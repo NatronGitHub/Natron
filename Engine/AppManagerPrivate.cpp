@@ -27,6 +27,9 @@
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
+#if defined(__APPLE__)
+#include <sys/syslimits.h> // OPEN_MAX
+#endif
 #endif
 #include <cstddef>
 #include <cstdlib>
@@ -58,6 +61,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/RectDSerialization.h"
 #include "Engine/RectISerialization.h"
@@ -78,6 +82,8 @@ AppManagerPrivate::AppManagerPrivate()
     , _settings()
     , _formats()
     , _plugins()
+    , readerPlugins()
+    , writerPlugins()
     , ofxHost( new OfxHost() )
     , _knobFactory( new KnobFactory() )
     , _nodeCache()
@@ -116,6 +122,8 @@ AppManagerPrivate::AppManagerPrivate()
     , missingOpenglError()
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , renderingContextPool()
+    , openGLRenderers()
 {
     setMaxCacheFiles();
 
@@ -309,7 +317,7 @@ void
 restoreCache(AppManagerPrivate* p,
              Cache<T>* cache)
 {
-    if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
+    if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
         FStreamsSupport::ifstream ifile;
         FStreamsSupport::open(&ifile, settingsFilePath);
@@ -329,11 +337,11 @@ restoreCache(AppManagerPrivate* p,
             if ( cacheVersion == cache->cacheVersion() ) {
                 iArchive >> tableOfContents;
             } else {
-                p->cleanUpCacheDiskStructure( cache->getCachePath() );
+                p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
-            p->cleanUpCacheDiskStructure( cache->getCachePath() );
+            p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
 
             return;
         }
@@ -355,7 +363,7 @@ AppManagerPrivate::restoreCaches()
 } // restoreCaches
 
 bool
-AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
+AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool isTiled)
 {
     QString settingsFilePath = cachePath;
 
@@ -366,49 +374,51 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
     settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
-        cleanUpCacheDiskStructure(cachePath);
+        cleanUpCacheDiskStructure(cachePath, isTiled);
 
         return false;
     }
-    QDir directory(cachePath);
-    QStringList files = directory.entryList(QDir::AllDirs);
+
+    if (!isTiled) {
+        QDir directory(cachePath);
+        QStringList files = directory.entryList(QDir::AllDirs);
 
 
-    /*Now counting actual data files in the cache*/
-    /*check if there's 256 subfolders, otherwise reset cache.*/
-    int count = 0; // -1 because of the restoreFile
-    int subFolderCount = 0;
-    Q_FOREACH(const QString &file, files) {
-        QString subFolder(cachePath);
+        /*Now counting actual data files in the cache*/
+        /*check if there's 256 subfolders, otherwise reset cache.*/
+        int count = 0; // -1 because of the restoreFile
+        int subFolderCount = 0;
+        Q_FOREACH(const QString &file, files) {
+            QString subFolder(cachePath);
 
-        subFolder.append( QDir::separator() );
-        subFolder.append(file);
-        if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
-            continue;
-        }
-        QDir d(subFolder);
-        if ( d.exists() ) {
-            ++subFolderCount;
-            QStringList items = d.entryList();
-            for (int j = 0; j < items.size(); ++j) {
-                if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
-                    ++count;
+            subFolder.append( QDir::separator() );
+            subFolder.append(file);
+            if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
+                continue;
+            }
+            QDir d(subFolder);
+            if ( d.exists() ) {
+                ++subFolderCount;
+                QStringList items = d.entryList();
+                for (int j = 0; j < items.size(); ++j) {
+                    if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
+                        ++count;
+                    }
                 }
             }
         }
+        if (subFolderCount < 256) {
+            qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
+            cleanUpCacheDiskStructure(cachePath, isTiled);
+            
+            return false;
+        }
     }
-    if (subFolderCount < 256) {
-        qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
-        cleanUpCacheDiskStructure(cachePath);
-
-        return false;
-    }
-
     return true;
 } // AppManagerPrivate::checkForCacheDiskStructure
 
 void
-AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
+AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled)
 {
     /*re-create cache*/
 
@@ -426,17 +436,19 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
     if (etr.size() < 256) {
-        Q_FOREACH (QString e, etr) {
+        Q_FOREACH (const QString &e, etr) {
             cacheFolder.rmdir(e);
         }
     }
-    for (U32 i = 0x00; i <= 0xF; ++i) {
-        for (U32 j = 0x00; j <= 0xF; ++j) {
-            std::ostringstream oss;
-            oss << std::hex <<  i;
-            oss << std::hex << j;
-            std::string str = oss.str();
-            cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+    if (!isTiled) {
+        for (U32 i = 0x00; i <= 0xF; ++i) {
+            for (U32 j = 0x00; j <= 0xF; ++j) {
+                std::ostringstream oss;
+                oss << std::hex <<  i;
+                oss << std::hex << j;
+                std::string str = oss.str();
+                cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+            }
         }
     }
 }
@@ -454,6 +466,10 @@ AppManagerPrivate::setMaxCacheFiles()
        Increase the number of file descriptors that the process can open to the maximum allowed.
        - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
        - On Linux, the default limit is usually 1024.
+
+        Note that due to a bug in stdio on OS X, the limit on the number of files opened using fopen()
+        cannot be changed after the first call to stdio (e.g. printf() or fopen()).
+        Consequently, this has to be the first thing to do in main().
      */
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
@@ -546,7 +562,7 @@ post_gl_call(const char */*name*/,
 #ifdef GL_TRACE_CALLS
     GLenum _glerror_ = glGetError();
     if (_glerror_ != GL_NO_ERROR) {
-        std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+        std::cout << "GL_ERROR : " << __FILE__ << ":" << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
         glError();
     }
 #endif
@@ -555,12 +571,23 @@ post_gl_call(const char */*name*/,
 #endif // debug
 
 void
+AppManagerPrivate::initGLAPISpecific()
+{
+#ifdef Q_OS_WIN32
+    wglInfo.reset(new OSGLContext_wgl_data);
+    OSGLContext_win::initWGLData( wglInfo.get() );
+#elif defined(Q_OS_LINUX)
+    glxInfo.reset(new OSGLContext_glx_data);
+    OSGLContext_x11::initGLXData( glxInfo.get() );
+
+#endif // Q_OS_WIN32
+}
+
+void
 AppManagerPrivate::initGl()
 {
     // Private should not lock
     assert( !openGLFunctionsMutex.tryLock() );
-
-    assert( QThread::currentThread() == qApp->thread() );
 
     hasInitializedOpenGLFunctions = true;
     hasRequiredOpenGLVersionAndExtensions = true;
@@ -572,18 +599,43 @@ AppManagerPrivate::initGl()
 #endif
 
 
-    if ( !gladLoadGL() ) {
+    if ( !gladLoadGL() ||
+        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0)) {
         missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
         missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
-        missingOpenglError += tr("Your OpenGL version ");
-        missingOpenglError += appPTR->getOpenGLVersion();
+        QString glVersion = appPTR->getOpenGLVersion();
+        if (!glVersion.isEmpty()) {
+            missingOpenglError += tr("Your OpenGL version ");
+            missingOpenglError += glVersion;
+        }
         hasRequiredOpenGLVersionAndExtensions = false;
+
+#ifdef DEBUG
+        std::cerr << missingOpenglError.toStdString() << std::endl;
+#endif
 
         return;
     }
-
+    
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
+}
+
+void
+AppManagerPrivate::tearDownGL()
+{
+    // Kill all rendering context
+    renderingContextPool.reset();
+
+#ifdef Q_OS_WIN32
+    if (wglInfo) {
+        OSGLContext_win::destroyWGLData( wglInfo.get() );
+    }
+#elif defined(Q_OS_LINUX)
+    if (glxInfo) {
+        OSGLContext_x11::destroyGLXData( glxInfo.get() );
+    }
+#endif
 }
 
 NATRON_NAMESPACE_EXIT;

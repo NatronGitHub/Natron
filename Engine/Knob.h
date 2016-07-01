@@ -240,6 +240,11 @@ public:
         Q_EMIT labelChanged();
     }
 
+    void s_inViewerContextLabelChanged()
+    {
+        Q_EMIT inViewerContextLabelChanged();
+    }
+
     void s_evaluateOnChangeChanged(bool value)
     {
         Q_EMIT evaluateOnChangeChanged(value);
@@ -344,6 +349,8 @@ Q_SIGNALS:
 
     void labelChanged();
 
+    void inViewerContextLabelChanged();
+
     void dimensionNameChanged(int dimension);
 };
 
@@ -364,16 +371,21 @@ typedef std::list<KnobChange> KnobChanges;
 
 class KnobI
     : public OverlaySupport
-      , public boost::enable_shared_from_this<KnobI>
+    , public boost::enable_shared_from_this<KnobI>
 {
     friend class KnobHolder;
 
 public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobI()
     {
     }
 
+public:
+
+    // dtor
     virtual ~KnobI()
     {
     }
@@ -391,7 +403,8 @@ public:
         bool isExpr;
         bool isListening;
         int targetDim;
-        ListenerDim() : isExpr(false), isListening(false), targetDim(-1) {}
+        ListenerDim()
+            : isExpr(false), isListening(false), targetDim(-1) {}
     };
 
     typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
@@ -559,8 +572,8 @@ public:
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension) = 0;
-    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) = 0;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) = 0;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) = 0;
 
 
     /**
@@ -611,7 +624,7 @@ public:
     /**
      * @brief Calls deleteValueAtTime with a reason of eValueChangedReasonUserEdited
      **/
-    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension) = 0;
+    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) = 0;
 
     /**
      * @brief Calls removeAnimation with a reason of eValueChangedReasonUserEdited
@@ -1367,12 +1380,12 @@ private:
 
 
     virtual void removeAnimationWithReason(ViewSpec view, int dimension, ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension) OVERRIDE FINAL;
-    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension,bool copyCurveValueAtTimeToInternalValue) OVERRIDE FINAL;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) OVERRIDE FINAL;
 
 public:
 
-    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension) OVERRIDE FINAL;
+    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) OVERRIDE FINAL;
     virtual bool moveValueAtTime(CurveChangeReason reason, double time, ViewSpec view, int dimension, double dt, double dv, KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimension, double dt, double dv, std::vector<KeyFrame>* keyframes) OVERRIDE FINAL;
 
@@ -1556,7 +1569,7 @@ protected:
 
     virtual bool setHasModifications(int dimension, bool value, bool lock) OVERRIDE FINAL;
 
-
+    virtual bool hasDefaultValueChanged(int dimension) const = 0;
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
@@ -1608,6 +1621,9 @@ public:
     };
 
 protected:
+
+    virtual void copyValuesFromCurve(int /*dim*/) {}
+
 
     virtual void handleSignalSlotsForAliasLink(const KnobPtr& /*alias*/,
                                                bool /*connect*/)
@@ -1951,11 +1967,17 @@ public:
     std::vector<T> getDefaultValues_mt_safe() const WARN_UNUSED_RETURN;
     T getDefaultValue(int dimension) const WARN_UNUSED_RETURN;
 
+    bool isDefaultValueSet(int dimension) const WARN_UNUSED_RETURN;
+
     /**
      * @brief Set a default value and set the knob value to it for the particular dimension.
      **/
     void setDefaultValue(const T & v, int dimension = 0);
     void setDefaultValueWithoutApplying(const T& v, int dimension = 0);
+    void setDefaultValuesWithoutApplying(const T& v1, const T& v2);
+    void setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3);
+    void setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3, const T& v4);
+
 
     //////////////////////////////////////////////////////////////////////
     ///////////////////////////////////
@@ -2036,6 +2058,10 @@ protected:
 
 private:
 
+    virtual void copyValuesFromCurve(int dim) OVERRIDE FINAL;
+
+    virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
+
     void initMinMax();
 
     T clampToMinMax(const T& value, int dimension) const;
@@ -2075,6 +2101,7 @@ private:
         _exprRes[dimension].clear();
     }
 
+
 private:
 
     bool evaluateExpression(double time, ViewIdx view, int dimension, T* ret, std::string* error);
@@ -2096,7 +2123,13 @@ private:
     class QueuedSetValue
     {
 public:
-        QueuedSetValue(ViewSpec view, int dimension, const T& value, const KeyFrame& key, bool useKey, ValueChangedReasonEnum reason, bool valueChangesBlocked);
+        QueuedSetValue(ViewSpec view,
+                       int dimension,
+                       const T& value,
+                       const KeyFrame& key,
+                       bool useKey,
+                       ValueChangedReasonEnum reason,
+                       bool valueChangesBlocked);
 
         virtual bool isSetValueAtTime() const { return false; }
 
@@ -2149,7 +2182,13 @@ private:
     ///Here is all the stuff we couldn't get rid of the template parameter
     mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults
     std::vector<T> _values, _guiValues;
-    std::vector<T> _defaultValues;
+
+    struct DefaultValue
+    {
+        T initialValue,value;
+        bool defaultValueSet;
+    };
+    std::vector<DefaultValue> _defaultValues;
     mutable ExprResults _exprRes;
 
     //Only for double and int
@@ -2249,6 +2288,8 @@ public:
      **/
     KnobHolder(const AppInstPtr& appInstance);
 
+    KnobHolder(const KnobHolder& other);
+
     virtual ~KnobHolder();
 
     void setPanelPointer(DockablePanelI* gui);
@@ -2321,6 +2362,7 @@ public:
     bool isInitializingKnobs() const;
 
     void addKnobToViewerUI(const KnobPtr& knob);
+    bool isInViewerUIKnob(const KnobPtr& knob) const;
     KnobsVec getViewerUIKnobs() const;
 
 protected:
@@ -2338,6 +2380,14 @@ public:
     virtual bool isProject() const
     {
         return false;
+    }
+
+    /**
+     * @brief If false, all knobs within this container cannot animate
+     **/
+    virtual bool canKnobsAnimate() const
+    {
+        return true;
     }
 
     /**
@@ -2360,7 +2410,7 @@ public:
      * Should be called prior to changing the state of the user interface that could impact the
      * final image.
      **/
-    virtual void abortAnyEvaluation() {}
+    virtual void abortAnyEvaluation(bool keepOldestRender = true) { Q_UNUSED(keepOldestRender); }
 
     /**
      * @brief Dequeues all values set in the queues for all knobs
@@ -2735,6 +2785,12 @@ public:
         : KnobHolder(instance)
     {
     }
+
+    NamedKnobHolder(const NamedKnobHolder& other)
+    : KnobHolder(other)
+    {
+    }
+
 
     virtual ~NamedKnobHolder()
     {

@@ -42,10 +42,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-/*The current settings in the preferences menu.
-   @todo Move this class to QSettings instead*/
-
-
+/*The current settings in the preferences menu.*/
 class Settings
     : public KnobHolder
 {
@@ -82,10 +79,22 @@ public:
         eKnownHostNameNone,
     };
 
+    enum EnableOpenGLEnum
+    {
+        eEnableOpenGLEnabled = 0,
+        eEnableOpenGLDisabled,
+        eEnableOpenGLDisabledIfBackground,
+    };
+
     Settings();
 
     virtual ~Settings()
     {
+    }
+
+    virtual bool canKnobsAnimate() const OVERRIDE FINAL
+    {
+        return false;
     }
 
     virtual bool onKnobValueChanged(KnobI* k,
@@ -95,8 +104,6 @@ public:
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     double getRamMaximumPercent() const;
-
-    double getRamPlaybackMaximumPercent() const;
 
     U64 getMaximumViewerDiskCacheSize() const;
 
@@ -120,27 +127,14 @@ public:
 
     void setUseGlobalThreadPool(bool use);
 
-    std::string getReaderPluginIDForFileType(const std::string & extension);
-    std::string getWriterPluginIDForFileType(const std::string & extension);
-
-    void populateReaderPluginsAndFormats(const std::map<std::string, std::vector< std::pair<std::string, double> > > & rows);
-
-    void populateWriterPluginsAndFormats(const std::map<std::string, std::vector< std::pair<std::string, double> > > & rows);
-
-    void populatePluginsTab();
+    void restorePluginSettings();
 
     void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
 
-    void getFileFormatsForReadingAndReader(std::map<std::string, std::string>* formats);
-
-    void getFileFormatsForWritingAndWriter(std::map<std::string, std::string>* formats);
-
-    void getReadersForFormat(const std::string& format, std::vector<std::string>* decoders);
-
-    void getWritersForFormat(const std::string& format, std::vector<std::string>* encoders);
-
     ///save the settings to the application's settings
-    void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings);
+    void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings, bool pluginSettings);
+
+    void savePluginsSettings();
 
     void saveAllSettings();
 
@@ -149,7 +143,7 @@ public:
         std::vector<KnobI*> knobs;
 
         knobs.push_back(knob);
-        saveSettings(knobs, false);
+        saveSettings(knobs, false, false);
     }
 
     ///restores the settings from disk
@@ -269,14 +263,6 @@ public:
      **/
     bool didSettingsExistOnStartup() const;
 
-    /**
-     * @brief Return whether the render scale support is set to its default value (0)  or deactivated (1)
-     * for the given plug-in.
-     * If the plug-in ID is not valid, -1 is returned.
-     **/
-    int getRenderScaleSupportPreference(const Plugin* p) const;
-
-
     bool notifyOnFileChange() const;
 
     bool isAggressiveCachingEnabled() const;
@@ -363,8 +349,6 @@ public:
 
     std::string getUserStyleSheetFilePath() const;
 
-    bool isPluginDeactivated(const Plugin* p) const;
-
     int getDocumentationSource() const;
     int getServerPort() const;
     void setServerPort(int port) const;
@@ -372,6 +356,16 @@ public:
     QString makeHTMLDocumentation(bool genHTML) const;
 
     bool isAutoScrollEnabled() const;
+
+    GLRendererID getActiveOpenGLRendererID() const;
+
+    void populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers);
+
+    bool isOpenGLRenderingEnabled() const;
+
+    int getMaxOpenGLContexts() const;
+
+    bool isDriveLetterToUNCPathConversionEnabled() const;
 
 Q_SIGNALS:
 
@@ -382,14 +376,25 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     void initializeKnobsGeneral();
-    void initializeKnobsAppearance();
+    void initializeKnobsThreading();
+    void initializeKnobsRendering();
+    void initializeKnobsGPU();
+    void initializeKnobsProjectSetup();
+    void initializeKnobsDocumentation();
+    void initializeKnobsUserInterface();
+    void initializeKnobsColorManagement();
+    void initializeKnobsCaching();
     void initializeKnobsViewers();
     void initializeKnobsNodeGraph();
-    void initializeKnobsCaching();
-    void initializeKnobsReaders();
-    void initializeKnobsWriters();
     void initializeKnobsPlugins();
     void initializeKnobsPython();
+    void initializeKnobsAppearance();
+    void initializeKnobsGuiColors();
+    void initializeKnobsCurveEditorColors();
+    void initializeKnobsDopeSheetColors();
+    void initializeKnobsNodeGraphColors();
+    void initializeKnobsScriptEditorColors();
+
 
     void warnChangedKnobs(const std::vector<KnobI*>& knobs);
 
@@ -399,11 +404,11 @@ private:
     bool tryLoadOpenColorIOConfig();
 
 
-    boost::shared_ptr<KnobPage> _generalTab;
     boost::shared_ptr<KnobBool> _natronSettingsExist;
 
 
-    // Natron
+    // General
+    boost::shared_ptr<KnobPage> _generalTab;
     boost::shared_ptr<KnobBool> _checkForUpdates;
     boost::shared_ptr<KnobBool> _enableCrashReports;
     boost::shared_ptr<KnobButton> _testCrashReportButton;
@@ -412,7 +417,8 @@ private:
     boost::shared_ptr<KnobChoice> _hostName;
     boost::shared_ptr<KnobString> _customHostName;
 
-    // Threading
+    // General/Threading
+    boost::shared_ptr<KnobPage> _threadingPage;
     boost::shared_ptr<KnobInt> _numberOfThreads;
     boost::shared_ptr<KnobInt> _numberOfParallelRenders;
     boost::shared_ptr<KnobBool> _useThreadPool;
@@ -420,36 +426,59 @@ private:
     boost::shared_ptr<KnobBool> _renderInSeparateProcess;
     boost::shared_ptr<KnobBool> _queueRenders;
 
-    // Misc
+    // General/Rendering
+    boost::shared_ptr<KnobPage> _renderingPage;
+    boost::shared_ptr<KnobBool> _convertNaNValues;
+    boost::shared_ptr<KnobBool> _pluginUseImageCopyForSource;
+    boost::shared_ptr<KnobBool> _activateRGBSupport;
+    boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
+
+    // General/GPU rendering
+    boost::shared_ptr<KnobPage> _gpuPage;
+    boost::shared_ptr<KnobString> _openglRendererString;
+    boost::shared_ptr<KnobChoice> _availableOpenGLRenderers;
+    boost::shared_ptr<KnobInt> _nOpenGLContexts;
+    boost::shared_ptr<KnobChoice> _enableOpenGL;
+
+
+
+    // General/Projects setup
+    boost::shared_ptr<KnobPage> _projectsPage;
+    boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
+    boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
+    boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
+    boost::shared_ptr<KnobBool> _enableMappingFromDriveLettersToUNCShareNames;
+
+    // General/Documentation
+    boost::shared_ptr<KnobPage> _documentationPage;
+    boost::shared_ptr<KnobInt> _wwwServerPort;
+    boost::shared_ptr<KnobChoice> _documentationSource;
+
+    // General/User Interface
+    boost::shared_ptr<KnobPage> _uiPage;
     boost::shared_ptr<KnobBool> _notifyOnFileChange;
 
 #ifdef NATRON_ENABLE_IO_META_NODES
     boost::shared_ptr<KnobBool> _filedialogForWriters;
 #endif
-
-    boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
-    boost::shared_ptr<KnobBool> _convertNaNValues;
-    boost::shared_ptr<KnobBool> _pluginUseImageCopyForSource;
-    boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
-    boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
     boost::shared_ptr<KnobBool> _renderOnEditingFinished;
-    boost::shared_ptr<KnobBool> _activateRGBSupport;
-    boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
-
-    // User Interface
     boost::shared_ptr<KnobBool> _linearPickers;
     boost::shared_ptr<KnobInt> _maxPanelsOpened;
     boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
     boost::shared_ptr<KnobFile> _defaultLayoutFile;
     boost::shared_ptr<KnobBool> _loadProjectsWorkspace;
+
+    // Color-Management
+    boost::shared_ptr<KnobPage> _ocioTab;
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;
     boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;
     boost::shared_ptr<KnobBool> _ocioStartupCheck;
     boost::shared_ptr<KnobFile> _customOcioConfigFile;
+
+    // Caching
     boost::shared_ptr<KnobPage> _cachingTab;
     boost::shared_ptr<KnobBool> _aggressiveCaching;
     ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    boost::shared_ptr<KnobInt> _maxPlayBackPercent;
     boost::shared_ptr<KnobString> _maxPlaybackLabel;
 
     ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
@@ -472,7 +501,7 @@ private:
     boost::shared_ptr<KnobPath> _diskCachePath;
     boost::shared_ptr<KnobButton> _wipeDiskCache;
 
-    // "Viewers" pane
+    // Viewer
     boost::shared_ptr<KnobPage> _viewersTab;
     boost::shared_ptr<KnobChoice> _texturesMode;
     boost::shared_ptr<KnobInt> _powerOf2Tiling;
@@ -485,8 +514,9 @@ private:
     boost::shared_ptr<KnobInt> _maximumNodeViewerUIOpened;
     boost::shared_ptr<KnobBool> _viewerKeys;
 
-    // "Nodegraph" pane
+    // Nodegraph
     boost::shared_ptr<KnobPage> _nodegraphTab;
+    boost::shared_ptr<KnobBool> _autoScroll;
     boost::shared_ptr<KnobBool> _autoTurbo;
     boost::shared_ptr<KnobBool> _useNodeGraphHints;
     boost::shared_ptr<KnobBool> _snapNodesToConnections;
@@ -497,31 +527,15 @@ private:
     boost::shared_ptr<KnobBool> _useInputAForMergeAutoConnect;
     boost::shared_ptr<KnobBool> _usePluginIconsInNodeGraph;
     boost::shared_ptr<KnobBool> _useAntiAliasing;
-    boost::shared_ptr<KnobColor> _defaultNodeColor;
-    boost::shared_ptr<KnobColor> _defaultBackdropColor;
-    boost::shared_ptr<KnobColor> _defaultGeneratorColor;
-    boost::shared_ptr<KnobColor> _defaultReaderColor;
-    boost::shared_ptr<KnobColor> _defaultWriterColor;
-    boost::shared_ptr<KnobColor> _defaultColorGroupColor;
-    boost::shared_ptr<KnobColor> _defaultFilterGroupColor;
-    boost::shared_ptr<KnobColor> _defaultTransformGroupColor;
-    boost::shared_ptr<KnobColor> _defaultTimeGroupColor;
-    boost::shared_ptr<KnobColor> _defaultDrawGroupColor;
-    boost::shared_ptr<KnobColor> _defaultKeyerGroupColor;
-    boost::shared_ptr<KnobColor> _defaultChannelGroupColor;
-    boost::shared_ptr<KnobColor> _defaultMergeGroupColor;
-    boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
-    boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
-    boost::shared_ptr<KnobInt> _defaultAppearanceVersion;
-    boost::shared_ptr<KnobPage> _readersTab;
-    std::vector< boost::shared_ptr<KnobChoice> > _readersMapping;
-    boost::shared_ptr<KnobPage> _writersTab;
-    std::vector< boost::shared_ptr<KnobChoice> >  _writersMapping;
+
+    // Plugins
+    boost::shared_ptr<KnobPage> _pluginsTab;
     boost::shared_ptr<KnobPath> _extraPluginPaths;
     boost::shared_ptr<KnobPath> _templatesPluginPaths;
     boost::shared_ptr<KnobBool> _preferBundledPlugins;
     boost::shared_ptr<KnobBool> _loadBundledPlugins;
-    boost::shared_ptr<KnobPage> _pluginsTab;
+
+    // Python
     boost::shared_ptr<KnobPage> _pythonPage;
     boost::shared_ptr<KnobString> _onProjectCreated;
     boost::shared_ptr<KnobString> _defaultOnProjectLoaded;
@@ -531,11 +545,16 @@ private:
     boost::shared_ptr<KnobString> _defaultOnNodeDelete;
     boost::shared_ptr<KnobBool> _loadPyPlugsFromPythonScript;
     boost::shared_ptr<KnobBool> _echoVariableDeclarationToPython;
+
+    // Appearance
     boost::shared_ptr<KnobPage> _appearanceTab;
     boost::shared_ptr<KnobChoice> _systemFontChoice;
     boost::shared_ptr<KnobInt> _fontSize;
     boost::shared_ptr<KnobFile> _qssFile;
-    boost::shared_ptr<KnobGroup> _guiColors;
+    boost::shared_ptr<KnobInt> _defaultAppearanceVersion;
+
+    // Appearance/Main Window
+    boost::shared_ptr<KnobPage> _guiColorsTab;
     boost::shared_ptr<KnobColor> _sunkenColor;
     boost::shared_ptr<KnobColor> _baseColor;
     boost::shared_ptr<KnobColor> _raisedColor;
@@ -551,18 +570,23 @@ private:
     boost::shared_ptr<KnobColor> _exprColor;
     boost::shared_ptr<KnobColor> _cachedFrameColor;
     boost::shared_ptr<KnobColor> _diskCachedFrameColor;
-    boost::shared_ptr<KnobGroup> _curveEditorColors;
+
+    // Apprance/Curve Editor
+    boost::shared_ptr<KnobPage> _curveEditorColorsTab;
     boost::shared_ptr<KnobColor> _curveEditorBGColor;
     boost::shared_ptr<KnobColor> _gridColor;
     boost::shared_ptr<KnobColor> _curveEditorScaleColor;
-    boost::shared_ptr<KnobGroup> _dopeSheetEditorColors;
+
+    // Appearance/Dope Sheet
+    boost::shared_ptr<KnobPage> _dopeSheetEditorColorsTab;
     boost::shared_ptr<KnobColor> _dopeSheetEditorBackgroundColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorRootSectionBackgroundColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorKnobSectionBackgroundColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorScaleColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
-    boost::shared_ptr<KnobGroup> _scriptEditorColors;
-    boost::shared_ptr<KnobGroup> _graphColors;
+
+    // Appearance/Script Editor
+    boost::shared_ptr<KnobPage> _scriptEditorColorsTab;
     boost::shared_ptr<KnobColor> _curLineColor;
     boost::shared_ptr<KnobColor> _keywordColor;
     boost::shared_ptr<KnobColor> _operatorColor;
@@ -574,28 +598,24 @@ private:
     boost::shared_ptr<KnobColor> _numbersColor;
     boost::shared_ptr<KnobChoice> _scriptEditorFontChoice;
     boost::shared_ptr<KnobInt> _scriptEditorFontSize;
-    boost::shared_ptr<KnobInt> _wwwServerPort;
-    boost::shared_ptr<KnobChoice> _documentationSource;
-    boost::shared_ptr<KnobBool> _autoScroll;
-    struct PerPluginKnobs
-    {
-        boost::shared_ptr<KnobBool> enabled;
-        boost::shared_ptr<KnobChoice> renderScaleSupport;
 
-        PerPluginKnobs(const boost::shared_ptr<KnobBool>& enabled,
-                       const boost::shared_ptr<KnobChoice>& renderScaleSupport)
-            : enabled(enabled)
-            , renderScaleSupport(renderScaleSupport)
-        {
-        }
-
-        PerPluginKnobs()
-            : enabled(), renderScaleSupport()
-        {
-        }
-    };
-
-    std::map<const Plugin*, PerPluginKnobs> _pluginsMap;
+    // Appearance/Node Graph
+    boost::shared_ptr<KnobPage> _nodegraphColorsTab;
+    boost::shared_ptr<KnobColor> _defaultNodeColor;
+    boost::shared_ptr<KnobColor> _defaultBackdropColor;
+    boost::shared_ptr<KnobColor> _defaultGeneratorColor;
+    boost::shared_ptr<KnobColor> _defaultReaderColor;
+    boost::shared_ptr<KnobColor> _defaultWriterColor;
+    boost::shared_ptr<KnobColor> _defaultColorGroupColor;
+    boost::shared_ptr<KnobColor> _defaultFilterGroupColor;
+    boost::shared_ptr<KnobColor> _defaultTransformGroupColor;
+    boost::shared_ptr<KnobColor> _defaultTimeGroupColor;
+    boost::shared_ptr<KnobColor> _defaultDrawGroupColor;
+    boost::shared_ptr<KnobColor> _defaultKeyerGroupColor;
+    boost::shared_ptr<KnobColor> _defaultChannelGroupColor;
+    boost::shared_ptr<KnobColor> _defaultMergeGroupColor;
+    boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
+    boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
     std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;

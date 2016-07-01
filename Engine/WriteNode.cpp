@@ -32,6 +32,19 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
@@ -42,11 +55,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
@@ -153,13 +168,15 @@ WriteNode::isBundledWriter(const std::string& pluginID,
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
         return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-               boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM);
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG);
     }
 
     return pluginID == PLUGINID_OFX_WRITEOIIO ||
-           pluginID == PLUGINID_OFX_WRITEFFMPEG ||
-           pluginID == PLUGINID_OFX_WRITEPFM;
+    pluginID == PLUGINID_OFX_WRITEFFMPEG ||
+    pluginID == PLUGINID_OFX_WRITEPFM ||
+    pluginID == PLUGINID_OFX_WRITEPNG;
 }
 
 bool
@@ -302,6 +319,33 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
         }
     }
 
+    // Find the separatorKnob in the page and if the next parameter is also a separator, hide it
+    int foundSep = -1;
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        if (children[i]== separatorKnob.lock()) {
+            foundSep = i;
+            break;
+        }
+    }
+    if (foundSep != -1) {
+        ++foundSep;
+        if (foundSep < (int)children.size()) {
+            bool isSecret = children[foundSep]->getIsSecret();
+            while (isSecret && foundSep < (int)children.size()) {
+                ++foundSep;
+                isSecret = children[foundSep]->getIsSecret();
+            }
+            if (foundSep < (int)children.size()) {
+                separatorKnob.lock()->setSecret(dynamic_cast<KnobSeparator*>(children[foundSep].get()));
+            } else {
+                separatorKnob.lock()->setSecret(true);
+            }
+
+        } else {
+            separatorKnob.lock()->setSecret(true);
+        }
+    }
+
     //Set the render button as the last knob
     boost::shared_ptr<KnobButton> renderB = renderButtonKnob.lock();
     if (renderB) {
@@ -331,6 +375,13 @@ WriteNodePrivate::cloneGenericKnobs()
                 } else {
                     (*it2)->clone( serializedKnob.get() );
                 }
+                (*it2)->setSecret( serializedKnob->getIsSecret() );
+                if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
+                    for (int i = 0; i < (*it2)->getDimension(); ++i) {
+                        (*it2)->setEnabled( i, serializedKnob->isEnabled(i) );
+                    }
+                }
+
                 break;
             }
         }
@@ -346,43 +397,79 @@ WriteNodePrivate::destroyWriteNode()
 
     genericKnobsSerialization.clear();
 
-    for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( !(*it)->isDeclaredByPlugin() ) {
-            continue;
-        }
+    std::string serializationString;
+    try {
+        std::ostringstream ss;
+        boost::archive::xml_oarchive oArchive(ss);
+        std::list<boost::shared_ptr<KnobSerialization> > serialized;
+        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            if ( !(*it)->isDeclaredByPlugin() ) {
+                continue;
+            }
 
-        //If it is a knob of this WriteNode, ignore it
-        bool isWriteNodeKnob = false;
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
-            if (it2->lock() == *it) {
-                isWriteNodeKnob = true;
-                break;
+            //If it is a knob of this WriteNode, ignore it
+            bool isWriteNodeKnob = false;
+            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                if (it2->lock() == *it) {
+                    isWriteNodeKnob = true;
+                    break;
+                }
+            }
+            if (isWriteNodeKnob) {
+                continue;
+            }
+
+            //Keep pages around they will be re-used
+            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+            if (isPage) {
+                continue;
+            }
+
+            //This is a knob of the Writer plug-in
+
+            //Serialize generic knobs and keep them around until we create a new Writer plug-in
+            bool mustSerializeKnob;
+            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+            if (isGeneric && mustSerializeKnob) {
+                boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
+                serialized.push_back(s);
+            }
+            if (!isGeneric) {
+                try {
+                    _publicInterface->deleteKnob(it->get(), false);
+                } catch (...) {
+                    
+                }
             }
         }
-        if (isWriteNodeKnob) {
-            continue;
-        }
 
-        //Keep pages around they will be re-used
-        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-        if (isPage) {
-            continue;
-        }
+        int n = (int)serialized.size();
+        oArchive << boost::serialization::make_nvp("numItems", n);
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
+            oArchive << boost::serialization::make_nvp("item", **it);
 
-        //This is a knob of the Writer plug-in
+        }
+        serializationString = ss.str();
 
-        //Serialize generic knobs and keep them around until we create a new Writer plug-in
-        bool mustSerializeKnob;
-        bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-        if (isGeneric && mustSerializeKnob) {
-            boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
-            genericKnobsSerialization.push_back(s);
-        }
-        if (!isGeneric) {
-            _publicInterface->deleteKnob(it->get(), false);
-        }
+    } catch (...) {
+        assert(false);
     }
 
+    try {
+        std::stringstream ss(serializationString);
+        boost::archive::xml_iarchive iArchive(ss);
+        int n ;
+        iArchive >> boost::serialization::make_nvp("numItems", n);
+        for (int i = 0; i < n; ++i) {
+            boost::shared_ptr<KnobSerialization> s(new KnobSerialization);
+            iArchive >> boost::serialization::make_nvp("item", *s);
+            genericKnobsSerialization.push_back(s);
+
+        }
+    } catch (...) {
+        assert(false);
+    }
+    
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
@@ -395,12 +482,12 @@ void
 WriteNodePrivate::createDefaultWriteNode()
 {
     boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
-    CreateNodeArgs args( QString::fromUtf8(WRITE_NODE_DEFAULT_WRITER), eCreateNodeReasonInternal, isNodeGroup );
-
-    args.createGui = false;
-    args.addToProject = false;
-    args.ioContainer = _publicInterface->getNode();
-    args.fixedName = QString::fromUtf8("defaultWriteNodeWriter");
+    CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isNodeGroup );
+    args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultWriteNodeWriter");
+    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
@@ -509,35 +596,31 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
-    std::string readerPluginID;
-    std::map<std::string, std::string> readersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    std::map<std::string, std::string>::iterator foundReaderForFormat = readersForFormat.find(ext);
-    if ( foundReaderForFormat != readersForFormat.end() ) {
-        readerPluginID = foundReaderForFormat->second;
-    }
-
+    std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     NodePtr writeNode = embeddedPlugin.lock();
 
     readBackNode.reset();
     if ( !readerPluginID.empty() ) {
-        CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ),  eCreateNodeReasonInternal, isNodeGroup );
-        args.createGui = false;
-        args.addToProject = false;
-        args.fixedName = QString::fromUtf8("internalDecoderNode");
+        CreateNodeArgs args(readerPluginID, isNodeGroup );
+        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         //Set a pre-value for the inputfile knob only if it did not exist
         if ( !filename.empty() ) {
-            args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+            args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
         }
 
         if (writeNode) {
             double first, last;
             writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
-            args.paramValues.push_back( createDefaultValueForParam<int>(kReaderParamNameOriginalFrameRange, (int)first, (int)last) );
-            args.paramValues.push_back( createDefaultValueForParam<int>(kParamFirstFrame, (int)first) );
-            args.paramValues.push_back( createDefaultValueForParam<int>(kParamLastFrame, (int)last) );
+            std::vector<int> originalRange(2);
+            originalRange[0] = (int)first;
+            originalRange[1] = (int)last;
+            args.addParamDefaultValueN<int>(kReaderParamNameOriginalFrameRange, originalRange);
+            args.addParamDefaultValue<int>(kParamFirstFrame, (int)first);
+            args.addParamDefaultValue<int>(kParamFirstFrame, (int)last);
         }
 
 
@@ -581,9 +664,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     //NodePtr maskInput;
     assert( (input && output) || (!input && !output) );
     if (!output) {
-        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isNodeGroup);
-        args.createGui = false;
-        args.addToProject = false;
+        CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isNodeGroup);
+        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         output = _publicInterface->getApp()->createNode(args);
         try {
             output->setScriptName("Output");
@@ -594,10 +678,11 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         outputNode = output;
     }
     if (!input) {
-        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isNodeGroup);
-        args.fixedName = QLatin1String("Source");
-        args.createGui = false;
-        args.addToProject = false;
+        CreateNodeArgs args(PLUGINID_NATRON_INPUT, isNodeGroup);
+        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         input = _publicInterface->getApp()->createNode(args);
         assert(input);
         inputNode = input;
@@ -614,12 +699,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         int pluginChoice_i = pluginChoiceKnob->getValue();
         if (pluginChoice_i == 0) {
             //Use default
-            std::map<std::string, std::string> writersForFormat;
-            appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
-            std::map<std::string, std::string>::iterator foundWriterForFormat = writersForFormat.find(ext);
-            if ( foundWriterForFormat != writersForFormat.end() ) {
-                writerPluginID = foundWriterForFormat->second;
-            }
+            writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
         } else {
             std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
@@ -650,17 +730,21 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if ( writerPluginID.empty() ) {
             writerPluginID = WRITE_NODE_DEFAULT_WRITER;
         }
-        CreateNodeArgs args( QString::fromUtf8( writerPluginID.c_str() ), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, isNodeGroup );
-        args.createGui = false;
-        args.addToProject = false;
-        args.fixedName = QString::fromUtf8("internalEncoderNode");
-        args.serialization = serialization;
-        args.ioContainer = _publicInterface->getNode();
-
+        CreateNodeArgs args(writerPluginID, isNodeGroup );
+        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalEncoderNode");
+        args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         //Set a pre-value for the inputfile knob only if it did not exist
         if (!filename.empty() && !serialization) {
-            args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+            args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
         }
+        if (serialization) {
+            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        }
+
         embeddedPlugin = _publicInterface->getApp()->createNode(args);
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
@@ -717,7 +801,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
 
-    KnobPtr knob = _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         outputFileKnob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     }
@@ -736,15 +820,15 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::vector<std::string> writersForFormat;
     std::string pluginID;
     if ( !ext.empty() ) {
-        appPTR->getCurrentSettings()->getWritersForFormat(ext, &writersForFormat);
+        pluginID = appPTR->getWriterPluginIDForFileType(ext);
+        IOPluginSetForFormat writersForFormat;
+        appPTR->getWritersForFormat(ext, &writersForFormat);
 
-        pluginID = appPTR->getCurrentSettings()->getWriterPluginIDForFileType(ext);
-
-        for (std::size_t i = 0; i < writersForFormat.size(); ++i) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( writersForFormat[i].c_str() ), -1, -1, false);
+        // Reverse it so that we sort them by decreasing score order
+        for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it != writersForFormat.rend(); ++it) {
+            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
@@ -849,13 +933,14 @@ WriteNode::initializeKnobs()
 
 
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, tr(kNatronWriteParamFrameStepLabel), 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>( this, tr(kNatronWriteParamFrameStepLabel) );
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
+    controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
         std::vector< KnobPtr > children = mainPage->getChildren();
         bool foundLastFrame = false;
@@ -913,8 +998,13 @@ WriteNode::initializeKnobs()
 
 void
 WriteNode::onEffectCreated(bool mayCreateFileDialog,
-                           const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
+                           const CreateNodeArgs& args)
 {
+
+    boost::shared_ptr<RenderEngine> engine = getRenderEngine();
+    assert(engine);
+    QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
+
     if ( !_imp->renderButtonKnob.lock() ) {
         _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName("startRender") );
         assert( _imp->renderButtonKnob.lock() );
@@ -938,7 +1028,15 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
     } else {
-        pattern = getFileNameFromSerialization(defaultParamValues);
+
+        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        if (foundFileName != defaultParamValues.end()) {
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            pattern = args.getProperty<std::string>(propName);
+        }
     }
 
     _imp->createWriteNode( throwErrors, pattern, boost::shared_ptr<NodeSerialization>() );
@@ -960,6 +1058,7 @@ WriteNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& se
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization
     _imp->createWriteNode(false, filename, serialization);
+    _imp->refreshPluginSelectorKnob();
 }
 
 bool
@@ -980,6 +1079,11 @@ WriteNode::knobChanged(KnobI* k,
 
             return false;
         }
+
+        NodePtr hasMaster = getNode()->getMasterNode();
+        if (hasMaster) {
+            unslaveAllKnobs();
+        }
         try {
             _imp->refreshPluginSelectorKnob();
         } catch (const std::exception& e) {
@@ -995,11 +1099,18 @@ WriteNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
+        if (hasMaster) {
+            slaveAllKnobs(hasMaster->getEffectInstance().get(), false);
+        }
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
+        }
+
+        if (entry == "Default") {
+            entry.clear();
         }
 
         pluginIDKnob->setValue(entry);
@@ -1016,6 +1127,8 @@ WriteNode::knobChanged(KnobI* k,
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
+        boost::shared_ptr<KnobButton> button = _imp->renderButtonKnob.lock();
+        button->setAllDimensionsEnabled(!readFile);
         if (readFile) {
             boost::shared_ptr<KnobOutputFile> fileKnob = _imp->outputFileKnob.lock();
             assert(fileKnob);
@@ -1068,8 +1181,9 @@ WriteNode::getFrameRange(double *first,
     }
 }
 
+
 void
-WriteNode::renderSequenceStarted()
+WriteNode::onSequenceRenderStarted()
 {
     NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
 
@@ -1085,7 +1199,7 @@ WriteNode::renderSequenceStarted()
 }
 
 void
-WriteNode::renderSequenceEnd()
+WriteNode::onSequenceRenderFinished()
 {
     NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
 

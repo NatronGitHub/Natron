@@ -26,7 +26,6 @@
 
 #include <stdexcept>
 
-#include "Global/Macros.h"
 #include "Gui/GuiApplicationManager.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

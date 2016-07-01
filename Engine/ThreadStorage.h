@@ -45,7 +45,8 @@ class ThreadStorage
     : public QThreadStorage<T>
 {
 public:
-    ThreadStorage() : mainData() {}
+    ThreadStorage()
+        : mainData() {}
 
     /// Is local storage present?
     /// This *does not* mean that it was initialized.

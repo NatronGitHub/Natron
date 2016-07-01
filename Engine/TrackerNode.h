@@ -159,6 +159,7 @@ private:
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
 
 private:
 

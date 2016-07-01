@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -559,12 +560,9 @@ PrecompNodePrivate::createReadNode()
 
     std::string pattern = fileKnob->getValue();
     QString qpattern = QString::fromUtf8( pattern.c_str() );
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
-    if ( found == readersForFormat.end() ) {
+    std::string found = appPTR->getReaderPluginIDForFileType(ext);
+    if ( found.empty() ) {
         std::stringstream ss;
         ss << tr("No plugin capable of decoding %1 was found")
             .arg( QString::fromUtf8( ext.c_str() ) ).toStdString();
@@ -573,16 +571,16 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    QString readPluginID = QString::fromUtf8( found->second.c_str() );
+    QString readPluginID = QString::fromUtf8( found.c_str() );
     QString fixedNamePrefix = QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() );
     fixedNamePrefix.append( QLatin1Char('_') );
     fixedNamePrefix.append( QString::fromUtf8("readNode") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-    CreateNodeArgs args( readPluginID, eCreateNodeReasonInternal, app.lock()->getProject() );
-    args.createGui = false;
-    args.fixedName = fixedNamePrefix;
-    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+    CreateNodeArgs args( readPluginID.toStdString(), app.lock()->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
 
     NodePtr read = app.lock()->createNode(args);

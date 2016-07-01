@@ -85,6 +85,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/MemoryInfo.h"
 #include "Gui/GuiDefines.h"
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
@@ -184,7 +185,8 @@ public:
 
 #endif
 
-#endif // 0
+#endif \
+    // 0
 
 
 ///////////////////////// SequenceFileDialog
@@ -193,7 +195,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
                                         const std::vector<std::string> & filters, // the user accepted file types
                                         bool isSequenceDialog, // true if this dialog can display sequences
                                         FileDialogModeEnum mode, // if it is an open or save dialog
-                                        const std::string & currentDirectory,// the directory to show first
+                                        const std::string & currentDirectory, // the directory to show first
                                         Gui* gui,
                                         bool allowRelativePaths)
     : QDialog(parent)
@@ -1844,8 +1846,10 @@ SequenceFileDialog::selectedFiles()
     }
 
 #ifdef __NATRON_WIN32__
-    QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( selection.c_str() ) );
-    selection = ret.toStdString();
+    if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+        QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( selection.c_str() ) );
+        selection = ret.toStdString();
+    }
 #endif
 
     return selection;
@@ -1870,7 +1874,9 @@ SequenceFileDialog::filesToSave()
     }
 
 #ifdef __NATRON_WIN32__
-    ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+    if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+        ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+    }
 #endif
 
     return ret.toStdString();
@@ -1897,8 +1903,10 @@ SequenceFileDialog::selectedDirectory() const
 
 
 #ifdef __NATRON_WIN32__
-    QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( path.c_str() ) );
-    path = ret.toStdString();
+    if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+        QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( path.c_str() ) );
+        path = ret.toStdString();
+    }
 #endif
 
     return path;
@@ -2908,10 +2916,8 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-
-    args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
-    args.addToProject = false;
+    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, boost::shared_ptr<NodeCollection>() );
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
@@ -2989,10 +2995,10 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         return _preview->readerNode;
     }
     Q_UNUSED(filetype);
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_READ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-    args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
-    args.createGui = false;
-    args.addToProject = false;
+    CreateNodeArgs args( PLUGINID_NATRON_READ, boost::shared_ptr<NodeCollection>() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     NodePtr reader = _gui->getApp()->createNode(args);
     if (reader) {
         _preview->readerNode = reader;

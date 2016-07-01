@@ -1,6 +1,7 @@
 
 OCIO.files = \
 $$PWD/OpenColorIO-Configs/blender \
+$$PWD/OpenColorIO-Configs/natron \
 $$PWD/OpenColorIO-Configs/nuke-default
 
 OCIO_extra.files = \
@@ -8,6 +9,7 @@ $$PWD/OpenColorIO-Configs/ChangeLog \
 $$PWD/OpenColorIO-Configs/README \
 $$PWD/OpenColorIO-Configs/aces_0.1.1 \
 $$PWD/OpenColorIO-Configs/aces_0.7.1 \
+$$PWD/OpenColorIO-Configs/blender-cycles \
 $$PWD/OpenColorIO-Configs/spi-anim \
 $$PWD/OpenColorIO-Configs/spi-vfx
 
@@ -27,6 +29,12 @@ macx {
 }
 !macx {
     OCIO.path = $$OUT_PWD/OpenColorIO-Configs
+    unix {
+        isEmpty(PREFIX) {
+            PREFIX = /usr/local
+        }
+        OCIO.path = $${PREFIX}/share/OpenColorIO-Configs
+    }
     INSTALLS += OCIO
     OCIO_extra.path = $$OUT_PWD/OpenColorIO-Configs
     #INSTALLS += OCIO_extra

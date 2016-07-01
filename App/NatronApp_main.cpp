@@ -22,6 +22,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if defined(Q_OS_UNIX)
+#include <sys/time.h>     // for getrlimit on linux
+#include <sys/resource.h> // for getrlimit
+#if defined(__APPLE__)
+#include <sys/syslimits.h> // OPEN_MAX
+#endif
+#endif
+
+#include "Gui/GuiApplicationManager.h"
 
 #include <cstdio>  // perror
 #include <cstdlib> // exit
@@ -29,13 +38,9 @@
 #include <sstream>
 #include <iostream>
 
-#include "Global/Macros.h"
-
 #include <QCoreApplication>
 
 #include "Engine/CLArgs.h"
-
-#include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_USING
 
@@ -43,6 +48,36 @@ int
 main(int argc,
      char *argv[])
 {
+#if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
+    /*
+     Avoid 'Too many open files' on Unix.
+
+     Increase the number of file descriptors that the process can open to the maximum allowed.
+     - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
+     - On Linux, the default limit is usually 1024.
+
+     Note that due to a bug in stdio on OS X, the limit on the number of files opened using fopen()
+     cannot be changed after the first call to stdio (e.g. printf() or fopen()).
+     Consequently, this has to be the first thing to do in main().
+     */
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
+        if (rl.rlim_max > rl.rlim_cur) {
+            rl.rlim_cur = rl.rlim_max;
+            if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
+#             if defined(__APPLE__) && defined(OPEN_MAX)
+                // On Mac OS X, setrlimit(RLIMIT_NOFILE, &rl) fails to set
+                // rlim_cur above OPEN_MAX even if rlim_max > OPEN_MAX.
+                if (rl.rlim_cur > OPEN_MAX) {
+                    rl.rlim_cur = OPEN_MAX;
+                    setrlimit(RLIMIT_NOFILE, &rl);
+                }
+#             endif
+            }
+        }
+    }
+#endif
+    
     CLArgs::printBackGroundWelcomeMessage();
     CLArgs args(argc, argv, false);
 

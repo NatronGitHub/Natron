@@ -298,6 +298,7 @@ EffectInstance::RenderArgs::RenderArgs()
     , firstFrame(0)
     , lastFrame(0)
     , transformRedirections()
+    , isDoingOpenGLRender(false)
 {
 }
 
@@ -317,6 +318,7 @@ EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
     , firstFrame(o.firstFrame)
     , lastFrame(o.lastFrame)
     , transformRedirections(o.transformRedirections)
+    , isDoingOpenGLRender(o.isDoingOpenGLRender)
 {
 }
 
@@ -328,7 +330,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , pluginMemoryChunksMutex()
     , pluginMemoryChunks()
     , supportsRenderScale(eSupportsMaybe)
-    , actionsCache(appPTR->getHardwareIdealThreadCount() * 2)
+    , actionsCache(new ActionsCache(appPTR->getHardwareIdealThreadCount() * 2))
 #if NATRON_ENABLE_TRIMAP
     , imagesBeingRenderedMutex()
     , imagesBeingRendered()
@@ -341,7 +343,44 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , metadatas()
     , runningClipPreferences(false)
     , overlaysViewport(0)
+    , attachedContextsMutex(QMutex::Recursive)
+    , attachedContexts()
+    , mainInstance(0)
+    , isDoingInstanceSafeRender(false)
+    , renderClonesMutex()
+    , renderClonesPool()
 {
+}
+
+EffectInstance::Implementation::Implementation(const Implementation& other)
+: _publicInterface(0)
+, tlsData(other.tlsData)
+, duringInteractActionMutex()
+, duringInteractAction(other.duringInteractAction)
+, pluginMemoryChunksMutex()
+, pluginMemoryChunks()
+, supportsRenderScale(other.supportsRenderScale)
+, actionsCache(other.actionsCache)
+#if NATRON_ENABLE_TRIMAP
+, imagesBeingRenderedMutex()
+, imagesBeingRendered()
+#endif
+, componentsAvailableMutex()
+, componentsAvailableDirty(other.componentsAvailableDirty)
+, outputComponentsAvailable(other.outputComponentsAvailable)
+, overlaySlaves(other.overlaySlaves)
+, metadatasMutex()
+, metadatas(other.metadatas)
+, runningClipPreferences(other.runningClipPreferences)
+, overlaysViewport(other.overlaysViewport)
+, attachedContextsMutex(QMutex::Recursive)
+, attachedContexts()
+, mainInstance(other._publicInterface)
+, isDoingInstanceSafeRender(false)
+, renderClonesMutex()
+, renderClonesPool()
+{
+
 }
 
 void
@@ -406,6 +445,15 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
         thisGroupVar = appID;
     }
 
+    bool alreadyDefined = false;
+    PyObject* nodeObj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(thisNodeVar, NATRON_PYTHON_NAMESPACE::getMainModule(), &alreadyDefined);
+    if (!nodeObj || !alreadyDefined) {
+        return;
+    }
+
+    if (!PyObject_HasAttrString( nodeObj, k->getName().c_str() ) ) {
+        return;
+    }
 
     std::stringstream ss;
     ss << callback << "(" << thisNodeVar << "." << k->getName() << "," << thisNodeVar << "," << thisGroupVar << "," << appID
@@ -530,7 +578,8 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
     }
 }
 
-#endif // if NATRON_ENABLE_TRIMAP
+#endif \
+    // if NATRON_ENABLE_TRIMAP
 
 
 EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
@@ -545,7 +594,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
                                                                    int firstFrame,
-                                                                   int lastFrame)
+                                                                   int lastFrame,
+                                                                   bool isDoingOpenGLRender)
     : tlsData(tlsData)
 {
     tlsData->currentRenderArgs.rod = rod;
@@ -560,6 +610,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
     tlsData->currentRenderArgs.firstFrame = firstFrame;
     tlsData->currentRenderArgs.lastFrame = lastFrame;
+    tlsData->currentRenderArgs.isDoingOpenGLRender = isDoingOpenGLRender;
 
     tlsData->currentRenderArgs.validArgs = true;
 }

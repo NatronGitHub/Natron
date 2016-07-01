@@ -27,6 +27,8 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/AbortableRenderInfo.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
@@ -54,8 +56,24 @@
 #define kTrackerPMParamTrackingOffset "offset"
 #define kTrackerPMParamTrackingCenterPoint "center"
 
+
 NATRON_NAMESPACE_ENTER;
 
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+class MetaTypesRegistration
+{
+public:
+    inline MetaTypesRegistration()
+    {
+        qRegisterMetaType<TrackMarkerPtr>("TrackMarkerPtr");
+    }
+};
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+static MetaTypesRegistration registration;
 
 struct TrackMarkerPrivate
 {
@@ -76,6 +94,10 @@ struct TrackMarkerPrivate
     std::set<int> userKeyframes;
     std::string trackScriptName, trackLabel;
     boost::weak_ptr<KnobBool> enabled;
+
+    // Only used by the TrackScheduler thread
+    int trackingStartedCount;
+    std::list<double> keyframesAddedWhileTracking;
 
     TrackMarkerPrivate(TrackMarker* publicInterface,
                        const boost::shared_ptr<TrackerContext>& context)
@@ -99,6 +121,8 @@ struct TrackMarkerPrivate
         , trackScriptName()
         , trackLabel()
         , enabled()
+        , trackingStartedCount(0)
+        , keyframesAddedWhileTracking()
     {
     }
 };
@@ -117,47 +141,54 @@ TrackMarker::~TrackMarker()
 void
 TrackMarker::initializeKnobs()
 {
+    boost::shared_ptr<TrackerContext> context = _imp->context.lock();
+    boost::shared_ptr<KnobInt> defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
+    boost::shared_ptr<KnobInt> defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
+
+    double patternHalfSize = defPatternSizeKnob->getValue() / 2.;
+    double searchHalfSize = defSearchSizeKnob->getValue() / 2.;
+
     boost::shared_ptr<KnobDouble> swbbtmLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
 
     swbbtmLeft->setName(kTrackerParamSearchWndBtmLeft);
-    swbbtmLeft->setDefaultValue(-25, 0);
-    swbbtmLeft->setDefaultValue(-25, 1);
+    swbbtmLeft->setDefaultValue(-searchHalfSize, 0);
+    swbbtmLeft->setDefaultValue(-searchHalfSize, 1);
     swbbtmLeft->setHintToolTip( tr(kTrackerParamSearchWndBtmLeftHint) );
     _imp->searchWindowBtmLeft = swbbtmLeft;
 
     boost::shared_ptr<KnobDouble> swbtRight = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamSearchWndTopRightLabel), 2, false);
     swbtRight->setName(kTrackerParamSearchWndTopRight);
-    swbtRight->setDefaultValue(25, 0);
-    swbtRight->setDefaultValue(25, 1);
+    swbtRight->setDefaultValue(searchHalfSize, 0);
+    swbtRight->setDefaultValue(searchHalfSize, 1);
     swbtRight->setHintToolTip( tr(kTrackerParamSearchWndTopRightHint) );
     _imp->searchWindowTopRight = swbtRight;
 
 
     boost::shared_ptr<KnobDouble> ptLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternTopLeftLabel), 2, false);
     ptLeft->setName(kTrackerParamPatternTopLeft);
-    ptLeft->setDefaultValue(-15, 0);
-    ptLeft->setDefaultValue(15, 1);
+    ptLeft->setDefaultValue(-patternHalfSize, 0);
+    ptLeft->setDefaultValue(patternHalfSize, 1);
     ptLeft->setHintToolTip( tr(kTrackerParamPatternTopLeftHint) );
     _imp->patternTopLeft = ptLeft;
 
     boost::shared_ptr<KnobDouble> ptRight = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternTopRightLabel), 2, false);
     ptRight->setName(kTrackerParamPatternTopRight);
-    ptRight->setDefaultValue(15, 0);
-    ptRight->setDefaultValue(15, 1);
+    ptRight->setDefaultValue(patternHalfSize, 0);
+    ptRight->setDefaultValue(patternHalfSize, 1);
     ptRight->setHintToolTip( tr(kTrackerParamPatternTopRightHint) );
     _imp->patternTopRight = ptRight;
 
     boost::shared_ptr<KnobDouble> pBRight = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternBtmRightLabel), 2, false);
     pBRight->setName(kTrackerParamPatternBtmRight);
-    pBRight->setDefaultValue(15, 0);
-    pBRight->setDefaultValue(-15, 1);
+    pBRight->setDefaultValue(patternHalfSize, 0);
+    pBRight->setDefaultValue(-patternHalfSize, 1);
     pBRight->setHintToolTip( tr(kTrackerParamPatternBtmRightHint) );
     _imp->patternBtmRight = pBRight;
 
     boost::shared_ptr<KnobDouble> pBLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternBtmLeftLabel), 2, false);
     pBLeft->setName(kTrackerParamPatternBtmLeft);
-    pBLeft->setDefaultValue(-15, 0);
-    pBLeft->setDefaultValue(-15, 1);
+    pBLeft->setDefaultValue(-patternHalfSize, 0);
+    pBLeft->setDefaultValue(-patternHalfSize, 1);
     pBLeft->setHintToolTip( tr(kTrackerParamPatternBtmLeftHint) );
     _imp->patternBtmLeft = pBLeft;
 
@@ -713,7 +744,7 @@ deleteKnobAnimation(const std::set<int>& userKeyframes,
             break;
         }
         }
-        knob->deleteValuesAtTime(eCurveChangeReasonInternal, toRemove, ViewSpec::all(), i);
+        knob->deleteValuesAtTime(eCurveChangeReasonInternal, toRemove, ViewSpec::all(), i, true);
     }
 }
 
@@ -882,8 +913,14 @@ TrackMarker::onCenterKeyframeSet(double time,
                                  int /*reason*/,
                                  bool added)
 {
-    if (added) {
-        getContext()->s_keyframeSetOnTrackCenter(shared_from_this(), time);
+    if (!_imp->trackingStartedCount) {
+        if (added) {
+            getContext()->s_keyframeSetOnTrackCenter(shared_from_this(), time);
+        }
+    } else {
+        if (added) {
+            _imp->keyframesAddedWhileTracking.push_back(time);
+        }
     }
 }
 
@@ -936,7 +973,9 @@ TrackMarker::onCenterKnobValueChanged(ViewSpec /*view*/,
                                       int dimension,
                                       int reason)
 {
-    getContext()->s_centerKnobValueChanged(shared_from_this(), dimension, reason);
+    if (!_imp->trackingStartedCount) {
+        getContext()->s_centerKnobValueChanged(shared_from_this(), dimension, reason);
+    }
 }
 
 void
@@ -952,7 +991,9 @@ TrackMarker::onErrorKnobValueChanged(ViewSpec /*view*/,
                                      int dimension,
                                      int reason)
 {
-    getContext()->s_errorKnobValueChanged(shared_from_this(), dimension, reason);
+    if (!_imp->trackingStartedCount) {
+        getContext()->s_errorKnobValueChanged(shared_from_this(), dimension, reason);
+    }
 }
 
 void
@@ -971,30 +1012,7 @@ TrackMarker::onMotionModelKnobValueChanged(ViewSpec /*view*/,
     getContext()->s_motionModelKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
-/*void
-   TrackMarker::onPatternTopLeftKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternTopLeftKnobValueChanged(shared_from_this(), dimension, reason);
-   }
 
-   void
-   TrackMarker::onPatternTopRightKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternTopRightKnobValueChanged(shared_from_this(), dimension, reason);
-   }
-
-   void
-   TrackMarker::onPatternBtmRightKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternBtmRightKnobValueChanged(shared_from_this(), dimension, reason);
-   }
-
-   void
-   TrackMarker::onPatternBtmLeftKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternBtmLeftKnobValueChanged(shared_from_this(), dimension, reason);
-   }
- */
 void
 TrackMarker::onSearchBtmLeftKnobValueChanged(ViewSpec /*view*/,
                                              int dimension,
@@ -1010,6 +1028,35 @@ TrackMarker::onSearchTopRightKnobValueChanged(ViewSpec /*view*/,
 {
     getContext()->s_searchTopRightKnobValueChanged(shared_from_this(), dimension, reason);
 }
+
+void
+TrackMarker::notifyTrackingStarted()
+{
+    ++_imp->trackingStartedCount;
+    _imp->keyframesAddedWhileTracking.clear();
+}
+
+void
+TrackMarker::notifyTrackingEnded()
+{
+    if (_imp->trackingStartedCount) {
+        --_imp->trackingStartedCount;
+    }
+
+    // Refresh knobs once finished
+    if (!_imp->trackingStartedCount) {
+        TrackMarkerPtr marker = shared_from_this();
+        getContext()->s_errorKnobValueChanged(marker, 0, eValueChangedReasonNatronInternalEdited);
+        for (int i = 0; i < 2; ++i) {
+            getContext()->s_centerKnobValueChanged(marker, i, eValueChangedReasonNatronInternalEdited);
+        }
+        if (!_imp->keyframesAddedWhileTracking.empty()) {
+            getContext()->s_multipleKeyframesSetOnTrackCenter(marker, _imp->keyframesAddedWhileTracking);
+            _imp->keyframesAddedWhileTracking.clear();
+        }
+    }
+}
+
 
 RectI
 TrackMarker::getMarkerImageRoI(int time) const
@@ -1062,7 +1109,7 @@ TrackMarker::getMarkerImage(int time,
         return std::make_pair(ImagePtr(), roi);
     }
 
-    AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
@@ -1081,7 +1128,6 @@ TrackMarker::getMarkerImage(int time,
                                               NodePtr(),
                                               true, //isAnalysis
                                               false, //draftMode
-                                              false, // viewerprogress
                                               boost::shared_ptr<RenderStats>() );
     RenderScale scale;
     scale.x = scale.y = 1.;
@@ -1095,7 +1141,9 @@ TrackMarker::getMarkerImage(int time,
                                         components,
                                         eImageBitDepthFloat,
                                         false,
-                                        node->getEffectInstance().get() );
+                                        node->getEffectInstance().get(),
+                                        eStorageModeRAM /*returnOpenGlTex*/,
+                                        time);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
 
@@ -1260,10 +1308,10 @@ TrackMarkerPM::initializeKnobs()
     QObject::connect( getContext().get(), SIGNAL(onNodeInputChanged(int)), this, SLOT(onTrackerNodeInputChanged(int)) );
     NodePtr node;
     {
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_TRACKERPM), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-        args.createGui = false;
-        args.addToProject = false;
-        args.fixedName = QLatin1String("TrackerPMNode");
+        CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, boost::shared_ptr<NodeCollection>() );
+        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
+
         node = getContext()->getNode()->getApp()->createNode(args);
         if (!node) {
             throw std::runtime_error("Couldn't create plug-in " PLUGINID_OFX_TRACKERPM);
@@ -1333,6 +1381,7 @@ TrackMarkerPM::initializeKnobs()
         searchWindowTopRight->slaveTo(i, getSearchWindowTopRightKnob(), i);
     }
 } // TrackMarkerPM::initializeKnobs
+
 
 NATRON_NAMESPACE_EXIT;
 

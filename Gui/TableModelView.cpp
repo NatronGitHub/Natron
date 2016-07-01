@@ -938,7 +938,7 @@ ExpandingLineEdit::resizeToContents()
     if (originalWidth == -1) {
         originalWidth = oldWidth;
     }
-    if ( QWidget *parent = parentWidget() ) {
+    if ( QWidget * parent = parentWidget() ) {
         QPoint position = pos();
         int hintWidth = minimumWidth() + fontMetrics().width( displayText() );
         int parentWidth = parent->width();

@@ -27,8 +27,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QCloseEvent>
@@ -98,7 +96,7 @@ Gui::Gui(const GuiAppInstPtr& app,
                       SLOT(onDoDialogWithStopAskingCheckbox(int,QString,QString,bool,StandardButtons,int)) );
     QObject::connect( app.get(), SIGNAL(pluginsPopulated()), this, SLOT(addToolButttonsToToolBar()) );
     QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
-
+    QObject::connect (this, SIGNAL(s_showLogOnMainThread()), this, SLOT(onShowLogOnMainThreadReceived()));
 
     setAcceptDrops(true);
 }
@@ -106,6 +104,7 @@ Gui::Gui(const GuiAppInstPtr& app,
 Gui::~Gui()
 {
     _imp->_nodeGraphArea->invalidateAllNodesParenting();
+    delete _imp->_errorLog;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
     _imp->_viewerTabs.clear();
@@ -146,21 +145,15 @@ Gui::setLeftToolBarVisible(bool visible)
 }
 
 bool
-Gui::closeInstance(bool warnUserIfSaveNeeded)
-{
-    return abortProject(true, warnUserIfSaveNeeded);
-}
-
-void
 Gui::closeProject()
 {
-    closeInstance(true);
+    bool ret = abortProject(true, true, true);
 
     ///When closing a project we can remove the ViewerCache from memory and put it on disk
     ///since we're not sure it will be used right away
     appPTR->clearPlaybackCache();
-    //_imp->_appInstance->getProject()->createViewer();
-    //_imp->_appInstance->execOnProjectCreatedCallback();
+
+    return ret;
 }
 
 void
@@ -179,7 +172,7 @@ Gui::reloadProject()
 
     projectPath.append(filename);
 
-    if ( !abortProject(false, true) ) {
+    if ( !abortProject(false, true, true) ) {
         return;
     }
 
@@ -206,7 +199,8 @@ Gui::notifyGuiClosing()
 
 bool
 Gui::abortProject(bool quitApp,
-                  bool warnUserIfSaveNeeded)
+                  bool warnUserIfSaveNeeded,
+                  bool blocking)
 {
     if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
@@ -231,7 +225,11 @@ Gui::abortProject(bool quitApp,
         GuiAppInstPtr app = getApp();
         if (app) {
             app->resetPreviewProvider();
-            app->getProject()->closeProject(false);
+            if (!blocking) {
+                app->getProject()->closeProject(false);
+            } else {
+                app->getProject()->closeProject_blocking(false);
+            }
         }
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
@@ -270,7 +268,7 @@ Gui::closeEvent(QCloseEvent* e)
     if ( app && app->isClosing() ) {
         e->ignore();
     } else {
-        if ( !closeInstance(true) ) {
+        if ( !abortProject(true, true, true) ) {
             e->ignore();
 
             return;
@@ -469,9 +467,6 @@ Gui::createMenuActions()
     _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, this);
     QObject::connect( _imp->actionShowErrorLog, SIGNAL(triggered()), this, SLOT(showErrorLog()) );
 
-    _imp->actionShortcutEditor = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, this);
-    QObject::connect( _imp->actionShortcutEditor, SIGNAL(triggered()), this, SLOT(showShortcutEditor()) );
-
     _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, this);
     QObject::connect( _imp->actionNewViewer, SIGNAL(triggered()), this, SLOT(createNewViewer()) );
 
@@ -651,7 +646,6 @@ Gui::createMenuActions()
 
     _imp->menuDisplay->addAction(_imp->actionProject_settings);
     _imp->menuDisplay->addAction(_imp->actionShowErrorLog);
-    _imp->menuDisplay->addAction(_imp->actionShortcutEditor);
 #ifdef __NATRON_WIN32__
     _imp->menuDisplay->addAction(_imp->actionShowWindowsConsole);
 #endif
@@ -725,7 +719,11 @@ void
 Gui::openHelpDocumentation()
 {
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
-    int serverPort = appPTR->getCurrentSettings()->getServerPort();
+    int serverPort = appPTR->getDocumentationServerPort();
+
+    if ( (serverPort == 0) && (docSource == 0) ) {
+        docSource = 1;
+    }
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 

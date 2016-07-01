@@ -24,12 +24,13 @@
 
 #include "Image.h"
 
-#include "Global/Macros.h"
-
 #include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDebug>
+
+#include "Engine/OSGLContext.h"
+#include "Engine/GLShader.h"
 
 
 // disable some warnings due to unused parameters
@@ -586,7 +587,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
                                const ImagePremultiplicationEnum originalImagePremult,
                                const std::bitset<4> processChannels,
                                const ImagePtr& originalImage,
-                               bool ignorePremult)
+                               bool ignorePremult,
+                               const OSGLContextPtr& glContext)
 {
     int numComp = getComponents().getNumComponents();
 
@@ -614,8 +616,63 @@ Image::copyUnProcessedChannels(const RectI& roi,
     assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
 
 
-    RectI intersected;
-    roi.intersect(_bounds, &intersected);
+    RectI srcRoi;
+    roi.intersect(_bounds, &srcRoi);
+
+    if (getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        assert(originalImage->getStorageMode() == eStorageModeGLTex);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateCopyUnprocessedChannelsShader(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
+        assert(shader);
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture( target, getGLTextureID() );
+
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+        glCheckError();
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture( target, originalImage->getGLTextureID() );
+
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+        shader->bind();
+        shader->setUniform("originalImageTex", 1);
+        shader->setUniform("outputImageTex", 0);
+        OfxRGBAColourF procChannelsV = {
+            processChannels[0] ? 1.f : 0.f,
+            processChannels[1] ? 1.f : 0.f,
+            processChannels[2] ? 1.f : 0.f,
+            processChannels[3] ? 1.f : 0.f
+        };
+        shader->setUniform("processChannels", procChannelsV);
+        applyTextureMapping(_bounds, srcRoi);
+        shader->unbind();
+
+        glCheckError();
+        glBindTexture(target, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(target, 0);
+        glCheckError();
+
+        return;
+    }
+
 
     bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
     bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
@@ -633,6 +690,6 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
         return;
     }
-}
+} // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;

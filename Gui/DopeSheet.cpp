@@ -146,7 +146,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 class DopeSheetPrivate
 {
 public:
-    DopeSheetPrivate(DopeSheetEditor* editor, DopeSheet *qq);
+    DopeSheetPrivate(DopeSheetEditor* editor,
+                     DopeSheet *qq);
     ~DopeSheetPrivate();
 
     /* functions */
@@ -167,8 +168,8 @@ public:
 };
 
 DopeSheetPrivate::DopeSheetPrivate(DopeSheetEditor* editor,
-                                   DopeSheet *qq) :
-    q_ptr(qq),
+                                   DopeSheet *qq)
+    : q_ptr(qq),
     treeItemNodeMap(),
     selectionModel( new DopeSheetSelectionModel(qq) ),
     undoStack( new QUndoStack(qq) ),
@@ -289,8 +290,8 @@ DopeSheet::getUndoStack() const
 
 DopeSheet::DopeSheet(Gui *gui,
                      DopeSheetEditor* editor,
-                     const boost::shared_ptr<TimeLine> &timeline) :
-    _imp( new DopeSheetPrivate(editor, this) )
+                     const boost::shared_ptr<TimeLine> &timeline)
+    : _imp( new DopeSheetPrivate(editor, this) )
 {
     _imp->timeline = timeline;
 
@@ -864,7 +865,7 @@ DopeSheet::onNodeNameEditDialogFinished()
 }
 
 void
-DopeSheet::pasteKeys()
+DopeSheet::pasteKeys(bool relative)
 {
     std::vector<DopeSheetKey> toPaste;
 
@@ -873,16 +874,30 @@ DopeSheet::pasteKeys()
 
         toPaste.push_back(key);
     }
+
     if ( !toPaste.empty() ) {
-        _imp->pushUndoCommand( new DSPasteKeysCommand(toPaste, _imp->editor) );
+
+        std::list<boost::shared_ptr<DSKnob> > dstKnobs;
+        _imp->editor->getHierarchyView()->getSelectedDSKnobs(&dstKnobs);
+        if (dstKnobs.empty()) {
+            Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
+            return;
+        }
+        _imp->pushUndoCommand( new DSPasteKeysCommand(toPaste, dstKnobs, relative, _imp->editor) );
     }
 }
 
 void
-DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys)
+DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative)
 {
     if ( !keys.empty() ) {
-        _imp->pushUndoCommand( new DSPasteKeysCommand(keys, _imp->editor) );
+        std::list<boost::shared_ptr<DSKnob> > dstKnobs;
+        _imp->editor->getHierarchyView()->getSelectedDSKnobs(&dstKnobs);
+        if (dstKnobs.empty()) {
+            Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
+            return;
+        }
+        _imp->pushUndoCommand( new DSPasteKeysCommand(keys, dstKnobs, relative, _imp->editor) );
     }
 }
 
@@ -997,8 +1012,8 @@ public:
     KnobWPtr knob;
 };
 
-DSKnobPrivate::DSKnobPrivate() :
-    dimension(-2),
+DSKnobPrivate::DSKnobPrivate()
+    : dimension(-2),
     nameItem(0),
     knobGui(),
     knob()
@@ -1030,8 +1045,8 @@ DSKnobPrivate::~DSKnobPrivate()
  */
 DSKnob::DSKnob(int dimension,
                QTreeWidgetItem *nameItem,
-               const KnobGuiPtr& knobGui) :
-    _imp(new DSKnobPrivate)
+               const KnobGuiPtr& knobGui)
+    : _imp(new DSKnobPrivate)
 {
     assert(knobGui);
 
@@ -1124,8 +1139,8 @@ public:
     std::list<boost::weak_ptr<DSNode> > selectedRangeNodes;
 };
 
-DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet) :
-    _imp(new DopeSheetSelectionModelPrivate)
+DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet)
+    : _imp(new DopeSheetSelectionModelPrivate)
 {
     _imp->dopeSheet = dopeSheet;
 }
@@ -1412,8 +1427,8 @@ public:
     bool isSelected;
 };
 
-DSNodePrivate::DSNodePrivate() :
-    dopeSheetModel(0),
+DSNodePrivate::DSNodePrivate()
+    : dopeSheetModel(0),
     nodeType(),
     nodeGui(),
     nameItem(0),
@@ -1453,8 +1468,8 @@ DSNodePrivate::initGroupNode()
 DSNode::DSNode(DopeSheet *model,
                DopeSheetItemType itemType,
                const NodeGuiPtr &nodeGui,
-               QTreeWidgetItem *nameItem) :
-    _imp(new DSNodePrivate)
+               QTreeWidgetItem *nameItem)
+    : _imp(new DSNodePrivate)
 {
     _imp->dopeSheetModel = model;
     _imp->nodeType = itemType;

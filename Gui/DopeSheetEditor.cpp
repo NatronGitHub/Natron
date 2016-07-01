@@ -62,13 +62,13 @@ public:
     DopeSheetView *dopeSheetView;
 };
 
-DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
-    q_ptr(qq),
-    mainLayout(0),
-    model(0),
-    splitter(0),
-    hierarchyView(0),
-    dopeSheetView(0)
+DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)
+    : q_ptr(qq)
+    , mainLayout(0)
+    , model(0)
+    , splitter(0)
+    , hierarchyView(0)
+    , dopeSheetView(0)
 {}
 
 /**
@@ -78,8 +78,8 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
  */
 DopeSheetEditor::DopeSheetEditor(Gui *gui,
                                  boost::shared_ptr<TimeLine> timeline,
-                                 QWidget *parent) :
-    QWidget(parent),
+                                 QWidget *parent)
+    : QWidget(parent),
     PanelWidget(this, gui),
     _imp( new DopeSheetEditorPrivate(this) )
 {
@@ -183,6 +183,12 @@ DopeSheetEditor::getDopesheetView() const
     return _imp->dopeSheetView;
 }
 
+HierarchyView*
+DopeSheetEditor::getHierarchyView() const
+{
+    return _imp->hierarchyView;
+}
+
 void
 DopeSheetEditor::setTreeWidgetWidth(int width)
 {
@@ -234,7 +240,9 @@ DopeSheetEditor::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key) ) {
         _imp->dopeSheetView->copySelectedKeyframes();
     } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key) ) {
-        _imp->dopeSheetView->pasteKeyframes();
+        _imp->dopeSheetView->pasteKeyframesRelative();
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute, modifiers, key) ) {
+        _imp->dopeSheetView->pasteKeyframesAbsolute();
     } else {
         accept = false;
     }

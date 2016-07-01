@@ -68,6 +68,10 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
         _children.clear();
 
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+            if (!(*it)->isPartOfProject()) {
+                continue;
+            }
             boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
             if (!gui_i) {
                 continue;

@@ -32,6 +32,8 @@
 
 #include "Global/Macros.h"
 
+#include <cassert>
+
 #ifdef DEBUG
 #ifdef __cplusplus
 #include <iostream>
@@ -98,7 +100,7 @@ glErrorString(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            std::cout << "GL_ERROR: " << __FILE__ << ":" << __LINE__ << " "; \
             const char* _glerror_s_ = glErrorString(_glerror_);         \
             if (_glerror_s_) {                                          \
                 std::cout << _glerror_s_ << std::endl;   \
@@ -114,7 +116,7 @@ glErrorString(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            std::cout << "GL_ERROR: " << __FILE__ << ":" << __LINE__ << " "; \
             const char* _glerror_s_ = glErrorString(_glerror_);         \
             if (_glerror_s_) {                                          \
                 std::cout << _glerror_s_ << std::endl;   \
@@ -132,7 +134,7 @@ glErrorString(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            std::cout << "GL_ERROR: " << __FILE__ << ":" << __LINE__ << " "; \
             const char* _glerror_s_ = glErrorString(_glerror_);         \
             if (_glerror_s_) {                                          \
                 std::cout << _glerror_s_ << std::endl;   \
@@ -288,7 +290,8 @@ private:
 class GLProtectMatrix
 {
 public:
-    GLProtectMatrix(GLenum mode) : _mode(mode)
+    GLProtectMatrix(GLenum mode)
+        : _mode(mode)
     {
 #ifdef DEBUG
         GLint d = -1, m0 = -1, m = -1;

@@ -52,7 +52,8 @@ public:
         return new RotoPaint(n, true);
     }
 
-    RotoPaint(NodePtr node, bool isPaintByDefault);
+    RotoPaint(NodePtr node,
+              bool isPaintByDefault);
 
     virtual ~RotoPaint();
 
@@ -142,6 +143,10 @@ public Q_SLOTS:
 
 private:
 
+    virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
+
+    virtual bool shouldDrawHostOverlay() const OVERRIDE FINAL;
+
     virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) OVERRIDE FINAL;
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -198,7 +203,8 @@ public:
         return new RotoNode(n);
     }
 
-    RotoNode(NodePtr node) : RotoPaint(node, false) {}
+    RotoNode(NodePtr node)
+        : RotoPaint(node, false) {}
 
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;

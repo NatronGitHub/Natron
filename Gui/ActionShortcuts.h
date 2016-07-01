@@ -95,9 +95,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionShowErrorLog "showErrorLog"
 #define kShortcutDescActionShowErrorLog "Show Project Errors Log..."
 
-#define kShortcutIDActionShowShortcutEditor "showShortcutEditor"
-#define kShortcutDescActionShowShortcutEditor "Show Shortcuts Editor..."
-
 #define kShortcutIDActionNewViewer "newViewer"
 #define kShortcutDescActionNewViewer "New Viewer"
 
@@ -330,6 +327,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDMousePickColor "pick"
 #define kShortcutDescMousePickColor "Pick a Color"
 
+#define kShortcutIDMousePickInputColor "pickInput"
+#define kShortcutDescMousePickInputColor "Pick a Color from input of viewed node"
+
 #define kShortcutIDMouseRectanglePick "rectanglePick"
 #define kShortcutDescMouseRectanglePick "Rectangle Color Picker"
 
@@ -481,6 +481,8 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionGraphShowCacheSize "cacheSize"
 #define kShortcutDescActionGraphShowCacheSize "Diplay Cache Memory Consumption"
 
+#define kShortcutIDActionGraphOpenNodePanel "openSettingsPanel"
+#define kShortcutDescActionGraphOpenNodePanel "Open Node Settings Panel"
 
 #define kShortcutIDActionGraphFrameNodes "frameNodes"
 #define kShortcutDescActionGraphFrameNodes "Center on All Nodes"
@@ -555,6 +557,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
 #define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste Keyframes"
+
+#define kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute "pastekeyframesAbs"
+#define kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute "Paste Keyframes Absolute"
 
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"

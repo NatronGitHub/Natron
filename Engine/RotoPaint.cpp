@@ -329,11 +329,25 @@ RotoPaint::initializeKnobs()
     removeKeyframe->setEvaluateOnChange(false);
     removeKeyframe->setSecretByDefault(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
-    removeKeyframe->setInViewerContextNewLineActivated(true);
     removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeKF.png");
     generalPage->addKnob(removeKeyframe);
     _imp->ui->removeKeyframeButton = removeKeyframe;
 
+
+    boost::shared_ptr<KnobButton> showTransform = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamShowTransformLabel) );
+    showTransform->setName(kRotoUIParamShowTransform);
+    showTransform->setHintToolTip( tr(kRotoUIParamShowTransformHint) );
+    showTransform->setEvaluateOnChange(false);
+    showTransform->setSecretByDefault(true);
+    showTransform->setCheckable(true);
+    showTransform->setDefaultValue(true);
+    showTransform->setInViewerContextCanHaveShortcut(true);
+    showTransform->setInViewerContextNewLineActivated(true);
+    showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoShowTransformOverlay.png", true);
+    showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoHideTransformOverlay.png", false);
+    generalPage->addKnob(showTransform);
+    addOverlaySlaveParam(showTransform);
+    _imp->ui->showTransformHandle = showTransform;
     // RotoPaint
 
     boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>( this, tr(kRotoUIParamMultiStrokeEnabledLabel) );
@@ -546,6 +560,7 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(rippleEditEnabled);
     addKnobToViewerUI(addKeyframe);
     addKnobToViewerUI(removeKeyframe);
+    addKnobToViewerUI(showTransform);
 
     // RotoPaint
     addKnobToViewerUI(multiStroke);
@@ -1060,6 +1075,7 @@ RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRippleEdit, kRotoUIParamRippleEditLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamAddKeyFrame, kRotoUIParamAddKeyFrameLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRemoveKeyframe, kRotoUIParamRemoveKeyframeLabel) );
+    shortcuts->push_back( PluginActionShortcut(kRotoUIParamShowTransform, kRotoUIParamShowTransformLabel, Key_T) );
 
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureOpacity, kRotoUIParamPressureOpacityLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureSize, kRotoUIParamPressureSizeLabel) );
@@ -1088,6 +1104,22 @@ RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionSelectAll, kRotoUIParamRightClickMenuActionSelectAllLabel, Key_A, eKeyboardModifierControl) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionOpenClose, kRotoUIParamRightClickMenuActionOpenCloseLabel, Key_Return) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionLockShapes, kRotoUIParamRightClickMenuActionLockShapesLabel, Key_L, eKeyboardModifierShift) );
+}
+
+bool
+RotoPaint::shouldPreferPluginOverlayOverHostOverlay() const
+{
+    return !_imp->ui->ctrlDown;
+}
+
+bool
+RotoPaint::shouldDrawHostOverlay() const
+{
+    boost::shared_ptr<KnobButton> b = _imp->ui->showTransformHandle.lock();
+    if (!b) {
+        return true;
+    }
+    return b->getValue();
 }
 
 void
@@ -1433,7 +1465,7 @@ RotoPaint::render(const RenderActionArgs& args)
 
     if ( items.empty() ) {
         RectI bgImgRoI;
-        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
         for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
@@ -1481,7 +1513,9 @@ RotoPaint::render(const RenderActionArgs& args)
                                     neededComps,
                                     bgDepth,
                                     false,
-                                    this);
+                                    this,
+                                    eStorageModeRAM /*returnOpenGLtex*/,
+                                    args.time);
         std::map<ImageComponents, ImagePtr> rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getEffectInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
@@ -1512,7 +1546,7 @@ RotoPaint::render(const RenderActionArgs& args)
             }
             if (!bgImg) {
                 if (!triedGetImage) {
-                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
+                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
                     triedGetImage = true;
                 }
             }
@@ -1565,11 +1599,12 @@ RotoPaint::render(const RenderActionArgs& args)
 
                     if ( bgImg->getComponents() != plane->second->getComponents() ) {
                         RectI intersection;
-                        args.roi.intersect(bgImg->getBounds(), &intersection);
-                        bgImg->convertToFormat( intersection,
+                        if (args.roi.intersect(bgImg->getBounds(), &intersection)) {
+                            bgImg->convertToFormat( intersection,
                                                 getApp()->getDefaultColorSpaceForBitDepth( rotoImagesIt->second->getBitDepth() ),
                                                 getApp()->getDefaultColorSpaceForBitDepth( plane->second->getBitDepth() ), 3
                                                 , false, false, plane->second.get() );
+                        }
                     } else {
                         plane->second->pasteFrom(*bgImg, args.roi, false);
                     }
@@ -1636,8 +1671,10 @@ RotoPaint::drawOverlay(double time,
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glLineWidth(1.5);
-        glEnable(GL_POINT_SMOOTH);
-        glPointSize(7.);
+
+
+        double cpWidth = kControlPointMidSize * 2;
+        glPointSize(cpWidth);
         for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
@@ -1691,8 +1728,14 @@ RotoPaint::drawOverlay(double time,
                     continue;
                 }
 
-                std::list< Point > points;
-                isBezier->evaluateAtTime_DeCasteljau(true, time, 0, 100, &points, NULL);
+                std::list< ParametricPoint > points;
+                isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                     100,
+#else
+                                                     1,
+#endif
+                                                     &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
@@ -1704,13 +1747,13 @@ RotoPaint::drawOverlay(double time,
                 glColor4dv(curveColor);
 
                 glBegin(GL_LINE_STRIP);
-                for (std::list<Point >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
+                for (std::list<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     glVertex2f(it2->x, it2->y);
                 }
                 glEnd();
 
                 ///draw the feather points
-                std::list< Point > featherPoints;
+                std::list< ParametricPoint > featherPoints;
                 RectD featherBBox( std::numeric_limits<double>::infinity(),
                                    std::numeric_limits<double>::infinity(),
                                    -std::numeric_limits<double>::infinity(),
@@ -1720,13 +1763,19 @@ RotoPaint::drawOverlay(double time,
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(true, time, 0, 100, true, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(true, time, 0,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                                      100,
+#else
+                                                                      1,
+#endif
+                                                                      true, &featherPoints, &featherBBox);
 
                     if ( !featherPoints.empty() ) {
                         glLineStipple(2, 0xAAAA);
                         glEnable(GL_LINE_STIPPLE);
                         glBegin(GL_LINE_STRIP);
-                        for (std::list<Point >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
+                        for (std::list<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
                             glVertex2f(it2->x, it2->y);
                         }
                         glEnd();
@@ -1756,8 +1805,6 @@ RotoPaint::drawOverlay(double time,
                         continue;
                     }
 
-                    double cpHalfWidth = kControlPointMidSize * pixelScale.first;
-                    double cpHalfHeight = kControlPointMidSize * pixelScale.second;
 
                     glColor3d(0.85, 0.67, 0.);
 
@@ -1841,11 +1888,8 @@ RotoPaint::drawOverlay(double time,
                             }
                         } // for(cpIt)
 
-                        glBegin(GL_POLYGON);
-                        glVertex2f(x - cpHalfWidth, y - cpHalfHeight);
-                        glVertex2f(x + cpHalfWidth, y - cpHalfHeight);
-                        glVertex2f(x + cpHalfWidth, y + cpHalfHeight);
-                        glVertex2f(x - cpHalfWidth, y + cpHalfHeight);
+                        glBegin(GL_POINTS);
+                        glVertex2f(x,y);
                         glEnd();
 
                         if (colorChanged) {
@@ -1874,11 +1918,8 @@ RotoPaint::drawOverlay(double time,
                         }
 
                         if (drawFeather) {
-                            glBegin(GL_POLYGON);
-                            glVertex2f(xF - cpHalfWidth, yF - cpHalfHeight);
-                            glVertex2f(xF + cpHalfWidth, yF - cpHalfHeight);
-                            glVertex2f(xF + cpHalfWidth, yF + cpHalfHeight);
-                            glVertex2f(xF - cpHalfWidth, yF + cpHalfHeight);
+                            glBegin(GL_POINTS);
+                            glVertex2f(xF, yF);
                             glEnd();
 
 
@@ -2166,19 +2207,15 @@ RotoPaint::onOverlayPenDoubleClicked(double /*time*/,
 
 bool
 RotoPaint::onOverlayPenDown(double time,
-                            const RenderScale & renderScale,
-                            ViewIdx view,
-                            const QPointF & viewportPos,
+                            const RenderScale & /*renderScale*/,
+                            ViewIdx /*view*/,
+                            const QPointF & /*viewportPos*/,
                             const QPointF & pos,
                             double pressure,
                             double timestamp,
                             PenType pen)
 {
     NodePtr node = getNode();
-
-    if ( node->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
-        return true;
-    }
 
     std::pair<double, double> pixelScale;
     getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
@@ -3037,6 +3074,8 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         redrawOverlayInteract();
         _imp->ui->evaluateOnPenUp = false;
     }
+
+    bool ret = false;
     _imp->ui->tangentBeingDragged.reset();
     _imp->ui->bezierBeingDragged.reset();
     _imp->ui->cpBeingDragged.first.reset();
@@ -3076,6 +3115,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         context->evaluateNeatStrokeRender();
         setCurrentCursor(eCursorDefault);
         _imp->ui->strokeBeingPaint->setStrokeFinished();
+        ret = true;
     }
 
     _imp->ui->state = eEventStateNone;
@@ -3083,13 +3123,15 @@ RotoPaint::onOverlayPenUp(double /*time*/,
     if ( (_imp->ui->selectedTool == eRotoToolDrawEllipse) || (_imp->ui->selectedTool == eRotoToolDrawRectangle) ) {
         _imp->ui->selectedCps.clear();
         _imp->ui->setCurrentTool( _imp->ui->selectAllAction.lock() );
+        ret = true;
     }
 
     if (_imp->ui->lastTabletDownTriggeredEraser) {
         _imp->ui->setCurrentTool( _imp->ui->lastPaintToolAction.lock() );
+        ret = true;
     }
 
-    return true;
+    return ret;
 } // onOverlayPenUp
 
 bool

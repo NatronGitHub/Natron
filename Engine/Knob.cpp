@@ -224,7 +224,8 @@ struct Expr
 
     //PyObject* code;
 
-    Expr() : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/ {}
+    Expr()
+        : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/ {}
 };
 
 struct KnobHelperPrivate
@@ -386,6 +387,10 @@ struct KnobHelperPrivate
         , listenersNotificationBlocked(0)
         , isClipPreferenceSlave(false)
     {
+        if ( holder && !holder->canKnobsAnimate() ) {
+            isAnimationEnabled = false;
+        }
+
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
         mustClearExprResults.resize(dimension);
@@ -703,7 +708,7 @@ void
 KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                const std::list<double>& times,
                                ViewSpec view,
-                               int dimension)
+                               int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
@@ -728,6 +733,11 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
     }
 
     assert(curve);
+
+    // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
+    if (copyCurveValueAtTimeToInternalValue) {
+        copyValuesFromCurve(dimension);
+    }
 
     try {
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
@@ -777,7 +787,7 @@ void
 KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               double time,
                               ViewSpec view,
-                              int dimension)
+                              int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
@@ -799,6 +809,12 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     }
 
     assert(curve);
+
+    // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
+    if (copyCurveValueAtTimeToInternalValue) {
+        copyValuesFromCurve(dimension);
+    }
+
 
     try {
         curve->removeKeyFrameWithTime(time);
@@ -841,9 +857,10 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
 void
 KnobHelper::onKeyFrameRemoved(double time,
                               ViewSpec view,
-                              int dimension)
+                              int dimension,
+                              bool copyCurveValueAtTimeToInternalValue)
 {
-    deleteValueAtTime(eCurveChangeReasonInternal, time, view, dimension);
+    deleteValueAtTime(eCurveChangeReasonInternal, time, view, dimension, copyCurveValueAtTimeToInternalValue);
 }
 
 bool
@@ -1383,6 +1400,8 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
         _signalSlotHandler->s_animationAboutToBeRemoved(view, dimension);
     }
 
+    copyValuesFromCurve(dimension);
+
     assert(curve);
     if (curve) {
         curve->clearKeyFrames();
@@ -1746,9 +1765,12 @@ KnobHelper::getInViewerContextLabel() const
 void
 KnobHelper::setInViewerContextLabel(const QString& label)
 {
-    QMutexLocker k(&_imp->labelMutex);
+    {
+        QMutexLocker k(&_imp->labelMutex);
 
-    _imp->inViewerContextLabel = label.toStdString();
+        _imp->inViewerContextLabel = label.toStdString();
+    }
+    _signalSlotHandler->s_inViewerContextLabelChanged();
 }
 
 void
@@ -2333,6 +2355,10 @@ KnobHelper::validateExpression(const std::string& expression,
                                bool hasRetVariable,
                                std::string* resultAsString)
 {
+
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    throw std::invalid_argument("NATRON_RUN_WITHOUT_PYTHON is defined");
+#endif
     PythonGILLocker pgl;
 
     if ( expression.empty() ) {
@@ -2862,6 +2888,9 @@ KnobHelper::setAnimationEnabled(bool val)
     if ( !canAnimate() ) {
         return;
     }
+    if ( _imp->holder && !_imp->holder->canKnobsAnimate() ) {
+        return;
+    }
     _imp->isAnimationEnabled = val;
 }
 
@@ -2914,14 +2943,12 @@ KnobHelper::setName(const std::string & name,
             PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
             Q_UNUSED(obj);
             if (isAttrDefined) {
-                std::stringstream ss;
-                ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
+                QString message = tr("A Python attribute with the name %1 already exists.").arg(QString::fromUtf8(newPotentialQualifiedName.c_str()));
                 if (throwExceptions) {
-                    throw std::runtime_error( ss.str() );
+                    throw std::runtime_error( message.toStdString() );
                 } else {
-                    std::string err = ss.str();
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
-                    std::cerr << err << std::endl;
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getName().c_str()), message );
+                    std::cerr << message.toStdString() << std::endl;
 
                     return;
                 }
@@ -4123,15 +4150,18 @@ bool
 KnobHelper::hasModificationsForSerialization() const
 {
     bool enabledChanged = false;
-
+    bool defValueChanged = false;
     for (int i = 0; i < getDimension(); ++i) {
         if ( isEnabled(i) != isDefaultEnabled(i) ) {
             enabledChanged = true;
         }
+        if (hasDefaultValueChanged(i)) {
+            defValueChanged = true;
+        }
     }
 
     return hasModifications() ||
-           getIsSecret() != getDefaultIsSecret() || enabledChanged;
+           getIsSecret() != getDefaultIsSecret() || enabledChanged || defValueChanged;
 }
 
 bool
@@ -4553,6 +4583,34 @@ struct KnobHolder::KnobHolderPrivate
 
     {
     }
+
+    KnobHolderPrivate(const KnobHolderPrivate& other)
+    : app(other.app)
+    , knobsMutex()
+    , knobs(other.knobs)
+    , knobsInitialized(other.knobsInitialized)
+    , isInitializingKnobs(other.isInitializingKnobs)
+    , isSlave(other.isSlave)
+    , overlayRedrawStackMutex()
+    , overlayRedrawStack(0)
+    , isDequeingValuesSet(other.isDequeingValuesSet)
+    , paramsEditLevel(other.paramsEditLevel)
+    , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
+    , evaluationBlockedMutex(QMutex::Recursive)
+    , evaluationBlocked(0)
+    , canCurrentlySetValue(other.canCurrentlySetValue)
+    , knobChanged()
+    , nbSignificantChangesDuringEvaluationBlock(0)
+    , nbChangesDuringEvaluationBlock(0)
+    , nbChangesRequiringMetadataRefresh(0)
+    , knobsFrozenMutex()
+    , knobsFrozen(false)
+    , hasAnimationMutex()
+    , hasAnimation(other.hasAnimation)
+    , settingsPanel(other.settingsPanel)
+    {
+
+    }
 };
 
 KnobHolder::KnobHolder(const AppInstPtr& appInstance)
@@ -4564,6 +4622,17 @@ KnobHolder::KnobHolder(const AppInstPtr& appInstance)
                       SLOT(onDoEvaluateOnMainThread(bool,bool)) );
     QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
                       SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
+}
+
+KnobHolder::KnobHolder(const KnobHolder& other)
+: QObject()
+, _imp (new KnobHolderPrivate(*other._imp))
+{
+    QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
+    QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
+                     SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
+    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ), this,
+                     SLOT( onDoValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ) );
 }
 
 KnobHolder::~KnobHolder()
@@ -4582,6 +4651,18 @@ KnobHolder::addKnobToViewerUI(const KnobPtr& knob)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->knobsWithViewerUI.push_back(knob);
+}
+
+bool
+KnobHolder::isInViewerUIKnob(const KnobPtr& knob) const
+{
+    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
+        KnobPtr p = it->lock();
+        if (p == knob) {
+            return true;
+        }
+    }
+    return false;
 }
 
 KnobsVec
@@ -5364,7 +5445,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->checkAnimationLevel(it->view, dimension);
         }
 
-        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() ) {
+        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() && firstKnobReason != eValueChangedReasonTimeChanged) {
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }

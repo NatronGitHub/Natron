@@ -30,8 +30,6 @@
 
 #include <boost/weak_ptr.hpp>
 
-#include "Global/Macros.h"
-
 #include "Engine/KnobTypes.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
@@ -186,6 +184,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
                    Label* warningIndicator,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
+                   int lastKnobSpacing,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
 {
     _imp->guiRemoved = false;
@@ -207,7 +206,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
         if (isViewerParam) {
             spacing = _imp->container->getItemsSpacingOnSameLine();
         } else {
-            spacing = knob->getSpacingBetweenitems();
+            spacing = lastKnobSpacing;//knob->getSpacingBetweenitems();
             // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
             // The minimum allowed spacing should be 1px
             if (spacing == 0) {
@@ -396,11 +395,19 @@ KnobGui::createAnimationMenu(QMenu* menu,
     menu->clear();
     bool dimensionHasKeyframeAtTime = false;
     bool hasAllKeyframesAtTime = true;
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    int nDims = knob->getDimension();
+
+
+    if (dimension == -1 && nDims == 1) {
+        dimension = 0;
+    }
+
+
+    for (int i = 0; i < nDims; ++i) {
         AnimationLevelEnum lvl = knob->getAnimationLevel(i);
         if (lvl != eAnimationLevelOnKeyframe) {
             hasAllKeyframesAtTime = false;
-        } else if ( (dimension == i) && (lvl == eAnimationLevelOnKeyframe) ) {
+        } else if ( dimension == i && (lvl == eAnimationLevelOnKeyframe) ) {
             dimensionHasKeyframeAtTime = true;
         }
     }
@@ -411,7 +418,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     bool isEnabled = true;
     bool dimensionIsSlaved = false;
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < nDims; ++i) {
         if ( knob->isSlave(i) ) {
             hasDimensionSlaved = true;
 
@@ -434,7 +441,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         }
     }
 
-    bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp() != 0;
+    bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp();
 
     if ( (knob->getDimension() > 1) && knob->isAnimationEnabled() && !hasDimensionSlaved && isAppKnob ) {
         ///Multi-dim actions

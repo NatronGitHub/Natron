@@ -1,0 +1,12 @@
+The content of the openMVG/ directory has been extracted from the official github repository of openMVG at
+https://github.com/openMVG/openMVG.git
+
+This version corresponds to the release v0.9 and the commit hash f0889f0a0024a211a7e5ed71794ad1926e545767
+
+We only use the osi_clp dependency as cereal and glfw are not needed for Natron
+
+To sync openMVG against upstream:
+
+- Replace the openMVG/openMVG directory with the new version
+- Update the third_party directory headers
+- Apply the patches in the openMVG/patches/ directory from the openMVG/ directory using patch -p1

@@ -64,6 +64,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C libs/openMVG
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
+    make $J -C libs/libtess
     make $J -C HostSupport;
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
@@ -77,6 +78,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C App; # linking Natron may break the 3Gb limit
     if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then
         # don't build the tests on coverity, so that we do not exceed the time limit
+	make $J -C Tests;
         make $J
         if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     fi
@@ -85,7 +87,11 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # on OSX, the tests are done on the clang configuration
     # cairo requires xcb-shm, which has its pkg-config file in /opt/X11
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
-    if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="debug $BREAKPAD $SILENT"; else qmake -r -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD $SILENT"; fi
+    if [ "$CC" = "gcc" ]; then
+	qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="debug $BREAKPAD $SILENT";
+    else
+	qmake -r -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD $SILENT";
+    fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
     make $J -C libs/glog
@@ -94,10 +100,13 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C libs/openMVG
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
+    make $J -C libs/libtess
     make $J -C HostSupport;
     make $J -C Engine;
+    make $J -C Renderer;
     make $J -C Gui;
     make -C App; # linking Natron may break the 3Gb limit
+    make $J -C Tests;
     make $J
     if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi

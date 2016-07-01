@@ -62,7 +62,7 @@ Then comes the standard license agreement, Natron and it's plug-ins are licensed
 
 .. image:: _images/linux_install_08.png
 
-The installation wizard is now ready to install Natron to your computer. The process should not take more than a minute or two (depending on your computer).
+The installation wizard is now ready to install Natron on your computer. The process should not take more than a minute or two (depending on your computer).
 
 .. image:: _images/linux_install_09.png
 

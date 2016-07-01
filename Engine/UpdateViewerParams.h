@@ -52,7 +52,7 @@ public:
     struct CachedTile
     {
         TextureRect rect;
-
+        RectI rectRounded;
         // This is a pointer to the data held in the cache. If this is set the ramBuffer is no more than cachedFrame->data()
         // use a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
         FrameEntryPtr cachedData;
@@ -61,7 +61,8 @@ public:
         std::size_t bytesCount; // number of bytes in the texture
 
 
-        CachedTile() : rect(), cachedData(), isCached(false), ramBuffer(0), bytesCount(0) {}
+        CachedTile()
+            : rect(), rectRounded(), cachedData(), isCached(false), ramBuffer(0), bytesCount(0) {}
     };
 
     UpdateViewerParams()
@@ -80,6 +81,7 @@ public:
         , alphaLayer()
         , alphaChannelName()
         , tiles()
+        , tileSize(0)
         , nbCachedTile(0)
         , colorImage()
         , rod()
@@ -127,6 +129,7 @@ public:
     ImageComponents alphaLayer; // the alpha layer
     std::string alphaChannelName; // the alpha channel name
     std::list<CachedTile> tiles;
+    int tileSize;
     int nbCachedTile;
 
     // The image which was used to make the texture
@@ -135,8 +138,8 @@ public:
     // The RoD of the src image
     RectD rod;
 
-    // The RoI of the viewer
-    RectI roi;
+    // The RoI of the viewer, rounded to the tile size
+    RectI roi,roiNotRoundedToTileSize;
 
     // The Par of the input image
     double pixelAspectRatio;

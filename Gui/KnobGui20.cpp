@@ -27,8 +27,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
@@ -928,7 +926,14 @@ KnobGui::onLabelChanged()
         }
 
         std::string descriptionLabel = getDescriptionLabel();
-        _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
+        if (descriptionLabel.empty()) {
+            _imp->descriptionLabel->hide();
+        } else {
+            _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
+            _imp->descriptionLabel->show();
+        }
+        onLabelChangedInternal();
+    } else {
         onLabelChangedInternal();
     }
 }

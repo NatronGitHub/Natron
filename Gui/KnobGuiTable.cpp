@@ -99,7 +99,8 @@ class KnobTableItemDelegate
 
 public:
 
-    explicit KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob, TableView* view);
+    explicit KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob,
+                                   TableView* view);
 
 private:
 

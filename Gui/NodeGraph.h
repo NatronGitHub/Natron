@@ -189,6 +189,8 @@ public Q_SLOTS:
 
     void togglePreviewsForSelectedNodes();
 
+    void showSelectedNodeSettingsPanel();
+
     void toggleAutoPreview();
 
     void toggleSelectedNodesEnabled();
@@ -246,6 +248,8 @@ public Q_SLOTS:
     void onAutoScrollTimerTriggered();
 
 private:
+
+    void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
 
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
 
@@ -309,7 +313,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    FindNodeDialog(NodeGraph* graph, QWidget* parent);
+    FindNodeDialog(NodeGraph* graph,
+                   QWidget* parent);
 
     virtual ~FindNodeDialog();
 
@@ -342,7 +347,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    EditNodeNameDialog(const NodeGuiPtr& node, QWidget* parent);
+    EditNodeNameDialog(const NodeGuiPtr& node,
+                       QWidget* parent);
 
     virtual ~EditNodeNameDialog();
 

@@ -27,6 +27,10 @@
 #include <cassert>
 #include <stdexcept>
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include <QtCore/QMutex>
 
 #include "Engine/AppManager.h"
@@ -260,12 +264,7 @@ Plugin::getOfxDesc(ContextEnum* ctx) const
 bool
 Plugin::getIsUserCreatable() const
 {
-    if (!_activatedSet) {
-        _activated = !appPTR->getCurrentSettings()->isPluginDeactivated(this);
-        _activatedSet = true;
-    }
-
-    return !_isInternalOnly && _activated;
+    return !_isInternalOnly && _activated && !_isDeprecated;
 }
 
 void
@@ -275,6 +274,66 @@ Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,
     assert(ctx != eContextNone);
     _ofxDescriptor = desc;
     _ofxContext = ctx;
+}
+
+bool
+Plugin::isRenderScaleEnabled() const
+{
+    return _renderScaleEnabled;
+}
+
+void
+Plugin::setRenderScaleEnabled(bool b)
+{
+    _renderScaleEnabled = b;
+}
+
+bool
+Plugin::isMultiThreadingEnabled() const
+{
+    return _multiThreadingEnabled;
+}
+
+void
+Plugin::setMultiThreadingEnabled(bool b)
+{
+    _multiThreadingEnabled = b;
+}
+
+bool
+Plugin::isOpenGLEnabled() const
+{
+    return _openglActivated;
+}
+
+void
+Plugin::setOpenGLEnabled(bool b)
+{
+    _openglActivated = b;
+}
+
+void
+Plugin::setOpenGLRenderSupport(PluginOpenGLRenderSupport support)
+{
+    _openglRenderSupport = support;
+}
+
+PluginOpenGLRenderSupport
+Plugin::getPluginOpenGLRenderSupport() const
+{
+    return _openglRenderSupport;
+}
+
+bool
+Plugin::isActivated() const
+{
+    return _activated;
+}
+
+void
+Plugin::setActivated(bool b)
+{
+    _activated = b;
 }
 
 void
@@ -298,6 +357,13 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
             return;
         }
     }
+}
+
+bool
+FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs,
+                                                   const std::string& rhs) const
+{
+    return boost::algorithm::lexicographical_compare( lhs, rhs, boost::algorithm::is_iless() );
 }
 
 NATRON_NAMESPACE_EXIT;

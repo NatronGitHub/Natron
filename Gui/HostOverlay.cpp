@@ -46,7 +46,6 @@
 
 #include "Global/KeySymbols.h"
 
-#include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 CLANG_DIAG_OFF(deprecated)
 #include <QtOpenGL/QGLWidget>
@@ -253,12 +252,12 @@ public:
 
     double pointSize() const
     {
-        return 5;
+        return TO_DPIX(5);
     }
 
     double pointTolerance() const
     {
-        return 6.;
+        return TO_DPIX(12.);
     }
 
     bool getInteractive(double time) const
@@ -266,7 +265,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -541,7 +540,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -677,9 +676,9 @@ public:
         return false;
     }
 
-    static double pointSize() { return 5.; }
+    static double pointSize() { return TO_DPIX(5.); }
 
-    static double pointTolerance() { return 6.; }
+    static double pointTolerance() { return TO_DPIX(12.); }
 
     static bool isNearby(const QPointF & p,
                          double x,
@@ -747,7 +746,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -2119,6 +2118,7 @@ TransformInteract::penMotion(double time,
         // no need to redraw overlay since it is slave to the paramaters
         EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        KeyFrame k;
         if (centerChanged) {
             boost::shared_ptr<KnobDouble> knob = _center.lock();
             knob->setValues(center.x, center.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
@@ -2133,15 +2133,15 @@ TransformInteract::penMotion(double time,
         }
         if (rotateChanged) {
             boost::shared_ptr<KnobDouble> knob = _rotate.lock();
-            knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         if (skewXChanged) {
             boost::shared_ptr<KnobDouble> knob = _skewX.lock();
-            knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         if (skewYChanged) {
             boost::shared_ptr<KnobDouble> knob = _skewY.lock();
-            knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     } else if (didSomething || valuesChanged) {

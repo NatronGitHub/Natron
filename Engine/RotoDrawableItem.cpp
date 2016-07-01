@@ -47,6 +47,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
 #include "Engine/Format.h"
@@ -217,10 +219,12 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if ( !pluginId.isEmpty() ) {
         fixedNamePrefix.append( QString::fromUtf8("Effect") );
 
-        CreateNodeArgs args( pluginId, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-        args.fixedName = fixedNamePrefix;
-        args.createGui = false;
-        args.addToProject = false;
+        CreateNodeArgs args( pluginId.toStdString(), boost::shared_ptr<NodeCollection>() );
+        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropTrustPluginID, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+
         _imp->effectNode = app->createNode(args);
         if (!_imp->effectNode) {
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
@@ -231,10 +235,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
-                CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_TIMEOFFSET), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-                args.fixedName = fixedNamePrefix;
-                args.createGui = false;
-                args.addToProject = false;
+                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, boost::shared_ptr<NodeCollection>() );
+                args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+
                 _imp->timeOffsetNode = app->createNode(args);
                 if (!_imp->timeOffsetNode) {
                     throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_TIMEOFFSET " in order to work");
@@ -244,10 +248,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
-                CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_FRAMEHOLD), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-                args.fixedName = fixedNamePrefix;
-                args.createGui = false;
-                args.addToProject = false;
+                CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, boost::shared_ptr<NodeCollection>() );
+                args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
                 _imp->frameHoldNode = app->createNode(args);
                 if (!_imp->frameHoldNode) {
                     throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_FRAMEHOLD " in order to work");
@@ -260,10 +263,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-    args.fixedName = fixedNamePrefix;
-    args.createGui = false;
-    args.addToProject = false;
+    CreateNodeArgs args( PLUGINID_OFX_MERGE, boost::shared_ptr<NodeCollection>() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
     if (!_imp->mergeNode) {
@@ -1031,15 +1033,19 @@ RotoDrawableItem::isActivated(double time) const
     if ( !isGloballyActivated() ) {
         return false;
     }
-    int lifetime_i = _imp->lifeTime->getValue();
-    if (lifetime_i == 0) {
-        return time == _imp->lifeTimeFrame->getValue();
-    } else if (lifetime_i == 1) {
-        return time <= _imp->lifeTimeFrame->getValue();
-    } else if (lifetime_i == 2) {
-        return time >= _imp->lifeTimeFrame->getValue();
-    } else {
-        return _imp->activated->getValueAtTime(time);
+    try {
+        int lifetime_i = _imp->lifeTime->getValue();
+        if (lifetime_i == 0) {
+            return time == _imp->lifeTimeFrame->getValue();
+        } else if (lifetime_i == 1) {
+            return time <= _imp->lifeTimeFrame->getValue();
+        } else if (lifetime_i == 2) {
+            return time >= _imp->lifeTimeFrame->getValue();
+        } else {
+            return _imp->activated->getValueAtTime(time);
+        }
+    } catch (std::runtime_error) {
+        return false;
     }
 }
 
@@ -1409,7 +1415,6 @@ RotoDrawableItem::getTransformAtTime(double time,
     extraMat.d = _imp->extraMatrix->getValueAtTime(time, 3); extraMat.e = _imp->extraMatrix->getValueAtTime(time, 4); extraMat.f = _imp->extraMatrix->getValueAtTime(time, 5);
     extraMat.g = _imp->extraMatrix->getValueAtTime(time, 6); extraMat.h = _imp->extraMatrix->getValueAtTime(time, 7); extraMat.i = _imp->extraMatrix->getValueAtTime(time, 8);
     *matrix = Transform::matMul(*matrix, extraMat);
-
 }
 
 /**
@@ -1463,7 +1468,9 @@ RotoDrawableItem::setTransform(double time,
 }
 
 void
-RotoDrawableItem::setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat)
+RotoDrawableItem::setExtraMatrix(bool setKeyframe,
+                                 double time,
+                                 const Transform::Matrix3x3& mat)
 {
     _imp->extraMatrix->beginChanges();
     if (setKeyframe) {

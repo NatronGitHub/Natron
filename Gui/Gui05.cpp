@@ -27,8 +27,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
@@ -39,11 +37,14 @@
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/CreateNodeArgs.h"
 
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/FloatingWidget.h"
@@ -53,7 +54,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
@@ -120,14 +120,18 @@ Gui::setupUi()
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
-    createDefaultLayoutInternal(false);
-
     boost::shared_ptr<Project> project = getApp()->getProject();
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(project,
                               _imp->_layoutPropertiesBin,
                               this);
+
+    _imp->_errorLog = new LogWindow(0);
+    _imp->_errorLog->hide();
+
+    createDefaultLayoutInternal(false);
+
 
     initProjectGuiKnobs();
 
@@ -136,9 +140,6 @@ Gui::setupUi()
 
     _imp->_aboutWindow = new AboutWindow(this);
     _imp->_aboutWindow->hide();
-
-    _imp->shortcutEditor = new ShortCutEditor(this);
-    _imp->shortcutEditor->hide();
 
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
@@ -199,7 +200,7 @@ Gui::updateAboutWindowLibrariesVersion()
 
 void
 Gui::createGroupGui(const NodePtr & group,
-                    CreateNodeReason reason)
+                    const CreateNodeArgs& args)
 {
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
@@ -224,7 +225,10 @@ Gui::createGroupGui(const NodePtr & group,
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
-    if ( where && (reason == eCreateNodeReasonUserCreate) && !getApp()->isCreatingPythonGroup() ) {
+    
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+
+    if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {
@@ -329,12 +333,20 @@ Gui::wipeLayout()
     }
     std::list<FloatingWidget*> floatingWidgets = getFloatingWindows();
 
+    FloatingWidget* projectFW = _imp->_projectGui->getPanel()->getFloatingWindow();
     for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
-        (*it)->deleteLater();
+        if (!projectFW || (*it) != projectFW) {
+            (*it)->deleteLater();
+        }
     }
     {
         QMutexLocker k(&_imp->_floatingWindowMutex);
         _imp->_floatingWindows.clear();
+
+        // Re-add the project window
+        if (projectFW) {
+            _imp->_floatingWindows.push_back(projectFW);
+        }
     }
 
 

@@ -27,6 +27,10 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -101,7 +105,8 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    TransformOverlayKnobs() : HostOverlayKnobs() {}
+    TransformOverlayKnobs()
+        : HostOverlayKnobs() {}
 
     virtual ~TransformOverlayKnobs() {}
 
@@ -134,7 +139,8 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    CornerPinOverlayKnobs() : HostOverlayKnobs() {}
+    CornerPinOverlayKnobs()
+        : HostOverlayKnobs() {}
 
     virtual ~CornerPinOverlayKnobs() {}
 
@@ -155,7 +161,8 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    PositionOverlayKnobs() : HostOverlayKnobs() {}
+    PositionOverlayKnobs()
+        : HostOverlayKnobs() {}
 
     virtual ~PositionOverlayKnobs() {}
 

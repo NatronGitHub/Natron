@@ -163,6 +163,14 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
    }
 }
 
+*clang* {
+  openmp {
+    QMAKE_CXXFLAGS += -fopenmp
+    QMAKE_CFLAGS += -fopenmp
+    QMAKE_LFLAGS += -fopenmp
+   }
+}
+
 macx {
   # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
   # (else qmake generates an old pbproj on Snow Leopard)
@@ -193,6 +201,15 @@ macx {
   LIBS += -framework CoreServices
 }
 
+macx-clang-libc++ {
+    # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
+    QMAKE_OBJECTIVE_CFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
+}
+
+macx-clang {
+    QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
+}
+
 CONFIG(debug) {
     CONFIG += nopch
 }
@@ -221,6 +238,10 @@ win32 {
 
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
+
+  # Natron requires a link to opengl32.dll and Gdi32 for offscreen rendering
+  LIBS += -lopengl32 -lGdi32
+
 
 }
 
@@ -261,9 +282,6 @@ win32-g++ {
    # On MingW everything is defined with pkgconfig except boost
     QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
-
-    # Natron requires a link to opengl32.dll for offscreen rendering
-    LIBS += -lopengl32
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
@@ -395,6 +413,21 @@ coverage {
   QMAKE_CFLAGS += -fprofile-arcs -ftest-coverage -O0
   QMAKE_LFLAGS += -fprofile-arcs -ftest-coverage
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
+}
+
+# install targets on unix
+unix:!macx {
+    isEmpty(PREFIX) {
+        PREFIX = /usr/local
+    }
+    target.path = $${PREFIX}/bin
+    target_icons.path = $${PREFIX}/share/icons
+    target_icons.files = $PWD/../Gui/Resources/Images/natronIcon256_linux.png $PWD/../Gui/Resources/Images/natronProjectIcon_linux.png
+    target_mime.path = $${PREFIX}/share/mime/application
+    target_mime.files = $PWD/../Gui/Resources/Mime/x-natron.xml
+    target_desktop.path = $${PREFIX}/share/applications
+    target_desktop.files = $PWD/../Gui/Resources/Applications/Natron.desktop
+    INSTALLS += target_icons target_mime target_desktop
 }
 
 # and finally...

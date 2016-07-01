@@ -47,46 +47,17 @@ public:
     double par; // the par of the associated image
     int closestPo2; //< the closest power of 2 of the original region of interest of the image
 
-    TextureRect()
-        : RectI()
-        , par(1.)
-        , closestPo2(1)
-    {
-    }
+    TextureRect();
 
     TextureRect(int x1_,
                 int y1_,
                 int x2_,
                 int y2_,
                 int closestPo2_,
-                double par_)
-        : RectI(x1_, y1_, x2_, y2_)
-        , par(par_)
-        , closestPo2(closestPo2_)
-    {
-    }
+                double par_);
 
-    void set(int x1_,
-             int y1_,
-             int x2_,
-             int y2_,
-             int closestPo2_,
-             double par_)
-    {
-        RectI::set(x1_, y1_, x2_, y2_);
+    void reset();
 
-        closestPo2 = closestPo2_;
-        par = par_;
-    }
-
-    void reset()
-    {
-        set(0, 0, 0, 0, 1, 1.);
-    }
-
-    void operator=(const RectI& other);
-
-    bool contains(const TextureRect& other) const;
 };
 
 inline bool

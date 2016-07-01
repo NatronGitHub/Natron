@@ -129,6 +129,11 @@ private:
         }
         KnobPtr knob = knobUI->getKnob();
 
+        KnobHolder* holder = knob->getHolder();
+
+        // If the knob has several UI (one in the viewer and one in the settings panel) refreshUI
+        bool refreshUI = holder ? holder->isInViewerUIKnob(knob) : false;
+
         knob->beginChanges();
 
         assert( (int)_oldValue.size() == knob->getDimension() || _dimension != -1 );
@@ -150,7 +155,7 @@ private:
             }
 
 
-            knobUI->setValue(dimension, *it, NULL, false, eValueChangedReasonUserEdited);
+            knobUI->setValue(dimension, *it, NULL, refreshUI, !refreshUI ? eValueChangedReasonUserEdited : eValueChangedReasonNatronGuiEdited);
 
             if ( knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
@@ -192,9 +197,13 @@ private:
         }
         KnobPtr knob = knobUI->getKnob();
 
+        KnobHolder* holder = knob->getHolder();
 
-        if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-            time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+        // If the knob has several UI (one in the viewer and one in the settings panel) refreshUI
+        bool refreshUI = holder ? holder->isInViewerUIKnob(knob) : false;
+
+        if ( holder && holder->getApp() ) {
+            time = holder->getApp()->getTimeLine()->currentFrame();
         }
 
         assert( (int)_oldValue.size() == knob->getDimension() || _dimension != -1 );
@@ -225,7 +234,7 @@ private:
                 knob->unblockValueChanges();
             }
 
-            _valueChangedReturnCode[i] = knobUI->setValue(dimension, *it, &_newKeys[i], false, eValueChangedReasonUserEdited);
+            _valueChangedReturnCode[i] = knobUI->setValue(dimension, *it, &_newKeys[i], refreshUI, !refreshUI ? eValueChangedReasonUserEdited : eValueChangedReasonNatronGuiEdited);
             if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }

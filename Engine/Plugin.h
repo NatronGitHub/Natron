@@ -183,13 +183,17 @@ class Plugin
 
     //When the plug-in is a PyPlug, if this is set to true, the script will not be embedded into a group
     bool _toolSetScript;
-    mutable bool _activatedSet;
     mutable bool _activated;
 
     /*
        These are shortcuts that the plug-in registered
      */
     std::list<PluginActionShortcut> _shortcuts;
+    bool _renderScaleEnabled;
+    bool _multiThreadingEnabled;
+    bool _openglActivated;
+
+    PluginOpenGLRenderSupport _openglRenderSupport;
 
 public:
 
@@ -215,8 +219,11 @@ public:
         , _isDeprecated(false)
         , _isInternalOnly(false)
         , _toolSetScript(false)
-        , _activatedSet(false)
         , _activated(true)
+        , _renderScaleEnabled(true)
+        , _multiThreadingEnabled(true)
+        , _openglActivated(true)
+        , _openglRenderSupport(ePluginOpenGLRenderSupportNone)
     {
     }
 
@@ -254,8 +261,11 @@ public:
         , _isDeprecated(isDeprecated)
         , _isInternalOnly(false)
         , _toolSetScript(false)
-        , _activatedSet(false)
         , _activated(true)
+        , _renderScaleEnabled(true)
+        , _multiThreadingEnabled(true)
+        , _openglActivated(true)
+        , _openglRenderSupport(ePluginOpenGLRenderSupportNone)
     {
         if ( _resourcesPath.isEmpty() ) {
             _resourcesPath = QLatin1String(":/Resources/");
@@ -346,6 +356,21 @@ public:
     OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
 
     void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
+
+    bool isRenderScaleEnabled() const;
+    void setRenderScaleEnabled(bool b);
+
+    bool isMultiThreadingEnabled() const;
+    void setMultiThreadingEnabled(bool b);
+
+    bool isActivated() const;
+    void setActivated(bool b);
+
+    bool isOpenGLEnabled() const;
+    void setOpenGLEnabled(bool b);
+
+    void setOpenGLRenderSupport(PluginOpenGLRenderSupport support);
+    PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
 };
 
 struct Plugin_compare_major
@@ -359,6 +384,43 @@ struct Plugin_compare_major
 
 typedef std::set<Plugin*, Plugin_compare_major> PluginMajorsOrdered;
 typedef std::map<std::string, PluginMajorsOrdered> PluginsMap;
+
+struct IOPluginEvaluation
+{
+    std::string pluginID;
+    double evaluation;
+
+    IOPluginEvaluation()
+        : pluginID()
+        , evaluation(0)
+    {
+    }
+
+    IOPluginEvaluation(const std::string& p,
+                       double e)
+        : pluginID(p)
+        , evaluation(e)
+    {}
+};
+
+struct IOPluginEvaluation_CompareLess
+{
+    bool operator() (const IOPluginEvaluation& lhs,
+                     const IOPluginEvaluation& rhs) const
+    {
+        return lhs.evaluation < rhs.evaluation;
+    }
+};
+
+struct FormatExtensionCompareCaseInsensitive
+{
+    bool operator() (const std::string& lhs, const std::string& rhs) const;
+};
+
+typedef std::set<IOPluginEvaluation, IOPluginEvaluation_CompareLess> IOPluginSetForFormat;
+// For each extension format (lower case) a set of plug-in IDs sorted by increasing evaluation order.
+// The best plug-in for a format is the set.rbegin()
+typedef std::map<std::string, IOPluginSetForFormat, FormatExtensionCompareCaseInsensitive> IOPluginsMap;
 
 NATRON_NAMESPACE_EXIT;
 

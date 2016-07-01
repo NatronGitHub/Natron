@@ -1,5 +1,5 @@
---- Portfile.orig	2016-05-26 11:59:50.000000000 +0200
-+++ Portfile	2016-05-26 14:18:25.000000000 +0200
+--- Portfile.orig	2016-05-28 11:24:37.000000000 +0200
++++ Portfile	2016-06-23 13:55:58.000000000 +0200
 @@ -101,6 +101,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
@@ -26,22 +26,7 @@
  
  # disable asm on Tiger
  # libblueray doesn't build on Tiger so disable for now (#39442)
-@@ -170,8 +177,12 @@
-     }
- 
-     # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
--    if {${os.major} < 12} {
--        configure.args-append --disable-indev=avfoundation
-+    #if {${os.major} < 12} {
-+    #    configure.args-append --disable-indev=avfoundation
-+    #}
-+    # Video Toolbox was also introduced in 10.8
-+    if {[vercmp ${macosx_sdk_version} 10.8] < 0} {
-+        configure.args-append --disable-indev=avfoundation --disable-videotoolbox
-     }
- }
- 
-@@ -181,6 +192,17 @@
+@@ -181,6 +188,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -59,7 +44,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -205,6 +227,15 @@
+@@ -205,6 +223,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -75,7 +60,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -230,11 +261,52 @@
+@@ -230,11 +257,52 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -128,7 +113,7 @@
  }
  
  default_variants +x11
-@@ -305,6 +377,12 @@
+@@ -305,6 +373,12 @@
                              port:samba3
  
      license                 GPL-3+

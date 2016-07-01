@@ -3848,8 +3848,8 @@ RotoGui::RotoGuiPrivate::isWithinSelectedCpsBBox(const QPointF& pos) const
     double r = rotoData->selectedCpsBbox.bottomRight().x();
     double b = rotoData->selectedCpsBbox.bottomRight().y();
     double t = rotoData->selectedCpsBbox.topLeft().y();
-    double toleranceX = 0;//kXHairSelectedCpsTolerance * pixelScale.first;
-    double toleranceY = 0;//kXHairSelectedCpsTolerance * pixelScale.second;
+    double toleranceX = 0; //kXHairSelectedCpsTolerance * pixelScale.first;
+    double toleranceY = 0; //kXHairSelectedCpsTolerance * pixelScale.second;
 
     return pos.x() > (l - toleranceX) && pos.x() < (r + toleranceX) &&
            pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);

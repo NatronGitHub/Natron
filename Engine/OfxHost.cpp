@@ -24,8 +24,6 @@
 
 #include "OfxHost.h"
 
-#include "Global/Macros.h"
-
 #include <cassert>
 #include <cstdarg>
 #include <memory>
@@ -66,7 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
 
-#include "Global/Macros.h"
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -87,9 +84,12 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
+#include "Global/KeySymbols.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -263,7 +263,9 @@ OfxHost::setProperties()
     }
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentMotionVectors, 3);
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentStereoDisparity, 4);
-
+#ifdef OFX_EXTENSIONS_NATRON
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kNatronOfxImageComponentXY, 5);
+#endif
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthFloat, 0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthShort, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthByte, 2);
@@ -295,7 +297,11 @@ OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2); // OFX 1.2
 #ifdef OFX_SUPPORTS_OPENGLRENDER
-    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false"); // OFX 1.3
+    if (appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true"); // OFX 1.3
+    } else {
+        _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false"); // OFX 1.3
+    }
 #endif
     _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
     _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
@@ -495,19 +501,19 @@ OfxHost::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe( tr("Plug-in"), QString::fromUtf8( message.c_str() ) );
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
         //Dialogs::errorDialog(NATRON_APPLICATION_NAME, message);
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe(tr("Plug-in"), QString::fromUtf8( message.c_str() ) );
     } else if (type == kOfxMessageWarning) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
         //        Dialogs::warningDialog(NATRON_APPLICATION_NAME, message);
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe( tr("Plug-in"), QString::fromUtf8( message.c_str() ) );
     } else if (type == kOfxMessageMessage) {
         Dialogs::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
@@ -690,9 +696,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
-                         const NodeSerialization* serialization,
-                         const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                         bool disableRenderScaleSupport
+                         const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                          ,
                          bool allowFileDialogs,
@@ -710,11 +714,15 @@ OfxHost::createOfxEffect(NodePtr node,
 
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+
     if ( node && !node->getEffectInstance() ) {
         node->setEffect(hostSideEffect);
+        node->initNodeScriptName(serialization.get(), QString::fromUtf8(fixedName.c_str()));
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization, paramValues, disableRenderScaleSupport
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization.get(), args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                                  , allowFileDialogs,
                                                  hasUsedFileDialog
@@ -756,9 +764,73 @@ getCacheFilePath()
     return ofxCacheFilePath;
 }
 
+
+static void
+getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<PluginActionShortcut>* shortcuts)
+{
+    int nDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextDefaultShortcuts);
+    if (nDims == 0) {
+        return;
+    }
+    {
+        // Check that all props have the same dimension
+
+        int nSymDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutSymbol);
+        int nCtrlDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasControlModifier);
+        int nShiftDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier);
+        int nAltDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier);
+        int nMetaDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier);
+
+        if (nSymDims != nDims ||
+            nCtrlDims != nDims ||
+            nShiftDims != nDims ||
+            nAltDims != nDims ||
+            nMetaDims != nDims) {
+            std::cerr << desc.getPlugin()->getIdentifier() << ": Invalid dimension setup of the NatronOfxImageEffectPropInViewerContextDefaultShortcuts property." << std::endl;
+            return;
+        }
+    }
+
+    const std::map<std::string, OFX::Host::Param::Descriptor*> & paramDescriptors = desc.getParams();
+
+    for (int i = 0; i < nDims; ++i) {
+        const std::string& paramName = desc.getProps().getStringProperty(kNatronOfxImageEffectPropInViewerContextDefaultShortcuts, i);
+        int symbol = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutSymbol, i);
+        int hasCtrl = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasControlModifier, i);
+        int hasShift = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier, i);
+        int hasAlt = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier, i);
+        int hasMeta = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier, i);
+
+        std::map<std::string, OFX::Host::Param::Descriptor*>::const_iterator foundParamDesc = paramDescriptors.find(paramName);
+        if (foundParamDesc == paramDescriptors.end()) {
+            // Hmm the plug-in probably wrongly set the kNatronOfxImageEffectPropInViewerContextDefaultShortcuts property
+            std::cerr << desc.getPlugin()->getIdentifier() << ": " << paramName << " was set to the NatronOfxImageEffectPropInViewerContextDefaultShortcuts property but does not appear to exist in the parameters described." << std::endl;
+            continue;
+        }
+
+
+        // The Key enum is a mapping 1:1 of the symbols defined in ofxKeySymbols.h
+        Key eSymbol = (Key)symbol;
+        KeyboardModifiers eMods;
+        if (hasCtrl) {
+            eMods |= eKeyboardModifierControl;
+        }
+        if (hasShift) {
+            eMods |= eKeyboardModifierShift;
+        }
+        if (hasAlt) {
+            eMods |= eKeyboardModifierAlt;
+        }
+        if (hasMeta) {
+            eMods |= eKeyboardModifierMeta;
+        }
+        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), eSymbol, eMods));
+    }
+}
+
 void
-OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap)
+OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
+                        IOPluginsMap* writersMap)
 {
     assert( OFX::Host::PluginCache::getPluginCache() );
     /// set the version label in the global cache
@@ -807,7 +879,7 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
             try {
                 OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
             } catch (const std::exception& e) {
-                appPTR->writeToErrorLog_mt_safe( tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
+                appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"),tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
             }
         }
     }
@@ -908,7 +980,24 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
             natronPlugin->setForInternalUseOnly(true);
         }
 
+        PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+        {
+            const std::string& str = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+            if (str == "false") {
+                glSupport = ePluginOpenGLRenderSupportNone;
+            } else if (str == "needed") {
+                glSupport = ePluginOpenGLRenderSupportNeeded;
+            } else if (str == "true") {
+                glSupport = ePluginOpenGLRenderSupportYes;
+            }
+        }
+        natronPlugin->setOpenGLRenderSupport(glSupport);
+
         natronPlugin->setOfxPlugin(p);
+
+        std::list<PluginActionShortcut> shortcuts;
+        getPluginShortcuts(p->getDescriptor(), &shortcuts);
+        natronPlugin->setShorcuts(shortcuts);
 
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,
         ///use it to fill the readersMap and writersMap
@@ -924,31 +1013,15 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
 
         if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
             ///we're safe to assume that this plugin is a reader
-            for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-                it = readersMap->find(formats[k]);
-
-                if ( it != readersMap->end() ) {
-                    it->second.push_back( std::make_pair(openfxId, evaluation) );
-                } else {
-                    std::vector<std::pair<std::string, double> > newVec(1);
-                    newVec[0] = std::make_pair(openfxId, evaluation);
-                    readersMap->insert( std::make_pair(formats[k], newVec) );
-                }
+            for (std::size_t k = 0; k < formats.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
+                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
             ///we're safe to assume that this plugin is a writer.
-            for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-                it = writersMap->find(formats[k]);
-
-                if ( it != writersMap->end() ) {
-                    it->second.push_back( std::make_pair(openfxId, evaluation) );
-                } else {
-                    std::vector<std::pair<std::string, double> > newVec(1);
-                    newVec[0] = std::make_pair(openfxId, evaluation);
-                    writersMap->insert( std::make_pair(formats[k], newVec) );
-                }
+            for (std::size_t k = 0; k < formats.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];
+                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         }
     }

@@ -56,7 +56,8 @@ public:
 
 
     basic_ifstream();
-    explicit basic_ifstream(const std::wstring& path, std::ios_base::openmode __mode = std::ios_base::in);
+    explicit basic_ifstream(const std::wstring& path,
+                            std::ios_base::openmode __mode = std::ios_base::in);
 
     virtual ~basic_ifstream();
 
@@ -215,7 +216,8 @@ public:
 
 
     basic_ofstream();
-    explicit basic_ofstream(const std::wstring& path, std::ios_base::openmode __mode = std::ios_base::out);
+    explicit basic_ofstream(const std::wstring& path,
+                            std::ios_base::openmode __mode = std::ios_base::out);
 
     virtual ~basic_ofstream();
 

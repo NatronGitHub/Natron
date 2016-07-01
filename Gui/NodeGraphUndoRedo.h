@@ -388,7 +388,8 @@ class ExtractNodeUndoRedoCommand
 
 public:
 
-    ExtractNodeUndoRedoCommand(NodeGraph* graph, const NodesGuiList & nodes);
+    ExtractNodeUndoRedoCommand(NodeGraph* graph,
+                               const NodesGuiList & nodes);
 
     virtual ~ExtractNodeUndoRedoCommand();
     virtual void undo();
@@ -408,7 +409,8 @@ class GroupFromSelectionCommand
 
 public:
 
-    GroupFromSelectionCommand(NodeGraph* graph, const NodesGuiList & nodes);
+    GroupFromSelectionCommand(NodeGraph* graph,
+                              const NodesGuiList & nodes);
 
     virtual ~GroupFromSelectionCommand();
 
@@ -419,6 +421,13 @@ private:
 
     NodeGraph* _graph;
     std::list<boost::weak_ptr<NodeGui> > _originalNodes;
+    struct OutputLink
+    {
+        int inputIdx;
+        NodeWPtr inputNode;
+    };
+    typedef std::map<NodeWPtr, OutputLink> OutputLinksMap;
+    OutputLinksMap _outputLinks;
     boost::weak_ptr<NodeGui> _group;
     bool _firstRedoCalled;
     bool _isRedone;
@@ -431,7 +440,8 @@ class InlineGroupCommand
 
 public:
 
-    InlineGroupCommand(NodeGraph* graph, const NodesGuiList & nodes);
+    InlineGroupCommand(NodeGraph* graph,
+                       const NodesGuiList & nodes);
 
     virtual ~InlineGroupCommand();
 

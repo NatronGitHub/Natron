@@ -81,7 +81,8 @@ struct RenderViewerArgs
                      const Color::Lut* srcColorSpace_,
                      const Color::Lut* colorSpace_,
                      int alphaChannelIndex_,
-                     bool renderOnlyRoI_)
+                     bool renderOnlyRoI_,
+                     std::size_t tileRowElements_)
         : inputImage(inputImage_)
         , matteImage(matteImage_)
         , channels(channels_)
@@ -94,6 +95,7 @@ struct RenderViewerArgs
         , colorSpace(colorSpace_)
         , alphaChannelIndex(alphaChannelIndex_)
         , renderOnlyRoI(renderOnlyRoI_)
+        , tileRowElements(tileRowElements_)
     {
     }
 
@@ -109,6 +111,7 @@ struct RenderViewerArgs
     const Color::Lut* colorSpace;
     int alphaChannelIndex;
     bool renderOnlyRoI;
+    std::size_t tileRowElements;
 };
 
 struct ViewerInstance::ViewerInstancePrivate
@@ -226,7 +229,7 @@ public:
             ++renderAge[texIndex];
         }
 
-        AbortableRenderInfoPtr info( new AbortableRenderInfo(canAbort, ret) );
+        AbortableRenderInfoPtr info = AbortableRenderInfo::create(canAbort, ret);
 
         return info;
     }

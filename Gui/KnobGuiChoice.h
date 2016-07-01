@@ -62,7 +62,9 @@ class KnobComboBox
     : public ComboBox
 {
 public:
-    KnobComboBox(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
+    KnobComboBox(const KnobGuiPtr& knob,
+                 int dimension,
+                 QWidget* parent = 0);
 
     virtual ~KnobComboBox();
 

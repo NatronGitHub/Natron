@@ -36,6 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
@@ -59,6 +60,94 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 NATRON_NAMESPACE_ENTER;
+
+void
+NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
+{
+    if (!nearbyNode) {
+        return;
+    }
+    if ( casIsCtrl ) {
+        nearbyNode->ensurePanelCreated();
+        if ( nearbyNode->getSettingPanel() ) {
+            nearbyNode->getSettingPanel()->floatPanel();
+        }
+    } else {
+        nearbyNode->setVisibleSettingsPanel(true);
+        if ( nearbyNode->getSettingPanel() ) {
+            getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
+        } else {
+            ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewer();
+            if (isViewer) {
+                ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
+                assert(viewer);
+                if (viewer) {
+                    ViewerTab* tab = viewer->getViewerTab();
+                    assert(tab);
+
+                    TabWidget* foundTab = 0;
+                    QWidget* parent = tab->parentWidget();
+                    while (parent) {
+                        foundTab = dynamic_cast<TabWidget*>(parent);
+                        if (foundTab) {
+                            break;
+                        }
+                        parent = parent->parentWidget();
+                    }
+                    if (foundTab) {
+                        foundTab->setCurrentWidget(tab);
+                    } else {
+                        //try to find a floating window
+                        FloatingWidget* floating = 0;
+                        parent = tab->parentWidget();
+                        while (parent) {
+                            floating = dynamic_cast<FloatingWidget*>(parent);
+                            if (floating) {
+                                break;
+                            }
+                            parent = parent->parentWidget();
+                        }
+                        if (floating) {
+                            floating->activateWindow();
+                        }
+                    }
+                } // if (viewer)
+            }
+        }
+    }
+    if ( !nearbyNode->wasBeginEditCalled() ) {
+        nearbyNode->beginEditKnobs();
+    }
+
+    if ( casIsShift ) {
+        NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
+        if ( isGrp && isGrp->isSubGraphUserVisible() ) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+            if (graph) {
+                TabWidget* isParentTab = dynamic_cast<TabWidget*>( graph->parentWidget() );
+                if (isParentTab) {
+                    isParentTab->setCurrentWidget(graph);
+                } else {
+                    NodeGraph* lastSelectedGraph = getGui()->getLastSelectedGraph();
+                    ///We're in the double click event, it should've entered the focus in event beforehand!
+                    assert(lastSelectedGraph == this);
+
+                    isParentTab = dynamic_cast<TabWidget*>( lastSelectedGraph->parentWidget() );
+                    assert(isParentTab);
+                    if (isParentTab) {
+                        isParentTab->appendTab(graph, graph);
+                    }
+                }
+                QTimer::singleShot( 25, graph, SLOT(centerOnAllNodes()) );
+            }
+        }
+    }
+
+    getGui()->getApp()->redrawAllViewers();
+}
+
 void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
@@ -66,86 +155,8 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
     Edge* nearbyEdge;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
-    if (nearbyItemCode == eNearbyItemNode) {
-        if ( modCASIsControl(e) ) {
-            nearbyNode->ensurePanelCreated();
-            if ( nearbyNode->getSettingPanel() ) {
-                nearbyNode->getSettingPanel()->floatPanel();
-            }
-        } else {
-            nearbyNode->setVisibleSettingsPanel(true);
-            if ( nearbyNode->getSettingPanel() ) {
-                getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
-            } else {
-                ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewer();
-                if (isViewer) {
-                    ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
-                    assert(viewer);
-                    if (viewer) {
-                        ViewerTab* tab = viewer->getViewerTab();
-                        assert(tab);
-
-                        TabWidget* foundTab = 0;
-                        QWidget* parent = tab->parentWidget();
-                        while (parent) {
-                            foundTab = dynamic_cast<TabWidget*>(parent);
-                            if (foundTab) {
-                                break;
-                            }
-                            parent = parent->parentWidget();
-                        }
-                        if (foundTab) {
-                            foundTab->setCurrentWidget(tab);
-                        } else {
-                            //try to find a floating window
-                            FloatingWidget* floating = 0;
-                            parent = tab->parentWidget();
-                            while (parent) {
-                                floating = dynamic_cast<FloatingWidget*>(parent);
-                                if (floating) {
-                                    break;
-                                }
-                                parent = parent->parentWidget();
-                            }
-                            if (floating) {
-                                floating->activateWindow();
-                            }
-                        }
-                    } // if (viewer)
-                }
-            }
-        }
-        if ( !nearbyNode->wasBeginEditCalled() ) {
-            nearbyNode->beginEditKnobs();
-        }
-
-        if ( modCASIsShift(e) ) {
-            NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
-            if ( isGrp && isGrp->isSubGraphUserVisible() ) {
-                NodeGraphI* graph_i = isGrp->getNodeGraph();
-                assert(graph_i);
-                NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-                if (graph) {
-                    TabWidget* isParentTab = dynamic_cast<TabWidget*>( graph->parentWidget() );
-                    if (isParentTab) {
-                        isParentTab->setCurrentWidget(graph);
-                    } else {
-                        NodeGraph* lastSelectedGraph = getGui()->getLastSelectedGraph();
-                        ///We're in the double click event, it should've entered the focus in event beforehand!
-                        assert(lastSelectedGraph == this);
-
-                        isParentTab = dynamic_cast<TabWidget*>( lastSelectedGraph->parentWidget() );
-                        assert(isParentTab);
-                        if (isParentTab) {
-                            isParentTab->appendTab(graph, graph);
-                        }
-                    }
-                    QTimer::singleShot( 25, graph, SLOT(centerOnAllNodes()) );
-                }
-            }
-        }
-
-        getGui()->getApp()->redrawAllViewers();
+    if (nearbyItemCode == eNearbyItemNode || nearbyItemCode == eNearbyItemBackdropFrame) {
+        showNodePanel(modCASIsControl(e), modCASIsShift(e), nearbyNode);
     }
 } // NodeGraph::mouseDoubleClickEvent
 
@@ -196,10 +207,10 @@ NodeGraph::onNodeCreationDialogFinished()
             PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
             if ( found != allPlugins.end() ) {
                 QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                CreateNodeArgs args( res, eCreateNodeReasonUserCreate, getGroup() );
-                args.xPosHint = posHint.x();
-                args.yPosHint = posHint.y();
-                args.majorV = major;
+                CreateNodeArgs args( res.toStdString(), getGroup() );
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
                 getGui()->getApp()->createNode(args);
             }
             break;
@@ -380,6 +391,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
+        if (_imp->_selection.size() == 1) {
+            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front().get());
+        } else {
+            accept = false;
+        }
     } else {
         bool intercepted = false;
 
@@ -404,9 +421,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                     }
                     if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        CreateNodeArgs args( plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup() );
-                        args.xPosHint = hint.x();
-                        args.yPosHint = hint.y();
+                        CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
+                        args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                        args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
                         getGui()->getApp()->createNode(args);
 
                         intercepted = true;

@@ -78,7 +78,8 @@ public:
     typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
 
     ///Used to serialize
-    NodeSerialization(const NodePtr & n, bool serializeInputs = true);
+    explicit NodeSerialization(const NodePtr & n,
+                      bool serializeInputs = true);
 
     ////Used to deserialize
     NodeSerialization()

@@ -30,6 +30,7 @@
 #include <QtCore/QFileInfo>
 
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Settings.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeGroup.h"
@@ -108,7 +109,12 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    CreateNodeArgs args(QString::fromUtf8( pluginID.c_str() ), eCreateNodeReasonInternal, group);
+                    CreateNodeArgs args(pluginID, group);
+                    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+                    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+                    
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {
                         parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
@@ -180,6 +186,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                             if (rep == eStandardButtonYes) {
                                 pluginID = pythonPluginID;
                                 usingPythonModule = true;
+                            } else {
+                                pluginID = PLUGINID_NATRON_GROUP;
+                                usingPythonModule = false;
                             }
                             moduleUpdatesProcessed->insert( std::make_pair(stdModuleName, rep == eStandardButtonYes) );
                         }
@@ -208,11 +217,15 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         }
 
         if (!n) {
-            CreateNodeArgs args(QString::fromUtf8( pluginID.c_str() ), eCreateNodeReasonProjectLoad, group);
-            args.multiInstanceParentName = (*it)->getMultiInstanceParentName();
-            args.majorV = majorVersion;
-            args.minorV = minorVersion;
-            args.serialization = *it;
+            CreateNodeArgs args(pluginID, group);
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
+            args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, *it);
+            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+            if (!(*it)->getMultiInstanceParentName().empty()) {
+                args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
+            }
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             n = group->getApplication()->createNode(args);
         }
         if (!n) {
@@ -221,7 +234,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                              " exist in the loaded plug-ins.")
                           .arg( QString::fromUtf8( pluginID.c_str() ) )
                           .arg(majorVersion).arg(minorVersion) );
-            appPTR->writeToErrorLog_mt_safe(text);
+            appPTR->writeToErrorLog_mt_safe(tr("Project"),text);
             mustShowErrorsLog = true;
             continue;
         } else {
@@ -238,7 +251,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                               .arg(minorVersion)
                               .arg( n->getPlugin()->getMajorVersion() )
                               .arg( n->getPlugin()->getMinorVersion() ) );
-                appPTR->writeToErrorLog_mt_safe(text);
+                appPTR->writeToErrorLog_mt_safe(tr("Project"),text);
                 mustShowErrorsLog = true;
             }
         }
@@ -251,7 +264,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         createdNodes[n] = *it;
 
         const std::list<boost::shared_ptr<NodeSerialization> >& children = (*it)->getNodesCollection();
-        if ( !children.empty() ) {
+        if ( !children.empty() && !usingPythonModule) {
             NodeGroup* isGrp = n->isEffectGroup();
             if (isGrp) {
                 EffectInstPtr sharedEffect = isGrp->shared_from_this();
@@ -295,7 +308,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
 
             if (!masterNode) {
-                appPTR->writeToErrorLog_mt_safe( tr("Cannot restore the link between %1 and %2.")
+                appPTR->writeToErrorLog_mt_safe( tr("Project"), tr("Cannot restore the link between %1 and %2.")
                                                  .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
                                                  .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
                 mustShowErrorsLog = true;
@@ -332,7 +345,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
+                    appPTR->writeToErrorLog_mt_safe( tr("Project"),QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
@@ -388,7 +401,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
+                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {

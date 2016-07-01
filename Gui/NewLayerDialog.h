@@ -48,7 +48,8 @@ class NewLayerDialog
     Q_OBJECT
 
 public:
-    NewLayerDialog(const ImageComponents& original, QWidget* parent);
+    NewLayerDialog(const ImageComponents& original,
+                   QWidget* parent);
 
     virtual ~NewLayerDialog();
 

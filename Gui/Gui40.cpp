@@ -32,8 +32,6 @@
 #include <utility>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QSettings>
 #include <QtCore/QFileInfo>
 
@@ -46,6 +44,7 @@
 
 
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h" // floatToInt, LutManager
 #include "Engine/Node.h"
@@ -63,7 +62,6 @@
 #include "Gui/NodeGui.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/RenderStatsDialog.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
@@ -116,14 +114,6 @@ Gui::showAbout()
     _imp->_aboutWindow->raise();
     _imp->_aboutWindow->activateWindow();
     ignore_result( _imp->_aboutWindow->exec() );
-}
-
-void
-Gui::showShortcutEditor()
-{
-    _imp->shortcutEditor->show();
-    _imp->shortcutEditor->raise();
-    _imp->shortcutEditor->activateWindow();
 }
 
 void
@@ -707,13 +697,15 @@ Gui::ensureScriptEditorVisible()
     }
 }
 
-void
+PanelWidget*
 Gui::ensureProgressPanelVisible()
 {
     TabWidget* pane = _imp->_progressPanel->getParentPane();
 
     if (pane != 0) {
+        PanelWidget* ret = pane->currentWidget();
         pane->setCurrentWidget(_imp->_progressPanel);
+        return ret;
     } else {
         pane = _imp->_nodeGraphArea->getParentPane();
         if (!pane) {
@@ -723,12 +715,14 @@ Gui::ensureProgressPanelVisible()
                 tabs = _imp->_panes;
             }
             if ( tabs.empty() ) {
-                return;
+                return 0;
             }
             pane = tabs.front();
         }
         assert(pane);
+        PanelWidget* ret = pane->currentWidget();
         pane->moveProgressPanelHere();
+        return ret;
     }
 }
 
@@ -804,7 +798,11 @@ Gui::renderSelectedNode()
                 NodePtr writer = createWriter();
 #else
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
-                NodePtr writer = getApp()->createWriter( "", eCreateNodeReasonInternal, graph->getGroup() );
+                CreateNodeArgs args(PLUGINID_NATRON_WRITE, graph->getGroup());
+                args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                NodePtr writer = getApp()->createWriter( std::string(), args );
 #endif
                 if (writer) {
                     AppInstance::RenderWork w;

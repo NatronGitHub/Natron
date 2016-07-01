@@ -60,15 +60,24 @@ NATRON_NAMESPACE_ENTER;
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder, public NodeCollection, public AfterQuitProcessingI, public boost::noncopyable, public boost::enable_shared_from_this<Project>
+    :  public KnobHolder
+    , public NodeCollection
+    , public AfterQuitProcessingI
+    , public boost::noncopyable
+    , public boost::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Project(const AppInstPtr& appInstance);
+
+public:
+    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance) {
+        return boost::shared_ptr<Project>( new Project(appInstance) );
+    }
 
     virtual ~Project();
 
@@ -154,6 +163,8 @@ public:
     const std::vector<std::string>& getProjectViewNames() const;
 
     int getProjectViewsCount() const;
+
+    bool isGPURenderingEnabledInProject() const;
 
     std::vector<std::string> getProjectDefaultLayerNames() const;
     std::vector<ImageComponents> getProjectDefaultLayers() const;
@@ -294,6 +305,10 @@ public:
      **/
     bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
 
+    bool isOpenGLRenderActivated() const;
+
+    void refreshOpenGLRenderingFlagOnNodes();
+
 private:
 
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
@@ -323,8 +338,10 @@ public:
 
     void closeProject(bool aboutToQuit)
     {
-        reset(aboutToQuit);
+        reset(aboutToQuit, false);
     }
+
+    void closeProject_blocking(bool aboutToQuit);
 
     bool addFormat(const std::string& formatSpec);
 
@@ -378,7 +395,7 @@ private:
     /**
      * @brief Resets the project state clearing all nodes and the project name.
      **/
-    void reset(bool aboutToQuit);
+    void reset(bool aboutToQuit, bool blocking);
 
     void doResetEnd(bool aboutToQuit);
 

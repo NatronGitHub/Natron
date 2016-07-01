@@ -27,8 +27,6 @@
 
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
@@ -847,7 +845,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
     fontFilenames << fontResource.arg( QString::fromUtf8("DroidSans") );
     fontFilenames << fontResource.arg( QString::fromUtf8("DroidSans-Bold") );
-    Q_FOREACH (QString fontFilename, fontFilenames) {
+    Q_FOREACH (const QString &fontFilename, fontFilenames) {
         int fontID = QFontDatabase::addApplicationFont(fontFilename);
 
         qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
@@ -1096,6 +1094,12 @@ GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node,
                                                  double time)
 {
     _imp->previewRenderThread.appendToQueue(node, time);
+}
+
+int
+GuiApplicationManager::getDocumentationServerPort()
+{
+    return _imp->documentation->serverPort();
 }
 
 double

@@ -22,11 +22,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #include "BaseTest.h"
 
 #include <QtCore/QFile>
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/AppManager.h"
@@ -106,10 +108,11 @@ BaseTest::createNode(const QString & pluginID,
                      int majorVersion,
                      int minorVersion)
 {
-    CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, getApp()->getProject() );
+    CreateNodeArgs args( pluginID.toStdString(), getApp()->getProject() );
+    
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
 
-    args.majorV = majorVersion;
-    args.minorV = minorVersion;
     NodePtr ret =  getApp()->createNode(args);
 
 

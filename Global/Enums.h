@@ -61,6 +61,7 @@ enum StatusEnum
 {
     eStatusOK = 0,
     eStatusFailed = 1,
+    eStatusOutOfMemory = 2,
     eStatusReplyDefault = 14
 };
 
@@ -460,7 +461,8 @@ enum StorageModeEnum
 {
     eStorageModeNone = 0, //< no memory will be allocated
     eStorageModeRAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector)
-    eStorageModeDisk //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
+    eStorageModeDisk, //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
+    eStorageModeGLTex //< will be allocated as an OpenGL texture
 };
 
 enum OrientationEnum
@@ -584,6 +586,8 @@ enum CreateNodeReason
     eCreateNodeReasonInternal,
 };
 
+
+
 enum KnobClipBoardType
 {
     eKnobClipBoardTypeCopyValue,
@@ -620,6 +624,51 @@ enum CursorEnum
     eCursorSplitH,
     eCursorOpenHand,
     eCursorClosedHand
+};
+
+///Keep this in sync with @openfx-supportext/ofxsMerging.h
+enum MergingFunctionEnum
+{
+    eMergeATop = 0,
+    eMergeAverage,
+    eMergeColor,
+    eMergeColorBurn,
+    eMergeColorDodge,
+    eMergeConjointOver,
+    eMergeCopy,
+    eMergeDifference,
+    eMergeDisjointOver,
+    eMergeDivide,
+    eMergeExclusion,
+    eMergeFreeze,
+    eMergeFrom,
+    eMergeGeometric,
+    eMergeGrainExtract,
+    eMergeGrainMerge,
+    eMergeHardLight,
+    eMergeHue,
+    eMergeHypot,
+    eMergeIn,
+    // eMergeInterpolated,
+    eMergeLuminosity,
+    eMergeMask,
+    eMergeMatte,
+    eMergeMax,
+    eMergeMin,
+    eMergeMinus,
+    eMergeMultiply,
+    eMergeOut,
+    eMergeOver,
+    eMergeOverlay,
+    eMergePinLight,
+    eMergePlus,
+    eMergeReflect,
+    eMergeSaturation,
+    eMergeScreen,
+    eMergeSoftLight,
+    eMergeStencil,
+    eMergeUnder,
+    eMergeXOR
 };
 
 

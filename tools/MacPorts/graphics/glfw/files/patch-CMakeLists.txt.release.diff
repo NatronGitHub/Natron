@@ -1,18 +1,19 @@
---- CMakeLists.txt.orig
-+++ CMakeLists.txt
-@@ -479,7 +479,10 @@
+--- CMakeLists.txt.orig	2016-06-02 10:13:47.000000000 -0400
++++ CMakeLists.txt	2016-06-02 15:10:42.000000000 -0400
+@@ -336,7 +336,11 @@
+ #--------------------------------------------------------------------
  include(CMakePackageConfigHelpers)
  
- if (UNIX)
--    set(GLFW_CONFIG_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake/glfw3/")
-+    if (NOT GLFW_CMAKE_CONFIG_PATH)
-+        set(GLFW_CMAKE_CONFIG_PATH "lib${LIB_SUFFIX}")
-+    endif()
-+    set(GLFW_CONFIG_PATH "${CMAKE_INSTALL_PREFIX}/${GLFW_CMAKE_CONFIG_PATH}/cmake/glfw3/")
- else()
-     set(GLFW_CONFIG_PATH "${CMAKE_INSTALL_PREFIX}/")
- endif()
-@@ -520,6 +523,9 @@
+-set(GLFW_CONFIG_PATH "lib${LIB_SUFFIX}/cmake/glfw3")
++if (NOT GLFW_CMAKE_CONFIG_PATH)
++  set(GLFW_CMAKE_CONFIG_PATH "lib${LIB_SUFFIX}")
++endif()
++
++set(GLFW_CONFIG_PATH "${GLFW_CMAKE_CONFIG_PATH}/cmake/glfw3")
+ 
+ configure_package_config_file(src/glfw3Config.cmake.in
+                               src/glfw3Config.cmake
+@@ -366,6 +370,9 @@
  
  if (DOXYGEN_FOUND AND GLFW_BUILD_DOCS)
      add_subdirectory(docs)
@@ -22,17 +23,9 @@
  endif()
  
  #--------------------------------------------------------------------
-@@ -532,12 +538,17 @@
- 
-     install(FILES "${GLFW_BINARY_DIR}/src/glfw3Config.cmake"
-                   "${GLFW_BINARY_DIR}/src/glfw3ConfigVersion.cmake"
--            DESTINATION lib${LIB_SUFFIX}/cmake/glfw)
-+            DESTINATION ${GLFW_CONFIG_PATH})
- 
--    install(EXPORT glfwTargets DESTINATION lib${LIB_SUFFIX}/cmake/glfw)
-+    install(EXPORT glfwTargets DESTINATION ${GLFW_CONFIG_PATH})
+@@ -386,6 +393,11 @@
      install(FILES "${GLFW_BINARY_DIR}/src/glfw3.pc"
-             DESTINATION lib${LIB_SUFFIX}/pkgconfig)
+             DESTINATION "lib${LIB_SUFFIX}/pkgconfig")
  
 +    if (DOXYGEN_FOUND AND GLFW_BUILD_DOCS)
 +        install(FILES "${GLFW_BINARY_DIR}/docs/html"
@@ -41,4 +34,4 @@
 +
      # Only generate this target if no higher-level project already has
      if (NOT TARGET uninstall)
-         configure_file("${GLFW_SOURCE_DIR}/cmake_uninstall.cmake.in"
+         configure_file(cmake_uninstall.cmake.in

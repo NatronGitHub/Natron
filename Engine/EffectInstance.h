@@ -85,6 +85,9 @@
 #define PLUGINID_OFX_READSVG      "net.fxarena.openfx.ReadSVG"
 #define PLUGINID_OFX_READORA      "fr.inria.openfx.OpenRaster"
 #define PLUGINID_OFX_READCDR      "fr.inria.openfx.ReadCDR"
+#define PLUGINID_OFX_READPNG      "fr.inria.openfx.ReadPNG"
+#define PLUGINID_OFX_WRITEPNG     "fr.inria.openfx.WritePNG"
+#define PLUGINID_OFX_READPDF      "fr.inria.openfx.ReadPDF"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
@@ -150,6 +153,15 @@ public:
         bool byPassCache;
         bool calledFromGetImage;
 
+        // Request what kind of storage we need images to be in return of renderRoI
+        StorageModeEnum returnStorage;
+
+        // Set to false if you don't want the node to render using the GPU at all
+        bool allowGPURendering;
+
+        // the time that was passed to the original renderRoI call of the caller node
+        double callerRenderTime;
+
         RenderRoIArgs()
             : time(0)
             , scale(1.)
@@ -163,6 +175,9 @@ public:
             , bitdepth(eImageBitDepthFloat)
             , byPassCache(false)
             , calledFromGetImage(false)
+            , returnStorage(eStorageModeRAM)
+            , allowGPURendering(true)
+            , callerRenderTime(0.)
         {
         }
 
@@ -177,6 +192,8 @@ public:
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
                        const EffectInstance* caller,
+                       StorageModeEnum returnStorage,
+                       double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
             , scale(scale_)
@@ -190,6 +207,9 @@ public:
             , bitdepth(bitdepth_)
             , byPassCache(byPassCache_)
             , calledFromGetImage(calledFromGetImage)
+            , returnStorage(returnStorage)
+            , allowGPURendering(true)
+            , callerRenderTime(callerRenderTime)
         {
         }
     };
@@ -202,7 +222,8 @@ public:
     };
 
 public:
-
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -212,6 +233,11 @@ public:
      **/
     explicit EffectInstance(NodePtr node);
 
+    EffectInstance(const EffectInstance& other);
+
+public:
+
+    // dtor
     virtual ~EffectInstance();
 
 
@@ -471,6 +497,11 @@ public:
     virtual std::string getInputLabel(int inputNb) const WARN_UNUSED_RETURN;
 
     /**
+     * @brief Return a string indicating the purpose of the given input. It is used for the user documentation.
+     **/
+    virtual std::string getInputHint(int inputNb) const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Must be implemented to give the plugin internal id(i.e: net.sf.openfx:invertPlugin)
      **/
     virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;
@@ -542,18 +573,33 @@ public:
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
-                                             bool useDiskCache,
+                                             StorageModeEnum storage,
+                                             StorageModeEnum returnStorage,
                                              const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
+                                             const RectI& roi,
                                              ImageBitDepthEnum bitdepth,
                                              const ImageComponents & components,
-                                             ImageBitDepthEnum nodeBitDepthPref,
-                                             const ImageComponents & nodeComponentsPref,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
+                                             const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
                                              boost::shared_ptr<Image>* image);
+
+    /**
+     * @brief Converts the given OpenGL texture to a RAM-stored image. The resulting image will be cached.
+     * This function is SLOW as it makes use of glReadPixels.
+     * The OpenGL context should have been made current prior to calling this function.
+     **/
+    ImagePtr convertOpenGLTextureToCachedRAMImage(const ImagePtr& image);
+
+    /**
+     * @brief Converts the given RAM-stored image to an OpenGL texture.
+     * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
+     * The OpenGL context should have been made current prior to calling this function.
+     **/
+    ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
 
 
     /**
@@ -568,6 +614,7 @@ public:
     {
         Node* _node;
         bool _didEmit;
+        bool _didGroupEmit;
 
 public:
 
@@ -584,7 +631,8 @@ public:
 
 public:
 
-        NotifyInputNRenderingStarted_RAII(Node* node, int inputNumber);
+        NotifyInputNRenderingStarted_RAII(Node* node,
+                                          int inputNumber);
 
         ~NotifyInputNRenderingStarted_RAII();
     };
@@ -601,16 +649,18 @@ public:
                                   U64 nodeHash,
                                   const AbortableRenderInfoPtr& abortInfo,
                                   const NodePtr & treeRoot,
+                                  int visitsCount,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
+                                  const OSGLContextPtr& glContext,
                                   int textureIndex,
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
                                   const NodesList & rotoPaintNodes,
                                   RenderSafetyEnum currentThreadSafety,
+                                  PluginOpenGLRenderSupport currentOpenGLSupport,
                                   bool doNanHandling,
                                   bool draftMode,
-                                  bool viewerProgressReportEnabled,
                                   const boost::shared_ptr<RenderStats> & stats);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
@@ -656,6 +706,7 @@ public:
                                                                const RoIMap & inputRois,
                                                                const boost::shared_ptr<InputMatrixMap> & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
+                                                               StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
                                                                unsigned int originalMipMapLevel,         // roi functor specific
                                                                double time,
                                                                ViewIdx view,
@@ -741,6 +792,8 @@ private:
 
 public:
 
+
+
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
      **/
@@ -789,7 +842,7 @@ public:
     virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void abortAnyEvaluation() OVERRIDE FINAL;
+    virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const
@@ -810,6 +863,7 @@ public:
 
     bool getThreadLocalRegionsOfInterests(RoIMap & roiMap) const;
 
+    OSGLContextPtr getThreadLocalOpenGLContext() const;
 
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
@@ -852,6 +906,36 @@ public:
         return eViewInvarianceAllViewsVariant;
     }
 
+    class OpenGLContextEffectData
+    {
+        // True if we did not unlock the context mutex in attachOpenGLContext()
+        bool hasTakenLock;
+
+public:
+
+        OpenGLContextEffectData()
+            : hasTakenLock(false)
+        {
+        }
+
+        void setHasTakenLock(bool b)
+        {
+            hasTakenLock = b;
+        }
+
+        bool getHasTakenLock() const
+        {
+            return hasTakenLock;
+        }
+
+        virtual ~OpenGLContextEffectData()
+        {
+        }
+    };
+
+    typedef boost::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+
+
     struct RenderActionArgs
     {
         double time;
@@ -865,6 +949,8 @@ public:
         bool isRenderResponseToUserInteraction;
         bool byPassCache;
         bool draftMode;
+        bool useOpenGL;
+        EffectInstance::OpenGLContextEffectDataPtr glContextData;
         std::bitset<4> processChannels;
     };
 
@@ -926,6 +1012,7 @@ protected:
 
 public:
 
+
     bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                            U64 hash,
                            double time,
@@ -966,10 +1053,12 @@ public:
                                       const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
                                       const bool mapToClipPrefs,
                                       const bool dontUpscale,
+                                      const StorageModeEnum returnStorage,
+                                      const ImageBitDepthEnum* textureDepth,
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
@@ -1220,6 +1309,11 @@ public:
         return ePluginOpenGLRenderSupportNone;
     }
 
+    virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
+    {
+
+    }
+
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
      * with the content of pattern.
@@ -1319,6 +1413,8 @@ public:
         std::map<int, ImagePremultiplicationEnum> inputPremult;
         ImagePremultiplicationEnum outputPremult;
         bool isBeingRenderedElsewhere;
+        bool useOpenGL;
+        EffectInstance::OpenGLContextEffectDataPtr glContextData;
 
         ImagePlanesToRender()
             : rectsToRender()
@@ -1326,6 +1422,8 @@ public:
             , inputPremult()
             , outputPremult(eImagePremultiplicationPremultiplied)
             , isBeingRenderedElsewhere(false)
+            , useOpenGL(false)
+            , glContextData()
         {
         }
     };
@@ -1438,7 +1536,9 @@ public:
                                            bool /*isSequentialRender*/,
                                            bool /*isRenderResponseToUserInteraction*/,
                                            bool /*draftMode*/,
-                                           ViewIdx /*view*/)
+                                           ViewIdx /*view*/,
+                                           bool /*isOpenGLRender*/,
+                                           const EffectInstance::OpenGLContextEffectDataPtr& /*glContextData*/)
     {
         return eStatusOK;
     }
@@ -1451,7 +1551,9 @@ public:
                                          bool /*isSequentialRender*/,
                                          bool /*isRenderResponseToUserInteraction*/,
                                          bool /*draftMode*/,
-                                         ViewIdx /*view*/)
+                                         ViewIdx /*view*/,
+                                         bool /*isOpenGLRender*/,
+                                         const EffectInstance::OpenGLContextEffectDataPtr& /*glContextData*/)
     {
         return eStatusOK;
     }
@@ -1487,12 +1589,16 @@ public:
                                           double step, bool interactive, const RenderScale & scale,
                                           bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                           bool draftMode,
-                                          ViewIdx view);
+                                          ViewIdx view,
+                                          bool isOpenGLRender,
+                                          const EffectInstance::OpenGLContextEffectDataPtr& glContextData);
     StatusEnum endSequenceRender_public(double first, double last,
                                         double step, bool interactive, const RenderScale & scale,
                                         bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                         bool draftMode,
-                                        ViewIdx view);
+                                        ViewIdx view,
+                                        bool isOpenGLRender,
+                                        const EffectInstance::OpenGLContextEffectDataPtr& glContextData);
 
     virtual bool canHandleRenderScaleForOverlays() const { return true; }
 
@@ -1516,6 +1622,8 @@ public:
     bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
+
+    void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInteractViewportSelectionCleared() {}
@@ -1598,21 +1706,88 @@ public:
      * @brief Called after all knobs have been loaded and the nod ehas been created
      **/
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
-                                 const std::list<boost::shared_ptr<KnobSerialization> >& /*defaultParamValues*/) {}
+                                 const CreateNodeArgs& /*args*/) {}
 
     virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
-private:
+    /**
+     * @brief This function calls the impementation specific attachOpenGLContext()
+     **/
+    StatusEnum attachOpenGLContext_public(const OSGLContextPtr& glContext, EffectInstance::OpenGLContextEffectDataPtr* data);
+
+    /**
+     * @brief This function calls the impementation specific dettachOpenGLContext()
+     **/
+    StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectInstance::OpenGLContextEffectDataPtr& data);
+
+    /**
+     * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
+     **/
+    void dettachAllOpenGLContexts();
+
+    /**
+     * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
+     * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by natron allows to do so.
+     **/
+    virtual bool supportsConcurrentOpenGLRenders() const { return true; }
+
+
+    void clearRenderInstances();
+
+protected:
 
 
     /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
+     * @brief Plug-ins that are flagged eRenderSafetyInstanceSafe or lower can implement this function to make a copy
+     * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
+     * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
      **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
+    virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
+
+
+    /**
+    * @brief Must be implemented to evaluate a value change
+    * made to a knob(e.g: force a new render).
+    * @param knob[in] The knob whose value changed.
+    **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+private:
+
+    EffectInstPtr getOrCreateRenderInstance();
+
+
+    void releaseRenderInstance(const EffectInstPtr& instance);
+
+    /**
+     * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
+     * This function will be called once per context. The function dettachOpenGLContext() will be called
+     * on the value returned by this function to deinitialize all context related data.
+     *
+     * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
+     * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
+     *
+     * Possible return status code:
+     * eStatusOK , the action was trapped and all was well
+     * eStatusReplyDefault , the action was ignored, but all was well anyway
+     * eStatusOutOfMemory , in which case this may be called again after a memory purge
+     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
+     **/
+    virtual StatusEnum attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* /*data*/) { return eStatusReplyDefault; }
+
+    /**
+     * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
+     * Possible return status code:
+     * eStatusOK , the action was trapped and all was well
+     * eStatusReplyDefault , the action was ignored, but all was well anyway
+     * eStatusOutOfMemory , in which case this may be called again after a memory purge
+     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
+     **/
+    virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) { return eStatusReplyDefault; }
+
+
 
     void getComponentsAvailableRecursive(bool useLayerChoice,
                                          bool useThisNodeComponentsNeeded,
@@ -1670,6 +1845,7 @@ public:
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
         double firstFrame, lastFrame;
         boost::shared_ptr<InputMatrixMap> transformRedirections;
+        bool isDoingOpenGLRender;
 
         RenderArgs();
 
@@ -1793,12 +1969,19 @@ protected:
                                                 NodePtr* passThroughInput);
 
 
-    /**
-     * @brief This function is provided for means to copy more data than just the knobs from the live instance
-     * to the render clones.
-     **/
-    virtual void cloneExtras()
+    virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
     {
+
+    }
+
+    virtual bool shouldPreferPluginOverlayOverHostOverlay() const
+    {
+        return true;
+    }
+
+    virtual bool shouldDrawHostOverlay() const
+    {
+        return true;
     }
 
     virtual void drawOverlay(double /*time*/,
@@ -1905,7 +2088,8 @@ private:
     {
         eRenderRoIStatusImageAlreadyRendered = 0, // there was nothing left to render
         eRenderRoIStatusImageRendered, // we rendered what was missing
-        eRenderRoIStatusRenderFailed // render failed
+        eRenderRoIStatusRenderFailed, // render failed
+        eRenderRoIStatusRenderOutOfGPUMemory, // The render failed because the GPU did not have enough memory
     };
 
 
@@ -1934,28 +2118,30 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    RenderRoIStatusEnum renderRoIInternal(double time,
-                                          const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
-                                          RenderSafetyEnum safety,
-                                          unsigned int mipMapLevel,
-                                          ViewIdx view,
-                                          const RectD & rod, //!< rod in canonical coordinates
-                                          const double par,
-                                          const boost::shared_ptr<ImagePlanesToRender> & planes,
-                                          bool isSequentialRender,
-                                          bool isRenderMadeInResponseToUserInteraction,
-                                          U64 nodeHash,
-                                          bool renderFullScaleThenDownscale,
-                                          bool byPassCache,
-                                          ImageBitDepthEnum outputClipPrefDepth,
-                                          const ImageComponents& outputClipPrefsComps,
-                                          const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                          std::bitset<4> processChannels);
+    static RenderRoIStatusEnum renderRoIInternal(EffectInstance* self,
+                                                 double time,
+                                                 const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                                 RenderSafetyEnum safety,
+                                                 unsigned int mipMapLevel,
+                                                 ViewIdx view,
+                                                 const RectD & rod, //!< rod in canonical coordinates
+                                                 const double par,
+                                                 const boost::shared_ptr<ImagePlanesToRender> & planes,
+                                                 bool isSequentialRender,
+                                                 bool isRenderMadeInResponseToUserInteraction,
+                                                 U64 nodeHash,
+                                                 bool renderFullScaleThenDownscale,
+                                                 bool byPassCache,
+                                                 ImageBitDepthEnum outputClipPrefDepth,
+                                                 const ImageComponents& outputClipPrefsComps,
+                                                 const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                 std::bitset<4> processChannels);
 
 
     /// \returns false if rendering was aborted
     RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
                                              bool useTransforms,
+                                             StorageModeEnum renderStorageMode,
                                              double time,
                                              ViewIdx view,
                                              const RectD & rod,
@@ -2012,7 +2198,7 @@ private:
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
-                            bool useDiskCache,
+                            StorageModeEnum storage,
                             bool createInCache,
                             boost::shared_ptr<Image>* fullScaleImage,
                             boost::shared_ptr<Image>* downscaleImage);
@@ -2025,7 +2211,8 @@ private:
         eRenderingFunctorRetFailed, //< must stop rendering
         eRenderingFunctorRetOK, //< ok, move on
         eRenderingFunctorRetTakeImageLock, //< take the image lock because another thread is rendering part of something we need
-        eRenderingFunctorRetAborted // we were aborted
+        eRenderingFunctorRetAborted, // we were aborted
+        eRenderingFunctorRetOutOfGPUMemory
     };
 
 

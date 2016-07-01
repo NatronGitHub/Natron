@@ -30,8 +30,6 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QApplication>
 #include <QVBoxLayout>
 #include <QScrollBar>
@@ -371,9 +369,11 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
     if (found) {
         putSettingsPanelFirst(panel);
     } else {
-        panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
-        _imp->_layoutPropertiesBin->insertWidget(0, panel);
-        _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+        if (!panel->isFloating()) {
+            panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
+            _imp->_layoutPropertiesBin->insertWidget(0, panel);
+            _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+        }
         if ( !panel->isVisible() ) {
             panel->setVisible(true);
         }

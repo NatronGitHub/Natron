@@ -211,7 +211,7 @@ void
 AnimatingTextEdit::dragEnterEvent(QDragEnterEvent* e)
 {
     if ( !_dnd->dragEnter(e) ) {
-        AnimatingTextEdit::dragEnterEvent(e);
+        QTextEdit::dragEnterEvent(e);
     }
 }
 
@@ -219,7 +219,7 @@ void
 AnimatingTextEdit::dragMoveEvent(QDragMoveEvent* e)
 {
     if ( !_dnd->dragMove(e) ) {
-        AnimatingTextEdit::dragMoveEvent(e);
+        QTextEdit::dragMoveEvent(e);
     }
 }
 
@@ -227,7 +227,7 @@ void
 AnimatingTextEdit::dropEvent(QDropEvent* e)
 {
     if ( !_dnd->drop(e) ) {
-        AnimatingTextEdit::dropEvent(e);
+        QTextEdit::dropEvent(e);
     }
 }
 

@@ -248,7 +248,7 @@ public Q_SLOTS:
      * This function is not blocking and once returned you may NOT assume that the thread is completly aborted.
      * @returns true if the thread was running and actively working and we did not post any abort request before, false otherwise
      **/
-    bool abortThreadedTask();
+    bool abortThreadedTask(bool keepOldestRender = true);
 
     void onWatcherTaskAbortedEmitted();
 
@@ -268,7 +268,7 @@ protected:
     /**
      * @brief Called whenever abort is requested
      **/
-    virtual void onAbortRequested() {}
+    virtual void onAbortRequested(bool keepOldestRender) { Q_UNUSED(keepOldestRender); }
 
     /**
      * @brief Called when quitThread has been requested

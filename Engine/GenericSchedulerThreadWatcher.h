@@ -25,7 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include <QThread>
 
 #include "Engine/EngineFwd.h"
@@ -185,11 +192,9 @@ public:
 
     NodeRenderWatcher(const NodesList& nodes)
         : GenericWatcher()
-        , _nodes()
+        , _nodes(nodes)
     {
-        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            _nodes.push_back(*it);
-        }
+
     }
 
     virtual ~NodeRenderWatcher()
@@ -199,7 +204,7 @@ public:
 private:
 
     virtual void handleBlockingTask(int taskID) OVERRIDE FINAL;
-    NodesWList _nodes;
+    NodesList _nodes;
 };
 
 

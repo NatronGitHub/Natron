@@ -109,7 +109,8 @@ public:
         esTransformingKeyframesMiddleLeft
     };
 
-    explicit DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
+    explicit DopeSheetView(DopeSheet *model,
+                           HierarchyView *hierarchyView,
                            Gui *gui,
                            const boost::shared_ptr<TimeLine> &timeline,
                            QWidget *parent = 0);
@@ -325,7 +326,17 @@ public Q_SLOTS:
      * This slot is automatically called when the user triggers the menu action
      * or presses Ctrl + V.
      */
-    void pasteKeyframes();
+    void pasteKeyframes(bool relative);
+
+    void pasteKeyframesAbsolute()
+    {
+        pasteKeyframes(false);
+    }
+
+    void pasteKeyframesRelative()
+    {
+        pasteKeyframes(true);
+    }
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;

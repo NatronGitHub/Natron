@@ -74,6 +74,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraphUndoRedo.h" // RenameNodeUndoRedoCommand
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/RightClickableWidget.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/RotoPanel.h"
 #include "Gui/TabGroup.h"
@@ -98,15 +99,12 @@ DockablePanel::DockablePanel(Gui* gui,
                              const boost::shared_ptr<QUndoStack>& stack,
                              const QString & initialName,
                              const QString & helpToolTip,
-                             bool createDefaultPage,
-                             const QString & defaultPageName,
                              QWidget *parent)
     : QFrame(parent)
-    , DockablePanelI()
-    , KnobGuiContainerI(this)
-    , _imp( new DockablePanelPrivate(this, gui, holder, container, headerMode, useScrollAreasForTabs, defaultPageName, helpToolTip, stack) )
+    , KnobGuiContainerHelper(holder, stack)
+    , _imp( new DockablePanelPrivate(this, gui, holder, container, headerMode, useScrollAreasForTabs, helpToolTip) )
 {
-    QObject::connect(this, SIGNAL(deleteCurCmdLater()), this, SLOT(onDeleteCurCmdLater()), Qt::QueuedConnection);
+    setContainerWidget(this);
 
     assert(holder);
     holder->setPanelPointer(this);
@@ -127,9 +125,7 @@ DockablePanel::DockablePanel(Gui* gui,
         }
 
         const Plugin* plugin = isEffect->getNode()->getPlugin();
-        pluginLabelVersioned = plugin->getPluginLabel();
-        QString toAppend = QString::fromUtf8(" version %1.%2").arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
-        pluginLabelVersioned.append(toAppend);
+        pluginLabelVersioned = tr("%1 version %2.%3").arg( plugin->getPluginLabel() ).arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
     }
     MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
     if (isMultiInstance) {
@@ -418,80 +414,173 @@ DockablePanel::DockablePanel(Gui* gui,
     QObject::connect( _imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)) );
     _imp->_horizLayout->addWidget(_imp->_rightContainer);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
-
-    if (createDefaultPage) {
-        _imp->getOrCreatePage( boost::shared_ptr<KnobPage>() );
-    }
 }
 
 DockablePanel::~DockablePanel()
 {
-//    if (_imp->_holder) {
-//        _imp->_holder->discardPanelPointer();
-//    }
     if ( getGui() ) {
         getGui()->removeVisibleDockablePanel(this);
     }
-
-    ///Delete the knob gui if they weren't before
-    ///normally the onKnobDeletion() function should have cleared them
-    for (KnobsGuiMapping::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->second) {
-            KnobPtr knob = it->first.lock();
-            it->second->setGuiRemoved();
-        }
-    }
 }
 
-int
-DockablePanel::getItemsSpacingOnSameLine() const
+bool
+DockablePanel::isPagingEnabled() const
 {
-    return 15;
+    return _imp->_pagesEnabled;
+}
+
+bool
+DockablePanel::useScrollAreaForTabs() const
+{
+    return _imp->_useScrollAreasForTabs;
+}
+
+QWidget*
+DockablePanel::createKnobHorizontalFieldContainer(QWidget* parent) const
+{
+    RightClickableWidget* clickableWidget = new RightClickableWidget(this, parent);
+    QObject::connect( clickableWidget, SIGNAL(rightClicked(QPoint)), this, SLOT(onRightClickMenuRequested(QPoint)) );
+    QObject::connect( clickableWidget, SIGNAL(escapePressed()), this, SLOT(closePanel()) );
+    clickableWidget->setFocusPolicy(Qt::NoFocus);
+    return clickableWidget;
+}
+
+QWidget*
+DockablePanel::getPagesContainer() const
+{
+    if (_imp->_tabWidget) {
+        return _imp->_tabWidget;
+    }
+
+    return (QWidget*)_imp->_publicInterface;
+}
+
+QWidget*
+DockablePanel::createPageMainWidget(QWidget* parent) const
+{
+    RightClickableWidget* clickableWidget = new RightClickableWidget(this, parent);
+    QObject::connect( clickableWidget, SIGNAL(rightClicked(QPoint)), this, SLOT(onRightClickMenuRequested(QPoint)) );
+    QObject::connect( clickableWidget, SIGNAL(escapePressed()), this, SLOT(closePanel()) );
+
+    clickableWidget->setFocusPolicy(Qt::NoFocus);
+
+    return clickableWidget;
 }
 
 void
-DockablePanel::onPageLabelChangedInternally()
+DockablePanel::onPageLabelChanged(const KnobPageGuiPtr& page)
 {
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    if (!handler) {
-        return;
-    }
-    KnobPtr knob = handler->getKnob();
-    QString newLabel = QString::fromUtf8( knob->getLabel().c_str() );
-    for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
-        if (it->second.pageKnob.lock() == knob) {
-            if (_imp->_tabWidget) {
-                int nTabs = _imp->_tabWidget->count();
-                for (int i = 0; i < nTabs; ++i) {
-                    if (_imp->_tabWidget->widget(i) == it->second.tab) {
-                        _imp->_tabWidget->setTabText(i, newLabel);
-                        break;
-                    }
-                }
+    if (_imp->_tabWidget) {
+        int nTabs = _imp->_tabWidget->count();
+        for (int i = 0; i < nTabs; ++i) {
+            if (_imp->_tabWidget->widget(i) == page->tab) {
+                QString newLabel = QString::fromUtf8( page->pageKnob.lock()->getLabel().c_str() );
+                _imp->_tabWidget->setTabText(i, newLabel);
+                break;
             }
-            _imp->_pages.insert( std::make_pair(newLabel, it->second) );
-            _imp->_pages.erase(it);
-            break;
         }
+    }
+}
+
+void
+DockablePanel::addPageToPagesContainer(const KnobPageGuiPtr& page)
+{
+    if (_imp->_tabWidget) {
+        QString name = QString::fromUtf8( page->pageKnob.lock()->getLabel().c_str() );
+        _imp->_tabWidget->addTab(page->tab, name);
+    } else {
+        _imp->_horizLayout->addWidget(page->tab);
+    }
+}
+
+void
+DockablePanel::removePageFromContainer(const KnobPageGuiPtr& page)
+{
+    if (_imp->_tabWidget) {
+        int index = _imp->_tabWidget->indexOf(page->tab);
+        if (index != -1) {
+            _imp->_tabWidget->removeTab(index);
+        }
+    }
+}
+
+void
+DockablePanel::setPagesOrder(const std::list<KnobPageGuiPtr>& orderedPages,
+                             const KnobPageGuiPtr& curPage,
+                             bool restorePageIndex)
+{
+    _imp->_tabWidget->clear();
+
+
+    int index = 0;
+    int i = 0;
+    for (std::list<KnobPageGuiPtr>::const_iterator it = orderedPages.begin(); it != orderedPages.end(); ++it, ++i) {
+        QString tabName = QString::fromUtf8( (*it)->pageKnob.lock()->getLabel().c_str() );
+        _imp->_tabWidget->addTab( (*it)->tab, tabName );
+        if ( restorePageIndex && (*it == curPage) ) {
+            index = i;
+        }
+    }
+
+    if ( (index >= 0) && ( index < int( orderedPages.size() ) ) ) {
+        _imp->_tabWidget->setCurrentIndex(index);
+    }
+}
+
+void
+DockablePanel::onKnobsRecreated()
+{
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+
+    // Refresh the curve editor with potential new animated knobs
+    if (isNodePanel) {
+        NodeGuiPtr node = isNodePanel->getNode();
+
+        getGui()->getCurveEditor()->removeNode( node.get() );
+        getGui()->getCurveEditor()->addNode(node);
+
+        getGui()->removeNodeGuiFromDopeSheetEditor(node);
+        getGui()->addNodeGuiToDopeSheetEditor(node);
     }
 }
 
 void
 DockablePanel::onPageIndexChanged(int index)
 {
-    assert(_imp->_tabWidget);
-    QString name = _imp->_tabWidget->tabText(index);
-    PageMap::iterator found = _imp->_pages.find(name);
-    if ( found == _imp->_pages.end() ) {
+    if (!_imp->_tabWidget) {
         return;
     }
+    QWidget* curTab = _imp->_tabWidget->widget(index);
+    const PagesMap& pages = getPages();
 
-    _imp->refreshPagesSecretness();
+    for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
+        if (it->second->tab == curTab) {
+            setCurrentPage(it->second);
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
+            if ( isEffect && isEffect->getNode()->hasOverlay() ) {
+                isEffect->getApp()->redrawAllViewers();
+            }
+        }
+    }
+}
 
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
-    if ( isEffect && isEffect->getNode()->hasOverlay() ) {
-        isEffect->getApp()->redrawAllViewers();
+void
+DockablePanel::refreshCurrentPage()
+{
+    onPageIndexChanged( _imp->_tabWidget ? _imp->_tabWidget->currentIndex() : 0);
+}
+
+void
+DockablePanel::onPageActivated(const KnobPageGuiPtr& page)
+{
+    if (!page) {
+        return;
+    }
+    for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
+        if (_imp->_tabWidget->widget(i) == page->tab) {
+            _imp->_tabWidget->setCurrentIndex(i);
+            break;
+        }
     }
 }
 
@@ -504,21 +593,22 @@ DockablePanel::turnOffPages()
     setFrameShape(QFrame::NoFrame);
 
     boost::shared_ptr<KnobPage> userPage = _imp->_holder->getOrCreateUserPageKnob();
-    _imp->getOrCreatePage(userPage);
+    getOrCreatePage(userPage);
 }
 
 void
 DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
                                      const std::string& pluginID,
+                                     const std::string& pluginDesc,
                                      unsigned int version)
 {
     if (_imp->_iconLabel) {
-        QString pluginLabelVersioned = QString::fromUtf8( pluginLabel.c_str() );
-        QString toAppend = QString::fromUtf8(" version %1").arg(version);
-        pluginLabelVersioned.append(toAppend);
+        QString pluginLabelVersioned = tr("%1 version %2").arg( QString::fromUtf8( pluginLabel.c_str() ) ).arg(version);
         _imp->_iconLabel->setToolTip(pluginLabelVersioned);
     }
     if (_imp->_helpButton) {
+        _imp->_helpToolTip = QString::fromUtf8( pluginDesc.c_str() );
+        _imp->_helpButton->setToolTip( helpString() );
         EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
         if (iseffect) {
             _imp->_pluginID = QString::fromUtf8( pluginID.c_str() );
@@ -541,13 +631,6 @@ DockablePanel::setPluginIcon(const QPixmap& pix)
 }
 
 void
-DockablePanel::setPluginDescription(const std::string& description)
-{
-    _imp->_helpToolTip = QString::fromUtf8( description.c_str() );
-    _imp->_helpButton->setToolTip( helpString() );
-}
-
-void
 DockablePanel::onNodeScriptChanged(const QString& label)
 {
     if (_imp->_nameLineEdit) {
@@ -555,36 +638,6 @@ DockablePanel::onNodeScriptChanged(const QString& label)
     } else if (_imp->_nameLabel) {
         _imp->_nameLabel->setToolTip( QString::fromUtf8("<p>Script name: <br/><b><font size=4>") + label + QString::fromUtf8("</b></font></p>") );
     }
-}
-
-void
-DockablePanel::setUserPageActiveIndex()
-{
-    for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
-        if ( _imp->_tabWidget->tabText(i) == QString::fromUtf8(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) ) {
-            _imp->_tabWidget->setCurrentIndex(i);
-            _imp->refreshPagesSecretness();
-            break;
-        }
-    }
-}
-
-void
-DockablePanel::setPageActiveIndex(const boost::shared_ptr<KnobPage>& page)
-{
-    for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
-        if ( _imp->_tabWidget->tabText(i) == QString::fromUtf8( page->getLabel().c_str() ) ) {
-            _imp->_tabWidget->setCurrentIndex(i);
-            _imp->refreshPagesSecretness();
-            break;
-        }
-    }
-}
-
-int
-DockablePanel::getPagesCount() const
-{
-    return _imp->_pages.size();
 }
 
 void
@@ -677,7 +730,7 @@ DockablePanel::onLineEditNameEditingFinished()
 }
 
 void
-DockablePanel::initializeKnobsInternal()
+DockablePanel::onKnobsInitialized()
 {
     assert(_imp->_tabWidget);
     _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
@@ -691,10 +744,6 @@ DockablePanel::initializeKnobsInternal()
 
     assert(!_imp->_trackerPanel);
     _imp->_trackerPanel = initializeTrackerPanel();
-
-
-    std::vector< KnobPtr > knobs = _imp->_holder->getKnobs();
-    _imp->initializeKnobVector(knobs, NULL);
 
     if (_imp->_trackerPanel) {
         if ( !_imp->_tabWidget->count() ) {
@@ -711,9 +760,6 @@ DockablePanel::initializeKnobsInternal()
         }
     }
 
-    ///add all knobs left  to the default page
-
-
     initializeExtraGui(_imp->_rightContainerLayout);
 
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
@@ -726,7 +772,6 @@ DockablePanel::initializeKnobsInternal()
             }
         }
     }
-    _imp->refreshPagesSecretness();
 } // DockablePanel::initializeKnobsInternal
 
 TrackerPanel*
@@ -762,65 +807,24 @@ DockablePanel::refreshTabWidgetMaxHeight()
 }
 
 void
-DockablePanel::initializeKnobs()
-{
-    initializeKnobsInternal();
-}
-
-KnobGuiPtr
-DockablePanel::getKnobGui(const KnobPtr & knob) const
-{
-    for (KnobsGuiMapping::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first.lock() == knob) {
-            return it->second;
-        }
-    }
-
-    return KnobGuiPtr();
-}
-
-const QUndoCommand*
-DockablePanel::getLastUndoCommand() const
-{
-    return _imp->_undoStack->command(_imp->_undoStack->index() - 1);
-}
-
-void
-DockablePanel::refreshUndoRedoButtonsEnabledNess()
+DockablePanel::refreshUndoRedoButtonsEnabledNess(bool canUndo,
+                                                 bool canRedo)
 {
     if (_imp->_undoButton && _imp->_redoButton) {
-        _imp->_undoButton->setEnabled( _imp->_undoStack->canUndo() );
-        _imp->_redoButton->setEnabled( _imp->_undoStack->canRedo() );
+        _imp->_undoButton->setEnabled(canUndo);
+        _imp->_redoButton->setEnabled(canRedo);
     }
-}
-
-void
-DockablePanel::pushUndoCommand(QUndoCommand* cmd)
-{
-    if (!_imp->_gui) {
-        delete cmd;
-
-        return;
-    }
-    _imp->_undoStack->setActive();
-    _imp->_cmdBeingPushed = cmd;
-    _imp->_clearedStackDuringPush = false;
-    _imp->_undoStack->push(cmd);
-
-    //We may be in a situation where the command was not pushed because the stack was cleared
-    if (!_imp->_clearedStackDuringPush) {
-        _imp->_cmdBeingPushed = 0;
-    }
-    refreshUndoRedoButtonsEnabledNess();
 }
 
 void
 DockablePanel::onUndoClicked()
 {
-    _imp->_undoStack->undo();
+    boost::shared_ptr<QUndoStack> stack = getUndoStack();
+
+    stack->undo();
     if (_imp->_undoButton && _imp->_redoButton) {
-        _imp->_undoButton->setEnabled( _imp->_undoStack->canUndo() );
-        _imp->_redoButton->setEnabled( _imp->_undoStack->canRedo() );
+        _imp->_undoButton->setEnabled( stack->canUndo() );
+        _imp->_redoButton->setEnabled( stack->canRedo() );
     }
     Q_EMIT undoneChange();
 }
@@ -828,10 +832,12 @@ DockablePanel::onUndoClicked()
 void
 DockablePanel::onRedoPressed()
 {
-    _imp->_undoStack->redo();
+    boost::shared_ptr<QUndoStack> stack = getUndoStack();
+
+    stack->redo();
     if (_imp->_undoButton && _imp->_redoButton) {
-        _imp->_undoButton->setEnabled( _imp->_undoStack->canUndo() );
-        _imp->_redoButton->setEnabled( _imp->_undoStack->canRedo() );
+        _imp->_undoButton->setEnabled( stack->canUndo() );
+        _imp->_redoButton->setEnabled( stack->canRedo() );
     }
     Q_EMIT redoneChange();
 }
@@ -857,16 +863,13 @@ DockablePanel::helpString() const
     if (iseffect) {
         //Prepend the plugin ID
         if ( !_imp->_pluginID.isEmpty() ) {
-            QString pluginLabelVersioned(_imp->_pluginID);
-            QString toAppend = QString::fromUtf8(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
-            if (isMarkdown) {
-                toAppend.append( QString::fromUtf8("\n=========\n\n") );
-            }
-            pluginLabelVersioned.append(toAppend);
-
+            QString pluginLabelVersioned = tr("%1 version %2.%3")
+                                            .arg(_imp->_pluginID)
+                                            .arg(_imp->_pluginVersionMajor)
+                                            .arg(_imp->_pluginVersionMinor);
             if ( !pluginLabelVersioned.isEmpty() ) {
                 if (isMarkdown) {
-                    tt.prepend(pluginLabelVersioned);
+                    tt.prepend(pluginLabelVersioned + QString::fromUtf8("\n=========\n\n"));
                 } else {
                     QString toPrepend = QString::fromUtf8("<p><b>");
                     toPrepend.append(pluginLabelVersioned);
@@ -893,14 +896,17 @@ DockablePanel::showHelp()
     EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
 
     if (iseffect) {
-        const Plugin* plugin = iseffect->getNode()->getPlugin();
-        assert(plugin);
-        if (plugin) {
-            int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
-            int serverPort = appPTR->getCurrentSettings()->getServerPort();
-            QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + plugin->getPluginID();
-            QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + plugin->getPluginID() + QString::fromUtf8(".html");
-            switch (docSource) {
+        NodePtr node = iseffect->getNode();
+        std::string pluginLabel = node->getPluginLabel();
+        std::string pluginID = node->getPluginID();
+        int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+        int serverPort = appPTR->getDocumentationServerPort();
+        if ( (serverPort == 0) && (docSource == 0) ) {
+            docSource = 1;
+        }
+        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + QString::fromUtf8(pluginID.c_str());
+        QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + QString::fromUtf8(pluginID.c_str()) + QString::fromUtf8(".html");
+        switch (docSource) {
             case 0:
                 QDesktopServices::openUrl( QUrl(localUrl) );
                 break;
@@ -908,10 +914,10 @@ DockablePanel::showHelp()
                 QDesktopServices::openUrl( QUrl(remoteUrl) );
                 break;
             case 2:
-                Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+                Dialogs::informationDialog(pluginLabel, helpString().toStdString(), true);
                 break;
-            }
         }
+
     }
 }
 
@@ -953,7 +959,7 @@ DockablePanel::setClosedInternal(bool c)
     }
 
     ///Remove any color picker active
-    const KnobsGuiMapping& knobs = getKnobs();
+    const KnobsGuiMapping& knobs = getKnobsMapping();
     for (KnobsGuiMapping::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobGuiColor* ck = dynamic_cast<KnobGuiColor*>( it->second.get() );
         if (ck) {
@@ -1062,10 +1068,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     } else {
         Q_EMIT maximized();
     }
-    _imp->_tabWidget->setVisible(!_imp->_minimized);
-    if (_imp->_verticalColorBar) {
-        _imp->_verticalColorBar->setVisible(!_imp->_minimized);
-    }
+    _imp->_rightContainer->setVisible(!_imp->_minimized);
     std::vector<QWidget*> _panels;
     for (int i = 0; i < _imp->_container->count(); ++i) {
         if ( QWidget * myItem = dynamic_cast <QWidget*>( _imp->_container->itemAt(i) ) ) {
@@ -1080,7 +1083,13 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     update();
 }
 
-void
+FloatingWidget*
+DockablePanel::getFloatingWindow() const
+{
+    return _imp->_floatingWidget;
+}
+
+FloatingWidget*
 DockablePanel::floatPanel()
 {
     _imp->_floating = !_imp->_floating;
@@ -1111,6 +1120,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget = 0;
     }
     getGui()->buildTabFocusOrderPropertiesBin();
+    return _imp->_floatingWidget;
 }
 
 void
@@ -1132,85 +1142,6 @@ DockablePanel::insertHeaderButton(int headerPosition)
 
     return ret;
 }
-
-void
-DockablePanel::deleteKnobGui(const KnobPtr& knob)
-{
-    KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
-
-    if (isPage && _imp->_pagesEnabled) {
-        PageMap::iterator found = _imp->_pages.find( QString::fromUtf8( isPage->getLabel().c_str() ) );
-        if ( found != _imp->_pages.end() ) {
-            if (_imp->_tabWidget) {
-                int index = _imp->_tabWidget->indexOf(found->second.tab);
-                if (index != -1) {
-                    _imp->_tabWidget->removeTab(index);
-                    _imp->refreshPagesSecretness();
-                }
-            }
-
-            KnobsVec children = isPage->getChildren();
-            for (U32 i = 0; i < children.size(); ++i) {
-                deleteKnobGui(children[i]);
-            }
-
-            found->second.tab->deleteLater();
-            found->second.currentRow = 0;
-            _imp->_pages.erase(found);
-        }
-    } else {
-        KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
-        if (isGrp) {
-            KnobsVec children = isGrp->getChildren();
-            for (U32 i = 0; i < children.size(); ++i) {
-                deleteKnobGui(children[i]);
-            }
-        }
-        if ( isGrp && isGrp->isTab() ) {
-            //find parent page
-            KnobPtr parent = knob->getParentKnob();
-            KnobPage* isParentPage = dynamic_cast<KnobPage*>( parent.get() );
-            KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>( parent.get() );
-
-            assert(isParentPage || isParentGroup);
-            if (isParentPage) {
-                PageMap::iterator page = _imp->_pages.find( QString::fromUtf8( isParentPage->getLabel().c_str() ) );
-                assert( page != _imp->_pages.end() );
-                TabGroup* groupAsTab = page->second.groupAsTab;
-                if (groupAsTab) {
-                    groupAsTab->removeTab(isGrp);
-                    if ( groupAsTab->isEmpty() ) {
-                        delete page->second.groupAsTab;
-                        page->second.groupAsTab = 0;
-                    }
-                }
-            } else if (isParentGroup) {
-                KnobsGuiMapping::iterator found  = _imp->findKnobGui(knob);
-                assert( found != _imp->_knobs.end() );
-                KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>( found->second.get() );
-                assert(parentGroupGui);
-                TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
-                if (groupAsTab) {
-                    groupAsTab->removeTab(isGrp);
-                    if ( groupAsTab->isEmpty() ) {
-                        parentGroupGui->removeTabWidget();
-                    }
-                }
-            }
-
-            KnobsGuiMapping::iterator it  = _imp->findKnobGui(knob);
-            if ( it != _imp->_knobs.end() ) {
-                _imp->_knobs.erase(it);
-            }
-        } else {
-            KnobsGuiMapping::iterator it  = _imp->findKnobGui(knob);
-            if ( it != _imp->_knobs.end() ) {
-                it->second->removeGui();
-                _imp->_knobs.erase(it);
-            }
-        }
-    }
-} // DockablePanel::deleteKnobGui
 
 Gui*
 DockablePanel::getGui() const
@@ -1247,22 +1178,10 @@ DockablePanel::isMinimized() const
     return _imp->_minimized;
 }
 
-const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &
-DockablePanel::getKnobs() const
-{
-    return _imp->_knobs;
-}
-
 QVBoxLayout*
 DockablePanel::getContainer() const
 {
     return _imp->_container;
-}
-
-boost::shared_ptr<QUndoStack>
-DockablePanel::getUndoStack() const
-{
-    return _imp->_undoStack;
 }
 
 bool
@@ -1307,8 +1226,33 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
 
 
     if ( (_imp->_mode  != eHeaderModeReadOnlyName) && _imp->_overlayButton ) {
-        QPixmap p(15, 15);
-        p.fill(color);
+
+        // Replace the circle portion from the icon with the color picked by the user
+        int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+        QPixmap pixOverlay;
+        appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
+
+        QImage img = pixOverlay.toImage();
+        if (!img.isNull()) {
+            int width = img.width();
+            int height = img.height();
+
+            for (int y = 0; y < height; ++y) {
+                QRgb* pix = reinterpret_cast<QRgb*>(img.scanLine(y));
+                for (int x = 0; x < width; ++x) {
+                    int alpha = qAlpha(*pix);
+                    int r = int((float)color.red() * alpha / 255.f);
+                    int g = int((float)color.green() * alpha / 255.f);
+                    int b = int((float)color.blue() * alpha / 255.f);
+
+                    *pix = qRgba(r,g,b, alpha);
+                    ++pix;
+                }
+            }
+        }
+        //QPixmap p(15, 15);
+        //p.fill(color);
+        QPixmap p = QPixmap::fromImage(img);
         _imp->_overlayButton->setIcon( QIcon(p) );
         {
             QMutexLocker k(&_imp->_currentColorMutex);
@@ -1463,7 +1407,7 @@ DockablePanel::focusInEvent(QFocusEvent* e)
 {
     QFrame::focusInEvent(e);
 
-    _imp->_undoStack->setActive();
+    getUndoStack()->setActive();
 }
 
 void
@@ -1517,8 +1461,9 @@ DockablePanel::setKeyOnAllParameters()
 {
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     AddKeysCommand::KeysToAddList keys;
+    const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
-    for (KnobsGuiMapping::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1566,8 +1511,9 @@ void
 DockablePanel::removeAnimationOnAllParameters()
 {
     std::map< boost::shared_ptr<CurveGui>, std::vector<KeyFrame > > keysToRemove;
+    const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
-    for (KnobsGuiMapping::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         KnobPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1660,7 +1606,8 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 {
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
-        for (KnobsGuiMapping::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        const KnobsGuiMapping& knobsMap = getKnobsMapping();
+        for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
             KnobPtr knob = it->first.lock();
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
             KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
@@ -1680,122 +1627,6 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             }
         }
     }
-}
-
-void
-DockablePanel::refreshGuiForKnobsChanges(bool restorePageIndex)
-{
-    QString curTabName;
-
-    if (_imp->_pagesEnabled) {
-        if (restorePageIndex) {
-            curTabName = _imp->_tabWidget->tabText( _imp->_tabWidget->currentIndex() );
-        }
-    }
-
-    //Delete all knobs gui
-    {
-        KnobsGuiMapping mapping = _imp->_knobs;
-        _imp->_knobs.clear();
-        for (KnobsGuiMapping::iterator it = mapping.begin(); it != mapping.end(); ++it) {
-            assert(it->second);
-            KnobPtr knob = it->first.lock();
-            if (knob) {
-                knob->setKnobGuiPointer( KnobGuiPtr() );
-            }
-            it->second->removeGui();
-            it->second.reset();
-        }
-    }
-
-    //Now delete all pages
-    for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
-        if (_imp->_tabWidget) {
-            int index = _imp->_tabWidget->indexOf(it->second.tab);
-            if (index != -1) {
-                _imp->_tabWidget->removeTab(index);
-            }
-        }
-        it->second.tab->deleteLater();
-        it->second.currentRow = 0;
-    }
-    _imp->_pages.clear();
-
-    //Clear undo/Redo stack so that KnobGui pointers are not lying around
-    if (_imp->_undoStack) {
-        _imp->_undoStack->clear();
-        _imp->_clearedStackDuringPush = true;
-        Q_EMIT deleteCurCmdLater();
-        refreshUndoRedoButtonsEnabledNess();
-    }
-
-    recreateKnobs(curTabName, restorePageIndex);
-    _imp->refreshPagesSecretness();
-}
-
-void
-DockablePanel::onDeleteCurCmdLater()
-{
-    if (_imp->_cmdBeingPushed) {
-        _imp->_undoStack->clear();
-        //delete _imp->_cmdBeingPushed;
-        _imp->_cmdBeingPushed = 0;
-    }
-}
-
-void
-DockablePanel::recreateKnobs(const QString& curTabName,
-                             bool restorePageIndex)
-{
-    //Re-create knobs
-    const KnobsVec& knobs = _imp->_holder->getKnobs();
-
-    _imp->initializeKnobVector(knobs, NULL);
-
-    _imp->refreshPagesOrder(curTabName, restorePageIndex);
-
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-
-
-    ///Refresh the curve editor with potential new animated knobs
-    if (isNodePanel) {
-        NodeGuiPtr node = isNodePanel->getNode();
-
-        getGui()->getCurveEditor()->removeNode( node.get() );
-        getGui()->getCurveEditor()->addNode(node);
-
-        getGui()->removeNodeGuiFromDopeSheetEditor(node);
-        getGui()->addNodeGuiToDopeSheetEditor(node);
-    }
-}
-
-void
-DockablePanel::recreateUserKnobs(bool restorePageIndex)
-{
-    const KnobsVec& knobs = _imp->_holder->getKnobs();
-    std::list<KnobPage*> userPages;
-
-    getUserPages(userPages);
-
-    QString curTabName;
-    if (_imp->_pagesEnabled) {
-        if (restorePageIndex) {
-            curTabName = _imp->_tabWidget->tabText( _imp->_tabWidget->currentIndex() );
-        }
-
-        boost::shared_ptr<KnobPage> page = getUserPageKnob();
-        if (page) {
-            userPages.push_back( page.get() );
-        }
-        for (std::list<KnobPage*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            deleteKnobGui( (*it)->shared_from_this() );
-        }
-    } else {
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            deleteKnobGui(*it);
-        }
-    }
-    recreateKnobs(curTabName, restorePageIndex);
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -1850,34 +1681,7 @@ struct ManageUserParamsDialogPrivate
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-boost::shared_ptr<KnobPage>
-DockablePanel::getOrCreateUserPageKnob() const
-{
-    return _imp->_holder->getOrCreateUserPageKnob();
-}
-
-boost::shared_ptr<KnobPage>
-DockablePanel::getUserPageKnob() const
-{
-    return _imp->_holder->getUserPageKnob();
-}
-
-void
-DockablePanel::getUserPages(std::list<KnobPage*>& userPages) const
-{
-    const KnobsVec& knobs = getHolder()->getKnobs();
-
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->isUserKnob() ) {
-            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-            if (isPage) {
-                userPages.push_back(isPage);
-            }
-        }
-    }
-}
-
-NATRON_NAMESPACE_EXIT;
+    NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
 #include "moc_DockablePanel.cpp"

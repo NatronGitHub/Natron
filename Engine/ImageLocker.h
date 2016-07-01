@@ -38,6 +38,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
+
+
 template<typename EntryType>
 class LockManagerI
 {
@@ -51,6 +53,7 @@ public:
     virtual bool tryLock(const boost::shared_ptr<EntryType>& entry) = 0;
     virtual void unlock(const boost::shared_ptr<EntryType>& entry) = 0;
 };
+
 
 /**
  * @brief Small interface describing an image locker.
@@ -67,10 +70,12 @@ class ImageLockerHelper
 public:
 
 
-    ImageLockerHelper(LockManagerI<EntryType>* manager) : _manager(manager), _entries() {}
+    ImageLockerHelper(LockManagerI<EntryType>* manager)
+        : _manager(manager), _entries() {}
 
     ImageLockerHelper(LockManagerI<EntryType>* manager,
-                      const boost::shared_ptr<EntryType>& entry) : _manager(manager), _entries()
+                      const boost::shared_ptr<EntryType>& entry)
+        : _manager(manager), _entries()
     {
         if (entry && _manager) {
             _entries.push_back(entry);
@@ -78,7 +83,7 @@ public:
         }
     }
 
-    ~ImageLockerHelper()
+    virtual ~ImageLockerHelper()
     {
         unlock();
     }

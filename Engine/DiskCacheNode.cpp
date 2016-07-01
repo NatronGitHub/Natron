@@ -77,7 +77,8 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
                                  double /*time*/,
-                                 ViewIdx /*view*/) const
+                                 ViewIdx /*view*/,
+                                 int /*visitsCount*/) const
 {
     return true;
 }
@@ -212,7 +213,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
     for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false, true, &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
         if (!srcImg) {
             return eStatusFailed;
         }

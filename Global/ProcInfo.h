@@ -24,19 +24,6 @@
 #include <QtCore/QProcess>
 #include <QtCore/QString>
 
-#ifdef __NATRON_OSX__
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreServices/CoreServices.h>
-#include <libproc.h>
-#include <sys/sysctl.h>
-#elif defined(__NATRON_WIN32__)
-#include <windows.h>
-#endif
-
-#ifdef __NATRON_UNIX__
-#include <unistd.h>
-#include <sys/stat.h>
-#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -60,6 +47,10 @@ QString applicationDirPath(const char* argv0Param);
  * file path exists and is still running.
  **/
 bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid);
+
+#ifdef Q_OS_MAC
+QString applicationFileName_mac();
+#endif
 } // namespace ProcInfo
 
 NATRON_NAMESPACE_EXIT;

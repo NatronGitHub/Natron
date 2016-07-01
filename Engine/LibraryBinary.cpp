@@ -42,7 +42,7 @@ LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
 {
 }
 
-LibraryBinary::LibraryBinary(const std::map<std::string, void(*)()> &functions)
+LibraryBinary::LibraryBinary(const std::map<std::string, void(*) ()> &functions)
     : _type(LibraryBinary::eLibraryTypeBuiltin)
     , _library(0)
     , _valid(false)

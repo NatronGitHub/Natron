@@ -69,6 +69,7 @@
 
 #ifdef DEBUG
 //#define TRACE_SCHEDULER
+//#define TRACE_CURRENT_FRAME_SCHEDULER
 #endif
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
@@ -195,7 +196,6 @@ struct OutputSchedulerThreadPrivate
 
     // Pointer to the args used in threadLoopOnce(), only usable from the scheduler thread
     boost::weak_ptr<OutputSchedulerThreadStartArgs> runArgs;
-
     mutable QMutex lastRunArgsMutex;
     std::vector<ViewIdx> lastPlaybackViewsToRender;
     RenderDirectionEnum lastPlaybackRenderDirection;
@@ -242,41 +242,41 @@ struct OutputSchedulerThreadPrivate
     OutputSchedulerThreadPrivate(RenderEngine* engine,
                                  const boost::shared_ptr<OutputEffectInstance>& effect,
                                  OutputSchedulerThread::ProcessFrameModeEnum mode)
-    : buf()
-    , bufEmptyCondition()
-    , bufMutex()
-    , mode(mode)
-    , timer(new Timer)
-    , renderTimer()
-    , renderFinishedMutex()
-    , nFramesRendered(0)
-    , renderFinished(false)
-    , runArgs()
-    , lastRunArgsMutex()
-    , lastPlaybackViewsToRender()
-    , lastPlaybackRenderDirection(eRenderDirectionForward)
-    , renderThreadsMutex()
-    , renderThreads()
-    , allRenderThreadsInactiveCond()
+        : buf()
+        , bufEmptyCondition()
+        , bufMutex()
+        , mode(mode)
+        , timer(new Timer)
+        , renderTimer()
+        , renderFinishedMutex()
+        , nFramesRendered(0)
+        , renderFinished(false)
+        , runArgs()
+        , lastRunArgsMutex()
+        , lastPlaybackViewsToRender()
+        , lastPlaybackRenderDirection(eRenderDirectionForward)
+        , renderThreadsMutex()
+        , renderThreads()
+        , allRenderThreadsInactiveCond()
 #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
-    , threadPool( QThreadPool::globalInstance() )
+        , threadPool( QThreadPool::globalInstance() )
 #else
-    , allRenderThreadsQuitCond()
-    , framesToRender()
-    , framesToRenderNotEmptyCond()
+        , allRenderThreadsQuitCond()
+        , framesToRender()
+        , framesToRenderNotEmptyCond()
 #endif
-    , framesToRenderMutex()
-    , lastFramePushedIndex(0)
-    , expectFrameToRender(0)
-    , outputEffect(effect)
-    , engine(engine)
+        , framesToRenderMutex()
+        , lastFramePushedIndex(0)
+        , expectFrameToRender(0)
+        , outputEffect(effect)
+        , engine(engine)
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-    , threadSpawnsTimer()
-    , lastRecordedFPSMutex()
-    , lastRecordedFPS(0.)
+        , threadSpawnsTimer()
+        , lastRecordedFPSMutex()
+        , lastRecordedFPS(0.)
 #endif
-    , bufferedOutputMutex()
-    , lastBufferedOutputSize(0)
+        , bufferedOutputMutex()
+        , lastBufferedOutputSize(0)
     {
     }
 
@@ -816,7 +816,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
 
 
     bool gotFrame = false;
-    int frame;
+    int frame = -1;
     {
         QMutexLocker l(&_imp->framesToRenderMutex);
         while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
@@ -1087,7 +1087,9 @@ OutputSchedulerThread::startRender()
                                                 scaleOne, true,
                                                 true,
                                                 false,
-                                                ViewIdx(0) ) == eStatusFailed) {
+                                                ViewIdx(0),
+                                                false /*useOpenGL*/,
+                                                EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
             l.unlock();
 
 
@@ -1176,7 +1178,9 @@ OutputSchedulerThread::stopRender()
                                                          scaleOne, true,
                                                          !appPTR->isBackground(),
                                                          false,
-                                                         ViewIdx(0) ) );
+                                                         ViewIdx(0),
+                                                         false /*use OpenGL render*/,
+                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
     }
 
 
@@ -1444,7 +1448,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 } // OutputSchedulerThread::threadLoopOnce
 
 void
-OutputSchedulerThread::onAbortRequested()
+OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
 {
     ///We make sure the render-threads don't wait for the main-thread to process a frame
     ///This function (abortRendering) was probably called from a user event that was posted earlier in the
@@ -1790,9 +1794,11 @@ OutputSchedulerThread::getDesiredFPS() const
 }
 
 void
-OutputSchedulerThread::getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const
+OutputSchedulerThread::getLastRunArgs(RenderDirectionEnum* direction,
+                                      std::vector<ViewIdx>* viewsToRender) const
 {
     QMutexLocker k(&_imp->lastRunArgsMutex);
+
     *direction = _imp->lastPlaybackRenderDirection;
     *viewsToRender = _imp->lastPlaybackViewsToRender;
 }
@@ -1839,7 +1845,7 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
         _imp->lastPlaybackViewsToRender = viewsToRender;
     }
     int firstFrame, lastFrame;
-    
+
     getFrameRangeToRender(firstFrame, lastFrame);
 
     ///Make sure current frame is in the frame range
@@ -2289,7 +2295,7 @@ private:
                 rod.toPixelEnclosing(scale, par, &renderWindow);
 
 
-                AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
                 if (isAbortableThread) {
                     isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
                 }
@@ -2303,7 +2309,6 @@ private:
                                                          0, //texture index
                                                          output->getApp()->getTimeLine().get(),
                                                          NodePtr(),
-                                                         false,
                                                          false,
                                                          false,
                                                          stats);
@@ -2320,17 +2325,19 @@ private:
                 }
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImageComponents, ImagePtr> planes;
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
-                                                                                                                scale, //< the scale at which to render
-                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                                                viewsToRender[view], //< the view to render
-                                                                                                                false,
-                                                                                                                renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                                                rod, // < any precomputed rod ? in canonical coordinates
-                                                                                                                components,
-                                                                                                                imageDepth,
-                                                                                                                false,
-                                                                                                                activeInputToRender.get() ) );
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                                                               scale, //< the scale at which to render
+                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                                                               viewsToRender[view], //< the view to render
+                                                                                                               false,
+                                                                                                               renderWindow, //< the region of interest (in pixel coordinates)
+                                                                                                               rod, // < any precomputed rod ? in canonical coordinates
+                                                                                                               components,
+                                                                                                               imageDepth,
+                                                                                                               false,
+                                                                                                               activeInputToRender.get(),
+                                                                                                               eStorageModeRAM,
+                                                                                                               time) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
@@ -2406,7 +2413,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     const bool isSequentialRender = true;
 
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
 
         setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
 
@@ -2419,7 +2426,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  0, //texture index
                                                  effect->getApp()->getTimeLine().get(),
                                                  NodePtr(),
-                                                 false,
                                                  false,
                                                  false,
                                                  it->stats);
@@ -2444,6 +2450,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        imageDepth,
                                                                                                        false,
                                                                                                        effect.get(),
+                                                                                                       eStorageModeRAM,
+                                                                                                       frame.time,
                                                                                                        inputImages) );
         try {
             std::map<ImageComponents, ImagePtr> planes;
@@ -2541,7 +2549,7 @@ DefaultScheduler::aboutToStartRender()
     // Activate the internal writer node for a write node
     WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriter) {
-        isWriter->renderSequenceStarted();
+        isWriter->onSequenceRenderStarted();
     }
 
     std::string cb = effect->getNode()->getBeforeRenderCallback();
@@ -2608,12 +2616,6 @@ DefaultScheduler::onRenderStopped(bool aborted)
     }
 
     effect->notifyRenderFinished();
-
-    // Deactivate the internal writer node for a write node
-    WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
-    if (isWriter) {
-        isWriter->renderSequenceEnd();
-    }
 
     std::string cb = effect->getNode()->getAfterRenderCallback();
     if ( !cb.empty() ) {
@@ -3069,7 +3071,7 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
         if (working) {
             _imp->scheduler->abortThreadedTask();
         }
-        if (working || isPlaybackAutoRestartEnabled()) {
+        if ( working || isPlaybackAutoRestartEnabled() ) {
             RenderDirectionEnum lastDirection;
             std::vector<ViewIdx> lastViews;
             _imp->scheduler->getLastRunArgs(&lastDirection, &lastViews);
@@ -3169,26 +3171,26 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
 }
 
 bool
-RenderEngine::abortRenderingInternal( )
+RenderEngine::abortRenderingInternal(bool keepOldestRender)
 {
     bool ret = false;
 
     if (_imp->currentFrameScheduler) {
-        ret |= _imp->currentFrameScheduler->abortThreadedTask();
+        ret |= _imp->currentFrameScheduler->abortThreadedTask(keepOldestRender);
     }
 
     if ( _imp->scheduler && _imp->scheduler->isWorking() ) {
         //If any playback active, abort it
-        ret |= _imp->scheduler->abortThreadedTask();
+        ret |= _imp->scheduler->abortThreadedTask(keepOldestRender);
     }
 
     return ret;
 }
 
 bool
-RenderEngine::abortRenderingNoRestart()
+RenderEngine::abortRenderingNoRestart(bool keepOldestRender)
 {
-    if ( abortRenderingInternal() ) {
+    if ( abortRenderingInternal(keepOldestRender) ) {
         setPlaybackAutoRestartEnabled(false);
 
         return true;
@@ -3200,7 +3202,7 @@ RenderEngine::abortRenderingNoRestart()
 bool
 RenderEngine::abortRenderingAutoRestart()
 {
-    if ( abortRenderingInternal() ) {
+    if ( abortRenderingInternal(true) ) {
         return true;
     }
 
@@ -3373,7 +3375,7 @@ public:
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
     NodePtr isRotoPaintRequest;
-    boost::shared_ptr<RotoStrokeItem> strokeItem;
+    boost::weak_ptr<RotoStrokeItem> strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
     bool isRotoNeatRender;
 
@@ -3544,7 +3546,7 @@ public:
                 stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
                                                    NodePtr(), true, _args->args, _args->request, _args->stats);
             } else {
-                stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem, _args->stats, &_args->args[0], &_args->args[1]);
+                stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->stats, &_args->args[0], &_args->args[1]);
             }
         } catch (...) {
             stat = ViewerInstance::eViewerRenderRetCodeFail;
@@ -3618,6 +3620,10 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
 
 ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 {
+    // Should've been stopped before anyway
+    if (_imp->backupThread.quitThread(false)) {
+        _imp->backupThread.waitForAbortToComplete_enforce_blocking();
+    }
 }
 
 GenericSchedulerThread::TaskQueueBehaviorEnum
@@ -3634,6 +3640,9 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 
     assert(args);
 
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+    qDebug() << getThreadName().c_str() << "Thread loop once, waiting for" << args->age << "to be produced";
+#endif
 
     ///Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
@@ -3650,7 +3659,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         while ( found == _imp->producedFrames.end() ) {
             state = resolveState();
             if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
-                _imp->producedFrames.clear();
+                //_imp->producedFrames.clear();
                 break;
             }
             _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
@@ -3664,6 +3673,10 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         }
 
         if ( found != _imp->producedFrames.end() ) {
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+            qDebug() << getThreadName().c_str() << "Found" << args->age << "produced";
+#endif
+
             mtArgs->frames = found->frames;
             mtArgs->stats = found->stats;
 
@@ -3674,8 +3687,13 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             //    ++found;
             //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //} else {
-            _imp->producedFrames.erase(found);
+            ++found;
+            _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //}
+        } else {
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+            qDebug() << getThreadName().c_str() << "Got aborted, skip waiting for" << args->age;
+#endif
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
 
@@ -3688,6 +3706,10 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
     }
 
     requestExecutionOnMainThread(mtArgs);
+
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+    qDebug() << getThreadName().c_str() << "Frame processed" << args->age;
+#endif
 
     return state;
 } // ViewerCurrentFrameRequestScheduler::threadLoopOnce
@@ -3735,12 +3757,15 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
 }
 
 void
-ViewerCurrentFrameRequestScheduler::onAbortRequested()
+ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
 {
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+    qDebug() << getThreadName().c_str() << "Received abort request";
+#endif
     //This will make all processing nodes that call the abort() function return true
     //This function marks all active renders of the viewer as aborted (except the oldest one)
     //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()
-    _imp->viewer->markAllOnGoingRendersAsAborted();
+    _imp->viewer->markAllOnGoingRendersAsAborted(keepOldestRender);
     _imp->backupThread.abortThreadedTask();
 }
 

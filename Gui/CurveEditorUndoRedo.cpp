@@ -121,10 +121,12 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
         }
 
         if (guiKnob && !isParametric) {
-            if (add && isKnobCurve) {
-                guiKnob->setKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
-            } else {
-                guiKnob->removeKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+            if (isKnobCurve) {
+                if (add) {
+                    guiKnob->setKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+                } else {
+                    guiKnob->removeKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+                }
             }
         } else {
             for (std::size_t i = 0; i < it->keyframes.size(); ++i) {
@@ -134,7 +136,8 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                     if (add) {
                         int time = it->keyframes[i].getTime();
                         if (isParametric) {
-                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue() );
+                            // keyframes added to parametric params are Cubic by default
+                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue(), eKeyframeTypeCubic );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
@@ -161,7 +164,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->keyframes[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->keyframes[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension(), i == 0 );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -254,6 +257,7 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
 void
 RemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
+    std::set<KnobPtr> knobsSet;
     for (std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
@@ -268,7 +272,14 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
             knob = isKnobCurve->getInternalKnob();
         }
         boost::shared_ptr<KnobParametric> isParametric;
+
+        std::pair<std::set<KnobPtr>::iterator, bool> insertOk;
         if (knob) {
+            insertOk = knobsSet.insert(knob);
+            if (insertOk.second) {
+                knob->beginChanges();
+                knob->blockValueChanges();
+            }
             isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         }
 
@@ -281,7 +292,6 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         } else {
             for (std::size_t i = 0; i < it->second.size(); ++i) {
                 if (isKnobCurve) {
-                    isKnobCurve->getInternalKnob()->beginChanges();
 
                     if (add) {
                         int time = it->second[i].getTime();
@@ -314,7 +324,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension(), i == 0 );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -328,9 +338,13 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 } // if (isKnobCurve) {
             } // for (std::size_t i = 0; i < it->second.size(); ++i) {
         } // if (guiKnob) {
-        if (isKnobCurve) {
-            isKnobCurve->getInternalKnob()->endChanges();
-        }
+ 
+    }
+
+    for (std::set<KnobPtr>::iterator it = knobsSet.begin(); it!=knobsSet.end(); ++it) {
+        (*it)->unblockValueChanges();
+        (*it)->evaluateValueChange(0, (*it)->getCurrentTime(), ViewSpec(0), eValueChangedReasonUserEdited);
+        (*it)->endChanges();
     }
 
     _curveWidget->update();

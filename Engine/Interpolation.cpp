@@ -65,6 +65,7 @@ hermiteToCubicCoeffs(double P0,
     *c1 = P0pr;
     *c2 = 3 * (P3 - P0) - 2 * P0pr - P3pl;
     *c3 = -2 * (P3 - P0) + P0pr + P3pl;
+    assert(P0 == P0 && P0pr == P0pr && P3pl == P3pl && P3 == P3 && *c0 == *c0 && *c1 == *c1 && *c2 == *c2 && *c3 == *c3);
 }
 
 // evaluate at t
@@ -77,8 +78,9 @@ cubicEval(double c0,
 {
     const double t2 = t * t;
     const double t3 = t2 * t;
+    assert(t == t && t2 == t2 && t3 == t3 && c0 == c0 && c1 == c1 && c2 == c2 && c3 == c3);
 
-    return c0 + c1 * t + c2 * t2 + c3 * t3;
+    return c0 + (c1 ? c1 * t : 0.) + (c2 ? c2 * t2 : 0.) + (c3 ? c3 * t3 : 0.);
 }
 
 // integrate from 0 to t
@@ -92,8 +94,9 @@ cubicIntegrate(double c0,
     const double t2 = t * t;
     const double t3 = t2 * t;
     const double t4 = t3 * t;
+    assert(t == t && t2 == t2 && t3 == t3 && t4 == t4 && c0 == c0 && c1 == c1 && c2 == c2 && c3 == c3);
 
-    return c0 * t + c1 * t2 / 2. + c2 * t3 / 3 + c3 * t4 / 4;
+    return (c0 ? c0 * t : 0.) + (c1 ? c1 * t2 / 2. : 0.) + (c2 ? c2 * t3 / 3 : 0.) + (c3 ? c3 * t4 / 4 : 0.);
 }
 
 // derive at t
@@ -105,8 +108,9 @@ cubicDerive(double /*c0*/,
             double t)
 {
     const double t2 = t * t;
+    assert(t == t && t2 == t2 && c1 == c1 && c2 == c2 && c3 == c3);
 
-    return c1 + 2 * c2 * t + 3 * c3 * t2;
+    return c1 + (c2 ? 2 * c2 * t : 0.) + (c3 ? 3 * c3 * t2 : 0.);
 }
 
 #define EQN_EPS 1e-9
@@ -121,6 +125,7 @@ cubicDerive(double /*c0*/,
 static int
 isZero(double x)
 {
+    assert(x == x);
     return (x > -EQN_EPS && x < EQN_EPS);
 }
 
@@ -133,6 +138,7 @@ Interpolation::solveLinear(double c0,
                            double s[1],
                            int o[1])
 {
+    assert(c0 == c0 && c1 == c1);
     if ( (c1 == 0.) || isZero(c1) ) {
         // it's a constant equation
 
@@ -159,6 +165,7 @@ Interpolation::solveQuadric(double c0,
                             double s[2],
                             int o[2])
 {
+    assert(c0 == c0 && c1 == c1 && c2 == c2);
     if ( (c2 == 0.) || isZero(c2) ) {
         // it's at most a linear equation
         return Interpolation::solveLinear(c0, c1, s, o);
@@ -202,6 +209,7 @@ Interpolation::solveCubic(double c0,
                           double s[3],
                           int o[3])
 {
+    assert(c0 == c0 && c1 == c1 && c2 == c2 && c3 == c3);
     if ( (c3 == 0.) || isZero(c3) ) {
         // it's at most a second-degree polynomial
         return Interpolation::solveQuadric(c0, c1, c2, s, o);
@@ -276,6 +284,7 @@ getOneCubicRoot(double c0,
                 double c2,
                 double c3)
 {
+    assert(c0 == c0 && c1 == c1 && c2 == c2 && c3 == c3);
     assert (c3 != 0.);
 
     // normalize the equation:x ^ 3 + Ax ^ 2 + Bx  + C = 0
@@ -333,6 +342,7 @@ Interpolation::solveQuartic(double c0,
                             double s[4],
                             int o[4])
 {
+    assert(c0 == c0 && c1 == c1 && c2 == c2 && c3 == c3 && c4 == c4);
     if ( (c4 == 0.) || isZero(c4) ) {
         // it's at most a third-degree polynomial
         return Interpolation::solveCubic(c0, c1, c2, c3, s, o);
@@ -743,21 +753,25 @@ Interpolation::integrate_clamp(double tcur,
     // solve cubic = vmax
     double tmax[3];
     int omax[3];
-    int nmax = Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax);
+    int nmax = (vmax < DBL_MAX) ? Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax) : 0;
     // solve cubic = vmin
     double tmin[3];
     int omin[3];
-    int nmin = Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin);
+    int nmin = (vmin > -DBL_MAX) ? Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin) : 0;
 
     // now, find out on which intervals the function is constant/clamped, and on which intervals it is a cubic.
     // ignore the solutions with an order of 2 (which means the tangent is horizontal and the polynomial doesn't change sign)
     // algorithm: order the solutions, sort them wrt time. The cubic sections are where there are transitions bewteen min and max solutions.
     std::vector<Sol> sols;
     for (int i = 0; i < nmax; ++i) {
-        sols.push_back( Sol( eSolTypeMax, tmax[i], omax[i], cubicDerive(c0, c1, c2, c3, tmax[i]) ) );
+        double deriv = cubicDerive(c0, c1, c2, c3, tmax[i]);
+        assert(deriv == deriv);
+        sols.push_back( Sol(eSolTypeMax, tmax[i], omax[i], deriv) );
     }
     for (int i = 0; i < nmin; ++i) {
-        sols.push_back( Sol( eSolTypeMin, tmin[i], omin[i], cubicDerive(c0, c1, c2, c3, tmin[i]) ) );
+        double deriv = cubicDerive(c0, c1, c2, c3, tmin[i]);
+        assert(deriv == deriv);
+        sols.push_back( Sol(eSolTypeMin, tmin[i], omin[i], deriv) );
     }
 
     const double t2 = (time2 - tcur) / (tnext - tcur);
@@ -771,6 +785,7 @@ Interpolation::integrate_clamp(double tcur,
         // - or it' constant
         // Just evaluate at t1 to determine where it is.
         double val = cubicEval(c0, c1, c2, c3, t1);
+        assert(val == val);
         if (val < vmin) {
             val = vmin;
         } else if (val > vmax) {
@@ -877,11 +892,11 @@ Interpolation::integrate_clamp(double tcur,
    Q3 := P0:
 
    derivativeAtCurRight := dP(0)/(tnext-tcur):
-   curvatureAtCurRight := dP2(0)/(tnext-tcur):
-   curvatureAtNextLeft:= dP2(1)/(tnext - tcur):
+   curvatureAtCurRight := dP2(0)/(tnext-tcur)**2:
+   curvatureAtNextLeft:= dP2(1)/(tnext - tcur)**2:
    derivativeAtCurLeft := dQ(1)/(tcur-tprev):
-   curvatureAtCurLeft:= dQ2(1)/(tcur - tprev):
-   curvatureAtPrevRight:= dQ2(0)/(tcur - tprev):
+   curvatureAtCurLeft:= dQ2(1)/(tcur - tprev)**2:
+   curvatureAtPrevRight:= dQ2(0)/(tcur - tprev)**2:
 
    printf("linear, general case:"):
    solve( {curvatureAtCurRight = 0, curvatureAtCurLeft = 0}, { P0pr, Q3pl });
@@ -1054,18 +1069,21 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
     case eKeyframeTypeCubic:
         /* Cubic means the the 2nd derivative of the cubic curve at the point 'cur' are equal. */
         if ( ( interpPrev == eKeyframeTypeLinear) && ( interpNext == eKeyframeTypeLinear) ) {
-            P0pr = -(double)( (Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (tcur - tprev) ) / 0.2e1;
-            Q3pl = (double)( (Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (-tnext + tcur) ) / 0.2e1;
+            // cubic, prev and next are linear
+            P0pr = -(Q0 * tnext * tnext - 2 * Q0 * tnext * tcur - 2 * P0 * tcur * tprev + 2 * P3 * tcur * tprev + 2 * P0 * tnext * tcur - P3 * tprev * tprev + P0 * tprev * tprev - P0 * tnext * tnext + Q0 * tcur * tcur - P3 * tcur * tcur) / (tcur - tprev) / (tnext - tprev);
+            Q3pl = (Q0 * tnext * tnext - 2 * Q0 * tnext * tcur - 2 * P0 * tcur * tprev + 2 * P3 * tcur * tprev + 2 * P0 * tnext * tcur - P3 * tprev * tprev + P0 * tprev * tprev - P0 * tnext * tnext + Q0 * tcur * tcur - P3 * tcur * tcur) / (-tnext * tnext + tnext * tcur + tprev * tnext - tcur * tprev);
         } else if (interpPrev == eKeyframeTypeLinear) {
-            P0pr = -(double)( (-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev) ) / 0.7e1;
-            Q3pl = (double)( (-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur) ) / 0.7e1;
+            // cubic, prev is linear:
+            P0pr = -(2 * P3pl * tcur * tcur + 3 * P0 * tcur * tcur - 6 * P3 * tcur * tcur + 3 * Q0 * tcur * tcur - 6 * Q0 * tnext * tcur - 4 * P3pl * tcur * tprev - 12 * P0 * tcur * tprev + 6 * P0 * tnext * tcur + 12 * P3 * tcur * tprev + 2 * P3pl * tprev * tprev + 3 * Q0 * tnext * tnext - 6 * P3 * tprev * tprev + 6 * P0 * tprev * tprev - 3 * P0 * tnext * tnext) / (tcur - tprev) / (tcur - 4 * tprev + 3 * tnext);
+            Q3pl = (2 * P3pl * tcur * tcur + 3 * P0 * tcur * tcur - 6 * P3 * tcur * tcur + 3 * Q0 * tcur * tcur - 6 * Q0 * tnext * tcur - 4 * P3pl * tcur * tprev - 12 * P0 * tcur * tprev + 6 * P0 * tnext * tcur + 12 * P3 * tcur * tprev + 2 * P3pl * tprev * tprev + 3 * Q0 * tnext * tnext - 6 * P3 * tprev * tprev + 6 * P0 * tprev * tprev - 3 * P0 * tnext * tnext) / (2 * tnext * tcur - 4 * tcur * tprev + 4 * tprev * tnext + tcur * tcur - 3 * tnext * tnext);
         } else if (interpNext == eKeyframeTypeLinear) {
-            P0pr = -(double)( (-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev) ) / 0.7e1;
-            Q3pl = (double)( (-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur) ) / 0.7e1;
+            // cubic, next is linear:
+            P0pr = -(6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (tcur - tprev) / (tcur - 4 * tnext + 3 * tprev);
+            Q3pl = (6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (-5 * tnext * tcur - 3 * tprev * tnext + 3 * tcur * tprev + 4 * tnext * tnext + tcur * tcur);
         } else {
-            P0pr = -(double)( (6 * P0 * tcur - 3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + P3pl * tcur - P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur + Q0pr * tnext - Q0pr * tcur - 3 * P0 * tnext) / (tcur - tprev) ) / 0.4e1;
-
-            Q3pl = (double)( (6 * P0 * tcur - 3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + P3pl * tcur - P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur + Q0pr * tnext - Q0pr * tcur - 3 * P0 * tnext) / (-tnext + tcur) ) / 0.4e1;
+            // cubic, general case:
+            P0pr = -(6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (tcur - tprev) / (tcur - 4 * tnext + 3 * tprev);
+            Q3pl = (6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (-5 * tnext * tcur - 3 * tprev * tnext + 3 * tcur * tprev + 4 * tnext * tnext + tcur * tcur);
         }
         break;
 

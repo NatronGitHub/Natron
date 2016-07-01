@@ -1,0 +1,397 @@
+diff --git a/libs/openMVG/openMVG/features/akaze/AKAZE.cpp b/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
+index 00ca9a0..bc40623 100644
+--- a/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
++++ b/libs/openMVG/openMVG/features/akaze/AKAZE.cpp
+@@ -6,6 +6,12 @@
+ 
+ #include "openMVG/features/akaze/AKAZE.hpp"
+ 
++#include <cmath>
++
++#ifndef M_LN2
++#define M_LN2          0.69314718055994530942  /* log_e 2 */
++#endif
++
+ namespace openMVG {
+ namespace features {
+ 
+@@ -64,7 +70,7 @@ float AKAZE::ComputeAutomaticContrastFactor( const Image<float> & src , const fl
+ 
+       if( val > 0 )
+       {
+-        int bin_id = floor( (val / grad_max ) * static_cast<float>(nb_bin) ) ;
++        int bin_id = std::floor( (val / grad_max ) * static_cast<float>(nb_bin) ) ;
+ 
+         // Handle overflow (need to do it in a cleaner way)
+         if( bin_id == nb_bin )
+@@ -201,7 +207,7 @@ AKAZE::AKAZE(const Image<unsigned char> & in, const AKAZEConfig & options):
+   in_ = in.GetMat().cast<float>() / 255.f;
+   options_.fDesc_factor = std::max(6.f*sqrtf(2.f), options_.fDesc_factor);
+   //-- Safety check to limit the computable octave count
+-  const int nbOctaveMax = ceil(std::log2( std::min(in_.Width(), in_.Height())));
++  const int nbOctaveMax = std::ceil(std::log( std::min(in_.Width(), in_.Height()))/M_LN2);
+   options_.iNbOctave = std::min(options_.iNbOctave, nbOctaveMax);
+ }
+ 
+diff --git a/libs/openMVG/openMVG/features/image_describer.hpp b/libs/openMVG/openMVG/features/image_describer.hpp
+index 8cee223..f31e5a8 100644
+--- a/libs/openMVG/openMVG/features/image_describer.hpp
++++ b/libs/openMVG/openMVG/features/image_describer.hpp
+@@ -48,11 +48,11 @@ public:
+      Non-zero values depict the region of interest.
+   */
+   virtual bool Describe(const image::Image<unsigned char> & image,
+-    std::unique_ptr<Regions> &regions,
++    OPENMVG_UNIQUE_PTR<Regions> &regions,
+     const image::Image<unsigned char> * mask = NULL) = 0;
+ 
+   /// Allocate regions depending of the Image_describer
+-  virtual void Allocate(std::unique_ptr<Regions> &regions) const = 0;
++  virtual void Allocate(unique_ptr<Regions> &regions) const = 0;
+ 
+ #ifndef OPENMVG_NO_SERIALIZATION
+   //--
+diff --git a/libs/openMVG/openMVG/features/image_describer_akaze.hpp b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
+index affff89..af537bf 100644
+--- a/libs/openMVG/openMVG/features/image_describer_akaze.hpp
++++ b/libs/openMVG/openMVG/features/image_describer_akaze.hpp
+@@ -87,7 +87,7 @@ public:
+      Non-zero values depict the region of interest.
+   */
+   bool Describe(const image::Image<unsigned char>& image,
+-    std::unique_ptr<Regions> &regions,
++    OPENMVG_UNIQUE_PTR<Regions> &regions,
+     const image::Image<unsigned char> * mask = NULL)
+   {
+     _params._options.fDesc_factor =
+@@ -248,7 +248,7 @@ public:
+   };
+ 
+   /// Allocate Regions type depending of the Image_describer
+-  void Allocate(std::unique_ptr<Regions> &regions) const
++  void Allocate(OPENMVG_UNIQUE_PTR<Regions> &regions) const
+   {
+     switch(_params._eAkazeDescriptor)
+     {
+diff --git a/libs/openMVG/openMVG/features/io_regions_type.hpp b/libs/openMVG/openMVG/features/io_regions_type.hpp
+index bd66f7c..fe0dd8e 100644
+--- a/libs/openMVG/openMVG/features/io_regions_type.hpp
++++ b/libs/openMVG/openMVG/features/io_regions_type.hpp
+@@ -21,13 +21,13 @@ namespace openMVG {
+ namespace features {
+ 
+ // Init the regions_type from an image describer file (used for regions loading)
+-static std::unique_ptr<features::Regions> Init_region_type_from_file
++static OPENMVG_UNIQUE_PTR<features::Regions> Init_region_type_from_file
+ (
+   const std::string & sImage_describer_file
+ )
+ {
+   using namespace openMVG::features;
+-  std::unique_ptr<Regions> regions_type;
++  OPENMVG_UNIQUE_PTR<Regions> regions_type;
+   if (stlplus::is_file(sImage_describer_file))
+   {
+     // Dynamically load the regions type from the file
+diff --git a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
+index 15ad7fc..536be72 100644
+--- a/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
++++ b/libs/openMVG/openMVG/matching/matcher_brute_force.hpp
+@@ -13,6 +13,7 @@
+ #include "openMVG/stl/indexed_sort.hpp"
+ #include <memory>
+ #include <iostream>
++#include <cstddef>
+ 
+ namespace openMVG {
+ namespace matching {
+@@ -40,7 +41,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
+    */
+   bool Build(const Scalar * dataset, int nbRows, int dimension) {
+     if (nbRows < 1) {
+-      memMapping.reset(nullptr);
++      memMapping.reset(NULL);
+       return false;
+     }
+     memMapping.reset(new Eigen::Map<BaseMat>( (Scalar*)dataset, nbRows, dimension) );
+@@ -150,7 +151,7 @@ class ArrayMatcherBruteForce  : public ArrayMatcher<Scalar, Metric>
+ private:
+   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
+   /// Use a memory mapping in order to avoid memory re-allocation
+-  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
++  OPENMVG_UNIQUE_PTR< Eigen::Map<BaseMat> > memMapping;
+ };
+ 
+ }  // namespace matching
+diff --git a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
+index 00b85d8..3dcb963 100644
+--- a/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
++++ b/libs/openMVG/openMVG/matching/matcher_cascade_hashing.hpp
+@@ -12,6 +12,7 @@
+ #include <memory>
+ #include <random>
+ #include <cmath>
++#include <cstddef>
+ 
+ namespace openMVG {
+ namespace matching {
+@@ -50,7 +51,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
+    */
+   bool Build(const Scalar * dataset, int nbRows, int dimension) {
+     if (nbRows < 1) {
+-      memMapping.reset(nullptr);
++      memMapping.reset(NULL);
+       return false;
+     }
+     memMapping.reset(new Eigen::Map<BaseMat>( (Scalar*)dataset, nbRows, dimension) );
+@@ -133,7 +134,7 @@ class ArrayMatcherCascadeHashing  : public ArrayMatcher<Scalar, Metric>
+ private:
+   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BaseMat;
+   /// Use a memory mapping in order to avoid memory re-allocation
+-  std::unique_ptr< Eigen::Map<BaseMat> > memMapping;
++  OPENMVG_UNIQUE_PTR< Eigen::Map<BaseMat> > memMapping;
+   CascadeHasher cascade_hasher_;
+   HashedDescriptions hashed_base_;
+   Eigen::VectorXf zero_mean_descriptor_;
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp b/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp
+index fffd166..a00f2f8 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Cascade_Hashing_Matcher_Regions_AllInMemory.hpp
+@@ -31,7 +31,7 @@ class Cascade_Hashing_Matcher_Regions_AllInMemory : public Matcher
+   void Match
+   (
+     const sfm::SfM_Data & sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair_Set & pairs,
+     matching::PairWiseMatches & map_PutativesMatches // the pairwise photometric corresponding points
+   )const;
+diff --git a/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp b/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp
+index 17ee664..bf1e942 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/F_ACRobust.hpp
+@@ -34,7 +34,7 @@ struct GeometricFilter_FMatrix_AC
+   /// Robust fitting of the FUNDAMENTAL matrix
+   bool Robust_estimation(
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const matching::IndMatches & vec_PutativeMatches,
+     matching::IndMatches & geometric_inliers)
+@@ -95,7 +95,7 @@ struct GeometricFilter_FMatrix_AC
+   bool Geometry_guided_matching
+   (
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const double dDistanceRatio,
+     matching::IndMatches & matches
+diff --git a/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp b/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
+index 9031235..d31aaa6 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/GeometricFilter.hpp
+@@ -30,7 +30,7 @@ struct ImageCollectionGeometricFilter
+   ImageCollectionGeometricFilter
+   (
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider
++    const shared_ptr<sfm::Regions_Provider> & regions_provider
+   ):_sfm_data(sfm_data), _regions_provider(regions_provider)
+   {}
+ 
+@@ -48,7 +48,7 @@ struct ImageCollectionGeometricFilter
+ 
+   // Data
+   const sfm::SfM_Data * _sfm_data;
+-  const std::shared_ptr<sfm::Regions_Provider> & _regions_provider;
++  const shared_ptr<sfm::Regions_Provider> & _regions_provider;
+   PairWiseMatches _map_GeometricMatches;
+ };
+ 
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp b/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp
+index 6921538..c4576e3 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Geometric_Filter_utils.hpp
+@@ -47,7 +47,7 @@ void MatchesPairToMat
+   const Pair pairIndex,
+   const matching::IndMatches & putativeMatches,
+   const sfm::SfM_Data * sfm_data,
+-  const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++  const shared_ptr<sfm::Regions_Provider> & regions_provider,
+   MatT & x_I, MatT & x_J
+ )
+ {
+diff --git a/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp b/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp
+index ab814ba..cdc7107 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/H_ACRobust.hpp
+@@ -33,7 +33,7 @@ struct GeometricFilter_HMatrix_AC
+   /// Robust fitting of the HOMOGRAPHY matrix
+   bool Robust_estimation(
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const matching::IndMatches & vec_PutativeMatches,
+     matching::IndMatches & geometric_inliers)
+@@ -117,7 +117,7 @@ struct GeometricFilter_HMatrix_AC
+   bool Geometry_guided_matching
+   (
+     const sfm::SfM_Data * sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair pairIndex,
+     const double dDistanceRatio,
+     matching::IndMatches & matches
+diff --git a/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp b/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp
+index 46956b4..917ac93 100644
+--- a/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp
++++ b/libs/openMVG/openMVG/matching_image_collection/Matcher.hpp
+@@ -31,7 +31,7 @@ class Matcher
+   /// Find corresponding points between some pair of view Ids
+   virtual void Match(
+     const sfm::SfM_Data & sfm_data,
+-    const std::shared_ptr<sfm::Regions_Provider> & regions_provider,
++    const shared_ptr<sfm::Regions_Provider> & regions_provider,
+     const Pair_Set & pairs, // list of pair to consider for matching
+     matching::PairWiseMatches & map_putatives_matches // the output pairwise photometric corresponding points
+     )const = 0;
+diff --git a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+index b35084d..743bd12 100644
+--- a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
++++ b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+@@ -14,6 +14,7 @@
+ #include "ceres/rotation.h"
+ 
+ #include <vector>
++#include <cstddef>
+ 
+ namespace openMVG {
+ 
+@@ -126,7 +127,7 @@ bool solve_translations_problem_softl1
+   }
+ 
+   ceres::LossFunction * loss =
+-    (d_l1_loss_threshold < 0) ? nullptr : new ceres::SoftLOneLoss(d_l1_loss_threshold);
++    (d_l1_loss_threshold < 0) ? NULL : new ceres::SoftLOneLoss(d_l1_loss_threshold);
+ 
+   // Add constraints to the minimization
+   //
+@@ -167,7 +168,7 @@ bool solve_translations_problem_softl1
+         new ceres::AutoDiffCostFunction<SmallScaleError, 1, 1>(
+             new SmallScaleError(1.0));
+ 
+-    problem.AddResidualBlock(cost_function, nullptr, &vec_scales[i]);
++    problem.AddResidualBlock(cost_function, NULL, &vec_scales[i]);
+   }
+   // Set one center as known (to fix the gauge freedom)
+   vec_translations[0] = vec_translations[1] = vec_translations[2] = 0.0;
+diff --git a/libs/openMVG/openMVG/types.hpp b/libs/openMVG/openMVG/types.hpp
+index 43a053d..21c5790 100644
+--- a/libs/openMVG/openMVG/types.hpp
++++ b/libs/openMVG/openMVG/types.hpp
+@@ -9,19 +9,31 @@
+ 
+ #include <Eigen/Core>
+ 
+-#include <cstdint>
+ #include <limits>
+ #include <map>
+ #include <set>
+ #include <vector>
++#include <memory>
+ 
+ #if defined OPENMVG_STD_UNORDERED_MAP
+ #include <unordered_map>
+ #endif
+ 
++#if defined(OPENMVG_BOOST_UNORDERED_MAP)
++#include <boost/unordered_map.hpp>
++#endif
++
++#if defined(OPENMVG_BOOST_SHARED_PTR)
++#include <boost/shared_ptr.hpp>
++#endif
++
++#if defined(OPENMVG_BOOST_UNIQUE_PTR)
++#include <boost/move/unique_ptr.hpp>
++#endif
++
+ namespace openMVG{
+ 
+-typedef uint32_t IndexT;
++typedef unsigned long IndexT;
+ static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
+ 
+ typedef std::pair<IndexT,IndexT> Pair;
+@@ -34,11 +46,27 @@ typedef std::vector<Pair> Pair_Vec;
+ template<typename K, typename V>
+ struct Hash_Map : std::map<K, V, std::less<K>,
+  Eigen::aligned_allocator<std::pair<K,V> > > {};
+-#endif
+-
+-#if defined OPENMVG_STD_UNORDERED_MAP
++#elif defined OPENMVG_STD_UNORDERED_MAP
+ template<typename Key, typename Value>
+ struct Hash_Map : std::unordered_map<Key, Value> {};
++#elif defined OPENMVG_BOOST_UNORDERED_MAP
++template<typename Key, typename Value>
++struct Hash_Map : boost::unordered_map<Key, Value> {};
++#endif
++
++#if defined(OPENMVG_TR1_SHARED_PTR)
++using std::tr1::shared_ptr;
++#elif defined(OPENMVG_BOOST_SHARED_PTR)
++using boost::shared_ptr;
++#else
++using std::shared_ptr;
++#endif
++
++#if defined(OPENMVG_NO_UNIQUE_PTR)
++// shared_ptr does not guarantee uniqueness, but can be used as a drop-in replacement
++#define OPENMVG_UNIQUE_PTR shared_ptr;
++#else
++#define OPENMVG_UNIQUE_PTR std::unique_ptr;
+ #endif
+ 
+ } // namespace openMVG
+diff --git a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+index 743bd12..fc2681f 100644
+--- a/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
++++ b/libs/openMVG/openMVG/multiview/translation_averaging_solver_softl1.cpp
+@@ -118,8 +118,9 @@ bool solve_translations_problem_softl1
+   // Relative rotations array
+   std::vector<double> vec_relative_rotations(vec_initial_estimates.size()*3, 0.0);
+   size_t cpt = 0;
+-  for (const openMVG::relativeInfo & info : vec_initial_estimates)
++  for (std::vector<openMVG::relativeInfo >::const_iterator it = vec_initial_estimates.begin(); it != vec_initial_estimates.end(); ++it)
+   {
++    const openMVG::relativeInfo & info = *it;
+     ceres::RotationMatrixToAngleAxis(
+       (const double*)info.second.first.data(),
+       &vec_relative_rotations[cpt]);
+@@ -134,8 +135,9 @@ bool solve_translations_problem_softl1
+   // A. Add cost functor from camera translation to the relative informations
+   cpt = 0;
+   IndexT scale_idx = 0;
+-  for (const openMVG::relativeInfo & info : vec_initial_estimates)
++  for (std::vector<openMVG::relativeInfo >::const_iterator it = vec_initial_estimates.begin(); it != vec_initial_estimates.end(); ++it)
+   {
++    const openMVG::relativeInfo & info = *it;
+     const Pair & ids = info.first;
+     const IndexT I = ids.first;
+     const IndexT J = ids.second;
+diff -ur a/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp b/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp
+--- a/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp	2016-06-21 09:42:47.000000000 +0200
++++ b/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp	2016-05-20 11:55:42.000000000 +0200
+@@ -31,7 +31,7 @@
+  * \note Need at least 3 points
+  */
+ 
+-static bool FindRTS(const Mat &x1,
++inline bool FindRTS(const Mat &x1,
+   const Mat &x2,
+   double * S,
+   Vec3 * t,

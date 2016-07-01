@@ -70,24 +70,30 @@ void
 Cache<EntryType>::save(CacheTOC* tableOfContents)
 {
     clearInMemoryPortion(false);
-    QMutexLocker l(&_lock);     // must be locked
+    {
+        QMutexLocker l(&_lock);     // must be locked
 
-    for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
-        std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
-        for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
-            if ( (*it2)->isStoredOnDisk() ) {
-                SerializedEntry serialization;
-                serialization.hash = (*it2)->getHashKey();
-                serialization.params = (*it2)->getParams();
-                serialization.key = (*it2)->getKey();
-                serialization.size = (*it2)->dataSize();
-                serialization.filePath = (*it2)->getFilePath();
-                tableOfContents->push_back(serialization);
+        for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
+            std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
+            for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
+                if ( (*it2)->isStoredOnDisk() ) {
+                    SerializedEntry serialization;
+                    serialization.hash = (*it2)->getHashKey();
+                    serialization.params = (*it2)->getParams();
+                    serialization.key = (*it2)->getKey();
+                    serialization.size = (*it2)->dataSize();
+                    serialization.filePath = (*it2)->getFilePath();
+                    serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
+
+                    (*it2)->syncBackingFile();
+                    
+                    tableOfContents->push_back(serialization);
 #ifdef DEBUG
-                if ( !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
-                    qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
-                }
+                    if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
+                        qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+                    }
 #endif
+                }
             }
         }
     }
@@ -102,6 +108,7 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
     ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
     std::list<EntryTypePtr> entriesToBeDeleted;
 
+    std::set<QString> usedFilePaths;
     for (typename CacheTOC::const_iterator it =
              tableOfContents.begin(); it != tableOfContents.end(); ++it) {
         if ( it->hash != it->key.getHash() ) {
@@ -118,28 +125,69 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
         }
 
 #ifdef DEBUG
-        if ( !checkFileNameMatchesHash(it->filePath, it->hash) ) {
+        if ( !_isTiled && !checkFileNameMatchesHash(it->filePath, it->hash) ) {
             qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
         }
 #endif
 
         EntryType* value = NULL;
-        StorageModeEnum storage = eStorageModeDisk;
 
         try {
-            value = new EntryType(it->key, it->params, this, storage, it->filePath);
-
+            value = new EntryType(it->key, it->params, this);
+            if (it->size != getTileSizeBytes()) {
+                continue;
+            }
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
-            value->restoreMetaDataFromFile(it->size);
+            value->restoreMetaDataFromFile(it->size, it->filePath, it->dataOffsetInFile);
         } catch (const std::exception & e) {
             qDebug() << e.what();
             continue;
         }
-
+        const std::string& filePath = value->getFilePath();
+        usedFilePaths.insert(QString::fromUtf8(filePath.c_str()));
         {
             QMutexLocker locker(&_lock);
-            sealEntry(EntryTypePtr(value), false);
+            sealEntry(EntryTypePtr(value), false /*inMemory*/);
         }
+    }
+
+    // Remove from the cache all files that are not referenced by the table of contents
+    QString cachePath = getCachePath();
+    if (isTileCache()) {
+        QDir cacheFolder(cachePath);
+        QString absolutePath = cacheFolder.absolutePath();
+        QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
+        for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {
+            QString entryFilePath = absolutePath + QLatin1Char('/') + *it;
+
+            std::set<QString>::iterator foundUsed = usedFilePaths.find(entryFilePath);
+            if (foundUsed == usedFilePaths.end()) {
+                cacheFolder.remove(*it);
+            }
+        }
+    } else {
+        for (U32 i = 0x00; i <= 0xF; ++i) {
+            for (U32 j = 0x00; j <= 0xF; ++j) {
+                std::ostringstream oss;
+                oss << std::hex <<  i;
+                oss << std::hex << j;
+                std::string str = oss.str();
+
+
+                QDir cacheFolder(cachePath + QLatin1Char('/') + QString::fromUtf8( str.c_str() ));
+                QString absolutePath = cacheFolder.absolutePath();
+                QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
+                for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {
+                    QString entryFilePath = absolutePath + QLatin1Char('/') + *it;
+
+                    std::set<QString>::iterator foundUsed = usedFilePaths.find(entryFilePath);
+                    if (foundUsed == usedFilePaths.end()) {
+                        cacheFolder.remove(*it);
+                    }
+                }
+            }
+        }
+
     }
 }
 
@@ -151,6 +199,7 @@ struct Cache<EntryType>::SerializedEntry
     ParamsTypePtr params;
     std::size_t size; //< the data size in bytes
     std::string filePath; //< we need to serialize it as several entries can have the same hash, hence we index them
+    std::size_t dataOffsetInFile;
 
     SerializedEntry()
         : hash(0)
@@ -158,6 +207,7 @@ struct Cache<EntryType>::SerializedEntry
           , params()
           , size(0)
           , filePath()
+          , dataOffsetInFile(0)
     {
     }
 
@@ -170,6 +220,7 @@ struct Cache<EntryType>::SerializedEntry
         ar & ::boost::serialization::make_nvp("Params", params);
         ar & ::boost::serialization::make_nvp("Size", size);
         ar & ::boost::serialization::make_nvp("Filename", filePath);
+        ar & ::boost::serialization::make_nvp("Offset", dataOffsetInFile);
     }
 };
 

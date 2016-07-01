@@ -45,69 +45,6 @@
 NATRON_NAMESPACE_ENTER;
 
 struct AppInstancePrivate;
-struct CreateNodeArgs
-{
-    typedef std::list< boost::shared_ptr<KnobSerialization> > DefaultValuesList;
-
-    ///The pluginID corresponds to Plugin::getPluginID()
-    QString pluginID;
-
-    //The version of the plug-in we want to instanciate
-    int majorV, minorV;
-
-    //If the node is a multi-instance child, this is the script-name of the parent
-    std::string multiInstanceParentName;
-
-    //A hint for the initial x,y position in the NodeGraph
-    double xPosHint, yPosHint;
-
-    //If we do not want the name of the node to be generated automatically, we can set this
-    //to force the node to have this name
-    QString fixedName;
-
-    //A list of parameter values that will be set prior to calling createInstanceAction
-    DefaultValuesList paramValues;
-
-    //The group into which the node should be. All "user" nodes should at least be in the Project
-    //or in a NodeGroup
-    boost::shared_ptr<NodeCollection> group;
-
-    //How was this node created
-    CreateNodeReason reason;
-
-    //Should we create the NodeGui or keep the node internal only
-    bool createGui;
-
-    //If false the node will not be serialized, indicating it's just used by Natron internals
-    bool addToProject;
-
-    //When copy/pasting or loading from a project, this is a pointer to this node serialization to load
-    //data from
-    boost::shared_ptr<NodeSerialization> serialization;
-
-    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
-    NodePtr ioContainer;
-
-    explicit CreateNodeArgs(const QString& pluginID,
-                            CreateNodeReason reason,
-                            const boost::shared_ptr<NodeCollection>& group)
-        : pluginID(pluginID)
-        , majorV(-1)
-        , minorV(-1)
-        , multiInstanceParentName()
-        , xPosHint(INT_MIN)
-        , yPosHint(INT_MIN)
-        , fixedName()
-        , paramValues()
-        , group(group)
-        , reason(reason)
-        , createGui(true)
-        , addToProject(true)
-        , serialization()
-        , ioContainer()
-    {
-    }
-};
 
 
 class FlagSetter
@@ -117,9 +54,12 @@ class FlagSetter
 
 public:
 
-    FlagSetter(bool initialValue, bool* p);
+    FlagSetter(bool initialValue,
+               bool* p);
 
-    FlagSetter(bool initialValue, bool* p, QMutex* mutex);
+    FlagSetter(bool initialValue,
+               bool* p,
+               QMutex* mutex);
 
     ~FlagSetter();
 };
@@ -133,23 +73,30 @@ public:
 
     FlagIncrementer(int* p);
 
-    FlagIncrementer(int* p, QMutex* mutex);
+    FlagIncrementer(int* p,
+                    QMutex* mutex);
 
     ~FlagIncrementer();
 };
 
 
 class AppInstance
-    : public QObject, public boost::noncopyable, public boost::enable_shared_from_this<AppInstance>, public TimeLineKeyFrames
+    : public QObject
+    , public boost::noncopyable
+    , public boost::enable_shared_from_this<AppInstance>
+    , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     AppInstance(int appID);
+
+public:
 
     virtual ~AppInstance();
 
@@ -206,12 +153,12 @@ public:
     /** @brief Create a new node  in the node graph.
     **/
     NodePtr createNode(CreateNodeArgs & args);
-    NodePtr createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group);
+    NodePtr createReader(const std::string& filename,
+                         CreateNodeArgs& args);
 
 
     NodePtr createWriter(const std::string& filename,
-                         CreateNodeReason reason,
-                         const boost::shared_ptr<NodeCollection>& collection,
+                         CreateNodeArgs& args,
                          int firstFrame = INT_MIN, int lastFrame = INT_MAX);
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
@@ -260,7 +207,7 @@ public:
         return eStandardButtonYes;
     }
 
-    virtual void loadProjectGui(boost::archive::xml_iarchive & /*archive*/) const
+    virtual void loadProjectGui(bool /*isAutosave*/, boost::archive::xml_iarchive & /*archive*/) const
     {
     }
 
@@ -461,6 +408,9 @@ public:
     void removeRenderFromQueue(OutputEffectInstance* writer);
     virtual void reloadScriptEditorFonts() {}
 
+    const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
+    void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
+
 public Q_SLOTS:
 
     void quit();
@@ -489,7 +439,7 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason);
+    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
@@ -511,9 +461,7 @@ private:
                                    const QString &pythonModule);
 
     NodePtr createNodeFromPythonModule(Plugin* plugin,
-                                       const boost::shared_ptr<NodeCollection>& group,
-                                       CreateNodeReason reason,
-                                       const boost::shared_ptr<NodeSerialization>& serialization);
+                                       const CreateNodeArgs& args);
 
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };

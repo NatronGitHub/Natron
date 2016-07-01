@@ -233,18 +233,14 @@ NodeRenderWatcher::handleBlockingTask(int taskID)
 {
     BlockingTaskEnum task = (BlockingTaskEnum)taskID;
 
-    for (NodesWList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        NodePtr node = it->lock();
-        if (!node) {
-            continue;
-        }
+    for (NodesList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         switch (task) {
         case eBlockingTaskAbortAnyProcessing:
-            node->abortAnyProcessing_blocking();
+            (*it)->abortAnyProcessing_blocking();
             break;
 
         case eBlockingTaskQuitAnyProcessing:
-            node->quitAnyProcessing_blocking(false);
+            (*it)->quitAnyProcessing_blocking(false);
             break;
         }
     }

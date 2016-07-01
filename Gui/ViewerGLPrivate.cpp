@@ -54,7 +54,6 @@
 #endif
 
 
-#define MAX_MIP_MAP_LEVELS 20
 
 NATRON_NAMESPACE_ENTER;
 
@@ -67,7 +66,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , vboVerticesId(0)
     , vboTexturesId(0)
     , iboTriangleStripId(0)
-    , activeTextures()
     , displayTextures()
     , partialUpdateTextures()
     , shaderRGB()
@@ -83,7 +81,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , textRenderingColor(200, 200, 200, 255)
     , displayWindowOverlayColor(125, 125, 125, 255)
     , rodOverlayColor(100, 100, 100, 255)
-    , textFont( new QFont(appFont, appFontSize) )
+    , textFont(appFont, appFontSize)
     , overlay(true)
     , updatingTexture(false)
     , clearColor(0, 0, 0, 255)
@@ -102,15 +100,15 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , currentViewerInfo_resolutionOverlay()
     , pickerState(ePickerStateInactive)
     , lastPickerPos()
-    , userRoIEnabled(false) // protected by mutex
-    , userRoI() // protected by mutex
+    , userRoIEnabled(false)   // protected by mutex
+    , userRoI()   // protected by mutex
     , buildUserRoIOnNextPress(false)
     , draggedUserRoI()
-    , zoomCtx() // protected by mutex
-    , clipToDisplayWindow(false) // protected by mutex
+    , zoomCtx()   // protected by mutex
+    , clipToDisplayWindow(false)   // protected by mutex
     , wipeControlsMutex()
-    , mixAmount(1.) // protected by mutex
-    , wipeAngle(M_PI_2) // protected by mutex
+    , mixAmount(1.)   // protected by mutex
+    , wipeAngle(M_PI_2)   // protected by mutex
     , wipeCenter()
     , wipeInitialized(false)
     , selectionRectangle()
@@ -127,22 +125,10 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , isUpdatingTexture(false)
     , renderOnPenUp(false)
     , updateViewerPboIndex(0)
-    , lastTextureTransferRoI()
-    , lastTextureTransferMipMapLevel()
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
 
-    for (int i = 0; i < 2; ++i) {
-        displayTextures[i].isPartialImage = false;
-        displayTextures[i].gain = 1.;
-        displayTextures[i].gamma = 1.;
-        displayTextures[i].offset = 0.;
-        displayTextures[i].memoryHeldByLastRenderedImages = 0;
-        displayTextures[i].time = 0;
-        displayTextures[i].mipMapLevel = 0;
-        displayTextures[i].lastRenderedTiles.resize(MAX_MIP_MAP_LEVELS);
-    }
     assert( qApp && qApp->thread() == QThread::currentThread() );
     //menu->setFont( QFont(appFont,appFontSize) );
 
@@ -171,17 +157,19 @@ ViewerGL::Implementation::~Implementation()
         displayTextures[i].texture.reset();
     }
     partialUpdateTextures.clear();
-    glCheckError();
-    for (U32 i = 0; i < this->pboIds.size(); ++i) {
-        glDeleteBuffers(1, &this->pboIds[i]);
+
+    if ( appPTR && appPTR->isOpenGLLoaded() ) {
+        glCheckError();
+        for (U32 i = 0; i < this->pboIds.size(); ++i) {
+            glDeleteBuffers(1, &this->pboIds[i]);
+        }
+        glCheckError();
+        glDeleteBuffers(1, &this->vboVerticesId);
+        glDeleteBuffers(1, &this->vboTexturesId);
+        glDeleteBuffers(1, &this->iboTriangleStripId);
+        glCheckError();
+        glDeleteTextures(1, &this->checkerboardTextureID);
     }
-    glCheckError();
-    glDeleteBuffers(1, &this->vboVerticesId);
-    glDeleteBuffers(1, &this->vboTexturesId);
-    glDeleteBuffers(1, &this->iboTriangleStripId);
-    glCheckError();
-    delete this->textFont;
-    glDeleteTextures(1, &this->checkerboardTextureID);
 }
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -246,14 +234,17 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
-    const TextureRect &r = this->activeTextures[textureIndex]->getTextureRect();
+    const TextureRect &roiRounded = this->displayTextures[textureIndex].texture->getTextureRect();
+    const TextureRect& roiNotRounded = this->displayTextures[textureIndex].roiNotRoundedToTileSize;
 
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
-    RectI texRect(r.x1, r.y1, r.x2, r.y2);
-    const double par = r.par;
-    RectD canonicalTexRect;
-    texRect.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalTexRect);
+    const double par = roiRounded.par;
+    RectD canonicalRoIRoundedToTileSize;
+    roiRounded.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
+
+    RectD canonicalRoINotRounded;
+    roiNotRounded.toCanonical_noClipping(mipMapLevel, par, &canonicalRoINotRounded);
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
@@ -262,7 +253,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         QMutexLocker l(&this->clipToDisplayWindowMutex);
         clipToDisplayWindow = this->clipToDisplayWindow;
     }
-    RectD rectClippedToRoI(canonicalTexRect);
+    RectD rectClippedToRoI(canonicalRoINotRounded);
 
     if (clipToDisplayWindow) {
         RectD canonicalProjectFormat;
@@ -315,7 +306,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
             ///don't draw anything
             return;
         } else if (polyType == Implementation::eWipePolygonPartial) {
-            this->getPolygonTextureCoordinates(polygonPoints, canonicalTexRect, polygonTexCoords);
+            this->getPolygonTextureCoordinates(polygonPoints, canonicalRoIRoundedToTileSize, polygonTexCoords);
 
             this->bindTextureAndActivateShader(textureIndex, useShader);
 
@@ -336,13 +327,19 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     }
 
     if (polygonMode == eDrawPolygonModeWhole) {
+        const double pixelCenterOffset = 0.5;
+        // draw vertices at the center of the first and last pixel in the texture, with the same texture coordinates
+        rectClippedToRoI.x1 += pixelCenterOffset * par;
+        rectClippedToRoI.x2 -= pixelCenterOffset * par;
+        rectClippedToRoI.y1 += pixelCenterOffset;
+        rectClippedToRoI.y2 -= pixelCenterOffset;
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left(), (GLfloat)rod.top(),    //0
-            (GLfloat)rectClippedToRoI.x1, (GLfloat)rod.top(),          //1
-            (GLfloat)rectClippedToRoI.x2, (GLfloat)rod.top(),    //2
+            (GLfloat)rectClippedToRoI.x1 + pixelCenterOffset, (GLfloat)rod.top(),          //1
+            (GLfloat)rectClippedToRoI.x2 - pixelCenterOffset, (GLfloat)rod.top(),    //2
             (GLfloat)rod.right(), (GLfloat)rod.top(),   //3
-            (GLfloat)rod.left(), (GLfloat)rectClippedToRoI.y2, //4
+            (GLfloat)rod.left(), (GLfloat)rectClippedToRoI.y2 - pixelCenterOffset, //4
             (GLfloat)rectClippedToRoI.x1,  (GLfloat)rectClippedToRoI.y2,       //5
             (GLfloat)rectClippedToRoI.x2,  (GLfloat)rectClippedToRoI.y2, //6
             (GLfloat)rod.right(), (GLfloat)rectClippedToRoI.y2, //7
@@ -360,10 +357,10 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         //        GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
         //        GLfloat texLeft = 0;
         //        GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
-        GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 - canonicalTexRect.y1)  / canonicalTexRect.height();
-        GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - canonicalTexRect.y1)  / canonicalTexRect.height();
-        GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 - canonicalTexRect.x1)  / canonicalTexRect.width();
-        GLfloat texRight = (GLfloat)(rectClippedToRoI.x2 - canonicalTexRect.x1)  / canonicalTexRect.width();
+        GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
+        GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
+        GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
+        GLfloat texRight = (GLfloat)(rectClippedToRoI.x2 - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
         GLfloat renderingTextureCoordinates[32] = {
             texLeft, texTop,   //0
             texLeft, texTop,   //1
@@ -435,8 +432,10 @@ ViewerGL::Implementation::initializeGL()
     _this->makeCurrent();
     initAndCheckGlExtensions();
 
-    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
-    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    int format, internalFormat, glType;
+    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
 
 
     // glGenVertexArrays(1, &_vaoId);
@@ -470,8 +469,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
-    const QGLContext* context = _this->context();
-    assert( QGLShaderProgram::hasOpenGLShaderPrograms(context) );
+    assert( QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) );
 
     return true;
 }
@@ -671,10 +669,10 @@ void
 ViewerGL::Implementation::bindTextureAndActivateShader(int i,
                                                        bool useShader)
 {
-    assert(activeTextures[i]);
+    assert(displayTextures[i].texture);
     glActiveTexture(GL_TEXTURE0);
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
-    glBindTexture( GL_TEXTURE_2D, activeTextures[i]->getTexID() );
+    glBindTexture( GL_TEXTURE_2D, displayTextures[i].texture->getTexID() );
     // debug (so the OpenGL debugger can make a breakpoint here)
     //GLfloat d;
     //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);

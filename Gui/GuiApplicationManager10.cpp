@@ -30,8 +30,6 @@
 #include <boost/scoped_ptr.hpp>
 
 ///gui
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
@@ -44,6 +42,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/LibraryBinary.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
@@ -56,8 +55,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiFactory.h"
-#include "Gui/QtDecoder.h"
-#include "Gui/QtEncoder.h"
 #include "Gui/SplashScreen.h"
 
 // removed in qt5, just revert the commit (1b58d9acc493111390b31f0bffd6b2a76baca91b)
@@ -131,78 +128,12 @@ GuiApplicationManager::setLoadingStatus(const QString & str)
 }
 
 void
-GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                                              std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap)
+GuiApplicationManager::loadBuiltinNodePlugins(IOPluginsMap* readersMap,
+                                              IOPluginsMap* writersMap)
 {
-    ////ReadQt and WriteQt are buggy and not maintained
-    // these are built-in nodes
-    QStringList grouping;
-
-    grouping.push_back( QString::fromUtf8(PLUGIN_GROUP_IMAGE) );
-
-# ifdef NATRON_ENABLE_QT_IO_NODES
-    {
-        QStringList pgrp = grouping;
-        pgrp.push_back("Readers");
-        boost::scoped_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( NodePtr() ) ) );
-        assert( reader.get() );
-        std::map<std::string, void (*)()> readerFunctions;
-        readerFunctions.insert( std::make_pair("BuildEffect", ( void (*)() ) & QtReader::BuildEffect) );
-        LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
-        assert(readerPlugin);
-
-        registerPlugin(QString(), pgrp, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", QStringList(), false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), false);
-
-        std::vector<std::string> extensions = reader->supportedFileFormats();
-        for (U32 k = 0; k < extensions.size(); ++k) {
-            std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-            it = readersMap->find(extensions[k]);
-
-            if ( it != readersMap->end() ) {
-                it->second.push_back( std::make_pair(reader->getPluginID(), -1) );
-            } else {
-                std::vector<std::pair<std::string, double> > newVec(1);
-                newVec[0] = std::make_pair(reader->getPluginID(), -1);
-                readersMap->insert( std::make_pair(extensions[k], newVec) );
-            }
-        }
-    }
-
-    {
-        QStringList pgrp = grouping;
-        pgrp.push_back("Writers");
-        boost::scoped_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( NodePtr() ) ) );
-        assert( writer.get() );
-        std::map<std::string, void (*)()> writerFunctions;
-        writerFunctions.insert( std::make_pair("BuildEffect", ( void (*)() ) & QtWriter::BuildEffect) );
-        LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
-        assert(writerPlugin);
-
-        registerPlugin(QString(), pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(), "", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
-
-
-        std::vector<std::string> extensions = writer->supportedFileFormats();
-        for (U32 k = 0; k < extensions.size(); ++k) {
-            std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-            it = writersMap->find(extensions[k]);
-
-            if ( it != writersMap->end() ) {
-                it->second.push_back( std::make_pair(writer->getPluginID(), -1) );
-            } else {
-                std::vector<std::pair<std::string, double> > newVec(1);
-                newVec[0] = std::make_pair(writer->getPluginID(), -1);
-                writersMap->insert( std::make_pair(extensions[k], newVec) );
-            }
-        }
-    }
-# else // !NATRON_ENABLE_QT_IO_NODES
-    Q_UNUSED(readersMap);
-    Q_UNUSED(writersMap);
-# endif // NATRON_ENABLE_QT_IO_NODES
-
-    ///Also load the plug-ins of the AppManager
+    // Nothing special, load base class implementation
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
-} // loadBuiltinNodePlugins
+}
 
 AppInstPtr
 GuiApplicationManager::makeNewInstance(int appID) const
@@ -376,7 +307,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
     QString fileCopy( QString::fromUtf8( filename.c_str() ) );
     QString ext = QtCompat::removeFileExtension(fileCopy);
-    std::string readerFileType = appPTR->isImageFileSupportedByNatron( ext.toStdString() );
+    std::string readerFileType = appPTR->getReaderPluginIDForFileType( ext.toStdString() );
     AppInstPtr mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
 
@@ -389,8 +320,10 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
         return false;
     }
 
-    CreateNodeArgs args( QString::fromUtf8( readerFileType.c_str() ), eCreateNodeReasonUserCreate, mainInstance->getProject() );
-    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+    CreateNodeArgs args(readerFileType, mainInstance->getProject() );
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
         mainInstance->quit();
@@ -410,7 +343,9 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 
     ///If no viewer is found, create it
     if (!viewerFound) {
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, mainInstance->getProject() );
+        CreateNodeArgs args(PLUGINID_NATRON_VIEWER, mainInstance->getProject() );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         viewerFound = mainInstance->createNode(args);
     }
     if (viewerFound) {
@@ -464,7 +399,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         GuiAppInstPtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
-            app->getGui()->closeInstance(warnUserForSave);
+            app->getGui()->abortProject(true, warnUserForSave, true);
         }
 
         //refreshg ui instances
@@ -780,7 +715,6 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, Qt::NoModifier, Qt::Key_S);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, Qt::NoModifier, (Qt::Key)0);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, Qt::ControlModifier, Qt::Key_I);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::AltModifier, Qt::Key_S); // as in Nuke
@@ -888,6 +822,7 @@ GuiApplicationManager::populateShortcuts()
 
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
+    //registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, kShortcutDescMousePickInputColor, Qt::ControlModifier | Qt::AltModifier, Qt::LeftButton);
 
 
     ///Player
@@ -948,6 +883,9 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, kShortcutDescActionGraphExpandGroup, Qt::ControlModifier | Qt::AltModifier,
                     Qt::Key_G);
 
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, kShortcutDescActionGraphOpenNodePanel, Qt::NoModifier, Qt::Key_Return);
+
+
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier, Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
@@ -978,6 +916,7 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, kShortcutDescActionDopeSheetEditorCopySelectedKeyframes, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, kShortcutDescActionDopeSheetEditorPasteKeyframes, Qt::ControlModifier, Qt::Key_V);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute, kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_V);
 
     //Script editor
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, kShortcutDescActionScriptEditorPrevScript, Qt::ControlModifier, Qt::Key_BracketLeft, Qt::ShiftModifier | Qt::AltModifier);

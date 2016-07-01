@@ -31,12 +31,11 @@
 #include <map>
 #include <set>
 
-#include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
@@ -139,7 +138,16 @@ class Curve
     };
 
 public:
+    struct YRange {
+        YRange(double min_, double max_)
+            : min(min_)
+            , max(max_)
+        {
+        }
 
+        double min;
+        double max;
+    };
 
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
@@ -149,7 +157,8 @@ public:
     /**
      * @brief An empty curve, held by owner. This is the "normal" constructor.
      **/
-    Curve(KnobI* owner, int dimensionInOwner);
+    Curve(KnobI* owner,
+          int dimensionInOwner);
 
     Curve(const Curve & other);
 
@@ -275,7 +284,7 @@ public:
 
     void setCurveInterpolation(KeyframeTypeEnum interp);
 
-    std::pair<double, double> getCurveYRange() const WARN_UNUSED_RETURN;
+    YRange getCurveYRange() const WARN_UNUSED_RETURN;
 
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
 
@@ -294,7 +303,7 @@ private:
     KeyFrameSet::const_iterator atIndex(int index) const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
-    std::pair<double, double> getCurveYRange_internal() const WARN_UNUSED_RETURN;
+    YRange getCurveYRange_internal() const WARN_UNUSED_RETURN;
 
     void removeKeyFrame(KeyFrameSet::const_iterator it);
 

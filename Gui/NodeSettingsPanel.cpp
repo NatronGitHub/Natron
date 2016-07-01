@@ -74,8 +74,6 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     NodeUi->getUndoStack(),
                     QString::fromUtf8( NodeUi->getNode()->getLabel().c_str() ),
                     QString::fromUtf8( NodeUi->getNode()->getPluginDescription().c_str() ),
-                    false,
-                    QString::fromUtf8("Settings"),
                     parent)
     , _nodeGUI(NodeUi)
     , _selected(false)

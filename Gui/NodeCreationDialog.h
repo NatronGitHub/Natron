@@ -97,7 +97,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    explicit NodeCreationDialog(const QString& initialFilter, QWidget* parent);
+    explicit NodeCreationDialog(const QString& initialFilter,
+                                QWidget* parent);
 
     virtual ~NodeCreationDialog() OVERRIDE;
 

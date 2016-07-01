@@ -130,16 +130,19 @@ class NodeGui
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-             Q_INTERFACES(QGraphicsItem)
+    Q_INTERFACES(QGraphicsItem)
 
 public:
 
-
     typedef std::vector<Edge*> InputEdges;
+
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     NodeGui(QGraphicsItem *parent = 0);
 
+public:
     void initialize(NodeGraph* dag,
                     const NodePtr & internalNode);
 
@@ -383,9 +386,12 @@ public:
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
     virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void removePositionHostOverlay(KnobI* knob) OVERRIDE FINAL;
-    virtual void setPluginIconFilePath(const std::string& filePath) OVERRIDE FINAL;
-    virtual void setPluginDescription(const std::string& description) OVERRIDE FINAL;
-    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping, const std::string& pluginLabel, const std::string& pluginID, unsigned int version) OVERRIDE FINAL;
+    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
+                                       const std::string& pluginLabel,
+                                       const std::string& pluginID,
+                                       const std::string& pluginDesc,
+                                       const std::string& pluginIconFilePath,
+                                       unsigned int version) OVERRIDE FINAL;
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
@@ -423,6 +429,10 @@ protected:
                                     bool /*forceResize*/) {}
 
 public Q_SLOTS:
+
+    void onInputLabelChanged(int inputNb,const QString& label);
+
+    void onInputVisibilityChanged(int inputNb);
 
     void onRightClickActionTriggered();
 

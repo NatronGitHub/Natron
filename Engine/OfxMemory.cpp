@@ -27,8 +27,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)

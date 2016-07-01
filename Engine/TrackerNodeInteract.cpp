@@ -26,7 +26,9 @@
 #include "TrackerNodeInteract.h"
 
 #ifndef NDEBUG
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 #include "Engine/Image.h"
@@ -89,7 +91,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     , selectedMarkerTextureRoI()
     , selectedMarker()
     , pboID(0)
-    , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
     , imageGetterWatcher()
     , showMarkerTexture(false)
     , selectedMarkerScale()
@@ -546,6 +547,7 @@ void
 TrackerNodeInteract::computeSelectedMarkerCanonicalRect(RectD* rect) const
 {
     assert(selectedMarkerTexture);
+    int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     computeTextureCanonicalRect(*selectedMarkerTexture, 0, selectedMarkerWidth, rect);
 }
 
@@ -667,6 +669,8 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     boost::shared_ptr<KnobDouble> searchWndBtmLeft = marker->getSearchWindowBottomLeftKnob();
     boost::shared_ptr<KnobDouble> searchWndTopRight = marker->getSearchWindowTopRightKnob();
     int fontHeight = overlay->getWidgetFontHeight();
+
+    int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     double xOffsetPixels = selectedMarkerWidth;
     QPointF viewerTopLeftCanonical = overlay->toCanonicalCoordinates( QPointF(0, 0.) );
 
@@ -1172,74 +1176,94 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
         glGenBuffers(1, &pboID);
     }
 
+    // bind PBO to update texture source
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
+
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+
+    // map the buffer object into client's memory
     GLvoid *buf = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
     assert(buf);
+    if (buf) {
+        // update data directly on the mapped buffer
+        if (!image) {
+            int pixelsCount = roi.area();
+            unsigned int* dstPixels = (unsigned int*)buf;
+            for (int i = 0; i < pixelsCount; ++i, ++dstPixels) {
+                *dstPixels = toBGRA(0, 0, 0, 255);
+            }
+        } else {
+            int srcNComps = (int)image->getComponentsCount();
+            assert(srcNComps >= 3);
+            Image::ReadAccess acc( image.get() );
+            const float* srcPixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
+            unsigned int* dstPixels = (unsigned int*)buf;
+            assert(srcPixels);
 
-    if (!image) {
-        int pixelsCount = roi.area();
-        unsigned int* dstPixels = (unsigned int*)buf;
-        for (int i = 0; i < pixelsCount; ++i, ++dstPixels) {
-            *dstPixels = toBGRA(0, 0, 0, 255);
-        }
-    } else {
-        int srcNComps = (int)image->getComponentsCount();
-        assert(srcNComps >= 3);
-        Image::ReadAccess acc( image.get() );
-        const float* srcPixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
-        unsigned int* dstPixels = (unsigned int*)buf;
-        assert(srcPixels);
+            int w = roi.width();
+            int srcRowElements = bounds.width() * srcNComps;
+            const Color::Lut* lut = Color::LutManager::sRGBLut();
+            lut->validate();
+            assert(lut);
 
-        int w = roi.width();
-        int srcRowElements = bounds.width() * srcNComps;
-        const Color::Lut* lut = Color::LutManager::sRGBLut();
-        lut->validate();
-        assert(lut);
+            unsigned char alpha = 255;
 
-        unsigned char alpha = 255;
+            for (int y = roi.y1; y < roi.y2; ++y, dstPixels += w, srcPixels += srcRowElements) {
+                int start = (int)( rand() % (roi.x2 - roi.x1) );
 
-        for (int y = roi.y1; y < roi.y2; ++y, dstPixels += w, srcPixels += srcRowElements) {
-            int start = (int)( rand() % (roi.x2 - roi.x1) );
+                for (int backward = 0; backward < 2; ++backward) {
+                    int index = backward ? start - 1 : start;
+                    assert( backward == 1 || ( index >= 0 && index < (roi.x2 - roi.x1) ) );
+                    unsigned error_r = 0x80;
+                    unsigned error_g = 0x80;
+                    unsigned error_b = 0x80;
 
-            for (int backward = 0; backward < 2; ++backward) {
-                int index = backward ? start - 1 : start;
-                assert( backward == 1 || ( index >= 0 && index < (roi.x2 - roi.x1) ) );
-                unsigned error_r = 0x80;
-                unsigned error_g = 0x80;
-                unsigned error_b = 0x80;
+                    while (index < w && index >= 0) {
+                        float r = srcPixels[index * srcNComps];
+                        float g = srcPixels[index * srcNComps + 1];
+                        float b = srcPixels[index * srcNComps + 2];
 
-                while (index < w && index >= 0) {
-                    float r = srcPixels[index * srcNComps];
-                    float g = srcPixels[index * srcNComps + 1];
-                    float b = srcPixels[index * srcNComps + 2];
+                        error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
+                        error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
+                        error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
+                        assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
 
-                    error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
-                    error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
-                    error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
-                    assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-
-                    dstPixels[index] = toBGRA( (U8)(error_r >> 8),
-                                               (U8)(error_g >> 8),
-                                               (U8)(error_b >> 8),
-                                               alpha );
-
-
-                    if (backward) {
-                        --index;
-                    } else {
-                        ++index;
+                        dstPixels[index] = toBGRA( (U8)(error_r >> 8),
+                                                  (U8)(error_g >> 8),
+                                                  (U8)(error_b >> 8),
+                                                  alpha );
+                        
+                        
+                        if (backward) {
+                            --index;
+                        } else {
+                            ++index;
+                        }
                     }
                 }
             }
         }
+        
+        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        assert(result == GL_TRUE);
+        Q_UNUSED(result);
     }
-
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
-    tex->fillOrAllocateTexture(region, Texture::eDataTypeByte, RectI(), false);
 
+    // copy pixels from PBO to texture object
+    // using glBindTexture followed by glTexSubImage2D.
+    // Use offset instead of pointer (last parameter is 0).
+    tex->fillOrAllocateTexture(region, RectI(), false, 0);
+
+    // restore previously bound PBO
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
 
     glCheckError();
@@ -1315,12 +1339,17 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!isOpenGLViewer) {
         return;
     }
-
+    if (!ret.first) {
+        return;
+    }
     isOpenGLViewer->makeOpenGLcontextCurrent();
 
     showMarkerTexture = true;
     if (!selectedMarkerTexture) {
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        int format, internalFormat, glType;
+        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                                 format, internalFormat, glType) );
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;
@@ -1358,7 +1387,10 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
                 return;
             }
             TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
-            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+            int format, internalFormat, glType;
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                          format, internalFormat, glType) );
             keyTextures[it->first.time] = tex;
             convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 
@@ -1406,7 +1438,13 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
         _p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
         double time = _p->publicInterface->getCurrentTime();
         bool createkey = createKeyOnMoveButton.lock()->getValue();
+
+        int hasMovedMarker = false;
         for (std::list< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+
+            if (!(*it)->isEnabled(time)) {
+                continue;
+            }
             boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
             boost::shared_ptr<KnobDouble> patternCorners[4];
             patternCorners[0] = (*it)->getPatternBtmLeftKnob();
@@ -1426,10 +1464,11 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
             if (createkey) {
                 (*it)->setUserKeyframe(time);
             }
+            hasMovedMarker = true;
         }
         refreshSelectedMarkerTexture();
 
-        return true;
+        return hasMovedMarker;
     }
 
     return false;
@@ -1497,155 +1536,192 @@ TrackerNodeInteract::transformPattern(double time,
             patternPoints[1].rx() += delta.x;
             patternPoints[1].ry() += delta.y;
 
-            patternPoints[0].rx() += delta.x;
-            patternPoints[0].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[0].rx() += delta.x;
+                patternPoints[0].ry() -= delta.y;
 
-            patternPoints[2].rx() -= delta.x;
-            patternPoints[2].ry() += delta.y;
+                patternPoints[2].rx() -= delta.x;
+                patternPoints[2].ry() += delta.y;
 
-            patternPoints[3].rx() -= delta.x;
-            patternPoints[3].ry() -= delta.y;
+                patternPoints[3].rx() -= delta.x;
+                patternPoints[3].ry() -= delta.y;
+            }
         }
 
         searchPoints[1].rx() += delta.x;
         searchPoints[1].ry() += delta.y;
 
-        searchPoints[0].rx() += delta.x;
-        searchPoints[0].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[0].rx() += delta.x;
+            searchPoints[0].ry() -= delta.y;
 
-        searchPoints[2].rx() -= delta.x;
-        searchPoints[2].ry() += delta.y;
+            searchPoints[2].rx() -= delta.x;
+            searchPoints[2].ry() += delta.y;
 
-        searchPoints[3].rx() -= delta.x;
-        searchPoints[3].ry() -= delta.y;
+            searchPoints[3].rx() -= delta.x;
+            searchPoints[3].ry() -= delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerBtmRight) ||
-                ( state == eMouseStateDraggingOuterBtmRight) ) {
+               ( state == eMouseStateDraggingOuterBtmRight) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() -= delta.x;
-            patternPoints[1].ry() += delta.y;
 
-            patternPoints[0].rx() -= delta.x;
-            patternPoints[0].ry() -= delta.y;
 
             patternPoints[2].rx() += delta.x;
             patternPoints[2].ry() += delta.y;
 
-            patternPoints[3].rx() += delta.x;
-            patternPoints[3].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].rx() -= delta.x;
+                patternPoints[1].ry() += delta.y;
+
+                patternPoints[0].rx() -= delta.x;
+                patternPoints[0].ry() -= delta.y;
+
+                patternPoints[3].rx() += delta.x;
+                patternPoints[3].ry() -= delta.y;
+            }
         }
 
-        searchPoints[1].rx() -= delta.x;
-        searchPoints[1].ry() += delta.y;
-
-        searchPoints[0].rx() -= delta.x;
-        searchPoints[0].ry() -= delta.y;
 
         searchPoints[2].rx() += delta.x;
         searchPoints[2].ry() += delta.y;
 
-        searchPoints[3].rx() += delta.x;
-        searchPoints[3].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].rx() -= delta.x;
+            searchPoints[1].ry() += delta.y;
+
+            searchPoints[0].rx() -= delta.x;
+            searchPoints[0].ry() -= delta.y;
+
+            searchPoints[3].rx() += delta.x;
+            searchPoints[3].ry() -= delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerTopRight) ||
-                ( state == eMouseStateDraggingOuterTopRight) ) {
+               ( state == eMouseStateDraggingOuterTopRight) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() -= delta.x;
-            patternPoints[1].ry() -= delta.y;
 
-            patternPoints[0].rx() -= delta.x;
-            patternPoints[0].ry() += delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].rx() -= delta.x;
+                patternPoints[1].ry() -= delta.y;
 
-            patternPoints[2].rx() += delta.x;
-            patternPoints[2].ry() -= delta.y;
+                patternPoints[0].rx() -= delta.x;
+                patternPoints[0].ry() += delta.y;
+
+                patternPoints[2].rx() += delta.x;
+                patternPoints[2].ry() -= delta.y;
+            }
 
             patternPoints[3].rx() += delta.x;
             patternPoints[3].ry() += delta.y;
         }
 
-        searchPoints[1].rx() -= delta.x;
-        searchPoints[1].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].rx() -= delta.x;
+            searchPoints[1].ry() -= delta.y;
 
-        searchPoints[0].rx() -= delta.x;
-        searchPoints[0].ry() += delta.y;
+            searchPoints[0].rx() -= delta.x;
+            searchPoints[0].ry() += delta.y;
 
-        searchPoints[2].rx() += delta.x;
-        searchPoints[2].ry() -= delta.y;
-
+            searchPoints[2].rx() += delta.x;
+            searchPoints[2].ry() -= delta.y;
+        }
+        
         searchPoints[3].rx() += delta.x;
         searchPoints[3].ry() += delta.y;
     } else if ( (state == eMouseStateDraggingInnerTopLeft) ||
-                ( state == eMouseStateDraggingOuterTopLeft) ) {
+               ( state == eMouseStateDraggingOuterTopLeft) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() += delta.x;
-            patternPoints[1].ry() -= delta.y;
-
             patternPoints[0].rx() += delta.x;
             patternPoints[0].ry() += delta.y;
 
-            patternPoints[2].rx() -= delta.x;
-            patternPoints[2].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].rx() += delta.x;
+                patternPoints[1].ry() -= delta.y;
 
-            patternPoints[3].rx() -= delta.x;
-            patternPoints[3].ry() += delta.y;
+                patternPoints[2].rx() -= delta.x;
+                patternPoints[2].ry() -= delta.y;
+
+                patternPoints[3].rx() -= delta.x;
+                patternPoints[3].ry() += delta.y;
+            }
         }
-
-        searchPoints[1].rx() += delta.x;
-        searchPoints[1].ry() -= delta.y;
 
         searchPoints[0].rx() += delta.x;
         searchPoints[0].ry() += delta.y;
 
-        searchPoints[2].rx() -= delta.x;
-        searchPoints[2].ry() -= delta.y;
 
-        searchPoints[3].rx() -= delta.x;
-        searchPoints[3].ry() += delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].rx() += delta.x;
+            searchPoints[1].ry() -= delta.y;
+
+            searchPoints[2].rx() -= delta.x;
+            searchPoints[2].ry() -= delta.y;
+
+            searchPoints[3].rx() -= delta.x;
+            searchPoints[3].ry() += delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerBtmMid) ||
-                ( state == eMouseStateDraggingOuterBtmMid) ) {
+               ( state == eMouseStateDraggingOuterBtmMid) ) {
         if (transformPatternCorners) {
             patternPoints[1].ry() += delta.y;
             patternPoints[2].ry() += delta.y;
-            patternPoints[0].ry() -= delta.y;
-            patternPoints[3].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[0].ry() -= delta.y;
+                patternPoints[3].ry() -= delta.y;
+            }
         }
         searchPoints[1].ry() += delta.y;
         searchPoints[2].ry() += delta.y;
-        searchPoints[0].ry() -= delta.y;
-        searchPoints[3].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[0].ry() -= delta.y;
+            searchPoints[3].ry() -= delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerTopMid) ||
                 ( state == eMouseStateDraggingOuterTopMid) ) {
         if (transformPatternCorners) {
-            patternPoints[1].ry() -= delta.y;
-            patternPoints[2].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].ry() -= delta.y;
+                patternPoints[2].ry() -= delta.y;
+            }
             patternPoints[0].ry() += delta.y;
             patternPoints[3].ry() += delta.y;
         }
-        searchPoints[1].ry() -= delta.y;
-        searchPoints[2].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].ry() -= delta.y;
+            searchPoints[2].ry() -= delta.y;
+        }
         searchPoints[0].ry() += delta.y;
         searchPoints[3].ry() += delta.y;
     } else if ( (state == eMouseStateDraggingInnerMidLeft) ||
                 ( state == eMouseStateDraggingOuterMidLeft) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() += delta.x;
-            patternPoints[2].rx() -= delta.x;
             patternPoints[0].rx() += delta.x;
-            patternPoints[3].rx() -= delta.x;
+            patternPoints[1].rx() += delta.x;
+            if (controlDown == 0) {
+                patternPoints[2].rx() -= delta.x;
+                patternPoints[3].rx() -= delta.x;
+            }
         }
-        searchPoints[1].rx() += delta.x;
-        searchPoints[2].rx() -= delta.x;
         searchPoints[0].rx() += delta.x;
-        searchPoints[3].rx() -= delta.x;
+        searchPoints[1].rx() += delta.x;
+        if (controlDown == 0) {
+            searchPoints[2].rx() -= delta.x;
+            searchPoints[3].rx() -= delta.x;
+        }
     } else if ( (state == eMouseStateDraggingInnerMidRight) ||
                 ( state == eMouseStateDraggingOuterMidRight) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() -= delta.x;
+            if (controlDown == 0) {
+                patternPoints[0].rx() -= delta.x;
+                patternPoints[1].rx() -= delta.x;
+            }
             patternPoints[2].rx() += delta.x;
-            patternPoints[0].rx() -= delta.x;
             patternPoints[3].rx() += delta.x;
         }
-        searchPoints[1].rx() -= delta.x;
+        if (controlDown == 0) {
+            searchPoints[0].rx() -= delta.x;
+            searchPoints[1].rx() -= delta.x;
+        }
         searchPoints[2].rx() += delta.x;
-        searchPoints[0].rx() -= delta.x;
         searchPoints[3].rx() += delta.x;
     }
 

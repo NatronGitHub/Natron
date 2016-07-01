@@ -38,6 +38,9 @@
 
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
+#include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 
@@ -90,8 +93,7 @@ DocumentationManager::startServer()
 {
     server = new QHttpServer(this);
     connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
-    connect( server, SIGNAL(newPort(int)), this, SLOT(setPort(int)) );
-    server->listen(QHostAddress::LocalHost, 0);
+    server->listen( QHostAddress::LocalHost, appPTR->getCurrentSettings()->getServerPort() );
 }
 
 void
@@ -162,17 +164,13 @@ DocumentationManager::handler(QHttpRequest *req,
                         }
 
                         if (plugin) {
-                            QString isPyPlug = plugin->getPythonModule();
-                            if ( !isPyPlug.isEmpty() ) { // loading pyplugs crash, so redirect to group
-                                pluginID = QString::fromUtf8("fr.inria.built-in.Group");
-                            }
-                            CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-                            args.createGui = false;
-                            args.addToProject = false;
+        
+                            CreateNodeArgs args( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() );
+                            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
-                                QString html = node->makeHTMLDocumentation(true, false);
-                                html.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
+                                QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
                             }
@@ -287,6 +285,7 @@ DocumentationManager::handler(QHttpRequest *req,
                              .arg( tr("Reference Guide") ) );
                 html.append(navFooter);
                 html.append(groupBodyStart);
+
                 for (int i = 0; i < plugins.size(); ++i) {
                     QStringList pluginInfo = plugins.at(i);
                     QString plugID, plugName;
@@ -319,6 +318,8 @@ DocumentationManager::handler(QHttpRequest *req,
             html.append(navHeader);
             html.append(navFooter);
             html.append(groupBodyStart);
+            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("Preferences") ) );
+
             QStringList groups;
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
@@ -353,7 +354,7 @@ DocumentationManager::handler(QHttpRequest *req,
     QFileInfo staticFileInfo;
     if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".css") ) || page.endsWith( QString::fromUtf8(".js") ) || page.endsWith( QString::fromUtf8(".txt") ) || page.endsWith( QString::fromUtf8(".png") ) || page.endsWith( QString::fromUtf8(".jpg") ) ) {
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") );
+            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") );
         } else {
             staticFileInfo = docDir + page;
         }
@@ -503,13 +504,10 @@ DocumentationManager::parser(QString html,
     return result;
 }             // DocumentationManager::parser
 
-void
-DocumentationManager::setPort(int port)
+int
+DocumentationManager::serverPort()
 {
-#ifdef DEBUG
-    qDebug() << "Documentation Server is attached to port" << port;
-#endif
-    appPTR->getCurrentSettings()->setServerPort(port);
+    return server->serverPort();
 }
 
 NATRON_NAMESPACE_EXIT;

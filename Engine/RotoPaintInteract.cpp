@@ -50,7 +50,7 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
     , isPaintByDefault(isPaintByDefault)
     , premultKnob()
     , enabledKnobs()
-    , ui( new RotoPaintInteract(this) )
+, ui( RotoPaintInteract::create(this) )
 {
 }
 
@@ -188,6 +188,7 @@ RotoPaintInteract::drawSelectedCp(double time,
 
     bool drawLeftHandle = leftDeriv.x != x || leftDeriv.y != y;
     bool drawRightHandle = rightDeriv.y != x || rightDeriv.y != y;
+    glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
     if (drawLeftHandle) {
         if (colorLeftTangent) {
@@ -218,6 +219,7 @@ RotoPaintInteract::drawSelectedCp(double time,
         glVertex2d(rightDeriv.x, rightDeriv.y);
     }
     glEnd();
+    glDisable(GL_POINT_SMOOTH);
 } // drawSelectedCp
 
 void
@@ -660,6 +662,7 @@ RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& rol
     rippleEditEnabledButton.lock()->setInViewerContextSecret(isPaintRole);
     addKeyframeButton.lock()->setInViewerContextSecret(isPaintRole);
     removeKeyframeButton.lock()->setInViewerContextSecret(isPaintRole);
+    showTransformHandle.lock()->setInViewerContextSecret(isPaintRole);
 
     // RotoPaint action bar
     colorWheelButton.lock()->setInViewerContextSecret(!isPaintRole);
@@ -803,10 +806,6 @@ RotoPaintInteract::computeSelectedCpsBBOX()
     }
 
     double time = p->publicInterface->getCurrentTime();
-    std::pair<double, double> pixelScale;
-
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-
 
     double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
@@ -1174,8 +1173,8 @@ RotoPaintInteract::isWithinSelectedCpsBBox(const QPointF& pos) const
     double r = selectedCpsBbox.bottomRight().x();
     double b = selectedCpsBbox.bottomRight().y();
     double t = selectedCpsBbox.topLeft().y();
-    double toleranceX = 0;//kXHairSelectedCpsTolerance * pixelScale.first;
-    double toleranceY = 0;//kXHairSelectedCpsTolerance * pixelScale.second;
+    double toleranceX = 0; //kXHairSelectedCpsTolerance * pixelScale.first;
+    double toleranceY = 0; //kXHairSelectedCpsTolerance * pixelScale.second;
 
     return pos.x() > (l - toleranceX) && pos.x() < (r + toleranceX) &&
            pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);
@@ -1478,12 +1477,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
         if (cpCount <= 1) {
             continue;
         }
-        //        std::list<Point> polygon;
-        //        RectD polygonBBox( std::numeric_limits<double>::infinity(),
-        //                           std::numeric_limits<double>::infinity(),
-        //                           -std::numeric_limits<double>::infinity(),
-        //                           -std::numeric_limits<double>::infinity() );
-        //        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
+
 
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;

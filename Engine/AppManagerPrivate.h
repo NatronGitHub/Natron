@@ -40,7 +40,9 @@
 
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
+GCC_DIAG_OFF(deprecated)
 #include "client/mac/handler/exception_handler.h"
+GCC_DIAG_ON(deprecated)
 #elif defined(Q_OS_LINUX)
 #include <fcntl.h>
 #include "client/linux/handler/exception_handler.h"
@@ -50,10 +52,19 @@
 #endif
 #endif
 
+#ifdef Q_OS_LINUX
+#include "Engine/OSGLContext_x11.h"
+#elif defined(Q_OS_WIN32)
+#include "Engine/OSGLContext_win.h"
+#elif defined(Q_OS_MAC)
+#include "Engine/OSGLContext_mac.h"
+#endif
+
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
@@ -75,6 +86,8 @@ public:
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
+    IOPluginsMap readerPlugins; // for all reader plug-ins which are best suited for each format
+    IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache
@@ -88,7 +101,7 @@ public:
     QString _binaryPath; //< the path to the application's binary
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     mutable QMutex errorLogMutex;
-    QString errorLog;
+    std::list<LogEntry> errorLog;
     size_t maxCacheFiles; //< the maximum number of files the application can open for caching. This is the hard limit * 0.9
     size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
     mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount
@@ -148,6 +161,16 @@ public:
     QString missingOpenglError;
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
+
+#ifdef Q_OS_WIN32
+    boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
+#endif
+#ifdef Q_OS_LINUX
+    boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
+#endif
+
+    boost::scoped_ptr<GPUContextPool> renderingContextPool;
+    std::list<OpenGLRendererInfo> openGLRenderers;
     boost::scoped_ptr<QCoreApplication> _qApp;
 
 public:
@@ -163,9 +186,9 @@ public:
 
     void restoreCaches();
 
-    bool checkForCacheDiskStructure(const QString & cachePath);
+    bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled);
 
-    void cleanUpCacheDiskStructure(const QString & cachePath);
+    void cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled);
 
     /**
      * @brief Called on startup to initialize the max opened files
@@ -183,6 +206,12 @@ public:
 #endif
 
     void initGl();
+
+    void initGLAPISpecific();
+
+    void tearDownGL();
+
+    void setViewerCacheTileSize();
 };
 
 NATRON_NAMESPACE_EXIT;

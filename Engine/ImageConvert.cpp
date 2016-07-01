@@ -369,8 +369,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
 
-                        const bool unpremultChannel = (//srcNComps == 4 && // test already done in convertToFormatInternalForDepth
-                                                       //dstNComps == 3 && // test already done in convertToFormatInternalForDepth
+                        const bool unpremultChannel = ( //srcNComps == 4 && // test already done in convertToFormatInternalForDepth
+                                                        //dstNComps == 3 && // test already done in convertToFormatInternalForDepth
                             requiresUnpremult);
 
                         ///This is only set if unpremultChannel is true
@@ -888,6 +888,8 @@ Image::convertToFormat(const RectI & renderWindow,
                        bool requiresUnpremult,
                        Image* dstImg) const
 {
+    // OpenGL textures are always RGBA anyway
+    assert(getStorageMode() != eStorageModeGLTex);
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, false, copyBitmap, requiresUnpremult, dstImg);
 } // convertToFormat
 
@@ -900,6 +902,7 @@ Image::convertToFormatAlpha0(const RectI & renderWindow,
                              bool requiresUnpremult,
                              Image* dstImg) const
 {
+    assert(getStorageMode() != eStorageModeGLTex);
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, true, copyBitmap, requiresUnpremult, dstImg);
 }
 

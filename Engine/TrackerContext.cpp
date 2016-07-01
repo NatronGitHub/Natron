@@ -96,9 +96,9 @@ TrackerContext::load(const TrackerContextSerialization& serialization)
     for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
         TrackMarkerPtr marker;
         if ( it->usePatternMatching() ) {
-            marker.reset( new TrackMarkerPM(thisShared) );
+            marker = TrackMarkerPM::create(thisShared);
         } else {
-            marker.reset( new TrackMarker(thisShared) );
+            marker = TrackMarker::create(thisShared);
         }
         marker->initializeKnobsPublic();
         marker->load(*it);
@@ -237,12 +237,12 @@ TrackerContext::createMarker()
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     bool usePM = isTrackerPMEnabled();
     if (!usePM) {
-        track.reset( new TrackMarker( shared_from_this() ) );
+        track = TrackMarker::create( shared_from_this() );
     } else {
-        track.reset( new TrackMarkerPM( shared_from_this() ) );
+        track = TrackMarkerPM::create( shared_from_this() );
     }
 #else
-    track.reset( new TrackMarker( shared_from_this() ) );
+    track = TrackMarker::create( shared_from_this() );
 #endif
 
     track->initializeKnobsPublic();
@@ -391,9 +391,21 @@ TrackerContext::getEnabledKnob() const
 }
 
 boost::shared_ptr<KnobPage>
-TrackerContext::getTrackingPageKnbo() const
+TrackerContext::getTrackingPageKnob() const
 {
     return _imp->trackingPageKnob.lock();
+}
+
+boost::shared_ptr<KnobInt>
+TrackerContext::getDefaultMarkerPatternWinSizeKnob() const
+{
+    return _imp->defaultPatternWinSize.lock();
+}
+
+boost::shared_ptr<KnobInt>
+TrackerContext::getDefaultMarkerSearchWinSizeKnob() const
+{
+    return _imp->defaultSearchWinSize.lock();
 }
 
 bool
@@ -449,7 +461,6 @@ TrackerContext::trackSelectedMarkers(int start,
              it != _imp->selectedMarkers.end(); ++it) {
             double time = (*it)->getCurrentTime();
             if ( (*it)->isEnabled(time) ) {
-                (*it)->setEnabledAtTime(time, true);
                 markers.push_back(*it);
             }
         }
@@ -798,7 +809,10 @@ TrackerContext::exportTrackDataFromExportOptions()
 
     NodePtr thisNode = getNode();
     AppInstPtr app = thisNode->getApp();
-    CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, thisNode->getGroup() );
+    CreateNodeArgs args( pluginID.toStdString(), thisNode->getGroup() );
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+
     NodePtr createdNode = app->createNode(args);
     if (!createdNode) {
         return;
@@ -1468,7 +1482,7 @@ TrackerContext::onSchedulerTrackingFinished()
 void
 TrackerContext::onSchedulerTrackingProgress(double progress)
 {
-    if ( !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
+    if ( getNode()->getApp() && !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
         _imp->scheduler.abortThreadedTask();
     }
 }
@@ -1488,6 +1502,8 @@ struct TrackArgsPrivate
     //Store the format size because LibMV internally has a top-down Y axis
     double formatWidth, formatHeight;
     mutable QMutex autoTrackMutex;
+    
+    bool autoKeyingOnEnabledParamEnabled;
 
     TrackArgsPrivate()
         : start(0)
@@ -1500,6 +1516,7 @@ struct TrackArgsPrivate
         , tracks()
         , formatWidth(0)
         , formatHeight(0)
+        , autoKeyingOnEnabledParamEnabled(false)
     {
     }
 };
@@ -1518,7 +1535,8 @@ TrackArgs::TrackArgs(int start,
                      const boost::shared_ptr<TrackerFrameAccessor>& fa,
                      const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
                      double formatWidth,
-                     double formatHeight)
+                     double formatHeight,
+                     bool autoKeyEnabled)
     : GenericThreadStartArgs()
     , _imp( new TrackArgsPrivate() )
 {
@@ -1532,6 +1550,7 @@ TrackArgs::TrackArgs(int start,
     _imp->tracks = tracks;
     _imp->formatWidth = formatWidth;
     _imp->formatHeight = formatHeight;
+    _imp->autoKeyingOnEnabledParamEnabled = autoKeyEnabled;
 }
 
 TrackArgs::~TrackArgs()
@@ -1558,6 +1577,13 @@ TrackArgs::operator=(const TrackArgs& other)
     _imp->tracks = other._imp->tracks;
     _imp->formatWidth = other._imp->formatWidth;
     _imp->formatHeight = other._imp->formatHeight;
+    _imp->autoKeyingOnEnabledParamEnabled = other._imp->autoKeyingOnEnabledParamEnabled;
+}
+
+bool
+TrackArgs::isAutoKeyingEnabledParamEnabled() const
+{
+    return _imp->autoKeyingOnEnabledParamEnabled;
 }
 
 double
@@ -1729,7 +1755,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     }
 
     // Disable the marker since it failed to track
-    if (!ret) {
+    if (!ret && args.isAutoKeyingEnabledParamEnabled()) {
         track->natronMarker->setEnabledAtTime(time, false);
     }
 
@@ -1812,7 +1838,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
     std::vector<int> trackIndexes( tracks.size() );
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         trackIndexes[i] = i;
-
+        tracks[i]->natronMarker->notifyTrackingStarted();
         // unslave the enabled knob, since it is slaved to the gui but we may modify it
         boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
         enabledKnob->unSlave(0, false);
@@ -1855,12 +1881,18 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
                 }
             }
 
+
+
+            lastValidFrame = cur;
+
+
+
             // We don't have any successful track, stop
             if (allTrackFailed) {
                 break;
             }
 
-            lastValidFrame = cur;
+
 
             cur += frameStep;
 
@@ -1935,6 +1967,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             // unslave the enabled knob, since it is slaved to the gui but we may modify it
             boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
 
+            tracks[i]->natronMarker->notifyTrackingEnded();
             contextEnabledKnob->blockListenersNotification();
             contextEnabledKnob->cloneAndUpdateGui( enabledKnob.get() );
             contextEnabledKnob->unblockListenersNotification();

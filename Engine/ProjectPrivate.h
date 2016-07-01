@@ -29,7 +29,7 @@
 
 #include <map>
 #include <list>
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
@@ -40,7 +40,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
 
 #include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
@@ -85,6 +84,7 @@ public:
     boost::shared_ptr<KnobChoice> colorSpace16u;
     boost::shared_ptr<KnobChoice> colorSpace32f;
     boost::shared_ptr<KnobDouble> frameRate;
+    boost::shared_ptr<KnobChoice> gpuSupport;
     boost::shared_ptr<KnobInt> frameRange;
     boost::shared_ptr<KnobBool> lockFrameRange;
     boost::shared_ptr<KnobString> natronVersion;

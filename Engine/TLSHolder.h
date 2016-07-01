@@ -55,9 +55,12 @@ class TLSHolderBase
     friend class AppTLS;
 
 public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TLSHolderBase() {}
 
+public:
     virtual ~TLSHolderBase() {}
 
 protected:
@@ -187,7 +190,8 @@ class TLSHolder
 
 public:
 
-    TLSHolder() : TLSHolderBase() {}
+    TLSHolder()
+        : TLSHolderBase() {}
 
     virtual ~TLSHolder() {}
 

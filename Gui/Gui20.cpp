@@ -32,8 +32,6 @@
 #include <utility>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QTextStream>
 #include <QtCore/QSettings>
 #include <QtCore/QFile>
@@ -43,6 +41,7 @@
 #include <QApplication>
 
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Lut.h" // Color, floatToInt
 #include "Engine/Node.h"
@@ -1240,7 +1239,7 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup() );
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, graph->getGroup() );
     ignore_result( getApp()->createNode(args) );
 }
 
@@ -1248,13 +1247,10 @@ NodePtr
 Gui::createReader()
 {
     NodePtr ret;
-    std::map<std::string, std::string> readersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
+
+    appPTR->getSupportedReaderFileFormats(&filters);
+
     std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true );
     if ( !pattern.empty() ) {
         NodeGraph* graph = 0;
@@ -1267,7 +1263,8 @@ Gui::createReader()
         assert(group);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-        ret = getApp()->createReader(pattern, eCreateNodeReasonUserCreate, group);
+        CreateNodeArgs args(PLUGINID_NATRON_READ, group);
+        ret = getApp()->createReader(pattern, args);
 #else
 
         QString qpattern = QString::fromUtf8( pattern.c_str() );
@@ -1281,8 +1278,8 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding \"%1\" files was found.").arg(ext_qs).toStdString(), false);
         } else {
-            CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
-            args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, pattern) );
+            CreateNodeArgs args(found->second.c_str(), group);
+            args.addParamDefaultValue(kOfxImageEffectFileParamName, pattern);
             std::string canonicalFilename = pattern;
             getApp()->getProject()->canonicalizePath(canonicalFilename);
             int firstFrame, lastFrame;
@@ -1306,14 +1303,9 @@ NodePtr
 Gui::createWriter()
 {
     NodePtr ret;
-    std::map<std::string, std::string> writersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
 
+    appPTR->getSupportedWriterFileFormats(&filters);
 
     std::string file;
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -1344,7 +1336,8 @@ Gui::createWriter()
     boost::shared_ptr<NodeCollection> group = graph->getGroup();
     assert(group);
 
-    ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
+    CreateNodeArgs args(PLUGINID_NATRON_WRITE, group);
+    ret =  getApp()->createWriter(file, args);
 
 
     return ret;
@@ -1368,13 +1361,9 @@ Gui::popOpenFileDialog(bool sequenceDialog,
 std::string
 Gui::openImageSequenceDialog()
 {
-    std::map<std::string, std::string> readersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
+
+    appPTR->getSupportedReaderFileFormats(&filters);
 
     return popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true);
 }
@@ -1382,13 +1371,9 @@ Gui::openImageSequenceDialog()
 std::string
 Gui::saveImageSequenceDialog()
 {
-    std::map<std::string, std::string> writersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
+
+    appPTR->getSupportedWriterFileFormats(&filters);
 
     return popSaveFileDialog(true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true);
 }
@@ -1434,17 +1419,17 @@ Gui::saveWarning()
 }
 
 void
-Gui::loadProjectGui(boost::archive::xml_iarchive & obj) const
+Gui::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->load(obj /*, version*/);
+    _imp->_projectGui->load(isAutosave, obj);
 }
 
 void
 Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->save(archive /*, version*/);
+    _imp->_projectGui->save(archive);
 }
 
 bool

@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Markdown.h"
 
 #include "Gui/GuiFwd.h"
-#include "Gui/KnobGuiContainerI.h"
+#include "Gui/KnobGuiContainerHelper.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -59,8 +59,7 @@ NATRON_NAMESPACE_ENTER;
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
-      , public DockablePanelI
-      , public KnobGuiContainerI
+      , public KnobGuiContainerHelper
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -83,18 +82,12 @@ public:
                            const boost::shared_ptr<QUndoStack>& stack,
                            const QString & initialName = QString(),
                            const QString & helpToolTip = QString(),
-                           bool createDefaultPage = false,
-                           const QString & defaultPageName = QString::fromUtf8("Default"),
                            QWidget *parent = 0);
 
     virtual ~DockablePanel() OVERRIDE;
 
     bool isMinimized() const;
-
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & getKnobs() const;
     QVBoxLayout* getContainer() const;
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
-
     bool isClosed() const;
     bool isFloating() const;
 
@@ -104,10 +97,6 @@ public:
        way you want. The ownership of the Button remains
        to the DockablePanel.*/
     Button* insertHeaderButton(int headerPosition);
-
-
-    void refreshUndoRedoButtonsEnabledNess();
-
 
     void insertHeaderWidget(int index, QWidget* widget);
 
@@ -142,32 +131,13 @@ public:
 
     void onGuiClosing();
 
-    virtual void recreateUserKnobs(bool restorePageIndex) OVERRIDE FINAL;
-    virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
+
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-private:
 
-    void recreateKnobs(const QString& curTabName, bool restorePageIndex);
-
+    FloatingWidget* getFloatingWindow() const;
 public:
 
-    void setUserPageActiveIndex();
-
-    void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
-
-    boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() const;
-    boost::shared_ptr<KnobPage> getUserPageKnob() const;
-
-    void getUserPages(std::list<KnobPage*>& userPages) const;
-
-    virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
-
-    int getPagesCount() const;
 
     /**
      * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
@@ -176,15 +146,31 @@ public:
 
     void setPluginIcon(const QPixmap& pix);
 
-    void setPluginDescription(const std::string& description);
-
-    void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
+    void setPluginIDAndVersion(const std::string& pluginLabel,
+                               const std::string& pluginID,
+                               const std::string& pluginDesc,
+                               unsigned int version);
 
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
+    virtual bool isPagingEnabled() const OVERRIDE FINAL;
+    virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
+    virtual void onKnobsInitialized() OVERRIDE FINAL;
+
+private:
+
+    virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
+    virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
+    virtual QWidget* createPageMainWidget(QWidget* parent) const OVERRIDE FINAL;
+    virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+    virtual void removePageFromContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+    virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
+    virtual void onKnobsRecreated() OVERRIDE FINAL;
+    virtual void onPageActivated(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+    virtual void refreshCurrentPage() OVERRIDE FINAL;
+    virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
 
 public Q_SLOTS:
-
-    void onPageLabelChangedInternally();
 
     void onPageIndexChanged(int index);
 
@@ -200,9 +186,6 @@ public Q_SLOTS:
     ///Set the name on the line-edit/label header
     void setName(const QString & str);
 
-    /*initializes the knobs GUI and also the roto context if any*/
-    void initializeKnobs();
-
     /*Internal slot, not meant to be called externally.*/
     void onUndoClicked();
 
@@ -213,7 +196,7 @@ public Q_SLOTS:
 
     void onLineEditNameEditingFinished();
 
-    void floatPanel();
+    FloatingWidget* floatPanel();
 
     void onColorButtonClicked();
 
@@ -242,7 +225,6 @@ public Q_SLOTS:
 
     void onSubGraphEditionChanged(bool editable);
 
-    void onDeleteCurCmdLater();
 
 Q_SIGNALS:
 
@@ -267,8 +249,6 @@ Q_SIGNALS:
     void closeChanged(bool closed);
 
     void colorChanged(QColor);
-
-    void deleteCurCmdLater();
 
 protected:
 

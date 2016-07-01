@@ -53,12 +53,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    DockablePanel* panel;
+    const DockablePanel* panel;
 
 public:
 
 
-    RightClickableWidget(DockablePanel* panel,
+    RightClickableWidget(const DockablePanel* panel,
                          QWidget* parent)
         : QWidget(parent)
         , panel(panel)
@@ -68,7 +68,7 @@ public:
 
     virtual ~RightClickableWidget() {}
 
-    DockablePanel* getPanel() const { return panel; }
+    const DockablePanel* getPanel() const { return panel; }
 
     static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w);
 

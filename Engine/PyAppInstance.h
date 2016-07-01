@@ -64,6 +64,193 @@ private:
 };
 
 
+class NodeCreationProperty
+{
+
+
+public:
+
+    NodeCreationProperty()
+    {
+
+    }
+
+    virtual ~NodeCreationProperty()
+    {
+
+    }
+
+};
+
+
+class IntNodeCreationProperty : public NodeCreationProperty
+{
+    std::vector<int> values;
+
+public:
+
+    IntNodeCreationProperty(int value)
+    : NodeCreationProperty()
+    , values()
+    {
+        values.push_back(value);
+    }
+
+    IntNodeCreationProperty(const std::vector<int>& values = std::vector<int>())
+    : NodeCreationProperty()
+    , values(values)
+    {
+
+    }
+
+    void setValue(int value, int index = 0)
+    {
+        if (index < 0) {
+            return;
+        }
+        if (index >= (int)values.size()) {
+            values.resize(index + 1);
+        }
+        values[index] = value;
+    }
+
+    const std::vector<int>& getValues() const
+    {
+        return values;
+    }
+
+    virtual ~IntNodeCreationProperty()
+    {
+    }
+};
+
+class BoolNodeCreationProperty : public NodeCreationProperty
+{
+    std::vector<bool> values;
+
+public:
+
+    BoolNodeCreationProperty(bool value)
+    : NodeCreationProperty()
+    , values()
+    {
+        values.push_back(value);
+    }
+
+    BoolNodeCreationProperty(const std::vector<bool>& values = std::vector<bool>())
+    : NodeCreationProperty()
+    , values(values)
+    {
+
+    }
+
+    void setValue(bool value, int index = 0)
+    {
+        if (index < 0) {
+            return;
+        }
+        if (index >= (int)values.size()) {
+            values.resize(index + 1);
+        }
+        values[index] = value;
+    }
+
+    const std::vector<bool>& getValues() const
+    {
+        return values;
+    }
+
+
+    virtual ~BoolNodeCreationProperty()
+    {
+    }
+};
+
+class FloatNodeCreationProperty : public NodeCreationProperty
+{
+    std::vector<double> values;
+
+public:
+
+    FloatNodeCreationProperty(double value)
+    : NodeCreationProperty()
+    , values()
+    {
+        values.push_back(value);
+    }
+
+    FloatNodeCreationProperty(const std::vector<double>& values = std::vector<double>())
+    : NodeCreationProperty()
+    , values(values)
+    {
+
+    }
+
+    void setValue(double value, int index = 0)
+    {
+        if (index < 0) {
+            return;
+        }
+        if (index >= (int)values.size()) {
+            values.resize(index + 1);
+        }
+        values[index] = value;
+    }
+
+    const std::vector<double>& getValues() const
+    {
+        return values;
+    }
+
+
+    virtual ~FloatNodeCreationProperty()
+    {
+    }
+};
+
+class StringNodeCreationProperty : public NodeCreationProperty
+{
+    std::vector<std::string> values;
+
+public:
+
+    StringNodeCreationProperty(const std::string& value)
+    : NodeCreationProperty()
+    , values()
+    {
+        values.push_back(value);
+    }
+
+    StringNodeCreationProperty(const std::vector<std::string>& values = std::vector<std::string>())
+    : NodeCreationProperty()
+    , values(values)
+    {
+
+    }
+
+    void setValue(const std::string& value, int index = 0)
+    {
+        if (index < 0) {
+            return;
+        }
+        if (index >= (int)values.size()) {
+            values.resize(index + 1);
+        }
+        values[index] = value;
+    }
+
+    const std::vector<std::string>& getValues() const
+    {
+        return values;
+    }
+
+
+    virtual ~StringNodeCreationProperty()
+    {
+    }
+};
+
+
 class App
     : public Group
 {
@@ -92,11 +279,14 @@ public:
      **/
     Effect* createNode(const QString& pluginID,
                        int majorVersion = -1,
-                       Group* group = 0) const;
+                       Group* group = 0,
+                       const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
     Effect* createReader(const QString& filename,
-                         Group* group = 0) const;
+                         Group* group = 0,
+                         const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
     Effect* createWriter(const QString& filename,
-                         Group* group = 0) const;
+                         Group* group = 0,
+                         const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
 
     int timelineGetTime() const;
 

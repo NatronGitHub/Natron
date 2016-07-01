@@ -203,7 +203,7 @@ CLArgs::printBackGroundWelcomeMessage()
 void
 CLArgs::printUsage(const std::string& programName)
 {
-    QString msg = tr(/* Text must hold in 80 columns ************************************************/
+    QString msg = tr( /* Text must hold in 80 columns ************************************************/
         "%3 usage:\n"
         "Three distinct execution modes exist in background mode:\n"
         "- The execution of %1 projects (.%2)\n"
@@ -407,7 +407,7 @@ CLArgs::getImageFilename() const
                 QString fileCopy = *it;
                 QString ext = QtCompat::removeFileExtension(fileCopy);
                 if ( !ext.isEmpty() ) {
-                    std::string readerId = appPTR->isImageFileSupportedByNatron( ext.toStdString() );
+                    std::string readerId = appPTR->getReaderPluginIDForFileType( ext.toStdString() );
                     if ( !readerId.empty() ) {
                         _imp->imageFilename = *it;
                         _imp->args.erase(it);

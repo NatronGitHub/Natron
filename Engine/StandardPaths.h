@@ -60,7 +60,16 @@ public:
 
     static QString writableLocation(StandardLocationEnum type);
 
+
+#if QT_VERSION < 0x050000
+    static void appendOrganizationAndApp(QString &path);
+#endif
+
 private:
+
+#ifdef __NATRON_OSX__
+    static QString writableLocation_mac_qt4(StandardLocationEnum type);
+#endif
 
     StandardPaths();
 };

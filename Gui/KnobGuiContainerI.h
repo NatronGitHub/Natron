@@ -49,7 +49,9 @@ public:
     virtual const QUndoCommand* getLastUndoCommand() const = 0;
     virtual void pushUndoCommand(QUndoCommand* cmd) = 0;
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const = 0;
+    virtual int getItemsSpacingOnSameLine() const = 0;
     virtual void refreshTabWidgetMaxHeight() {}
+
 
     virtual bool isInViewerUIKnob() const
     {
@@ -60,8 +62,6 @@ public:
     {
         return _containerWidget;
     }
-
-    virtual int getItemsSpacingOnSameLine() const = 0;
 
 protected:
 

@@ -189,6 +189,7 @@ public:
 
     void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
 
+    int getDocumentationServerPort();
 
     virtual void setCurrentLogicalDPI(double dpiX, double dpiY) OVERRIDE FINAL;
     virtual double getLogicalDPIXRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -207,8 +208,8 @@ private:
     void onPluginLoaded(Plugin* plugin) OVERRIDE;
     virtual void ignorePlugin(Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
-    virtual void loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap) OVERRIDE;
+    virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
+                                        IOPluginsMap* writersMap) OVERRIDE;
     virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
     virtual AppInstPtr makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;

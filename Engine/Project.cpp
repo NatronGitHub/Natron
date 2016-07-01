@@ -38,8 +38,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/Macros.h"
-
 #ifdef __NATRON_WIN32__
 #include <stdio.h> //for _snprintf
 #include <windows.h> //for GetUserName
@@ -68,6 +66,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/BezierCPSerialization.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FormatSerialization.h"
@@ -193,7 +192,7 @@ Project::loadProject(const QString & path,
                      bool isUntitledAutosave,
                      bool attemptToLoadAutosave)
 {
-    reset(false);
+    reset(false, true);
 
     try {
         QString realPath = path;
@@ -229,18 +228,16 @@ Project::loadProject(const QString & path,
 
         bool mustSave = false;
         if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
-            if ( !getApp()->isBackground() ) {
-                appPTR->showErrorLog();
-            } else {
-                std::cerr << appPTR->getErrorLog_mt_safe().toStdString() << std::endl;
-            }
+            appPTR->showErrorLog();
         } else if (mustSave) {
             saveProject(realPath, realName, 0);
         }
     } catch (const std::exception & e) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
+            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
+            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             getApp()->createNode(args);
         }
 
@@ -248,7 +245,9 @@ Project::loadProject(const QString & path,
     } catch (...) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
+            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
+            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             getApp()->createNode(args);
         }
 
@@ -314,14 +313,20 @@ Project::loadProjectInternal(const QString & path,
             iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
             iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-
             ret = load(projectSerializationObj, name, path, mustSave);
         } // __raii_loadingProjectInternal__
 
         if (!bgProject) {
-            getApp()->loadProjectGui(iArchive);
+            getApp()->loadProjectGui(isAutoSave, iArchive);
         }
     } catch (...) {
+        const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
+            QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(NATRON_VERSION_MAJOR).arg(NATRON_VERSION_MINOR).arg(NATRON_VERSION_REVISION).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+            throw std::runtime_error(message.toStdString());
+        }
         throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
     }
 
@@ -814,6 +819,26 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
 
+    _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
+    _imp->gpuSupport->setName("gpuRendering");
+    {
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        entries.push_back("Enabled");
+        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back("Disabled if background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        _imp->gpuSupport->populateChoices(entries, helps);
+    }
+    _imp->gpuSupport->setAnimationEnabled(false);
+    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
+    _imp->gpuSupport->setEvaluateOnChange(false);
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        _imp->gpuSupport->setAllDimensionsEnabled(false);
+    }
+    page->addKnob(_imp->gpuSupport);
 
     boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
 
@@ -1075,6 +1100,16 @@ Project::getProjectFormatAtIndex(int index,
     return _imp->findFormat(index, f);
 }
 
+bool
+Project::isOpenGLRenderActivated() const
+{
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        return false;
+    }
+    int index =  _imp->gpuSupport->getValue();
+    return index == 0 || (index == 2 && !getApp()->isBackground());
+}
+
 int
 Project::currentFrame() const
 {
@@ -1144,6 +1179,26 @@ Project::getProjectViewsCount() const
     _imp->viewsList->getTable(&pairs);
 
     return (int)pairs.size();
+}
+
+bool
+Project::isGPURenderingEnabledInProject() const
+{
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        return false;
+    }
+    int index = _imp->gpuSupport->getValue();
+
+    if (index == 0) {
+        return true;
+    } else if (index == 1) {
+        return false;
+    } else if (index == 2) {
+        return !getApp()->isBackground();
+    }
+    assert(false);
+
+    return false;
 }
 
 std::vector<ImageComponents>
@@ -1459,12 +1514,33 @@ Project::onKnobValueChanged(KnobI* knob,
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
+    } else if ( knob == _imp->gpuSupport.get() ) {
+
+        refreshOpenGLRenderingFlagOnNodes();
     } else {
         ret = false;
     }
 
     return ret;
 } // Project::onKnobValueChanged
+
+void
+Project::refreshOpenGLRenderingFlagOnNodes()
+{
+    bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
+    if (!activated) {
+        _imp->gpuSupport->setAllDimensionsEnabled(false);
+    } else {
+        _imp->gpuSupport->setAllDimensionsEnabled(true);
+        int index =  _imp->gpuSupport->getValue();
+        activated = index == 0 || (index == 2 && !getApp()->isBackground());
+    }
+    NodesList allNodes;
+    getNodes_recursive(allNodes, false);
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        (*it)->onOpenGLEnabledKnobChangedOnProject(activated);
+    }
+}
 
 bool
 Project::isLoadingProject() const
@@ -1660,7 +1736,7 @@ Project::autoSavesDir()
 void
 Project::resetProject()
 {
-    reset(false);
+    reset(false, true);
     if ( !getApp()->isBackground() ) {
         createViewer();
     }
@@ -1685,7 +1761,7 @@ public:
 };
 
 void
-Project::reset(bool aboutToQuit)
+Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
     {
@@ -1693,12 +1769,40 @@ Project::reset(bool aboutToQuit)
         _imp->projectClosing = true;
     }
 
-    boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
-    args->aboutToQuit = aboutToQuit;
-    if ( !quitAnyProcessingForAllNodes(this, args) ) {
+    if (!blocking) {
+        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        args->aboutToQuit = aboutToQuit;
+        if ( !quitAnyProcessingForAllNodes(this, args) ) {
+            doResetEnd(aboutToQuit);
+        }
+    } else {
+        {
+            NodesList nodesToWatch;
+            getNodes_recursive(nodesToWatch, false);
+            for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+                (*it)->quitAnyProcessing_blocking(false);
+            }
+        }
         doResetEnd(aboutToQuit);
     }
 } // Project::reset
+
+void
+Project::closeProject_blocking(bool aboutToQuit)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker k(&_imp->projectClosingMutex);
+        _imp->projectClosing = true;
+    }
+    NodesList nodesToWatch;
+    getNodes_recursive(nodesToWatch, false);
+    for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+        (*it)->quitAnyProcessing_blocking(false);
+    }
+
+    doResetEnd(aboutToQuit);
+}
 
 void
 Project::doResetEnd(bool aboutToQuit)
@@ -1763,9 +1867,8 @@ bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
                                       const WatcherCallerArgsPtr& args)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-
     NodesList nodesToWatch;
+
     getNodes_recursive(nodesToWatch, false);
     if ( nodesToWatch.empty() ) {
         return false;
@@ -2226,7 +2329,12 @@ Project::onOCIOConfigPathChanged(const std::string& path,
     beginChanges();
 
     try {
-        std::string oldEnv = _imp->envVars->getValue();
+        std::string oldEnv;
+        try {
+            oldEnv = _imp->envVars->getValue();
+        } catch (...) {
+            // ignore
+        }
         std::list<std::vector<std::string> > table;
         _imp->envVars->decodeFromKnobTableFormat(oldEnv, &table);
 
@@ -2361,7 +2469,9 @@ Project::createViewer()
         return;
     }
 
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
+    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, shared_from_this() );
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     getApp()->createNode(args);
 }
 

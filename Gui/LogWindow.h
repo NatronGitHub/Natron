@@ -38,9 +38,11 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 class LogWindow
-    : public QDialog
+    : public QWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     QVBoxLayout* mainLayout;
     QTextBrowser* textBrowser;
@@ -49,12 +51,43 @@ class LogWindow
 
 public:
 
-    LogWindow(const QString & log,
-              QWidget* parent = 0);
+    LogWindow(QWidget* parent = 0);
+
+    void displayLog(const std::list<LogEntry>& log);
 
 public Q_SLOTS:
 
     void onClearButtonClicked();
+
+    void onOkButtonClicked();
+
+private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+};
+
+class LogWindowModal
+: public QDialog
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+    QVBoxLayout* mainLayout;
+    QTextBrowser* textBrowser;
+    Button* okButton;
+
+public:
+
+    LogWindowModal(const QString& log, QWidget* parent = 0);
+
+public Q_SLOTS:
+
+    void onOkButtonClicked();
+
+private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

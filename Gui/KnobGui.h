@@ -66,7 +66,9 @@ NATRON_NAMESPACE_ENTER;
 struct KnobGuiPrivate;
 
 class KnobGui
-    : public QObject, public KnobGuiI, public boost::enable_shared_from_this<KnobGui>
+    : public QObject
+    , public KnobGuiI
+    , public boost::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -80,10 +82,14 @@ public:
         eKnobWarningChoiceMenuOutOfDate
     };
 
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobGui(const KnobPtr& knob,
             KnobGuiContainerI* container);
 
+public:
     virtual ~KnobGui() OVERRIDE;
 
     void initialize();
@@ -128,6 +134,7 @@ public:
                    Label* warningIndicator,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
+                   int lastKnobSpacing,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
 
     virtual bool shouldAddStretch() const { return true; }
@@ -237,7 +244,6 @@ public:
                  (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged) );
     }
 
-
     virtual RectD getViewportRect() const OVERRIDE FINAL;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     /**
@@ -260,7 +266,6 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void swapOpenGLBuffers() OVERRIDE;
     virtual void redraw() OVERRIDE;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE;

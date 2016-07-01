@@ -105,7 +105,8 @@ class RenderThreadTask
 public:
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output, OutputSchedulerThread* scheduler);
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+                     OutputSchedulerThread* scheduler);
 #else
     RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                      OutputSchedulerThread* scheduler,
@@ -409,7 +410,7 @@ protected:
 
 private:
 
-    virtual void onAbortRequested() OVERRIDE FINAL;
+    virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 
     /**
@@ -476,7 +477,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    DefaultScheduler(RenderEngine* engine, const boost::shared_ptr<OutputEffectInstance>& effect);
+    DefaultScheduler(RenderEngine* engine,
+                     const boost::shared_ptr<OutputEffectInstance>& effect);
 
     virtual ~DefaultScheduler();
 
@@ -510,7 +512,8 @@ class ViewerDisplayScheduler
 {
 public:
 
-    ViewerDisplayScheduler(RenderEngine* engine, const boost::shared_ptr<ViewerInstance>& viewer);
+    ViewerDisplayScheduler(RenderEngine* engine,
+                           const boost::shared_ptr<ViewerInstance>& viewer);
 
     virtual ~ViewerDisplayScheduler();
 
@@ -569,7 +572,7 @@ private:
 
     virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
     virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
-    virtual void onAbortRequested() OVERRIDE FINAL;
+    virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
     virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 
@@ -716,11 +719,11 @@ public:
      * The AutoRestart version attempts to restart the playback upon a call to renderCurrentFrame
      **/
     bool abortRenderingAutoRestart();
-    bool abortRenderingNoRestart();
+    bool abortRenderingNoRestart(bool keepOldestRender = true);
 
 private:
 
-    bool abortRenderingInternal();
+    bool abortRenderingInternal(bool keepOldestRender);
 
 public:
 

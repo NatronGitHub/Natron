@@ -26,8 +26,6 @@
 
 #include <map>
 
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
@@ -225,8 +223,8 @@ ProgressPanel::onShowProgressPanelTimerTriggered()
     }
     for (TasksOrdered::iterator it = _imp->tasksOrdered.begin(); it != _imp->tasksOrdered.end(); ++it) {
         if ( (*it) == _imp->lastTaskAdded ) {
+            _imp->lastTaskAdded->onShowProgressPanelTimerTimeout();
             _imp->lastTaskAdded.reset();
-            getGui()->ensureProgressPanelVisible();
 
             return;
         }
@@ -636,9 +634,9 @@ ProgressPanel::onItemRightClicked(TableItem* item)
     }
     if ( (triggered == showLogAction) && showLogAction ) {
         const QString& log = hasProcess->getProcessLog();
-        LogWindow window(log, this);
+        LogWindowModal window(log,this);
         window.setWindowTitle( tr("Background Render Log") );
-        ignore_result( window.exec() );
+        ignore_result(window.exec());
     }
 }
 

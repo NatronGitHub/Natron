@@ -30,7 +30,6 @@
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
 
-#include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #if QT_VERSION >= 0x050000
@@ -56,6 +55,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Project.h"
+#include "Engine/OfxOverlayInteract.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
 #include "Engine/Texture.h"
@@ -74,6 +75,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/KnobGuiParametric.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Shaders.h"
 #include "Gui/TabWidget.h"
@@ -156,7 +158,7 @@ ViewerGL::textFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return *_imp->textFont;
+    return _imp->textFont;
 }
 
 void
@@ -164,7 +166,7 @@ ViewerGL::setTextFont(const QFont & f)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    *_imp->textFont = f;
+    _imp->textFont = f;
 }
 
 /**
@@ -176,7 +178,7 @@ ViewerGL::displayingImage() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _imp->activeTextures[0] != 0 || _imp->activeTextures[1] != 0;
+    return _imp->displayTextures[0].isVisible || _imp->displayTextures[1].isVisible;
 }
 
 void
@@ -323,8 +325,8 @@ ViewerGL::paintGL()
         }
         internalViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
         bool drawTexture[2];
-        drawTexture[0] = _imp->activeTextures[0];
-        drawTexture[1] = _imp->activeTextures[1] && compOperator != eViewerCompositingOperatorNone;
+        drawTexture[0] = _imp->displayTextures[0].isVisible;
+        drawTexture[1] = _imp->displayTextures[1].isVisible && compOperator != eViewerCompositingOperatorNone;
         if ( (activeInputs[0] == activeInputs[1]) &&
              (compOperator != eViewerCompositingOperatorWipeMinus) &&
              (compOperator != eViewerCompositingOperatorStackMinus) ) {
@@ -588,7 +590,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
     RectD projectFormatCanonical;
     _imp->getProjectFormatCanonical(projectFormatCanonical);
-    renderText(projectFormatCanonical.right(), projectFormatCanonical.bottom(), _imp->currentViewerInfo_resolutionOverlay, _imp->textRenderingColor, *_imp->textFont);
+    renderText(projectFormatCanonical.right(), projectFormatCanonical.bottom(), _imp->currentViewerInfo_resolutionOverlay, _imp->textRenderingColor, _imp->textFont);
 
 
     QPoint topRight( projectFormatCanonical.right(), projectFormatCanonical.top() );
@@ -625,7 +627,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         int activeInputs[2];
         getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
         for (int i = 0; i < 2; ++i) {
-            if ( !_imp->activeTextures[i] || (activeInputs[i] == -1) ) {
+            if ( !_imp->displayTextures[i].isVisible || (activeInputs[i] == -1) ) {
                 continue;
             }
             if ( (i == 1) && (_imp->viewerTab->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
@@ -635,9 +637,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
             if (dataW != projectFormatCanonical) {
                 renderText(dataW.right(), dataW.top(),
-                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, *_imp->textFont);
+                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
-                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, *_imp->textFont);
+                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
                 glCheckError();
 
                 QPointF topRight2( dataW.right(), dataW.top() );
@@ -696,13 +698,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         glCheckErrorIgnoreOSXBug();
 
         if (_imp->pickerState == ePickerStateRectangle) {
-            if ( _imp->viewerTab->getGui()->hasPickers() ) {
                 drawPickerRectangle();
-            }
         } else if (_imp->pickerState == ePickerStatePoint) {
-            if ( _imp->viewerTab->getGui()->hasPickers() ) {
                 drawPickerPixel();
-            }
         }
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
@@ -1154,7 +1152,7 @@ ViewerGL::drawPersistentMessage()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    QFontMetrics metrics( *_imp->textFont );
+    QFontMetrics metrics( _imp->textFont );
     int offset =  10;
     double metricsHeightZoomCoord;
     QPointF topLeft, bottomRight, offsetZoomCoord;
@@ -1188,8 +1186,8 @@ ViewerGL::drawPersistentMessage()
 
 
         for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
-            renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, *_imp->textFont);
-            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) );/*metrics.height() * 2 * zoomScreenPixelHeight*/
+            renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, _imp->textFont);
+            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) ); /*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1202,6 +1200,9 @@ ViewerGL::initializeGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
     makeCurrent();
+    if ( !appPTR->isOpenGLLoaded() ) {
+        throw std::runtime_error("OpenGL was not loaded");
+    }
     _imp->initializeGL();
 }
 
@@ -1326,7 +1327,10 @@ RectI
 ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
                                                       const double par,
                                                       unsigned int mipMapLevel,
-                                                      std::vector<RectI>* tiles)
+                                                      std::vector<RectI>* tiles,
+                                                      std::vector<RectI>* tilesRounded,
+                                                      int *viewerTileSize,
+                                                      RectI* roiNotRounded)
 {
     bool clipToProject = isClippingImageToProjectWindow();
     RectD clippedRod;
@@ -1346,29 +1350,40 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
     RectI texRect;
-    double tileSize = std::pow( 2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2() );
-    texRect.x1 = std::floor( ( (double)roi.x1 ) / tileSize ) * tileSize;
-    texRect.y1 = std::floor( ( (double)roi.y1 ) / tileSize ) * tileSize;
-    texRect.x2 = std::ceil( ( (double)roi.x2 ) / tileSize ) * tileSize;
-    texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * tileSize;
+    int tileSize = std::pow( 2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2() );
+    texRect.x1 = std::floor( ( (double)roi.x1 ) / tileSize ) * (double)tileSize;
+    texRect.y1 = std::floor( ( (double)roi.y1 ) / tileSize ) * (double)tileSize;
+    texRect.x2 = std::ceil( ( (double)roi.x2 ) / tileSize ) * (double)tileSize;
+    texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * (double)tileSize;
 
     // Make sure the bounds of the area to render in the texture lies in the bounds
-    texRect.intersect(bounds, &texRect);
-    if (tiles) {
+    if (roiNotRounded) {
+        *roiNotRounded = roi;
+    }
+    if (tilesRounded) {
         for (int y = texRect.y1; y < texRect.y2; y += tileSize) {
-            int y2 = std::min(y + (int)tileSize, texRect.y2);
+            int y2 = std::min(y + tileSize, texRect.y2);
             for (int x = texRect.x1; x < texRect.x2; x += tileSize) {
-                tiles->resize(tiles->size() + 1);
-                RectI& tile = tiles->back();
+                tilesRounded->resize(tilesRounded->size() + 1);
+                RectI& tile = tilesRounded->back();
                 tile.x1 = x;
-                tile.x2 = std::min(x + (int)tileSize, texRect.x2);
+                tile.x2 = std::min(x + tileSize, texRect.x2);
                 tile.y1 = y;
                 tile.y2 = y2;
+
+                if (tiles) {
+                    RectI tileRectRounded;
+                    tile.intersect(bounds, &tileRectRounded);
+                    tiles->push_back(tileRectRounded);
+                }
                 assert( texRect.contains(tile) );
             }
         }
     }
 
+    if (viewerTileSize) {
+        *viewerTileSize = tileSize;
+    }
     return texRect;
 }
 
@@ -1467,7 +1482,6 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
                                         const ImagePtr& image,
                                         int time,
                                         const RectD& rod,
-                                        const RectI& viewerRoI,
                                         double par,
                                         ImageBitDepthEnum depth,
                                         unsigned int mipMapLevel,
@@ -1487,9 +1501,6 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
     }
 
-    _imp->lastTextureTransferMipMapLevel[textureIndex] = mipMapLevel;
-    _imp->lastTextureTransferRoI[textureIndex] = viewerRoI;
-
     if (isPartialRect) {
         TextureInfo info;
         info.texture = boost::dynamic_pointer_cast<Texture>(texture);
@@ -1501,14 +1512,14 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         info.time = time;
         info.memoryHeldByLastRenderedImages = 0;
         info.isPartialImage = true;
+        info.isVisible = true;
         _imp->partialUpdateTextures.push_back(info);
         // Update time otherwise overlays won't refresh
         _imp->displayTextures[0].time = time;
         _imp->displayTextures[1].time = time;
     } else {
         ViewerInstance* internalNode = getInternalNode();
-
-        _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex].texture;
+        _imp->displayTextures[textureIndex].isVisible = true;
         _imp->displayTextures[textureIndex].gain = gain;
         _imp->displayTextures[textureIndex].gamma = gamma;
         _imp->displayTextures[textureIndex].offset = offset;
@@ -1541,7 +1552,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
-            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel].lock() ) {
+            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] ) {
                 Q_EMIT imageChanged(textureIndex, false);
             } else {
                 Q_EMIT imageChanged(textureIndex, true);
@@ -1555,7 +1566,8 @@ void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      size_t bytesCount,
                                      const RectI &roiRoundedToTileSize,
-                                     const TextureRect & region,
+                                     const RectI& roi,
+                                     const TextureRect & tileRect,
                                      int textureIndex,
                                      bool isPartialRect,
                                      bool isFirstTile,
@@ -1592,31 +1604,69 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     TextureRect textureRectangle;
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
-        textureRectangle = region;
+        int format, internalFormat, glType;
+        if (dataType == Texture::eDataTypeFloat) {
+            Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+        } else {
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        }
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType) );
+        textureRectangle = tileRect;
     } else {
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
-        textureRectangle = roiRoundedToTileSize;
-        textureRectangle.par = region.par;
+        if (tex->type() != dataType) {
+            int format, internalFormat, glType;
+            if (dataType == Texture::eDataTypeFloat) {
+                Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+            } else {
+                Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            }
+            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType) );
+        }
+        textureRectangle.set(roiRoundedToTileSize);
+        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.set(roi);
+        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.closestPo2 = tileRect.closestPo2;
+        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.par = tileRect.par;
+        textureRectangle.par = tileRect.par;
+        textureRectangle.closestPo2 = tileRect.closestPo2;
         if (isFirstTile) {
-            tex->ensureTextureHasSize(textureRectangle, dataType);
+            tex->ensureTextureHasSize(textureRectangle, 0);
         }
     }
 
+    // bind PBO to update texture source
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+
+    // map the buffer object into client's memory
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
     assert(ret);
     assert(ramBuffer);
-    std::memcpy(ret, (void*)ramBuffer, bytesCount);
-
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    if (ret) {
+        // update data directly on the mapped buffer
+        std::memcpy(ret, (void*)ramBuffer, bytesCount);
+        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        assert(result == GL_TRUE);
+        Q_UNUSED(result);
+    }
     glCheckError();
 
-    tex->fillOrAllocateTexture(textureRectangle, dataType, region, true);
+    // copy pixels from PBO to texture object
+    // using glBindTexture followed by glTexSubImage2D.
+    // Use offset instead of pointer (last parameter is 0).
+    tex->fillOrAllocateTexture(textureRectangle, tileRect, true, 0);
 
+    // restore previously bound PBO
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError();
@@ -1650,8 +1700,8 @@ ViewerGL::disconnectInputTexture(int textureIndex)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(textureIndex == 0 || textureIndex == 1);
-    if (_imp->activeTextures[textureIndex]) {
-        _imp->activeTextures[textureIndex].reset();
+    if (_imp->displayTextures[textureIndex].isVisible) {
+        _imp->displayTextures[textureIndex].isVisible = false;
         RectI r(0, 0, 0, 0);
         _imp->infoViewer[textureIndex]->setDataWindow(r);
     }
@@ -1775,18 +1825,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     }
-    if ( !overlaysCaught &&
-         hasPickers &&
-         isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
-         displayingImage() ) {
-        // picker with single-point selection
-        _imp->pickerState = ePickerStatePoint;
-        if ( pickColor( e->x(), e->y() ) ) {
-            _imp->ms = eMouseStatePickingColor;
-            mustRedraw = true;
-            overlaysCaught = true;
-        }
-    }
+
 
     // process the wipe tool events before the plugin overlays
     if ( !overlaysCaught &&
@@ -1829,9 +1868,31 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
     }
 
+    if ( !overlaysCaught &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
+        displayingImage() ) {
+        // picker with single-point selection
+        _imp->pickerState = ePickerStatePoint;
+        if ( pickColor( e->x(), e->y(), false ) ) {
+            _imp->ms = eMouseStatePickingColor;
+            mustRedraw = true;
+            overlaysCaught = true;
+        }
+    }
 
     if ( !overlaysCaught &&
-         hasPickers &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) &&
+        displayingImage() ) {
+        // picker with single-point selection
+        _imp->pickerState = ePickerStatePoint;
+        if ( pickColor( e->x(), e->y(), true ) ) {
+            _imp->ms = eMouseStatePickingInputColor;
+            mustRedraw = true;
+            overlaysCaught = true;
+        }
+    }
+
+    if ( !overlaysCaught &&
          isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
          displayingImage() ) {
         // start picker with rectangle selection (picked color is the average over the rectangle)
@@ -2088,9 +2149,11 @@ ViewerGL::penMotionInternal(int x,
 
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
-    if ( !gui->hasPickers() ) {
-        _imp->pickerState = ePickerStateInactive;
-    }
+    // Edited: commented-out we need the picker state to be active even if there are no color pickers active because parametric
+    // parameters may use it
+    //if ( !gui->hasPickers() ) {
+    //    _imp->pickerState = ePickerStateInactive;
+    //}
 
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
@@ -2405,7 +2468,12 @@ ViewerGL::penMotionInternal(int x,
         break;
     }
     case eMouseStatePickingColor: {
-        pickColor( newClick.x(), newClick.y() );
+        pickColor( newClick.x(), newClick.y(), false );
+        mustRedraw = true;
+        break;
+    }
+    case eMouseStatePickingInputColor: {
+        pickColor( newClick.x(), newClick.y(), true );
         mustRedraw = true;
         break;
     }
@@ -2516,7 +2584,9 @@ ViewerGL::updateColorPicker(int textureIndex,
         if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
         }
-
+        if (textureIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
         return;
     }
 
@@ -2582,6 +2652,9 @@ ViewerGL::updateColorPicker(int textureIndex,
     }
     if (!picked) {
         _imp->infoViewer[textureIndex]->setColorValid(false);
+        if (textureIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
     } else {
         _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
         _imp->infoViewer[textureIndex]->setColorValid(true);
@@ -2589,6 +2662,11 @@ ViewerGL::updateColorPicker(int textureIndex,
             _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
         }
         _imp->infoViewer[textureIndex]->setColor(r, g, b, a);
+
+        if (textureIndex == 0) {
+            OfxRGBAColourD interactColor = {r,g,b,a};
+            setParametricParamsPickerColor(interactColor, true, true);
+        }
 
         std::vector<double> colorVec(4);
         colorVec[0] = r;
@@ -2603,18 +2681,44 @@ ViewerGL::updateColorPicker(int textureIndex,
     }
 } // updateColorPicker
 
+void
+ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor)
+{
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    const std::list<DockablePanel*>& panels = _imp->viewerTab->getGui()->getVisiblePanels();
+    for (std::list<DockablePanel*>::const_iterator it = panels.begin(); it != panels.end(); ++it) {
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
+        if (!nodePanel) {
+            continue;
+        }
+        NodeGuiPtr node = nodePanel->getNode();
+        if (!node) {
+            continue;
+        }
+        node->getNode()->getEffectInstance()->setInteractColourPicker_public(color, setColor, hasColor);
+    }
+}
+
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
-    unsigned int mipMapLevel = getInternalNode()->getViewerMipMapLevel();
-
-    if (mipMapLevel != _imp->lastTextureTransferMipMapLevel[texIndex]) {
+    if (!_imp->displayTextures[texIndex].isVisible) {
+        return true;
+    }
+    unsigned int mipMapLevel = (unsigned int)std::max((int)getInternalNode()->getMipMapLevelFromZoomFactor(), (int)getInternalNode()->getViewerMipMapLevel());
+    int closestPo2 = 1 << mipMapLevel;
+    if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {
         return false;
     }
-    RectI roi = getImageRectangleDisplayedRoundedToTileSize(_imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0);
-    if (roi != _imp->lastTextureTransferRoI[texIndex]) {
+    RectI roiNotRounded;
+    RectI roi = getImageRectangleDisplayedRoundedToTileSize(_imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0, 0, 0, &roiNotRounded);
+    const RectI& currentTexRoi = _imp->displayTextures[texIndex].texture->getTextureRect();
+    if (!currentTexRoi.contains(roi)) {
         return false;
     }
+    _imp->displayTextures[texIndex].roiNotRoundedToTileSize.set(roiNotRounded);
 
     return true;
 }
@@ -2968,7 +3072,7 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,
     for (int i = 0; i < 2; ++i) {
         if (_imp->infoViewer[i]) {
             _imp->infoViewer[i]->setResolution(format);
-            if (!_imp->activeTextures[i]) {
+            if (!_imp->displayTextures[i].isVisible) {
                 _imp->displayTextures[i].rod = canonicalFormat;
             }
         }
@@ -3042,8 +3146,8 @@ ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->activeTextures[0].reset();
-    _imp->activeTextures[1].reset();
+    _imp->displayTextures[0].isVisible = false;
+    _imp->displayTextures[1].isVisible = false;
     update();
 }
 
@@ -3086,8 +3190,11 @@ ViewerGL::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->infoViewer[0]->hideColorAndMouseInfo();
-    _imp->infoViewer[1]->hideColorAndMouseInfo();
+    if (_imp->pickerState == ePickerStateInactive) {
+        _imp->infoViewer[0]->hideColorAndMouseInfo();
+        _imp->infoViewer[1]->hideColorAndMouseInfo();
+        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+    }
     QGLWidget::leaveEvent(e);
 }
 
@@ -3289,7 +3396,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     }
     _imp->persistentMessageType = type;
 
-    QFontMetrics fm(*_imp->textFont);
+    QFontMetrics fm(_imp->textFont);
 
     for (int i = 0; i < allMessages.size(); ++i) {
         QStringList wordWrapped = wordWrap(fm, allMessages[i], w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS);
@@ -3634,8 +3741,11 @@ ViewerGL::getViewerTab() const
 
 bool
 ViewerGL::pickColorInternal(double x,
-                            double y)
+                            double y,
+                            bool /*pickInput*/)
 {
+
+#pragma message WARN("Todo: use pickInput")
     float r, g, b, a;
     QPointF imgPos;
     {
@@ -3661,8 +3771,13 @@ ViewerGL::pickColorInternal(double x,
             }
             _imp->infoViewer[i]->setColor(r, g, b, a);
             ret = true;
+            {
+                OfxRGBAColourD interactColor = {r,g,b,a};
+                setParametricParamsPickerColor(interactColor, true, true);
+            }
         } else {
             _imp->infoViewer[i]->setColorValid(false);
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 
@@ -3672,7 +3787,8 @@ ViewerGL::pickColorInternal(double x,
 // used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
 bool
 ViewerGL::pickColor(double x,
-                    double y)
+                    double y,
+                    bool pickInput)
 {
     bool isSync = _imp->viewerTab->isViewersSynchroEnabled();
 
@@ -3680,7 +3796,7 @@ ViewerGL::pickColor(double x,
         bool res = false;
         const std::list<ViewerTab*>& allViewers = _imp->viewerTab->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-            bool ret = (*it)->getViewer()->pickColorInternal(x, y);
+            bool ret = (*it)->getViewer()->pickColorInternal(x, y, pickInput);
             if ( (*it)->getViewer() == this ) {
                 res = ret;
             }
@@ -3688,7 +3804,7 @@ ViewerGL::pickColor(double x,
 
         return res;
     } else {
-        return pickColorInternal(x, y);
+        return pickColorInternal(x, y, pickInput);
     }
 }
 
@@ -3727,7 +3843,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
 
     const std::list<Histogram*>& histograms = _imp->viewerTab->getGui()->getHistograms();
 
-    if ( _imp->activeTextures[texIndex] &&
+    if ( _imp->displayTextures[texIndex].isVisible &&
          ( imgPos.x() >= rod.left() ) &&
          ( imgPos.x() < rod.right() ) &&
          ( imgPos.y() >= rod.bottom() ) &&
@@ -3740,22 +3856,29 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                ( imgPos.x() >= dispW.right() ) ||
                ( imgPos.y() < dispW.bottom() ) ||
                ( imgPos.y() >= dispW.top() ) ) ) {
-            if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
-                _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
-            }
-            for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
-                if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
-                    (*it)->hideViewerCursor();
-                }
-            }
-        } else {
-            if (_imp->pickerState == ePickerStateInactive) {
-                //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
-                updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
+                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
+                     _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+                 }
+                 for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+                     if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
+                         (*it)->hideViewerCursor();
+                     }
+                 }
+                 if (texIndex == 0 && _imp->pickerState == ePickerStateInactive) {
+                     setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+                 }
+             } else {
+                 if (_imp->pickerState == ePickerStateInactive) {
+                     //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
+                     updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
                 // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
                 if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                     _imp->infoViewer[texIndex]->showColorAndMouseInfo();
+                }
+                // Show the picker on parametric params without updating the color value
+                if (texIndex == 0) {
+                    setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
                 }
             } else {
                 ///unkwn state
@@ -3768,13 +3891,16 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
             _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
         }
     } else {
-        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
+        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
             _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
         }
         for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
             if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
                 (*it)->hideViewerCursor();
             }
+        }
+        if (texIndex == 0 && _imp->pickerState == ePickerStateInactive) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 } // ViewerGL::updateInfoWidgetColorPickerInternal
@@ -3820,8 +3946,12 @@ ViewerGL::updateRectangleColorPickerInternal()
             }
             _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);
+
+            OfxRGBAColourD c = {r,g,b,a};
+            setParametricParamsPickerColor(c, true, true);
         } else {
             _imp->infoViewer[i]->setColorValid(false);
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 }
@@ -3831,9 +3961,9 @@ ViewerGL::resetWipeControls()
 {
     RectD rod;
 
-    if (_imp->activeTextures[1]) {
+    if (_imp->displayTextures[1].isVisible) {
         rod = getRoD(1);
-    } else if (_imp->activeTextures[0]) {
+    } else if (_imp->displayTextures[0].isVisible) {
         rod = getRoD(0);
     } else {
         _imp->getProjectFormatCanonical(rod);
@@ -4037,7 +4167,7 @@ ViewerGL::getLastRenderedImage(int textureIndex) const
     }
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     for (U32 i = 0; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
-        ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
+        ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
         if (mipmap) {
             return mipmap;
         }
@@ -4060,7 +4190,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     assert(_imp->displayTextures[textureIndex].lastRenderedTiles.size() > mipMapLevel);
 
-    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel].lock();
+    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel];
     if (mipmap) {
         return mipmap;
     }
@@ -4068,7 +4198,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     //Find an image at higher scale
     if (mipMapLevel > 0) {
         for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
-            mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
+            mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
             if (mipmap) {
                 return mipmap;
             }
@@ -4077,7 +4207,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
 
     //Find an image at lower scale
     for (U32 i = mipMapLevel + 1; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
-        mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
+        mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
         if (mipmap) {
             return mipmap;
         }
@@ -4092,6 +4222,9 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
 int
 ViewerGL::getMipMapLevelCombinedToZoomFactor() const
 {
+    if (!getInternalNode()) {
+        return 0;
+    }
     int mmLvl = getInternalNode()->getMipMapLevel();
     double factor = getZoomFactor();
 
@@ -4476,7 +4609,7 @@ ViewerGL::getCurrentlyDisplayedTime() const
 {
     QMutexLocker k(&_imp->lastRenderedImageMutex);
 
-    if (_imp->activeTextures[0]) {
+    if (_imp->displayTextures[0].isVisible) {
         return _imp->displayTextures[0].time;
     } else {
         return _imp->viewerTab->getTimeLine()->currentFrame();

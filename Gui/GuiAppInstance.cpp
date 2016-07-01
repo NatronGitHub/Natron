@@ -33,10 +33,12 @@
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
@@ -489,15 +491,16 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     NodeGroup* isGroup = node->isEffectGroup();
     if ( isGroup && isGroup->isSubGraphUserVisible() ) {
-        _imp->_gui->createGroupGui(node, args.reason);
+        _imp->_gui->createGroupGui(node, args);
     }
 
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
     if (!parentMultiInstance) {
         nodegui->initializeInputs();
     }
-
-    if ( (args.reason == eCreateNodeReasonUserCreate) && !isViewer ) {
+    
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    if ( !serialization && !isViewer ) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
         triggerAutoSave();
@@ -505,20 +508,22 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
 
     ///only move main instances
-    if ( node->getParentMultiInstanceName().empty() ) {
-        bool autoConnect = args.reason == eCreateNodeReasonUserCreate;
+    if ( node->getParentMultiInstanceName().empty() && !serialization) {
+        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
 
-        if ( selectedNodes.empty() ) {
+        if ( selectedNodes.empty() || serialization) {
             autoConnect = false;
         }
-        if ( (args.xPosHint != INT_MIN) && (args.yPosHint != INT_MIN) && (!autoConnect) ) {
-            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(args.xPosHint, args.yPosHint) ) );
+        double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
+            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {
             BackdropGui* isBd = dynamic_cast<BackdropGui*>( nodegui.get() );
             if (!isBd) {
                 NodeGuiPtr selectedNode;
-                if ( (args.reason == eCreateNodeReasonUserCreate) && (selectedNodes.size() == 1) ) {
+                if ( !serialization && (selectedNodes.size() == 1) ) {
                     selectedNode = selectedNodes.front();
                     BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>( selectedNode.get() );
                     if (isBackdropGui) {
@@ -772,9 +777,9 @@ GuiAppInstance::isShowingDialog() const
 }
 
 void
-GuiAppInstance::loadProjectGui(boost::archive::xml_iarchive & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & archive) const
 {
-    _imp->_gui->loadProjectGui(archive);
+    _imp->_gui->loadProjectGui(isAutosave, archive);
 }
 
 void
@@ -889,7 +894,7 @@ GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 bool
 GuiAppInstance::isGuiFrozen() const
 {
-    return _imp->_gui->isGUIFrozen();
+    return _imp->_gui ? _imp->_gui->isGUIFrozen() : false;
 }
 
 void
@@ -923,7 +928,9 @@ GuiAppInstance::appendToScriptEditor(const std::string& str)
 void
 GuiAppInstance::printAutoDeclaredVariable(const std::string& str)
 {
-    _imp->_gui->printAutoDeclaredVariable(str);
+    if (_imp->_gui) {
+        _imp->_gui->printAutoDeclaredVariable(str);
+    }
 }
 
 void
@@ -1067,9 +1074,9 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        CreateNodeReason reason)
+                                        const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect)
 {
-    if (reason == eCreateNodeReasonUserCreate) {
+    if (autoConnect && !serialization) {
         NodeGraph* graph = 0;
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
         assert(collection);
@@ -1099,7 +1106,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
 
-    AppInstance::onGroupCreationFinished(node, reason);
+    AppInstance::onGroupCreationFinished(node, serialization, autoConnect);
 
     /*std::list<ViewerInstance* > viewers;
        node->hasViewersConnected(&viewers);
@@ -1201,14 +1208,14 @@ GuiAppInstance::loadProject(const std::string& filename)
 bool
 GuiAppInstance::resetProject()
 {
-    return _imp->_gui->abortProject(false, true);
+    return _imp->_gui->abortProject(false, true, true);
 }
 
 ///Reset + close window, quit if last window
 bool
 GuiAppInstance::closeProject()
 {
-    return _imp->_gui->abortProject(true, true);
+    return _imp->_gui->abortProject(true, true, true);
 }
 
 ///Opens a new window

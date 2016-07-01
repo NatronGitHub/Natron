@@ -243,9 +243,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if ( !effect->getNode() ) {
             return;
         }
-        KnobPtr thisShared = holder->getKnobByName( getName() );
-        assert(thisShared);
-        boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(thisShared);
+        boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
         assert(thisSharedDouble);
         if (handle) {
             effect->getNode()->addPositionInteract(thisSharedDouble,
@@ -498,7 +496,8 @@ KnobButton::trigger()
 
 /******************************KnobChoice**************************************/
 
-#define KNOBCHOICE_MAX_ENTRIES_HELP 40 // don't show help in the tootlip if there are more entries that this
+#define KNOBCHOICE_MAX_ENTRIES_HELP 40 \
+    // don't show help in the tootlip if there are more entries that this
 
 KnobChoice::KnobChoice(KnobHolder* holder,
                        const std::string &label,

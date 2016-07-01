@@ -541,7 +541,8 @@ FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString&
     return ret;
 }
 
-#endif // ifdef __NATRON_WIN32__
+#endif \
+    // ifdef __NATRON_WIN32__
 
 FileSystemModel::~FileSystemModel()
 {
@@ -1015,7 +1016,7 @@ FileSystemModel::resetCompletly(bool rebuild)
     boost::shared_ptr<FileSystemModel> model = shared_from_this();
 
     if (rebuild) {
-        _imp->rootItem.reset( new FileSystemItem(model, true, QString(), QString(), boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), QDateTime(), 0) );
+        _imp->rootItem = FileSystemItem::create(model, true, QString(), QString(), boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), QDateTime(), 0);
         _imp->registerItem(_imp->rootItem);
 
         QFileInfoList drives = QDir::drives();
@@ -1031,13 +1032,13 @@ FileSystemModel::resetCompletly(bool rebuild)
             driveName = generateChildAbsoluteName( _imp->rootItem.get(), drive.fileName() );
 #endif
 
-            boost::shared_ptr<FileSystemItem> child( new FileSystemItem(model, true, //isDir
+            boost::shared_ptr<FileSystemItem> child = FileSystemItem::create(model, true, //isDir
                                                                         driveName, //drives have canonical path
                                                                         driveName,
                                                                         boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
                                                                         drive.lastModified(),
                                                                         drive.size(),
-                                                                        _imp->rootItem) );
+                                                                        _imp->rootItem);
             _imp->registerItem(child);
             _imp->rootItem->addChild(child);
         }
@@ -1071,13 +1072,13 @@ FileSystemModel::mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,
     if (!child) {
         QFileInfo info( generateChildAbsoluteName(item.get(), path[index]) );
         ///The child doesn't exist already, create it without populating it
-        child.reset( new FileSystemItem(shared_from_this(), true, //isDir
+        child = FileSystemItem::create(shared_from_this(), true, //isDir
                                         path[index], //name
                                         path[index], //name
                                         boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
                                         info.lastModified(),
                                         0, //0 for directories
-                                        item) );
+                                        item);
         _imp->registerItem(child);
         item->addChild(child);
     }

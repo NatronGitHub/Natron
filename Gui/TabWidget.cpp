@@ -26,7 +26,6 @@
 
 #include <stdexcept>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThread>
 #include <QLayout>
@@ -49,6 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ScriptObject.h"
@@ -97,7 +97,7 @@ public:
         , _type(TabWidget::eDropRectNone)
         , _widget(pane)
     {
-        setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
+        setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_ShowWithoutActivating);
         setStyleSheet( QString::fromUtf8("background:transparent;") );
@@ -727,7 +727,7 @@ TabWidget::addNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup() );
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, graph->getGroup() );
     _imp->gui->getApp()->createNode(args);
 }
 
@@ -2008,7 +2008,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     std::string err;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
+        _imp->gui->getApp()->appendToScriptEditor(err);
     }
 }
 

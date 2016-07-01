@@ -102,11 +102,18 @@ struct ParallelRenderArgs
     ///A pointer to the node that requested the current render.
     NodePtr treeRoot;
 
+    ///In the tree originating from the root treeRoot, how many times this node is visited ? this is used to determine
+    ///if we should cache the output and whether we should do GPU rendering or not
+    int visitsCount;
+
     ///List of the nodes in the rotopaint tree
     NodesList rotoPaintNodes;
 
     ///Various stats local to the render of a frame
     boost::shared_ptr<RenderStats> stats;
+
+    ///The OpenGL context to use for the render of this frame
+    boost::weak_ptr<OSGLContext> openGLContext;
 
     ///The texture index of the viewer being rendered, only useful for abortable renders
     int textureIndex;
@@ -114,6 +121,9 @@ struct ParallelRenderArgs
     ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
     ///whereas afterwards we revert back to the plug-in thread safety
     RenderSafetyEnum currentThreadSafety;
+
+    ///Current OpenGL support: it might change during instanceChanged action
+    PluginOpenGLRenderSupport currentOpenglSupport;
 
     /// is this a render due to user interaction ? Generally this is true when rendering because
     /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
@@ -136,10 +146,6 @@ struct ParallelRenderArgs
 
     ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported : 1;
-
-    ///True when the preference in Natron is set and the renderRequester is a Viewer
-    bool viewerProgressReportEnabled : 1;
-
 
     ParallelRenderArgs();
 
@@ -238,6 +244,10 @@ class ParallelRenderArgsSetter
     boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > argsMap;
     NodesList nodes;
 
+protected:
+
+    boost::weak_ptr<OSGLContext> _openGLContext;
+
 public:
 
     /**
@@ -258,7 +268,6 @@ public:
                              const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
-                             bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
 
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);

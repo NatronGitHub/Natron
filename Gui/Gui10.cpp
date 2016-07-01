@@ -32,8 +32,6 @@
 
 #include <boost/algorithm/clamp.hpp>
 
-#include "Global/Macros.h"
-
 #include <QApplication> // qApp
 #include <QDesktopWidget>
 
@@ -255,8 +253,9 @@ Gui::restoreLayout(bool wipePrevious,
              it != floatingDockablePanels.end(); ++it) {
             ///Find the node associated to the floating panel if any and float it
             assert( !(*it)->child_asDockablePanel.empty() );
+            FloatingWidget* fWindow = 0;
             if ( (*it)->child_asDockablePanel == kNatronProjectSettingsPanelSerializationName ) {
-                _imp->_projectGui->getPanel()->floatPanel();
+                fWindow = _imp->_projectGui->getPanel()->floatPanel();
             } else {
                 ///Find a node with the dockable panel name
                 const NodesGuiList & nodes = getNodeGraph()->getAllActiveNodes();
@@ -273,18 +272,16 @@ Gui::restoreLayout(bool wipePrevious,
                     }
                 }
                 if (panel) {
-                    FloatingWidget* fWindow = 0;
                     QWidget* w = panel->parentWidget();
                     while (!fWindow && w) {
                         fWindow = dynamic_cast<FloatingWidget*>(w);
                         w = w->parentWidget();
                     }
-
-                    assert(fWindow);
-                    fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-                    fWindow->resize( std::min( (*it)->w, screen.width() ), std::min( (*it)->h, screen.height() ) );
                 }
             }
+            assert(fWindow);
+            fWindow->move( QPoint( (*it)->x, (*it)->y ) );
+            fWindow->resize( std::min( (*it)->w, screen.width() ), std::min( (*it)->h, screen.height() ) );
         }
     }
 } // restoreLayout

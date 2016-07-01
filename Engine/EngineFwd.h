@@ -32,9 +32,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #endif
 
 
@@ -114,7 +112,7 @@ class BufferableObject;
 class CLArgs;
 class CacheEntryHolder;
 class CacheSignalEmitter;
-struct CreateNodeArgs;
+class CreateNodeArgs;
 class ChoiceExtraData;
 class Curve;
 class Dimension;
@@ -123,8 +121,11 @@ class EffectInstance;
 class ExistenceCheckerThread;
 class Format;
 class FrameEntry;
+class FramebufferConfig;
 class FrameKey;
 class FrameParams;
+class GPUContextPool;
+class GLShader;
 class GenericAccess;
 class GenericSchedulerThread;
 class GenericSchedulerThreadWatcher;
@@ -157,6 +158,7 @@ class KnobSerialization;
 class KnobString;
 class KnobTable;
 class LibraryBinary;
+struct LogEntry;
 class Node;
 class NodeCollection;
 class NodeGroup;
@@ -165,6 +167,10 @@ class NodeGuiI;
 class NodeMetadata;
 class NodeSerialization;
 class NodeSettingsPanel;
+class OSGLContext;
+class OSGLContextAttacher;
+struct GLRendererID;
+struct OpenGLRendererInfo;
 class OfxClipInstance;
 class OfxEffectInstance;
 class OfxHost;
@@ -185,6 +191,7 @@ class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
 class Project;
+struct ProjectBeingLoadedInfo;
 class ProjectSerialization;
 class RectD;
 class RectI;
@@ -223,6 +230,13 @@ namespace Transform {
 struct Matrix3x3;
 }
 
+#ifdef __NATRON_WIN32__
+struct OSGLContext_wgl_data;
+#endif
+#ifdef __NATRON_LINUX__
+class OSGLContext_glx_data;
+#endif
+
 NATRON_PYTHON_NAMESPACE_ENTER;
 class App;
 class AppSettings;
@@ -258,6 +272,7 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<PluginMemory> PluginMemoryPtr;
 typedef boost::weak_ptr<AppInstance> AppInstWPtr;
 typedef boost::shared_ptr<AppInstance> AppInstPtr;

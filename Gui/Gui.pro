@@ -121,6 +121,7 @@ SOURCES += \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
+    KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
     KnobGui20.cpp \
@@ -181,8 +182,6 @@ SOURCES += \
     PropertiesBinWrapper.cpp \
     PyGuiApp.cpp \
     PythonPanels.cpp \
-    QtDecoder.cpp \
-    QtEncoder.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
@@ -193,7 +192,6 @@ SOURCES += \
     SequenceFileDialog.cpp \
     Shaders.cpp \
     SerializableWindow.cpp \
-    ShortCutEditor.cpp \
     SpinBox.cpp \
     SpinBoxValidator.cpp \
     SplashScreen.cpp \
@@ -276,6 +274,7 @@ HEADERS += \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiContainerI.h \
+    KnobGuiContainerHelper.h \
     KnobGuiFactory.h \
     KnobGuiFile.h \
     KnobGuiButton.h \
@@ -323,8 +322,6 @@ HEADERS += \
     PyGuiApp.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
-    QtDecoder.h \
-    QtEncoder.h \
     RegisteredTabs.h \
     RenderStatsDialog.h \
     ResizableMessageBox.h \
@@ -336,7 +333,6 @@ HEADERS += \
     SequenceFileDialog.h \
     Shaders.h \
     SerializableWindow.h \
-    ShortCutEditor.h \
     SpinBox.h \
     SpinBoxValidator.h \
     SplashScreen.h \
@@ -402,8 +398,7 @@ Resources/Images/natronIcon256_windows.ico \
 Resources/Images/splashscreen.svg \
     Resources/Images/prevUserKey.png
 
-
 macx {
 OBJECTIVE_SOURCES += \
-    QtMac.mm
+    $$PWD/../Gui/QtMac.mm
 }

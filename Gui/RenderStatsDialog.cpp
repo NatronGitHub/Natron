@@ -84,7 +84,8 @@ struct RowInfo
     int rowIndex;
     TableItem* item;
 
-    RowInfo() : node(), rowIndex(-1), item(0) {}
+    RowInfo()
+        : node(), rowIndex(-1), item(0) {}
 };
 
 struct StatRowsCompare

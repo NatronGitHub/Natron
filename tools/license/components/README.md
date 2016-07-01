@@ -8,8 +8,8 @@ Natron binaries include components from the following libraries:
 * Qt (LGPL 2.1 with Qt LGPL Exception) http://doc.qt.io/qt-4.8/lgpl.html
 * Boost (Boost Software License) http://www.boost.org/users/license.html
 * Cairo (LGPL 2.1) http://cairographics.org/
-* GLAD (MIT) https://github.com/Dav1dde/glad
-* GLFW (zlib/libpng license (BSD-like)) http://www.glfw.org
+* GLAD (MIT) http://glad.dav1d.de/
+* GLFW (libpng/zlib license) http://www.glfw.org/
 * openfx (Modified BSD) https://github.com/ofxa/openfx
 * openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
 * openfx-misc (GPLv2) https://github.com/devernay/openfx-misc
@@ -22,6 +22,7 @@ Natron binaries include components from the following libraries:
 * openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
 * hoedown (BSD) https://github.com/hoedown/hoedown
+* libtess (SGI Free Software License B, X11-like) ftp://ftp.freedesktop.org/pub/mesa/glu/
 
 # Additional dependencies
 
@@ -76,6 +77,7 @@ Natron binaries include components from the following libraries:
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
 * libxml (MIT) http://www.xmlsoft.org/
+* poppler (GPL 2.0) https://poppler.freedesktop.org/ (used by openfx-arena via ReadPDF) 
 
 ## Indirect dependencies
 

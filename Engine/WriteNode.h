@@ -97,7 +97,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual void onEffectCreated(bool mayCreateFileDialog, const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues) OVERRIDE FINAL;
+    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
@@ -107,6 +107,11 @@ public:
     void renderSequenceEnd();
 
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+public Q_SLOTS:
+
+    void onSequenceRenderStarted();
+    void onSequenceRenderFinished();
 
 private:
 

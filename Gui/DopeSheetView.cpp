@@ -311,28 +311,28 @@ public:
     Menu *contextMenu;
 };
 
-DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
-    q_ptr(qq),
-    model(0),
-    hierarchyView(0),
-    gui(0),
-    timeline(),
-    nodeRanges(),
-    nodeRangesBeingComputed(),
-    rangeComputationRecursion(0),
-    font( new QFont(appFont, appFontSize) ),
-    textRenderer(),
-    kfTexturesIDs(),
-    zoomContext(),
-    zoomOrPannedSinceLastFit(false),
-    selectionRect(),
-    selectedKeysBRect(),
-    lastPosOnMousePress(),
-    lastPosOnMouseMove(),
-    keyDragLastMovement(),
-    eventState(DopeSheetView::esNoEditingState),
-    currentEditedReader(),
-    contextMenu( new Menu(q_ptr) )
+DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
+    : q_ptr(qq)
+    , model(0)
+    , hierarchyView(0)
+    , gui(0)
+    , timeline()
+    , nodeRanges()
+    , nodeRangesBeingComputed()
+    , rangeComputationRecursion(0)
+    , font( new QFont(appFont, appFontSize) )
+    , textRenderer()
+    , kfTexturesIDs()
+    , zoomContext()
+    , zoomOrPannedSinceLastFit(false)
+    , selectionRect()
+    , selectedKeysBRect()
+    , lastPosOnMousePress()
+    , lastPosOnMouseMove()
+    , keyDragLastMovement()
+    , eventState(DopeSheetView::esNoEditingState)
+    , currentEditedReader()
+    , contextMenu( new Menu(q_ptr) )
 {
 }
 
@@ -990,7 +990,7 @@ DopeSheetViewPrivate::drawRows() const
                 continue;
             }
 
-            if ( QTreeWidgetItem *parentItem = treeItem->parent() ) {
+            if ( QTreeWidgetItem * parentItem = treeItem->parent() ) {
                 if ( !parentItem->isExpanded() ) {
                     continue;
                 }
@@ -2384,8 +2384,16 @@ DopeSheetViewPrivate::createContextMenu()
                                                            kShortcutDescActionDopeSheetEditorPasteKeyframes,
                                                            editMenu);
     QObject::connect( pasteKeyframesAction, SIGNAL(triggered()),
-                      q_ptr, SLOT(pasteKeyframes()) );
+                      q_ptr, SLOT(pasteKeyframesRelative()) );
     editMenu->addAction(pasteKeyframesAction);
+
+    QAction *pasteKeyframesAbsAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute,
+                                                           kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute,
+                                                           editMenu);
+    QObject::connect( pasteKeyframesAbsAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(pasteKeyframesAbsolute()) );
+    editMenu->addAction(pasteKeyframesAbsAction);
 
     QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                                kShortcutIDActionDopeSheetEditorSelectAllKeyframes,
@@ -2518,9 +2526,9 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
                              HierarchyView *hierarchyView,
                              Gui *gui,
                              const boost::shared_ptr<TimeLine> &timeline,
-                             QWidget *parent) :
-    QGLWidget(parent),
-    _imp( new DopeSheetViewPrivate(this) )
+                             QWidget *parent)
+    : QGLWidget(parent)
+    , _imp( new DopeSheetViewPrivate(this) )
 {
     _imp->model = model;
     _imp->hierarchyView = hierarchyView;
@@ -2557,7 +2565,13 @@ void
 DopeSheetView::centerOn(double xMin,
                         double xMax)
 {
-    _imp->zoomContext.fill( xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top() );
+    double ymin = _imp->zoomContext.bottom();
+    double ymax = _imp->zoomContext.top();
+
+    if (ymin >= ymax) {
+        return;
+    }
+    _imp->zoomContext.fill( xMin, xMax, ymin, ymax );
 
     redraw();
 }
@@ -2890,11 +2904,11 @@ DopeSheetView::copySelectedKeyframes()
 }
 
 void
-DopeSheetView::pasteKeyframes()
+DopeSheetView::pasteKeyframes(bool relative)
 {
     running_in_main_thread();
 
-    _imp->model->pasteKeys();
+    _imp->model->pasteKeys(relative);
 }
 
 void
@@ -3135,6 +3149,11 @@ DopeSheetView::initializeGL()
 {
     running_in_main_thread();
     appPTR->initializeOpenGLFunctionsOnce();
+
+    if ( !appPTR->isOpenGLLoaded() ) {
+        return;
+    }
+
     _imp->generateKeyframeTextures();
 }
 
@@ -3149,7 +3168,12 @@ DopeSheetView::resizeGL(int w,
 {
     running_in_main_thread_and_context(this);
 
+    if ( !appPTR->isOpenGLLoaded() ) {
+        return;
+    }
+
     if (h == 0) {
+        h = 1;
     }
 
     glViewport(0, 0, w, h);
@@ -3176,6 +3200,11 @@ void
 DopeSheetView::paintGL()
 {
     running_in_main_thread_and_context(this);
+
+    if ( !appPTR->isOpenGLLoaded() ) {
+        return;
+    }
+
 
     glCheckError();
 
@@ -3411,6 +3440,13 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
         if (_imp->eventState == DopeSheetView::esNoEditingState) {
             if ( !modCASIsShift(e) ) {
                 _imp->model->getSelectionModel()->clearKeyframeSelection();
+
+                boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt( e->pos().y() );
+                if (dsKnob) {
+                    double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+                    _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
+                                              eTimelineChangeReasonDopeSheetEditorSeek);
+                }
             }
 
             _imp->selectionRect.x1 = _imp->selectionRect.x2 = clickZoomCoords.x();
@@ -3566,19 +3602,12 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
                 _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
                                           eTimelineChangeReasonDopeSheetEditorSeek);
 
-                //The value of the keyframe will be set automatically in DSPasteKeysCommand::addOrRemoveKeyframe
                 KeyFrame k(keyframeTime, 0);
                 DopeSheetKey key(dsKnob, k);
                 toPaste.push_back(key);
-                _imp->model->pasteKeys(toPaste);
+                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
+                _imp->model->pasteKeys(toPaste, true);
             }
-        }
-    } else if ( modCASIsNone(e) ) {
-        boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt( e->pos().y() );
-        if (dsKnob) {
-            double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
-            _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
-                                      eTimelineChangeReasonDopeSheetEditorSeek);
         }
     }
 }

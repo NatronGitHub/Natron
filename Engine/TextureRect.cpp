@@ -31,22 +31,33 @@
 #include "Engine/RectD.h"
 
 NATRON_NAMESPACE_ENTER;
-void
-TextureRect::operator=(const RectI& other)
+
+TextureRect::TextureRect()
+: RectI()
+, par(1.)
+, closestPo2(1)
 {
-    x1 = other.x1;
-    x2 = other.x2;
-    y1 = other.y1;
-    y2 = other.y2;
 }
 
-bool
-TextureRect::contains(const TextureRect& other) const
+TextureRect::TextureRect(int x1_,
+            int y1_,
+            int x2_,
+            int y2_,
+            int closestPo2_,
+            double par_)
+: RectI(x1_, y1_, x2_, y2_)
+, par(par_)
+, closestPo2(closestPo2_)
 {
-    return other.x1 >= x1 &&
-           other.y1 >= y1 &&
-           other.x2 <= x2 &&
-           other.y2 <= y2;
 }
+
+void
+TextureRect::reset()
+{
+    set(0, 0, 0, 0);
+    par = 1;
+    closestPo2 = 1;
+}
+
 
 NATRON_NAMESPACE_EXIT;

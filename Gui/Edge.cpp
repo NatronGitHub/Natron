@@ -224,6 +224,12 @@ Edge::setAngle(double a)
 }
 
 void
+Edge::setLabel(const QString &label)
+{
+    _imp->label->setText(label);
+}
+
+void
 Edge::turnOnRenderingColor()
 {
     _imp->useRenderingColor = true;
@@ -303,6 +309,11 @@ Edge::computeVisibility(bool hovered) const
     }
 
     if (!effect) {
+        return false;
+    }
+
+    bool inputVisibleInternally = dst ? dst->getNode()->isInputVisible(_imp->inputNb) : true;
+    if (!inputVisibleInternally) {
         return false;
     }
 
@@ -552,7 +563,7 @@ Edge::initLine()
 
                 /*adjusting dst to show label at the middle of the line*/
 
-                QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
+                QPointF labelDst = dstIntersection; //QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
 
                 _imp->label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset, ( labelDst.y() + srcpt.y() ) / 2. - 20 );
             }

@@ -258,7 +258,9 @@ NodeGraph::updateCacheSizeText()
     QString oldText = _imp->_cacheSizeText->text();
     quint64 cacheSize = appPTR->getCachesTotalMemorySize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
-    QString newText = tr("Memory cache size: ") + cacheSizeStr;
+    quint64 diskSize = appPTR->getCachesTotalDiskSize();
+    QString diskCacheSizeStr = QDirModelPrivate_size(diskSize);
+    QString newText = tr("Memory cache: %1 / Disk cache: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
     if (newText != oldText) {
         _imp->_cacheSizeText->setText(newText);
     }
@@ -404,6 +406,15 @@ NodeGraph::showMenu(const QPoint & pos)
         turnOffPreviewAction->setChecked(false);
         QObject::connect( turnOffPreviewAction, SIGNAL(triggered()), this, SLOT(togglePreviewsForSelectedNodes()) );
         _imp->_menu->addAction(turnOffPreviewAction);
+
+        if (selectedNodes.size() == 1) {
+            QAction* openNodePanelAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel,
+                                                                  kShortcutDescActionGraphOpenNodePanel, _imp->_menu);
+            openNodePanelAction->setCheckable(true);
+            openNodePanelAction->setChecked(false);
+            QObject::connect( openNodePanelAction, SIGNAL(triggered()), this, SLOT(showSelectedNodeSettingsPanel()) );
+            _imp->_menu->addAction(openNodePanelAction);
+        }
     }
 
     QAction* connectionHints = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints,

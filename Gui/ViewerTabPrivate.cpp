@@ -357,10 +357,19 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
 std::list<ViewerTabPrivate::PluginViewerContext>::iterator
 ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
 {
+    // Roto and RotoPaint are 2 different plug-ins but we don't want them at the same time in the viewer
+    bool isRotoOrRotoPaint = pluginID == PLUGINID_NATRON_ROTO || pluginID == PLUGINID_NATRON_ROTOPAINT;
     for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it != currentNodeContext.end(); ++it) {
-        if (it->pluginID == pluginID) {
-            return it;
+        if (isRotoOrRotoPaint) {
+            if (it->pluginID == PLUGINID_NATRON_ROTO || it->pluginID == PLUGINID_NATRON_ROTOPAINT) {
+                return it;
+            }
+        } else {
+            if (it->pluginID == pluginID) {
+                return it;
+            }
         }
+
     }
 
     return currentNodeContext.end();

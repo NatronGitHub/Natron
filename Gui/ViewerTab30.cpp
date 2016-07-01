@@ -504,7 +504,7 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
         return;
     }
 
-    boost::shared_ptr<NodeViewerContext> nodeContext( new NodeViewerContext(n, this) );
+    boost::shared_ptr<NodeViewerContext> nodeContext = NodeViewerContext::create(n, this);
     nodeContext->createGui();
     _imp->nodesContext.insert( std::make_pair(n, nodeContext) );
 

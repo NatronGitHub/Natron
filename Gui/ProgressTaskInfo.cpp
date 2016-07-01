@@ -24,8 +24,6 @@
 
 #include "ProgressTaskInfo.h"
 
-#include "Global/Macros.h"
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/clamp.hpp>
@@ -55,6 +53,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TableModelView.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/Gui.h"
+#include "Gui/TabWidget.h"
+#include "Gui/PanelWidget.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
 #include "Gui/Utils.h"
@@ -117,6 +117,8 @@ public:
     QString message;
     boost::shared_ptr<ProcessHandler> process;
 
+    PanelWidget* lastWidgetCurrentWhenShowingProgressDialog;
+
     ProgressTaskInfoPrivate(ProgressPanel* panel,
                             const NodePtr& node,
                             ProgressTaskInfo* publicInterface,
@@ -159,6 +161,7 @@ public:
         , refreshLabelTimer()
         , message(message)
         , process(process)
+        , lastWidgetCurrentWhenShowingProgressDialog(0)
     {
     }
 
@@ -202,6 +205,12 @@ ProgressTaskInfo::getStatus() const
 }
 
 void
+ProgressTaskInfo::onShowProgressPanelTimerTimeout()
+{
+    _imp->lastWidgetCurrentWhenShowingProgressDialog = _imp->panel->getGui()->ensureProgressPanelVisible();
+}
+
+void
 ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
                              int retCode)
 {
@@ -212,6 +221,11 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
     if (calledFromRenderEngine) {
         _imp->panel->getGui()->ensureProgressPanelVisible();
         _imp->panel->onLastTaskAddedFinished(this);
+    } else {
+        if (_imp->lastWidgetCurrentWhenShowingProgressDialog) {
+            _imp->lastWidgetCurrentWhenShowingProgressDialog->getParentPane()->setCurrentWidget(_imp->lastWidgetCurrentWhenShowingProgressDialog);
+            _imp->lastWidgetCurrentWhenShowingProgressDialog = 0;
+        }
     }
 
     {

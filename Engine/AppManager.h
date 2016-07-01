@@ -49,6 +49,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/ImageLocker.h"
+#include "Engine/LogEntry.h"
 #include "Engine/EngineFwd.h"
 
 /*macro to get the unique pointer to the controler*/
@@ -58,6 +60,8 @@ CLANG_DIAG_ON(deprecated)
 #define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
+
+class QDir;
 
 NATRON_NAMESPACE_ENTER;
 
@@ -153,9 +157,7 @@ public:
     }
 
     EffectInstPtr createOFXEffect(NodePtr node,
-                                  const NodeSerialization* serialization,
-                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                  bool disableRenderScaleSupport
+                                  const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                   , bool allowFileDialogs,
                                   bool *hasUsedFileDialog
@@ -173,7 +175,6 @@ public:
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
     AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
-    QMutex* getMutexForPlugin(const QString & pluginId, int major, int minor) const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
@@ -200,52 +201,16 @@ public:
     bool getImageOrCreate_diskCache(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
                                     boost::shared_ptr<Image>* returnValue) const;
 
-    static bool getImageFromCache(const ImageKey & key,
-                                  std::list<boost::shared_ptr<Image> >* returnValue)
-    {
-        return appPTR->getImage(key, returnValue);
-    }
-
-    static bool getImageFromCacheOrCreate(const ImageKey & key,
-                                          const boost::shared_ptr<ImageParams>& params,
-                                          boost::shared_ptr<Image>* returnValue)
-    {
-        return appPTR->getImageOrCreate(key, params, returnValue);
-    }
-
-    static bool getImageFromDiskCache(const ImageKey & key,
-                                      std::list<boost::shared_ptr<Image> >* returnValue)
-    {
-        return appPTR->getImage_diskCache(key, returnValue);
-    }
-
-    static bool getImageFromDiskCacheOrCreate(const ImageKey & key,
-                                              const boost::shared_ptr<ImageParams>& params,
-                                              boost::shared_ptr<Image>* returnValue)
-    {
-        return appPTR->getImageOrCreate_diskCache(key, params, returnValue);
-    }
-
     bool getTexture(const FrameKey & key,
                     std::list<FrameEntryPtr>* returnValue) const;
 
     bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
+                            FrameEntryLocker* locker,
                             FrameEntryPtr* returnValue) const;
 
-    static bool getTextureFromCache(const FrameKey & key,
-                                    std::list<FrameEntryPtr>* returnValue)
-    {
-        return appPTR->getTexture(key, returnValue);
-    }
-
-    static bool getTextureFromCacheOrCreate(const FrameKey & key,
-                                            const boost::shared_ptr<FrameParams> &params,
-                                            FrameEntryPtr* returnValue)
-    {
-        return appPTR->getTextureOrCreate(key, params, returnValue);
-    }
 
     U64 getCachesTotalMemorySize() const;
+    U64 getCachesTotalDiskSize() const;
     boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
@@ -253,8 +218,6 @@ public:
     void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
-
-    void setPlaybackCacheMaximumSize(double p);
 
     void removeFromNodeCache(const boost::shared_ptr<Image> & image);
     void removeFromViewerCache(const FrameEntryPtr & texture);
@@ -341,13 +304,13 @@ public:
     {
     }
 
-    QString getErrorLog_mt_safe() const;
+    void getErrorLog_mt_safe(std::list<LogEntry>* entries) const;
 
-    void writeToErrorLog_mt_safe(const QString & str);
+    void writeToErrorLog_mt_safe(const QString& context, const QString & str, bool isHtml = false, const LogEntry::LogEntryColor& color = LogEntry::LogEntryColor());
 
-    void clearOfxLog_mt_safe();
+    void clearErrorLog_mt_safe();
 
-    virtual void showErrorLog() {}
+    virtual void showErrorLog();
 
     virtual void debugImage(const Image* /*image*/,
                             const RectI& /*roi*/,
@@ -514,14 +477,13 @@ public:
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const;
 
-    static std::string isImageFileSupportedByNatron(const std::string& ext);
-
     void setOFXHostHandle(void* handle);
 
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     ContextEnum* ctx);
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
+    GPUContextPool* getGPUContextPool() const;
 
 
     /**
@@ -564,7 +526,6 @@ public:
 
     bool hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError = 0) const;
 
-
     QString getOpenGLVersion() const;
 
     QString getBoostVersion() const;
@@ -575,9 +536,39 @@ public:
 
     QString getPySideVersion() const;
 
-    void initializeOpenGLFunctionsOnce();
+    bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
+
+    const std::list<OpenGLRendererInfo>& getOpenGLRenderers() const;
+
+    void refreshOpenGLRenderingFlagOnAllInstances();
+
+    /**
+     * @brief Returns true if we could correctly fetch needed OpenGL functions and extensions
+     **/
+    bool isOpenGLLoaded() const;
 
     virtual void updateAboutWindowLibrariesVersion() {}
+
+#ifdef __NATRON_WIN32__
+    const OSGLContext_wgl_data* getWGLData() const;
+#endif
+#ifdef __NATRON_LINUX__
+    const OSGLContext_glx_data* getGLXData() const;
+#endif
+
+    const IOPluginsMap& getFileFormatsForReadingAndReader() const;
+    const IOPluginsMap& getFileFormatsForWritingAndWriter() const;
+
+    void getSupportedReaderFileFormats(std::vector<std::string>* formats) const;
+
+    void getSupportedWriterFileFormats(std::vector<std::string>* formats) const;
+
+    void getReadersForFormat(const std::string& format, IOPluginSetForFormat* decoders) const;
+
+    void getWritersForFormat(const std::string& format, IOPluginSetForFormat* encoders) const;
+
+    std::string getReaderPluginIDForFileType(const std::string & extension) const;
+    std::string getWriterPluginIDForFileType(const std::string & extension) const;
 
 public Q_SLOTS:
 
@@ -585,6 +576,8 @@ public Q_SLOTS:
     {
         exitApp(true);
     }
+
+    void onViewerTileCacheSizeChanged();
 
     void toggleAutoHideGraphInputs();
 
@@ -626,8 +619,8 @@ Q_SIGNALS:
 protected:
 
     virtual bool initGui(const CLArgs& cl);
-    virtual void loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap);
+    virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
+                                        IOPluginsMap* writersMap);
 
     template <typename PLUGIN>
     void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
@@ -657,6 +650,16 @@ protected:
 
 private:
 
+    void findAllScriptsRecursive(const QDir& directory,
+                            QStringList& allPlugins,
+                            QStringList *foundInit,
+                            QStringList *foundInitGui);
+
+    bool findAndRunScriptFile(const QString& path,
+                         const QStringList& files,
+                         const QString& script);
+
+
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
@@ -684,7 +687,8 @@ struct PyCallback
     std::string originalExpression; //< the one input by the user
     PyObject* code;
 
-    PyCallback() : expression(), originalExpression(),  code(0) {}
+    PyCallback()
+        : expression(), originalExpression(),  code(0) {}
 };
 
 // put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions

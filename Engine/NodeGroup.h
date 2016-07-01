@@ -274,6 +274,7 @@ public:
                              const QString& pluginDescription,
                              const QString& pluginIconPath,
                              const QString& pluginGrouping,
+                             int version,
                              QString& output);
 
 private:

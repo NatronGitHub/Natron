@@ -354,7 +354,7 @@ ViewerTab::abortViewersAndRefresh()
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
-            if ( engine && engine->hasThreadsWorking() ) {
+            if ( engine ) {
                 engine->abortRenderingAutoRestart();
                 engine->renderCurrentFrame(false, true);
             }

@@ -142,7 +142,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent = 0);
+    explicit HierarchyView(DopeSheet *dopeSheetModel,
+                           Gui *gui,
+                           QWidget *parent = 0);
     ~HierarchyView();
 
     /**
@@ -172,6 +174,8 @@ public:
     QTreeWidgetItem* getTreeItemForModelIndex(const QModelIndex& index) const;
 
     void setCanResizeOtherWidget(bool canResize);
+
+    void getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;

@@ -107,7 +107,9 @@ public:
 
 class TrackerContextPrivate;
 class TrackerContext
-    : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
+    : public QObject
+    , public boost::enable_shared_from_this<TrackerContext>
+, public TrackerParamsProvider
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -122,8 +124,15 @@ public:
         eTrackSelectionInternal,
     };
 
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackerContext(const boost::shared_ptr<Node> &node);
+
+public:
+    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node) {
+        return boost::shared_ptr<TrackerContext>( new TrackerContext(node) );
+    }
 
     virtual ~TrackerContext();
 
@@ -135,7 +144,11 @@ public:
     boost::shared_ptr<Node> getNode() const;
     boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
     boost::shared_ptr<KnobBool> getEnabledKnob() const;
-    boost::shared_ptr<KnobPage> getTrackingPageKnbo() const;
+    boost::shared_ptr<KnobPage> getTrackingPageKnob() const;
+
+    boost::shared_ptr<KnobInt> getDefaultMarkerPatternWinSizeKnob() const;
+
+    boost::shared_ptr<KnobInt> getDefaultMarkerSearchWinSizeKnob() const;
 
     bool isTrackerPMEnabled() const;
 
@@ -432,12 +445,15 @@ public:
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
               const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
               double formatWidth,
-              double formatHeight);
+              double formatHeight,
+              bool autoKeyEnabled);
 
     TrackArgs(const TrackArgs& other);
     void operator=(const TrackArgs& other);
 
     virtual ~TrackArgs();
+    
+    bool isAutoKeyingEnabledParamEnabled() const;
 
     double getFormatHeight() const;
     double getFormatWidth() const;
@@ -476,7 +492,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node);
+    TrackScheduler(TrackerParamsProvider* paramsProvider,
+                   const NodeWPtr& node);
 
     virtual ~TrackScheduler();
 

@@ -34,6 +34,7 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
+#include "Engine/MergingEnum.h"
 #include "Engine/PyParameter.h"
 #include "Engine/EngineFwd.h"
 
@@ -103,43 +104,6 @@ class BezierCurve
 {
 public:
 
-    enum CairoOperatorEnum
-    {
-        CAIRO_OPERATOR_CLEAR,
-
-        CAIRO_OPERATOR_SOURCE,
-        CAIRO_OPERATOR_OVER,
-        CAIRO_OPERATOR_IN,
-        CAIRO_OPERATOR_OUT,
-        CAIRO_OPERATOR_ATOP,
-
-        CAIRO_OPERATOR_DEST,
-        CAIRO_OPERATOR_DEST_OVER,
-        CAIRO_OPERATOR_DEST_IN,
-        CAIRO_OPERATOR_DEST_OUT,
-        CAIRO_OPERATOR_DEST_ATOP,
-
-        CAIRO_OPERATOR_XOR,
-        CAIRO_OPERATOR_ADD,
-        CAIRO_OPERATOR_SATURATE,
-
-        CAIRO_OPERATOR_MULTIPLY,
-        CAIRO_OPERATOR_SCREEN,
-        CAIRO_OPERATOR_OVERLAY,
-        CAIRO_OPERATOR_DARKEN,
-        CAIRO_OPERATOR_LIGHTEN,
-        CAIRO_OPERATOR_COLOR_DODGE,
-        CAIRO_OPERATOR_COLOR_BURN,
-        CAIRO_OPERATOR_HARD_LIGHT,
-        CAIRO_OPERATOR_SOFT_LIGHT,
-        CAIRO_OPERATOR_DIFFERENCE,
-        CAIRO_OPERATOR_EXCLUSION,
-        CAIRO_OPERATOR_HSL_HUE,
-        CAIRO_OPERATOR_HSL_SATURATION,
-        CAIRO_OPERATOR_HSL_COLOR,
-        CAIRO_OPERATOR_HSL_LUMINOSITY
-    };
-
 
     BezierCurve(const boost::shared_ptr<RotoItem>& item);
 
@@ -169,6 +133,12 @@ public:
 
     int getNumControlPoints() const;
 
+    void getKeyframes(std::list<double>* keys) const;
+
+    void getControlPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const;
+
+    void getFeatherPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const;
+
     void setActivated(double time, bool activated);
     bool getIsActivated(double time);
 
@@ -187,9 +157,8 @@ public:
     ColorTuple getColor(double time);
     void setColor(double time, double r, double g, double b);
 
-    void setCompositingOperator(CairoOperatorEnum op);
-    CairoOperatorEnum getCompositingOperator() const;
-
+    void setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum op);
+    NATRON_NAMESPACE::MergingFunctionEnum getCompositingOperator() const;
     BooleanParam* getActivatedParam() const;
     DoubleParam* getOpacityParam() const;
     DoubleParam* getFeatherDistanceParam() const;

@@ -21,13 +21,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyParameter.h>
 #include <PyRoto.h>
+#include <list>
 
 
 // Native ---------------------------------------------------------
 
 void BezierCurveWrapper::pysideInitQtMetaTypes()
 {
-    qRegisterMetaType< ::BezierCurve::CairoOperatorEnum >("BezierCurve::CairoOperatorEnum");
 }
 
 BezierCurveWrapper::~BezierCurveWrapper()
@@ -266,8 +266,8 @@ static PyObject* Sbk_BezierCurveFunc_getCompositingOperator(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCompositingOperator()const
-            BezierCurve::CairoOperatorEnum cppResult = BezierCurve::CairoOperatorEnum(const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator());
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX]), &cppResult);
+            NATRON_NAMESPACE::MergingFunctionEnum cppResult = NATRON_NAMESPACE::MergingFunctionEnum(const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator());
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_MERGINGFUNCTIONENUM_IDX]), &cppResult);
         }
     }
 
@@ -305,6 +305,81 @@ static PyObject* Sbk_BezierCurveFunc_getCompositingOperatorParam(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_BezierCurveFunc_getControlPointPosition(PyObject* self, PyObject* args)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "getControlPointPosition", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_getControlPointPosition_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        double cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+            // Begin code injection
+
+            double x,y,rx,ry,lx,ly;
+            cppSelf->getControlPointPosition(cppArg0, cppArg1, &x,&y, &lx,&ly,&rx,&ry);
+
+            PyObject* ret = PyTuple_New(6);
+            PyTuple_SET_ITEM(ret, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &x));
+            PyTuple_SET_ITEM(ret, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &y));
+            PyTuple_SET_ITEM(ret, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &lx));
+            PyTuple_SET_ITEM(ret, 3, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ly));
+            PyTuple_SET_ITEM(ret, 4, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &rx));
+            PyTuple_SET_ITEM(ret, 5, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ry));
+            return ret;
+
+            // End of code injection
+
+
+            pyResult = Py_None;
+            Py_INCREF(Py_None);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_BezierCurveFunc_getControlPointPosition_TypeError:
+        const char* overloads[] = {"int, float, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.getControlPointPosition", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject* pyArg)
@@ -455,6 +530,81 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherFallOffParam(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_BezierCurveFunc_getFeatherPointPosition(PyObject* self, PyObject* args)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "getFeatherPointPosition", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_getFeatherPointPosition_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        double cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+            // Begin code injection
+
+            double x,y,rx,ry,lx,ly;
+            cppSelf->getFeatherPointPosition(cppArg0, cppArg1, &x,&y, &lx,&ly,&rx,&ry);
+
+            PyObject* ret = PyTuple_New(6);
+            PyTuple_SET_ITEM(ret, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &x));
+            PyTuple_SET_ITEM(ret, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &y));
+            PyTuple_SET_ITEM(ret, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &lx));
+            PyTuple_SET_ITEM(ret, 3, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ly));
+            PyTuple_SET_ITEM(ret, 4, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &rx));
+            PyTuple_SET_ITEM(ret, 5, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ry));
+            return ret;
+
+            // End of code injection
+
+
+            pyResult = Py_None;
+            Py_INCREF(Py_None);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_BezierCurveFunc_getFeatherPointPosition_TypeError:
+        const char* overloads[] = {"int, float, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.getFeatherPointPosition", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* pyArg)
 {
     ::BezierCurve* cppSelf = 0;
@@ -498,6 +648,46 @@ static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* py
         const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getIsActivated", overloads);
         return 0;
+}
+
+static PyObject* Sbk_BezierCurveFunc_getKeyframes(PyObject* self)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getKeyframes(std::list<double>*)const
+            // Begin code injection
+
+            std::list<double> keys;
+            cppSelf->getKeyframes(&keys);
+            PyObject* ret = PyList_New((int) keys.size());
+            int idx = 0;
+            for (std::list<double>::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
+            PyList_SET_ITEM(ret, idx, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &*it));
+            }
+            return ret;
+
+            // End of code injection
+
+
+            pyResult = Py_None;
+            Py_INCREF(Py_None);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_BezierCurveFunc_getNumControlPoints(PyObject* self)
@@ -1066,9 +1256,9 @@ static PyObject* Sbk_BezierCurveFunc_setCompositingOperator(PyObject* self, PyOb
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setCompositingOperator(BezierCurve::CairoOperatorEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setCompositingOperator(BezierCurve::CairoOperatorEnum)
+    // 0: setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_MERGINGFUNCTIONENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum)
     }
 
     // Function signature not found.
@@ -1076,11 +1266,11 @@ static PyObject* Sbk_BezierCurveFunc_setCompositingOperator(PyObject* self, PyOb
 
     // Call function/method
     {
-        ::BezierCurve::CairoOperatorEnum cppArg0 = ((::BezierCurve::CairoOperatorEnum)0);
+        ::NATRON_NAMESPACE::MergingFunctionEnum cppArg0 = ((::NATRON_NAMESPACE::MergingFunctionEnum)0);
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setCompositingOperator(BezierCurve::CairoOperatorEnum)
+            // setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum)
             cppSelf->setCompositingOperator(cppArg0);
         }
     }
@@ -1091,7 +1281,7 @@ static PyObject* Sbk_BezierCurveFunc_setCompositingOperator(PyObject* self, PyOb
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setCompositingOperator_TypeError:
-        const char* overloads[] = {"NatronEngine.BezierCurve.CairoOperatorEnum", 0};
+        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.MergingFunctionEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.setCompositingOperator", overloads);
         return 0;
 }
@@ -1515,11 +1705,14 @@ static PyMethodDef Sbk_BezierCurve_methods[] = {
     {"getColorParam", (PyCFunction)Sbk_BezierCurveFunc_getColorParam, METH_NOARGS},
     {"getCompositingOperator", (PyCFunction)Sbk_BezierCurveFunc_getCompositingOperator, METH_NOARGS},
     {"getCompositingOperatorParam", (PyCFunction)Sbk_BezierCurveFunc_getCompositingOperatorParam, METH_NOARGS},
+    {"getControlPointPosition", (PyCFunction)Sbk_BezierCurveFunc_getControlPointPosition, METH_VARARGS},
     {"getFeatherDistance", (PyCFunction)Sbk_BezierCurveFunc_getFeatherDistance, METH_O},
     {"getFeatherDistanceParam", (PyCFunction)Sbk_BezierCurveFunc_getFeatherDistanceParam, METH_NOARGS},
     {"getFeatherFallOff", (PyCFunction)Sbk_BezierCurveFunc_getFeatherFallOff, METH_O},
     {"getFeatherFallOffParam", (PyCFunction)Sbk_BezierCurveFunc_getFeatherFallOffParam, METH_NOARGS},
+    {"getFeatherPointPosition", (PyCFunction)Sbk_BezierCurveFunc_getFeatherPointPosition, METH_VARARGS},
     {"getIsActivated", (PyCFunction)Sbk_BezierCurveFunc_getIsActivated, METH_O},
+    {"getKeyframes", (PyCFunction)Sbk_BezierCurveFunc_getKeyframes, METH_NOARGS},
     {"getNumControlPoints", (PyCFunction)Sbk_BezierCurveFunc_getNumControlPoints, METH_NOARGS},
     {"getOpacity", (PyCFunction)Sbk_BezierCurveFunc_getOpacity, METH_O},
     {"getOpacityParam", (PyCFunction)Sbk_BezierCurveFunc_getOpacityParam, METH_NOARGS},
@@ -1617,22 +1810,6 @@ static void* Sbk_BezierCurve_typeDiscovery(void* cptr, SbkObjectType* instanceTy
 
 // Type conversion functions.
 
-// Python to C++ enum conversion.
-static void BezierCurve_CairoOperatorEnum_PythonToCpp_BezierCurve_CairoOperatorEnum(PyObject* pyIn, void* cppOut) {
-    *((::BezierCurve::CairoOperatorEnum*)cppOut) = (::BezierCurve::CairoOperatorEnum) Shiboken::Enum::getValue(pyIn);
-
-}
-static PythonToCppFunc is_BezierCurve_CairoOperatorEnum_PythonToCpp_BezierCurve_CairoOperatorEnum_Convertible(PyObject* pyIn) {
-    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX]))
-        return BezierCurve_CairoOperatorEnum_PythonToCpp_BezierCurve_CairoOperatorEnum;
-    return 0;
-}
-static PyObject* BezierCurve_CairoOperatorEnum_CppToPython_BezierCurve_CairoOperatorEnum(const void* cppIn) {
-    int castCppIn = *((::BezierCurve::CairoOperatorEnum*)cppIn);
-    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX], castCppIn);
-
-}
-
 // Python to C++ pointer conversion - returns the C++ object of the Python wrapper (keeps object identity).
 static void BezierCurve_PythonToCpp_BezierCurve_PTR(PyObject* pyIn, void* cppOut) {
     Shiboken::Conversions::pythonToCppPointer(&Sbk_BezierCurve_Type, pyIn, cppOut);
@@ -1679,117 +1856,6 @@ void init_BezierCurve(PyObject* module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_BezierCurve_Type, &Sbk_BezierCurve_typeDiscovery);
-
-    // Initialization of enums.
-
-    // Initialization of enum 'CairoOperatorEnum'.
-    SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_BezierCurve_Type,
-        "CairoOperatorEnum",
-        "NatronEngine.BezierCurve.CairoOperatorEnum",
-        "BezierCurve::CairoOperatorEnum");
-    if (!SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX])
-        return ;
-
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_CLEAR", (long) BezierCurve::CAIRO_OPERATOR_CLEAR))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_SOURCE", (long) BezierCurve::CAIRO_OPERATOR_SOURCE))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_OVER", (long) BezierCurve::CAIRO_OPERATOR_OVER))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_IN", (long) BezierCurve::CAIRO_OPERATOR_IN))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_OUT", (long) BezierCurve::CAIRO_OPERATOR_OUT))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_ATOP", (long) BezierCurve::CAIRO_OPERATOR_ATOP))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DEST", (long) BezierCurve::CAIRO_OPERATOR_DEST))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DEST_OVER", (long) BezierCurve::CAIRO_OPERATOR_DEST_OVER))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DEST_IN", (long) BezierCurve::CAIRO_OPERATOR_DEST_IN))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DEST_OUT", (long) BezierCurve::CAIRO_OPERATOR_DEST_OUT))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DEST_ATOP", (long) BezierCurve::CAIRO_OPERATOR_DEST_ATOP))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_XOR", (long) BezierCurve::CAIRO_OPERATOR_XOR))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_ADD", (long) BezierCurve::CAIRO_OPERATOR_ADD))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_SATURATE", (long) BezierCurve::CAIRO_OPERATOR_SATURATE))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_MULTIPLY", (long) BezierCurve::CAIRO_OPERATOR_MULTIPLY))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_SCREEN", (long) BezierCurve::CAIRO_OPERATOR_SCREEN))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_OVERLAY", (long) BezierCurve::CAIRO_OPERATOR_OVERLAY))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DARKEN", (long) BezierCurve::CAIRO_OPERATOR_DARKEN))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_LIGHTEN", (long) BezierCurve::CAIRO_OPERATOR_LIGHTEN))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_COLOR_DODGE", (long) BezierCurve::CAIRO_OPERATOR_COLOR_DODGE))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_COLOR_BURN", (long) BezierCurve::CAIRO_OPERATOR_COLOR_BURN))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_HARD_LIGHT", (long) BezierCurve::CAIRO_OPERATOR_HARD_LIGHT))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_SOFT_LIGHT", (long) BezierCurve::CAIRO_OPERATOR_SOFT_LIGHT))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_DIFFERENCE", (long) BezierCurve::CAIRO_OPERATOR_DIFFERENCE))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_EXCLUSION", (long) BezierCurve::CAIRO_OPERATOR_EXCLUSION))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_HSL_HUE", (long) BezierCurve::CAIRO_OPERATOR_HSL_HUE))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_HSL_SATURATION", (long) BezierCurve::CAIRO_OPERATOR_HSL_SATURATION))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_HSL_COLOR", (long) BezierCurve::CAIRO_OPERATOR_HSL_COLOR))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-        &Sbk_BezierCurve_Type, "CAIRO_OPERATOR_HSL_LUMINOSITY", (long) BezierCurve::CAIRO_OPERATOR_HSL_LUMINOSITY))
-        return ;
-    // Register converter for enum 'BezierCurve::CairoOperatorEnum'.
-    {
-        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX],
-            BezierCurve_CairoOperatorEnum_CppToPython_BezierCurve_CairoOperatorEnum);
-        Shiboken::Conversions::addPythonToCppValueConversion(converter,
-            BezierCurve_CairoOperatorEnum_PythonToCpp_BezierCurve_CairoOperatorEnum,
-            is_BezierCurve_CairoOperatorEnum_PythonToCpp_BezierCurve_CairoOperatorEnum_Convertible);
-        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX], converter);
-        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX], converter);
-        Shiboken::Conversions::registerConverterName(converter, "BezierCurve::CairoOperatorEnum");
-        Shiboken::Conversions::registerConverterName(converter, "CairoOperatorEnum");
-    }
-    // End of 'CairoOperatorEnum' enum.
 
 
     BezierCurveWrapper::pysideInitQtMetaTypes();

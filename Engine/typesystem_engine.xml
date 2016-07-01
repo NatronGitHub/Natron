@@ -211,6 +211,7 @@
      <!--Natron global enums-->
     <namespace-type name="NATRON_NAMESPACE">
     <enum-type name="StatusEnum"/>
+    <enum-type name="MergingFunctionEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
     <enum-type name="KeyframeTypeEnum"/>
     <enum-type name="PixmapEnum"/>
@@ -334,32 +335,41 @@
             
         </modify-function>
     </object-type>
-    
+    <object-type name="NodeCreationProperty">
+    </object-type>
+    <object-type name="IntNodeCreationProperty">
+    </object-type>
+    <object-type name="BoolNodeCreationProperty">
+    </object-type>
+    <object-type name="FloatNodeCreationProperty">
+    </object-type>
+    <object-type name="StringNodeCreationProperty">
+    </object-type>
     <object-type name="App" copyable="false">
-        <modify-function signature="createNode(QString,int,Group*)const">
+        <modify-function signature="createNode(QString,int,Group*, std::map&lt; QString, NodeCreationProperty* &gt;)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3, %4);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createReader(QString,Group*)const">
+        <modify-function signature="createReader(QString,Group*,std::map&lt; QString, NodeCreationProperty* &gt;)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2);
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2, %3);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createWriter(QString,Group*)const">
+        <modify-function signature="createWriter(QString,Group*, std::map&lt;QString, NodeCreationProperty* &gt;)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2);
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2, %3);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
@@ -670,16 +680,7 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        
-        <modify-function signature="createChild()">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME();
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
-            </inject-code>
-        </modify-function>
+
         <modify-function signature="connectInput(int,const Effect*)">
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2);
@@ -1101,7 +1102,6 @@
         </modify-function>
     </object-type>
     <object-type name="BezierCurve">
-        <enum-type name="CairoOperatorEnum"/>
         <modify-function signature="getActivatedParam()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -1132,6 +1132,97 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getKeyframes(std::list&lt;double&gt;*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::list&lt;double&gt; keys;
+                %CPPSELF.%FUNCTION_NAME(&amp;keys);
+                PyObject* ret = PyList_New((int) keys.size());
+                int idx = 0;
+                for (std::list&lt;double&gt;::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
+                PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[double](*it));
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="5">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="6">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="7">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="8">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double x,y,rx,ry,lx,ly;
+                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry);
+
+                PyObject* ret = PyTuple_New(6);
+                PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
+                PyTuple_SET_ITEM(ret, 1, %CONVERTTOPYTHON[double](y));
+                PyTuple_SET_ITEM(ret, 2, %CONVERTTOPYTHON[double](lx));
+                PyTuple_SET_ITEM(ret, 3, %CONVERTTOPYTHON[double](ly));
+                PyTuple_SET_ITEM(ret, 4, %CONVERTTOPYTHON[double](rx));
+                PyTuple_SET_ITEM(ret, 5, %CONVERTTOPYTHON[double](ry));
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="5">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="6">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="7">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="8">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double x,y,rx,ry,lx,ly;
+                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry);
+
+                PyObject* ret = PyTuple_New(6);
+                PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
+                PyTuple_SET_ITEM(ret, 1, %CONVERTTOPYTHON[double](y));
+                PyTuple_SET_ITEM(ret, 2, %CONVERTTOPYTHON[double](lx));
+                PyTuple_SET_ITEM(ret, 3, %CONVERTTOPYTHON[double](ly));
+                PyTuple_SET_ITEM(ret, 4, %CONVERTTOPYTHON[double](rx));
+                PyTuple_SET_ITEM(ret, 5, %CONVERTTOPYTHON[double](ry));
+                return ret;
+            </inject-code>
+        </modify-function>
+
     </object-type>
     <object-type name="Track">
         <modify-function signature="getParam(QString)const">

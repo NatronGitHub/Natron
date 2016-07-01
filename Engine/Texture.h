@@ -44,6 +44,7 @@ public:
         eDataTypeNone,
         eDataTypeByte,
         eDataTypeFloat,
+        eDataTypeUShort,
         eDataTypeHalf,
     };
 
@@ -51,11 +52,22 @@ public:
     Texture(U32 target,
             int minFilter,
             int magFilter,
-            int clamp);
+            int clamp,
+            DataTypeEnum type,
+            int format,
+            int internalFormat,
+            int glType);
+    static void getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType);
+    static void getRecommendedTexParametersForRGBAFloatTexture(int* format, int* internalFormat, int* glType);
 
     U32 getTexID() const
     {
         return _texID;
+    }
+
+    int getTexTarget() const
+    {
+        return _target;
     }
 
     int w() const
@@ -76,22 +88,51 @@ public:
         return _type;
     }
 
+    std::size_t getDataSizeOf() const
+    {
+        switch (_type) {
+        case eDataTypeByte:
+
+            return sizeof(unsigned char);
+        case eDataTypeFloat:
+
+            return sizeof(float);
+        case eDataTypeHalf:
+
+            // Fixme when we support half
+            return sizeof(float);
+        case eDataTypeNone:
+        default:
+
+            return 0;
+        }
+    }
+
+    /**
+     * @brief Returns the size occupied by this texture in bytes
+     **/
+    std::size_t getSize() const
+    {
+        // textures are always RGBA for now.
+        return _textureRect.area() * getDataSizeOf() * 4;
+    }
+
     /*
      * @brief Ensures that the texture is of size texRect and of the given type
      * @returns True if something changed, false otherwise
      * Note: Internally this function calls glTexImage2D to reallocate the texture buffer
+     * @param originalRAMBuffer Optional pointer to a mapped PBO for asynchronous texture upload
      */
-    bool ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type);
+    bool ensureTextureHasSize(const TextureRect& texRect, const unsigned char* originalRAMBuffer);
 
     /**
      * @brief Update the texture with the currently bound PBO across the given rectangle.
      * @param texRect The bounds of the texture, if the texture does not match these bounds, it will be reallocated
      * using ensureTextureHasSize(texRect,type)/
-     * @param type The bitdepth of the texture
-     * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTextSubImage2D
+     * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTexSubImage2D
      * @param updateOnlyRoI if updateOnlyRoi is true, only the portion defined by roi will be updated on the texture
      **/
-    void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type, const RectI& roi, bool updateOnlyRoi);
+    void fillOrAllocateTexture(const TextureRect & texRect, const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer);
 
     /**
      * @brief The bounds of the texture
@@ -101,6 +142,21 @@ public:
         return _textureRect;
     }
 
+    int getFormat() const
+    {
+        return _format;
+    }
+
+    int getInternalFormat() const
+    {
+        return _internalFormat;
+    }
+
+    int getGLType() const
+    {
+        return _glType;
+    }
+
     virtual ~Texture();
 
 private:
@@ -108,6 +164,7 @@ private:
     U32 _texID;
     U32 _target;
     int _minFilter, _magFilter, _clamp;
+    int _internalFormat, _format, _glType;
     TextureRect _textureRect;
     DataTypeEnum _type;
 };

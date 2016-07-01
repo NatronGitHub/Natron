@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 148995 2016-05-24 18:07:47Z michaelld@macports.org $
+# $Id: Portfile 149466 2016-06-22 15:43:38Z michaelld@macports.org $
 
 PortSystem          1.0
 universal_variant no
@@ -39,6 +39,9 @@ if {${subport} eq ${name}} {
     long_description ${base_long_description} \
         The ${subport} release port is updated roughly every few months.
 
+    # keep this patch until the next version (major or minor)
+    patchfiles-append patch-Modules-Platform-Darwin-Initialize.cmake.diff
+
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
     livecheck.url   [lindex $master_sites 0]
@@ -47,12 +50,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160523
-    set dist_branch 3.5
-    set dist_date   20160523
-    set dist_hash   g201e5
-    checksums       rmd160 d21e31665cc1ed3af7dc00025ba85d7b2a283c19 \
-                    sha256 784fec5be785dccacc0d80a61fc0a25fc10e0b4d330b6bf744658343c8c70929
+    version         20160621
+    set dist_branch 3.6
+    set dist_date   20160621
+    set dist_hash   gdbfd5
+    checksums       rmd160 8b536bbda1334cab7954724f8bdc485d1330e5ba \
+                    sha256 ff99a623f1a95313ac4b8a648ca185db8468ad0a5edaa888fcf4564e6c66d5e9
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -83,7 +86,6 @@ patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
                     patch-Modules-FindFreetype.cmake.diff \
                     patch-Modules-FindQt4.cmake.diff \
                     patch-Modules-Platform-Darwin.cmake.diff \
-                    patch-Modules-Platform-Darwin-Initialize.cmake.diff \
                     patch-Modules-noArchCheck.diff
 
 configure.env-append \

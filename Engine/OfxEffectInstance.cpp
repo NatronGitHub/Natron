@@ -34,8 +34,6 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QPointF>
 
-#include "Global/Macros.h"
-
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
@@ -60,6 +58,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppManager.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
@@ -74,6 +73,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/UndoCommand.h"
 #ifdef DEBUG
 #include "Engine/TLSHolder.h"
 #endif
@@ -190,6 +190,10 @@ struct OfxEffectInstancePrivate
     boost::scoped_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
+    boost::weak_ptr<KnobString> cursorKnob; // secret knob for ofx effects so they can set the cursor
+    boost::weak_ptr<KnobInt> selectionRectangleStateKnob;
+    boost::weak_ptr<KnobString> undoRedoTextKnob;
+    boost::weak_ptr<KnobBool> undoRedoStateKnob;
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
@@ -197,16 +201,32 @@ struct OfxEffectInstancePrivate
     ContextEnum context;
     struct ClipsInfo
     {
+        ClipsInfo()
+            : optional(false)
+            , mask(false)
+            , rotoBrush(false)
+            , clip(NULL)
+            , label()
+            , hint()
+            , visible(true)
+        {
+        }
+
         bool optional;
         bool mask;
         bool rotoBrush;
         OfxClipInstance* clip;
+        std::string label;
+        std::string hint;
+        bool visible;
     };
 
     std::vector<ClipsInfo> clipsInfos;
     OfxClipInstance* outputClip;
     int nbSourceClips;
     SequentialPreferenceEnum sequentialPref;
+    mutable QMutex supportsConcurrentGLRendersMutex;
+    bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
     bool created; // true after the call to createInstance
@@ -227,6 +247,10 @@ struct OfxEffectInstancePrivate
         : effect()
         , natronPluginID()
         , overlayInteract()
+        , cursorKnob()
+        , selectionRectangleStateKnob()
+        , undoRedoTextKnob()
+        , undoRedoStateKnob()
         , preferencesLock(QReadWriteLock::Recursive)
         , renderSafetyLock()
         , renderSafety(eRenderSafetyUnsafe)
@@ -236,6 +260,8 @@ struct OfxEffectInstancePrivate
         , outputClip(0)
         , nbSourceClips(0)
         , sequentialPref(eSequentialPreferenceNotSequential)
+        , supportsConcurrentGLRendersMutex()
+        , supportsConcurrentGLRenders(false)
         , isOutput(false)
         , penDown(false)
         , created(false)
@@ -247,11 +273,45 @@ struct OfxEffectInstancePrivate
         , multiplanar(false)
     {
     }
+
+    OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
+        : effect()
+        , natronPluginID(other.natronPluginID)
+        , overlayInteract()
+        , preferencesLock(QReadWriteLock::Recursive)
+        , renderSafetyLock()
+        , renderSafety(other.renderSafety)
+        , wasRenderSafetySet(other.wasRenderSafetySet)
+        , context(other.context)
+        , clipsInfos(other.clipsInfos)
+        , outputClip(other.outputClip)
+        , nbSourceClips(other.nbSourceClips)
+        , sequentialPref(other.sequentialPref)
+        , supportsConcurrentGLRendersMutex()
+        , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
+        , isOutput(other.isOutput)
+        , penDown(other.penDown)
+        , created(other.created)
+        , initialized(other.initialized)
+        , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
+        , supportsMultipleClipsPar(other.supportsMultipleClipsPar)
+        , supportsMultipleClipsBitdepth(other.supportsMultipleClipsBitdepth)
+        , doesTemporalAccess(other.doesTemporalAccess)
+        , multiplanar(other.multiplanar)
+    {
+    }
 };
 
 OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
     , _imp( new OfxEffectInstancePrivate() )
+{
+    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
+}
+
+OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
+    : AbstractOfxEffectInstance(other)
+    , _imp( new OfxEffectInstancePrivate(*other._imp) )
 {
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
@@ -285,8 +345,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 OFX::Host::ImageEffect::Descriptor* desc,
                                                 ContextEnum context,
                                                 const NodeSerialization* serialization,
-                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                bool disableRenderScaleSupport
+                                                const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                                 ,
                                                 bool allowFileDialogs,
@@ -313,7 +372,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     if (context == eContextWriter) {
         _imp->isOutput = true;
     }
-    if ( disableRenderScaleSupport || (context == eContextWriter) ) {
+    if (context == eContextWriter) {
         // Writers don't support render scale (full-resolution images are written to disk)
         setSupportsRenderScaleMaybe(eSupportsNo);
     }
@@ -345,10 +404,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->clipsInfos.resize( clips.size() );
         for (unsigned i = 0; i < clips.size(); ++i) {
             OfxEffectInstancePrivate::ClipsInfo info;
-            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.optional = clips[i]->isOptional() || info.rotoBrush;
             info.mask = clips[i]->isMask();
+            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.clip = NULL;
+            // label, hint, visible are set below
             _imp->clipsInfos[i] = info;
         }
 
@@ -384,6 +444,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
             for (unsigned i = 0; i < clips.size(); ++i) {
                 _imp->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip( clips[i]->getName() ) );
+                _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
+                _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
+                _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
                 assert(_imp->clipsInfos[i].clip);
             }
 
@@ -413,17 +476,45 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
 
             getNode()->initializeInputs();
-            getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0, serialization != 0);
+            getNode()->initializeKnobs(serialization != 0);
 
+            {
+                KnobPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
+                if (foundCursorKnob) {
+                    boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
+                    _imp->cursorKnob = isStringKnob;
+                }
+            }
+            
+            {
 
+                KnobPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+                if (foundSelKnob) {
+                    boost::shared_ptr<KnobInt> isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
+                    _imp->selectionRectangleStateKnob = isIntKnob;
+                }
+            }
+            {
+                KnobPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
+                if (foundTextKnob) {
+                    boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
+                    _imp->undoRedoTextKnob = isStringKnob;
+                }
+            }
+            {
+                KnobPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
+                if (foundUndoRedoKnob) {
+                    boost::shared_ptr<KnobBool> isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
+                    _imp->undoRedoStateKnob = isBool;
+                }
+            }
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
                 getNode()->loadKnobs(*serialization);
             }
 
-            if ( !paramValues.empty() ) {
-                getNode()->setValuesFromSerialization(paramValues);
-            }
+            getNode()->setValuesFromSerialization(args);
+            
 
 #ifndef NATRON_ENABLE_IO_META_NODES
             //////////////////////////////////////////////////////
@@ -462,7 +553,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            throw std::runtime_error("Could not create effect instance for plugin");
+            QString message;
+            int type;
+            NodePtr messageContainer = getNode();
+#ifdef NATRON_ENABLE_IO_META_NODES
+            NodePtr ioContainer = messageContainer->getIOContainer();
+            if (ioContainer) {
+                messageContainer = ioContainer;
+            }
+#endif
+            messageContainer->getPersistentMessage(&message, &type);
+            if (message.isEmpty()) {
+                throw std::runtime_error("Could not create effect instance for plugin");
+            } else {
+                throw std::runtime_error(message.toStdString());
+            }
         }
 
         OfxPointD scaleOne;
@@ -517,6 +622,35 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    _imp->overlayInteract.reset();
+    if (_imp->effect) {
+        _imp->effect->destroyInstanceAction();
+    }
+}
+
+EffectInstPtr
+OfxEffectInstance::createRenderClone()
+{
+    boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
+
+    clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
+    assert(clone->_imp->effect);
+    clone->_imp->effect->setOfxEffectInstance(clone);
+
+    OfxStatus stat;
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&clone->_imp->preferencesLock);
+        stat = clone->_imp->effect->createInstanceAction();
+    }
+
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        // Failed to create clone...
+        return EffectInstPtr();
+    }
+
+
+    return clone;
 }
 
 bool
@@ -631,12 +765,35 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
-        interactDesc.describe(8, false);
-        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle() ) );
+#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
+        interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
+        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
 } // OfxEffectInstance::tryInitializeOverlayInteracts
+
+void
+OfxEffectInstance::setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor)
+{
+    if (!_imp->overlayInteract) {
+        return;
+    }
+
+    if (!_imp->overlayInteract->isColorPickerRequired()) {
+        return;
+    }
+    if (!hasColor) {
+        _imp->overlayInteract->setHasColorPicker(false);
+    } else {
+        if (setColor) {
+            _imp->overlayInteract->setLastColorPickerColor(color);
+        }
+        _imp->overlayInteract->setHasColorPicker(true);
+    }
+
+    ignore_result(_imp->overlayInteract->redraw());
+}
 
 bool
 OfxEffectInstance::isOutput() const
@@ -924,8 +1081,44 @@ OfxEffectInstance::getPluginGrouping(std::list<std::string>* grouping) const
     }
 }
 
+void
+OfxEffectInstance::onClipLabelChanged(int inputNb, const std::string& label)
+{
+    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
+    _imp->clipsInfos[inputNb].label = label;
+    getNode()->setInputLabel(inputNb, label);
+}
+
+void
+OfxEffectInstance::onClipHintChanged(int inputNb, const std::string& hint)
+{
+    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
+    _imp->clipsInfos[inputNb].hint = hint;
+    getNode()->setInputHint(inputNb, hint);
+}
+
+void
+OfxEffectInstance::onClipSecretChanged(int inputNb, bool isSecret)
+{
+    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
+    _imp->clipsInfos[inputNb].visible = !isSecret;
+    getNode()->setInputVisible(inputNb, !isSecret);
+}
+
 std::string
 OfxEffectInstance::getInputLabel(int inputNb) const
+{
+    assert(_imp->context != eContextNone);
+    assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );
+    if (_imp->context != eContextReader) {
+        return _imp->clipsInfos[inputNb].clip->getShortLabel();
+    } else {
+        return NATRON_READER_INPUT_NAME;
+    }
+}
+
+std::string
+OfxEffectInstance::getInputHint(int inputNb) const
 {
     assert(_imp->context != eContextNone);
     assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );
@@ -1694,6 +1887,32 @@ OfxEffectInstance::isIdentity(double time,
     //throw std::runtime_error("isIdentity failed");
 } // isIdentity
 
+class OfxGLContextEffectData
+    : public EffectInstance::OpenGLContextEffectData
+{
+    void* _dataHandle;
+
+public:
+
+    OfxGLContextEffectData()
+        : EffectInstance::OpenGLContextEffectData()
+        , _dataHandle(0)
+    {
+    }
+
+    void setDataHandle(void *dataHandle)
+    {
+        _dataHandle = dataHandle;
+    }
+
+    void* getDataHandle() const
+    {
+        return _dataHandle;
+    }
+
+    virtual ~OfxGLContextEffectData() {}
+};
+
 StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
@@ -1703,7 +1922,9 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
                                        bool draftMode,
-                                       ViewIdx view)
+                                       ViewIdx view,
+                                       bool isOpenGLRender,
+                                       const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1720,13 +1941,15 @@ OfxEffectInstance::beginSequenceRender(double first,
 
         SET_CAN_SET_VALUE(false);
 
+        OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
+        void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
-                                                   /*openGLRender=*/ false, /*contextData=*/ NULL, draftMode, view);
+                                                   isOpenGLRender, oglData, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1745,7 +1968,9 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      bool draftMode,
-                                     ViewIdx view)
+                                     ViewIdx view,
+                                     bool isOpenGLRender,
+                                     const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1761,13 +1986,15 @@ OfxEffectInstance::endSequenceRender(double first,
                                             mipMapLevel);
         SET_CAN_SET_VALUE(false);
 
+        OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
+        void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
                                                  isSequentialRender, isRenderResponseToUserInteraction,
-                                                 /*openGLRender=*/ false, /*contextData=*/ NULL, draftMode, view);
+                                                 isOpenGLRender, oglData, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1845,7 +2072,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                              Image::getLevelFromScale(args.originalScale.x),
                                              firstPlane.first,
                                              args.inputImages);
-
+        OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( args.glContextData.get() );
+        void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(&_imp->preferencesLock);
@@ -1855,8 +2083,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                            args.mappedScale,
                                            args.isSequentialRender,
                                            args.isRenderResponseToUserInteraction,
-                                           /*openGLRender=*/ false,
-                                           /*contextData=*/ NULL,
+                                           args.useOpenGL,
+                                           oglData,
                                            args.draftMode,
                                            args.view,
                                            viewsCount,
@@ -1868,12 +2096,19 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             QString err;
             if (stat == kOfxStatErrImageFormat) {
                 err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+                setPersistentMessage( eMessageTypeError, err.toStdString() );
             } else if (stat == kOfxStatErrMemory) {
                 err = tr("Out of memory!");
+                setPersistentMessage( eMessageTypeError, err.toStdString() );
             } else {
-                err = tr("Unknown failure reason.");
+                QString existingMessage;
+                int type;
+                getNode()->getPersistentMessage(&existingMessage, &type);
+                if (existingMessage.isEmpty()) {
+                    err = tr("Unknown failure reason.");
+                }
             }
-            setPersistentMessage( eMessageTypeError, err.toStdString() );
+
         }
 
         return eStatusFailed;
@@ -1956,7 +2191,7 @@ OfxEffectInstance::drawOverlay(double time,
     }
     if (_imp->overlayInteract) {
         SET_CAN_SET_VALUE(false);
-        _imp->overlayInteract->drawAction(time, renderScale, view);
+        _imp->overlayInteract->drawAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
     }
 }
 
@@ -1991,7 +2226,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
+        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2032,7 +2267,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
+        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2068,7 +2303,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.y = viewportPos.y();
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
+        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2098,7 +2333,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view,_imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2126,7 +2361,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2157,7 +2392,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
         QByteArray keyStr;
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2183,7 +2418,7 @@ OfxEffectInstance::onOverlayFocusGained(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view);
+        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2203,7 +2438,7 @@ OfxEffectInstance::onOverlayFocusLost(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view);
+        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2249,6 +2484,58 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
     }
 }
 
+class OfxUndoCommand : public UndoCommand
+{
+    boost::weak_ptr<KnobString> _textKnob;
+    boost::weak_ptr<KnobBool> _stateKnob;
+public:
+
+    OfxUndoCommand(const boost::shared_ptr<KnobString>& textKnob, const boost::shared_ptr<KnobBool> &stateKnob)
+    : _textKnob(textKnob)
+    , _stateKnob(stateKnob)
+    {
+        setText(textKnob->getValue());
+        stateKnob->blockValueChanges();
+        stateKnob->setValue(true);
+        stateKnob->unblockValueChanges();
+    }
+
+    virtual ~OfxUndoCommand()
+    {
+
+    }
+
+    /**
+     * @brief Called to redo the action
+     **/
+    virtual void redo() OVERRIDE FINAL
+    {
+        boost::shared_ptr<KnobBool> state = _stateKnob.lock();
+        bool currentValue = state->getValue();
+        assert(!currentValue);
+        state->setValue(true);
+        if (currentValue) {
+            state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
+        }
+    }
+
+    /**
+     * @brief Called to undo the action
+     **/
+    virtual void undo() OVERRIDE FINAL
+    {
+        boost::shared_ptr<KnobBool> state = _stateKnob.lock();
+        bool currentValue = state->getValue();
+        assert(currentValue);
+        state->setValue(false);
+        if (!currentValue) {
+            state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
+        }
+    }
+    
+
+};
+
 bool
 OfxEffectInstance::knobChanged(KnobI* k,
                                ValueChangedReasonEnum reason,
@@ -2260,7 +2547,32 @@ OfxEffectInstance::knobChanged(KnobI* k,
         return false;
     }
 
+    {
+        // Handle cursor knob
+        boost::shared_ptr<KnobString> cursorKnob = _imp->cursorKnob.lock();
+        if (k == cursorKnob.get()) {
+            CursorEnum c;
+            std::string cursorStr = cursorKnob->getValue();
+            if (OfxImageEffectInstance::ofxCursorToNatronCursor(cursorStr, &c)) {
+                setCurrentCursor(c);
+            } else {
+                setCurrentCursor(QString::fromUtf8(cursorStr.c_str()));
+            }
+            return true;
+        }
+        boost::shared_ptr<KnobString> undoRedoText = _imp->undoRedoTextKnob.lock();
+        if (k == undoRedoText.get()) {
+            boost::shared_ptr<KnobBool> undoRedoState = _imp->undoRedoStateKnob.lock();
+            assert(undoRedoState);
 
+            if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
+                UndoCommandPtr cmd(new OfxUndoCommand(undoRedoText, undoRedoState));
+                pushUndoCommand(cmd);
+                return true;
+            }
+        }
+
+    }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     RenderScale renderScale  = getOverlayInteractRenderScale();
@@ -2360,6 +2672,7 @@ OfxEffectInstance::purgeCaches()
     Q_UNUSED(stat);
 }
 
+
 int
 OfxEffectInstance::getMajorVersion() const
 {
@@ -2394,14 +2707,6 @@ OfxEffectInstance::supportsTiles() const
 PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
-    // first, check the descriptor
-    {
-        const std::string& str = effectInstance()->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
-        if (str == "false") {
-            return ePluginOpenGLRenderSupportNone;
-        }
-    }
-    // then, check the instance
     const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
 
     if (str == "false") {
@@ -2412,6 +2717,20 @@ OfxEffectInstance::supportsOpenGLRender() const
         assert(str == "needed");
 
         return ePluginOpenGLRenderSupportNeeded;
+    }
+}
+
+void
+OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
+{
+    const Plugin* p = getNode()->getPlugin();
+    if (p->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportYes) {
+        // The property may only change if the plug-in has the property set to yes on the descriptor
+        if (activated) {
+            effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true");
+        } else {
+            effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false");
+        }
     }
 }
 
@@ -2768,6 +3087,92 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropInstanceId, scriptname);
+}
+
+bool
+OfxEffectInstance::supportsConcurrentOpenGLRenders() const
+{
+    // By default OpenFX OpenGL render suite does not support concurrent OpenGL renders.
+    QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
+
+    return _imp->supportsConcurrentGLRenders;
+}
+
+StatusEnum
+OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* data)
+{
+    boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData() );
+
+    *data = ofxData;
+    void* ofxGLData = 0;
+    OfxStatus stat = effectInstance()->contextAttachedAction(ofxGLData);
+
+    // If the plug-in use the Natron property kNatronOfxImageEffectPropOpenGLContextData, that means it can handle
+    // concurrent OpenGL renders.
+    if (ofxGLData) {
+        ofxData->setDataHandle(ofxGLData);
+        QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
+        if (!_imp->supportsConcurrentGLRenders) {
+            _imp->supportsConcurrentGLRenders = true;
+        }
+    }
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    } else if (stat == kOfxStatErrMemory) {
+        return eStatusOutOfMemory;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else {
+        return eStatusOK;
+    }
+}
+
+StatusEnum
+OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffectDataPtr& data)
+{
+    OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
+    void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;
+    OfxStatus stat = effectInstance()->contextDetachedAction(ofxGLData);
+
+    if (isOfxData) {
+        // the context data can not be used anymore, reset it.
+        isOfxData->setDataHandle(NULL);
+    }
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    } else if (stat == kOfxStatErrMemory) {
+        return eStatusOutOfMemory;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else {
+        return eStatusOK;
+    }
+}
+
+void
+OfxEffectInstance::onInteractViewportSelectionCleared()
+{
+    boost::shared_ptr<KnobInt> k = _imp->selectionRectangleStateKnob.lock();
+    if (!k) {
+        return;
+    }
+    double propV[4] = {0, 0, 0, 0};
+    effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+
+    k->setValue(0);
+}
+
+
+void
+OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
+{
+    boost::shared_ptr<KnobInt> k = _imp->selectionRectangleStateKnob.lock();
+    if (!k) {
+        return;
+    }
+    double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
+    effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+    k->setValue(onRelease ? 2 : 1);
 }
 
 NATRON_NAMESPACE_EXIT;

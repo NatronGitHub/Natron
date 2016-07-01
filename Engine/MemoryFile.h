@@ -132,10 +132,18 @@ public:
      **/
     size_t size() const;
 
+    enum FlushTypeEnum
+    {
+        eFlushTypeSync,
+        eFlushTypeAsync,
+        eFlushTypeInvalidate
+    };
     /**
      * @brief Ensures that the backing file is in sync. with the data in memory
+     * @param data If non null, only the portion starting at data and spanning size bytes
+     * will be synced
      **/
-    bool flush();
+    bool flush(FlushTypeEnum type, void* data, std::size_t size);
 
     /**
      * @brief Returns the filepath of the backing file.

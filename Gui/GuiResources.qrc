@@ -13,6 +13,7 @@
         <file alias="LICENSE-FreeType.txt">../tools/license/components/LICENSE-FreeType.txt</file>
         <file alias="LICENSE-GIFLIB.txt">../tools/license/components/LICENSE-GIFLIB.txt</file>
         <file alias="LICENSE-GLAD.txt">../tools/license/components/LICENSE-GLAD.txt</file>
+        <file alias="LICENSE-GLFW.txt">../tools/license/components/LICENSE-GLFW.txt</file>
         <file alias="LICENSE-GPL-2.0.txt">../tools/license/components/LICENSE-GPL-2.0.txt</file>
         <file alias="LICENSE-HDF5.txt">../tools/license/components/LICENSE-HDF5.txt</file>
         <file alias="LICENSE-HarfBuzz.txt">../tools/license/components/LICENSE-HarfBuzz.txt</file>
@@ -32,7 +33,7 @@
         <file alias="LICENSE-Qt-LGPL.txt">../tools/license/components/LICENSE-Qt-LGPL.txt</file>
         <file alias="LICENSE-Schroedinger.txt">../tools/license/components/LICENSE-Schroedinger.txt</file>
         <file alias="LICENSE-SeExpr.txt">../tools/license/components/LICENSE-SeExpr.txt</file>
-        <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file>
+        <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file> 
         <file alias="LICENSE-bzip2.txt">../tools/license/components/LICENSE-bzip2.txt</file>
         <file alias="LICENSE-expat.txt">../tools/license/components/LICENSE-expat.txt</file>
         <file alias="LICENSE-fontconfig.txt">../tools/license/components/LICENSE-fontconfig.txt</file>
@@ -47,6 +48,7 @@
         <file alias="LICENSE-libopus.txt">../tools/license/components/LICENSE-libopus.txt</file>
         <file alias="LICENSE-libpng.txt">../tools/license/components/LICENSE-libpng.txt</file>
         <file alias="LICENSE-libspeex.txt">../tools/license/components/LICENSE-libspeex.txt</file>
+        <file alias="LICENSE-libtess.txt">../tools/license/components/LICENSE-libtess.txt</file>
         <file alias="LICENSE-libtheora.txt">../tools/license/components/LICENSE-libtheora.txt</file>
         <file alias="LICENSE-libtiff.txt">../tools/license/components/LICENSE-libtiff.txt</file>
         <file alias="LICENSE-libvorbis.txt">../tools/license/components/LICENSE-libvorbis.txt</file>
@@ -352,6 +354,8 @@
         <file>Resources/Images/merge_xor.png</file>
         <file>Resources/Images/pauseEnabled.png</file>
         <file>Resources/Images/pauseDisabled.png</file>
+        <file>Resources/Images/rotoShowTransformOverlay.png</file>
+        <file>Resources/Images/rotoHideTransformOverlay.png</file>
         <file>Resources/Images/trackerNodeIcon.png</file>
         <file>Resources/Images/trackAllKeyframes.png</file>
         <file>Resources/Images/trackBackwardOff.png</file>

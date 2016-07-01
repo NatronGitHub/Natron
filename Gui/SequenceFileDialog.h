@@ -84,7 +84,8 @@ public:
         EnabledRole = Qt::UserRole + 2
     };
 
-    explicit UrlModel(const std::map<std::string, std::string>& envVars, QObject *parent = 0);
+    explicit UrlModel(const std::map<std::string, std::string>& envVars,
+                      QObject *parent = 0);
 
     QStringList mimeTypes() const OVERRIDE;
     virtual QMimeData * mimeData(const QModelIndexList &indexes) const OVERRIDE;
@@ -153,7 +154,8 @@ Q_SIGNALS:
     void urlRequested(const QUrl &url);
 
 public:
-    explicit FavoriteView(Gui* gui, QWidget *parent = 0);
+    explicit FavoriteView(Gui* gui,
+                          QWidget *parent = 0);
     void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
     ~FavoriteView();
 
@@ -244,7 +246,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    FileDialogComboBox(SequenceFileDialog *p, QWidget *parent = 0);
+    FileDialogComboBox(SequenceFileDialog *p,
+                       QWidget *parent = 0);
 
     void showPopup() OVERRIDE;
     void setHistory(const QStringList &paths);

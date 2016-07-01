@@ -30,7 +30,6 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -79,7 +78,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    InputScriptTextEdit(Gui* gui, QWidget* parent);
+    InputScriptTextEdit(Gui* gui,
+                        QWidget* parent);
 
     virtual ~InputScriptTextEdit();
 

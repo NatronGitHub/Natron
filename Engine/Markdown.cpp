@@ -26,12 +26,10 @@
 
 #include <sstream>
 
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QTextStream>
-#include <QRegExp>
+#include <QtCore/QTextStream>
+#include <QtCore/QRegExp>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -45,20 +43,21 @@ Markdown::Markdown()
 
 // Converts markdown to html
 QString
-Markdown::convert2html(QString markdown)
+Markdown::convert2html(const QString& markdown)
 {
     QString html;
 
     if ( !markdown.isEmpty() ) {
-        markdown = parseCustomLinksForHTML(markdown);
+        QString markdownClean = parseCustomLinksForHTML(markdown);
 
-        hoedown_html_flags flags = HOEDOWN_HTML_SKIP_HTML;
-        hoedown_extensions extensions = HOEDOWN_EXT_AUTOLINK;
+        hoedown_html_flags flags = HOEDOWN_HTML_USE_XHTML;
+        hoedown_extensions extensions = (hoedown_extensions)(HOEDOWN_EXT_BLOCK|HOEDOWN_EXT_SPAN|HOEDOWN_EXT_FLAGS);
         size_t max_nesting = 16;
         hoedown_renderer *renderer = hoedown_html_renderer_new(flags, 0);
         hoedown_document *document = hoedown_document_new(renderer, extensions, max_nesting);
         hoedown_buffer *result = hoedown_buffer_new(max_nesting);
-        hoedown_document_render( document, result, reinterpret_cast<const uint8_t*>(&markdown.toStdString()[0]), markdown.toStdString().size() );
+        std::string markdownStr = markdownClean.toStdString();
+        hoedown_document_render( document, result, reinterpret_cast<const uint8_t*>(&markdownStr[0]), markdownStr.size() );
 
         std::ostringstream convert;
         for (size_t x = 0; x < result->size; x++) {
@@ -75,168 +74,44 @@ Markdown::convert2html(QString markdown)
     return html;
 }
 
-// Creates a markdown grid table from plugin knobs
-// for use with pandoc (which converts the markdown to rst for use in sphinx/rtd)
-// Only used as an intermediate, so the table does not look good in plaintext.
 QString
-Markdown::genPluginKnobsTable(QVector<QStringList> items)
+Markdown::parseCustomLinksForHTML(const QString& markdown)
 {
-    QString ret;
-    QTextStream ts(&ret);
+    QString result = markdown;
+    QRegExp rx( QString::fromUtf8("(\\|html::[^|]*\\|)\\|rst::[^|]*\\|") );
+    result.replace( rx, QString::fromUtf8("\\1") );
 
-    if (items.size() > 0) {
-        int header1Length = 0;
-        int header2Length = 0;
-        int header3Length = 0;
-        int header4Length = 0;
-        int headerTotal = 0;
-        int headerPadding = 4;
-        int headerCap = 60;
-        QString header1Text = tr("Label (UI Name)");
-        QString header2Text = tr("Script-Name");
-        QString header3Text = tr("Default-Value");
-        QString header4Text = tr("Function");
-
-        // get sizes
-        Q_FOREACH(const QStringList &item, items) {
-            int header1Count = item.at(0).count() + headerPadding + header1Text.count();
-
-            if (header1Count > headerCap) {
-                header1Count = headerCap;
-            }
-            if (header1Count > header1Length) {
-                header1Length = header1Count;
-            }
-            int header2Count = item.at(1).count() + headerPadding + header2Text.count();
-            if (header2Count > headerCap) {
-                header2Count = headerCap;
-            }
-            if (header2Count > header2Length) {
-                header2Length = header2Count;
-            }
-            int header3Count = item.at(2).count() + headerPadding + header3Text.count();
-            if (header3Count > headerCap) {
-                header3Count = headerCap;
-            }
-            if (header3Count > header3Length) {
-                header3Length = header3Count;
-            }
-            int header4Count = item.at(3).count() + headerPadding + header4Text.count();
-            if (header4Count > headerCap) {
-                header4Count = headerCap;
-            }
-            if (header4Count > header4Length) {
-                header4Length = header4Count;
-            }
-        }
-        headerTotal = (header1Length + header2Length + header3Length + header4Length) - 2;
-        int header1Split = header1Length;
-        int header2Split = header1Split + header2Length;
-        int header3Split = header2Split + header3Length;
-
-        // table top
-        ts << "+";
-        for (int i = 0; i < headerTotal; ++i) {
-            if ( (i == header1Split) || (i == header2Split) || (i == header3Split) ) {
-                ts << "+";
-            } else {
-                ts << "-";
-            }
-        }
-        ts << "+\n";
-
-        // header text
-        ts << "| " << header1Text;
-        for (int i = 0; i < headerTotal; ++i) {
-            if (i == ( header1Split - header1Text.count() ) - 1) {
-                ts << "| " << header2Text;
-            } else if (i == ( header2Split - header1Text.count() - header2Text.count() ) - 2) {
-                ts << "| " << header3Text;
-            } else if (i == ( header3Split - header1Text.count() - header2Text.count() - header3Text.count() ) - 3) {
-                ts << "| " << header4Text;
-            } else {
-                ts << " ";
-            }
-        }
-        ts << "|\n";
-
-        // header bottom
-        ts << "+";
-        for (int i = 0; i < headerTotal; ++i) {
-            if ( (i == header1Split) || (i == header2Split) || (i == header3Split) ) {
-                ts << "+";
-            } else {
-                ts << "=";
-            }
-        }
-        ts << "+\n";
-
-        // table rows
-        Q_FOREACH(const QStringList &item, items) {
-            QString col1 = item.at(0);
-
-            if (col1.count() < header1Length) {
-                for (int i = col1.count(); i < header1Length - 1; ++i) {
-                    col1.append( QString::fromUtf8(" ") );
-                }
-                col1.append( QString::fromUtf8("|") );
-            }
-            QString col2 = item.at(1);
-            if (col2.count() < header2Length) {
-                for (int i = col2.count(); i < header2Length - 1; ++i) {
-                    col2.append( QString::fromUtf8(" ") );
-                }
-                col2.append( QString::fromUtf8("|") );
-            }
-            QString col3 = item.at(2);
-            if (col3.count() < header3Length) {
-                for (int i = col3.count(); i < header3Length - 1; ++i) {
-                    col3.append( QString::fromUtf8(" ") );
-                }
-                col3.append( QString::fromUtf8("|") );
-            }
-            QString col4 = item.at(3);
-            if (col4.count() < header4Length) {
-                for (int i = col4.count(); i < header4Length - 1; ++i) {
-                    col4.append( QString::fromUtf8(" ") );
-                }
-                col4.append( QString::fromUtf8("|\n") );
-            } else {
-                col4.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
-                col4.append( QString::fromUtf8("|\n") );
-            }
-            ts << "| ";
-            ts << col1 << col2 << col3 << col4;
-
-            // table end
-            ts << "+";
-            for (int i = 0; i < headerTotal; ++i) {
-                if ( (i == header1Split) || (i == header2Split) || (i == header3Split) ) {
-                    ts << "+";
-                } else {
-                    ts << "-";
-                }
-            }
-            ts << "+\n";
-        }
-    }
-
-    return ret;
-} // Markdown::genPluginKnobsTable
+    return result;
+}
 
 QString
-Markdown::parseCustomLinksForHTML(QString markdown)
+Markdown::fixNodeHTML(const QString &html)
+{
+    QString result = html;
+
+    result.replace( QString::fromUtf8("<h2>Inputs</h2>\n\n<table>"), QString::fromUtf8("<h2>Inputs <span class=\"showHideTable\">(<a class=\"toggleInputTable\" href=\"#\">+/-</a>)</span></h2>\n\n<table class=\"inputTable\">") );
+    result.replace( QString::fromUtf8("<h2>Controls</h2>\n\n<table>"), QString::fromUtf8("<h2>Controls <span class=\"showHideTable\">(<a class=\"toggleControlTable\" href=\"#\">+/-</a>)</span></h2>\n\n<table class=\"controlTable\">") );
+
+    return result;
+}
+
+QString
+Markdown::fixSettingsHTML(const QString &html)
 {
     QString result;
 
-    if ( !markdown.isEmpty() ) {
-        QStringList split = markdown.split( QString::fromUtf8("\n") );
-        Q_FOREACH(const QString &line_const, split) {
-            QString line( line_const + QChar::fromAscii('\n') );
-
-            if ( line.contains( QString::fromUtf8("|html::") ) && line.contains( QString::fromUtf8("|rst::") ) ) {
-                line.replace( QString::fromUtf8("|html::"), QString::fromUtf8("") ).replace( QRegExp( QString::fromUtf8("\\|\\|rst::.*\\|") ), QString::fromUtf8("") );
-            }
+    // Replace <h2>A Title</h2> with <h2 id="a-title">A Title</h2>
+    QStringList list = html.split( QString::fromUtf8("\n") );
+    Q_FOREACH(const QString &line, list) {
+        if ( line.startsWith(QString::fromUtf8("<h2>")) ) {
+            QRegExp rx( QString::fromUtf8("<h2>(.*)</h2>") );
+            rx.indexIn(line);
+            QString header = rx.cap(1);
+            QString headerLink = header.toLower();
+            headerLink.replace( QString::fromUtf8(" "), QString::fromUtf8("-") );
+            result.append(QString::fromUtf8("<h2 id=\"%1\">%2</h2>").arg(headerLink).arg(header));
+        } else {
+            result.append(line);
         }
     }
 

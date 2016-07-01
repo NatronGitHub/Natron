@@ -42,7 +42,8 @@ NATRON_NAMESPACE_ENTER;
 
 struct ProgressTaskInfoPrivate;
 class ProgressTaskInfo
-    : public QObject, public boost::enable_shared_from_this<ProgressTaskInfo>
+    : public QObject
+    , public boost::enable_shared_from_this<ProgressTaskInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -61,6 +62,9 @@ public:
         eProgressTaskStatusCanceled
     };
 
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
     ProgressTaskInfo(ProgressPanel* panel,
                      const NodePtr& node,
                      const int firstFrame,
@@ -70,6 +74,28 @@ public:
                      const bool canCancel,
                      const QString& message,
                      const boost::shared_ptr<ProcessHandler>& process);
+
+public:
+    static boost::shared_ptr<ProgressTaskInfo> create(ProgressPanel* panel,
+                                                      const NodePtr& node,
+                                                      const int firstFrame,
+                                                      const int lastFrame,
+                                                      const int frameStep,
+                                                      const bool canPause,
+                                                      const bool canCancel,
+                                                      const QString& message,
+                                                      const boost::shared_ptr<ProcessHandler>& process)
+    {
+        return boost::shared_ptr<ProgressTaskInfo>( new ProgressTaskInfo(panel,
+                                                                         node,
+                                                                         firstFrame,
+                                                                         lastFrame,
+                                                                         frameStep,
+                                                                         canPause,
+                                                                         canCancel,
+                                                                         message,
+                                                                         process) );
+    }
 
     virtual ~ProgressTaskInfo();
 
@@ -96,6 +122,8 @@ public:
     boost::shared_ptr<ProcessHandler> getProcess() const;
 
 public Q_SLOTS:
+
+    void onShowProgressPanelTimerTimeout();
 
     void onRefreshLabelTimeout();
 

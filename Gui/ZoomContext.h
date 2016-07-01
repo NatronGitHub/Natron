@@ -28,7 +28,9 @@
 #include "Global/Macros.h"
 
 #ifndef NDEBUG
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 CLANG_DIAG_OFF(deprecated)

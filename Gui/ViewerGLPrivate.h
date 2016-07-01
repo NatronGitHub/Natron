@@ -45,6 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30
 
+#define MAX_MIP_MAP_LEVELS 20
+
 NATRON_NAMESPACE_ENTER;
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
@@ -70,6 +72,7 @@ enum MouseStateEnum
     eMouseStateDraggingRoiCross,
     eMouseStateBuildingUserRoI,
     eMouseStatePickingColor,
+    eMouseStatePickingInputColor,
     eMouseStateBuildingPickerRectangle,
     eMouseStateDraggingWipeCenter,
     eMouseStateDraggingWipeMixHandle,
@@ -94,7 +97,26 @@ enum PickerStateEnum
 
 struct TextureInfo
 {
+    TextureInfo()
+        : texture()
+        , roiNotRoundedToTileSize()
+        , gain(1.)
+        , gamma(1.)
+        , offset(0.)
+        , mipMapLevel(0)
+        , premult(eImagePremultiplicationOpaque)
+        , time(0)
+        , rod()
+        , format()
+        , lastRenderedTiles(MAX_MIP_MAP_LEVELS)
+        , memoryHeldByLastRenderedImages(0)
+        , isPartialImage(false)
+        , isVisible(false)
+    {
+    }
+
     GLTexturePtr texture;
+    TextureRect roiNotRoundedToTileSize;
     double gain;
     double gamma;
     double offset;
@@ -105,14 +127,20 @@ struct TextureInfo
 
     // For now we always use the project format, but we store the pixel aspect ratio of the upstream image
     Format format;
-    std::vector<ImageWPtr> lastRenderedTiles;
+
+    // Hold shared pointers here because some images might not be held by the cache
+    std::vector<ImagePtr> lastRenderedTiles;
     U64 memoryHeldByLastRenderedImages;
     bool isPartialImage;
+
+    // false if this input is disconnected for the viewer
+    bool isVisible;
 };
 
 struct ViewerGL::Implementation
 {
-    Implementation(ViewerGL* this_, ViewerTab* parent);
+    Implementation(ViewerGL* this_,
+                   ViewerTab* parent);
 
     ~Implementation();
 
@@ -125,7 +153,6 @@ struct ViewerGL::Implementation
     GLuint vboVerticesId; //!< VBO holding the vertices for the texture mapping.
     GLuint vboTexturesId; //!< VBO holding texture coordinates.
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
-    GLTexturePtr activeTextures[2]; /*!< A pointer to the current textures used to display. One for A and B. May point to blackTex */
     TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
     std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
     boost::scoped_ptr<QGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
@@ -141,7 +168,7 @@ struct ViewerGL::Implementation
     const QColor textRenderingColor;
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
-    QFont* textFont;
+    QFont textFont;
     bool overlay; /*!< True if the user enabled overlay dispay*/
     bool updatingTexture;
     QColor clearColor;
@@ -198,11 +225,6 @@ struct ViewerGL::Implementation
     bool isUpdatingTexture;
     bool renderOnPenUp;
     int updateViewerPboIndex;  // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
-
-    // These are the last parameters of the texture that was uploaded in transferBufferFromRAMToGPU
-    // We use it to avoid re-rendering an image until we sitll have the same parameters
-    RectI lastTextureTransferRoI[2];
-    unsigned int lastTextureTransferMipMapLevel[2];
 
 public:
 

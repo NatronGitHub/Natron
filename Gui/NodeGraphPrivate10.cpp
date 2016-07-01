@@ -27,6 +27,8 @@
 
 #include <stdexcept>
 
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
@@ -124,9 +126,11 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         }
 
 
-        if (clipboard.nodes.size() > 1) {
+        if (newNodesList.size() > 1) {
             ///Only compute datas if we're pasting more than 1 node
             _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+        } else if (newNodesList.size() == 1) {
+            newNodesList.front()->getNode()->getEffectInstance()->refreshMetaDatas_public(true);
         }
 
         if (useUndoCommand) {
@@ -144,12 +148,17 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
                             bool clone,
                             std::map<std::string, std::string>* oldNewScriptNameMapping)
 {
-    CreateNodeArgs args(QString::fromUtf8( internalSerialization->getPluginID().c_str() ), eCreateNodeReasonCopyPaste, grp);
-
-    args.multiInstanceParentName = parentName;
-    args.majorV = internalSerialization->getPluginMajorVersion();
-    args.minorV = internalSerialization->getPluginMinorVersion();
-    args.serialization = internalSerialization;
+    CreateNodeArgs args(internalSerialization->getPluginID(), grp);
+    args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
+    if (!parentName.empty()) {
+        args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, parentName);
+    }
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->getPluginMajorVersion(), 0);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->getPluginMinorVersion(), 1);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    
     NodePtr n = _publicInterface->getGui()->getApp()->createNode(args);
 
     if (!n) {
@@ -262,11 +271,13 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
             }
         }
         restoreConnections(nodes, newNodes, *oldNewScriptNameMapping);
+
+
+        //Restore links once all children are created for alias knobs/expressions
+        n->restoreKnobsLinks(*internalSerialization, allNodes, *oldNewScriptNameMapping);
+
     }
 
-
-    //Restore links once all children are created for alias knobs/expressions
-    n->restoreKnobsLinks(*internalSerialization, allNodes, *oldNewScriptNameMapping);
 
     return gui;
 } // NodeGraphPrivate::pasteNode

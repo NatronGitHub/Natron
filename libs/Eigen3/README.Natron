@@ -1,0 +1,10 @@
+Project: Eigen, template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms
+URL: http://eigen.tuxfamily.org/index.php?title=Main_Page
+License: MPL2
+Upstream version: 3.2.7
+Local modifications:
+- OpenMP fix for MSVC2015, see http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1131
+
+Extracted from Blender git repository under the extern/ folder.
+Git URL=https://git.blender.org/blender.git
+Git HEAD version=108b36f1ce79a61f067d21e5aff3bf72ba0fc313 (2016-05-27)

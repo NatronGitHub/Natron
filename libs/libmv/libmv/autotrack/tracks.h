@@ -31,23 +31,23 @@
 namespace mv {
 
 using libmv::vector;
-    
+
 struct MarkerCompareFrameLess
 {
-    bool operator() (const Marker & lhs,
-                    const Marker & rhs) const
-    {
-        return lhs.frame < rhs.frame;
-    }
+  bool operator() (const Marker & lhs,
+                   const Marker & rhs) const
+  {
+    return lhs.frame < rhs.frame;
+  }
 };
-    
+
 // This is a set per track and per clip
 typedef std::set<Marker, MarkerCompareFrameLess> MarkerSet;
-    
+
 typedef std::map<int, Marker> FrameMarkerMap;
 typedef std::map<int, FrameMarkerMap> ClipMarkersMap;
 typedef std::map<int, ClipMarkersMap> TrackMarkersMap;
-    
+
 // The Tracks container stores correspondences between frames.
 class Tracks {
  public:

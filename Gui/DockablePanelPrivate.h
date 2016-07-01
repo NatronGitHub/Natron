@@ -53,26 +53,6 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-struct Page
-{
-    QWidget* tab;
-    int currentRow;
-    TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
-    boost::weak_ptr<KnobPage> pageKnob;
-
-    Page()
-        : tab(0), currentRow(0), groupAsTab(0), pageKnob()
-    {
-    }
-
-    Page(const Page & other)
-        : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab), pageKnob(other.pageKnob)
-    {
-    }
-};
-
-typedef std::map<QString, Page> PageMap;
-typedef std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > KnobsGuiMapping;
 
 struct DockablePanelPrivate
 {
@@ -112,23 +92,13 @@ struct DockablePanelPrivate
     Button* _redoButton;
     Button* _restoreDefaultsButton;
     bool _minimized; /*!< true if the panel is minimized*/
-    QUndoCommand* _cmdBeingPushed;
-    bool _clearedStackDuringPush;
-    boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
     bool _floating; /*!< true if the panel is floating*/
     FloatingWidget* _floatingWidget;
-
-    /*a map storing for each knob a pointer to their GUI.*/
-    KnobsGuiMapping _knobs;
 
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
     std::map<KnobGuiWPtr, bool> _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
-
-    /* map<tab name, pair<tab , row count> >*/
-    PageMap _pages;
-    QString _defaultPageName;
     bool _useScrollAreasForTabs;
     DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;
@@ -146,34 +116,7 @@ struct DockablePanelPrivate
                          QVBoxLayout* container,
                          DockablePanel::HeaderModeEnum headerMode,
                          bool useScrollAreasForTabs,
-                         const QString & defaultPageName,
-                         const QString& helpToolTip,
-                         const boost::shared_ptr<QUndoStack>& stack);
-
-    /*inserts a new page to the dockable panel.*/
-    PageMap::iterator getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
-    KnobsGuiMapping::iterator findKnobGui(const KnobPtr& knob);
-
-    void refreshPagesOrder(const QString& curTabName, bool restorePageIndex);
-
-    boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated();
-
-
-    void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
-                              QWidget* lastRowWidget);
-
-    KnobGuiPtr createKnobGui(const KnobPtr &knob);
-
-    /*Search an existing knob GUI in the map, otherwise creates
-       the gui for the knob.*/
-    KnobGuiPtr findKnobGuiOrCreate( const KnobPtr &knob,
-                                    bool makeNewLine,
-                                    QWidget* lastRowWidget,
-                                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
-
-    PageMap::iterator getDefaultPage(const KnobPtr &knob);
-
-    void refreshPagesSecretness();
+                         const QString& helpToolTip);
 };
 
 class OverlayColorButton

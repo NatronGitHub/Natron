@@ -218,8 +218,8 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
  *
  *
  */
-HierarchyViewItemDelegate::HierarchyViewItemDelegate(QObject *parent) :
-    QStyledItemDelegate(parent)
+HierarchyViewItemDelegate::HierarchyViewItemDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
 {}
 
 /**
@@ -314,8 +314,8 @@ public:
     bool _canResizeOtherWidget;
 };
 
-HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
-    q_ptr(qq),
+HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq)
+    : q_ptr(qq),
     dopeSheetModel(0),
     gui(0),
     _canResizeOtherWidget(true)
@@ -650,8 +650,8 @@ HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 
 HierarchyView::HierarchyView(DopeSheet *dopeSheetModel,
                              Gui *gui,
-                             QWidget *parent) :
-    QTreeWidget(parent),
+                             QWidget *parent)
+    : QTreeWidget(parent),
     _imp( new HierarchyViewPrivate(this) )
 {
     _imp->dopeSheetModel = dopeSheetModel;
@@ -684,6 +684,18 @@ void
 HierarchyView::setCanResizeOtherWidget(bool canResize)
 {
     _imp->_canResizeOtherWidget = canResize;
+}
+
+void
+HierarchyView::getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const
+{
+    QList<QTreeWidgetItem*> items = selectedItems();
+    for (QList<QTreeWidgetItem*>::iterator it = items.begin(); it != items.end(); ++it) {
+        boost::shared_ptr<DSKnob> k = _imp->dopeSheetModel->mapNameItemToDSKnob(*it);
+        if (k) {
+            knobs->push_back(k);
+        }
+    }
 }
 
 void

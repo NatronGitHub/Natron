@@ -27,7 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
+#include "ofxNatron.h"
+
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
@@ -59,6 +60,13 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
 {
 }
 
+bool
+OfxOverlayInteract::isColorPickerRequired() const
+{
+    return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
+}
+
+
 // overridden from OFX::Host::Interact::Instance
 ////////////////////////////////////////////////////////////////////////////////////////////
 // protect all OpenGL attribs from anything wrong that could be done in interact functions
@@ -75,10 +83,11 @@ OfxOverlayInteract::createInstanceAction()
 OfxStatus
 OfxOverlayInteract::drawAction(OfxTime time,
                                const OfxPointD &renderScale,
-                               int view)
+                               int view,
+                               const OfxRGBAColourD* pickerColour)
 {
     NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
-    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view);
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view, pickerColour);
 
     return stat;
 }
@@ -88,12 +97,13 @@ OfxStatus
 OfxOverlayInteract::penMotionAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* pickerColour,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double pressure)
 {
     //OGLContextSaver s(_viewport);
-    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, view, pickerColour, penPos, penPosViewport, pressure);
 }
 
 // overridden from OFX::Host::Interact::Instance
@@ -101,11 +111,12 @@ OfxStatus
 OfxOverlayInteract::penUpAction(OfxTime time,
                                 const OfxPointD &renderScale,
                                 int view,
+                                const OfxRGBAColourD* pickerColour,
                                 const OfxPointD &penPos,
                                 const OfxPointI &penPosViewport,
                                 double pressure)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, view, pickerColour, penPos, penPosViewport, pressure);
 }
 
 // overridden from OFX::Host::Interact::Instance
@@ -113,11 +124,12 @@ OfxStatus
 OfxOverlayInteract::penDownAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* pickerColour,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double pressure)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, view, pickerColour, penPos, penPosViewport, pressure);
 }
 
 // overridden from OFX::Host::Interact::Instance
@@ -125,10 +137,11 @@ OfxStatus
 OfxOverlayInteract::keyDownAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* pickerColour,
                                   int key,
                                   char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, view, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, view, pickerColour, key, keyString);
 }
 
 // overridden from OFX::Host::Interact::Instance
@@ -136,10 +149,11 @@ OfxStatus
 OfxOverlayInteract::keyUpAction(OfxTime time,
                                 const OfxPointD &renderScale,
                                 int view,
+                                const OfxRGBAColourD* pickerColour,
                                 int key,
                                 char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, view, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, view, pickerColour, key, keyString);
 }
 
 // overridden from OFX::Host::Interact::Instance
@@ -147,28 +161,31 @@ OfxStatus
 OfxOverlayInteract::keyRepeatAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* pickerColour,
                                     int key,
                                     char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, view, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, view, pickerColour, key, keyString);
 }
 
 // overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::gainFocusAction(OfxTime time,
                                     const OfxPointD &renderScale,
-                                    int view)
+                                    int view,
+                                    const OfxRGBAColourD* pickerColour)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale, view);
+    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale, view, pickerColour);
 }
 
 // overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::loseFocusAction(OfxTime time,
                                     const OfxPointD &renderScale,
-                                    int view)
+                                    int view,
+                                    const OfxRGBAColourD* pickerColour)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale, view);
+    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale, view, pickerColour);
 }
 
 // overridden from OFX::Host::Interact::Instance
@@ -213,8 +230,16 @@ OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
     setCallingViewport(knob);
 }
 
+bool
+OfxParamOverlayInteract::isColorPickerRequired() const
+{
+    return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
+}
+
 NatronOverlayInteractSupport::NatronOverlayInteractSupport()
-    : _viewport(NULL)
+    : _hasColorPicker(false)
+    , _lastColorPicker()
+    , _viewport(NULL)
 {
 }
 

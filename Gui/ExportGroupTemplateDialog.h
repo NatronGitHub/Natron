@@ -51,7 +51,9 @@ class ExportGroupTemplateDialog
 
 public:
 
-    ExportGroupTemplateDialog(NodeCollection* group, Gui* gui, QWidget* parent);
+    ExportGroupTemplateDialog(NodeCollection* group,
+                              Gui* gui,
+                              QWidget* parent);
 
     virtual ~ExportGroupTemplateDialog();
 

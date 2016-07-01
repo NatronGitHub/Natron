@@ -41,7 +41,9 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QFuture>
 #include <QFutureWatcher>
@@ -49,6 +51,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #include <boost/bind.hpp>
 
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TrackMarker.h"
@@ -109,6 +113,14 @@ GCC_DIAG_ON(unused-parameter)
     "position of the patch on the destination image and the reference patch needed to declare tracking success." \
     "The error is 1 minus the normalized cross-correlation score."
 
+#define kTrackerParamDefaultMarkerPatternWinSize "defPatternWinSize"
+#define kTrackerParamDefaultMarkerPatternWinSizeLabel "Default Pattern Size"
+#define kTrackerParamDefaultMarkerPatternWinSizeHint "The size in pixels of the pattern that created markers will have by default"
+
+#define kTrackerParamDefaultMarkerSearchWinSize "defSearchWinSize"
+#define kTrackerParamDefaultMarkerSearchWinSizeLabel "Default Search Area Size"
+#define kTrackerParamDefaultMarkerSearchWinSizeHint "The size in pixels of the search window that created markers will have by default"
+
 #define kTrackerParamMaximumIteration "maxIterations"
 #define kTrackerParamMaximumIterationLabel "Maximum iterations"
 #define kTrackerParamMaximumIterationHint "Maximum number of iterations the algorithm will run for the inner minimization " \
@@ -126,6 +138,14 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamPreBlurSigma "preBlurSigma"
 #define kTrackerParamPreBlurSigmaLabel "Pre-blur sigma"
 #define kTrackerParamPreBlurSigmaHint "The size in pixels of the blur kernel used to both smooth the image and take the image derivative."
+
+
+#define kTrackerParamAutoKeyEnabled "autoKeyEnabled"
+#define kTrackerParamAutoKeyEnabledLabel "Animate Enabled"
+#define kTrackerParamAutoKeyEnabledHint "When checked, the \"Enabled\" parameter will be keyframed automatically when a track fails. " \
+"This is useful for example if you have a scene with a moving camera that you want to stabilize: You place track markers, and when " \
+"the tracker looses them, they get disabled automatically and you can place new ones. A disabled marker will not be taken into account"\
+" when computing the resulting Transform to stabilize/match-move."
 
 #define kTrackerParamPerTrackParamsSeparator "perTrackParams"
 #define kTrackerParamPerTrackParamsSeparatorLabel "Per-Track Parameters"
@@ -347,10 +367,12 @@ public:
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
+    boost::weak_ptr<KnobInt> defaultSearchWinSize, defaultPatternWinSize;
     boost::weak_ptr<KnobBool> bruteForcePreTrack, useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
     boost::weak_ptr<KnobSeparator> perTrackParamsSeparator;
     boost::weak_ptr<KnobBool> activateTrack;
+    boost::weak_ptr<KnobBool> autoKeyEnabled;
     boost::weak_ptr<KnobChoice> motionModel;
     boost::weak_ptr<KnobSeparator> exportDataSep;
     boost::weak_ptr<KnobBool> exportLink;
@@ -462,7 +484,8 @@ public:
     SolveRequest lastSolveRequest;
 
 
-    TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Node> &node);
+    TrackerContextPrivate(TrackerContext* publicInterface,
+                          const boost::shared_ptr<Node> &node);
 
     virtual ~TrackerContextPrivate()
     {

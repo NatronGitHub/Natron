@@ -73,12 +73,10 @@ public:
     }
 
     template<class Archive>
-    void save(Archive & ar/*,
-                             const unsigned int version*/) const;
+    void save(Archive & ar) const;
 
     template<class Archive>
-    void load(Archive & ar/*,
-                             const unsigned int version*/);
+    void load(bool isAutosave, Archive & ar);
 
     void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 

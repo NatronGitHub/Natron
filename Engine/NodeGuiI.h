@@ -142,9 +142,12 @@ public:
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
     virtual bool hasHostOverlayForParam(const KnobI* param) = 0;
     virtual void removePositionHostOverlay(KnobI* knob) = 0;
-    virtual void setPluginIconFilePath(const std::string& filePath) = 0;
-    virtual void setPluginDescription(const std::string& description) = 0;
-    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping, const std::string& pluginLabel, const std::string& pluginID, unsigned int version) = 0;
+    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
+                                       const std::string& pluginLabel,
+                                       const std::string& pluginID,
+                                       const std::string& pluginDesc,
+                                       const std::string& pluginIconFilePath,
+                                       unsigned int version) = 0;
     virtual bool isUserSelected() const = 0;
     virtual void restoreStateAfterCreation() = 0;
     virtual void onIdentityStateChanged(int inputNb) = 0;

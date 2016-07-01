@@ -1251,6 +1251,7 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     }
 
     ComboBox* cb = new ComboBox;
+    cb->setFocusPolicy(Qt::NoFocus);
     QObject::connect( cb, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentItemCompOperatorChanged(int)) );
     std::vector<std::string> compositingOperators, tooltips;
     Merge::getOperatorStrings(&compositingOperators, &tooltips);

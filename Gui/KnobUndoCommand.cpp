@@ -611,13 +611,13 @@ RestoreDefaultsCommand::redo()
         if ( itKnob->getHolder() ) {
             itKnob->getHolder()->beginChanges();
         }
-        itKnob->blockValueChanges();
+       // itKnob->blockValueChanges();
 
         for (int d = 0; d < itKnob->getDimension(); ++d) {
             itKnob->resetToDefaultValue(d);
         }
 
-        itKnob->unblockValueChanges();
+        // itKnob->unblockValueChanges();
 
         if ( itKnob->getHolder() ) {
             itKnob->getHolder()->endChanges(true);

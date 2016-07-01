@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <map>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -48,7 +49,8 @@ class AddTrackCommand
 
 public:
 
-    AddTrackCommand(const TrackMarkerPtr &marker, const boost::shared_ptr<TrackerContext>& context);
+    AddTrackCommand(const TrackMarkerPtr &marker,
+                    const boost::shared_ptr<TrackerContext>& context);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -56,8 +58,8 @@ public:
 private:
 
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
-
-    std::list<TrackMarkerPtr > _markers;
+    bool _isFirstRedo;
+    std::map<int, TrackMarkerPtr> _markers;
     boost::weak_ptr<TrackerContext> _context;
 };
 
@@ -69,7 +71,8 @@ class RemoveTracksCommand
 
 public:
 
-    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers, const boost::shared_ptr<TrackerContext>& context);
+    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
+                        const boost::shared_ptr<TrackerContext>& context);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;

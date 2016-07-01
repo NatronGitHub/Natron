@@ -85,6 +85,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
@@ -265,6 +266,13 @@ AppManager::load(int &argc,
         argc = 1;
         argv = &argv0;
     }
+
+    // This needs to be done BEFORE creating qApp because
+    // on Linux, X11 will create a context that would corrupt
+    // the XUniqueContext created by Qt
+    _imp->renderingContextPool.reset( new GPUContextPool() );
+    initializeOpenGLFunctionsOnce(true);
+
     initializeQApp(argc, argv);
 
 #ifdef QT_CUSTOM_THREADPOOL
@@ -294,6 +302,8 @@ AppManager::load(int &argc,
     }
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+
+
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
 
@@ -367,11 +377,12 @@ AppManager::~AppManager()
     _imp->_diskCache.reset();
 
     tearDownPython();
+    _imp->tearDownGL();
 
     _instance = 0;
 
     // After this line, everything is cleaned-up (should be) and the process may resume in the main and could in theory be able to re-create a new AppManager
-    delete qApp;
+    _imp->_qApp.reset();
 }
 
 class QuitInstanceArgs
@@ -588,12 +599,30 @@ AppManager::loadInternal(const CLArgs& cl)
 
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
+
+    if (_imp->hasInitializedOpenGLFunctions && _imp->hasRequiredOpenGLVersionAndExtensions) {
+        OSGLContext::getGPUInfos(_imp->openGLRenderers);
+        for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
+            qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
+                     << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
+                ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+        }
+    }
+    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
+
+
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
 
     ///basically show a splashScreen load fonts etc...
     return initGui(cl);
 } // loadInternal
+
+const std::list<OpenGLRendererInfo>&
+AppManager::getOpenGLRenderers() const
+{
+    return _imp->openGLRenderers;
+}
 
 bool
 AppManager::isSpawnedFromCrashReporter() const
@@ -619,16 +648,84 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
     return _imp->pluginsUseInputImageCopyToRender;
 }
 
-void
-AppManager::initializeOpenGLFunctionsOnce()
+bool
+AppManager::isOpenGLLoaded() const
+{
+    QMutexLocker k(&_imp->openGLFunctionsMutex);
+
+    return _imp->hasInitializedOpenGLFunctions;
+}
+
+bool
+AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
+        OSGLContextPtr glContext;
+        if (createOpenGLContext) {
+            try {
+                _imp->initGLAPISpecific();
+
+                glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                if (!glContext) {
+                    return false;
+                }
+                // Make the context current and check its version
+                glContext->setContextCurrentNoRender();
+            } catch (const std::exception& e) {
+                std::cerr << "Error while loading OpenGL: " << e.what() << std::endl;
+                std::cerr << "OpenGL rendering is disabled. Viewer will probably not function properly." << std::endl;
+
+                return false;
+            }
+        }
+        // The following requires a valid OpenGL context to be created
         _imp->initGl();
-        updateAboutWindowLibrariesVersion();
+        if (createOpenGLContext) {
+            if (_imp->hasRequiredOpenGLVersionAndExtensions) {
+                try {
+                    OSGLContext::checkOpenGLVersion();
+                } catch (const std::exception& e) {
+                    if ( !_imp->missingOpenglError.isEmpty() ) {
+                        _imp->missingOpenglError = QString::fromUtf8( e.what() );
+                    }
+                }
+            }
+            
+            _imp->renderingContextPool->releaseGLContextFromRender(glContext);
+            glContext->unsetCurrentContextNoRender();
+
+            // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
+            // selected by the user in the settings (which are not created yet).
+            _imp->renderingContextPool->clear();
+        } else {
+            updateAboutWindowLibrariesVersion();
+        }
+
+        return true;
     }
+
+    return false;
 }
+
+#ifdef __NATRON_WIN32__
+const OSGLContext_wgl_data*
+AppManager::getWGLData() const
+{
+    return _imp->wglInfo.get();
+}
+
+#endif
+#ifdef __NATRON_LINUX__
+const OSGLContext_glx_data*
+AppManager::getGLXData() const
+{
+    return _imp->glxInfo.get();
+}
+
+#endif
+
 
 bool
 AppManager::initGui(const CLArgs& cl)
@@ -642,14 +739,13 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
     try {
         size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-        U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
-        U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-        U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
+        U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM - playbackSize, 1.) );
+        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
         _imp->_diskCache.reset( new Cache<Image>("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, (double)playbackSize / (double)viewerCacheSize) );
+        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
+        _imp->setViewerCacheTileSize();
     } catch (std::logic_error) {
         // ignore
     }
@@ -725,6 +821,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     hideSplashScreen();
 
     if (!mainInstance) {
+        qApp->quit();
+
         return false;
     } else {
         onLoadCompleted();
@@ -758,6 +856,34 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         return true;
     }
 } // AppManager::loadInternalAfterInitGui
+
+void
+AppManager::onViewerTileCacheSizeChanged()
+{
+    _imp->_viewerCache->clear();
+    _imp->setViewerCacheTileSize();
+}
+
+void
+AppManagerPrivate::setViewerCacheTileSize()
+{
+    std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
+
+    // Viewer tiles are always RGBA
+    tileSize = tileSize * tileSize * 4;
+
+
+    ImageBitDepthEnum viewerDepth = _settings->getViewersBitDepth();
+    switch (viewerDepth) {
+        case eImageBitDepthFloat:
+        case eImageBitDepthHalf:
+            tileSize *= sizeof(float);
+            break;
+        default:
+            break;
+    }
+    _viewerCache->setTiled(true, tileSize);
+}
 
 AppInstPtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
@@ -960,9 +1086,9 @@ AppManager::wipeAndCreateDiskCacheStructure()
     clearAllCaches();
 
     assert(_imp->_diskCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath() );
+    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
     assert(_imp->_viewerCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() );
+    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
 }
 
 AppInstPtr
@@ -1022,22 +1148,15 @@ void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 {
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
-    U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
+    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
     _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
 AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
-    U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-
     _imp->_viewerCache->setMaximumCacheSize(size);
-    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)size );
 }
 
 void
@@ -1047,44 +1166,24 @@ AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
 }
 
 void
-AppManager::setPlaybackCacheMaximumSize(double p)
-{
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
-    U64 playbackSize = maxCacheRAM * p;
-
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
-    _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
-}
-
-void
 AppManager::loadAllPlugins()
 {
     assert( _imp->_plugins.empty() );
     assert( _imp->_formats.empty() );
 
+    // Load plug-ins bundled into Natron
+    loadBuiltinNodePlugins(&_imp->readerPlugins, &_imp->writerPlugins);
 
-    std::map<std::string, std::vector< std::pair<std::string, double> > > readersMap;
-    std::map<std::string, std::vector< std::pair<std::string, double> > > writersMap;
-
-    /*loading node plugins*/
-
-    loadBuiltinNodePlugins(&readersMap, &writersMap);
-
-    /*loading ofx plugins*/
-    _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
-
-    _imp->_settings->populateReaderPluginsAndFormats(readersMap);
-    _imp->_settings->populateWriterPluginsAndFormats(writersMap);
+    // Load OpenFX plug-ins
+    _imp->ofxHost->loadOFXPlugins( &_imp->readerPlugins, &_imp->writerPlugins);
 
     _imp->declareSettingsToPython();
 
-    //Load python groups and init.py & initGui.py scripts
-    //Should be done after settings are declared
+    // Load PyPlugs and init.py & initGui.py scripts
+    // Should be done after settings are declared
     loadPythonGroups();
 
-    _imp->_settings->populatePluginsTab();
+    _imp->_settings->restorePluginSettings();
 
 
     onAllPluginsLoaded();
@@ -1193,14 +1292,17 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
     node->getPluginShortcuts(&shortcuts);
     p->setShorcuts(shortcuts);
 
+    PluginOpenGLRenderSupport glSupport = node->supportsOpenGLRender();
+    p->setOpenGLRenderSupport(glSupport);
+
     if (internalUseOnly) {
         p->setForInternalUseOnly(true);
     }
 }
 
 void
-AppManager::loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* /*readersMap*/,
-                                   std::map<std::string, std::vector< std::pair<std::string, double> > >* /*writersMap*/)
+AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
+                                   IOPluginsMap* /*writersMap*/)
 {
     registerBuiltInPlugin<Backdrop>(QString::fromUtf8(NATRON_IMAGES_PATH "backdrop_icon.png"), false, false);
     registerBuiltInPlugin<GroupOutput>(QString::fromUtf8(NATRON_IMAGES_PATH "output_icon.png"), false, false);
@@ -1225,8 +1327,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<
     }
 }
 
-static bool
-findAndRunScriptFile(const QString& path,
+bool
+AppManager::findAndRunScriptFile(const QString& path,
                      const QStringList& files,
                      const QString& script)
 {
@@ -1285,11 +1387,8 @@ findAndRunScriptFile(const QString& path,
 
 
                 if ( !error.empty() ) {
-                    QString message( QString::fromUtf8("Failed to load ") );
-                    message.append(absolutePath);
-                    message.append( QString::fromUtf8(": ") );
-                    message.append( QString::fromUtf8( error.c_str() ) );
-                    appPTR->writeToErrorLog_mt_safe(message);
+                    QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
+                    appPTR->writeToErrorLog_mt_safe(tr("Python Script"), message, false);
                     std::cerr << message.toStdString() << std::endl;
 
                     return false;
@@ -1412,8 +1511,8 @@ addToPythonPathFunctor(const QDir& directory)
     }
 }
 
-static void
-findAllScriptsRecursive(const QDir& directory,
+void
+AppManager::findAllScriptsRecursive(const QDir& directory,
                         QStringList& allPlugins,
                         QStringList *foundInit,
                         QStringList *foundInitGui)
@@ -1482,12 +1581,12 @@ AppManager::loadPythonGroups()
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+            QString message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
                                      "or reachable through the Python path. "
                                      "Note that Natron disables usage "
-                                     "of site-packages).").toStdString();
-            std::cerr << message << std::endl;
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+                                 "of site-packages).");
+            std::cerr << message.toStdString() << std::endl;
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtCore"),message);
         }
     }
 
@@ -1500,9 +1599,9 @@ AppManager::loadPythonGroups()
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = tr("Failed to import PySide.QtGui").toStdString();
-            std::cerr << message << std::endl;
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+            QString message = tr("Failed to import PySide.QtGui");
+            std::cerr << message.toStdString() << std::endl;
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtGui"),message);
         }
     }
 
@@ -1515,14 +1614,14 @@ AppManager::loadPythonGroups()
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
-        QString message = tr("init.py script not loaded");
+        QString message = tr("Info: init.py script not loaded (this is not an error)");
         appPTR->setLoadingStatus(message);
         if ( !appPTR->isBackground() ) {
             std::cout << message.toStdString() << std::endl;
         }
     } else {
         Q_FOREACH(const QString &found, foundInit) {
-            QString message = tr("init.py script found and loaded at %1").arg(found);
+            QString message = tr("Info: init.py script found and loaded at %1").arg(found);
 
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
@@ -1533,14 +1632,14 @@ AppManager::loadPythonGroups()
 
     if ( !appPTR->isBackground() ) {
         if ( foundInitGui.isEmpty() ) {
-            QString message = tr("initGui.py script not loaded");
+            QString message = tr("Info: initGui.py script not loaded (this is not an error)");
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
             }
         } else {
             Q_FOREACH(const QString &found, foundInitGui) {
-                QString message = tr("initGui.py script found and loaded at %1").arg(found);
+                QString message = tr("Info: initGui.py script found and loaded at %1").arg(found);
 
                 appPTR->setLoadingStatus(message);
                 if ( !appPTR->isBackground() ) {
@@ -1704,22 +1803,6 @@ AppManager::getPluginsList() const
     return _imp->_plugins;
 }
 
-QMutex*
-AppManager::getMutexForPlugin(const QString & pluginId,
-                              int major,
-                              int /*minor*/) const
-{
-    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( ( (*it2)->getPluginID() == pluginId ) && ( (*it2)->getMajorVersion() == major ) ) {
-                return (*it2)->getPluginLock();
-            }
-        }
-    }
-    std::string exc("Couldn't find a plugin named ");
-    exc.append( pluginId.toStdString() );
-    throw std::invalid_argument(exc);
-}
 
 const std::vector<Format> &
 AppManager::getFormats() const
@@ -1840,9 +1923,7 @@ AppManager::getPluginBinary(const QString & pluginId,
 
 EffectInstPtr
 AppManager::createOFXEffect(NodePtr node,
-                            const NodeSerialization* serialization,
-                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                            bool disableRenderScaleSupport
+                            const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                             ,
                             bool allowFileDialogs,
@@ -1850,7 +1931,7 @@ AppManager::createOFXEffect(NodePtr node,
 #endif
                             ) const
 {
-    return _imp->ofxHost->createOfxEffect(node, serialization, paramValues, disableRenderScaleSupport
+    return _imp->ofxHost->createOfxEffect(node, args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                           , allowFileDialogs,
                                           hasUsedFileDialog
@@ -1968,7 +2049,7 @@ AppManager::getImageOrCreate(const ImageKey & key,
                              const boost::shared_ptr<ImageParams>& params,
                              boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key, params, returnValue);
+    return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
@@ -1983,7 +2064,7 @@ AppManager::getImageOrCreate_diskCache(const ImageKey & key,
                                        const boost::shared_ptr<ImageParams>& params,
                                        boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_diskCache->getOrCreate(key, params, returnValue);
+    return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
@@ -2001,9 +2082,10 @@ AppManager::getTexture(const FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const FrameKey & key,
                                const boost::shared_ptr<FrameParams>& params,
+                               FrameEntryLocker* locker,
                                FrameEntryPtr* returnValue) const
 {
-    return _imp->_viewerCache->getOrCreate(key, params, returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params, locker, returnValue);
 }
 
 bool
@@ -2015,7 +2097,13 @@ AppManager::isAggressiveCachingEnabled() const
 U64
 AppManager::getCachesTotalMemorySize() const
 {
-    return _imp->_viewerCache->getMemoryCacheSize() + _imp->_nodeCache->getMemoryCacheSize();
+    return  _imp->_nodeCache->getMemoryCacheSize();
+}
+
+U64
+AppManager::getCachesTotalDiskSize() const
+{
+    return  _imp->_diskCache->getDiskCacheSize() + _imp->_viewerCache->getDiskCacheSize();
 }
 
 boost::shared_ptr<CacheSignalEmitter>
@@ -2186,24 +2274,37 @@ AppManager::getTotalNodesMemoryRegistered() const
     return _imp->_nodesGlobalMemoryUse;
 }
 
-QString
-AppManager::getErrorLog_mt_safe() const
+void
+AppManager::getErrorLog_mt_safe(std::list<LogEntry>* entries) const
 {
     QMutexLocker l(&_imp->errorLogMutex);
-
-    return _imp->errorLog;
+    *entries = _imp->errorLog;
 }
 
 void
-AppManager::writeToErrorLog_mt_safe(const QString & str)
+AppManager::writeToErrorLog_mt_safe(const QString& context, const QString & str, bool isHtml, const LogEntry::LogEntryColor& color)
 {
     QMutexLocker l(&_imp->errorLogMutex);
-
-    _imp->errorLog.append( str + QChar::fromLatin1('\n') + QChar::fromLatin1('\n') );
+    LogEntry e;
+    e.context = context;
+    e.message = str;
+    e.isHtml = isHtml;
+    e.color = color;
+    _imp->errorLog.push_back(e);
 }
 
 void
-AppManager::clearOfxLog_mt_safe()
+AppManager::showErrorLog()
+{
+    std::list<LogEntry> log;
+    getErrorLog_mt_safe(&log);
+    for (std::list<LogEntry>::iterator it = log.begin(); it != log.end(); ++it) {
+        std::cout << it->context.toStdString() << ": " << it->message.toStdString() <<  std::endl;
+    }
+}
+
+void
+AppManager::clearErrorLog_mt_safe()
 {
     QMutexLocker l(&_imp->errorLogMutex);
 
@@ -2294,31 +2395,16 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
     ///Before allocating the memory check that there's enough space to fit in memory
     size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
     size_t totalFreeRAM = getAmountFreePhysicalRAM();
-    double playbackRAMPercent = appPTR->getCurrentSettings()->getRamPlaybackMaximumPercent();
 
     while (totalFreeRAM <= systemRAMToKeepFree) {
-        size_t nodeCacheSize =  _imp->_nodeCache->getMemoryCacheSize();
-        size_t viewerRamCacheSize =  _imp->_viewerCache->getMemoryCacheSize();
-
-        ///If the viewer cache represents more memory than the node cache, clear some of the viewer cache
-        if ( (nodeCacheSize == 0) || ( (viewerRamCacheSize / (double)nodeCacheSize) > playbackRAMPercent ) ) {
 #ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-                     << ", clearing least recently used ViewerCache texture...";
+        qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
+        << ", clearing least recently used NodeCache image...";
 #endif
-
-            if ( !_imp->_viewerCache->evictLRUInMemoryEntry() ) {
-                break;
-            }
-        } else {
-#ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-                     << ", clearing least recently used NodeCache image...";
-#endif
-            if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
-                break;
-            }
+        if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
+            break;
         }
+
 
         totalFreeRAM = getAmountFreePhysicalRAM();
     }
@@ -2931,7 +3017,7 @@ AppManager::onCrashReporterNoLongerResponding()
                        "communication between the 2 processes is failing.")
                     .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
     std::cerr << error.toStdString() << std::endl;
-    writeToErrorLog_mt_safe( error );
+    writeToErrorLog_mt_safe(tr("Crash-Reporter"), error );
 #endif
 }
 
@@ -3012,18 +3098,94 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
 
 #endif
 
-std::string
-AppManager::isImageFileSupportedByNatron(const std::string& ext)
+const IOPluginsMap&
+AppManager::getFileFormatsForReadingAndReader() const
 {
-    std::string readId;
+    return _imp->readerPlugins;
+}
 
-    try {
-        readId = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
-    } catch (...) {
+const IOPluginsMap&
+AppManager::getFileFormatsForWritingAndWriter() const
+{
+    return _imp->writerPlugins;
+}
+
+void
+AppManager::getSupportedReaderFileFormats(std::vector<std::string>* formats) const
+{
+    const IOPluginsMap& readersForFormat = getFileFormatsForReadingAndReader();
+
+    formats->resize( readersForFormat.size() );
+    int i = 0;
+    for (IOPluginsMap::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it, ++i) {
+        (*formats)[i] = it->first;
+    }
+}
+
+void
+AppManager::getSupportedWriterFileFormats(std::vector<std::string>* formats) const
+{
+    const IOPluginsMap& writersForFormat = getFileFormatsForWritingAndWriter();
+
+    formats->resize( writersForFormat.size() );
+    int i = 0;
+    for (IOPluginsMap::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it, ++i) {
+        (*formats)[i] = it->first;
+    }
+}
+
+void
+AppManager::getReadersForFormat(const std::string& format,
+                                IOPluginSetForFormat* decoders) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->readerPlugins.find(format);
+
+    if ( found == _imp->readerPlugins.end() ) {
+        return;
+    }
+    *decoders = found->second;
+}
+
+void
+AppManager::getWritersForFormat(const std::string& format,
+                                IOPluginSetForFormat* encoders) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->writerPlugins.find(format);
+
+    if ( found == _imp->writerPlugins.end() ) {
+        return;
+    }
+    *encoders = found->second;
+}
+
+std::string
+AppManager::getReaderPluginIDForFileType(const std::string & extension) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->readerPlugins.find(extension);
+
+    if ( found == _imp->readerPlugins.end() ) {
         return std::string();
     }
+    // Return the "best" plug-in (i.e: higher score)
 
-    return readId;
+    return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
+}
+
+std::string
+AppManager::getWriterPluginIDForFileType(const std::string & extension) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->writerPlugins.find(extension);
+
+    if ( found == _imp->writerPlugins.end() ) {
+        return std::string();
+    }
+    // Return the "best" plug-in (i.e: higher score)
+
+    return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
 }
 
 AppTLS*
@@ -3082,6 +3244,20 @@ const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
+}
+
+GPUContextPool*
+AppManager::getGPUContextPool() const
+{
+    return _imp->renderingContextPool.get();
+}
+
+void
+AppManager::refreshOpenGLRenderingFlagOnAllInstances()
+{
+    for (std::size_t i = 0; i < _imp->_appInstances.size(); ++i) {
+        _imp->_appInstances[i]->getProject()->refreshOpenGLRenderingFlagOnNodes();
+    }
 }
 
 void
@@ -3476,8 +3652,8 @@ getGroupInfosInternal(const std::string& modulePath,
     std::string toRun = script.arg( QString::fromUtf8( pythonModule.c_str() ) ).toStdString();
     std::string err;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(toRun, &err, 0) ) {
-        QString logStr = QCoreApplication::translate("AppManager", "%1 was not recognized as a PyPlug: %2").arg( QString::fromUtf8( pythonModule.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) );
-        appPTR->writeToErrorLog_mt_safe(logStr);
+        QString logStr = QCoreApplication::translate("AppManager", "Was not recognized as a PyPlug: %1").arg( QString::fromUtf8( err.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(pythonModule.c_str()), logStr);
 
         return false;
     }

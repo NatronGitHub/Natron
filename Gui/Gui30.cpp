@@ -32,8 +32,6 @@
 #include <utility>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QThread>
 #include <QtCore/QDebug>
 
@@ -641,7 +639,8 @@ void
 Gui::showSettings()
 {
     if (!_imp->_settingsGui) {
-        _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
+        _imp->_settingsGui = new PreferencesPanel(this);
+        _imp->_settingsGui->createGui();
     }
     _imp->_settingsGui->show();
     _imp->_settingsGui->raise();

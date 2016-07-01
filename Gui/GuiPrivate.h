@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/LogWindow.h"
 
 
 #define kPropertiesBinName "properties"
@@ -101,7 +102,6 @@ public:
     ActionWithShortcut *actionExit;
     ActionWithShortcut *actionProject_settings;
     ActionWithShortcut *actionShowErrorLog;
-    ActionWithShortcut *actionShortcutEditor;
     ActionWithShortcut *actionNewViewer;
     ActionWithShortcut *actionFullScreen;
 #ifdef __NATRON_WIN32__
@@ -224,6 +224,9 @@ public:
     ///The project Gui (stored in the properties pane)
     ProjectGui* _projectGui;
 
+    ///The error log window
+    LogWindow* _errorLog;
+
     ///ptr to the currently dragged tab for d&d purpose.
     PanelWidget* _currentlyDraggedPanel;
     QSize _currentlyDraggedPanelInitialSize;
@@ -237,7 +240,6 @@ public:
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    ShortCutEditor* shortcutEditor;
     bool leftToolBarDisplayedOnHoverOnly;
     ScriptEditor* _scriptEditor;
     TabWidget* _lastEnteredTabWidget;

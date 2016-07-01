@@ -425,7 +425,8 @@ private:
 
 public:
 
-    InputScriptCommand(ScriptEditor* editor,  const QString& script);
+    InputScriptCommand(ScriptEditor* editor,
+                       const QString& script);
 
     void redo();
 

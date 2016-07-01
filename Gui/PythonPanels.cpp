@@ -26,7 +26,6 @@
 
 #include <stdexcept>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
@@ -212,8 +211,6 @@ PyModalDialog::PyModalDialog(Gui* gui,
                                     false,
                                     boost::shared_ptr<QUndoStack>(),
                                     QString(), QString(),
-                                    false,
-                                    QString::fromUtf8("Default"),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -399,8 +396,6 @@ PyPanel::PyPanel(const QString& scriptName,
                                         false,
                                         boost::shared_ptr<QUndoStack>(),
                                         QString(), QString(),
-                                        false,
-                                        QString::fromUtf8("Default"),
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();
         _imp->centerLayout->insertWidget(0, _imp->panel);

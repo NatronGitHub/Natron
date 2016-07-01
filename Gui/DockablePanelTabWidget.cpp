@@ -50,7 +50,8 @@ class NoWheelTabBar
 {
 public:
 
-    NoWheelTabBar(QWidget* parent) : QTabBar(parent) {}
+    NoWheelTabBar(QWidget* parent)
+        : QTabBar(parent) {}
 
 private:
 

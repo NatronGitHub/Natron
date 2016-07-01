@@ -39,8 +39,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/Macros.h"
-
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
@@ -56,6 +54,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
+#include <QThread>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
@@ -66,6 +65,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
@@ -94,9 +94,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/ScriptEditor.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
+#include "Gui/PreferencesPanel.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"
@@ -113,13 +113,27 @@ Gui::setUndoRedoStackLimit(int limit)
 }
 
 void
+Gui::onShowLogOnMainThreadReceived()
+{
+    std::list<LogEntry> log;
+    appPTR->getErrorLog_mt_safe(&log);
+    assert(_imp->_errorLog);
+    _imp->_errorLog->displayLog(log);
+
+    if (!_imp->_errorLog->isVisible()) {
+        _imp->_errorLog->show();
+        _imp->_errorLog->raise();
+    }
+}
+
+void
 Gui::showErrorLog()
 {
-    QString log = appPTR->getErrorLog_mt_safe();
-    LogWindow lw(log, this);
-
-    lw.setWindowTitle( tr("Error Log") );
-    ignore_result( lw.exec() );
+    if (QThread::currentThread() == qApp->thread()) {
+        onShowLogOnMainThreadReceived();
+    } else {
+        Q_EMIT s_showLogOnMainThread();
+    }
 }
 
 void
@@ -492,7 +506,10 @@ Gui::keyPressEvent(QKeyEvent* e)
     if (key == Qt::Key_Escape) {
         RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
         if (panel) {
-            panel->getPanel()->closePanel();
+            const DockablePanel* dock = panel->getPanel();
+            if (dock) {
+                const_cast<DockablePanel*>(dock)->closePanel();
+            }
         }
     } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
         // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
@@ -613,13 +630,13 @@ Gui::keyPressEvent(QKeyEvent* e)
             const std::list<ViewerTab*>& viewers = getViewersList();
             bool viewerTabHasFocus = false;
             for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-                if ( (*it)->hasFocus() || ( (_imp->currentPanelFocus == *it) && !_imp->keyPressEventHasVisitedFocusWidget ) ) {
+                if ( (*it)->hasFocus() || (_imp->currentPanelFocus == *it) ) {
                     viewerTabHasFocus = true;
                     break;
                 }
             }
             //Plug-ins did not yet receive a keyDown event for this modifier, send it
-            if (!viewers.empty() && !viewerTabHasFocus) {
+            if ((!viewers.empty() && (!viewerTabHasFocus || !_imp->keyPressEventHasVisitedFocusWidget))) {
                 //Increment a recursion counter because the handler of the focus widget might toss it back to us
                 ++_imp->currentPanelFocusEventRecursion;
                 //If a panel as the click focus, try to send the event to it
@@ -756,17 +773,12 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     }
 }
 
-bool
-Gui::hasShortcutEditorAlreadyBeenBuilt() const
-{
-    return _imp->shortcutEditor != NULL;
-}
-
 void
 Gui::addShortcut(BoundAction* action)
 {
-    assert(_imp->shortcutEditor);
-    _imp->shortcutEditor->addShortcut(action);
+    if (_imp->_settingsGui) {
+        _imp->_settingsGui->addShortcut(action);
+    }
 }
 
 void
@@ -1111,14 +1123,16 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
+
         if ( !path.isEmpty() && ( ( path.at(0) == QLatin1Char('/') ) || ( path.at(0) == QLatin1Char('\\') ) ) ) {
             path = path.remove(0, 1);
         }
-        path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);
-
+        if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+            path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);
+        }
 #endif
         QDir dir(path);
-
+        
         //if the path dropped is not a directory append it
         if ( !dir.exists() ) {
             filesList << path;
@@ -1131,11 +1145,11 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList supportedExtensions;
     supportedExtensions.push_back( QString::fromLatin1(NATRON_PROJECT_FILE_EXT) );
     supportedExtensions.push_back( QString::fromLatin1("py") );
-    ///get all the decoders
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        supportedExtensions.push_back( QString::fromUtf8( it->first.c_str() ) );
+
+    std::vector<std::string> readersFormat;
+    appPTR->getSupportedReaderFileFormats(&readersFormat);
+    for (std::vector<std::string>::const_iterator it = readersFormat.begin(); it != readersFormat.end(); ++it) {
+        supportedExtensions.push_back( QString::fromUtf8( it->c_str() ) );
     }
     *sequences = SequenceFileDialog::fileSequencesFromFilesList(filesList, supportedExtensions);
 }
@@ -1240,17 +1254,15 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
             _imp->_scriptEditor->sourceScript( QString::fromUtf8( content.begin()->second.absoluteFileName().c_str() ) );
             ensureScriptEditorVisible();
         } else {
-            std::map<std::string, std::string> readersForFormat;
-            appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-            std::map<std::string, std::string>::iterator found = readersForFormat.find(extLower);
-            if ( found == readersForFormat.end() ) {
+            std::string readerPluginID = appPTR->getReaderPluginIDForFileType(extLower);
+            if ( readerPluginID.empty() ) {
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
             } else {
                 std::string pattern = sequence->generateValidSequencePattern();
-                CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, graph->getGroup() );
-                args.xPosHint = graphScenePos.x();
-                args.yPosHint = graphScenePos.y();
-                args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+                CreateNodeArgs args(readerPluginID, graph->getGroup() );
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
+                args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
                 NodePtr n = getApp()->createNode(args);
 

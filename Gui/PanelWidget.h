@@ -47,7 +47,8 @@ class PanelWidget
 
 public:
 
-    PanelWidget(QWidget* thisWidget, Gui* gui);
+    PanelWidget(QWidget* thisWidget,
+                Gui* gui);
 
     Gui* getGui() const;
 

@@ -120,7 +120,7 @@ public:
 
     void drawCurve(int curveIndex, int curvesCount);
 
-    virtual std::pair<double, double> getCurveYRange() const;
+    virtual Curve::YRange getCurveYRange() const;
     virtual bool areKeyFramesTimeClampedToIntegers() const;
     virtual bool areKeyFramesValuesClampedToBooleans() const;
     virtual bool areKeyFramesValuesClampedToIntegers() const;
@@ -134,7 +134,7 @@ private:
     void nextPointForSegment(const double x1,
                              const KeyFrameSet & keyframes,
                              const std::list<double>& keysWidgetCoords,
-                             const std::pair<double, double>& curveYRange,
+                             const Curve::YRange& curveYRange,
                              const double xminCurveWidgetCoord,
                              const double xmaxCurveWidgetCoord,
                              KeyFrameSet::const_iterator* lastUpperIt,
@@ -240,7 +240,7 @@ public:
 
     boost::shared_ptr<Bezier> getBezier() const;
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::pair<double, double> getCurveYRange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Curve::YRange getCurveYRange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool areKeyFramesTimeClampedToIntegers() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
     virtual bool areKeyFramesValuesClampedToBooleans() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }

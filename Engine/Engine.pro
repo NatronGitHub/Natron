@@ -29,7 +29,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 # Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
-CONFIG += libmv-flags openmvg-flags glad-flags
+CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
 
 include(../global.pri)
 
@@ -79,8 +79,10 @@ SOURCES += \
     Cache.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
+    CreateNodeArgs.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
+    DefaultShaders.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
@@ -96,6 +98,8 @@ SOURCES += \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
+    GPUContextPool.cpp \
+    GLShader.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -128,6 +132,10 @@ SOURCES += \
     NodeSerialization.cpp \
     NodeGroupSerialization.cpp \
     NoOpBase.cpp \
+    OSGLContext.cpp \
+    OSGLContext_mac.cpp \
+    OSGLContext_win.cpp \
+    OSGLContext_x11.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -231,7 +239,13 @@ SOURCES += \
     NatronEngine/userparamholder_wrapper.cpp \
     NatronEngine/rectd_wrapper.cpp \
     NatronEngine/recti_wrapper.cpp \
-    NatronEngine/separatorparam_wrapper.cpp
+    NatronEngine/separatorparam_wrapper.cpp \
+    NatronEngine/boolnodecreationproperty_wrapper.cpp \
+    NatronEngine/floatnodecreationproperty_wrapper.cpp \
+    NatronEngine/intnodecreationproperty_wrapper.cpp \
+    NatronEngine/nodecreationproperty_wrapper.cpp \
+    NatronEngine/stringnodecreationproperty_wrapper.cpp
+
 
 HEADERS += \
     AbortableRenderInfo.h \
@@ -253,9 +267,11 @@ HEADERS += \
     CacheEntryHolder.h \
     CacheSerialization.h \
     CoonsRegularization.h \
+    CreateNodeArgs.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
+    DefaultShaders.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
@@ -278,6 +294,8 @@ HEADERS += \
     fstream_mingw.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
+    GLShader.h \
+    GPUContextPool.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \
@@ -302,6 +320,7 @@ HEADERS += \
     KnobTypes.h \
     LibraryBinary.h \
     Log.h \
+    LogEntry.h \
     LRUHashTable.h \
     Lut.h \
     Markdown.h \
@@ -317,6 +336,10 @@ HEADERS += \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
     NoOpBase.h \
+    OSGLContext.h \
+    OSGLContext_mac.h \
+    OSGLContext_win.h \
+    OSGLContext_x11.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
     OfxHost.h \
@@ -474,7 +497,13 @@ HEADERS += \
     NatronEngine/userparamholder_wrapper.h \
     NatronEngine/rectd_wrapper.h \
     NatronEngine/recti_wrapper.h \
-    NatronEngine/separatorparam_wrapper.h
+    NatronEngine/separatorparam_wrapper.h \
+    NatronEngine/boolnodecreationproperty_wrapper.h \
+    NatronEngine/floatnodecreationproperty_wrapper.h \
+    NatronEngine/intnodecreationproperty_wrapper.h \
+    NatronEngine/nodecreationproperty_wrapper.h \
+    NatronEngine/stringnodecreationproperty_wrapper.h
+
 
 
 OTHER_FILES += \
@@ -535,8 +564,8 @@ OTHER_FILES += \
 # SHIBOKEN.clean = dummy # don't remove the %_wrapper.cpp file by "make clean"
 
 # QMAKE_EXTRA_COMPILERS += SHIBOKEN
-
 macx {
+
 OBJECTIVE_SOURCES += \
     QUrlFix.mm
 }

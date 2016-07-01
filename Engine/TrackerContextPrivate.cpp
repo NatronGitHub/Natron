@@ -118,9 +118,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         //NodePtr maskInput;
 
         {
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isTrackerNode);
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+
             output = node->getApp()->createNode(args);
             try {
                 output->setScriptName("Output");
@@ -130,46 +130,19 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             assert(output);
         }
         {
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
-            args.fixedName = QLatin1String("Source");
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
             assert(input);
         }
 
-        /* {
-             CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
-             args.fixedName = QLatin1String("Mask");
-             args.createGui = false;
-             args.addToProject = false;
-             maskInput = node->getApp()->createNode(args);
-             assert(maskInput);
-             KnobPtr isMaskInputKnob = maskInput->getKnobByName(kNatronGroupInputIsMaskParamName);
-             if (isMaskInputKnob) {
-                 KnobBool* maskInputKnob = dynamic_cast<KnobBool*>(isMaskInputKnob.get());
-                 assert(maskInputKnob);
-                 if (maskInputKnob) {
-                     maskInputKnob->setValue(true);
-                 }
-             }
-             KnobPtr isOptionalInputKnob = maskInput->getKnobByName(kNatronGroupInputIsOptionalParamName);
-             if (isOptionalInputKnob) {
-                 KnobBool* optionalInputKnob = dynamic_cast<KnobBool*>(isOptionalInputKnob.get());
-                 assert(optionalInputKnob);
-                 if (optionalInputKnob) {
-                     optionalInputKnob->setValue(true);
-                 }
-             }
-
-           }*/
 
         {
             QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, isTrackerNode);
-            args.fixedName = cornerPinName;
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
             NodePtr cpNode = node->getApp()->createNode(args);
             if (!cpNode) {
                 throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
@@ -180,10 +153,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             QString transformName = fixedNamePrefix + QLatin1String("Transform");
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, isTrackerNode);
-            args.fixedName = transformName;
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_OFX_TRANSFORM, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);
             tNode->setNodeDisabled(true);
             transformNode = tNode;
@@ -269,7 +241,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     maxErrorKnob->setAnimationEnabled(false);
     maxErrorKnob->setMinimum(0.);
     maxErrorKnob->setMaximum(1.);
-    maxErrorKnob->setDefaultValue(0.2);
+    maxErrorKnob->setDefaultValue(0.25);
     maxErrorKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(maxErrorKnob);
     maxError = maxErrorKnob;
@@ -315,6 +287,32 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(preBlurSigmaKnob);
     preBlurSigma = preBlurSigmaKnob;
 
+    boost::shared_ptr<KnobInt> defPatternWinSizeKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamDefaultMarkerPatternWinSizeLabel), 1, false);
+    defPatternWinSizeKnob->setName(kTrackerParamDefaultMarkerPatternWinSize);
+    defPatternWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerPatternWinSizeLabel));
+    defPatternWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerPatternWinSizeHint) );
+    defPatternWinSizeKnob->setAnimationEnabled(false);
+    defPatternWinSizeKnob->setMinimum(1);
+    defPatternWinSizeKnob->disableSlider();
+    defPatternWinSizeKnob->setAddNewLine(false);
+    defPatternWinSizeKnob->setEvaluateOnChange(false);
+    defPatternWinSizeKnob->setDefaultValue(21);
+    settingsPage->addKnob(defPatternWinSizeKnob);
+    defaultPatternWinSize = defPatternWinSizeKnob;
+
+    boost::shared_ptr<KnobInt> defSearchWinSizeKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamDefaultMarkerSearchWinSizeLabel), 1, false);
+    defSearchWinSizeKnob->setName(kTrackerParamDefaultMarkerSearchWinSize);
+    defSearchWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerSearchWinSizeLabel));
+    defSearchWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerSearchWinSizeHint) );
+    defSearchWinSizeKnob->setAnimationEnabled(false);
+    defSearchWinSizeKnob->setMinimum(1);
+    defSearchWinSizeKnob->disableSlider();
+    defSearchWinSizeKnob->setEvaluateOnChange(false);
+    defSearchWinSizeKnob->setDefaultValue(71);
+    settingsPage->addKnob(defSearchWinSizeKnob);
+    defaultSearchWinSize = defSearchWinSizeKnob;
+
+
     boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), tr(kTrackerParamPerTrackParamsSeparatorLabel), 3);
     perTrackSeparatorKnob->setName(kTrackerParamPerTrackParamsSeparator);
     settingsPage->addKnob(perTrackSeparatorKnob);
@@ -331,6 +329,17 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(enableTrackKnob);
     activateTrack = enableTrackKnob;
     perTrackKnobs.push_back(enableTrackKnob);
+    
+    boost::shared_ptr<KnobBool> autoKeyEnabledKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamAutoKeyEnabledLabel), 1, false);
+    autoKeyEnabledKnob->setName(kTrackerParamAutoKeyEnabled);
+    autoKeyEnabledKnob->setHintToolTip( tr(kTrackerParamAutoKeyEnabledHint) );
+    autoKeyEnabledKnob->setAnimationEnabled(false);
+    autoKeyEnabledKnob->setDefaultValue(false);
+    autoKeyEnabledKnob->setEvaluateOnChange(false);
+    settingsPage->addKnob(autoKeyEnabledKnob);
+    autoKeyEnabled = autoKeyEnabledKnob;
+
+    
 
     boost::shared_ptr<KnobChoice> motionModelKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamMotionModelLabel), 1, false);
     motionModelKnob->setName(kTrackerParamMotionModel);
@@ -386,6 +395,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         transformTypeKnob->populateChoices(choices, helps);
     }
+    transformTypeKnob->setDefaultValue(1);
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
 
@@ -676,7 +686,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
  **/
 void
 TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
-                                                  int formatHeight,
+                                                  int /*formatHeight*/,
                                                   const libmv::TrackRegionResult* result,
                                                   const TrackMarkerPtr& natronMarker)
 {
@@ -693,9 +703,10 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
         errorKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
 
+    // Blender also adds 0.5 to coordinates
     Point center;
-    center.x = (double)mvMarker.center(0);
-    center.y = (double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
+    center.x = (double)mvMarker.center(0) + 0.5;
+    center.y = mvMarker.center(1) + 0.5; //(double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
 
     boost::shared_ptr<KnobDouble> offsetKnob = natronMarker->getOffsetKnob();
     Point offset;
@@ -707,17 +718,17 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 
     Point topLeftCorner, topRightCorner, btmRightCorner, btmLeftCorner;
-    topLeftCorner.x = mvMarker.patch.coordinates(0, 0) - offset.x - center.x;
-    topLeftCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0, 1), formatHeight) - offset.y - center.y;
+    topLeftCorner.x = mvMarker.patch.coordinates(3, 0) - offset.x - center.x;//mvMarker.patch.coordinates(0, 0) - offset.x - center.x;
+    topLeftCorner.y = mvMarker.patch.coordinates(3, 1) - offset.y - center.y; //TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0, 1), formatHeight) - offset.y - center.y;
 
-    topRightCorner.x = mvMarker.patch.coordinates(1, 0) - offset.x - center.x;
-    topRightCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(1, 1), formatHeight) - offset.y - center.y;
+    topRightCorner.x = mvMarker.patch.coordinates(2, 0) - offset.x - center.x;//mvMarker.patch.coordinates(1, 0) - offset.x - center.x;
+    topRightCorner.y = mvMarker.patch.coordinates(2, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(1, 1), formatHeight) - offset.y - center.y;
 
-    btmRightCorner.x = mvMarker.patch.coordinates(2, 0) - offset.x - center.x;
-    btmRightCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(2, 1), formatHeight) - offset.y - center.y;
+    btmRightCorner.x = mvMarker.patch.coordinates(1, 0) - offset.x - center.x;// mvMarker.patch.coordinates(2, 0) - offset.x - center.x;
+    btmRightCorner.y = mvMarker.patch.coordinates(1, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(2, 1), formatHeight) - offset.y - center.y;
 
-    btmLeftCorner.x = mvMarker.patch.coordinates(3, 0) - offset.x - center.x;
-    btmLeftCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(3, 1), formatHeight) - offset.y - center.y;
+    btmLeftCorner.x = mvMarker.patch.coordinates(0, 0) - offset.x - center.x; //mvMarker.patch.coordinates(3, 0) - offset.x - center.x;
+    btmLeftCorner.y = mvMarker.patch.coordinates(0, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(3, 1), formatHeight) - offset.y - center.y;
 
     boost::shared_ptr<KnobDouble> pntTopLeftKnob = natronMarker->getPatternTopLeftKnob();
     boost::shared_ptr<KnobDouble> pntTopRightKnob = natronMarker->getPatternTopRightKnob();
@@ -739,7 +750,7 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
                                                    int trackIndex,
                                                    int trackedTime,
                                                    int frameStep,
-                                                   double formatHeight,
+                                                   double /*formatHeight*/,
                                                    mv::Marker* mvMarker)
 {
     boost::shared_ptr<KnobDouble> searchWindowBtmLeftKnob = marker.getSearchWindowBottomLeftKnob();
@@ -869,8 +880,9 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     offsetAtTrackedTime.x = offsetKnob->getValueAtTime(trackedTime, 0);
     offsetAtTrackedTime.y = offsetKnob->getValueAtTime(trackedTime, 1);
 
-    mvMarker->center(0) = centerAtTrackedTime.x;
-    mvMarker->center(1) = TrackerFrameAccessor::invertYCoordinate(centerAtTrackedTime.y, formatHeight);
+    // Blender also substracts 0.5 to coordinates
+    mvMarker->center(0) = centerAtTrackedTime.x - 0.5;
+    mvMarker->center(1) = centerAtTrackedTime.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(centerAtTrackedTime.y, formatHeight);
 
     Point centerPlusOffset;
     centerPlusOffset.x = centerAtTrackedTime.x + offsetAtTrackedTime.x;
@@ -894,23 +906,23 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     bl.x += centerPlusOffset.x;
     bl.y += centerPlusOffset.y;
 
-    mvMarker->search_region.min(0) = searchWndBtmLeft.x;
-    mvMarker->search_region.min(1) = TrackerFrameAccessor::invertYCoordinate(searchWndTopRight.y, formatHeight);
-    mvMarker->search_region.max(0) = searchWndTopRight.x;
-    mvMarker->search_region.max(1) = TrackerFrameAccessor::invertYCoordinate(searchWndBtmLeft.y, formatHeight);
+    mvMarker->search_region.min(0) = searchWndBtmLeft.x - 0.5;
+    mvMarker->search_region.min(1) = searchWndBtmLeft.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(searchWndTopRight.y, formatHeight);
+    mvMarker->search_region.max(0) = searchWndTopRight.x - 0.5;
+    mvMarker->search_region.max(1) = searchWndTopRight.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(searchWndBtmLeft.y, formatHeight);
 
 
-    mvMarker->patch.coordinates(0, 0) = tl.x;
-    mvMarker->patch.coordinates(0, 1) = TrackerFrameAccessor::invertYCoordinate(tl.y, formatHeight);
+    mvMarker->patch.coordinates(0, 0) = bl.x - 0.5; //tl.x;
+    mvMarker->patch.coordinates(0, 1) = bl.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(tl.y, formatHeight);
 
-    mvMarker->patch.coordinates(1, 0) = tr.x;
-    mvMarker->patch.coordinates(1, 1) = TrackerFrameAccessor::invertYCoordinate(tr.y, formatHeight);
+    mvMarker->patch.coordinates(1, 0) = br.x - 0.5; //tr.x;
+    mvMarker->patch.coordinates(1, 1) = br.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(tr.y, formatHeight);
 
-    mvMarker->patch.coordinates(2, 0) = br.x;
-    mvMarker->patch.coordinates(2, 1) = TrackerFrameAccessor::invertYCoordinate(br.y, formatHeight);
+    mvMarker->patch.coordinates(2, 0) = tr.x - 0.5; //br.x;
+    mvMarker->patch.coordinates(2, 1) = tr.y - 0.5 ;//TrackerFrameAccessor::invertYCoordinate(br.y, formatHeight);
 
-    mvMarker->patch.coordinates(3, 0) = bl.x;
-    mvMarker->patch.coordinates(3, 1) = TrackerFrameAccessor::invertYCoordinate(bl.y, formatHeight);
+    mvMarker->patch.coordinates(3, 0) = tl.x - 0.5; //bl.x;
+    mvMarker->patch.coordinates(3, 1) = tl.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(bl.y, formatHeight);
 } // TrackerContextPrivate::natronTrackerToLibMVTracker
 
 void
@@ -1077,10 +1089,12 @@ struct PreviouslyComputedTrackFrame
     int frame;
     bool isUserKey;
 
-    PreviouslyComputedTrackFrame() : frame(0), isUserKey(false) {}
+    PreviouslyComputedTrackFrame()
+        : frame(0), isUserKey(false) {}
 
     PreviouslyComputedTrackFrame(int f,
-                                 bool b) : frame(f), isUserKey(b) {}
+                                 bool b)
+        : frame(f), isUserKey(b) {}
 };
 
 struct PreviouslyComputedTrackFrameCompareLess
@@ -1102,6 +1116,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                              OverlaySupport* overlayInteract)
 {
     if ( markers.empty() ) {
+        Q_EMIT trackingFinished();
         return;
     }
 
@@ -1123,6 +1138,8 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     formatWidth = f.width();
     formatHeight = f.height();
 
+    bool autoKeyingOnEnabledParamEnabled = _imp->autoKeyEnabled.lock()->getValue();
+    
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
     boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(this, enabledChannels, formatHeight) );
     boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
@@ -1141,6 +1158,11 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
      */
     int trackIndex = 0;
     for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it, ++trackIndex) {
+        
+        if (autoKeyingOnEnabledParamEnabled) {
+            (*it)->setEnabledAtTime(start, true);
+        }
+        
         boost::shared_ptr<TrackMarkerAndOptions> t(new TrackMarkerAndOptions);
         t->natronMarker = *it;
 
@@ -1163,9 +1185,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
         // Add a libmv marker for all keyframes
         for (std::set<int>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
-            mv::Marker marker;
-            TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
-            trackContext->AddMarker(marker);
+
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( (frameStep > 0) && (*it2 <= start) ) || ( (frameStep < 0) && (*it2 >= start) ) ) {
                 previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, true) );
@@ -1177,38 +1197,65 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         std::set<double> centerKeys;
         t->natronMarker->getCenterKeyframes(&centerKeys);
 
-
         for (std::set<double>::iterator it2 = centerKeys.begin(); it2 != centerKeys.end(); ++it2) {
             if ( userKeys.find(*it2) != userKeys.end() ) {
                 continue;
             }
 
-            mv::Marker marker;
-            TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
-            assert(marker.source == mv::Marker::TRACKED);
-            trackContext->AddMarker(marker);
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( ( (frameStep > 0) && (*it2 < start) ) || ( (frameStep < 0) && (*it2 > start) ) ) ) {
                 previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, false) );
             }
         }
 
+
         // Taken from libmv, only initialize the filter to this amount of frames (max)
         const int max_frames_to_predict_from = 20;
         std::list<mv::Marker> previouslyComputedMarkersOrdered;
-        {
-            int i = 0;
-            for (PreviouslyTrackedFrameSet::reverse_iterator it = previousFramesOrdered.rbegin(); it != previousFramesOrdered.rend(); ++it, ++i) {
-                if (i == max_frames_to_predict_from) {
-                    break;
-                }
-                mv::Marker m;
-                if ( trackContext->GetMarker(0, it->frame, trackIndex, &m) ) {
-                    previouslyComputedMarkersOrdered.push_front(m);
-                } else {
-                    assert(false);
+
+        // Find the first keyframe that's not considered to go before start or end
+        PreviouslyTrackedFrameSet::iterator prevFramesIt = previousFramesOrdered.lower_bound(PreviouslyComputedTrackFrame(start, false));
+        if (frameStep < 0) {
+            if (prevFramesIt != previousFramesOrdered.end()) {
+                while (prevFramesIt != previousFramesOrdered.end() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+
+                    mv::Marker mvMarker;
+
+                    TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    trackContext->AddMarker(mvMarker);
+
+                    // insert in the front of the list so that the order is reversed
+                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+                    ++prevFramesIt;
                 }
             }
+            // previouslyComputedMarkersOrdered is now ordererd by decreasing order
+        } else {
+
+            if (prevFramesIt != previousFramesOrdered.end()) {
+                while (prevFramesIt != previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+
+                    mv::Marker mvMarker;
+
+                    TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    trackContext->AddMarker(mvMarker);
+
+                    // insert in the front of the list so that the order is reversed
+                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+                    --prevFramesIt;
+                }
+                if (prevFramesIt == previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+                    mv::Marker mvMarker;
+
+                    TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    trackContext->AddMarker(mvMarker);
+
+                    // insert in the front of the list so that the order is reversed
+                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+
+                }
+            }
+            // previouslyComputedMarkersOrdered is now ordererd by increasing order
         }
 
 
@@ -1217,29 +1264,15 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
         // Initialise the kalman state with the marker at the position
 
-        if (frameStep > 0) {
-            std::list<mv::Marker>::iterator mIt = previouslyComputedMarkersOrdered.begin();
-            t->mvState.Init(*mIt, frameStep);
-            ++mIt;
-            for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
-                mv::Marker predictedMarker;
-                if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
-                    break;
-                } else {
-                    t->mvState.Update(*mIt);
-                }
-            }
-        } else {
-            std::list<mv::Marker>::reverse_iterator mIt = previouslyComputedMarkersOrdered.rbegin();
-            t->mvState.Init(*mIt, frameStep);
-            ++mIt;
-            for (; mIt != previouslyComputedMarkersOrdered.rend(); ++mIt) {
-                mv::Marker predictedMarker;
-                if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
-                    break;
-                } else {
-                    t->mvState.Update(*mIt);
-                }
+        std::list<mv::Marker>::iterator mIt = previouslyComputedMarkersOrdered.begin();
+        t->mvState.Init(*mIt, frameStep);
+        ++mIt;
+        for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
+            mv::Marker predictedMarker;
+            if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
+                break;
+            } else {
+                t->mvState.Update(*mIt);
             }
         }
 
@@ -1249,11 +1282,11 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         trackAndOptions.push_back(t);
     }
 
-
+    
     /*
        Launch tracking in the scheduler thread.
      */
-    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight) );
+    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
     _imp->scheduler.track(args);
 } // TrackerContext::trackMarkers
 

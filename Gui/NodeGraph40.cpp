@@ -49,6 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"
@@ -79,6 +80,14 @@ NodeGraph::togglePreviewsForSelectedNodes()
 
     if (empty) {
         Dialogs::warningDialog( tr("Toggle Preview").toStdString(), tr("You must select a node first").toStdString() );
+    }
+}
+
+void
+NodeGraph::showSelectedNodeSettingsPanel()
+{
+    if (_imp->_selection.size() == 1) {
+        showNodePanel(false, false, _imp->_selection.front().get());
     }
 }
 
@@ -308,6 +317,17 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     assert( serializations.size() == newNodes.size() );
     ///restore connections
     _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
+
+
+    NodesList allNodes;
+    getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
+
+
+    //Restore links once all children are created for alias knobs/expressions
+    std::list <boost::shared_ptr<NodeSerialization> >::iterator itS = serializations.begin();
+    for (std::list <NodeGuiPtr > ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
+        (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
+    }
 
 
     pushUndoCommand( new AddMultipleNodesCommand(this, newNodesList) );

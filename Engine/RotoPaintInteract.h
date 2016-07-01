@@ -252,6 +252,9 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamRemoveKeyframeLabel "Remove Keyframe"
 #define kRotoUIParamRemoveKeyframeHint "Remove a keyframe at the current time for the selected shape(s), if any"
 
+#define kRotoUIParamShowTransform "showTransformButton"
+#define kRotoUIParamShowTransformLabel "Show Transform Handle"
+#define kRotoUIParamShowTransformHint "When unchecked, even if the Transform tab is visible in the settings panel, the transform handle will be hidden"
 
 // RotoPaint
 #define kRotoUIParamColorWheel "strokeColorButton"
@@ -396,7 +399,8 @@ struct RotoPaintPrivate
     boost::weak_ptr<KnobBool> enabledKnobs[4];
     boost::shared_ptr<RotoPaintInteract> ui;
 
-    RotoPaintPrivate(RotoPaint* publicInterface, bool isPaintByDefault);
+    RotoPaintPrivate(RotoPaint* publicInterface,
+                     bool isPaintByDefault);
 };
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -591,6 +595,7 @@ struct RotoPaintInteract
     boost::weak_ptr<KnobButton> rippleEditEnabledButton;
     boost::weak_ptr<KnobButton> addKeyframeButton;
     boost::weak_ptr<KnobButton> removeKeyframeButton;
+    boost::weak_ptr<KnobButton> showTransformHandle;
 
     // RotoPaint buttons
     boost::weak_ptr<KnobColor> colorWheelButton;
@@ -610,7 +615,16 @@ struct RotoPaintInteract
     boost::weak_ptr<KnobBool> multiStrokeEnabled;
 
 
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
     RotoPaintInteract(RotoPaintPrivate* p);
+
+public:
+    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p)
+    {
+        return boost::shared_ptr<RotoPaintInteract>( new RotoPaintInteract(p) );
+    }
 
     bool isFeatherVisible() const;
 

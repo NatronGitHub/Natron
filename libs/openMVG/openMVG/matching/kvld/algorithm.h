@@ -1,4 +1,4 @@
-﻿#ifndef KVLD_ALGORITHM_H
+#ifndef KVLD_ALGORITHM_H
 #define KVLD_ALGORITHM_H
 
 /** @basic structures implementation

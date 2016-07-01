@@ -33,7 +33,6 @@
 #include <list>
 #include <bitset>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 #include <QtCore/QObject>
@@ -77,8 +76,9 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER;
 
 class Node
-    : public QObject, public boost::enable_shared_from_this<Node>
-      , public CacheEntryHolder
+    : public QObject
+    , public boost::enable_shared_from_this<Node>
+    , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -88,11 +88,14 @@ public:
 
     struct Implementation;
 
-
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstPtr& app,
          const boost::shared_ptr<NodeCollection>& group,
          Plugin* plugin);
 
+public:
     virtual ~Node();
 
     boost::shared_ptr<NodeCollection> getGroup() const;
@@ -121,6 +124,9 @@ public:
     void load(const CreateNodeArgs& args);
 
 
+    void initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName);
+
+
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
 
@@ -129,7 +135,7 @@ public:
                   bool updateKnobGui = false);
 
     ///Set values for Knobs given their serialization
-    void setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
+    void setValuesFromSerialization(const CreateNodeArgs& args);
 
     ///to be called once all nodes have been loaded from the project or right away after the load() function.
     ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
@@ -163,6 +169,8 @@ public:
     std::list<std::string> getPagesOrder() const;
 
     bool isNodeCreated() const;
+
+    bool isGLFinishRequiredBeforeRender() const;
 
     void refreshAcceptedBitDepths();
 
@@ -390,6 +398,16 @@ public:
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
 
+    std::string getInputHint(int inputNb) const;
+
+    void setInputLabel(int inputNb, const std::string& label);
+
+    void setInputHint(int inputNb, const std::string& hint);
+
+    bool isInputVisible(int inputNb) const;
+
+    void setInputVisible(int inputNb, bool visible);
+
     int getInputNumberFromLabel(const std::string& inputLabel) const;
 
     bool isInputConnected(int inputNb) const;
@@ -434,6 +452,10 @@ public:
     bool getCurrentSupportTiles() const;
 
     void refreshDynamicProperties();
+
+    bool isRenderScaleSupportEnabledForPlugin() const;
+
+    bool isMultiThreadingSupportEnabledForPlugin() const;
 
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
@@ -556,7 +578,13 @@ public:
 
     bool isSettingsPanelMinimized() const;
 
+    void onOpenGLEnabledKnobChangedOnProject(bool activated);
+
 private:
+
+    bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
+
+    int disconnectInputInternal(Node* input, bool useGuiInputs);
 
 
     bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
@@ -565,7 +593,7 @@ public:
 
     bool isUserSelected() const;
 
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
@@ -579,7 +607,7 @@ public:
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.
      **/
-    void getColor(double* r, double *g, double* b) const;
+    bool getColor(double* r, double *g, double* b) const;
     void setColor(double r, double g, double b);
 
 
@@ -668,7 +696,8 @@ public:
                     bool disconnectAll = true,
                     bool reconnect = true,
                     bool hideGui = true,
-                    bool triggerRender = true);
+                    bool triggerRender = true,
+                    bool unslaveKnobs = true);
 
 
     /* @brief Make this node active. It will appear
@@ -947,7 +976,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(int renderScaleSupportPref, bool loadingSerialization);
+    void initializeKnobs(bool loadingSerialization);
 
     void checkForPremultWarningAndCheckboxes();
 
@@ -955,13 +984,13 @@ public:
 
 private:
 
-    void initializeDefaultKnobs(int renderScaleSupportPref, bool loadingSerialization);
+    void initializeDefaultKnobs(bool loadingSerialization);
 
     void findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerialization);
 
     void findRightClickMenuKnob(const KnobsVec& knobs);
 
-    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int renderScaleSupportPref);
+    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage);
 
     void createInfoPage();
 
@@ -1185,11 +1214,12 @@ public:
 
     bool hasHostOverlayForParam(const KnobI* knob) const;
 
-    void setPluginIconFilePath(const std::string& iconFilePath);
-
-    void setPluginDescription(const std::string& description);
-
-    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping, const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
+    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
+                                     const std::string& pluginLabel,
+                                     const std::string& pluginID,
+                                     const std::string& pluginDesc,
+                                     const std::string& pluginIconFilePath,
+                                     unsigned int version);
 
     void setPluginPythonModule(const std::string& pythonModule);
 
@@ -1240,11 +1270,11 @@ public:
 
     int getFrameStepKnobValue() const;
 
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool canChangeValues);
+    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool loadingProject);
 
     bool handleFormatKnob(KnobI* knob);
 
-    QString makeHTMLDocumentation(bool genHTML, bool hasImg) const;
+    QString makeDocumentation(bool genHTML) const;
 
     void refreshPreviewsAfterProjectLoad();
 
@@ -1302,7 +1332,7 @@ private:
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
-    void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
+    void setNameInternal(const std::string& name, bool throwErrors);
 
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
 
@@ -1374,6 +1404,8 @@ Q_SIGNALS:
 
     void inputsInitialized();
 
+    void inputLabelChanged(int, QString);
+
     void knobsInitialized();
 
     /*
@@ -1394,7 +1426,9 @@ Q_SIGNALS:
 
     void labelChanged(QString);
     void scriptNameChanged(QString);
-    void inputLabelChanged(int, QString);
+    void inputEdgeLabelChanged(int, QString);
+
+    void inputVisibilityChanged(int);
 
     void refreshEdgesGUI();
 

@@ -164,11 +164,7 @@ KnobGuiFile::open_file()
     if ( !knob->isInputImageFile() ) {
         filters.push_back("*");
     } else {
-        std::map<std::string, std::string> readersForFormat;
-        appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-        for (std::map<std::string, std::string>::iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-            filters.push_back(it->first);
-        }
+        appPTR->getSupportedReaderFileFormats(&filters);
     }
     std::string oldPattern = knob->getValue();
     std::string currentPattern = oldPattern;
@@ -253,6 +249,9 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
         return false;
     }
     boost::shared_ptr<KnobFile> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
     EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
     assert(effect);
     if ( !effect || !effect->getNode()->isActivated() ) {
@@ -533,11 +532,7 @@ KnobGuiOutputFile::open_file(bool openSequence)
     if ( !_knob.lock()->isOutputImageFile() ) {
         filters.push_back("*");
     } else {
-        std::map<std::string, std::string> formats;
-        appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&formats);
-        for (std::map<std::string, std::string>::iterator it = formats.begin(); it != formats.end(); ++it) {
-            filters.push_back(it->first);
-        }
+        appPTR->getSupportedWriterFileFormats(&filters);
     }
 
     SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::eFileDialogModeSave, _lastOpened.toStdString(), getGui(), true);

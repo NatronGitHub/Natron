@@ -140,6 +140,11 @@ public:
 
     NodeGuiPtr getNode() const;
 
+    virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
     bool addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs);
 
 

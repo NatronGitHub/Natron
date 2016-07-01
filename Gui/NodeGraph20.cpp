@@ -82,7 +82,7 @@ NodeGraph::checkForHints(bool shiftdown,
         return;
     }
 
-    QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges();//selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
+    QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges(); //selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
     double tolerance = 10;
     selectedNodeBbox.adjust(-tolerance, -tolerance, tolerance, tolerance);
 
@@ -298,30 +298,27 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
 
 
     //Get the nodes to move, taking into account the backdrops
-    std::list<std::pair<NodeGuiPtr, bool> > nodesToMove;
+    bool ignoreMagnet = false;
+    std::set<NodeGuiPtr> nodesToMove;
     for (NodesGuiList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
         const NodeGuiPtr& node = *it;
-        nodesToMove.push_back( std::make_pair(node, false) );
+        nodesToMove.insert(node);
 
         std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
         if ( !controlDown && ( foundBd != _imp->_nodesWithinBDAtPenDown.end() ) ) {
+            ignoreMagnet = true; // we move a backdrop, ignore magnet
             for (NodesGuiList::iterator it2 = foundBd->second.begin();
                  it2 != foundBd->second.end(); ++it2) {
                 ///add it only if it's not already in the list
-                bool found = false;
-                for (std::list<std::pair<NodeGuiPtr, bool> >::iterator it3 = nodesToMove.begin();
-                     it3 != nodesToMove.end(); ++it3) {
-                    if (it3->first == *it2) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    nodesToMove.push_back( std::make_pair(*it2, true) );
-                }
+                nodesToMove.insert(*it2);
+
             }
         }
+    }
+
+    if (!ignoreMagnet && nodesToMove.size() > 1) {
+        ignoreMagnet = true;
     }
 
     //The delta
@@ -331,17 +328,16 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
 
     //Move all nodes
     bool deltaSet = false;
-    for (std::list<std::pair<NodeGuiPtr, bool> >::iterator it = nodesToMove.begin();
+    for (std::set<NodeGuiPtr>::iterator it = nodesToMove.begin();
          it != nodesToMove.end(); ++it) {
         //The current position
-        QPointF pos = it->first->getPos_mt_safe();
+        QPointF pos = (*it)->getPos_mt_safe();
 
         //if ignoreMagnet == true, we do not snap nodes to horizontal/vertical positions
-        bool ignoreMagnet = it->second || nodesToMove.size() > 1;
-        it->first->refreshPosition(pos.x() + dxScene, pos.y() + dyScene, ignoreMagnet, newPos);
+        (*it)->refreshPosition(pos.x() + dxScene, pos.y() + dyScene, ignoreMagnet, newPos);
 
         //The new position
-        QPointF newNodePos = it->first->getPos_mt_safe();
+        QPointF newNodePos = (*it)->getPos_mt_safe();
         if (!ignoreMagnet) {
             //Magnet only works when selection is only for a single node
             //Adjust the delta since mouse press by the new position after snapping

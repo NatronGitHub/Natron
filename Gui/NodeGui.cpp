@@ -123,12 +123,10 @@ using std::make_pair;
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-static QString
-replaceLineBreaksWithHtmlParagraph(QString txt)
+static void
+replaceLineBreaksWithHtmlParagraph(QString &txt)
 {
-    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br>") );
-
-    return txt;
+    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br >") );
 }
 
 static void
@@ -245,6 +243,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(rightClickMenuKnobPopulated()), this, SLOT(onRightClickMenuKnobPopulated()) );
+    QObject::connect( internalNode.get(), SIGNAL(inputEdgeLabelChanged(int, QString)), this, SLOT(onInputLabelChanged(int,QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(inputVisibilityChanged(int)), this, SLOT(onInputVisibilityChanged(int)) );
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
@@ -389,7 +389,7 @@ NodeGui::restoreStateAfterCreation()
     }
     if ( !internalNode->isMultiInstance() ) {
         _nodeLabel = QString::fromUtf8( internalNode->getNodeExtraLabel().c_str() );
-        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+        replaceLineBreaksWithHtmlParagraph(_nodeLabel);
     }
     ///Refresh the name in the line edit
     onInternalNameChanged( QString::fromUtf8( internalNode->getLabel().c_str() ) );
@@ -2081,10 +2081,10 @@ NodeGui::getKnobs() const
 {
     assert(_settingsPanel);
     if (_mainInstancePanel) {
-        return _mainInstancePanel->getKnobs();
+        return _mainInstancePanel->getKnobsMapping();
     }
 
-    return _settingsPanel->getKnobs();
+    return _settingsPanel->getKnobsMapping();
 }
 
 void
@@ -2988,7 +2988,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
         ///hence we remove it
         _nodeLabel = KnobGuiString::removeNatronHtmlTag(_nodeLabel);
     }
-    _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
+    replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(QString::fromUtf8( node->getLabel().c_str() ), _nodeLabel);
 
     //For the merge node, set its operator icon
@@ -3512,11 +3512,22 @@ NodeGui::removePositionHostOverlay(KnobI* knob)
     }
 }
 
+
 void
-NodeGui::setPluginIconFilePath(const std::string& filePath)
+NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
+                               const std::string& pluginLabel,
+                               const std::string& pluginID,
+                               const std::string& pluginDesc,
+                               const std::string& pluginIconFilePath,
+                               unsigned int version)
 {
+    setColorFromGrouping();
+    if ( getSettingPanel() ) {
+        getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, pluginDesc, version);
+    }
+
     boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
-    QPixmap p( QString::fromUtf8( filePath.c_str() ) );
+    QPixmap p( QString::fromUtf8( pluginIconFilePath.c_str() ) );
 
     if ( p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph() ) {
         return;
@@ -3559,25 +3570,6 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     }
 }
 
-void
-NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
-                               const std::string& pluginLabel,
-                               const std::string& pluginID,
-                               unsigned int version)
-{
-    setColorFromGrouping();
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, version);
-    }
-}
-
-void
-NodeGui::setPluginDescription(const std::string& description)
-{
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginDescription(description);
-    }
-}
 
 void
 NodeGui::setOverlayLocked(bool locked)
@@ -3828,7 +3820,8 @@ class GroupKnobDialog
 public:
 
 
-    GroupKnobDialog(Gui* gui, const KnobGroup* group);
+    GroupKnobDialog(Gui* gui,
+                    const KnobGroup* group);
 
     virtual ~GroupKnobDialog()
     {
@@ -3954,6 +3947,24 @@ NodeGui::onRightClickActionTriggered()
     } else {
         button->trigger();
     }
+}
+
+void
+NodeGui::onInputLabelChanged(int inputNb,const QString& label)
+{
+    if (inputNb < 0 || inputNb >= (int)_inputEdges.size()) {
+        return;
+    }
+    assert(_inputEdges[inputNb]);
+    if (_inputEdges[inputNb]) {
+        _inputEdges[inputNb]->setLabel(label);
+    }
+}
+
+void
+NodeGui::onInputVisibilityChanged(int /*inputNb*/)
+{
+    refreshEdgesVisility();
 }
 
 NATRON_NAMESPACE_EXIT;

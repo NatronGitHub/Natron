@@ -474,7 +474,9 @@ ComboBox::createMenu()
         }
     }
     _clicked = false;
-    setFocus();
+    if (focusPolicy() != Qt::NoFocus) {
+        setFocus();
+    }
     update();
 }
 
@@ -818,7 +820,7 @@ ComboBox::setCurrentIndex_internal(int index)
         return false;
     }
     //Forbid programmatic setting of the "New" choice, only user can select it
-    if ( ( node->isLeaf && ( node->isLeaf->data().toString() == QString::fromUtf8("New") ) ) ) {// "New" choice
+    if ( ( node->isLeaf && ( node->isLeaf->data().toString() == QString::fromUtf8("New") ) ) ) { // "New" choice
         return false;
     }
 

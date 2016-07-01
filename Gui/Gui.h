@@ -101,7 +101,7 @@ public:
 
     void createViewerGui(NodePtr viewer);
 
-    void createGroupGui(const NodePtr& group, CreateNodeReason reason);
+    void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);
 
     void addGroupGui(NodeGraph* tab, TabWidget* where);
 
@@ -305,7 +305,7 @@ public:
 
     static QPixmap screenShot(QWidget* w);
 
-    void loadProjectGui(boost::archive::xml_iarchive & obj) const;
+    void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
@@ -392,7 +392,7 @@ public:
 
     bool progressUpdate(const NodePtr& node, double t);
 
-    void ensureProgressPanelVisible();
+    PanelWidget* ensureProgressPanelVisible();
     void ensureScriptEditorVisible();
 
     /*Useful function that saves on disk the image in png format.
@@ -413,19 +413,11 @@ public:
 
     void disconnectViewersFromViewerCache();
 
-    ///Close the application instance, asking questions to the user
-    bool closeInstance(bool warnUserIfSaveNeeded);
-
     void checkNumberOfNonFloatingPanes();
 
     AppInstPtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
 
     bool isGUIFrozen() const;
-
-    /**
-     * @brief If returns true then you must add shorcuts to the shortcut editor using the addShortcut function
-     **/
-    bool hasShortcutEditorAlreadyBeenBuilt() const;
 
     void addShortcut(BoundAction* action);
 
@@ -512,7 +504,7 @@ public:
      * @brief Close project right away, without any user interaction.
      * @param quitApp If true, the application will exit, otherwise the main window will stay active.
      **/
-    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded);
+    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded, bool blocking);
 
     void setGuiAboutToClose(bool about);
 
@@ -567,8 +559,11 @@ Q_SIGNALS:
 
     void s_doProgressUpdateOnMainThread(KnobHolder* effect, double t);
 
+    void s_showLogOnMainThread();
+
 public Q_SLOTS:
 
+    void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline
     void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time, int reason);
@@ -578,7 +573,7 @@ public Q_SLOTS:
     void reloadStylesheet();
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
-    void closeProject();
+    bool closeProject();
 
     //Same as close + open same project to discard unsaved changes
     void reloadProject();
@@ -638,8 +633,6 @@ public Q_SLOTS:
     void showSettings();
 
     void showAbout();
-
-    void showShortcutEditor();
 
     void showErrorLog();
 

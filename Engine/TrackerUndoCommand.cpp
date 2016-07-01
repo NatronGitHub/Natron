@@ -34,10 +34,11 @@ NATRON_NAMESPACE_ENTER;
 AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
                                  const boost::shared_ptr<TrackerContext>& context)
     : UndoCommand()
-    , _markers()
+    , _isFirstRedo(true)
     , _context(context)
 {
-    _markers.push_back(marker);
+    int index = context->getMarkerIndex(marker);
+    _markers[index] = marker;
     setText( tr("Add Track(s)").toStdString() );
 }
 
@@ -51,8 +52,8 @@ AddTrackCommand::undo()
     }
 
     context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
-    for (std::list<TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-        context->removeMarker(*it);
+    for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+        context->removeMarker(it->second);
     }
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
     context->getNode()->getApp()->triggerAutoSave();
@@ -69,11 +70,18 @@ AddTrackCommand::redo()
     context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
 
-    for (std::list<TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-        context->addTrackToSelection(*it, TrackerContext::eTrackSelectionInternal);
+    if (!_isFirstRedo) {
+        for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+            context->insertMarker(it->second, it->first);
+        }
     }
+    for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+        context->addTrackToSelection(it->second, TrackerContext::eTrackSelectionInternal);
+    }
+
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
     context->getNode()->getApp()->triggerAutoSave();
+    _isFirstRedo = false;
 }
 
 RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,

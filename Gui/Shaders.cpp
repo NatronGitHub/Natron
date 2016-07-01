@@ -24,8 +24,6 @@
 
 #include "Shaders.h"
 
-#include "Global/Macros.h"
-
 #include <stdexcept>
 
 NATRON_NAMESPACE_ENTER;

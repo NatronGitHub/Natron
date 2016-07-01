@@ -379,7 +379,7 @@ void
 AnimatedParam::deleteValueAtTime(double time,
                                  int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension);
+    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
 }
 
 void
@@ -655,7 +655,7 @@ IntParam::getDefaultValue(int dimension) const
 void
 IntParam::restoreDefaultValue(int dimension)
 {
-    _intKnob.lock()->resetToDefaultValue(dimension);
+    _intKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
@@ -907,7 +907,7 @@ DoubleParam::getDefaultValue(int dimension) const
 void
 DoubleParam::restoreDefaultValue(int dimension)
 {
-    _doubleKnob.lock()->resetToDefaultValue(dimension);
+    _doubleKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
@@ -1100,7 +1100,7 @@ ColorParam::getDefaultValue(int dimension) const
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    _colorKnob.lock()->resetToDefaultValue(dimension);
+    _colorKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
@@ -1261,7 +1261,7 @@ ChoiceParam::getDefaultValue() const
 void
 ChoiceParam::restoreDefaultValue()
 {
-    _choiceKnob.lock()->resetToDefaultValue(0);
+    _choiceKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
 void
@@ -1414,7 +1414,7 @@ BooleanParam::getDefaultValue() const
 void
 BooleanParam::restoreDefaultValue()
 {
-    _boolKnob.lock()->resetToDefaultValue(0);
+    _boolKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
 bool
@@ -1505,7 +1505,7 @@ StringParamBase::getDefaultValue() const
 void
 StringParamBase::restoreDefaultValue()
 {
-    _stringKnob.lock()->resetToDefaultValue(0);
+    _stringKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
 QString
@@ -1702,7 +1702,7 @@ GroupParam::~GroupParam()
 void
 GroupParam::addParam(const Param* param)
 {
-    if ( !param || !param->getInternalKnob()->isUserKnob() || param->getInternalKnob()->getParentKnob() ) {
+    if ( !param || !param->getInternalKnob()->isUserKnob() ) {
         return;
     }
     _groupKnob.lock()->addKnob( param->getInternalKnob() );
@@ -1744,7 +1744,7 @@ PageParam::~PageParam()
 void
 PageParam::addParam(const Param* param)
 {
-    if ( !param || !param->getInternalKnob()->isUserKnob() || param->getInternalKnob()->getParentKnob() ) {
+    if ( !param || !param->getInternalKnob()->isUserKnob() ) {
         return;
     }
     _pageKnob.lock()->addKnob( param->getInternalKnob() );

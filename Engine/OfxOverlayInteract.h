@@ -40,14 +40,41 @@ NATRON_NAMESPACE_ENTER;
 
 class NatronOverlayInteractSupport
 {
+
+    bool _hasColorPicker;
+    OfxRGBAColourD _lastColorPicker;
+
 protected:
 
     OverlaySupport* _viewport;
+    
 
 public:
     NatronOverlayInteractSupport();
 
     virtual ~NatronOverlayInteractSupport();
+
+    virtual bool isColorPickerRequired() const = 0;
+
+    void setHasColorPicker(bool hasPicker)
+    {
+        _hasColorPicker = hasPicker;
+    }
+
+    bool hasColorPicker() const
+    {
+        return _hasColorPicker;
+    }
+
+    void setLastColorPickerColor(const OfxRGBAColourD& color)
+    {
+        _lastColorPicker = color;
+    }
+
+    const OfxRGBAColourD& getLastColorPickerColor() const
+    {
+        return _lastColorPicker;
+    }
 
     void setCallingViewport(OverlaySupport* viewport);
 
@@ -90,12 +117,14 @@ class OfxOverlayInteract
 public:
 
     OfxOverlayInteract(OfxImageEffectInstance &v,
-                       int bitDepthPerComponent = 8,
-                       bool hasAlpha = false);
+                       int bitDepthPerComponent,
+                       bool hasAlpha);
 
     virtual ~OfxOverlayInteract()
     {
     }
+
+    virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /*Swaps the buffer of the attached viewer*/
     virtual OfxStatus swapBuffers() OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -145,7 +174,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus drawAction(OfxTime time,
                                  const OfxPointD &renderScale,
-                                 int view) OVERRIDE FINAL;
+                                 int view,
+                                 const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionPenMotion
     //
@@ -159,6 +189,7 @@ public:
     virtual OfxStatus penMotionAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
+                                      const OfxRGBAColourD* pickerColour,
                                       const OfxPointD &penPos,
                                       const OfxPointI &penPosViewport,
                                       double pressure) OVERRIDE FINAL;
@@ -175,6 +206,7 @@ public:
     virtual OfxStatus penUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* pickerColour,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double pressure) OVERRIDE FINAL;
@@ -191,6 +223,7 @@ public:
     virtual OfxStatus penDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* pickerColour,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double pressure) OVERRIDE FINAL;
@@ -206,6 +239,7 @@ public:
     virtual OfxStatus keyDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* pickerColour,
                                     int key,
                                     char*   keyString) OVERRIDE FINAL;
 
@@ -220,6 +254,7 @@ public:
     virtual OfxStatus keyUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* pickerColour,
                                   int key,
                                   char*   keyString) OVERRIDE FINAL;
 
@@ -234,6 +269,7 @@ public:
     virtual OfxStatus keyRepeatAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
+                                      const OfxRGBAColourD* pickerColour,
                                       int key,
                                       char*   keyString) OVERRIDE FINAL;
 
@@ -245,7 +281,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus gainFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
-                                      int view) OVERRIDE FINAL;
+                                      int view,
+                                      const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionLoseFocus
     //
@@ -255,12 +292,16 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus loseFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
-                                      int view) OVERRIDE FINAL;
+                                      int view,
+                                      const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
 };
 
 class OfxParamOverlayInteract
     : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
 {
+
+
+
 public:
 
     OfxParamOverlayInteract(KnobI* knob,
@@ -272,27 +313,29 @@ public:
     {
     }
 
+    virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /*Swaps the buffer of the attached viewer*/
-    virtual OfxStatus swapBuffers()
+    virtual OfxStatus swapBuffers() OVERRIDE FINAL
     {
         return n_swapBuffers();
     }
 
     /*Calls update() on all viewers*/
-    virtual OfxStatus redraw();
+    virtual OfxStatus redraw() OVERRIDE FINAL;
 
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
     virtual void getViewportSize(double &width,
-                                 double &height) const
+                                 double &height) const OVERRIDE FINAL
     {
         n_getViewportSize(width, height);
     }
 
     // hooks to live kOfxInteractPropPixelScale in the property set
     virtual void getPixelScale(double & xScale,
-                               double & yScale) const
+                               double & yScale) const OVERRIDE FINAL
     {
         n_getPixelScale(xScale, yScale);
     }
@@ -300,7 +343,7 @@ public:
     // hooks to kOfxInteractPropBackgroundColour in the property set
     virtual void getBackgroundColour(double &r,
                                      double &g,
-                                     double &b) const
+                                     double &b) const OVERRIDE FINAL
     {
         n_getBackgroundColour(r, g, b);
     }
@@ -308,7 +351,7 @@ public:
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
     virtual bool getSuggestedColour(double &r,
                                     double &g,
-                                    double &b) const
+                                    double &b) const OVERRIDE FINAL
     {
         return n_getSuggestedColour(r, g, b);
     }

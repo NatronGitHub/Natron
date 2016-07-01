@@ -1,6 +1,7 @@
 #!/bin/sh
 set -x
 
+PANDOC="~/.cabal/bin/pandoc"
 NATRON_BIN=${1:-}
 TMP_FOLDER=${2:-}
 DOC_FOLDER=${3:-}
@@ -28,8 +29,8 @@ touch dummy.ntp
 "$NATRON_BIN" --export-docs "$TMP_FOLDER" dummy.ntp
 cd "$TMP_FOLDER" || exit 1
 
-for i in *.md;do pandoc $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
-for i in plugins/*.md;do pandoc $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
+for i in *.md;do $PANDOC $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
+for i in plugins/*.md;do $PANDOC $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
 
 for y in *.rst; do
   if [ ! -f "$DOC_FOLDER/source/${y}" ]; then

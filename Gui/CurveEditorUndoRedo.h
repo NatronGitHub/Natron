@@ -311,7 +311,8 @@ public:
     MoveTangentCommand(CurveWidget* widget,
                        SelectedTangentEnum deriv,
                        const KeyPtr& key,
-                       double dx, double dy,
+                       double dx,
+                       double dy,
                        bool updateOnFirstRedo,
                        QUndoCommand *parent = 0);
 

@@ -13,6 +13,5 @@ Contents:
 
     guide/index.rst
     devel/index.rst
-    _prefs.rst
     _group.rst
 
