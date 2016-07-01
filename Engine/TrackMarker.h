@@ -117,6 +117,10 @@ public:
         return TrackMarkerPtr( new TrackMarker(context) );
     }
 
+    TrackMarkerPtr shared_from_this() {
+        return boost::dynamic_pointer_cast<TrackMarker>(KnobHolder::shared_from_this());
+    }
+
     virtual ~TrackMarker();
 
     void clone(const TrackMarker& other);

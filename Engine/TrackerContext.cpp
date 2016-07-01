@@ -873,8 +873,8 @@ TrackerContext::exportTrackDataFromExportOptions()
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->translate.lock() );
                 } else {
-                    dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->translate.lock(), 0);
-                    dynamic_cast<KnobI*>(isDbl)->slaveTo(1, _imp->translate.lock(), 1);
+                    isDbl->slaveTo(0, _imp->translate.lock(), 0);
+                    isDbl->slaveTo(1, _imp->translate.lock(), 1);
                 }
             }
         }
@@ -886,8 +886,8 @@ TrackerContext::exportTrackDataFromExportOptions()
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->scale.lock() );
                 } else {
-                    dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->scale.lock(), 0);
-                    dynamic_cast<KnobI*>(isDbl)->slaveTo(1, _imp->scale.lock(), 1);
+                    isDbl->slaveTo(0, _imp->scale.lock(), 0);
+                    isDbl->slaveTo(1, _imp->scale.lock(), 1);
                 }
             }
         }
@@ -899,7 +899,7 @@ TrackerContext::exportTrackDataFromExportOptions()
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->rotate.lock() );
                 } else {
-                    dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->rotate.lock(), 0);
+                    isDbl->slaveTo(0, _imp->rotate.lock(), 0);
                 }
             }
         }

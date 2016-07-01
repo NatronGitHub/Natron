@@ -1412,16 +1412,16 @@ RotoContext::resetTransformsCenter(bool doClone,
     if (doTransform) {
         KnobDoublePtr centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 0);
-        dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 1);
+        centerKnob->removeAnimation(ViewSpec::all(), 0);
+        centerKnobremoveAnimation(ViewSpec::all(), 1);
         centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
         centerKnob->endChanges();
     }
     if (doClone) {
         KnobDoublePtr centerKnob = _imp->cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 0);
-        dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 1);
+        centerKnob->removeAnimation(ViewSpec::all(), 0);
+        centerKnob->removeAnimation(ViewSpec::all(), 1);
         centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
         centerKnob->endChanges();
     }

@@ -129,7 +129,6 @@ struct TrackMarkerPrivate
 
 TrackMarker::TrackMarker(const TrackerContextPtr& context)
     : NamedKnobHolder( context->getNode()->getApp() )
-    , boost::enable_shared_from_this<TrackMarker>()
     , _imp( new TrackMarkerPrivate(this, context) )
 {
 }
