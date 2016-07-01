@@ -334,18 +334,20 @@ RotoPaint::initializeKnobs()
     _imp->ui->removeKeyframeButton = removeKeyframe;
 
 
-    boost::shared_ptr<KnobButton> hideTransform = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamHideTransformLabel) );
-    hideTransform->setName(kRotoUIParamHideTransform);
-    hideTransform->setHintToolTip( tr(kRotoUIParamHideTransformHint) );
-    hideTransform->setEvaluateOnChange(false);
-    hideTransform->setSecretByDefault(true);
-    hideTransform->setCheckable(true);
-    hideTransform->setInViewerContextCanHaveShortcut(true);
-    hideTransform->setInViewerContextNewLineActivated(true);
-    hideTransform->setIconLabel(NATRON_IMAGES_PATH "");
-    generalPage->addKnob(hideTransform);
-    addOverlaySlaveParam(hideTransform);
-    _imp->ui->hideTransformHandle = hideTransform;
+    boost::shared_ptr<KnobButton> showTransform = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamShowTransformLabel) );
+    showTransform->setName(kRotoUIParamShowTransform);
+    showTransform->setHintToolTip( tr(kRotoUIParamShowTransformHint) );
+    showTransform->setEvaluateOnChange(false);
+    showTransform->setSecretByDefault(true);
+    showTransform->setCheckable(true);
+    showTransform->setDefaultValue(true);
+    showTransform->setInViewerContextCanHaveShortcut(true);
+    showTransform->setInViewerContextNewLineActivated(true);
+    showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoShowTransformOverlay.png", true);
+    showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoHideTransformOverlay.png", false);
+    generalPage->addKnob(showTransform);
+    addOverlaySlaveParam(showTransform);
+    _imp->ui->showTransformHandle = showTransform;
     // RotoPaint
 
     boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>( this, tr(kRotoUIParamMultiStrokeEnabledLabel) );
@@ -558,7 +560,7 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(rippleEditEnabled);
     addKnobToViewerUI(addKeyframe);
     addKnobToViewerUI(removeKeyframe);
-    addKnobToViewerUI(hideTransform);
+    addKnobToViewerUI(showTransform);
 
     // RotoPaint
     addKnobToViewerUI(multiStroke);
@@ -1073,7 +1075,7 @@ RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRippleEdit, kRotoUIParamRippleEditLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamAddKeyFrame, kRotoUIParamAddKeyFrameLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRemoveKeyframe, kRotoUIParamRemoveKeyframeLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamHideTransform, kRotoUIParamHideTransformLabel, Key_T) );
+    shortcuts->push_back( PluginActionShortcut(kRotoUIParamShowTransform, kRotoUIParamShowTransformLabel, Key_T) );
 
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureOpacity, kRotoUIParamPressureOpacityLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureSize, kRotoUIParamPressureSizeLabel) );
@@ -1113,11 +1115,11 @@ RotoPaint::shouldPreferPluginOverlayOverHostOverlay() const
 bool
 RotoPaint::shouldDrawHostOverlay() const
 {
-    boost::shared_ptr<KnobButton> b = _imp->ui->hideTransformHandle.lock();
+    boost::shared_ptr<KnobButton> b = _imp->ui->showTransformHandle.lock();
     if (!b) {
         return true;
     }
-    return !b->getValue();
+    return b->getValue();
 }
 
 void

@@ -354,6 +354,8 @@
         <file>Resources/Images/merge_xor.png</file>
         <file>Resources/Images/pauseEnabled.png</file>
         <file>Resources/Images/pauseDisabled.png</file>
+        <file>Resources/Images/rotoShowTransformOverlay.png</file>
+        <file>Resources/Images/rotoHideTransformOverlay.png</file>
         <file>Resources/Images/trackerNodeIcon.png</file>
         <file>Resources/Images/trackAllKeyframes.png</file>
         <file>Resources/Images/trackBackwardOff.png</file>
