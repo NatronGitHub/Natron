@@ -175,7 +175,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     }
 
     KnobIPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-    KnobOutputFilePtr outputFileName = outputFileNameKnob ? isKnobOutputFile(outputFileNameKnob) : 0;
+    KnobOutputFilePtr outputFileName = outputFileNameKnob ? isKnobOutputFile(outputFileNameKnob) : KnobOutputFilePtr();
     std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
 
     if ( isViewAware() ) {

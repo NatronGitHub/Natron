@@ -343,22 +343,22 @@ PrecompNode::knobChanged(const KnobIPtr& k,
 {
     bool ret = true;
 
-    if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock().get() ) ) {
+    if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock() ) ) {
         _imp->reloadProject(true);
-    } else if ( k == _imp->editProjectKnob.lock().get() ) {
+    } else if ( k == _imp->editProjectKnob.lock() ) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();
         AppInstancePtr appInstance = getApp()->loadProject(filename);
         Q_UNUSED(appInstance);
-    } else if ( k == _imp->preRenderKnob.lock().get() ) {
+    } else if ( k == _imp->preRenderKnob.lock() ) {
         _imp->launchPreRender();
-    } else if ( k == _imp->outputNodeNameKnob.lock().get() ) {
+    } else if ( k == _imp->outputNodeNameKnob.lock() ) {
         _imp->refreshOutputNode();
-    } else if ( k == _imp->writeNodesKnob.lock().get() ) {
+    } else if ( k == _imp->writeNodesKnob.lock() ) {
         _imp->createReadNode();
         _imp->setFirstAndLastFrame();
-    } else if ( k == _imp->errorBehaviourKnbo.lock().get() ) {
+    } else if ( k == _imp->errorBehaviourKnbo.lock() ) {
         _imp->setReadNodeErrorChoice();
-    } else if ( k == _imp->enablePreRenderKnob.lock().get() ) {
+    } else if ( k == _imp->enablePreRenderKnob.lock() ) {
         _imp->refreshKnobsVisibility();
         _imp->refreshOutputNode();
     } else {

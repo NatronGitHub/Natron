@@ -11340,7 +11340,7 @@ Node::refreshChannelSelectors()
 
         //Get the mask input components
         EffectInstance::ComponentsAvailableMap compsAvailable;
-        std::list<EffectInstance*> markedNodes;
+        std::list<EffectInstancePtr> markedNodes;
         if (node) {
             node->getEffectInstance()->getComponentsAvailable(true, true, time, &compsAvailable, &markedNodes);
         }

@@ -145,7 +145,7 @@ getKeyTime(const KnobIPtr& knob,
         return kOfxStatErrBadIndex;
     }
     OfxKeyFramesSet keyframes;
-    getOfxKeyFrames(knob.get(), keyframes, startDim, endDim);
+    getOfxKeyFrames(knob, keyframes, startDim, endDim);
     if ( nth >= (int)keyframes.size() ) {
         return kOfxStatErrBadIndex;
     }
@@ -167,7 +167,7 @@ getKeyIndex(const KnobIPtr& knob,
 {
     OfxKeyFramesSet keyframes;
 
-    getOfxKeyFrames(knob.get(), keyframes, startDim, endDim);
+    getOfxKeyFrames(knob, keyframes, startDim, endDim);
     int i = 0;
     if (direction == 0) {
         //search for key at indicated time
@@ -768,7 +768,7 @@ OfxIntegerInstance::getKnob() const
 OfxStatus
 OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -1061,7 +1061,7 @@ OfxDoubleInstance::isAnimated() const
 OfxStatus
 OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -1229,7 +1229,7 @@ OfxBooleanInstance::getKnob() const
 OfxStatus
 OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -1491,7 +1491,7 @@ OfxChoiceInstance::getKnob() const
 OfxStatus
 OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -1755,7 +1755,7 @@ OfxRGBAInstance::isAnimated() const
 OfxStatus
 OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -2007,7 +2007,7 @@ OfxRGBInstance::isAnimated() const
 OfxStatus
 OfxRGBInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -2355,7 +2355,7 @@ OfxDouble2DInstance::isAnimated() const
 OfxStatus
 OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys, _startIndex, _startIndex + 2);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
@@ -2616,7 +2616,7 @@ OfxInteger2DInstance::getKnob() const
 OfxStatus
 OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys, _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
@@ -2940,7 +2940,7 @@ OfxDouble3DInstance::isAnimated() const
 OfxStatus
 OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys, _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
@@ -3178,7 +3178,7 @@ OfxInteger3DInstance::getKnob() const
 OfxStatus
 OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
 }
 
 OfxStatus
@@ -3815,7 +3815,7 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
         return nKeys = 0;
     }
 
-    return OfxKeyFrame::getNumKeys(knob.get(), nKeys);
+    return OfxKeyFrame::getNumKeys(knob, nKeys);
 }
 
 OfxStatus
@@ -4092,7 +4092,7 @@ OfxCustomInstance::setEvaluateOnChange()
 OfxStatus
 OfxCustomInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_imp->knob.lock().get(), nKeys);
+    return OfxKeyFrame::getNumKeys(_imp->knob.lock(), nKeys);
 }
 
 OfxStatus

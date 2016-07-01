@@ -239,7 +239,7 @@ OfxParamOverlayInteract::isColorPickerRequired() const
 NatronOverlayInteractSupport::NatronOverlayInteractSupport()
     : _hasColorPicker(false)
     , _lastColorPicker()
-    , _viewport(NULL)
+    , _viewport()
 {
 }
 

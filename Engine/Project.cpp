@@ -785,7 +785,7 @@ Project::initializeKnobs()
     _imp->previewMode->setDefaultValue(autoPreviewEnabled, 0);
 
 
-    _imp->frameRange = AppManager::createKnob<KnobInt>(this, tr("Frame Range"), 2);
+    _imp->frameRange = AppManager::createKnob<KnobInt>(shared_from_this(), tr("Frame Range"), 2);
     _imp->frameRange->setDefaultValue(1, 0);
     _imp->frameRange->setDefaultValue(250, 1);
     _imp->frameRange->setDimensionName(0, "first");
