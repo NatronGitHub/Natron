@@ -948,7 +948,7 @@ GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
     }
 }
 
-ViewerInstance*
+ViewerInstancePtr
 GuiAppInstance::getLastViewerUsingTimeline() const
 {
     QMutexLocker k(&_imp->lastTimelineViewerMutex);

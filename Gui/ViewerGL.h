@@ -380,7 +380,7 @@ public:
      * @brief Returns the cursor position in canonical coordinates
      **/
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    virtual ViewerInstance* getInternalViewerNode() const OVERRIDE FINAL;
+    virtual ViewerInstancePtr getInternalViewerNode() const OVERRIDE FINAL;
 
     /**
      * @brief can only be called on the main-thread

@@ -511,7 +511,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             nodes = collection->getNodes();
         }
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            ViewerInstance* isViewer = (*it)->isEffectViewerInstance();
+            ViewerInstancePtr isViewer = (*it)->isEffectViewerInstance();
             if ( !isViewer || ( isViewer == tab->getInternalNode() ) || !(*it)->isActivated() ) {
                 continue;
             }
@@ -530,7 +530,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         }
     }
 
-    ViewerInstance* internalViewer = tab->getInternalNode();
+    ViewerInstancePtr internalViewer = tab->getInternalNode();
     if (internalViewer) {
         if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
             getApp()->discardLastViewerUsingTimeline();

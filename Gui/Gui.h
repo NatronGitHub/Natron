@@ -129,7 +129,7 @@ public:
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(ViewerInstance* node, TabWidget* where);
+    ViewerTab* addNewViewerTab(const ViewerInstancePtr& node, TabWidget* where);
 
     void addViewerTab(ViewerTab* tab, TabWidget* where);
 
@@ -331,11 +331,11 @@ public:
     void setMasterSyncViewer(ViewerTab* master);
     ViewerTab* getMasterSyncViewer() const;
 
-    void activateViewerTab(ViewerInstance* viewer);
+    void activateViewerTab(const ViewerInstancePtr& viewer);
 
-    void deactivateViewerTab(ViewerInstance* viewer);
+    void deactivateViewerTab(const ViewerInstancePtr& viewer);
 
-    ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
+    ViewerTab* getViewerTabForInstance(const ViewerInstancePtr& node) const;
     const NodesGuiList & getVisibleNodes() const;
     NodesGuiList getVisibleNodes_mt_safe() const;
 

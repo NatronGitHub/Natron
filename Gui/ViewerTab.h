@@ -60,7 +60,7 @@ public:
     explicit ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                        const std::list<NodeGuiPtr>& activePluginsContext,
                        Gui* gui,
-                       ViewerInstance* node,
+                       const ViewerInstancePtr& node,
                        QWidget* parent = 0);
 
     virtual ~ViewerTab() OVERRIDE;

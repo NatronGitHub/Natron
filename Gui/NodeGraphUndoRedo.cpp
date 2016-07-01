@@ -445,7 +445,7 @@ ConnectCommand::undo()
     }
 
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
+    ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -473,7 +473,7 @@ ConnectCommand::redo()
     }
 
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
+    ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -489,7 +489,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
     NodePtr internalDst =  dst->getNode();
     NodePtr internalNewSrc = newSrc ? newSrc->getNode() : NodePtr();
     NodePtr internalOldSrc = oldSrc ? oldSrc->getNode() : NodePtr();
-    ViewerInstance* isViewer = internalDst->isEffectViewerInstance();
+    ViewerInstancePtr isViewer = internalDst->isEffectViewerInstance();
 
 
     if (isViewer) {
@@ -570,7 +570,7 @@ InsertNodeCommand::undo()
         doConnect( _inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber() );
     }
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
+    ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -620,7 +620,7 @@ InsertNodeCommand::redo()
         }
     }
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
+    ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }

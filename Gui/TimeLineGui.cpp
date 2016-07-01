@@ -119,7 +119,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 struct TimelineGuiPrivate
 {
     TimeLineGui *parent;
-    ViewerInstance* viewer;
+#pragma message WARN("ViewerInstanceWPtr or ViewerInstancePtr?")
+    ViewerInstanceWPtr viewer;
     ViewerTab* viewerTab;
     TimeLinePtr timeline; ///< ptr to the internal timeline
     Gui* gui; ///< ptr to the gui

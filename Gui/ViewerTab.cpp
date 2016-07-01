@@ -99,7 +99,7 @@ addSpacer(QBoxLayout* layout)
 ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                      const std::list<NodeGuiPtr>& activePluginsContext,
                      Gui* gui,
-                     ViewerInstance* node,
+                     const ViewerInstancePtr& node,
                      QWidget* parent)
     : QWidget(parent)
     , PanelWidget(this, gui)

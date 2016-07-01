@@ -198,7 +198,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 Q_UNUSED(ok);
             }
         } else {
-            //ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewerInstance();
+            //ViewerInstancePtr isSelectedViewer = selectedNodeInternal->isEffectViewerInstance();
             //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
             /*    position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
                 position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );

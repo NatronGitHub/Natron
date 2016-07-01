@@ -279,7 +279,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
             return;
         }
-        ViewerInstance* isViewer = (*it)->getNode()->isEffectViewerInstance();
+        ViewerInstancePtr isViewer = (*it)->getNode()->isEffectViewerInstance();
         if (isViewer) {
             Dialogs::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
 

@@ -339,7 +339,7 @@ Gui::createViewerGui(const NodePtr& viewer)
     }
     assert(where);
 
-    ViewerInstance* v = viewer->isEffectViewerInstance();
+    ViewerInstancePtr v = viewer->isEffectViewerInstance();
     assert(v);
 
     ViewerTab* tab = addNewViewerTab(v, where);

@@ -49,7 +49,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
-                                   ViewerInstance* node)
+                                   const ViewerInstancePtr& node)
     : publicInterface(publicInterface)
     , viewer(NULL)
     , viewerContainer(NULL)

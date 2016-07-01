@@ -278,7 +278,7 @@ ViewerTab::getViewer() const
     return _imp->viewer;
 }
 
-ViewerInstance*
+ViewerInstancePtr
 ViewerTab::getInternalNode() const
 {
     return _imp->viewerNode.lock();

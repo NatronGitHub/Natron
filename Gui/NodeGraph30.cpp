@@ -392,7 +392,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
 
     n->setUserSelected(true);
 
-    ViewerInstance* isViewer =  n->getNode()->isEffectViewerInstance();
+    ViewerInstancePtr isViewer =  n->getNode()->isEffectViewerInstance();
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
         const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();

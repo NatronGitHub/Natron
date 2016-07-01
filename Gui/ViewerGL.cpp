@@ -319,7 +319,7 @@ ViewerGL::paintGL()
 
         ///Determine whether we need to draw each texture or not
         int activeInputs[2];
-        ViewerInstance* internalViewer = _imp->viewerTab->getInternalNode();
+        ViewerInstancePtr internalViewer = _imp->viewerTab->getInternalNode();
         if (!internalViewer) {
             return;
         }
@@ -1518,7 +1518,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->displayTextures[0].time = time;
         _imp->displayTextures[1].time = time;
     } else {
-        ViewerInstance* internalNode = getInternalNode();
+        ViewerInstancePtr internalNode = getInternalNode();
         _imp->displayTextures[textureIndex].isVisible = true;
         _imp->displayTextures[textureIndex].gain = gain;
         _imp->displayTextures[textureIndex].gamma = gamma;
@@ -1681,7 +1681,7 @@ ViewerGL::clearLastRenderedImage()
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    ViewerInstance* internalNode = getInternalNode();
+    ViewerInstancePtr internalNode = getInternalNode();
 
     for (int i = 0; i < 2; ++i) {
         for (U32 j = 0; j < _imp->displayTextures[i].lastRenderedTiles.size(); ++j) {

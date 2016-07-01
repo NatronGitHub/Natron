@@ -77,7 +77,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
         if ( nearbyNode->getSettingPanel() ) {
             getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
         } else {
-            ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewerInstance();
+            ViewerInstancePtr isViewer = nearbyNode->getNode()->isEffectViewerInstance();
             if (isViewer) {
                 ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
                 assert(viewer);

@@ -176,7 +176,7 @@ public:
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;
-    virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
+    virtual ViewerInstancePtr getLastViewerUsingTimeline() const OVERRIDE FINAL;
 
     void discardLastViewerUsingTimeline();
 

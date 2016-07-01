@@ -290,7 +290,7 @@ Gui::getMasterSyncViewer() const
 }
 
 void
-Gui::activateViewerTab(ViewerInstance* viewer)
+Gui::activateViewerTab(const ViewerInstancePtr& viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
 
@@ -309,7 +309,7 @@ Gui::activateViewerTab(ViewerInstance* viewer)
 }
 
 void
-Gui::deactivateViewerTab(ViewerInstance* viewer)
+Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
     ViewerTab* v = 0;
@@ -333,7 +333,7 @@ Gui::deactivateViewerTab(ViewerInstance* viewer)
 }
 
 ViewerTab*
-Gui::getViewerTabForInstance(ViewerInstance* node) const
+Gui::getViewerTabForInstance(const ViewerInstancePtr& node) const
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
@@ -734,7 +734,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
     if (!node) {
         return;
     }
-    ViewerInstance* isViewer = node->isEffectViewerInstance();
+    ViewerInstancePtr isViewer = node->isEffectViewerInstance();
     if (isViewer) {
         Q_EMIT viewersChanged();
     }
@@ -925,7 +925,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
     }
 
 
-    ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
+    ViewerInstancePtr leadViewer = getApp()->getLastViewerUsingTimeline();
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {

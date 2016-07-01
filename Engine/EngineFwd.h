@@ -365,6 +365,7 @@ typedef boost::weak_ptr<KnobI> KnobIWPtr;
 typedef boost::weak_ptr<KnobString> KnobStringWPtr;
 typedef boost::weak_ptr<Node> NodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;
+typedef boost::weak_ptr<ViewerInstance> ViewerInstanceWPtr;
 typedef std::list<ImagePtr> ImageList;
 typedef std::list<NodePtr> NodesList;
 typedef std::list<NodeWPtr> NodesWList;

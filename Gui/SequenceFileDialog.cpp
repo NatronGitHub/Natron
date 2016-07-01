@@ -2926,7 +2926,7 @@ SequenceFileDialog::createViewerPreviewNode()
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
 
-    ViewerInstance* viewerInstance = _preview->viewerNodeInternal->isEffectViewerInstance();
+    ViewerInstancePtr viewerInstance = _preview->viewerNodeInternal->isEffectViewerInstance();
     assert(viewerInstance);
     if (!viewerInstance) {
         // coverity[dead_error_line]

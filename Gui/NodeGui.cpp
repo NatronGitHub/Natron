@@ -1923,7 +1923,7 @@ NodeGui::hideGui()
         it->second.arrow->hide();
     }
     NodePtr node = getNode();
-    ViewerInstance* isViewer = node->isEffectViewerInstance();
+    ViewerInstancePtr isViewer = node->isEffectViewerInstance();
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (viewerGui) {
