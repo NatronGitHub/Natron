@@ -1055,7 +1055,7 @@ public:
     bool hasAnimatedKnob() const;
 
 
-    void setNodeIsRendering(std::list<NodeWPtr>& nodes);
+    void setNodeIsRendering(NodesWList& nodes);
     void unsetNodeIsRendering();
 
     /**
@@ -1502,7 +1502,7 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
 
-    void setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes);
+    void setNodeIsRenderingInternal(NodesWList& markedNodes);
 
 
     /**
@@ -1578,7 +1578,7 @@ private:
 class RenderingFlagSetter
 {
     NodeWPtr node;
-    std::list<NodeWPtr> nodes;
+    NodesWList nodes;
 
 public:
 

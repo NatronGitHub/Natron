@@ -742,9 +742,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
-        _imp->_diskCache.reset( new Cache<Image>("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
+        _imp->_nodeCache.reset( new ImageCache("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
+        _imp->_diskCache.reset( new ImageCache("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
+        _imp->_viewerCache.reset( new FrameEntryCache("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
         _imp->setViewerCacheTileSize();
     } catch (std::logic_error) {
         // ignore

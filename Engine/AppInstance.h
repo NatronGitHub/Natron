@@ -96,9 +96,9 @@ protected: // parent of GuiAppInstance
     AppInstance(int appID);
 
 public:
-    static boost::shared_ptr<AppInstance> create(int appID) WARN_UNUSED_RETURN
+    static AppInstancePtr create(int appID) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<AppInstance>( new AppInstance(appID) );
+        return AppInstancePtr( new AppInstance(appID) );
     }
 
     virtual ~AppInstance();
@@ -352,7 +352,7 @@ public:
     virtual void closeLoadPRojectSplashScreen() {}
 
     std::string getAppIDString() const;
-    const std::list<NodePtr>& getNodesBeingCreated() const;
+    const NodesList& getNodesBeingCreated() const;
     virtual bool isDraftRenderEnabled() const { return false; }
 
     virtual void setDraftRenderEnabled(bool /*b*/) {}

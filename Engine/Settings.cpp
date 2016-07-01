@@ -1697,7 +1697,7 @@ Settings::setDefaultValues()
 } // setDefaultValues
 
 void
-Settings::warnChangedKnobs(const std::vector<KnobIPtr>& knobs)
+Settings::warnChangedKnobs(const KnobsVec& knobs)
 {
     bool didFontWarn = false;
     bool didOCIOWarn = false;
@@ -1740,7 +1740,7 @@ void
 Settings::saveAllSettings()
 {
     const KnobsVec &knobs = getKnobs();
-    std::vector<KnobIPtr> k( knobs.size() );
+    KnobsVec k( knobs.size() );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         k[i] = knobs[i];
@@ -1846,7 +1846,7 @@ Settings::saveSettings(const KnobsVec& knobs,
     if (pluginSettings) {
         savePluginsSettings();
     }
-    std::vector<KnobIPtr> changedKnobs;
+    KnobsVec changedKnobs;
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);

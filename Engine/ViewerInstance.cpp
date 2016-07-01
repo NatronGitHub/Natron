@@ -1915,7 +1915,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                    boost::bind(&renderFunctor,
                                                viewerRenderRoI,
                                                args,
-                                               this,
+                                               shared_from_this(),
                                                _1) ).waitForFinished();
             }
 

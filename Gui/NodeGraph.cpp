@@ -414,7 +414,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     }
 
     //NodeGroupPtr parentIsGroup = isNodeGroup(node->getGroup());;
-    const std::list<NodePtr>& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
+    const NodesList& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
     bool isTopLevelNodeBeingCreated = false;
     if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
         isTopLevelNodeBeingCreated = true;

@@ -9474,10 +9474,10 @@ Node::canOthersConnectToThisNode() const
 }
 
 void
-Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
+Node::setNodeIsRenderingInternal(NodesWList& markedNodes)
 {
     ///If marked, we alredy set render args
-    for (std::list<NodeWPtr>::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
+    for (NodesWList::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
         if (it->lock().get() == this) {
             return;
         }
@@ -9521,7 +9521,7 @@ RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
 
 RenderingFlagSetter::~RenderingFlagSetter()
 {
-    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesWList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr n = it->lock();
         if (!n) {
             continue;
@@ -9531,7 +9531,7 @@ RenderingFlagSetter::~RenderingFlagSetter()
 }
 
 void
-Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
+Node::setNodeIsRendering(NodesWList& nodes)
 {
     setNodeIsRenderingInternal(nodes);
 }

@@ -86,9 +86,9 @@ private:
     GuiAppInstance(int appID);
 
 public:
-    static boost::shared_ptr<AppInstance> create(int appID) WARN_UNUSED_RETURN
+    static AppInstancePtr create(int appID) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<AppInstance>( new GuiAppInstance(appID) );
+        return AppInstancePtr( new GuiAppInstance(appID) );
     }
 
     virtual ~GuiAppInstance();

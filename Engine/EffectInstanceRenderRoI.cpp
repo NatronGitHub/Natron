@@ -1752,9 +1752,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         //If we have worked on a local swaped image, swap it in the cache
         if (it->second.cacheSwapImage) {
             const CacheAPI* cache = it->second.cacheSwapImage->getCacheAPI();
-            const Cache<Image>* imgCache = dynamic_cast<const Cache<Image>*>(cache);
+            const ImageCache* imgCache = dynamic_cast<const ImageCache*>(cache);
             if (imgCache) {
-                Cache<Image>* ccImgCache = const_cast<Cache<Image>*>(imgCache);
+                ImageCache* ccImgCache = const_cast<ImageCache*>(imgCache);
                 assert(ccImgCache);
                 ccImgCache->swapOrInsert(it->second.cacheSwapImage, it->second.fullscaleImage);
             }

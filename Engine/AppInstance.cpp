@@ -154,7 +154,7 @@ public:
     bool _creatingInternalNode;
 
     //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
-    std::list<NodePtr> _creatingNodeQueue;
+    NodesList _creatingNodeQueue;
 
     //When a node tree is created
     int _creatingTree;
@@ -226,7 +226,7 @@ AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
     _imp->projectBeingLoaded = info;
 }
 
-const std::list<NodePtr>&
+const NodesList&
 AppInstance::getNodesBeingCreated() const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -854,7 +854,7 @@ public:
 
     virtual ~AddCreateNode_RAII()
     {
-        std::list<NodePtr>::iterator found = std::find(_imp->_creatingNodeQueue.begin(), _imp->_creatingNodeQueue.end(), _node);
+        NodesList::iterator found = std::find(_imp->_creatingNodeQueue.begin(), _imp->_creatingNodeQueue.end(), _node);
 
         if ( found != _imp->_creatingNodeQueue.end() ) {
             _imp->_creatingNodeQueue.erase(found);

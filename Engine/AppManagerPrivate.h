@@ -90,9 +90,9 @@ public:
     IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
-    boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache
-    boost::shared_ptr<Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
-    boost::shared_ptr<Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
+    ImageCachePtr  _nodeCache; //< Images cache
+    ImageCachePtr  _diskCache; //< Images disk cache (used by DiskCache nodes)
+    FrameEntryCachePtr _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
     boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app

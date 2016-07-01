@@ -1898,6 +1898,11 @@ private:
 
 };
 
+typedef Cache<Image> ImageCache;
+typedef Cache<FrameEntry> FrameEntryCache;
+typedef boost::shared_ptr<ImageCache> ImageCachePtr;
+typedef boost::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
+
 NATRON_NAMESPACE_EXIT;
 
 
