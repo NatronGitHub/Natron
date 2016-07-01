@@ -290,7 +290,7 @@ struct KnobHelperPrivate
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
 
     ///Pointer to the knobGui interface if it has any
-    boost::weak_ptr<KnobGuiI> gui;
+    KnobGuiIWPtr gui;
     mutable QMutex mustCloneGuiCurvesMutex;
     /// Set to true if gui curves were modified by the user instead of the real internal curves.
     /// If true then when finished rendering, the knob should clone the guiCurves into the internal curves.

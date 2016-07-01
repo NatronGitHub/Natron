@@ -1460,7 +1460,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 {
     bool ret = true;
 
-    if ( knob == _imp->viewsList.get() ) {
+    if ( knob == _imp->viewsList ) {
         /**
          * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
          * The only way to overcome this is to wipe the cache.
@@ -1474,14 +1474,14 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             forceComputeInputDependentDataOnAllTrees();
         }
         Q_EMIT projectViewsChanged();
-    } else if  ( knob == _imp->defaultLayersList.get() ) {
+    } else if  ( knob == _imp->defaultLayersList ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
             forceComputeInputDependentDataOnAllTrees();
         }
-    } else if ( knob == _imp->setupForStereoButton.get() ) {
+    } else if ( knob == _imp->setupForStereoButton ) {
         setupProjectForStereo();
-    } else if ( knob == _imp->formatKnob.get() ) {
+    } else if ( knob == _imp->formatKnob ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
@@ -1504,17 +1504,17 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             }
             Q_EMIT formatChanged(frmt);
         }
-    } else if ( knob == _imp->addFormatKnob.get() ) {
+    } else if ( knob == _imp->addFormatKnob ) {
         Q_EMIT mustCreateFormat();
-    } else if ( knob == _imp->previewMode.get() ) {
+    } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
-    }  else if ( knob == _imp->frameRate.get() ) {
+    }  else if ( knob == _imp->frameRate ) {
         forceComputeInputDependentDataOnAllTrees();
-    } else if ( knob == _imp->frameRange.get() ) {
+    } else if ( knob == _imp->frameRange ) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
-    } else if ( knob == _imp->gpuSupport.get() ) {
+    } else if ( knob == _imp->gpuSupport ) {
 
         refreshOpenGLRenderingFlagOnNodes();
     } else {

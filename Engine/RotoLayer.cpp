@@ -325,7 +325,7 @@ RotoLayer::removeItem(const boost::shared_ptr<RotoItem>& item)
         }
     }
     item->setParentLayer( RotoLayerPtr() );
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( item.get() );
+    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( item.get() );
     if (isStroke) {
         isStroke->disconnectNodes();
     }

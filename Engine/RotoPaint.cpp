@@ -1194,7 +1194,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->ui->cloneOffset.first = _imp->ui->cloneOffset.second = 0;
     } else if ( k == _imp->ui->addKeyframeButton.lock().get() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
             if (!isBezier) {
                 continue;
             }
@@ -1203,7 +1203,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         getNode()->getRotoContext()->evaluateChange();
     } else if ( k == _imp->ui->removeKeyframeButton.lock().get() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
             if (!isBezier) {
                 continue;
             }
@@ -1258,7 +1258,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             ///select all the control points of all selected beziers
             _imp->ui->selectedCps.clear();
             for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-                Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+                BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
                 if (!isBezier) {
                     continue;
                 }
@@ -1679,8 +1679,8 @@ RotoPaint::drawOverlay(double time,
             }
 
 
-            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
+            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
             if (isStroke) {
                 if (_imp->ui->selectedTool != eRotoToolSelectAll) {
                     continue;
@@ -2715,7 +2715,7 @@ RotoPaint::onOverlayPenMotion(double time,
         if ( (_imp->ui->state != eEventStateDraggingControlPoint) && (_imp->ui->state != eEventStateDraggingSelectedControlPoints) ) {
             for (SelectedItems::const_iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
                 int index = -1;
-                Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+                BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
                 if (isBezier) {
                     std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > nb =
                         isBezier->isNearbyControlPoint(pos.x(), pos.y(), cpTol, Bezier::eControlPointSelectionPrefWhateverFirst, &index);

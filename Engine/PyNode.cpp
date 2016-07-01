@@ -177,7 +177,7 @@ ImageLayer::getDisparityRightComponents()
 }
 
 UserParamHolder::UserParamHolder()
-    : _holder(0)
+    : _holder()
 {
 }
 
@@ -189,13 +189,13 @@ UserParamHolder::UserParamHolder(const KnobHolderPtr& holder)
 void
 UserParamHolder::setHolder(const KnobHolderPtr& holder)
 {
-    assert(!_holder);
+    assert(!_holder.lock());
     _holder = holder;
 }
 
 Effect::Effect(const NodePtr& node)
     : Group()
-    , UserParamHolder(node ? node->getEffectInstance() : 0)
+    , UserParamHolder(node ? node->getEffectInstance() : KnobHolderPtr())
     , _node(node)
 {
     if (node) {

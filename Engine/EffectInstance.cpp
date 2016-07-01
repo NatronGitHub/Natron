@@ -2008,7 +2008,7 @@ EffectInstance::transformInputRois(const EffectInstancePtr& self,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputsRoi,
-                                   ReRoutesMap* reroutesMap)
+                                   const ReRoutesMapPtr& reroutesMap)
 {
     if (!inputTransforms) {
         return;

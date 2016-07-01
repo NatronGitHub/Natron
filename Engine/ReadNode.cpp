@@ -373,7 +373,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
                 isSecret = children[foundSep]->getIsSecret();
             }
             if (foundSep < (int)children.size()) {
-                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep].get()));
+                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep]));
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
@@ -393,8 +393,8 @@ ReadNodePrivate::cloneGenericKnobs()
         KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = isKnobChoice( (*it2).get() );
-                KnobChoicePtr serializedIsChoice = isKnobChoice( serializedKnob.get() );;
+                KnobChoicePtr isChoice = isKnobChoice(*it2);
+                KnobChoicePtr serializedIsChoice = isKnobChoice(serializedKnob);;
                 if (isChoice && serializedIsChoice) {
                     const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
                     assert(extraData);
@@ -402,7 +402,7 @@ ReadNodePrivate::cloneGenericKnobs()
                         isChoice->choiceRestoration(serializedIsChoice, extraData);
                     }
                 } else {
-                    (*it2)->clone( serializedKnob.get() );
+                    (*it2)->clone(serializedKnob);
                 }
                 (*it2)->setSecret( serializedKnob->getIsSecret() );
                 if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
@@ -467,7 +467,7 @@ ReadNodePrivate::destroyReadNode()
             }
             if (!isGeneric) {
                 try {
-                    _publicInterface->deleteKnob(it->get(), false);
+                    _publicInterface->deleteKnob(*it, false);
                 } catch (...) {
                     
                 }
@@ -573,7 +573,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 
     for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob().get() );
+            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob() );
             assert(isString);
             if (isString) {
                 filePattern = isString->getValue();
@@ -1175,7 +1175,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
         KnobIPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
         if (hasMetaDatasKnob) {
-            KnobButtonPtr showMetasKnob = isKnobButton( hasMetaDatasKnob.get() );
+            KnobButtonPtr showMetasKnob = isKnobButton(hasMetaDatasKnob);
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

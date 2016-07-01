@@ -445,7 +445,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
         assert( cp && cp->getBezier() && roto && roto->getContext() );
         BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
         assert(curve);
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( curve.get() );
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( curve.get() );
         std::list< CurveDesc >::iterator foundCurve = _curves.end();
         for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
             if (it2->curve == curve) {

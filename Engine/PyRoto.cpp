@@ -557,15 +557,15 @@ Roto::getItemByName(const QString& name) const
     if (!item) {
         return 0;
     }
-    RotoLayer* isLayer = dynamic_cast<RotoLayer*>( item.get() );
+    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
     if (isLayer) {
         return new Layer(item);
     }
-    Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
+    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
     if (isBezier) {
         return new BezierCurve(item);
     }
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( item.get() );
+    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     if (isStroke) {
         return new ItemBase(item);
     }

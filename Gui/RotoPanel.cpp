@@ -1148,7 +1148,7 @@ RotoPanelPrivate::insertItemRecursively(double time,
     RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(item);
 
     if (drawable) {
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( drawable.get() );
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( drawable.get() );
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
         QIcon overlayIcon;
@@ -2891,8 +2891,8 @@ void
 PasteItemUndoCommand::redo()
 {
     if (_mode == ePasteModeCopyToItem) {
-        Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( _targetItem.get() );
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(_targetItem);
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(_targetItem);
         if (isBezier) {
             boost::shared_ptr<Bezier> oldBezier( new Bezier(isBezier->getContext(), isBezier->getScriptName(), isBezier->getParentLayer(), false) );
             oldBezier->createNodes();

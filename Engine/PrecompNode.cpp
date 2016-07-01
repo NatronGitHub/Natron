@@ -553,7 +553,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    KnobOutputFilePtr fileKnob = isKnobOutputFile( fileNameKnob.get() );
+    KnobOutputFilePtr fileKnob = isKnobOutputFile(fileNameKnob);
     if (!fileKnob) {
         return;
     }
@@ -641,8 +641,8 @@ PrecompNodePrivate::setFirstAndLastFrame()
     }
     KnobIPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
     KnobIPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
-    KnobIntPtr firstFrame = isKnobInt( writefirstFrameKnob.get() );
-    KnobIntPtr lastFrame = isKnobInt( writelastFrameKnob.get() );
+    KnobIntPtr firstFrame = isKnobInt(writefirstFrameKnob);
+    KnobIntPtr lastFrame = isKnobInt(writelastFrameKnob);
     if (firstFrame) {
         firstFrameKnob.lock()->setValue( firstFrame->getValue() );
     }

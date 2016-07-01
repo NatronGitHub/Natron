@@ -1838,7 +1838,7 @@ public:
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
-                                   ReRoutesMap* reroutesMap);
+                                   const ReRoutesMapPtr& reroutesMap);
     struct RenderArgs
     {
         RectD rod; //!< the effect's RoD in CANONICAL coordinates

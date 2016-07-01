@@ -3611,7 +3611,7 @@ public:
     }
 };
 
-ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
+ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(const ViewerInstancePtr& viewer)
     : GenericSchedulerThread()
     , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {

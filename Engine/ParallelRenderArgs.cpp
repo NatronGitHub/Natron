@@ -282,7 +282,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                          componentsToRender, //< requested comps
                                                                                          inputPrefDepth,
                                                                                          false,
-                                                                                         effect.get(),
+                                                                                         effect,
                                                                                          renderStorageMode /*returnStorage*/,
                                                                                          time /*callerRenderTime*/) );
 
@@ -495,7 +495,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     if (useTransforms) {
         if (fvRequest->globalData.transforms) {
             fvRequest->globalData.reroutesMap.reset( new ReRoutesMap() );
-            transformInputRois( effect.get(), fvRequest->globalData.transforms, par, nodeRequest->mappedScale, &fvPerRequestData.inputsRoi, fvRequest->globalData.reroutesMap.get() );
+            transformInputRois( effect, fvRequest->globalData.transforms, par, nodeRequest->mappedScale, &fvPerRequestData.inputsRoi, fvRequest->globalData.reroutesMap );
         }
     }
 

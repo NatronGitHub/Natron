@@ -1450,8 +1450,8 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
     double acceptance = 10 * pixelScale.second;
 
     for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        Bezier* isBezier = dynamic_cast<Bezier*>(*it);
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
         assert(isStroke || isBezier);
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
             continue;
