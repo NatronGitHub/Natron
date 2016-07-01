@@ -42,7 +42,7 @@
 NATRON_NAMESPACE_ENTER;
 
 
-TrackerNode::TrackerNode(boost::shared_ptr<Natron::Node> node)
+TrackerNode::TrackerNode(const NodePtr& node)
     : NodeGroup(node)
     , _imp( new TrackerNodePrivate(this) )
 {
@@ -567,7 +567,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
     ctx->onKnobsLoaded();
     
     bool ret = true;
-    if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
+    if ( k == _imp->ui->trackRangeDialogOkButton.lock() ) {
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();
         int last = _imp->ui->trackRangeDialogLastFrame.lock()->getValue();
         int step = _imp->ui->trackRangeDialogStep.lock()->getValue();
@@ -592,68 +592,68 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         OverlaySupportPtr overlay = getCurrentViewportForOverlays();
         ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
-    } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock().get() ) {
+    } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
-    } else if ( k == _imp->ui->selectAllTracksMenuAction.lock().get() ) {
+    } else if ( k == _imp->ui->selectAllTracksMenuAction.lock() ) {
         getNode()->getTrackerContext()->selectAll(TrackerContext::eTrackSelectionInternal);
-    } else if ( k == _imp->ui->removeTracksMenuAction.lock().get() ) {
+    } else if ( k == _imp->ui->removeTracksMenuAction.lock() ) {
         std::list<TrackMarkerPtr > markers;
         TrackerContextPtr context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&markers);
         if ( !markers.empty() ) {
             pushUndoCommand( new RemoveTracksCommand( markers, context ) );
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnTopMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnTopMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(0, 1) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnRightMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnRightMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(1, 0) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnLeftMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnLeftMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(-1, 0) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnBottomMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnBottomMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(0, -1) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->stopTrackingButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->stopTrackingButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onStopButtonClicked();
-    } else if ( ( k == _imp->ui->trackBwButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackBwButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackBwClicked();
-    } else if ( ( k == _imp->ui->trackPrevButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackPrevButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackPrevClicked();
-    } else if ( ( k == _imp->ui->trackFwButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackFwButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackFwClicked();
-    } else if ( ( k == _imp->ui->trackNextButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackNextButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackNextClicked();
-    } else if ( ( k == _imp->ui->trackRangeButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackRangeButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackRangeClicked();
-    } else if ( ( k == _imp->ui->trackAllKeyframesButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackAllKeyframesButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackAllKeyframesClicked();
-    } else if ( ( k == _imp->ui->trackCurrentKeyframeButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackCurrentKeyframeButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackCurrentKeyframeClicked();
-    } else if ( ( k == _imp->ui->clearAllAnimationButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->clearAllAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearAllAnimationClicked();
-    } else if ( ( k == _imp->ui->clearBwAnimationButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->clearBwAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearBwAnimationClicked();
-    } else if ( ( k == _imp->ui->clearFwAnimationButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->clearFwAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearFwAnimationClicked();
-    } else if ( ( k == _imp->ui->updateViewerButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->updateViewerButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onUpdateViewerClicked( _imp->ui->updateViewerButton.lock()->getValue() );
-    } else if ( ( k == _imp->ui->centerViewerButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->centerViewerButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onCenterViewerButtonClicked( _imp->ui->centerViewerButton.lock()->getValue() );
-    } else if ( ( k == _imp->ui->setKeyFrameButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->setKeyFrameButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onSetKeyframeButtonClicked();
-    } else if ( ( k == _imp->ui->removeKeyFrameButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->removeKeyFrameButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onRemoveKeyframeButtonClicked();
-    } else if ( ( k == _imp->ui->resetOffsetButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->resetOffsetButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onResetOffsetButtonClicked();
-    } else if ( ( k == _imp->ui->resetTrackButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->resetTrackButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onResetTrackButtonClicked();
-    } else if ( k == _imp->ui->addTrackButton.lock().get() ) {
+    } else if ( k == _imp->ui->addTrackButton.lock() ) {
         _imp->ui->clickToAddTrackEnabled = _imp->ui->addTrackButton.lock()->getValue();
     } else {
         ret = false;

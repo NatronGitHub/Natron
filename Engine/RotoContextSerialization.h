@@ -63,7 +63,7 @@ class RotoContextSerialization
 public:
 
     RotoContextSerialization()
-        : _baseLayer()
+        : _baseLayer(new RotoLayerSerialization)
         , _selectedItems()
         , _autoKeying(false)
         , _rippleEdit(false)
@@ -109,7 +109,7 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    RotoLayerSerialization _baseLayer;
+    RotoLayerSerializationPtr _baseLayer;
     std::list< std::string > _selectedItems;
     bool _autoKeying;
     bool _rippleEdit;

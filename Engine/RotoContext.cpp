@@ -971,7 +971,7 @@ RotoContext::save(RotoContextSerialization* obj) const
     assert( !_imp->layers.empty() );
 
     ///Serializing this layer will recursively serialize everything
-    _imp->layers.front()->save( boost::dynamic_pointer_cast<RotoItemSerialization>(&obj->_baseLayer) );
+    _imp->layers.front()->save( boost::dynamic_pointer_cast<RotoItemSerialization>(obj->_baseLayer) );
 
     ///the age of the context is not serialized as the images are wiped from the cache anyway
 
@@ -1018,7 +1018,7 @@ RotoContext::load(const RotoContextSerialization & obj)
 
     RotoLayerPtr baseLayer = _imp->layers.front();
 
-    baseLayer->load(obj._baseLayer);
+    baseLayer->load(*(obj._baseLayer));
 
     for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it != obj._selectedItems.end(); ++it) {
         RotoItemPtr item = getItemByName(*it);
@@ -1413,7 +1413,7 @@ RotoContext::resetTransformsCenter(bool doClone,
         KnobDoublePtr centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
         centerKnob->removeAnimation(ViewSpec::all(), 0);
-        centerKnobremoveAnimation(ViewSpec::all(), 1);
+        centerKnob->removeAnimation(ViewSpec::all(), 1);
         centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
         centerKnob->endChanges();
     }

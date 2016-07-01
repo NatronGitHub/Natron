@@ -318,6 +318,7 @@ typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
 typedef boost::shared_ptr<NodeSerialization> NodeSerializationPtr;
 typedef boost::shared_ptr<OfxEffectInstance> OfxEffectInstancePtr;
 typedef boost::shared_ptr<OneViewNode> OneViewNodePtr;
+typedef boost::shared_ptr<OpenGLViewerI> OpenGLViewerIPtr;
 typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<OSGLContextAttacher> OSGLContextAttacherPtr;
 typedef boost::shared_ptr<OutputEffectInstance> OutputEffectInstancePtr;

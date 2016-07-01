@@ -1211,7 +1211,7 @@ TrackMarkerPM::trackMarker(bool forward,
         center->unSlave(i, true);
     }
 
-    trackerNode->getEffectInstance()->onKnobValueChanged_public(button.get(), eValueChangedReasonNatronInternalEdited, frame, ViewIdx(0),
+    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonNatronInternalEdited, frame, ViewIdx(0),
                                                                 true);
 
     KnobDoublePtr markerCenter = getCenterKnob();

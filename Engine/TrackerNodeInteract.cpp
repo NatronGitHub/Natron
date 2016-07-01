@@ -1334,7 +1334,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     std::pair<ImagePtr, RectI> ret = future->result();
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
-    OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
+    OpenGLViewerIPtr isOpenGLViewer = boost::dynamic_pointer_cast<OpenGLViewerI>(overlay);
     assert(isOpenGLViewer);
     if (!isOpenGLViewer) {
         return;
@@ -1372,7 +1372,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
 
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
-    OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
+    OpenGLViewerIPtr isOpenGLViewer = boost::dynamic_pointer_cast<OpenGLViewerI>(overlay);
     assert(isOpenGLViewer);
     if (!isOpenGLViewer) {
         return;
