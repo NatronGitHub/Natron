@@ -1436,7 +1436,7 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
 
 static void
 getOrCreateFromCacheInternal(const ImageKey & key,
-                             const boost::shared_ptr<ImageParams> & params,
+                             const ImageParamsPtr & params,
                              bool useCache,
                              ImagePtr* image)
 {
@@ -1484,7 +1484,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
 {
     assert(image->getStorageMode() == eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
+    ImageParamsPtr params( new ImageParams( *image->getParams() ) );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeRAM;
 
@@ -1511,7 +1511,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 {
     assert(image->getStorageMode() != eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
+    ImageParamsPtr params( new ImageParams( *image->getParams() ) );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
@@ -1688,7 +1688,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
 
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
-                boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
+                ImageParamsPtr oldParams = imageToConvert->getParams();
 
                 assert(imageToConvert->getMipMapLevel() < mipMapLevel);
 
@@ -1714,7 +1714,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
                 //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
 
-                boost::shared_ptr<ImageParams> imageParams = Image::makeParams(rod,
+                ImageParamsPtr imageParams = Image::makeParams(rod,
                                                                                downscaledBounds,
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
@@ -1954,7 +1954,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
         downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true) );
-        boost::shared_ptr<ImageParams> upscaledImageParams = Image::makeParams(rod,
+        ImageParamsPtr upscaledImageParams = Image::makeParams(rod,
                                                                                fullScaleImageBounds,
                                                                                par,
                                                                                0,
@@ -1975,7 +1975,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
         }
     } else {
         ///Cache the image with the requested components instead of the remapped ones
-        boost::shared_ptr<ImageParams> cachedImgParams = Image::makeParams(rod,
+        ImageParamsPtr cachedImgParams = Image::makeParams(rod,
                                                                            downscaleImageBounds,
                                                                            par,
                                                                            mipmapLevel,
@@ -2967,7 +2967,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
         useCache = false;
     }
     const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
-    boost::shared_ptr<ImageParams> params = img->getParams();
+    ImageParamsPtr params = img->getParams();
     EffectInstance::PlaneToRender p;
     bool ok = allocateImagePlane(img->getKey(),
                                  tls->currentRenderArgs.rod,

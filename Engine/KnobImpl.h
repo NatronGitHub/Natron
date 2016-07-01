@@ -1746,7 +1746,7 @@ Knob<T>::unSlaveInternal(int dimension,
         return;
     }
     std::pair<int, KnobIPtr > master = getMaster(dimension);
-    boost::shared_ptr<KnobHelper> masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
+    KnobHelperPtr masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),

@@ -193,12 +193,12 @@ public:
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
+    bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
                           ImagePtr* returnValue) const;
 
     bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
 
-    bool getImageOrCreate_diskCache(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
+    bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
                                     ImagePtr* returnValue) const;
 
     bool getTexture(const FrameKey & key,

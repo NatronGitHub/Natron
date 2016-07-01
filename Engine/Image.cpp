@@ -664,7 +664,7 @@ Image::printUnrenderedPixels(const RectI& roi) const
     // ifdef DEBUG
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params,
+             const ImageParamsPtr& params,
              const CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
     , _useBitmap(true)
@@ -680,7 +680,7 @@ Image::Image(const ImageKey & key,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params)
+             const ImageParamsPtr& params)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
     , _useBitmap(false)
 {
@@ -714,7 +714,7 @@ Image::Image(const ImageComponents& components,
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
-                  boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
+                  ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
                                                                   bounds,
@@ -784,7 +784,7 @@ Image::makeKey(const CacheEntryHolder* holder,
     return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
@@ -800,7 +800,7 @@ Image::makeParams(const RectD & rod,
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -813,7 +813,7 @@ Image::makeParams(const RectD & rod,
                                                            textureTarget) );
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,    // the image rod in canonical coordinates
                   const RectI& bounds,
                   const double par,
@@ -833,7 +833,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -937,7 +937,7 @@ Image::resizeInternal(const Image* srcImg,
                                        srcImg->getFieldingOrder(),
                                        srcImg->usesBitMap() ) );
     } else {
-        boost::shared_ptr<ImageParams> params( new ImageParams( *srcImg->getParams() ) );
+        ImageParamsPtr params( new ImageParams( *srcImg->getParams() ) );
         params->setBounds(merge);
         outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI() ) );
         (*outputImage)->allocateMemory();

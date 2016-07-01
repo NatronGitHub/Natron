@@ -1056,7 +1056,7 @@ SequenceFileDialog::proxyAndSetLineEditText(const QString& text)
 void
 SequenceFileDialog::updateView(const QString &directory)
 {
-    boost::shared_ptr<FileSystemItem> directoryItem = _model->getFileSystemItem(directory);
+    FileSystemItemPtr directoryItem = _model->getFileSystemItem(directory);
 
     assert(directoryItem);
 

@@ -2785,7 +2785,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
 
 
-    boost::shared_ptr<ImageParams> params = Image::makeParams( rotoBbox,
+    ImageParamsPtr params = Image::makeParams( rotoBbox,
                                                                pixelRod,
                                                                1., // par
                                                                mipmapLevel,

@@ -189,7 +189,7 @@ public:
         KnobStringPtr isString = isKnobString(ref);
         KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(ref);
         KnobIntPtr isInt = isKnobInt(ref);
-        boost::shared_ptr<KnobHelper> ret;
+        KnobHelperPtr ret;
         if (isInt) {
             KnobIntPtr intKnb = AppManager::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
             intKnb->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );

@@ -173,7 +173,7 @@ class Image
 public:
 
     Image(const ImageKey & key,
-          const boost::shared_ptr<ImageParams> &  params,
+          const ImageParamsPtr &  params,
           const CacheAPI* cache);
 
 
@@ -194,7 +194,7 @@ public:
 
     //Same as above but parameters are in the ImageParams object
     Image(const ImageKey & key,
-          const boost::shared_ptr<ImageParams>& params);
+          const ImageParamsPtr& params);
 
 
     virtual ~Image();
@@ -214,7 +214,7 @@ public:
                             ViewIdx view,
                             bool draftMode,
                             bool fullScaleWithDownscaleInputs);
-    static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
+    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const double par,
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
@@ -224,7 +224,7 @@ public:
                                                      ImageFieldingOrderEnum fielding,
                                                      StorageModeEnum storage = eStorageModeRAM,
                                                      U32 textureTarget = GL_TEXTURE_2D);
-    static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
+    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const RectI& bounds,
                                                      const double par,
                                                      unsigned int mipMapLevel,
@@ -236,7 +236,7 @@ public:
                                                      StorageModeEnum storage = eStorageModeRAM,
                                                      U32 textureTarget = GL_TEXTURE_2D);
 
-    // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
+    // ImageParamsPtr getParams() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
