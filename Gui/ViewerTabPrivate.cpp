@@ -179,8 +179,8 @@ ViewerTabPrivate::getOverlayTransform(double time,
         //No transfo matrix found, pass to the input...
 
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<EffectInstance*> nonOptionalInputs;
-        std::list<EffectInstance*> optionalInputs;
+        std::list<EffectInstancePtr> nonOptionalInputs;
+        std::list<EffectInstancePtr> optionalInputs;
         int maxInp = currentNode->getMaxInputCount();
 
         ///We cycle in reverse by default. It should be a setting of the application.
@@ -190,9 +190,9 @@ ViewerTabPrivate::getOverlayTransform(double time,
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
-                    optionalInputs.push_back( inp.get() );
+                    optionalInputs.push_back(inp);
                 } else {
-                    nonOptionalInputs.push_back( inp.get() );
+                    nonOptionalInputs.push_back(inp);
                 }
             }
         }
@@ -202,7 +202,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
 
         ///Cycle through all non optional inputs first
-        for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
@@ -213,7 +213,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
 
         ///Cycle through optional inputs...
-        for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+        for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
@@ -284,8 +284,8 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<EffectInstance*> nonOptionalInputs;
-    std::list<EffectInstance*> optionalInputs;
+    std::list<EffectInstancePtr> nonOptionalInputs;
+    std::list<EffectInstancePtr> optionalInputs;
     int maxInp = currentNode->getMaxInputCount();
 
     ///We cycle in reverse by default. It should be a setting of the application.
@@ -295,9 +295,9 @@ ViewerTabPrivate::getTimeTransform(double time,
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
-                optionalInputs.push_back( inp.get() );
+                optionalInputs.push_back(inp);
             } else {
-                nonOptionalInputs.push_back( inp.get() );
+                nonOptionalInputs.push_back(inp);
             }
         }
     }
@@ -307,7 +307,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     ///Cycle through all non optional inputs first
-    for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {

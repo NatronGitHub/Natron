@@ -467,7 +467,7 @@ public:
     int getStep() const;
 
     TimeLinePtr getTimeLine() const;
-    ViewerInstance* getViewer() const;
+    ViewerInstancePtr getViewer() const;
 
     int getNumTracks() const;
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const;
@@ -521,7 +521,7 @@ public:
 
 private Q_SLOTS:
 
-    void doRenderCurrentFrameForViewer(ViewerInstance* viewer);
+    void doRenderCurrentFrameForViewer(const ViewerInstancePtr& viewer);
 
 
 Q_SIGNALS:
@@ -532,7 +532,7 @@ Q_SIGNALS:
 
     void trackingProgress(double progress);
 
-    void renderCurrentFrameForViewer(ViewerInstance* viewer);
+    void renderCurrentFrameForViewer(const ViewerInstancePtr& viewer);
 
 private:
 

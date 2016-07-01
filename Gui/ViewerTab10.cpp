@@ -269,7 +269,7 @@ ViewerTab::abortRendering()
         const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
 
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            ViewerInstance* viewer = (*it)->getInternalNode();
+            ViewerInstancePtr viewer = (*it)->getInternalNode();
             if (viewer) {
                 viewer->getRenderEngine()->abortRenderingNoRestart();
             }
@@ -351,7 +351,7 @@ ViewerTab::abortViewersAndRefresh()
     }
     const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
+        ViewerInstancePtr viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEnginePtr engine = viewer->getRenderEngine();
             if ( engine ) {

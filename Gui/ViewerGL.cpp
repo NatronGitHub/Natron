@@ -205,7 +205,7 @@ ViewerGL::resizeGL(int w,
     glCheckError();
     _imp->ms = eMouseStateUndefined;
     assert(_imp->viewerTab);
-    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
+    ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
 
     bool isLoadingProject = _imp->viewerTab->getGui() &&
@@ -1224,7 +1224,7 @@ ViewerGL::getPboID(int index)
     }
 }
 
-ViewerInstance*
+ViewerInstancePtr
 ViewerGL::getInternalViewerNode() const
 {
     return getInternalNode();
@@ -2729,7 +2729,7 @@ ViewerGL::checkIfViewPortRoIValidOrRender()
     for (int i = 0; i < 2; ++i) {
         if ( !checkIfViewPortRoIValidOrRenderForInput(i) ) {
             if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
-                ViewerInstance* viewer = getInternalNode();
+                ViewerInstancePtr viewer = getInternalNode();
                 assert(viewer);
                 if (viewer) {
                     viewer->getRenderEngine()->abortRenderingAutoRestart();
@@ -3124,7 +3124,7 @@ ViewerGL::setClipToDisplayWindow(bool b)
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         _imp->clipToDisplayWindow = b;
     }
-    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
+    ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if ( viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
@@ -3727,7 +3727,7 @@ ViewerGL::getCurrentView() const
     return _imp->viewerTab->getCurrentView();
 }
 
-ViewerInstance*
+ViewerInstancePtr
 ViewerGL::getInternalNode() const
 {
     return _imp->viewerTab->getInternalNode();

@@ -370,7 +370,7 @@ loadNodeGuiSerialization(Gui* gui,
         }
     }
 
-    ViewerInstance* viewer = nGui->getNode()->isEffectViewerInstance();
+    ViewerInstancePtr viewer = nGui->getNode()->isEffectViewerInstance();
     if (viewer) {
         std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
         if ( found != viewersProjections.end() ) {

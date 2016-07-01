@@ -248,7 +248,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
-    OutputEffectInstance* isOutput = isOutputEffectInstance( internalNode->getEffectInstance() );
+    OutputEffectInstancePtr isOutput = isOutputEffectInstance( internalNode->getEffectInstance() );
     if (isOutput) {
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
@@ -1154,7 +1154,7 @@ NodeGui::changePosition(double dx,
 void
 NodeGui::refreshDashedStateOfEdges()
 {
-    ViewerInstance* viewer = getNode()->isEffectViewerInstance();
+    ViewerInstancePtr viewer = getNode()->isEffectViewerInstance();
 
     if (viewer) {
         int activeInputs[2];
@@ -1838,7 +1838,7 @@ NodeGui::showGui()
             output->doRefreshEdgesGUI();
         }
     }
-    ViewerInstance* viewer = node->isEffectViewerInstance();
+    ViewerInstancePtr viewer = node->isEffectViewerInstance();
     if (viewer) {
         _graph->getGui()->activateViewerTab(viewer);
     } else {

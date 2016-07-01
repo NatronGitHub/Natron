@@ -493,7 +493,7 @@ GuiApp::getViewer(const QString& scriptName) const
         return 0;
     }
 
-    ViewerInstance* viewer = ptr->isEffectViewerInstance();
+    ViewerInstancePtr viewer = ptr->isEffectViewerInstance();
     if (!viewer) {
         return 0;
     }
@@ -554,7 +554,7 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,
 PyViewer::PyViewer(const NodePtr& node)
     : _node(node)
 {
-    ViewerInstance* viewer = node->isEffectViewerInstance();
+    ViewerInstancePtr viewer = node->isEffectViewerInstance();
 
     assert(viewer);
     ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewer->getUiContext() );

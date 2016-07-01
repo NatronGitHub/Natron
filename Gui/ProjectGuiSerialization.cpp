@@ -83,7 +83,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 nodegui->serialize(&state);
                 _serializedNodes.push_back(state);
             }
-            ViewerInstance* viewer = (*it)->isEffectViewerInstance();
+            ViewerInstancePtr viewer = (*it)->isEffectViewerInstance();
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);

@@ -140,7 +140,7 @@ TrackerContext::goToPreviousKeyFrame(int time)
     }
     if (minimum != INT_MIN) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -160,7 +160,7 @@ TrackerContext::goToNextKeyFrame(int time)
     }
     if (maximum != INT_MAX) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -1494,7 +1494,7 @@ struct TrackArgsPrivate
     int start, end;
     int step;
     TimeLinePtr timeline;
-    ViewerInstance* viewer;
+    ViewerInstancePtr viewer;
     boost::shared_ptr<mv::AutoTrack> libmvAutotrack;
     boost::shared_ptr<TrackerFrameAccessor> fa;
     std::vector<boost::shared_ptr<TrackMarkerAndOptions> > tracks;
@@ -1510,7 +1510,7 @@ struct TrackArgsPrivate
         , end(0)
         , step(1)
         , timeline()
-        , viewer(0)
+        , viewer()
         , libmvAutotrack()
         , fa()
         , tracks()
@@ -1628,7 +1628,7 @@ TrackArgs::getTimeLine() const
     return _imp->timeline;
 }
 
-ViewerInstance*
+ViewerInstancePtr
 TrackArgs::getViewer() const
 {
     return _imp->viewer;
@@ -1724,7 +1724,7 @@ TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
     : GenericSchedulerThread()
     , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
 {
-    QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
+    QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstancePtr)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstancePtr)) );
 
     setThreadName("TrackScheduler");
 }
@@ -1771,7 +1771,7 @@ class IsTrackingFlagSetter_RAII
     Q_DECLARE_TR_FUNCTIONS(TrackScheduler)
 
 private:
-    ViewerInstance* _v;
+    ViewerInstancePtr _v;
     EffectInstancePtr _effect;
     TrackScheduler* _base;
     bool _reportProgress;
@@ -1822,7 +1822,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     ThreadStateEnum state = eThreadStateActive;
     TimeLinePtr timeline = args->getTimeLine();
-    ViewerInstance* viewer =  args->getViewer();
+    ViewerInstancePtr viewer =  args->getViewer();
     int end = args->getEnd();
     int start = args->getStart();
     int cur = start;
@@ -1923,7 +1923,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             if (isUpdateViewerOnTrackingEnabled && viewer) {
                 //This will not refresh the viewer since when tracking, renderCurrentFrame()
                 //is not called on viewers, see Gui::onTimeChanged
-                timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
+                timeline->seekFrame(cur, true, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
                 if (enoughTimePassedToReportProgress) {
                     if (doPartialUpdates) {
@@ -1969,7 +1969,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
             tracks[i]->natronMarker->notifyTrackingEnded();
             contextEnabledKnob->blockListenersNotification();
-            contextEnabledKnob->cloneAndUpdateGui( enabledKnob.get() );
+            contextEnabledKnob->cloneAndUpdateGui( enabledKnob );
             contextEnabledKnob->unblockListenersNotification();
             enabledKnob->slaveTo(0, contextEnabledKnob, 0);
         }
@@ -1981,14 +1981,14 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     if ( _imp->paramsProvider->getUpdateViewer() ) {
         //Refresh all viewers to the current frame
-        timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
+        timeline->seekFrame(lastValidFrame, true, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
 
     return state;
 } // >::threadLoopOnce
 
 void
-TrackScheduler::doRenderCurrentFrameForViewer(ViewerInstance* viewer)
+TrackScheduler::doRenderCurrentFrameForViewer(const ViewerInstancePtr& viewer)
 {
     assert( QThread::currentThread() == qApp->thread() );
     viewer->renderCurrentFrame(true);

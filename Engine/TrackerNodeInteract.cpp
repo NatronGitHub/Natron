@@ -119,7 +119,7 @@ TrackerNodeInteract::onTrackRangeClicked()
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int viewerFirst, viewerLast;
     viewer->getUiContext()->getViewerFrameRange(&viewerFirst, &viewerLast);
@@ -211,7 +211,7 @@ TrackerNodeInteract::onTrackBwClicked()
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int first, last;
     viewer->getUiContext()->getViewerFrameRange(&first, &last);
@@ -231,7 +231,7 @@ TrackerNodeInteract::onTrackPrevClicked()
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
     TrackerContextPtr ctx = getContext();
@@ -250,7 +250,7 @@ TrackerNodeInteract::onTrackNextClicked()
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
     TrackerContextPtr ctx = getContext();
@@ -263,7 +263,7 @@ TrackerNodeInteract::onTrackFwClicked()
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int first, last;
     viewer->getUiContext()->getViewerFrameRange(&first, &last);
@@ -861,7 +861,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
     assert(viewer);
 
     if ( isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime) || viewer->getRenderEngine()->isDoingSequentialRender() ) {

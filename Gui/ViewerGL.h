@@ -368,7 +368,7 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    ViewerInstance* getInternalNode() const;
+    ViewerInstancePtr getInternalNode() const;
     ViewerTab* getViewerTab() const;
 
     /**

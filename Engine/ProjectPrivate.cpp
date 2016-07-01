@@ -174,7 +174,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
 
         /// 2) restore the timeline
-        timeline->seekFrame(obj.getCurrentTime(), false, 0, eTimelineChangeReasonOtherSeek);
+        timeline->seekFrame(obj.getCurrentTime(), false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
 
         /// 3) Restore the nodes

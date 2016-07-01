@@ -64,7 +64,7 @@ public:
 
     void seekFrame(SequenceTime frame,
                    bool updateLastCaller,
-                   OutputEffectInstance* caller,
+                   const OutputEffectInstancePtr& caller,
                    TimelineChangeReasonEnum reason);
 
     void incrementCurrentFrame();

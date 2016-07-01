@@ -557,7 +557,7 @@ public:
                                            const libmv::TrackRegionResult* result,
                                            const TrackMarkerPtr& natronMarker);
     static bool trackStepLibMV(int trackIndex, const TrackArgs& args, int time);
-    static bool trackStepTrackerPM(TrackMarkerPM* tracker, const TrackArgs& args, int time);
+    static bool trackStepTrackerPM(const TrackMarkerPMPtr& tracker, const TrackArgs& args, int time);
 
 
     /**

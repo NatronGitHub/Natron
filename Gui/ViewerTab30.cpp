@@ -281,13 +281,13 @@ ViewerTab::getViewer() const
 ViewerInstance*
 ViewerTab::getInternalNode() const
 {
-    return _imp->viewerNode;
+    return _imp->viewerNode.lock();
 }
 
 void
 ViewerTab::discardInternalNodePointer()
 {
-    _imp->viewerNode = 0;
+    _imp->viewerNode.reset(0);
 }
 
 void

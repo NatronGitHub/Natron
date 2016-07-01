@@ -1502,7 +1502,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                     requestedComponents,
                                                                     imageDepth,
                                                                     false /*calledFromGetImage*/,
-                                                                    this,
+                                                                    shared_from_this(),
                                                                     eStorageModeRAM /*returnStorage*/,
                                                                     inArgs.params->time) );
                 retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
@@ -1838,7 +1838,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                 renderFunctor(viewerRenderRoI,
                               args,
-                              this,
+                              shared_from_this(),
                               *it);
             }
         } else {
@@ -1907,7 +1907,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 QReadLocker k(&_imp->gammaLookupMutex);
                 for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                     renderFunctor(viewerRenderRoI,
-                                  args, this, *it);
+                                  args, shared_from_this(), *it);
                 }
             } else {
                 QReadLocker k(&_imp->gammaLookupMutex);

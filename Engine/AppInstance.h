@@ -330,7 +330,7 @@ public:
 
     virtual void setLastViewerUsingTimeline(const NodePtr& /*node*/) {}
 
-    virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
+    virtual ViewerInstancePtr getLastViewerUsingTimeline() const { return ViewerInstancePtr(); }
 
     bool loadPythonScript(const QFileInfo& file);
     virtual void queueRedrawForAllViewers() {}

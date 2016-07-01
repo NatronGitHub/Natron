@@ -66,7 +66,7 @@ public:
     virtual ~ViewerTab() OVERRIDE;
 
 
-    ViewerInstance* getInternalNode() const;
+    ViewerInstancePtr getInternalNode() const;
     void discardInternalNodePointer();
 
     ViewerGL* getViewer() const;

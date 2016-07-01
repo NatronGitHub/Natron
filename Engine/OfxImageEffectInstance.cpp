@@ -1024,7 +1024,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
     bool redrawNeeded = effect->checkIfOverlayRedrawNeeded();
     Q_UNUSED(redrawNeeded);
 
-    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, eTimelineChangeReasonOtherSeek );
+    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek );
 }
 
 /// get the first and last times available on the effect's timeline

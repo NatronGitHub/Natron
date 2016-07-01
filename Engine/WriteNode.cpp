@@ -336,7 +336,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
                 isSecret = children[foundSep]->getIsSecret();
             }
             if (foundSep < (int)children.size()) {
-                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep].get()));
+                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep]));
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
@@ -350,7 +350,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     KnobButtonPtr renderB = renderButtonKnob.lock();
     if (renderB) {
         renderB->setParentKnob( KnobIPtr() );
-        isPage->removeKnob( renderB.get() );
+        isPage->removeKnob( renderB );
         isPage->addKnob(renderB);
     }
 }
@@ -364,8 +364,8 @@ WriteNodePrivate::cloneGenericKnobs()
         KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = isKnobChoice( (*it2).get() );
-                KnobChoicePtr serializedIsChoice = isKnobChoice( serializedKnob.get() );;
+                KnobChoicePtr isChoice = isKnobChoice(*it2);
+                KnobChoicePtr serializedIsChoice = isKnobChoice( serializedKnob );;
                 if (isChoice && serializedIsChoice) {
                     const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
                     assert(extraData);
@@ -373,7 +373,7 @@ WriteNodePrivate::cloneGenericKnobs()
                         isChoice->choiceRestoration(serializedIsChoice, extraData);
                     }
                 } else {
-                    (*it2)->clone( serializedKnob.get() );
+                    (*it2)->clone( serializedKnob );
                 }
                 (*it2)->setSecret( serializedKnob->getIsSecret() );
                 if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
@@ -436,7 +436,7 @@ WriteNodePrivate::destroyWriteNode()
             }
             if (!isGeneric) {
                 try {
-                    _publicInterface->deleteKnob(it->get(), false);
+                    _publicInterface->deleteKnob(*it, false);
                 } catch (...) {
                     
                 }
@@ -481,8 +481,8 @@ WriteNodePrivate::destroyWriteNode()
 void
 WriteNodePrivate::createDefaultWriteNode()
 {
-    NodeGroupPtr isNodeGroup = isNodeGroup( _publicInterface->shared_from_this() );
-    CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isNodeGroup );
+    NodeGroupPtr isGrp = isNodeGroup( _publicInterface->shared_from_this() );
+    CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isGrp );
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
     args.setProperty(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
@@ -537,7 +537,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 
     for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob().get() );
+            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob() );
             assert(isString);
             if (isString) {
                 filePattern = isString->getValue();
@@ -567,7 +567,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobIPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
         assert(originalFrameRangeKnob);
-        KnobIntPtr originalFrameRange = isKnobInt( originalFrameRangeKnob.get() );
+        KnobIntPtr originalFrameRange = isKnobInt( originalFrameRangeKnob );
         if (originalFrameRange) {
             originalFrameRange->setValues(first, last, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         }
@@ -575,7 +575,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobIPtr firstFrameKnob = readNode->getKnobByName(kParamFirstFrame);
         assert(firstFrameKnob);
-        KnobIntPtr firstFrame = isKnobInt( firstFrameKnob.get() );
+        KnobIntPtr firstFrame = isKnobInt( firstFrameKnob );
         if (firstFrame) {
             firstFrame->setValue(first);
         }
@@ -583,7 +583,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobIPtr lastFrameKnob = readNode->getKnobByName(kParamLastFrame);
         assert(lastFrameKnob);
-        KnobIntPtr lastFrame = isKnobInt( lastFrameKnob.get() );
+        KnobIntPtr lastFrame = isKnobInt( lastFrameKnob );
         if (lastFrame) {
             lastFrame->setValue(last);
         }
@@ -595,13 +595,13 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 {
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    NodeGroupPtr isNodeGroup = isNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = isNodeGroup( _publicInterface->shared_from_this() );
     std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     NodePtr writeNode = embeddedPlugin.lock();
 
     readBackNode.reset();
     if ( !readerPluginID.empty() ) {
-        CreateNodeArgs args(readerPluginID, isNodeGroup );
+        CreateNodeArgs args(readerPluginID, isGrp );
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
@@ -659,12 +659,12 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         return;
     }
 
-    NodeGroupPtr isNodeGroup = isNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = isNodeGroup( _publicInterface->shared_from_this() );
     NodePtr input = inputNode.lock(), output = outputNode.lock();
     //NodePtr maskInput;
     assert( (input && output) || (!input && !output) );
     if (!output) {
-        CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isNodeGroup);
+        CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -678,7 +678,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         outputNode = output;
     }
     if (!input) {
-        CreateNodeArgs args(PLUGINID_NATRON_INPUT, isNodeGroup);
+        CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
@@ -730,7 +730,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if ( writerPluginID.empty() ) {
             writerPluginID = WRITE_NODE_DEFAULT_WRITER;
         }
-        CreateNodeArgs args(writerPluginID, isNodeGroup );
+        CreateNodeArgs args(writerPluginID, isGrp );
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalEncoderNode");
@@ -1071,7 +1071,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
     bool ret = true;
     NodePtr writer = _imp->embeddedPlugin.lock();
 
-    if ( ( k == _imp->outputFileKnob.lock().get() ) && (reason != eValueChangedReasonTimeChanged) ) {
+    if ( ( k == _imp->outputFileKnob.lock() ) && (reason != eValueChangedReasonTimeChanged) ) {
         if (_imp->creatingWriteNode) {
             if (writer) {
                 writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
@@ -1102,7 +1102,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         if (hasMaster) {
             slaveAllKnobs(hasMaster->getEffectInstance(), false);
         }
-    } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
+    } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
         if ( entry == pluginIDKnob->getValue() ) {
@@ -1124,7 +1124,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-    } else if ( k == _imp->readBackKnob.lock().get() ) {
+    } else if ( k == _imp->readBackKnob.lock() ) {
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
         KnobButtonPtr button = _imp->renderButtonKnob.lock();

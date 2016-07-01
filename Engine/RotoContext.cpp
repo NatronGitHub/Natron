@@ -1698,7 +1698,7 @@ RotoContext::goToPreviousKeyframe()
 
     if (minimum != INT_MIN) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonOtherSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
 }
 
@@ -1731,7 +1731,7 @@ RotoContext::goToNextKeyframe()
     }
     if (maximum != INT_MAX) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL, eTimelineChangeReasonOtherSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
 }
 

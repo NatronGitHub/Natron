@@ -56,7 +56,7 @@ TimeLine::currentFrame() const
 void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
-                    OutputEffectInstance* caller,
+                    const OutputEffectInstancePtr& caller,
                     TimelineChangeReasonEnum reason)
 {
     if (reason != eTimelineChangeReasonPlaybackSeek) {

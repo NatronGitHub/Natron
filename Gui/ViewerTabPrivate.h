@@ -177,7 +177,8 @@ struct ViewerTabPrivate
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
     ViewerCompositingOperatorEnum compOperatorPrevious;
-    ViewerInstance* viewerNode; // < pointer to the internal node
+#pragma message WARN("viewerNode: ViewerInstanceWPtr or ViewerInstancePtr???")
+    ViewerInstanceWPtr viewerNode; // < pointer to the internal node
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
     bool infobarVisible;
     bool playerVisible;

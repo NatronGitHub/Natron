@@ -2731,7 +2731,7 @@ ViewerDisplayScheduler::timelineGoTo(int time)
 {
     boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
 
-    viewer->getTimeline()->seekFrame(time, false, 0, eTimelineChangeReasonPlaybackSeek);
+    viewer->getTimeline()->seekFrame(time, false, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
 }
 
 int
@@ -2745,8 +2745,8 @@ ViewerDisplayScheduler::getFrameRangeToRender(int &first,
                                               int &last) const
 {
     boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
-    ViewerInstance* leadViewer = viewer->getApp()->getLastViewerUsingTimeline();
-    ViewerInstance* v = leadViewer ? leadViewer : viewer.get();
+    ViewerInstancePtr leadViewer = viewer->getApp()->getLastViewerUsingTimeline();
+    ViewerInstancePtr v = leadViewer ? leadViewer : viewer;
 
     assert(v);
     v->getTimelineBounds(&first, &last);

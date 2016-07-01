@@ -78,6 +78,10 @@ private: // derives from EffectInstance
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN;
 
+    ViewerInstancePtr shared_from_this() {
+        return boost::dynamic_pointer_cast<ViewerInstance>(KnobHolder::shared_from_this());
+    }
+
     virtual ~ViewerInstance();
 
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;

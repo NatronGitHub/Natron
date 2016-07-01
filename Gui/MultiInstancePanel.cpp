@@ -2005,7 +2005,7 @@ TrackerPanelV1::onButtonTriggered(KnobButtonPtr button)
     assert(effect);
     std::list<ViewerInstancePtr> viewers;
     effect->getNode()->hasViewersConnected(&viewers);
-    ViewerInstance* viewer = 0;
+    ViewerInstancePtr viewer;
     if ( !viewers.empty() ) {
         viewer = viewers.front();
     }

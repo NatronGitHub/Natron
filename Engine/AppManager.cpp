@@ -2510,7 +2510,7 @@ AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (instance == NULL) {
+    if (!instance) {
         // instance may be NULL if using OfxDialogSuiteV1
         OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
         instance = tls->lastEffectCallingMainEntry;

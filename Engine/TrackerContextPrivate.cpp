@@ -66,7 +66,7 @@ createDuplicateKnob( const std::string& knobName,
         return boost::shared_ptr<KNOBTYPE>();
     }
     assert(internalNodeKnob);
-    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
     if (otherNode) {
         KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
@@ -974,7 +974,7 @@ TrackerContextPrivate::endLibMVOptionsForTrack(const TrackMarker& marker,
  * @param trackTime The search frame time, that is, the frame to track
  */
 bool
-TrackerContextPrivate::trackStepTrackerPM(TrackMarkerPM* track,
+TrackerContextPrivate::trackStepTrackerPM(const TrackMarkerPMPtr& track,
                                           const TrackArgs& args,
                                           int trackTime)
 {
@@ -1120,7 +1120,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         return;
     }
 
-    ViewerInstance* viewer = 0;
+    ViewerInstancePtr viewer;
     if (overlayInteract) {
         viewer = overlayInteract->getInternalViewerNode();
     }

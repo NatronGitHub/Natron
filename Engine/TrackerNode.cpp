@@ -1501,7 +1501,7 @@ TrackerNode::onOverlayPenDown(double time,
     if (!didSomething) {
         int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
         if (keyTime != INT_MAX) {
-            ViewerInstance* viewer = overlay->getInternalViewerNode();
+            ViewerInstancePtr viewer = overlay->getInternalViewerNode();
             if (viewer) {
                 viewer->getTimeline()->seekFrame(keyTime, true, viewer, eTimelineChangeReasonOtherSeek);
             }
