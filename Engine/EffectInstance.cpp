@@ -814,7 +814,7 @@ EffectInstance::getImage(int inputNb,
 
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
-    OSGLContextPtr glContext;
+    OSGLContextPtr gpuGlContext, cpuGlContext;
     AbortableRenderInfoPtr renderInfo;
     if ( !tls || ( !tls->currentRenderArgs.validArgs && tls->frameArgs.empty() ) ) {
         /*
@@ -845,7 +845,8 @@ EffectInstance::getImage(int inputNb,
             nodeHash = frameRenderArgs->nodeHash;
             duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
             isAnalysisPass = frameRenderArgs->isAnalysis;
-            glContext = frameRenderArgs->openGLContext.lock();
+            gpuGlContext = frameRenderArgs->openGLContext.lock();
+            cpuGlContext = frameRenderArgs->cpuOpenGLContext.lock();
             renderInfo = frameRenderArgs->abortInfo.lock();
         } else {
             //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
@@ -867,7 +868,7 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
-    if ( (!glContext || !renderInfo) && returnStorage == eStorageModeGLTex ) {
+    if ( ((!gpuGlContext && !cpuGlContext) || !renderInfo) && returnStorage == eStorageModeGLTex ) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
 
         return ImagePtr();
@@ -993,8 +994,7 @@ EffectInstance::getImage(int inputNb,
                     }
                 }
 
-                inputImg = attachedStroke->renderMask(components,
-                                                                time, view, depth, mipMapLevel, rotoSrcRod);
+                inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, rotoSrcRod, gpuGlContext ? gpuGlContext : cpuGlContext);
 
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);

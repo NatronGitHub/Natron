@@ -2687,11 +2687,12 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
 
 boost::shared_ptr<Image>
 RotoDrawableItem::renderMask(const ImageComponents& components,
-                                       const double time,
-                                       const ViewIdx view,
-                                       const ImageBitDepthEnum depth,
-                                       const unsigned int mipmapLevel,
-                                       const RectD& rotoNodeSrcRod)
+                             const double time,
+                             const ViewIdx view,
+                             const ImageBitDepthEnum depth,
+                             const unsigned int mipmapLevel,
+                             const RectD& rotoNodeSrcRod,
+                             const OSGLContextPtr& glContext)
 {
     NodePtr node = getContext()->getNode();
     ImagePtr image; // = stroke->getStrokeTimePreview();
@@ -2788,15 +2789,22 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
     rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
 
 
-    boost::shared_ptr<ImageParams> params = Image::makeParams( rotoBbox,
-                                                               pixelRod,
-                                                               1., // par
-                                                               mipmapLevel,
-                                                               false,
-                                                               components,
-                                                               depth,
-                                                               node->getEffectInstance()->getPremult(),
-                                                               node->getEffectInstance()->getFieldingOrder() );
+    boost::shared_ptr<ImageParams> params = Image::makeParams(rotoBbox,
+                                                              pixelRod,
+                                                              1., // par
+                                                              mipmapLevel,
+                                                              false,
+                                                              components,
+                                                              depth,
+                                                              node->getEffectInstance()->getPremult(),
+                                                              node->getEffectInstance()->getFieldingOrder(),
+                                                              glContext ? eStorageModeGLTex : eStorageModeRAM,
+                                                              GL_TEXTURE_2D);
+    CacheEntryStorageInfo& storage = params->getStorageInfo();
+    if (glContext) {
+        storage.isGPUTexture = glContext->isGPUContext();
+    }
+    
     /*
        Lock the image so that other threads wait before they can access it
      */
@@ -2805,7 +2813,7 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
-        std::size_t size = params->getStorageInfo().bounds.area() * params->getStorageInfo().numComponents * params->getStorageInfo().dataTypeSize;
+        std::size_t size = storage.bounds.area() * storage.numComponents * storage.dataTypeSize;
         ss << printAsRAM( size ).toStdString();
         Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
 
@@ -2820,27 +2828,43 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
     ///Does nothing if image is already alloc
     image->allocateMemory();
 
-
-    image = renderMaskInternal_cairo(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+    if (glContext) {
+        image = renderMaskInternal_gl(glContext, startTime, endTime, mbFrameStep, time, inverted, mipmapLevel, strokes, image);
+    } else {
+        image = renderMaskInternal_cairo(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+    }
 
     return image;
 } // RotoDrawableItem::renderMaskFromStroke
 
 boost::shared_ptr<Image>
 RotoDrawableItem::renderMaskInternal_gl(const OSGLContextPtr& glContext,
-                                               const RectI & roi,
-                                               const ImageComponents& components,
-                                               const double startTime,
-                                               const double endTime,
-                                               const double timeStep,
-                                               const double time,
-                                               const bool inverted,
-                                               const ImageBitDepthEnum depth,
-                                               const unsigned int mipmapLevel,
-                                               const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                               const boost::shared_ptr<Image> &image)
+                                        const double startTime,
+                                        const double endTime,
+                                        const double timeStep,
+                                        const double time,
+                                        const bool /*inverted*/,
+                                        const unsigned int mipmapLevel,
+                                        const std::list<std::list<std::pair<Point, double> > >& /*strokes*/,
+                                        const boost::shared_ptr<Image> &image)
 {
-    
+    double shapeColor[3];
+    getColor(time, shapeColor);
+    double opacity = getOpacity(time);
+
+
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
+    assert(isStroke || isBezier);
+    if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+#pragma message WARN("TODO: strokes with OpenGL")
+    } else {
+        ///render the bezier only if finished (closed) and activated
+        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() <= 1 ) ) {
+            RotoContextPrivate::renderBezier_gl(glContext, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel, image);
+        }
+    }
+    return image;
 }
 
 boost::shared_ptr<Image>
@@ -3296,7 +3320,7 @@ RotoContextPrivate::renderBezier_cairo(cairo_t* cr,
         
         RotoContextPrivate::applyAndDestroyMask(cr, mesh);
     }
-} // RotoContextPrivate::renderBezier
+} // RotoContextPrivate::renderBezier_cairo
 
 void
 RotoContextPrivate::renderFeather_old_cairo(const Bezier* bezier,
@@ -3674,6 +3698,38 @@ RotoContextPrivate::renderFeather_cairo(const PolygonData& inArgs, double shapeC
     } // for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); ) 
 } // RotoContextPrivate::renderFeather_cairo
 
+
+template <typename GL>
+void renderBezier_gl_internal_begin(const OSGLContextPtr& glContext, int target, int texID)
+{
+    GLuint fboID = glContext->getFBOId();
+
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, texID );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+    
+
+}
+
+
+template <typename GL>
+void renderBezier_gl_internal_end(int target)
+{
+
+    GL::glBindTexture(target, 0);
+    glCheckError(GL);
+}
+
 template <typename GL>
 void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int vboColorsID, int iboID, unsigned int primitiveType, const void* verticesData, const void* colorsData, const void* idsData, bool uploadVertices = true)
 {
@@ -3708,8 +3764,10 @@ void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int 
 }
 
 void
-RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double /*time*/, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel)
+RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double /*time*/, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel, const boost::shared_ptr<Image> &image)
 {
+
+    assert((image)->getStorageMode() == eStorageModeGLTex);
 
     int vboVerticesID = glContext->getOrCreateVBOVerticesId();
     int vboColorsID = glContext->getOrCreateVBOColorsId();
@@ -3722,6 +3780,15 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
     double mbOpacity = 1. / ((endTime - startTime + 1) / mbFrameStep);
 
     double shapeOpacity = opacity * mbOpacity;
+
+    OSGLContext::RampTypeEnum type = OSGLContext::eRampTypeLinear;
+    boost::shared_ptr<GLShaderBase> rampShader;
+    if (glContext->isGPUContext()) {
+        rampShader = glContext->getOrCreateRampShader<GL_GPU>(type);
+    } else {
+        rampShader = glContext->getOrCreateRampShader<GL_CPU>(type);
+    }
+
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
         double fallOff = bezier->getFeatherFallOff(t);
@@ -3737,6 +3804,17 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
 
         PolygonData data;
         computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
+
+        if (glContext->isGPUContext()) {
+            renderBezier_gl_internal_begin<GL_GPU>(glContext, (image)->getGLTextureTarget(), (image)->getGLTextureID());
+        } else {
+            renderBezier_gl_internal_begin<GL_CPU>(glContext, (image)->getGLTextureTarget(), (image)->getGLTextureID());
+        }
+
+        rampShader->bind();
+        OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity};
+        rampShader->setUniform("fillColor", fillColor);
+        rampShader->setUniform("fallOff", (float)fallOff);
 
         // First upload the feather mesh
         {
@@ -3848,6 +3926,15 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
             }
 
         }
+
+        rampShader->unbind();
+        if (glContext->isGPUContext()) {
+            renderBezier_gl_internal_end<GL_GPU>((image)->getGLTextureTarget());
+        } else {
+            renderBezier_gl_internal_end<GL_CPU>((image)->getGLTextureTarget());
+        }
+
+
         
     }
 } // RotoContextPrivate::renderBezier_gl

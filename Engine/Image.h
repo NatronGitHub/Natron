@@ -251,7 +251,7 @@ public:
     bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output);
 
     template <typename GL>
-    static void applyTextureMapping(const RectI& bounds, const RectI& roi)
+    static void setupGLViewport(const RectI& bounds, const RectI& roi)
     {
         GL::glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
         GL::glMatrixMode(GL_PROJECTION);
@@ -262,6 +262,12 @@ public:
         GL::glMatrixMode(GL_MODELVIEW);
         GL::glLoadIdentity();
         glCheckError(GL);
+    }
+
+    template <typename GL>
+    static void applyTextureMapping(const RectI& bounds, const RectI& roi)
+    {
+        setupGLViewport<GL>(bounds, roi);
 
         // Compute the texture coordinates to match the srcRoi
         Point srcTexCoords[4], vertexCoords[4];

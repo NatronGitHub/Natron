@@ -33,6 +33,7 @@ NATRON_NAMESPACE_ENTER;
 extern const char* fillConstant_FragmentShader;
 extern const char* applyMaskMix_FragmentShader;
 extern const char* copyUnprocessedChannels_FragmentShader;
+extern const char* rotoRamp_FragmentShader;
 
 NATRON_NAMESPACE_EXIT;
 

@@ -202,11 +202,12 @@ public:
     void resetTransformCenter();
 
     boost::shared_ptr<Image> renderMask(const ImageComponents& components,
-                                                  const double time,
-                                                  const ViewIdx view,
-                                                  const ImageBitDepthEnum depth,
-                                                  const unsigned int mipmapLevel,
-                                                  const RectD& rotoNodeSrcRod);
+                                        const double time,
+                                        const ViewIdx view,
+                                        const ImageBitDepthEnum depth,
+                                        const unsigned int mipmapLevel,
+                                        const RectD& rotoNodeSrcRod,
+                                        const OSGLContextPtr& glContext);
 
 private:
 
@@ -223,14 +224,11 @@ private:
                                                 const boost::shared_ptr<Image> &image);
 
     boost::shared_ptr<Image> renderMaskInternal_gl(const OSGLContextPtr& glContext,
-                                                   const RectI & roi,
-                                                   const ImageComponents& components,
                                                    const double startTime,
                                                    const double endTime,
                                                    const double timeStep,
                                                    const double time,
                                                    const bool inverted,
-                                                   const ImageBitDepthEnum depth,
                                                    const unsigned int mipmapLevel,
                                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
                                                    const boost::shared_ptr<Image> &image);

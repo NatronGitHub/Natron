@@ -38,9 +38,11 @@
 
 NATRON_NAMESPACE_ENTER;
 
-template <typename GL>
-class GLShader
+class GLShaderBase
 {
+
+
+
 public:
 
     enum ShaderTypeEnum
@@ -48,6 +50,33 @@ public:
         eShaderTypeVertex,
         eShaderTypeFragment
     };
+
+
+    GLShaderBase()
+    {
+
+    }
+
+    virtual ~GLShaderBase()
+    {
+
+    }
+
+    virtual bool addShader(ShaderTypeEnum type, const char* src, std::string* error = 0) = 0;
+    virtual void bind() = 0;
+    virtual void unbind() = 0;
+    virtual bool link(std::string* error = 0) = 0;
+    virtual U32 getShaderID() const = 0;
+    virtual bool setUniform(const char* name, int value) = 0;
+    virtual bool setUniform(const char* name, float value) = 0;
+    virtual bool setUniform(const char* name, const OfxRGBAColourF& values) = 0;
+
+};
+
+template <typename GL>
+class GLShader : public GLShaderBase
+{
+public:
 
     /**
      * @brief Creates an empty shader. To actually use the shader, you must add a fragment shader and optionnally a vertex shader.
@@ -76,7 +105,7 @@ public:
 
     }
 
-    ~GLShader()
+    virtual ~GLShader()
     {
         if (_vertexAttached) {
             GL::glDetachShader(_shaderID, _vertexID);
@@ -94,7 +123,7 @@ public:
         }
     }
 
-    bool addShader(ShaderTypeEnum type, const char* src, std::string* error = 0)
+    virtual bool addShader(ShaderTypeEnum type, const char* src, std::string* error = 0) OVERRIDE FINAL
     {
         if (_firstTime) {
             _firstTime = false;
@@ -136,12 +165,12 @@ public:
         return true;
     }
 
-    void bind()
+    virtual void bind() OVERRIDE FINAL
     {
         GL::glUseProgram(_shaderID);
     }
 
-    bool link(std::string* error = 0)
+    virtual bool link(std::string* error = 0) OVERRIDE FINAL
     {
         GL::glLinkProgram(_shaderID);
         GLint isLinked;
@@ -157,17 +186,17 @@ public:
         return true;
     }
 
-    void unbind()
+    virtual void unbind() OVERRIDE FINAL
     {
         GL::glUseProgram(0);
     }
 
-    U32 getShaderID() const
+    virtual U32 getShaderID() const OVERRIDE FINAL
     {
         return _shaderID;
     }
 
-    bool setUniform(const char* name, int value)
+    virtual bool setUniform(const char* name, int value) OVERRIDE FINAL
     {
         GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
 
@@ -180,7 +209,7 @@ public:
         return false;
     }
 
-    bool setUniform(const char* name, float value)
+    virtual bool setUniform(const char* name, float value) OVERRIDE FINAL
     {
         GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
 
@@ -193,7 +222,7 @@ public:
         return false;
     }
 
-    bool setUniform(const char* name, const OfxRGBAColourF& values)
+    virtual bool setUniform(const char* name, const OfxRGBAColourF& values) OVERRIDE FINAL
     {
         GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
 

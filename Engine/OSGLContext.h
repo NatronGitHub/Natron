@@ -114,6 +114,39 @@ public:
     template <typename GL>
     boost::shared_ptr<GLShader<GL> > getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
 
+    enum RampTypeEnum
+    {
+        // from http://www.comp-fu.com/2012/01/nukes-smooth-ramp-functions/
+        // linear
+        //y = x
+        // plinear: perceptually linear in rec709
+        //y = pow(x, 3)
+        // smooth: traditional smoothstep
+        //y = x*x*(3 - 2*x)
+        // smooth0: Catmull-Rom spline, smooth start, linear end
+        //y = x*x*(2 - x)
+        // smooth1: Catmull-Rom spline, linear start, smooth end
+        //y = x*(1 + x*(1 - x))
+
+        eRampTypeLinear,
+
+        // plinear: perceptually linear in rec709
+        eRampTypePLinear,
+
+        // smooth0: Catmull-Rom spline, smooth start, linear end
+        eRampTypeEaseIn,
+
+        // smooth1: Catmull-Rom spline, linear start, smooth end
+        eRampTypeEaseOut,
+
+        // smooth: traditional smoothstep
+        eRampTypeSmooth,
+
+    };
+
+    template <typename GL>
+    boost::shared_ptr<GLShader<GL> > getOrCreateRampShader(RampTypeEnum type);
+
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
      **/

@@ -210,9 +210,10 @@ public:
 
     boost::shared_ptr<GLShader<GL> > fillImageShader;
 
-    // One for enabled, one for disabled
     boost::shared_ptr<GLShader<GL> > applyMaskMixShader[4];
     boost::shared_ptr<GLShader<GL> > copyUnprocessedChannelsShader[16];
+
+    boost::shared_ptr<GLShader<GL> > rampShader[5];
 
 };
 
@@ -734,6 +735,68 @@ template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateMaskMixSha
 
 template <typename GL>
 boost::shared_ptr<GLShader<GL> >
+OSGLContext::getOrCreateRampShader(RampTypeEnum type)
+{
+    int shader_i = (int)type;
+
+    ShadersContainer<GL>& shaders = _imp->getShadersContainer<GL>();
+    if (shaders.rampShader[shader_i]) {
+        return shaders.rampShader[shader_i];
+    }
+    shaders.rampShader[shader_i].reset( new GLShader<GL>() );
+
+    std::string fragmentSource;
+
+    switch (type) {
+        case eRampTypeLinear:
+            break;
+        case eRampTypePLinear:
+            fragmentSource += "#define RAMP_P_LINEAR\n";
+            break;
+        case eRampTypeEaseIn:
+            fragmentSource += "#define RAMP_EASE_IN\n";
+            break;
+        case eRampTypeEaseOut:
+            fragmentSource += "#define RAMP_EASE_OUT\n";
+            break;
+        case eRampTypeSmooth:
+            fragmentSource += "#define RAMP_SMOOTH\n";
+            break;
+    }
+
+
+    fragmentSource += std::string(rotoRamp_FragmentShader);
+
+#ifdef DEBUG
+    std::string error;
+    bool ok = shaders.rampShader[shader_i]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    bool ok = shaders.rampShader[shader_i]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+    assert(ok);
+#ifdef DEBUG
+    ok = shaders.rampShader[shader_i]->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shaders.rampShader[shader_i]->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+
+    return shaders.rampShader[shader_i];
+}
+
+template boost::shared_ptr<GLShader<GL_GPU> > OSGLContext::getOrCreateRampShader<GL_GPU>(RampTypeEnum);
+template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateRampShader<GL_CPU>(RampTypeEnum);
+
+
+template <typename GL>
+boost::shared_ptr<GLShader<GL> >
 OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
                                                       bool doG,
                                                       bool doB,
@@ -802,6 +865,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
 
 template boost::shared_ptr<GLShader<GL_GPU> > OSGLContext::getOrCreateCopyUnprocessedChannelsShader<GL_GPU>(bool,bool,bool,bool);
 template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateCopyUnprocessedChannelsShader<GL_CPU>(bool,bool,bool,bool);
+
 
 void
 OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)

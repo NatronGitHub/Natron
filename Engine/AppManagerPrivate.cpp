@@ -595,6 +595,93 @@ typedef void (* GLADcallback)(const char *name, void *funcptr, int len_args, ...
 extern void glad_set_pre_callback(GLADcallback);
 extern void glad_set_post_callback(GLADcallback);
 extern gladGLversionStruct GLVersion;
+
+extern int GLAD_GL_ARB_vertex_buffer_object;
+extern int GLAD_GL_ARB_framebuffer_object;
+extern int GLAD_GL_ARB_pixel_buffer_object;
+extern int GLAD_GL_ARB_vertex_array_object;
+extern int GLAD_GL_ARB_texture_float;
+extern int GLAD_GL_EXT_framebuffer_object;
+
+typedef GLboolean (* PFNGLISRENDERBUFFEREXTPROC)(GLuint renderbuffer);
+extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbufferEXT;
+extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbuffer;
+
+typedef void (* PFNGLBINDRENDERBUFFEREXTPROC)(GLenum target, GLuint renderbuffer);
+extern PFNGLBINDRENDERBUFFEREXTPROC glad_glBindRenderbufferEXT;
+extern PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer;
+
+typedef void (* PFNGLDELETERENDERBUFFERSEXTPROC)(GLsizei n, const GLuint* renderbuffers);
+extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffersEXT;
+extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffers;
+
+
+typedef void (* PFNGLGENRENDERBUFFERSEXTPROC)(GLsizei n, GLuint* renderbuffers);
+extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffersEXT;
+extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffers;
+    
+typedef void (* PFNGLRENDERBUFFERSTORAGEEXTPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorageEXT;
+extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorage;
+
+typedef void (* PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC)(GLenum target, GLenum pname, GLint* params);
+extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameterivEXT;
+extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameteriv;
+
+
+typedef void (* PFNGLBINDFRAMEBUFFEREXTPROC)(GLenum target, GLuint framebuffer);
+extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebufferEXT;
+extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebuffer;
+
+
+typedef GLboolean (* PFNGLISFRAMEBUFFEREXTPROC)(GLuint framebuffer);
+extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebufferEXT;
+extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebuffer;
+
+
+typedef void (* PFNGLDELETEFRAMEBUFFERSEXTPROC)(GLsizei n, const GLuint* framebuffers);
+extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffersEXT;
+extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffers;
+
+
+typedef void (* PFNGLGENFRAMEBUFFERSEXTPROC)(GLsizei n, GLuint* framebuffers);
+extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffersEXT;
+extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffers;
+
+
+typedef GLenum (* PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)(GLenum target);
+extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatusEXT;
+extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatus;
+
+
+typedef void (* PFNGLFRAMEBUFFERTEXTURE1DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1DEXT;
+extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1D;
+
+
+typedef void (* PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2DEXT;
+extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2D;
+
+
+typedef void (* PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3DEXT;
+extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3D;
+
+
+typedef void (* PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbufferEXT;
+extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbuffer;
+
+
+typedef void (* PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)(GLenum target, GLenum attachment, GLenum pname, GLint* params);
+extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameterivEXT;
+extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameteriv;
+
+typedef void (* PFNGLGENERATEMIPMAPEXTPROC)(GLenum target);
+extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmapEXT;
+extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmap;
+
 }
 
 void
@@ -611,11 +698,33 @@ AppManagerPrivate::initGl()
     glad_set_post_callback(post_gl_call);
 #endif
 
+    bool glLoaded = gladLoadGL();
 
-    if ( !gladLoadGL() ||
-        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0)) {
+    // If only EXT_framebuffer is present and not ARB link functions
+    if (glLoaded && GLAD_GL_EXT_framebuffer_object && !GLAD_GL_ARB_framebuffer_object) {
+        glad_glIsRenderbuffer = glad_glIsRenderbufferEXT;
+        glad_glBindRenderbuffer = glad_glBindRenderbufferEXT;
+        glad_glDeleteRenderbuffers = glad_glDeleteRenderbuffersEXT;
+        glad_glGenRenderbuffers = glad_glGenRenderbuffersEXT;
+        glad_glRenderbufferStorage = glad_glRenderbufferStorageEXT;
+        glad_glGetRenderbufferParameteriv = glad_glGetRenderbufferParameterivEXT;
+        glad_glBindFramebuffer = glad_glBindFramebufferEXT;
+        glad_glIsFramebuffer = glad_glIsFramebufferEXT;
+        glad_glDeleteFramebuffers = glad_glDeleteFramebuffersEXT;
+        glad_glGenFramebuffers = glad_glGenFramebuffersEXT;
+        glad_glCheckFramebufferStatus = glad_glCheckFramebufferStatusEXT;
+        glad_glFramebufferTexture1D = glad_glFramebufferTexture1DEXT;
+        glad_glFramebufferTexture2D = glad_glFramebufferTexture2DEXT;
+        glad_glFramebufferTexture3D = glad_glFramebufferTexture3DEXT;
+        glad_glFramebufferRenderbuffer = glad_glFramebufferRenderbufferEXT;
+        glad_glGetFramebufferAttachmentParameteriv = glad_glGetFramebufferAttachmentParameterivEXT;
+        glad_glGenerateMipmap = glad_glGenerateMipmapEXT;
+    }
+
+    if ( !glLoaded ||
+        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0) || !GLAD_GL_ARB_vertex_buffer_object || (!GLAD_GL_ARB_framebuffer_object && !GLAD_GL_EXT_framebuffer_object) || !GLAD_GL_ARB_pixel_buffer_object || !GLAD_GL_ARB_vertex_array_object || !GLAD_GL_ARB_texture_float) {
         missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
-        missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
+        missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object, (GL_ARB_framebuffer_object or GL_EXT_framebuffer_object),GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
         QString glVersion = appPTR->getOpenGLVersion();
         if (!glVersion.isEmpty()) {

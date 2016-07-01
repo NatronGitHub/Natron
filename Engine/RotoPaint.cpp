@@ -1728,7 +1728,7 @@ RotoPaint::drawOverlay(double time,
                     continue;
                 }
 
-                std::list< ParametricPoint > points;
+                std::vector< ParametricPoint > points;
                 isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      100,
@@ -1747,13 +1747,13 @@ RotoPaint::drawOverlay(double time,
                 GL_GPU::glColor4dv(curveColor);
 
                 GL_GPU::glBegin(GL_LINE_STRIP);
-                for (std::list<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
+                for (std::vector<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     GL_GPU::glVertex2f(it2->x, it2->y);
                 }
                 GL_GPU::glEnd();
 
                 ///draw the feather points
-                std::list< ParametricPoint > featherPoints;
+                std::vector< ParametricPoint > featherPoints;
                 RectD featherBBox( std::numeric_limits<double>::infinity(),
                                    std::numeric_limits<double>::infinity(),
                                    -std::numeric_limits<double>::infinity(),
@@ -1775,7 +1775,7 @@ RotoPaint::drawOverlay(double time,
                         GL_GPU::glLineStipple(2, 0xAAAA);
                         GL_GPU::glEnable(GL_LINE_STIPPLE);
                         GL_GPU::glBegin(GL_LINE_STRIP);
-                        for (std::list<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
+                        for (std::vector<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
                             GL_GPU::glVertex2f(it2->x, it2->y);
                         }
                         GL_GPU::glEnd();

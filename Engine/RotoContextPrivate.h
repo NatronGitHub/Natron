@@ -2235,7 +2235,7 @@ public:
     static void renderInternalShape_cairo(const PolygonData& inArgs,
                                           double shapeColor[3],  cairo_pattern_t * mesh);
 
-    static void renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
+    static void renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel, const boost::shared_ptr<Image> &image);
 
 
 
