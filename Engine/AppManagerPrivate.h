@@ -157,8 +157,20 @@ public:
     bool pluginsUseInputImageCopyToRender;
 
     // True if we can use OpenGL
-    bool hasRequiredOpenGLVersionAndExtensions;
-    QString missingOpenglError;
+    struct OpenGLRequirementsData
+    {
+        QString error;
+        bool hasRequirements;
+
+        OpenGLRequirementsData()
+        : error()
+        , hasRequirements(false)
+        {
+
+        }
+    };
+    std::map<OpenGLRequirementsTypeEnum, OpenGLRequirementsData> glRequirements;
+    bool glHasTextureFloat;
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
 
@@ -205,7 +217,7 @@ public:
     void createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd);
 #endif
 
-    void initGl();
+    void initGl(bool checkRenderingReq);
 
     void initGLAPISpecific();
 

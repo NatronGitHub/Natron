@@ -601,7 +601,7 @@ AppInstance::loadInternal(const CLArgs& cl,
 
     if (getAppID() == 0) {
         QString missingOpenGLError;
-        if ( !appPTR->hasPlatformNecessaryOpenGLRequirements(&missingOpenGLError) ) {
+        if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeViewer, &missingOpenGLError) ) {
             throw std::runtime_error( missingOpenGLError.toStdString() );
         }
     }

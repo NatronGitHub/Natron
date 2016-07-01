@@ -600,7 +600,8 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
 
-    if (_imp->hasInitializedOpenGLFunctions && _imp->hasRequiredOpenGLVersionAndExtensions) {
+    bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
+    if (_imp->hasInitializedOpenGLFunctions && hasGLForRendering) {
         OSGLContext::getGPUInfos(_imp->openGLRenderers);
         for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
             qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
@@ -657,38 +658,64 @@ AppManager::isOpenGLLoaded() const
 }
 
 bool
+AppManager::isTextureFloatSupported() const
+{
+    return _imp->glHasTextureFloat;
+}
+
+bool
+AppManager::hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* missingOpenGLError ) const
+{
+    std::map<OpenGLRequirementsTypeEnum,AppManagerPrivate::OpenGLRequirementsData>::const_iterator found =  _imp->glRequirements.find(type);
+    assert(found != _imp->glRequirements.end());
+    if (found == _imp->glRequirements.end()) {
+        return false;
+    }
+    if (missingOpenGLError && !found->second.hasRequirements) {
+        *missingOpenGLError = found->second.error;
+    }
+    return found->second.hasRequirements;
+}
+
+bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
         OSGLContextPtr glContext;
+        bool checkRenderingReq = true;
         if (createOpenGLContext) {
             try {
                 _imp->initGLAPISpecific();
 
                 glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
-                if (!glContext) {
-                    return false;
+                if (glContext) {
+                    // Make the context current and check its version
+                    glContext->setContextCurrentNoRender();
                 }
-                // Make the context current and check its version
-                glContext->setContextCurrentNoRender();
+
+
             } catch (const std::exception& e) {
                 std::cerr << "Error while loading OpenGL: " << e.what() << std::endl;
-                std::cerr << "OpenGL rendering is disabled. Viewer will probably not function properly." << std::endl;
-
-                return false;
+                std::cerr << "OpenGL rendering is disabled. " << std::endl;
+                AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+                data.hasRequirements = false;
+                data.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
+                checkRenderingReq = false;
             }
         }
         // The following requires a valid OpenGL context to be created
-        _imp->initGl();
+        _imp->initGl(checkRenderingReq);
         if (createOpenGLContext) {
-            if (_imp->hasRequiredOpenGLVersionAndExtensions) {
+            if (hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
                 try {
                     OSGLContext::checkOpenGLVersion();
                 } catch (const std::exception& e) {
-                    if ( !_imp->missingOpenglError.isEmpty() ) {
-                        _imp->missingOpenglError = QString::fromUtf8( e.what() );
+                    AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+                    data.hasRequirements = false;
+                    if ( !data.error.isEmpty() ) {
+                        data.error = QString::fromUtf8( e.what() );
                     }
                 }
             }
@@ -3195,15 +3222,6 @@ AppManager::getAppTLS() const
     return &_imp->globalTLS;
 }
 
-bool
-AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) const
-{
-    if (missingOpenGLError) {
-        *missingOpenGLError = _imp->missingOpenglError;
-    }
-
-    return _imp->hasRequiredOpenGLVersionAndExtensions;
-}
 
 QString
 AppManager::getOpenGLVersion() const

@@ -703,8 +703,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     OSGLContextPtr glContext;
     try {
         glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
-    } catch (const std::exception& e) {
-        qDebug() << e.what();
+    } catch (const std::exception& /*e*/) {
+
     }
 
     _openGLContext = glContext;
