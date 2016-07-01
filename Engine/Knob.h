@@ -59,7 +59,7 @@ class KnobSignalSlotHandler
 {
     Q_OBJECT
 
-    boost::weak_ptr<KnobI> k;
+    KnobIWPtr k;
 
 public:
 
@@ -412,7 +412,7 @@ public:
             : isExpr(false), isListening(false), targetDim(-1) {}
     };
 
-    typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
+    typedef std::map<KnobIWPtr, std::vector<ListenerDim> > ListenerDimsMap;
 
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory

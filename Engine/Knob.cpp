@@ -254,7 +254,7 @@ struct KnobHelperPrivate
     int inViewerContextAddNewLine;
     std::string inViewerContextLabel;
     bool inViewerContextHasShortcut;
-    boost::weak_ptr<KnobI> parentKnob;
+    KnobIWPtr parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
     std::vector<bool> enabled, defaultEnabled;
@@ -2596,7 +2596,7 @@ KnobHelper::setExpressionInvalid(int dimension,
                 }
             }
             if (!haveOtherExprInvalid) {
-                holder->getApp()->removeInvalidExpressionKnob(this);
+                holder->getApp()->removeInvalidExpressionKnob( shared_from_this() );
             }
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_expressionChanged(dimension);
@@ -6112,7 +6112,7 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(const KnobHolderPtr& holder
                                                      int dimension,
                                                      bool declaredByPlugin)
     : KnobStringBase(holder, description, dimension, declaredByPlugin)
-    , _animation( new StringAnimationManager(this) )
+    , _animation( new StringAnimationManager( shared_from_this() ) )
 {
 }
 

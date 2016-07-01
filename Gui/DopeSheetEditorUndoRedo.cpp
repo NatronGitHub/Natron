@@ -49,7 +49,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
 ////////////////////////// Helpers //////////////////////////

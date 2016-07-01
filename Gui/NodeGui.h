@@ -253,7 +253,7 @@ public:
 
     void markInputNull(Edge* e);
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & getKnobs() const;
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & getKnobs() const;
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 

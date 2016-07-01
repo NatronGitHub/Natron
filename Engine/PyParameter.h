@@ -47,7 +47,7 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 class Param
 {
 protected:
-    boost::weak_ptr<KnobI> _knob;
+    KnobIWPtr _knob;
 
 public:
 
@@ -1129,7 +1129,7 @@ class PageParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobPage> _pageKnob;
+    KnobPageWPtr _pageKnob;
 
 public:
 
@@ -1147,7 +1147,7 @@ class ParametricParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobParametric> _parametricKnob;
+    KnobParametricWPtr _parametricKnob;
 
 public:
 

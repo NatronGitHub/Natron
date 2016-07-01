@@ -83,7 +83,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 // Typedefs
 typedef std::set<double> TimeSet;
 typedef std::pair<double, double> FrameRange;
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
 // Constants
@@ -2108,9 +2108,9 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             times.insert(found->second.second);
         }
 
-        const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
+        const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-        for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
+        for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin();
              it != knobs.end();
              ++it) {
             const KnobGuiPtr& knobGui = (*it).second;
@@ -2950,9 +2950,9 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
 
     if (nodeType == eDopeSheetItemTypeCommon) {
         if ( _imp->model->isPartOfGroup(dsNode) ) {
-            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
+            const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
 
-            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+            for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
                 KnobIPtr knob = knobIt->first.lock();
                 const KnobGuiPtr& knobGui = knobIt->second;
                 connect( knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),

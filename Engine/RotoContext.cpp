@@ -1010,7 +1010,7 @@ RotoContext::load(const RotoContextSerialization & obj)
     _imp->featherLink = obj._featherLink;
     _imp->rippleEdit = obj._rippleEdit;
 
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+    for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         it->lock()->setDefaultAllDimensionsEnabled(false);
     }
 
@@ -1193,7 +1193,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
 
         const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
         for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
-            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            for (std::list<KnobIWPtr >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
                 KnobIPtr thisKnob = it2->lock();
                 if ( thisKnob->getName() == (*it)->getName() ) {
                     //Clone current state
@@ -1235,7 +1235,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
         KnobIPtr sourceTypeKnob = _imp->sourceTypeKnob.lock();
         KnobIPtr timeOffsetKnob = _imp->timeOffsetKnob.lock();
         KnobIPtr timeOffsetModeKnob = _imp->timeOffsetModeKnob.lock();
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             KnobIPtr k = it->lock();
             if (!k) {
                 continue;
@@ -1251,7 +1251,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                 bool mustDisable = false;
                 if (nbStrokeWithoutCloneFunctions) {
                     bool isCloneKnob = false;
-                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->cloneKnobs.begin(); it2 != _imp->cloneKnobs.end(); ++it2) {
+                    for (std::list<KnobIWPtr >::iterator it2 = _imp->cloneKnobs.begin(); it2 != _imp->cloneKnobs.end(); ++it2) {
                         if (it2->lock() == k) {
                             isCloneKnob = true;
                         }
@@ -1260,7 +1260,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                 }
                 if (nbUnlockedBeziers && !mustDisable) {
                     bool isStrokeKnob = false;
-                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->strokeKnobs.begin(); it2 != _imp->strokeKnobs.end(); ++it2) {
+                    for (std::list<KnobIWPtr >::iterator it2 = _imp->strokeKnobs.begin(); it2 != _imp->strokeKnobs.end(); ++it2) {
                         if (it2->lock() == k) {
                             isStrokeKnob = true;
                         }
@@ -1269,7 +1269,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                 }
                 if (nbUnlockedStrokes && !mustDisable) {
                     bool isBezierKnob = false;
-                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->shapeKnobs.begin(); it2 != _imp->shapeKnobs.end(); ++it2) {
+                    for (std::list<KnobIWPtr >::iterator it2 = _imp->shapeKnobs.begin(); it2 != _imp->shapeKnobs.end(); ++it2) {
                         if (it2->lock() == k) {
                             isBezierKnob = true;
                         }
@@ -1300,7 +1300,7 @@ RotoContext::onSelectedKnobCurveChanged()
 
     if (handler) {
         KnobIPtr knob = handler->getKnob();
-        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        for (std::list<KnobIWPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             KnobIPtr k = it->lock();
             if ( k->getName() == knob->getName() ) {
                 k->clone(knob);
@@ -1349,7 +1349,7 @@ RotoContext::deselectInternal(RotoItemPtr b)
 
         const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
         for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
-            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            for (std::list<KnobIWPtr >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
                 KnobIPtr knob = it2->lock();
                 if ( knob->getName() == (*it)->getName() ) {
                     //Clone current state
@@ -1388,7 +1388,7 @@ RotoContext::deselectInternal(RotoItemPtr b)
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
 
     if ( (nbBeziersUnLockedBezier == 0) || (nbStrokesUnlocked == 0) ) {
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             KnobIPtr k = it->lock();
             if (!k) {
                 continue;
@@ -1452,16 +1452,16 @@ RotoContext::resetTransformInternal(const KnobDoublePtr& translate,
 {
     std::list<KnobIPtr> knobs;
 
-    knobs.push_back( translate.get() );
-    knobs.push_back( scale.get() );
-    knobs.push_back( center.get() );
-    knobs.push_back( rotate.get() );
-    knobs.push_back( skewX.get() );
-    knobs.push_back( skewY.get() );
-    knobs.push_back( scaleUniform.get() );
-    knobs.push_back( skewOrder.get() );
+    knobs.push_back(translate);
+    knobs.push_back(scale);
+    knobs.push_back(center);
+    knobs.push_back(rotate);
+    knobs.push_back(skewX);
+    knobs.push_back(skewY);
+    knobs.push_back(scaleUniform);
+    knobs.push_back(skewOrder);
     if (extraMatrix) {
-        knobs.push_back( extraMatrix.get() );
+        knobs.push_back(extraMatrix);
     }
     bool wasEnabled = translate->isEnabled(0);
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -1965,7 +1965,7 @@ RotoContext::onItemLockedChanged(const RotoItemPtr& item,
     bool dirty = nbBeziersUnLockedBezier > 1;
     bool enabled = nbBeziersUnLockedBezier > 0;
 
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+    for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         if (!knob) {
             continue;

@@ -1352,10 +1352,10 @@ public:
     boost::weak_ptr<KnobDouble> customOffsetKnob, globalCustomOffsetKnob;
 #endif
 
-    std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
-    std::list<boost::weak_ptr<KnobI> > cloneKnobs;
-    std::list<boost::weak_ptr<KnobI> > strokeKnobs;
-    std::list<boost::weak_ptr<KnobI> > shapeKnobs;
+    std::list<KnobIWPtr > knobs; //< list for easy access to all knobs
+    std::list<KnobIWPtr > cloneKnobs;
+    std::list<KnobIWPtr > strokeKnobs;
+    std::list<KnobIWPtr > shapeKnobs;
 
     ///This keeps track  of the items linked to the context knobs
     std::list<RotoItemPtr > selectedItems;

@@ -1305,7 +1305,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
         for (KnobsVec::const_iterator it2 = trackKnobs.begin(); it2 != trackKnobs.end(); ++it2) {
             // Find the knob in the TrackerContext knobs
             KnobIPtr found;
-            for (std::list<boost::weak_ptr<KnobI> >::iterator it3 = perTrackKnobs.begin(); it3 != perTrackKnobs.end(); ++it3) {
+            for (std::list<KnobIWPtr >::iterator it3 = perTrackKnobs.begin(); it3 != perTrackKnobs.end(); ++it3) {
                 KnobIPtr k = it3->lock();
                 if ( k->getName() == (*it2)->getName() ) {
                     found = k;

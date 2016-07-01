@@ -2223,7 +2223,7 @@ AppInstance::removeInvalidExpressionKnob(const KnobIConstPtr& knob)
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
     for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if (it->lock().get() == knob) {
+        if (it->lock() == knob) {
             _imp->invalidExprKnobs.erase(it);
             break;
         }

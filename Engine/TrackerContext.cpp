@@ -725,7 +725,7 @@ TrackerContext::endSelection(TrackSelectionReason reason)
         _imp->markersToSlave.clear();
 
 
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr >::iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
             KnobIPtr k = it->lock();
             if (!k) {
                 continue;

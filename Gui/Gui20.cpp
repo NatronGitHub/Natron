@@ -790,7 +790,7 @@ Gui::sortAllPluginsToolButtons()
 }
 
 ToolButton*
-Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
+Gui::findOrCreateToolButton(const PluginGroupNodePtr & plugin)
 {
     if ( !plugin->getIsUserCreatable() && plugin->getChildren().empty() ) {
         return 0;
@@ -844,7 +844,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
             ToolButton* othersGroup = findExistingToolButton( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
             QStringList grouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
             QStringList iconGrouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH) );
-            boost::shared_ptr<PluginGroupNode> othersToolButton =
+            PluginGroupNodePtr othersToolButton =
                 appPTR->findPluginToolButtonOrCreate(grouping,
                                                      QString::fromUtf8(PLUGIN_GROUP_DEFAULT),
                                                      iconGrouping,

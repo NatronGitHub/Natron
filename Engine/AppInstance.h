@@ -302,7 +302,7 @@ public:
 public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
-    void removeInvalidExpressionKnob(const KnobI* knob);
+    void removeInvalidExpressionKnob(const KnobIConstPtr& knob);
     void recheckInvalidExpressions();
 
     virtual void clearViewersLastRenderedTexture() {}

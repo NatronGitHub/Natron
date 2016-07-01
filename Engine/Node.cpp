@@ -454,7 +454,7 @@ public:
 #endif
 
     boost::weak_ptr<KnobInt> frameIncrKnob;
-    boost::weak_ptr<KnobPage> nodeSettingsPage;
+    KnobPageWPtr nodeSettingsPage;
     KnobStringWPtr nodeLabelKnob;
     boost::weak_ptr<KnobBool> previewEnabledKnob;
     boost::weak_ptr<KnobBool> disableNodeKnob;
@@ -465,7 +465,7 @@ public:
     KnobStringWPtr inputChangedCallback;
     KnobStringWPtr nodeCreatedCallback;
     KnobStringWPtr nodeRemovalCallback;
-    boost::weak_ptr<KnobPage> infoPage;
+    KnobPageWPtr infoPage;
     KnobStringWPtr nodeInfos;
     boost::weak_ptr<KnobButton> refreshInfoButton;
     boost::weak_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported;

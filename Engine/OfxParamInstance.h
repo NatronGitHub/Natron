@@ -773,7 +773,7 @@ public:
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
-    boost::weak_ptr<KnobPage> _pageKnob;
+    KnobPageWPtr _pageKnob;
 };
 
 
@@ -974,7 +974,7 @@ public:
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 
-    boost::weak_ptr<KnobParametric> _knob;
+    KnobParametricWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT;

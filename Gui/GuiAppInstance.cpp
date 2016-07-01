@@ -105,7 +105,7 @@ struct RotoPaintData
 
 struct KnobDnDData
 {
-    boost::weak_ptr<KnobI> source;
+    KnobIWPtr source;
     int sourceDimension;
     QDrag* drag;
 };
@@ -156,7 +156,7 @@ struct GuiAppInstancePrivate
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
-    void findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n);
+    void findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n);
 };
 
 GuiAppInstance::GuiAppInstance(int appID)
@@ -233,11 +233,11 @@ GuiAppInstance::isClosing() const
 }
 
 void
-GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n)
+GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n)
 {
     _gui->findOrCreateToolButton(n);
-    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    const std::list<PluginGroupNodePtr>& children = n->getChildren();
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         findOrCreateToolButtonRecursive(*it);
     }
 }
@@ -264,8 +264,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
-    for (std::list<boost::shared_ptr<PluginGroupNode>  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+    const std::list<PluginGroupNodePtr> & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
+    for (std::list<PluginGroupNodePtr  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
         _imp->findOrCreateToolButtonRecursive(*it);
     }
     _imp->_gui->sortAllPluginsToolButtons();

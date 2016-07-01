@@ -83,19 +83,19 @@ public:
     void centerOn(double xmin, double xmax);
     void centerOn(double xmin, double xmax, double ymin, double ymax);
 
-    void addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve);
+    void addCurveAndSetColor(const CurveGuiPtr& curve);
 
     void removeCurve(CurveGui* curve);
 
-    void centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves);
+    void centerOn(const std::vector<CurveGuiPtr > & curves);
 
-    void showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGui> > & curves);
+    void showCurvesAndHideOthers(const std::vector<CurveGuiPtr > & curves);
 
-    void getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const;
+    void getVisibleCurves(std::vector<CurveGuiPtr >* curves) const;
 
     void setSelectedKeys(const SelectedKeys & keys);
 
-    bool isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const;
+    bool isSelectedKey(const CurveGuiPtr& curve, double time) const;
 
     void refreshSelectedKeysAndUpdate();
 
@@ -248,7 +248,7 @@ private:
     const QFont & getFont() const;
     const SelectedKeys & getSelectedKeyFrames() const;
 
-    void addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, double yCurve);
+    void addKey(const CurveGuiPtr& curve, double xCurve, double yCurve);
 
 private:
 

@@ -357,14 +357,14 @@ public:
 
     TrackerContext * _publicInterface; // can not be a smart ptr
     boost::weak_ptr<Node> node;
-    std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
+    std::list<KnobIWPtr > perTrackKnobs;
 
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     boost::weak_ptr<KnobBool> usePatternMatching;
     boost::weak_ptr<KnobChoice> patternMatchingScore;
 #endif
 
-    boost::weak_ptr<KnobPage> trackingPageKnob;
+    KnobPageWPtr trackingPageKnob;
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
@@ -379,7 +379,7 @@ public:
     boost::weak_ptr<KnobBool> exportLink;
     boost::weak_ptr<KnobButton> exportButton;
     NodeWPtr transformNode, cornerPinNode;
-    boost::weak_ptr<KnobPage> transformPageKnob;
+    KnobPageWPtr transformPageKnob;
     boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
     boost::weak_ptr<KnobChoice> transformType, motionType;
     boost::weak_ptr<KnobBool> robustModel;

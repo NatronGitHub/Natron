@@ -1467,8 +1467,8 @@ DockablePanel::setKeyOnAllParameters()
         KnobIPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
-                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
+                for (std::list<CurveGuiPtr >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     AddKeysCommand::KeyToAdd k;
                     KeyFrame kf;
                     kf.setTime(time);
@@ -1510,16 +1510,16 @@ DockablePanel::setKeyOnAllParameters()
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
-    std::map< boost::shared_ptr<CurveGui>, std::vector<KeyFrame > > keysToRemove;
+    std::map< CurveGuiPtr, std::vector<KeyFrame > > keysToRemove;
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         KnobIPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
+                std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
 
-                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                for (std::list<CurveGuiPtr >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
                     std::vector<KeyFrame > vect;
                     for (KeyFrameSet::const_iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {

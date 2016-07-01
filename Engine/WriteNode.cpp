@@ -202,7 +202,7 @@ public:
     KnobStringWPtr pluginIDStringKnob;
     boost::weak_ptr<KnobSeparator> separatorKnob;
     boost::weak_ptr<KnobButton> renderButtonKnob;
-    std::list<boost::weak_ptr<KnobI> > writeNodeKnobs;
+    std::list<KnobIWPtr > writeNodeKnobs;
 
     //MT only
     int creatingWriteNode;
@@ -297,7 +297,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     if (!isPage) {
         return;
     }
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
         isPage->removeKnob(knob);
@@ -312,7 +312,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     }
     if (index != -1) {
         ++index;
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
@@ -409,7 +409,7 @@ WriteNodePrivate::destroyWriteNode()
 
             //If it is a knob of this WriteNode, ignore it
             bool isWriteNodeKnob = false;
-            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+            for (std::list<KnobIWPtr >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
                 if (it2->lock() == *it) {
                     isWriteNodeKnob = true;
                     break;

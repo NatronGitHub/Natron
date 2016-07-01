@@ -92,7 +92,7 @@ public:
 
     KnobIPtr getKnobForItem(TableItem* item, int* dimension) const;
     Gui* getGui() const;
-    virtual void setIconForButton(KnobButton* /*knob*/)
+    virtual void setIconForButton(const KnobButtonPtr& /*knob*/)
     {
     }
 
@@ -160,7 +160,7 @@ protected:
 
 private:
 
-    virtual void onButtonTriggered(KnobButton* button);
+    virtual void onButtonTriggered(const KnobButtonPtr& button);
 
     void resetInstances(const std::list<Node*> & instances);
 

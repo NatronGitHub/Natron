@@ -45,14 +45,14 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > KnobsGuiMapping;
+typedef std::list<std::pair<KnobIWPtr, KnobGuiPtr> > KnobsGuiMapping;
 
 struct KnobPageGui
 {
     QWidget* tab;
     int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
-    boost::weak_ptr<KnobPage> pageKnob;
+    KnobPageWPtr pageKnob;
     QGridLayout* gridLayout;
 
     KnobPageGui()
@@ -66,7 +66,7 @@ struct KnobPageGui
 };
 
 typedef boost::shared_ptr<KnobPageGui> KnobPageGuiPtr;
-typedef std::map<boost::weak_ptr<KnobPage>, KnobPageGuiPtr> PagesMap;
+typedef std::map<KnobPageWPtr, KnobPageGuiPtr> PagesMap;
 
 /**
  * @brief Helper class to handle signal/slots so we do not make KnobGuiContainerHelper inherit QObject.

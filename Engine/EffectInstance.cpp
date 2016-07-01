@@ -4761,7 +4761,7 @@ EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
 bool
 EffectInstance::isOverlaySlaveParam(const KnobIConstPtr& knob) const
 {
-    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
+    for (std::list<KnobIWPtr >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
         KnobIPtr k = it->lock();
         if (!k) {
             continue;

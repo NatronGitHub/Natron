@@ -66,7 +66,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, boost::shared_ptr<DSNode> > TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
@@ -1477,9 +1477,9 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nodeGui = nodeGui;
 
     // Create dope sheet knobs
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
+    for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
         KnobIPtr knob = it->first.lock();
         if (!knob) {

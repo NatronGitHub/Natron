@@ -417,7 +417,7 @@ CurveWidgetPrivate::drawCurves()
     assert( QGLContext::currentContext() == _widget->context() );
 
     //now draw each curve
-    std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
+    std::vector<CurveGuiPtr > visibleCurves;
     _widget->getVisibleCurves(&visibleCurves);
     int count = (int)visibleCurves.size();
 
@@ -662,7 +662,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
 
 bool
 CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
-                                     boost::shared_ptr<CurveGui>* curve,
+                                     CurveGuiPtr* curve,
                                      KeyFrame* key,
                                      bool* hasPrevKey,
                                      KeyFrame* prevKey,
@@ -1001,7 +1001,7 @@ CurveWidgetPrivate::isNearbyTimelineBtmPoly(const QPoint & pt) const
  * @brief Selects the curve given in parameter and deselects any other curve in the widget.
  **/
 void
-CurveWidgetPrivate::selectCurve(const boost::shared_ptr<CurveGui>& curve)
+CurveWidgetPrivate::selectCurve(const CurveGuiPtr& curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1154,7 +1154,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     double maxRight = INT_MAX;
     double epsilon = clampToIntegers ? 1 : 1e-4;
     bool canMoveY = true;
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
 
     for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         if ( canMoveY && !it->first->isYComponentMovable() ) {

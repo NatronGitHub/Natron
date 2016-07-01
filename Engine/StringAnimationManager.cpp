@@ -65,7 +65,7 @@ struct StringAnimationManagerPrivate
     mutable QMutex keyframesMutex;
     Keyframes keyframes;
 #pragma message WARN("KnobIPtr or KnobIWPtr?")
-    KnobIWConstPtr knob;
+    KnobIConstWPtr knob;
 
     StringAnimationManagerPrivate(const KnobIConstPtr& knob)
         : customInterpolation(NULL)
@@ -161,7 +161,11 @@ StringAnimationManager::customInterpolation(double time,
         OFX::Host::Property::propSpecEnd
     };
     OFX::Host::Property::Set inArgs(inArgsSpec);
-    inArgs.setStringProperty( kOfxPropName, _imp->knob->getName() );
+    KnobIConstPtr knob = _imp->knob.lock();
+    assert(knob);
+    if (knob) {
+        inArgs.setStringProperty( kOfxPropName, knob->getName() );
+    }
     inArgs.setDoubleProperty(kOfxPropTime, time);
 
     inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value, 0);

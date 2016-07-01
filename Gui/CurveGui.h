@@ -157,7 +157,7 @@ private:
     bool _selected; /// is this curve selected
 };
 
-typedef std::list<boost::shared_ptr<CurveGui> > Curves;
+typedef std::list<CurveGuiPtr > Curves;
 
 class KnobCurveGui
     : public CurveGui

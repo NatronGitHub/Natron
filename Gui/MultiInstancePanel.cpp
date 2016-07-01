@@ -238,7 +238,7 @@ public:
                                                                                    ref->getLabel(), ref->getDimension(), declaredByPlugin);
             ///set the name prior to calling setIconForButton
             btn->setName( ref->getName() );
-            publicInterface->setIconForButton( btn.get() );
+            publicInterface->setIconForButton(btn);
             ret = btn;
         } else if ( isKnobPage(ref) ) {
             ret = AppManager::createKnob<KnobPage>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
@@ -1653,7 +1653,7 @@ MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
 }
 
 void
-MultiInstancePanel::onButtonTriggered(KnobButtonPtr button)
+MultiInstancePanel::onButtonTriggered(const KnobButtonPtr& button)
 {
     std::list<Node*> selectedInstances;
 
@@ -1894,7 +1894,7 @@ TrackerPanelV1::initializeExtraKnobs()
 }
 
 void
-TrackerPanelV1::setIconForButton(KnobButtonPtr knob)
+TrackerPanelV1::setIconForButton(const KnobButtonPtr& knob)
 {
     const std::string name = knob->getName();
 
@@ -1995,7 +1995,7 @@ TrackerPanelV1::onAverageTracksButtonClicked()
 } // onAverageTracksButtonClicked
 
 void
-TrackerPanelV1::onButtonTriggered(KnobButtonPtr button)
+TrackerPanelV1::onButtonTriggered(const KnobButtonPtr& button)
 {
     std::string name = button->getName();
 

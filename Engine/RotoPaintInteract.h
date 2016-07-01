@@ -538,7 +538,7 @@ struct RotoPaintInteract
 
 
     //////// Toolbar
-    boost::weak_ptr<KnobPage> toolbarPage;
+    KnobPageWPtr toolbarPage;
     boost::weak_ptr<KnobGroup> selectedToolRole;
     boost::weak_ptr<KnobButton> selectedToolAction;
     boost::weak_ptr<KnobGroup> selectToolGroup;

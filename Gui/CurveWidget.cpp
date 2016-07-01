@@ -65,7 +65,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 bool
-CurveWidget::isSelectedKey(const boost::shared_ptr<CurveGui>& curve,
+CurveWidget::isSelectedKey(const CurveGuiPtr& curve,
                            double time) const
 {
     SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.find(curve);
@@ -154,7 +154,7 @@ CurveWidget::initializeGL()
 }
 
 void
-CurveWidget::addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve)
+CurveWidget::addCurveAndSetColor(const CurveGuiPtr& curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -187,7 +187,7 @@ CurveWidget::removeCurve(CurveGui *curve)
 }
 
 void
-CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
+CurveWidget::centerOn(const std::vector<CurveGuiPtr > & curves)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -199,7 +199,7 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
     bool doCenter = false;
     RectD ret;
     for (U32 i = 0; i < curves.size(); ++i) {
-        const boost::shared_ptr<CurveGui>& c = curves[i];
+        const CurveGuiPtr& c = curves[i];
         KeyFrameSet keys = c->getKeyFrames();
 
         if ( keys.empty() ) {
@@ -232,13 +232,13 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
 }
 
 void
-CurveWidget::showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGui> > & curves)
+CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGuiPtr > & curves)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    for (std::list<boost::shared_ptr<CurveGui> >::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        std::vector<boost::shared_ptr<CurveGui> >::const_iterator it2 = std::find(curves.begin(), curves.end(), *it);
+    for (std::list<CurveGuiPtr >::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
+        std::vector<CurveGuiPtr >::const_iterator it2 = std::find(curves.begin(), curves.end(), *it);
 
         if ( it2 != curves.end() ) {
             (*it)->setVisible(true);
@@ -299,12 +299,12 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
 }
 
 void
-CurveWidget::getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const
+CurveWidget::getVisibleCurves(std::vector<CurveGuiPtr >* curves) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    for (std::list<boost::shared_ptr<CurveGui> >::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
+    for (std::list<CurveGuiPtr >::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
             curves->push_back(*it);
         }
@@ -492,7 +492,7 @@ CurveWidget::resizeGL(int width,
 
     if (!_imp->zoomOrPannedSinceLastFit) {
         ///find out what are the selected curves and center on them
-        std::vector<boost::shared_ptr<CurveGui> > curves;
+        std::vector<CurveGuiPtr > curves;
         getVisibleCurves(&curves);
         if ( curves.empty() ) {
             centerOn(-10, 500, -10, 10);
@@ -631,7 +631,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     ///If the click is on a curve but not nearby a keyframe, add a keyframe
 
 
-    boost::shared_ptr<CurveGui> selectedKeyCurve;
+    CurveGuiPtr selectedKeyCurve;
     KeyFrame selectedKey, selectedKeyPrev, selectedKeyNext;
     bool selectedKeyHasPrev, selectedKeyHasNext;
     bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
@@ -845,7 +845,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     }
     ////
     // is the click near a keyframe manipulator?
-    boost::shared_ptr<CurveGui> selectedKeyCurve;
+    CurveGuiPtr selectedKeyCurve;
     KeyFrame selectedKey, selectedKeyPrev, selectedKeyNext;
     bool selectedKeyHasPrev, selectedKeyHasNext;
     bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
@@ -1070,7 +1070,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     } else {
         //if there's a keyframe handle nearby
 
-        boost::shared_ptr<CurveGui> selectedKeyCurve;
+        CurveGuiPtr selectedKeyCurve;
         KeyFrame selectedKey, selectedKeyPrev, selectedKeyNext;
         bool selectedKeyHasPrev, selectedKeyHasNext;
         bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
@@ -1182,7 +1182,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingTimeline:
         _imp->_gui->setDraftRenderEnabled(true);
         _imp->_gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
+        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, OutputEffectInstancePtr(),  eTimelineChangeReasonCurveEditorSeek );
         break;
     case eEventStateZooming: {
         if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
@@ -1667,7 +1667,7 @@ CurveWidget::deleteSelectedKeyFrames()
 
     //apply the same strategy than for moveSelectedKeyFrames()
 
-    std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> >  toRemove;
+    std::map<CurveGuiPtr, std::vector<KeyFrame> >  toRemove;
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
         std::vector<KeyFrame>& vect = toRemove[it->first];
         for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1703,7 +1703,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    boost::shared_ptr<CurveGui> curve;
+    CurveGuiPtr curve;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         if ( (*it)->isSelected() ) {
             curve = (*it);
@@ -1783,7 +1783,7 @@ CurveWidget::loopSelectedCurve()
         return;
     }
 
-    boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
+    CurveGuiPtr curve = ce->getSelectedCurve();
     if (!curve) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the view.").toStdString() );
 
@@ -1826,7 +1826,7 @@ CurveWidget::negateSelectedCurve()
     if (!ce) {
         return;
     }
-    boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
+    CurveGuiPtr curve = ce->getSelectedCurve();
     if (!curve) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the view.").toStdString() );
 
@@ -1859,7 +1859,7 @@ CurveWidget::reverseSelectedCurve()
     if (!ce) {
         return;
     }
-    boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
+    CurveGuiPtr curve = ce->getSelectedCurve();
     if (!curve) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the view.").toStdString() );
 
@@ -1882,7 +1882,7 @@ CurveWidget::frameSelectedCurve()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    std::vector<boost::shared_ptr<CurveGui> > selection;
+    std::vector<CurveGuiPtr > selection;
     _imp->_selectionModel->getSelectedCurves(&selection);
     centerOn(selection);
     if ( selection.empty() ) {
@@ -2017,9 +2017,9 @@ CurveWidget::exportCurveToAscii()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    std::vector<boost::shared_ptr<CurveGui> > curves;
+    std::vector<CurveGuiPtr > curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
+        KnobCurveGuiPtr isKnobCurve = boost::dynamic_pointer_cast<KnobCurveGui>(*it);
         if ( (*it)->isVisible() && isKnobCurve ) {
             KnobIPtr knob = isKnobCurve->getInternalKnob();
             KnobStringBasePtr isString = isKnobStringBase(knob);
@@ -2042,7 +2042,7 @@ CurveWidget::exportCurveToAscii()
         double x = dialog.getXStart();
         double end = dialog.getXEnd();
         double incr = dialog.getXIncrement();
-        std::map<int, boost::shared_ptr<CurveGui> > columns;
+        std::map<int, CurveGuiPtr > columns;
         dialog.getCurveColumns(&columns);
 
         for (U32 i = 0; i < curves.size(); ++i) {
@@ -2069,7 +2069,7 @@ CurveWidget::exportCurveToAscii()
 
         for (double i = x; i <= end; i += incr) {
             for (int c = 0; c < columnsCount; ++c) {
-                std::map<int, boost::shared_ptr<CurveGui> >::const_iterator foundCurve = columns.find(c);
+                std::map<int, CurveGuiPtr >::const_iterator foundCurve = columns.find(c);
                 if ( foundCurve != columns.end() ) {
                     QString str = QString::number(foundCurve->second->evaluate(true, i), 'f', 10);
                     ts << str;
@@ -2095,7 +2095,7 @@ CurveWidget::importCurveFromAscii()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    std::vector<boost::shared_ptr<CurveGui> > curves;
+    std::vector<CurveGuiPtr > curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
         if ( (*it)->isVisible() && isKnobCurve ) {
@@ -2127,7 +2127,7 @@ CurveWidget::importCurveFromAscii()
 
         double x = dialog.getXStart();
         double incr = dialog.getXIncrement();
-        std::map<int, boost::shared_ptr<CurveGui> > columns;
+        std::map<int, CurveGuiPtr > columns;
         dialog.getCurveColumns(&columns);
         assert( !columns.empty() );
 
@@ -2146,7 +2146,7 @@ CurveWidget::importCurveFromAscii()
         QFile file( dialog.getFilePath() );
         file.open(QIODevice::ReadOnly);
         QTextStream ts(&file);
-        std::map<boost::shared_ptr<CurveGui>, std::vector<double> > curvesValues;
+        std::map<CurveGuiPtr, std::vector<double> > curvesValues;
         ///scan the file to get the curve values
         while ( !ts.atEnd() ) {
             QString line = ts.readLine();
@@ -2187,13 +2187,13 @@ CurveWidget::importCurveFromAscii()
                 return;
             }
 
-            for (std::map<int, boost::shared_ptr<CurveGui> >::const_iterator col = columns.begin(); col != columns.end(); ++col) {
+            for (std::map<int, CurveGuiPtr >::const_iterator col = columns.begin(); col != columns.end(); ++col) {
                 if ( col->first >= (int)values.size() ) {
                     Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("One of the curve column index is not a valid index for the given file.").toStdString() );
 
                     return;
                 }
-                std::map<boost::shared_ptr<CurveGui>, std::vector<double> >::iterator foundCurve = curvesValues.find(col->second);
+                std::map<CurveGuiPtr, std::vector<double> >::iterator foundCurve = curvesValues.find(col->second);
                 if ( foundCurve != curvesValues.end() ) {
                     foundCurve->second.push_back(values[col->first]);
                 } else {
@@ -2204,7 +2204,7 @@ CurveWidget::importCurveFromAscii()
             }
         }
         ///now restore the curves since we know what we read is valid
-        for (std::map<boost::shared_ptr<CurveGui>, std::vector<double> >::const_iterator it = curvesValues.begin(); it != curvesValues.end(); ++it) {
+        for (std::map<CurveGuiPtr, std::vector<double> >::const_iterator it = curvesValues.begin(); it != curvesValues.end(); ++it) {
             std::vector<KeyFrame> keys;
             const std::vector<double> & values = it->second;
             double xIndex = x;
@@ -2234,7 +2234,7 @@ CurveWidget::getCustomInteract() const
 }
 
 void
-CurveWidget::addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, double yCurve)
+CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
 {
     _imp->selectCurve(curve);
 

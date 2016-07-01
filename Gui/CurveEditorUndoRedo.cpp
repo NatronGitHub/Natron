@@ -57,7 +57,7 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor,
 }
 
 AddKeysCommand::AddKeysCommand(CurveWidget *editor,
-                               const boost::shared_ptr<CurveGui>& curve,
+                               const CurveGuiPtr& curve,
                                const std::vector<KeyFrame> & keys,
                                QUndoCommand *parent)
     : QUndoCommand(parent)
@@ -206,7 +206,7 @@ SetKeysCommand::SetKeysCommand(CurveWidget *editor,
 }
 
 SetKeysCommand::SetKeysCommand(CurveWidget *editor,
-                               const boost::shared_ptr<CurveGui>& curve,
+                               const CurveGuiPtr& curve,
                                const std::vector<KeyFrame> & keys,
                                QUndoCommand *parent)
     : AddKeysCommand(editor, curve, keys, parent)
@@ -246,7 +246,7 @@ SetKeysCommand::redo()
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
-                                     const std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > & keys,
+                                     const std::map<CurveGuiPtr, std::vector<KeyFrame> > & keys,
                                      QUndoCommand *parent )
     : QUndoCommand(parent)
     , _keys(keys)
@@ -258,7 +258,7 @@ void
 RemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
     std::set<KnobIPtr> knobsSet;
-    for (std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+    for (std::map<CurveGuiPtr, std::vector<KeyFrame> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
         KnobGuiPtr guiKnob;
@@ -365,7 +365,7 @@ RemoveKeysCommand::redo()
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
-                                 const std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > &keys,
+                                 const std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > &keys,
                                  double dt,
                                  double dv,
                                  bool updateOnFirstRedo,
@@ -437,7 +437,7 @@ MoveKeysCommand::move(double dt,
     std::list<KnobHolderPtr> differentKnobs;
     std::list<RotoContextPtr > rotoToEvaluate;
 
-    for (std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+    for (std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
         if (isKnobCurve) {
             if ( !isKnobCurve->getKnobGui() ) {
@@ -500,8 +500,8 @@ MoveKeysCommand::mergeWith(const QUndoCommand * command)
             return false;
         }
 
-        std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> >::const_iterator itother = cmd->_keys.begin();
-        for (std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> >::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
+        std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::const_iterator itother = cmd->_keys.begin();
+        for (std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
             if (itother->first != it->first) {
                 return false;
             }

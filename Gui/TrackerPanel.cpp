@@ -206,7 +206,7 @@ TrackerTableItemDelegate::paint(QPainter * painter,
 struct ItemData
 {
     TableItem* item;
-    boost::weak_ptr<KnobI> knob;
+    KnobIWPtr knob;
     int dimension;
 };
 
