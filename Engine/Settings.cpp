@@ -2002,8 +2002,15 @@ Settings::restoreSettings()
     // Restore opengl renderer
     {
         std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
-        if ( availableRenderers.empty() ) {
-            _openglRendererString->setValue( tr("OpenGL rendering disabled: No device meeting %1 requirements could be found.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        QString missingGLError;
+        bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
+
+        if ( availableRenderers.empty() || !hasGL) {
+            if (missingGLError.isEmpty()) {
+                _openglRendererString->setValue( tr("OpenGL rendering disabled: No device meeting %1 requirements could be found.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+            } else {
+                _openglRendererString->setValue(missingGLError.toStdString());
+            }
         }
         int curIndex = _availableOpenGLRenderers->getValue();
         if ( (curIndex >= 0) && ( curIndex < (int)availableRenderers.size() ) ) {
@@ -2289,6 +2296,9 @@ Settings::onKnobValueChanged(KnobI* k,
 ImageBitDepthEnum
 Settings::getViewersBitDepth() const
 {
+    if (!appPTR->isTextureFloatSupported()) {
+        return eImageBitDepthByte;
+    }
     int v = _texturesMode->getValue();
 
     if (v == 0) {

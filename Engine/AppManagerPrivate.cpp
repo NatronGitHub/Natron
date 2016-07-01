@@ -118,8 +118,8 @@ AppManagerPrivate::AppManagerPrivate()
 #endif
     , natronPythonGIL(QMutex::Recursive)
     , pluginsUseInputImageCopyToRender(false)
-    , hasRequiredOpenGLVersionAndExtensions(true)
-    , missingOpenglError()
+    , glRequirements()
+    , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
     , renderingContextPool()
@@ -590,6 +590,7 @@ extern int GLAD_GL_ARB_pixel_buffer_object;
 extern int GLAD_GL_ARB_vertex_array_object;
 extern int GLAD_GL_ARB_texture_float;
 extern int GLAD_GL_EXT_framebuffer_object;
+extern int GLAD_GL_APPLE_vertex_array_object;
 
 typedef GLboolean (APIENTRYP PFNGLISRENDERBUFFEREXTPROC)(GLuint renderbuffer);
 extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbufferEXT;
@@ -670,16 +671,31 @@ typedef void (APIENTRYP PFNGLGENERATEMIPMAPEXTPROC)(GLenum target);
 extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmapEXT;
 extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmap;
 
+typedef void (APIENTRYP PFNGLBINDVERTEXARRAYAPPLEPROC)(GLuint array);
+extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArrayAPPLE;
+extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArray;
+
+typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSAPPLEPROC)(GLsizei n, const GLuint* arrays);
+extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArraysAPPLE;
+extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArrays;
+
+typedef void (APIENTRYP PFNGLGENVERTEXARRAYSAPPLEPROC)(GLsizei n, GLuint* arrays);
+extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArraysAPPLE;
+extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArrays;
+
+typedef GLboolean (APIENTRYP PFNGLISVERTEXARRAYAPPLEPROC)(GLuint array);
+extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArrayAPPLE;
+extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArray;
+
 }
 
 void
-AppManagerPrivate::initGl()
+AppManagerPrivate::initGl(bool checkRenderingReq)
 {
     // Private should not lock
     assert( !openGLFunctionsMutex.tryLock() );
 
     hasInitializedOpenGLFunctions = true;
-    hasRequiredOpenGLVersionAndExtensions = true;
 
 
 #ifdef DEBUG
@@ -710,25 +726,74 @@ AppManagerPrivate::initGl()
         glad_glGenerateMipmap = glad_glGenerateMipmapEXT;
     }
 
+    if (glLoaded && GLAD_GL_APPLE_vertex_array_object && !GLAD_GL_ARB_vertex_buffer_object) {
+        glad_glBindVertexArray = glad_glBindVertexArrayAPPLE;
+        glad_glDeleteVertexArrays = glad_glDeleteVertexArraysAPPLE;
+        glad_glGenVertexArrays = glad_glGenVertexArraysAPPLE;
+        glad_glIsVertexArray = glad_glIsVertexArrayAPPLE;
+    }
+
+    OpenGLRequirementsData& viewerReq = glRequirements[eOpenGLRequirementsTypeViewer];
+    viewerReq.hasRequirements = true;
+
+    OpenGLRequirementsData& renderingReq = glRequirements[eOpenGLRequirementsTypeRendering];
+    if (checkRenderingReq) {
+        renderingReq.hasRequirements = true;
+    }
+
+
+    if (!GLAD_GL_ARB_texture_float) {
+        glHasTextureFloat = false;
+    } else {
+        glHasTextureFloat = true;
+    }
+
+
+
     if ( !glLoaded ||
-        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0) || !GLAD_GL_ARB_vertex_buffer_object || (!GLAD_GL_ARB_framebuffer_object && !GLAD_GL_EXT_framebuffer_object) || !GLAD_GL_ARB_pixel_buffer_object || !GLAD_GL_ARB_vertex_array_object || !GLAD_GL_ARB_texture_float) {
-        missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
-        missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object, (GL_ARB_framebuffer_object or GL_EXT_framebuffer_object),GL_ARB_texture_float");
-        missingOpenglError += QLatin1String("\n");
+        GLVersion.major < 2 ||
+        (GLVersion.major == 2 && GLVersion.minor < 0) ||
+        !GLAD_GL_ARB_pixel_buffer_object ||
+        !GLAD_GL_ARB_vertex_buffer_object) {
+
+        viewerReq.error = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions so the viewer works appropriately: ");
+        viewerReq.error += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object");
+        viewerReq.error += QLatin1String("\n");
         QString glVersion = appPTR->getOpenGLVersion();
         if (!glVersion.isEmpty()) {
-            missingOpenglError += tr("Your OpenGL version ");
-            missingOpenglError += glVersion;
+            viewerReq.error += tr("Your OpenGL version ");
+            viewerReq.error += glVersion;
         }
-        hasRequiredOpenGLVersionAndExtensions = false;
 
+        viewerReq.hasRequirements = false;
+        renderingReq.hasRequirements = false;
 #ifdef DEBUG
-        std::cerr << missingOpenglError.toStdString() << std::endl;
+        std::cerr << viewerReq.error.toStdString() << std::endl;
 #endif
 
         return;
     }
-    
+
+    if (checkRenderingReq) {
+        if (!GLAD_GL_ARB_texture_float ||
+            (!GLAD_GL_ARB_framebuffer_object && !GLAD_GL_EXT_framebuffer_object) ||
+            (!GLAD_GL_ARB_vertex_array_object && !GLAD_GL_APPLE_vertex_array_object))
+        {
+            renderingReq.error = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions so that OpenGL nodes rendering works appropriately: ");
+            renderingReq.error += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,(GL_ARB_vertex_array_object or GL_APPLE_vertex_array_object), (GL_ARB_framebuffer_object or GL_EXT_framebuffer_object),GL_ARB_texture_float");
+            renderingReq.error += QLatin1String("\n");
+            QString glVersion = appPTR->getOpenGLVersion();
+            if (!glVersion.isEmpty()) {
+                renderingReq.error += tr("Your OpenGL version ");
+                renderingReq.error += glVersion;
+            }
+
+
+            renderingReq.hasRequirements = false;
+        } else {
+            renderingReq.hasRequirements = true;
+        }
+    }
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
 
