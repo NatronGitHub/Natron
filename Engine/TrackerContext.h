@@ -177,12 +177,12 @@ public:
      * @brief Tracks the selected markers over the range defined by [start,end[ (end pointing to the frame
      * after the last one, a la STL).
      **/
-    void trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer);
+    void trackSelectedMarkers(int start, int end, int frameStep, const OverlaySupportPtr& viewer);
     void trackMarkers(const std::list<TrackMarkerPtr >& marks,
                       int start,
                       int end,
                       int frameStep,
-                      OverlaySupport* viewer);
+                      const OverlaySupportPtr& viewer);
 
 
     void abortTracking();
@@ -235,39 +235,39 @@ public:
     void drawInternalNodesOverlay(double time,
                                   const RenderScale& scale,
                                   ViewIdx view,
-                                  OverlaySupport* viewer);
+                                  const OverlaySupportPtr& viewer);
 
     bool onOverlayPenDownInternalNodes(double time,
                                        const RenderScale & renderScale,
-                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayPenMotionInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayPenUpInternalNodes(double time,
                                      const RenderScale & renderScale,
-                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDownInternalNodes(double time,
                                        const RenderScale & renderScale,
-                                       ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                       ViewIdx view, Key key, KeyboardModifiers modifiers, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyUpInternalNodes(double time,
                                      const RenderScale & renderScale,
-                                     ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                     ViewIdx view, Key key, KeyboardModifiers modifiers, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyRepeatInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, Key key, KeyboardModifiers modifiers, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusGainedInternalNodes(double time,
                                            const RenderScale & renderScale,
-                                           ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                           ViewIdx view, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusLostInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, const OverlaySupportPtr& viewer) WARN_UNUSED_RETURN;
 
 
     void solveTransformParams();

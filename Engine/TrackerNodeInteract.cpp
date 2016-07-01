@@ -116,7 +116,7 @@ TrackerNodeInteract::getContext() const
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -208,7 +208,7 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 void
 TrackerNodeInteract::onTrackBwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -228,7 +228,7 @@ TrackerNodeInteract::onTrackBwClicked()
 void
 TrackerNodeInteract::onTrackPrevClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -247,7 +247,7 @@ TrackerNodeInteract::onStopButtonClicked()
 void
 TrackerNodeInteract::onTrackNextClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -260,7 +260,7 @@ TrackerNodeInteract::onTrackNextClicked()
 void
 TrackerNodeInteract::onTrackFwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -448,7 +448,7 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
         return INT_MAX;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
 
     //Find out which keyframe it is by counting keyframe portions
@@ -490,7 +490,7 @@ TrackerNodeInteract::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& po
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
     QPointF clickWidget = overlay->toWidgetCoordinates(pos);
     QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
@@ -510,7 +510,7 @@ TrackerNodeInteract::isInsideSelectedMarkerTextureResizeAnchor(const QPointF& po
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
     QPointF clickWidget = overlay->toWidgetCoordinates(pos);
     QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
@@ -532,7 +532,7 @@ TrackerNodeInteract::computeTextureCanonicalRect(const Texture& tex,
 {
     ///Preserve width
     double par = tex.w() / (double)tex.h();
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     rect->x2 = overlay->toCanonicalCoordinates( QPointF(xOffset + texWidthPx, 0.) ).x();
@@ -651,7 +651,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
         return;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
 
     double overlayColor[3];
@@ -858,7 +858,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
                                                const Point& /*selectedSearchWndTopRight*/)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -1015,7 +1015,7 @@ TrackerNodeInteract::isNearbyPoint(const KnobDoublePtr& knob,
                                    double time)
 {
     QPointF p;
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
 
@@ -1036,7 +1036,7 @@ TrackerNodeInteract::isNearbyPoint(const QPointF& p,
                                    double yWidget,
                                    double toleranceWidget)
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
     assert(overlay);
 
@@ -1332,7 +1332,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
     assert(future);
     std::pair<ImagePtr, RectI> ret = future->result();
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
@@ -1370,7 +1370,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
         return;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);

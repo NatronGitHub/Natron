@@ -3285,7 +3285,7 @@ EffectInstance::onKnobSlaved(const KnobIPtr& slave,
 }
 
 void
-EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
+EffectInstance::setCurrentViewportForOverlays_public(const OverlaySupportPtr& viewport)
 {
     assert( QThread::currentThread() == qApp->thread() );
     getNode()->setCurrentViewportForHostOverlays(viewport);
@@ -3293,7 +3293,7 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
     setCurrentViewportForOverlays(viewport);
 }
 
-OverlaySupport*
+OverlaySupportPtr
 EffectInstance::getCurrentViewportForOverlays() const
 {
     assert( QThread::currentThread() == qApp->thread() );

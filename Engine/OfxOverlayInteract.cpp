@@ -40,7 +40,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
+NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(const OverlaySupportPtr& viewport)
     : _viewport(viewport)
 {
     assert(_viewport);
@@ -248,12 +248,12 @@ NatronOverlayInteractSupport::~NatronOverlayInteractSupport()
 }
 
 void
-NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport)
+NatronOverlayInteractSupport::setCallingViewport(const OverlaySupportPtr& viewport)
 {
     _viewport = viewport;
 }
 
-OverlaySupport*
+OverlaySupportPtr
 NatronOverlayInteractSupport::getLastCallingViewport() const
 {
     return _viewport;

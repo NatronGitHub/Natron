@@ -163,7 +163,7 @@ public:
     DopeSheetSelectionModel *selectionModel;
     boost::scoped_ptr<QUndoStack> undoStack;
     std::vector<DopeSheetKey> keyframesClipboard;
-    boost::shared_ptr<TimeLine> timeline;
+    TimeLinePtr timeline;
     DopeSheetEditor* editor;
 };
 
@@ -290,7 +290,7 @@ DopeSheet::getUndoStack() const
 
 DopeSheet::DopeSheet(Gui *gui,
                      DopeSheetEditor* editor,
-                     const boost::shared_ptr<TimeLine> &timeline)
+                     const TimeLinePtr &timeline)
     : _imp( new DopeSheetPrivate(editor, this) )
 {
     _imp->timeline = timeline;

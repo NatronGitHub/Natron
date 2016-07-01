@@ -46,7 +46,7 @@ class NatronOverlayInteractSupport
 
 protected:
 
-    OverlaySupport* _viewport;
+    OverlaySupportPtr _viewport;
     
 
 public:
@@ -76,9 +76,9 @@ public:
         return _lastColorPicker;
     }
 
-    void setCallingViewport(OverlaySupport* viewport);
+    void setCallingViewport(const OverlaySupportPtr& viewport);
 
-    OverlaySupport* getLastCallingViewport() const;
+    OverlaySupportPtr getLastCallingViewport() const;
 
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();
@@ -100,13 +100,13 @@ public:
     // an RAII class to save OpenGL context
     class OGLContextSaver
     {
-public:
-        OGLContextSaver(OverlaySupport* viewport);
+    public:
+        OGLContextSaver(const OverlaySupportPtr& viewport);
 
         ~OGLContextSaver();
 
-private:
-        OverlaySupport* const _viewport;
+    private:
+        OverlaySupportPtr _viewport;
     };
 };
 

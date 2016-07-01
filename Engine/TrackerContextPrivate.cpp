@@ -1113,7 +1113,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                              int start,
                              int end,
                              int frameStep,
-                             OverlaySupport* overlayInteract)
+                             const OverlaySupportPtr& overlayInteract)
 {
     if ( markers.empty() ) {
         Q_EMIT trackingFinished();

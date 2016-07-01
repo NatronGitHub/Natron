@@ -1164,12 +1164,12 @@ public:
     {
     }
 
-    void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
-    OverlaySupport* getCurrentViewportForOverlays() const;
+    void setCurrentViewportForOverlays_public(const OverlaySupportPtr& viewport);
+    OverlaySupportPtr getCurrentViewportForOverlays() const;
 
 protected:
 
-    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
+    virtual void setCurrentViewportForOverlays(const OverlaySupportPtr& /*viewport*/)
     {
     }
 

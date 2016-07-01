@@ -260,6 +260,24 @@ private:
     bool _isStringList;
 };
 
+inline KnobFilePtr
+isKnobFile(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobFile>(knob);
+}
+
+inline KnobOutputFilePtr
+isKnobOutputFile(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+}
+
+inline KnobPathPtr
+isKnobPath(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobPath>(knob);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_KNOBFILE_H

@@ -759,7 +759,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                              * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
                              * interacting with the Reader or the container is actually the same.
                              **/
-                            if ( knobHolder != getOfxEffectInstance().get() ) {
+                            if ( knobHolder != getOfxEffectInstance() ) {
                                 getOfxEffectInstance()->addKnob(sep);
                             }
 #endif

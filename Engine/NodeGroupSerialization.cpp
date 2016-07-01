@@ -64,11 +64,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< NodeSeria
                                                       std::map<std::string, bool>* moduleUpdatesProcessed)
 {
     bool mustShowErrorsLog = false;
-    NodeGroupPtr isNodeGroup = isNodeGroup(group);
+    NodeGroupPtr isGrp = isNodeGroup(group);
     QString groupName;
 
-    if (isNodeGroup) {
-        groupName = QString::fromUtf8( isNodeGroup->getNode()->getLabel().c_str() );
+    if (isGrp) {
+        groupName = QString::fromUtf8( isGrp->getNode()->getLabel().c_str() );
     } else {
         groupName = tr("top-level");
     }
@@ -360,8 +360,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< NodeSeria
 
     ///Now that the graph is setup, restore expressions
     NodesList nodes = group->getNodes();
-    if (isNodeGroup) {
-        nodes.push_back( isNodeGroup->getNode() );
+    if (isGrp) {
+        nodes.push_back( isGrp->getNode() );
     }
 
     {

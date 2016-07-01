@@ -1230,7 +1230,7 @@ public:
 
     bool hasHostOverlay() const;
 
-    void setCurrentViewportForHostOverlays(OverlaySupport* viewPort);
+    void setCurrentViewportForHostOverlays(const OverlaySupportPtr& viewPort);
 
     bool hasHostOverlayForParam(const KnobIConstPtr& knob) const;
 

@@ -1522,7 +1522,7 @@ AppInstance::getProject() const
     return _imp->_currentProject;
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 AppInstance::getTimeLine() const
 {
     return _imp->_currentProject->getTimeLine();
@@ -1753,7 +1753,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstancePtr& wri
                                               QString* sequenceName)
 {
     ///get the output file knob to get the name of the sequence
-    boost::shared_ptr<DiskCacheNode> isDiskCache = boost::dynamic_pointer_cast<DiskCacheNode>(writer);
+    DiskCacheNodePtr isDiskCache = boost::dynamic_pointer_cast<DiskCacheNode>(writer);
 
     if (isDiskCache) {
         *sequenceName = tr("Caching");
@@ -1839,7 +1839,7 @@ AppInstance::onQueuedRenderFinished(int /*retCode*/)
     if (!engine) {
         return;
     }
-    boost::shared_ptr<OutputEffectInstance> effect = engine->getOutput();
+    OutputEffectInstancePtr effect = engine->getOutput();
     if (!effect) {
         return;
     }

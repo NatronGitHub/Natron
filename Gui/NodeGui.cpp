@@ -3338,7 +3338,7 @@ NodeGui::hasHostOverlay() const
 }
 
 void
-NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
+NodeGui::setCurrentViewportForHostOverlays(const OverlaySupportPtr& viewPort)
 {
     if (_hostOverlay) {
         _hostOverlay->setCallingViewport(viewPort);
@@ -3750,7 +3750,7 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
     if (!node) {
         return;
     }
-    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return;
     }
@@ -3778,7 +3778,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!node) {
         return false;
     }
-    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return false;
     }
@@ -3871,7 +3871,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!node) {
         return;
     }
-    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupportPtr overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return;
     }
@@ -3900,7 +3900,7 @@ NodeGui::onRightClickMenuKnobPopulated()
             // Plug-in specified invalid knob name in the menu
             continue;
         }
-        KnobButton* button = isKnobButton(knob);
+        KnobButtonPtr button = isKnobButton(knob);
         if (!button) {
             // Plug-in must only use buttons inside menu
             continue;
@@ -3937,7 +3937,7 @@ NodeGui::onRightClickActionTriggered()
         // Plug-in specified invalid knob name in the menu
         return;
     }
-    KnobButton* button = isKnobButton(knob);
+    KnobButtonPtr button = isKnobButton(knob);
     if (!button) {
         // Plug-in must only use buttons inside menu
         return;

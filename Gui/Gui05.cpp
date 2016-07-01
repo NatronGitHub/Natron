@@ -145,7 +145,7 @@ Gui::setupUi()
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
 
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
-    boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
+    TimeLinePtr timeline = project->getTimeLine();
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
     QObject::connect( timeline.get(), SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()) );
 

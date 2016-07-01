@@ -175,7 +175,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     }
 
     KnobIPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-    KnobOutputFilePtr outputFileName = outputFileNameKnob ? isKnobOutputFile( outputFileNameKnob.get() ) : 0;
+    KnobOutputFilePtr outputFileName = outputFileNameKnob ? isKnobOutputFile(outputFileNameKnob) : 0;
     std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
 
     if ( isViewAware() ) {
@@ -192,7 +192,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
             bool hasViewChoice = false;
             if ( viewsKnob && !viewsKnob->getIsSecret() ) {
-                KnobChoicePtr viewsChoice = isKnobChoice( viewsKnob.get() );
+                KnobChoicePtr viewsChoice = isKnobChoice(viewsKnob);
                 if (viewsChoice) {
                     hasViewChoice = true;
                     int viewChoice_i = viewsChoice->getValue();
@@ -335,7 +335,7 @@ OutputEffectInstance::createWriterPath()
     KnobIPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileParam) {
-        KnobStringBasePtr isString = isKnobStringBase( fileParam.get() );
+        KnobStringBasePtr isString = isKnobStringBase(fileParam);
         if (isString) {
             std::string pattern = isString->getValue();
             std::string path = SequenceParsing::removePath(pattern);
@@ -393,7 +393,7 @@ OutputEffectInstance::initializeData()
 RenderEngine*
 OutputEffectInstance::createRenderEngine()
 {
-    boost::shared_ptr<OutputEffectInstance> thisShared = isOutputEffectInstance( shared_from_this() );
+    OutputEffectInstancePtr thisShared = isOutputEffectInstance( shared_from_this() );
 
     assert(thisShared);
 
@@ -410,7 +410,7 @@ OutputEffectInstance::reportStats(int time,
     KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileKnob) {
-        KnobOutputFilePtr strKnob = isKnobOutputFile( fileKnob.get() );
+        KnobOutputFilePtr strKnob = isKnobOutputFile(fileKnob);
         if  (strKnob) {
             QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( 0, ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);
