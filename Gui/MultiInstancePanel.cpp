@@ -2396,8 +2396,8 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
                 std::stringstream ss;
                 ss << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << centers[i]->getName() << ".get()[dimension]";
                 std::string expr = ss.str();
-                dynamic_cast<KnobI*>( toPoints[i].get() )->setExpression(0, expr, false, false);
-                dynamic_cast<KnobI*>( toPoints[i].get() )->setExpression(1, expr, false, false);
+                toPoints[i]->setExpression(0, expr, false, false);
+                toPoints[i]->setExpression(1, expr, false, false);
             }
         }
     }

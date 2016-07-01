@@ -921,7 +921,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             if (!linked) {
                 isBool->cloneAndUpdateGui( _imp->invertTransform.lock() );
             } else {
-                dynamic_cast<KnobI*>(isBool)->slaveTo(0, _imp->invertTransform.lock(), 0);
+                isBool->slaveTo(0, _imp->invertTransform.lock(), 0);
             }
         }
     }
