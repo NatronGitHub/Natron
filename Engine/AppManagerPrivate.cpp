@@ -760,7 +760,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         !GLAD_GL_ARB_pixel_buffer_object ||
         !GLAD_GL_ARB_vertex_buffer_object) {
 
-        viewerReq.error = tr("Failed to load required OpenGL. %1 requires at least OpenGL %2.%3 with the following extensions so the viewer works appropriately: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
+        viewerReq.error = tr("Failed to load OpenGL. %1 requires at least OpenGL %2.%3 with the following extensions so the viewer works appropriately: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
         viewerReq.error += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object");
         viewerReq.error += QLatin1String("\n");
         QString glVersion = appPTR->getOpenGLVersion();
@@ -784,7 +784,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
             (!GLAD_GL_ARB_vertex_array_object && !GLAD_GL_APPLE_vertex_array_object))
         {
             renderingReq.error += QLatin1String("<p>");
-            renderingReq.error += tr("Failed to load required OpenGL.");
+            renderingReq.error += tr("Failed to load OpenGL.");
             renderingReq.error += QLatin1String("<br />");
             renderingReq.error += tr("%1 requires at least OpenGL %2.%3 with the following extensions to perform OpenGL rendering: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
             renderingReq.error += QLatin1String("<br />");
