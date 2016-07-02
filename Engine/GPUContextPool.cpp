@@ -100,7 +100,7 @@ GPUContextPool::getCurrentOpenGLRendererMaxTextureSize() const
 OSGLContextPtr
 GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 {
-    if ( checkIfGLLoaded && (!appPTR->isOpenGLLoaded() || !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled())) {
+    if (checkIfGLLoaded && (!appPTR->isOpenGLLoaded() || !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled())) {
         return OSGLContextPtr();
     }
     QMutexLocker k(&_imp->contextPoolMutex);
