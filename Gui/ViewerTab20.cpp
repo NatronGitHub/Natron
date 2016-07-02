@@ -1056,7 +1056,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 bool
 ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    if ( !getInternalNode() || !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
 

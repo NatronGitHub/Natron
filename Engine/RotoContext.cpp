@@ -3638,6 +3638,7 @@ RotoContextPrivate::renderFeather_cairo(const PolygonData& inArgs, double shapeC
         }
         // make a degenerated coons patch out of the triangle so that we can assign a color to each vertex to emulate simple gouraud shaded triangles
         Point p0, p0p1, p1, p1p0, p2, p2p3, p3p2, p3;
+
         p0.x = innerVertices[0]->x;
         p0.y = innerVertices[0]->y;
         p1.x = outterVertices[0]->x;
@@ -4042,7 +4043,10 @@ static void tess_vertex_callback(void* data /*per-vertex client data*/, void *po
     int* p = (int*)data;
     assert(p);
     assert(*p >= 0 && *p < (int)myData->bezierPolygonJoined.size());
-
+#ifndef NDEBUG
+    assert(myData->bezierPolygonJoined[*p].x >= myData->bezierBbox.x1 && myData->bezierPolygonJoined[*p].x <= myData->bezierBbox.x2 &&
+           myData->bezierPolygonJoined[*p].y >= myData->bezierBbox.y1 && myData->bezierPolygonJoined[*p].y <= myData->bezierBbox.y2);
+#endif
     if (myData->stripsBeingEdited) {
         myData->stripsBeingEdited->indices.push_back(*p);
     } else if (myData->fanBeingEdited) {
@@ -4068,7 +4072,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
 
     ParametricPoint v;
     v.x = coords[0];
-    v.x = coords[1];
+    v.y = coords[1];
     v.t = 0;
 
     assert(myData->bezierPolygonIndices.size() == myData->bezierPolygonJoined.size());
@@ -4112,15 +4116,31 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
 #endif
 
     bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,error, true, &outArgs->featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, error,&outArgs->bezierPolygon, NULL);
+    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, error,&outArgs->bezierPolygon,
+#ifndef NDEBUG
+                                       &outArgs->bezierBbox
+#else
+                                       0
+#endif
+                                       );
 
 
     // First compute the mesh composed of triangles of the feather
     assert( !outArgs->featherPolygon.empty() && !outArgs->bezierPolygon.empty() && outArgs->featherPolygon.size() == outArgs->bezierPolygon.size());
 
     std::vector<std::vector<ParametricPoint> >::const_iterator fIt = outArgs->featherPolygon.begin();
+    std::vector<std::vector<ParametricPoint> > ::const_iterator prevFSegmentIt = outArgs->featherPolygon.end();
+    --prevFSegmentIt;
+    std::vector<std::vector<ParametricPoint> > ::const_iterator nextFSegmentIt = outArgs->featherPolygon.begin();
+    ++nextFSegmentIt;
     for (std::vector<std::vector<ParametricPoint> > ::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it, ++fIt) {
 
+        if (prevFSegmentIt == outArgs->featherPolygon.end()) {
+            prevFSegmentIt = outArgs->featherPolygon.begin();
+        }
+        if (nextFSegmentIt == outArgs->featherPolygon.end()) {
+            nextFSegmentIt = outArgs->featherPolygon.begin();
+        }
         // Iterate over each bezier segment.
         // There are the same number of bezier segments for the feather and the internal bezier. Each discretized segment is a contour (list of vertices)
 
@@ -4136,8 +4156,9 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
         if ( fnext == fIt->end() ) {
             fnext = fIt->begin();
         }
-        std::vector<ParametricPoint>::const_iterator fprev = fIt->end();
+        std::vector<ParametricPoint>::const_iterator fprev = prevFSegmentIt->end();
         --fprev; // can only be valid since we assert the list is not empty
+        --fprev;
 
 
         // initialize the state with a segment between the first inner vertex and first outter vertex
@@ -4174,7 +4195,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
             ++fSegmentIt;
         }
 
-        if ( fprev != fIt->end() ) {
+        if ( fprev != prevFSegmentIt->end() ) {
             ++fprev;
         }
         if ( fnext != fIt->end() ) {
@@ -4182,14 +4203,15 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
         }
 
 
-
         for (;;) {
 
             if ( fnext == fIt->end() ) {
-                fnext = fIt->begin();
+                fnext = nextFSegmentIt->begin();
+                ++fnext;
             }
-            if ( fprev == fIt->end() ) {
+            if ( fprev == prevFSegmentIt->end() ) {
                 fprev = fIt->begin();
+                ++fprev;
             }
 
             double inner_t = (double)INT_MAX;
@@ -4257,7 +4279,12 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
             
             
         } // for(;;)
-
+        if (prevFSegmentIt != outArgs->featherPolygon.end()) {
+            ++prevFSegmentIt;
+        }
+        if (nextFSegmentIt != outArgs->featherPolygon.end()) {
+            ++nextFSegmentIt;
+        }
     }
  
 
@@ -4318,19 +4345,19 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
         assert(it->indices.size() >= 3 && it->indices.size() % 3 == 0);
 
         int c = 0;
-        const int* coonsPatchStart = 0;
+        int coonsPatchStart = -1;
         for (std::vector<int>::const_iterator it2 = it->indices.begin(); it2!=it->indices.end(); ++it2) {
             if (c == 0) {
                 cairo_mesh_pattern_begin_patch(mesh);
                 cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*it2].x, inArgs.bezierPolygonJoined[*it2].y);
-                coonsPatchStart = &(*it2);
+                coonsPatchStart = *it2;
             } else {
                 cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*it2].x, inArgs.bezierPolygonJoined[*it2].y);
             }
             if (c == 2) {
                 assert(coonsPatchStart);
                 // close coons patch by transforming the triangle into a degenerated coons patch
-                cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*coonsPatchStart].x, inArgs.bezierPolygonJoined[*coonsPatchStart].y);
+                cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[coonsPatchStart].x, inArgs.bezierPolygonJoined[coonsPatchStart].y);
                 // IMPORTANT NOTE:
                 // The two sqrt below are due to a probable cairo bug.
                 // To check wether the bug is present is a given cairo version,
@@ -4356,16 +4383,21 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
 
         assert(it->indices.size() >= 3);
         std::vector<int>::const_iterator cur = it->indices.begin();
-        const int* fanStart = &(*(cur));
+        int fanStart = *cur;
         ++cur;
         std::vector<int>::const_iterator next = cur;
         ++next;
         for (;next != it->indices.end();) {
             cairo_mesh_pattern_begin_patch(mesh);
-            cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*fanStart].x, inArgs.bezierPolygonJoined[*fanStart].y);
-            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*cur].x, inArgs.bezierPolygonJoined[*cur].y);
-            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*next].x, inArgs.bezierPolygonJoined[*next].y);
-            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*fanStart].x, inArgs.bezierPolygonJoined[*fanStart].y);
+            assert(fanStart < (int)inArgs.bezierPolygonJoined.size() && *cur < (int)inArgs.bezierPolygonJoined.size() && *next < (int)inArgs.bezierPolygonJoined.size());
+            const ParametricPoint &p0 = inArgs.bezierPolygonJoined[fanStart];
+            const ParametricPoint &p3 = p0;
+            const ParametricPoint &p1 = inArgs.bezierPolygonJoined[*cur];
+            const ParametricPoint &p2 = inArgs.bezierPolygonJoined[*next];
+            cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+            cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
+            cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+            cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
             // To check wether the bug is present is a given cairo version,
@@ -4391,17 +4423,21 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
         assert(it->indices.size() >= 3);
 
         std::vector<int>::const_iterator cur = it->indices.begin();
-        const int* prevPrev = &(*(cur));
+        int prevPrev = *cur;
         ++cur;
-        const int* prev = &(*(cur));
+        int prev = *cur;
         ++cur;
         for (; cur != it->indices.end(); ++cur) {
+            assert(prevPrev < (int)inArgs.bezierPolygonJoined.size() && prev < (int)inArgs.bezierPolygonJoined.size() && *cur < (int)inArgs.bezierPolygonJoined.size());
             cairo_mesh_pattern_begin_patch(mesh);
-            cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*prevPrev].x, inArgs.bezierPolygonJoined[*prevPrev].y);
-            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*prev].x, inArgs.bezierPolygonJoined[*prev].y);
-            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*cur].x, inArgs.bezierPolygonJoined[*cur].y);
-            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*prevPrev].x, inArgs.bezierPolygonJoined[*prevPrev].y);
-
+            const ParametricPoint &p0 = inArgs.bezierPolygonJoined[prevPrev];
+            const ParametricPoint &p3 = p0;
+            const ParametricPoint &p1 = inArgs.bezierPolygonJoined[prev];
+            const ParametricPoint &p2 = inArgs.bezierPolygonJoined[*cur];
+            cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+            cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
+            cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+            cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
             // To check wether the bug is present is a given cairo version,
@@ -4419,7 +4455,7 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
             cairo_mesh_pattern_end_patch(mesh);
             
             prevPrev = prev;
-            prev = &(*(cur));
+            prev = *cur;
         }
     }
 }

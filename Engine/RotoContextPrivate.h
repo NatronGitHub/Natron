@@ -2188,6 +2188,11 @@ public:
         std::vector<std::vector<ParametricPoint> > featherPolygon;
         std::vector<std::vector<ParametricPoint> > bezierPolygon;
 
+#ifndef NDEBUG
+        // Used to check that all points passed to the vertex callback lie in the bbox
+        RectD bezierBbox;
+#endif
+
         // Union of all discretized bezier segments
         std::vector<ParametricPoint> bezierPolygonJoined;
 

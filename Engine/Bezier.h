@@ -118,7 +118,8 @@ public:
                                       const Point & p1,
                                       const Point & p2,
                                       const Point & p3,
-                                      RectD *bbox);
+                                      RectD *bbox,
+                                      bool* bboxSet);
 
     bool isOpenBezier() const;
 

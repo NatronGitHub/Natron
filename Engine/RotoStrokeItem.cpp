@@ -804,6 +804,7 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
         for (; xNext != xCurve.end(); ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
             RectD subBox;
             subBox.setupInfinity();
+            bool subBoxSet = false;
 
             double dt = xNext->getTime() - xIt->getTime();
             double pressure = pressureAffectsSize ? std::max( pIt->getValue(), pNext->getValue() ) : 1.;
@@ -830,7 +831,7 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
             p2_.x = p2.x; p2_.y = p2.y;
             p3_.x = p3.x; p3_.y = p3.y;
 
-            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &subBox);
+            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &subBox, &subBoxSet);
             subBox.x1 -= halfBrushSize * pressure;
             subBox.x2 += halfBrushSize * pressure;
             subBox.y1 -= halfBrushSize * pressure;

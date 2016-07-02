@@ -283,27 +283,41 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
                               const Point & p1,
                               const Point & p2,
                               const Point & p3,
-                              RectD *bbox) ///< input/output
+                              RectD *bbox,
+                              bool* bboxSet) ///< input/output
 {
     {
         double x1, x2;
         bezierBounds(p0.x, p1.x, p2.x, p3.x, &x1, &x2);
-        if (x1 < bbox->x1) {
+        if (bboxSet && !*bboxSet) {
             bbox->x1 = x1;
-        }
-        if (x2 > bbox->x2) {
             bbox->x2 = x2;
+        } else {
+            if (x1 < bbox->x1) {
+                bbox->x1 = x1;
+            }
+            if (x2 > bbox->x2) {
+                bbox->x2 = x2;
+            }
         }
     }
     {
         double y1, y2;
         bezierBounds(p0.y, p1.y, p2.y, p3.y, &y1, &y2);
-        if (y1 < bbox->y1) {
+        if (bboxSet && !*bboxSet) {
             bbox->y1 = y1;
-        }
-        if (y2 > bbox->y2) {
             bbox->y2 = y2;
+        } else {
+            if (y1 < bbox->y1) {
+                bbox->y1 = y1;
+            }
+            if (y2 > bbox->y2) {
+                bbox->y2 = y2;
+            }
         }
+    }
+    if (bboxSet && !*bboxSet) {
+        *bboxSet = true;
     }
 }
 
@@ -323,7 +337,8 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
                         ViewIdx view,
                         unsigned int mipMapLevel,
                         const Transform::Matrix3x3& transform,
-                        RectD* bbox) ///< input/output
+                        RectD* bbox,
+                        bool *bboxSet) ///< input/output
 {
     Point p0, p1, p2, p3;
     Transform::Point3D p0M, p1M, p2M, p3M;
@@ -370,7 +385,7 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
         p3.x /= pot;
         p3.y /= pot;
     }
-    Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox);
+    Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
 }
 
 void
@@ -405,6 +420,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
     if ( next != points.end() ) {
         ++next;
     }
+    bool bboxSet = false;
     for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it) {
         if ( next == points.end() ) {
             if (!finished && !isOpenBezier) {
@@ -412,7 +428,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipMapLevel, transform, bbox);
+        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipMapLevel, transform, bbox, &bboxSet);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -709,7 +725,8 @@ bezierSegmentEval(bool useGuiCurves,
 #endif
                   const Transform::Matrix3x3& transform,
                   std::vector< ParametricPoint >* points, ///< output
-                  RectD* bbox = NULL) ///< input/output (optional)
+                  RectD* bbox = NULL,
+                  bool* bboxSet = NULL) ///< input/output (optional)
 {
     Transform::Point3D p0M, p1M, p2M, p3M;
     Point p0, p1, p2, p3;
@@ -784,7 +801,7 @@ bezierSegmentEval(bool useGuiCurves,
     recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
 #endif
     if (bbox) {
-        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox);
+        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox, bboxSet);
     }
 } // bezierSegmentEval
 
@@ -2520,6 +2537,7 @@ Bezier::deCastelJau(bool useGuiCurves,
                     std::vector<ParametricPoint >* pointsSingleList,
                     RectD* bbox)
 {
+    bool bboxSet = false;
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     BezierCPs::const_iterator next = cps.begin();
 
@@ -2536,13 +2554,24 @@ Bezier::deCastelJau(bool useGuiCurves,
             next = cps.begin();
         }
 
+        RectD segbbox;
+        bool segbboxSet = false;
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+        }
+
+        if (bbox) {
+            if (!bboxSet) {
+                *bbox = segbbox;
+                bboxSet = true;
+            } else {
+                bbox->merge(segbbox);
+            }
         }
 
         // increment for next iteration
