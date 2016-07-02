@@ -768,6 +768,10 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
             viewerReq.error += tr("Your OpenGL version ");
             viewerReq.error += glVersion;
         }
+#ifdef __NATRON_WIN32__
+        viewerReq.error += tr("To fix this: Re-start the installer, select \"Update Components\" and then install the \"Software OpenGL\" component.\n");
+        viewerReq.error += tr("Another solution is to manually copy opengl32.dll located in the \"bin\mesa\" directory of your %1 installation to the \"bin\" directory.").arg(QLatin1String(NATRON_APPLICATION_NAME));
+#endif
 
         viewerReq.hasRequirements = false;
         renderingReq.hasRequirements = false;
