@@ -1168,7 +1168,7 @@ public:
                 maximumDiskCacheSize = std::max( (std::size_t)1, _maximumCacheSize - _maximumInMemorySize );
             }
             double diskPercentage = (double)diskCacheSize / maximumDiskCacheSize;
-            while (diskCacheSize >= NATRON_CACHE_LIMIT_PERCENT) {
+            while (diskPercentage >= NATRON_CACHE_LIMIT_PERCENT) {
                 std::list<EntryTypePtr> deleted;
                 if ( !tryEvictDiskEntry(deleted) ) {
                     break;

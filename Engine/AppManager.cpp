@@ -693,17 +693,28 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 if (glContext) {
                     // Make the context current and check its version
                     glContext->setContextCurrentNoRender();
+                } else {
+                    AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
+                    AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+                    rdata.error = tr("Error creating OpenGL context.");
+                    rdata.hasRequirements = false;
+                    vdata.hasRequirements = false;
                 }
 
 
             } catch (const std::exception& e) {
                 std::cerr << "Error while loading OpenGL: " << e.what() << std::endl;
                 std::cerr << "OpenGL rendering is disabled. " << std::endl;
-                AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                data.hasRequirements = false;
-                data.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
+                AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
+                AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+                rdata.hasRequirements = false;
+                vdata.hasRequirements = false;
+                rdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
                 checkRenderingReq = false;
             }
+        }
+        if (createOpenGLContext && !glContext) {
+            return false;
         }
         // The following requires a valid OpenGL context to be created
         _imp->initGl(checkRenderingReq);
