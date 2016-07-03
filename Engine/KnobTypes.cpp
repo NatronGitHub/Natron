@@ -76,17 +76,6 @@ KnobInt::KnobInt(const KnobHolderPtr& holder,
 {
 }
 
-KnobInt::KnobInt(const KnobHolderPtr& holder,
-                 const QString &label,
-                 int dimension,
-                 bool declaredByPlugin)
-    : KnobIntBase(holder, label.toStdString(), dimension, declaredByPlugin)
-    , _increments(dimension, 1)
-    , _disableSlider(false)
-    , _isRectangle(false)
-{
-}
-
 void
 KnobInt::disableSlider()
 {
@@ -165,14 +154,6 @@ KnobBool::KnobBool(const KnobHolderPtr& holder,
 {
 }
 
-KnobBool::KnobBool(const KnobHolderPtr& holder,
-                   const QString &label,
-                   int dimension,
-                   bool declaredByPlugin)
-    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
-{
-}
-
 bool
 KnobBool::canAnimate() const
 {
@@ -209,25 +190,6 @@ KnobDouble::KnobDouble(const KnobHolderPtr& holder,
     , _defaultValuesAreNormalized(false)
     , _hasHostOverlayHandle(false)
 {
-}
-
-KnobDouble::KnobDouble(const KnobHolderPtr& holder,
-                       const QString &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
-    , _spatial(false)
-    , _isRectangle(false)
-    , _increments(dimension, 1)
-    , _decimals(dimension, 2)
-    , _disableSlider(false)
-    , _valueIsNormalized(dimension, eValueIsNormalizedNone)
-    , _defaultValuesAreNormalized(false)
-    , _hasHostOverlayHandle(false)
-{
-    if (dimension >= 4) {
-        disableSlider();
-    }
 }
 
 void
@@ -457,18 +419,6 @@ KnobButton::KnobButton(const KnobHolderPtr& holder,
     //setIsPersistant(false);
 }
 
-KnobButton::KnobButton(const KnobHolderPtr& holder,
-                       const QString &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
-    , _renderButton(false)
-    , _checkable(false)
-    , _isToolButtonAction(false)
-{
-    //setIsPersistant(false);
-}
-
 bool
 KnobButton::canAnimate() const
 {
@@ -504,18 +454,6 @@ KnobChoice::KnobChoice(const KnobHolderPtr& holder,
                        int dimension,
                        bool declaredByPlugin)
     : KnobIntBase(holder, label, dimension, declaredByPlugin)
-    , _entriesMutex()
-    , _currentEntryLabel()
-    , _addNewChoice(false)
-    , _isCascading(false)
-{
-}
-
-KnobChoice::KnobChoice(const KnobHolderPtr& holder,
-                       const QString &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : KnobIntBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _entriesMutex()
     , _currentEntryLabel()
     , _addNewChoice(false)
@@ -1144,14 +1082,6 @@ KnobSeparator::KnobSeparator(const KnobHolderPtr& holder,
 {
 }
 
-KnobSeparator::KnobSeparator(const KnobHolderPtr& holder,
-                             const QString &label,
-                             int dimension,
-                             bool declaredByPlugin)
-    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
-{
-}
-
 bool
 KnobSeparator::canAnimate() const
 {
@@ -1185,18 +1115,6 @@ KnobColor::KnobColor(const KnobHolderPtr& holder,
                      int dimension,
                      bool declaredByPlugin)
     : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _allDimensionsEnabled(true)
-    , _simplifiedMode(false)
-{
-    //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
-    assert(dimension <= 4 && dimension != 2);
-}
-
-KnobColor::KnobColor(const KnobHolderPtr& holder,
-                     const QString &label,
-                     int dimension,
-                     bool declaredByPlugin)
-    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _allDimensionsEnabled(true)
     , _simplifiedMode(false)
 {
@@ -1256,19 +1174,6 @@ KnobString::KnobString(const KnobHolderPtr& holder,
                        int dimension,
                        bool declaredByPlugin)
     : AnimatingKnobStringHelper(holder, label, dimension, declaredByPlugin)
-    , _multiLine(false)
-    , _richText(false)
-    , _customHtmlText(false)
-    , _isLabel(false)
-    , _isCustom(false)
-{
-}
-
-KnobString::KnobString(const KnobHolderPtr& holder,
-                       const QString &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : AnimatingKnobStringHelper(holder, label.toStdString(), dimension, declaredByPlugin)
     , _multiLine(false)
     , _richText(false)
     , _customHtmlText(false)
@@ -1360,17 +1265,6 @@ KnobGroup::KnobGroup(const KnobHolderPtr& holder,
                      int dimension,
                      bool declaredByPlugin)
     : KnobBoolBase(holder, label, dimension, declaredByPlugin)
-    , _isTab(false)
-    , _isToolButton(false)
-    , _isDialog(false)
-{
-}
-
-KnobGroup::KnobGroup(const KnobHolderPtr& holder,
-                     const QString &label,
-                     int dimension,
-                     bool declaredByPlugin)
-    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
     , _isDialog(false)
@@ -1552,16 +1446,6 @@ KnobPage::KnobPage(const KnobHolderPtr& holder,
     setIsPersistant(false);
 }
 
-KnobPage::KnobPage(const KnobHolderPtr& holder,
-                   const QString &label,
-                   int dimension,
-                   bool declaredByPlugin)
-    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
-    , _isToolBar(false)
-{
-    setIsPersistant(false);
-}
-
 bool
 KnobPage::canAnimate() const
 {
@@ -1697,25 +1581,6 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder,
                                int dimension,
                                bool declaredByPlugin)
     : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _curvesMutex()
-    , _curves(dimension)
-    , _defaultCurves(dimension)
-    , _curvesColor(dimension)
-{
-    for (int i = 0; i < dimension; ++i) {
-        RGBAColourD color;
-        color.r = color.g = color.b = color.a = 1.;
-        _curvesColor[i] = color;
-        _curves[i] = CurvePtr( new Curve(shared_from_this(), i) );
-        _defaultCurves[i] = CurvePtr( new Curve(shared_from_this(), i) );
-    }
-}
-
-KnobParametric::KnobParametric(const KnobHolderPtr& holder,
-                               const QString &label,
-                               int dimension,
-                               bool declaredByPlugin)
-    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _curvesMutex()
     , _curves(dimension)
     , _defaultCurves(dimension)

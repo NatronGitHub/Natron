@@ -88,25 +88,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobInt(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobInt(const KnobHolderPtr& holder,
             const std::string &label,
             int dimension,
             bool declaredByPlugin);
 
-    KnobInt(const KnobHolderPtr& holder,
-            const QString &label,
-            int dimension,
-            bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                             const std::string &label,
+                             int dimension,
+                             bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobInt(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobIntPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobIntPtr(new KnobInt(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     void disableSlider();
 
@@ -171,25 +177,31 @@ isKnobInt(const KnobIPtr& knob)
 class KnobBool
     :  public KnobBoolBase
 {
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobBool(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobBool(const KnobHolderPtr& holder,
              const std::string &label,
              int dimension,
              bool declaredByPlugin);
 
-    KnobBool(const KnobHolderPtr& holder,
-             const QString &label,
-             int dimension,
-             bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobBool(holder, label, dimension, declaredByPlugin));
+    }
+    
+    static KnobBoolPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobBoolPtr(new KnobBool(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
@@ -229,26 +241,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobDouble(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobDouble(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin );
 
-    KnobDouble(const KnobHolderPtr& holder,
-               const QString &label,
-               int dimension,
-               bool declaredByPlugin );
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobDouble(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobDoublePtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobDoublePtr(new KnobDouble(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     virtual ~KnobDouble();
 
@@ -418,25 +435,32 @@ isKnobDouble(const KnobIPtr& knob)
 class KnobButton
     : public KnobBoolBase
 {
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobButton(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobButton(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    KnobButton(const KnobHolderPtr& holder,
-               const QString &label,
-               int dimension,
-               bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobButton(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobButtonPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobButtonPtr(new KnobButton(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
     static const std::string & typeNameStatic();
 
     void setAsRenderButton()
@@ -528,23 +552,32 @@ public:
     // The clear() function will be called right before attempting to compare the first member of the entries to merge to b.
     // Then throughout the cycling of the internal entries, b will remain at the same value and temporary data can be used.
     typedef bool (*MergeMenuEqualityFunctor)(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* userData);
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobChoice(holder, label, dimension, declaredByPlugin);
-    }
+
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobChoice(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    KnobChoice(const KnobHolderPtr& holder,
-               const QString &label,
-               int dimension,
-               bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobChoice(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobChoicePtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobChoicePtr(new KnobChoice(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     virtual ~KnobChoice();
 
@@ -671,25 +704,32 @@ isKnobChoice(const KnobIPtr& knob)
 class KnobSeparator
     : public KnobBoolBase
 {
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobSeparator(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobSeparator(const KnobHolderPtr& holder,
                   const std::string &label,
                   int dimension,
                   bool declaredByPlugin);
 
-    KnobSeparator(const KnobHolderPtr& holder,
-                  const QString &label,
-                  int dimension,
-                  bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobSeparator(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobSeparatorPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobSeparatorPtr(new KnobSeparator(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
     static const std::string & typeNameStatic();
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -727,25 +767,32 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobColor(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobColor(const KnobHolderPtr& holder,
               const std::string &label,
               int dimension,
               bool declaredByPlugin);
 
-    KnobColor(const KnobHolderPtr& holder,
-              const QString &label,
-              int dimension,
-              bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobColor(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobColorPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobColorPtr(new KnobColor(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
     static const std::string & typeNameStatic();
 
     bool areAllDimensionsEnabled() const;
@@ -809,26 +856,31 @@ isKnobColor(const KnobIPtr& knob)
 class KnobString
     : public AnimatingKnobStringHelper
 {
-public:
-
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobString(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobString(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    KnobString(const KnobHolderPtr& holder,
-               const QString &label,
-               int dimension,
-               bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobString(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobStringPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobStringPtr(new KnobString(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     virtual ~KnobString();
 
@@ -934,25 +986,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     bool _isToolButton;
     bool _isDialog;
 
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobGroup(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobGroup(const KnobHolderPtr& holder,
               const std::string &label,
               int dimension,
               bool declaredByPlugin);
 
-    KnobGroup(const KnobHolderPtr& holder,
-              const QString &label,
-              int dimension,
-              bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobGroup(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobGroupPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobGroupPtr(new KnobGroup(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     void addKnob(const KnobIPtr& k);
     void removeKnob(const KnobIPtr& k);
@@ -1001,25 +1059,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobPage(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobPage(const KnobHolderPtr& holder,
              const std::string &label,
              int dimension,
              bool declaredByPlugin);
 
-    KnobPage(const KnobHolderPtr& holder,
-             const QString &label,
-             int dimension,
-             bool declaredByPlugin);
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobPage(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobPagePtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobPagePtr(new KnobPage(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     void addKnob(const KnobIPtr& k);
 
@@ -1073,25 +1137,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     std::vector< CurvePtr > _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
 
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobParametric(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobParametric(const KnobHolderPtr& holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin );
 
-    KnobParametric(const KnobHolderPtr& holder,
-                   const QString &label,
-                   int dimension,
-                   bool declaredByPlugin );
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobParametric(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobParametricPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobParametricPtr(new KnobParametric(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     void setCurveColor(int dimension, double r, double g, double b);
 
@@ -1180,7 +1250,10 @@ isKnobParametric(const KnobIPtr& knob)
 class KnobTable
     : public KnobStringBase
 {
-public:
+protected: // derives from KnobI, parent of KnobLayer, KnobPath
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
     KnobTable(const KnobHolderPtr& holder,
               const std::string &description,
               int dimension,
@@ -1191,6 +1264,7 @@ public:
               int dimension,
               bool declaredByPlugin);
 
+public:
     virtual ~KnobTable();
 
     void getTable(std::list<std::vector<std::string> >* table);
@@ -1241,15 +1315,9 @@ class KnobLayers
 {
     Q_DECLARE_TR_FUNCTIONS(KnobLayers)
 
-public:
-
-    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
-                                  const std::string &label,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobLayers(holder, label, dimension, declaredByPlugin);
-    }
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobLayers(const KnobHolderPtr& holder,
                const std::string &description,
@@ -1257,6 +1325,23 @@ public:
                bool declaredByPlugin)
         : KnobTable(holder, description, dimension, declaredByPlugin)
     {
+    }
+
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobLayers(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobLayersPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobLayersPtr(new KnobLayers(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
     virtual ~KnobLayers()

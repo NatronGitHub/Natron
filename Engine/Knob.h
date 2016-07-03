@@ -375,7 +375,7 @@ class KnobI
 {
     friend class KnobHolder;
 
-public:
+protected: // parent of KnobHelper
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
@@ -1264,6 +1264,9 @@ public:
         eValueChangedReturnCodeNothingChanged,
     };
 
+protected: // derives from KnobI, parent of Knob
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     /**
      * @brief Creates a new Knob that belongs to the given holder, with the given label.
      * The name of the knob will be equal to the label, you can change it by calling setName()
@@ -1275,6 +1278,7 @@ public:
                int dimension = 1,
                bool declaredByPlugin = true);
 
+public:
     virtual ~KnobHelper();
 
 private:
@@ -1736,6 +1740,9 @@ public:
     typedef std::map<double, T> FrameValueMap;
     typedef std::vector<FrameValueMap> ExprResults;
 
+protected: // derives from KnobI, parent of KnobInt, KnobBool
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     /**
      * @brief Make a knob for the given KnobHolder with the given label (the label displayed on
@@ -1747,6 +1754,7 @@ public:
          int dimension = 1,
          bool declaredByPlugin = true);
 
+public:
     virtual ~Knob();
 
 

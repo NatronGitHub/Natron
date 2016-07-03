@@ -1217,9 +1217,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
     if (!useInspector) {
-        node.reset( new Node(shared_from_this(), argsGroup, plugin) );
+        node = Node::create(shared_from_this(), argsGroup, plugin);
     } else {
-        node.reset( new InspectorNode(shared_from_this(), argsGroup, plugin) );
+        node = InspectorNode::create(shared_from_this(), argsGroup, plugin);
     }
 
 

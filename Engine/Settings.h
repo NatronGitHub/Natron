@@ -86,7 +86,16 @@ public:
         eEnableOpenGLDisabledIfBackground,
     };
 
+private: // inherits from KnobHolder
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Settings();
+
+public:
+    static SettingsPtr create()
+    {
+        return SettingsPtr( new Settings() );
+    }
 
     virtual ~Settings()
     {

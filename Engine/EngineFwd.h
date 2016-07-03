@@ -303,6 +303,7 @@ typedef boost::shared_ptr<KnobHelper> KnobHelperPtr;
 typedef boost::shared_ptr<KnobInt> KnobIntPtr;
 typedef boost::shared_ptr<KnobHolder> KnobHolderPtr;
 typedef boost::shared_ptr<KnobI> KnobIPtr;
+typedef boost::shared_ptr<KnobLayers> KnobLayersPtr;
 typedef boost::shared_ptr<const KnobI> KnobIConstPtr;
 typedef boost::shared_ptr<KnobOutputFile> KnobOutputFilePtr;
 typedef boost::shared_ptr<KnobPath> KnobPathPtr;

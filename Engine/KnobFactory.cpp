@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelper* (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &label, int dimension, bool declaredByPlugin);
+typedef KnobHelperPtr (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &label, int dimension, bool declaredByPlugin);
 
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory()
@@ -68,7 +68,8 @@ knobFactoryEntry()
     //KnobHelperPtr knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void (*)()> functions;
 
-    functions.insert( std::make_pair("BuildKnob", ( void (*)() ) & K::BuildKnob) );
+    KnobBuilder func = K::create;
+    functions.insert( std::make_pair("BuildKnob", ( void (*)() ) & func) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(K::typeNameStatic(), knobPlugin);

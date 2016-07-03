@@ -333,7 +333,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(removeKeyframe);
     _imp->ui->removeKeyframeButton = removeKeyframe;
 
-    KnobButtonPtr showTransform = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamShowTransformLabel) );
+    KnobButtonPtr showTransform = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamShowTransformLabel) );
     showTransform->setName(kRotoUIParamShowTransform);
     showTransform->setHintToolTip( tr(kRotoUIParamShowTransformHint) );
     showTransform->setEvaluateOnChange(false);

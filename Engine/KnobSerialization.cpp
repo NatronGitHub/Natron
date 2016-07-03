@@ -135,31 +135,31 @@ KnobSerialization::createKnob(const std::string & typeName,
     KnobIPtr ret;
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        ret.reset( new KnobInt(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobInt::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        ret.reset( new KnobBool(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobBool::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        ret.reset( new KnobDouble(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobDouble::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        ret.reset( new KnobChoice(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobChoice::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        ret.reset( new KnobString(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobString::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        ret.reset( new KnobParametric(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobParametric::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        ret.reset( new KnobColor(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobColor::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        ret.reset( new KnobPath(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobPath::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobLayers::typeNameStatic() ) {
-        ret.reset( new KnobLayers(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobLayers::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        ret.reset( new KnobFile(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobFile::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        ret.reset( new KnobOutputFile(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobOutputFile::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobButton::typeNameStatic() ) {
-        ret.reset( new KnobButton(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobButton::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobSeparator::typeNameStatic() ) {
-        ret.reset( new KnobSeparator(KnobHolderPtr(), std::string(), dimension, false) );
+        ret = KnobSeparator::create(KnobHolderPtr(), std::string(), dimension, false);
     }
 
     if (ret) {

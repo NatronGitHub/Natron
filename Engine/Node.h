@@ -88,7 +88,7 @@ public:
 
     struct Implementation;
 
-public:
+protected: // parent of InspectorNode
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstancePtr& app,
@@ -96,6 +96,13 @@ public:
          Plugin* plugin);
 
 public:
+    static NodePtr create(const AppInstancePtr& app,
+                          const NodeCollectionPtr& group,
+                          Plugin* plugin)
+    {
+        return NodePtr( new Node(app, group, plugin) );
+    }
+
     virtual ~Node();
 
     NodeCollectionPtr getGroup() const;
@@ -1532,12 +1539,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from Node
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     InspectorNode(const AppInstancePtr& app,
                   const NodeCollectionPtr& group,
                   Plugin* plugin);
 
+public:
     virtual ~InspectorNode();
 
 
