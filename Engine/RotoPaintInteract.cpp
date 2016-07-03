@@ -940,10 +940,10 @@ RotoPaintInteract::onBreakMultiStrokeTriggered()
 }
 
 static bool
-isBranchConnectedToRotoNodeRecursive(Node* node,
-                                     const Node* rotoNode,
+isBranchConnectedToRotoNodeRecursive(const NodePtr& node,
+                                     const NodeConstPtr& rotoNode,
                                      int* recursion,
-                                     std::list<Node*>& markedNodes)
+                                     std::list<NodePtr>& markedNodes)
 {
     assert(recursion);
     if (!node) {
@@ -958,7 +958,7 @@ isBranchConnectedToRotoNodeRecursive(Node* node,
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr inp = node->getInput(i);
         if (inp) {
-            if ( isBranchConnectedToRotoNodeRecursive(inp.get(), rotoNode, recursion, markedNodes) ) {
+            if ( isBranchConnectedToRotoNodeRecursive(inp, rotoNode, recursion, markedNodes) ) {
                 return true;
             }
         }
@@ -981,9 +981,9 @@ RotoPaintInteract::checkViewersAreDirectlyConnected()
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = viewerNode->getInput(i);
             if (input) {
-                std::list<Node*> markedNodes;
+                std::list<NodePtr> markedNodes;
                 int recursion = 0;
-                if ( isBranchConnectedToRotoNodeRecursive(input.get(), rotoNode.get(), &recursion, markedNodes) ) {
+                if ( isBranchConnectedToRotoNodeRecursive(input, rotoNode, &recursion, markedNodes) ) {
                     if (recursion == 0) {
                         //This viewer is already connected to the Roto node directly.
                         break;

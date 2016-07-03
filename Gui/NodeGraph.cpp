@@ -60,7 +60,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 void
-NodeGraph::makeFullyQualifiedLabel(Node* node,
+NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
                                    std::string* ret)
 {
     NodeCollectionPtr parent = node->getGroup();
@@ -375,17 +375,17 @@ NodeGraph::createNodeGUI(const NodePtr & node,
 
 
     if (isDotNode) {
-        node_ui.reset( new DotGui(_imp->_nodeRoot) );
+        node_ui = DotGui::create(_imp->_nodeRoot);
     } else if (isBd) {
-        node_ui.reset( new BackdropGui(_imp->_nodeRoot) );
+        node_ui = BackdropGui::create(_imp->_nodeRoot);
     } else {
-        node_ui.reset( new NodeGui(_imp->_nodeRoot) );
+        node_ui = NodeGui::create(_imp->_nodeRoot);
     }
     assert(node_ui);
     node_ui->initialize(this, node);
 
     if (isBd) {
-        BackdropGui* bd = dynamic_cast<BackdropGui*>( node_ui.get() );
+        BackdropGuiPtr bd = isBackdropGui(node_ui);
         assert(bd);
         NodesGuiList selectedNodes = _imp->_selection;
         if ( bd && !selectedNodes.empty() ) {

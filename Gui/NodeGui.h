@@ -176,7 +176,7 @@ public:
         return _graph;
     }
 
-    virtual bool isSelectedInParentMultiInstance(const Node* node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelMinimized() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setPosition(double x, double y) OVERRIDE FINAL;

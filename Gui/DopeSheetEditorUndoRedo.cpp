@@ -155,7 +155,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 ////////////////////////// DSMoveKeysCommand //////////////////////////
 
 DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                                                     const std::vector<boost::shared_ptr<DSNode> >& nodes,
+                                                     const std::vector<DSNodePtr >& nodes,
                                                      double dt,
                                                      DopeSheetEditor *model,
                                                      QUndoCommand *parent)
@@ -167,7 +167,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
 {
     setText( tr("Move selected keys") );
     std::set<NodePtr > nodesSet;
-    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::vector<DSNodePtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
         if ( (type != eDopeSheetItemTypeReader) &&
              ( type != eDopeSheetItemTypeGroup) &&
@@ -237,7 +237,7 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
     //////////Handle selected keyframes
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         const DSKeyPtr& selectedKey = (*it);
-        boost::shared_ptr<DSKnob> knobContext = selectedKey->context.lock();
+        DSKnobPtr knobContext = selectedKey->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -249,7 +249,7 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
                               dt, 0, &selectedKey->key);
     }
     ////////////Handle selected nodes
-    for (std::vector<boost::shared_ptr<DSNode> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::vector<DSNodePtr >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
         if (type == eDopeSheetItemTypeReader) {
             moveReader( (*it)->getInternalNode(), dt );
@@ -311,8 +311,8 @@ DSMoveKeysAndNodesCommand::mergeWith(const QUndoCommand *other)
         }
     }
 
-    std::vector<boost::shared_ptr<DSNode> >::const_iterator itOther = cmd->_nodes.begin();
-    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
+    std::vector<DSNodePtr >::const_iterator itOther = cmd->_nodes.begin();
+    for (std::vector<DSNodePtr >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
         if (*itOther != *it) {
             return false;
         }
@@ -335,7 +335,7 @@ DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
     , _model(model)
 {
     for (DSKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
+        DSKnobPtr knobContext = (*it)->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -437,7 +437,7 @@ DSTransformKeysCommand::redo()
 void
 DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
 {
-    boost::shared_ptr<DSKnob> knobContext = key->context.lock();
+    DSKnobPtr knobContext = key->context.lock();
 
     if (!knobContext) {
         return;
@@ -490,7 +490,7 @@ DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSLeftTrimReaderCommand //////////////////////////
 
-DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const DSNodePtr &reader,
                                                  double oldTime,
                                                  double newTime,
                                                  QUndoCommand *parent)
@@ -517,7 +517,7 @@ DSLeftTrimReaderCommand::redo()
 void
 DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    boost::shared_ptr<DSNode> nodeContext = _readerContext.lock();
+    DSNodePtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -559,8 +559,8 @@ DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    boost::shared_ptr<DSNode> node = _readerContext.lock();
-    boost::shared_ptr<DSNode> otherNode = cmd->_readerContext.lock();
+    DSNodePtr node = _readerContext.lock();
+    DSNodePtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -576,7 +576,7 @@ DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSRightTrimReaderCommand //////////////////////////
 
-DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+DSRightTrimReaderCommand::DSRightTrimReaderCommand(const DSNodePtr &reader,
                                                    double oldTime,
                                                    double newTime,
                                                    DopeSheetEditor * /*model*/,
@@ -604,7 +604,7 @@ DSRightTrimReaderCommand::redo()
 void
 DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    boost::shared_ptr<DSNode> nodeContext = _readerContext.lock();
+    DSNodePtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -646,8 +646,8 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    boost::shared_ptr<DSNode> node = _readerContext.lock();
-    boost::shared_ptr<DSNode> otherNode = cmd->_readerContext.lock();
+    DSNodePtr node = _readerContext.lock();
+    DSNodePtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -663,7 +663,7 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSSlipReaderCommand //////////////////////////
 
-DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
+DSSlipReaderCommand::DSSlipReaderCommand(const DSNodePtr &dsNodeReader,
                                          double dt,
                                          DopeSheetEditor *model,
                                          QUndoCommand *parent)
@@ -703,8 +703,8 @@ DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    boost::shared_ptr<DSNode> node = _readerContext.lock();
-    boost::shared_ptr<DSNode> otherNode = cmd->_readerContext.lock();
+    DSNodePtr node = _readerContext.lock();
+    DSNodePtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -721,7 +721,7 @@ DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
 void
 DSSlipReaderCommand::slipReader(double dt)
 {
-    boost::shared_ptr<DSNode> nodeContext = _readerContext.lock();
+    DSNodePtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -810,7 +810,7 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
     std::set<KnobGuiPtr> knobsSet;
     for (std::vector<DopeSheetKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DopeSheetKey selected = (*it);
-        boost::shared_ptr<DSKnob> knobContext = selected.context.lock();
+        DSKnobPtr knobContext = selected.context.lock();
         if (!knobContext) {
             continue;
         }
@@ -866,7 +866,7 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 {
     for (std::list<DSKeyInterpolationChange>::iterator it = _changes.begin(); it != _changes.end(); ++it) {
         KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
-        boost::shared_ptr<DSKnob> knobContext = it->_key->context.lock();
+        DSKnobPtr knobContext = it->_key->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -885,7 +885,7 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
 DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                                       const std::list<boost::shared_ptr<DSKnob> >& dstKnobs,
+                                       const std::list<DSKnobPtr >& dstKnobs,
                                        bool pasteRelativeToRefTime,
                                        DopeSheetEditor *model,
                                        QUndoCommand *parent)
@@ -897,7 +897,7 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
     _model(model)
 {
 
-    for (std::list<boost::shared_ptr<DSKnob> >::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
+    for (std::list<DSKnobPtr >::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
         _dstKnobs.push_back(*it);
     }
 
@@ -958,7 +958,7 @@ void
 DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
     for (std::list<boost::weak_ptr<DSKnob> >::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
-        boost::shared_ptr<DSKnob> knobContext = it->lock();
+        DSKnobPtr knobContext = it->lock();
         if (!knobContext) {
             continue;
         }

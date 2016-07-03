@@ -1071,9 +1071,9 @@ OutputSchedulerThread::startRender()
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
     EffectInstancePtr effect = _imp->outputEffect.lock();
-    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
-    if (isWriteNode) {
-        NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+    WriteNodePtr isWrite = isWriteNode( effect );
+    if (isWrite) {
+        NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
         if (embeddedWriter) {
             effect = embeddedWriter->getEffectInstance();
         }
@@ -1157,9 +1157,9 @@ OutputSchedulerThread::stopRender()
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
     EffectInstancePtr effect = _imp->outputEffect.lock();
-    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
-    if (isWriteNode) {
-        NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+    WriteNodePtr isWrite = isWriteNode( effect );
+    if (isWrite) {
+        NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
         if (embeddedWriter) {
             effect = embeddedWriter->getEffectInstance();
         }
@@ -2247,9 +2247,9 @@ private:
             EffectInstancePtr activeInputToRender;
             //if (renderDirectly) {
             activeInputToRender = output;
-            WriteNode* isWriteNode = dynamic_cast<WriteNode*>( output.get() );
-            if (isWriteNode) {
-                NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+            WriteNodePtr isWrite = isWriteNode(output);
+            if (isWrite) {
+                NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
                 if (embeddedWriter) {
                     activeInputToRender = embeddedWriter->getEffectInstance();
                 }
@@ -2547,9 +2547,9 @@ DefaultScheduler::aboutToStartRender()
     }
 
     // Activate the internal writer node for a write node
-    WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
-    if (isWriter) {
-        isWriter->onSequenceRenderStarted();
+    WriteNodePtr isWrite = isWriteNode( effect );
+    if (isWrite) {
+        isWrite->onSequenceRenderStarted();
     }
 
     std::string cb = effect->getNode()->getBeforeRenderCallback();

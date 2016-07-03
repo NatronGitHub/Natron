@@ -268,25 +268,25 @@ MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
     int dimension = originalKnob->getDimension();
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        copy.reset( new KnobInt(NULL, std::string(), dimension, false) );
+        copy = KnobInt::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        copy.reset( new KnobBool(NULL, std::string(), dimension, false) );
+        copy = KnobBool::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        copy.reset( new KnobDouble(NULL, std::string(), dimension, false) );
+        copy = KnobDouble::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        copy.reset( new KnobChoice(NULL, std::string(), dimension, false) );
+        copy = KnobChoice::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        copy.reset( new KnobString(NULL, std::string(), dimension, false) );
+        copy = KnobString::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        copy.reset( new KnobParametric(NULL, std::string(), dimension, false) );
+        copy = KnobParametric::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        copy.reset( new KnobColor(NULL, std::string(), dimension, false) );
+        copy = KnobColor::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        copy.reset( new KnobPath(NULL, std::string(), dimension, false) );
+        copy = KnobPath::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        copy.reset( new KnobFile(NULL, std::string(), dimension, false) );
+        copy = KnobFile::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        copy.reset( new KnobOutputFile(NULL, std::string(), dimension, false) );
+        copy = KnobOutputFile::create(KnobHolderPtr(), std::string(), dimension, false);
     }
 
     ///If this is another type of knob this is wrong since they do not hold any value
@@ -638,7 +638,7 @@ RestoreDefaultsCommand::redo()
             continue;
         }
         if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->onKnobValueChanged_public(itKnob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+            itKnob->getHolder()->onKnobValueChanged_public(itKnob, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
         }
     }
 

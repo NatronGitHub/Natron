@@ -128,7 +128,7 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
     for (std::set<NodeGui*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isVisible() && (*it)->isActive() ) {
             QPointF localPoint = (*it)->mapFromScene( mapToScene(mousePosViewport) );
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
+            BackdropGui* isBd =isBackdropGui(*it);
             if (isBd) {
                 if ( isBd->isNearbyNameFrame(localPoint) ) {
                     *node = *it;
@@ -248,7 +248,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>( selectedNode.get() );
+            BackdropGui* isBd =isBackdropGui( selectedNode.get() );
             if (!isBd) {
                 _imp->_magnifiedNode = selectedNode;
             }
@@ -269,7 +269,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
             for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
+                BackdropGui* isBd =isBackdropGui(*it);
                 if (isBd) {
                     NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(*it, nodesWithin) );

@@ -333,7 +333,7 @@ KnobGui::linkTo(int dimension)
             std::stringstream expr;
             NodeCollectionPtr thisCollection = isEffect->getNode()->getGroup();
             NodeGroupPtr otherIsGroup = isNodeGroup(otherEffect);
-            if ( otherIsGroup == thisCollection.get() ) {
+            if ( otherIsGroup == thisCollection ) {
                 expr << "thisGroup"; // make expression generic if possible
             } else {
                 expr << otherEffect->getNode()->getFullyQualifiedName();

@@ -702,7 +702,7 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
                 name = ss.str();
             }
             ++no;
-        } while ( group && group->checkIfNodeNameExists(name, this) );
+        } while ( group && group->checkIfNodeNameExists(name, shared_from_this()) );
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
@@ -724,7 +724,7 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
                 name = ss.str();
             }
             ++no;
-        } while ( group && group->checkIfNodeNameExists(name, this) );
+        } while ( group && group->checkIfNodeNameExists(name, shared_from_this()) );
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
@@ -1605,14 +1605,14 @@ Node::computeHashInternal()
 } // Node::computeHashInternal
 
 void
-Node::computeHashRecursive(std::list<Node*>& marked)
+Node::computeHashRecursive(std::list<NodePtr>& marked)
 {
-    if ( std::find(marked.begin(), marked.end(), this) != marked.end() ) {
+    if ( std::find(marked.begin(), marked.end(), shared_from_this()) != marked.end() ) {
         return;
     }
 
     bool hasChanged = computeHashInternal();
-    marked.push_back(this);
+    marked.push_back( shared_from_this() );
     if (!hasChanged) {
         //Nothing changed, no need to recurse on outputs
         return;
@@ -1699,7 +1699,7 @@ Node::computeHash()
 
         return;
     }
-    std::list<Node*> marked;
+    std::list<NodePtr> marked;
     computeHashRecursive(marked);
 } // computeHash
 
@@ -3068,7 +3068,7 @@ Node::setNameInternal(const std::string& name,
     if (collection) {
         if (throwErrors) {
             try {
-                collection->checkNodeName(this, name, false, false, &newName);
+                collection->checkNodeName(shared_from_this(), name, false, false, &newName);
             } catch (const std::exception& e) {
                 LogEntry::LogEntryColor c;
                 if (getColor(&c.r, &c.g, &c.b)) {
@@ -3080,7 +3080,7 @@ Node::setNameInternal(const std::string& name,
                 return;
             }
         } else {
-            collection->checkNodeName(this, name, false, false, &newName);
+            collection->checkNodeName(shared_from_this(), name, false, false, &newName);
         }
     }
 
@@ -3183,7 +3183,7 @@ Node::setScriptName(const std::string& name)
     std::string newName;
 
     if ( getGroup() ) {
-        getGroup()->checkNodeName(this, name, false, true, &newName);
+        getGroup()->checkNodeName(shared_from_this(), name, false, true, &newName);
     } else {
         newName = name;
     }
@@ -4958,12 +4958,12 @@ Node::getRealGuiInput(int index) const
 }
 
 int
-Node::getInputIndex(const Node* node) const
+Node::getInputIndex(const NodeConstPtr& node) const
 {
     QMutexLocker l(&_imp->inputsMutex);
 
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock().get() == node) {
+        if (_imp->inputs[i].lock() == node) {
             return i;
         }
     }
@@ -5209,21 +5209,21 @@ Node::hasOutputConnected() const
 }
 
 bool
-Node::checkIfConnectingInputIsOk(Node* input) const
+Node::checkIfConnectingInputIsOk(const NodePtr& input) const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    if (input == this) {
+    if (input.get() == this) {
         return false;
     }
     bool found;
-    input->isNodeUpstream(this, &found);
+    input->isNodeUpstream(shared_from_this(), &found);
 
     return !found;
 }
 
 void
-Node::isNodeUpstream(const Node* input,
+Node::isNodeUpstream(const NodeConstPtr& input,
                      bool* ok) const
 {
     ////Only called by the main-thread
@@ -5238,7 +5238,7 @@ Node::isNodeUpstream(const Node* input,
     ///No need to lock guiInputs is only written to by the main-thread
 
     for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock().get() == input) {
+        if (_imp->inputs[i].lock() == input) {
             *ok = true;
 
             return;
@@ -5248,7 +5248,7 @@ Node::isNodeUpstream(const Node* input,
     for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
         NodePtr in = _imp->inputs[i].lock();
         if (in) {
-            in->isNodeUpstream(input, ok);
+            in->isNodeUpstream(shared_from_this(), ok);
             if (*ok) {
                 return;
             }
@@ -5340,7 +5340,7 @@ Node::canConnectInput(const NodePtr& input,
     }
 
     ///Applying this connection would create cycles in the graph
-    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+    if ( !checkIfConnectingInputIsOk( input ) ) {
         return eCanConnectInput_graphCycles;
     }
 
@@ -5391,7 +5391,7 @@ Node::connectInput(const NodePtr & input,
     assert(input);
 
     ///Check for cycles: they are forbidden in the graph
-    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+    if ( !checkIfConnectingInputIsOk( input ) ) {
         return false;
     }
     if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
@@ -5490,7 +5490,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
     assert(_imp->inputsInitialized);
     assert(input);
     ///Check for cycles: they are forbidden in the graph
-    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+    if ( !checkIfConnectingInputIsOk( input ) ) {
         return false;
     }
     if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
@@ -5524,7 +5524,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
             NodePtr curIn = _imp->inputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, this);
+                curIn->disconnectOutput(useGuiInputs, shared_from_this());
             }
             _imp->inputs[inputNumber] = input;
             _imp->guiInputs[inputNumber] = input;
@@ -5532,7 +5532,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
             NodePtr curIn = _imp->guiInputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, this);
+                curIn->disconnectOutput(useGuiInputs, shared_from_this());
             }
             _imp->guiInputs[inputNumber] = input;
         }
@@ -5748,7 +5748,7 @@ Node::disconnectInput(int inputNumber)
 
 
     QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-    inputShared->disconnectOutput(useGuiValues, this);
+    inputShared->disconnectOutput(useGuiValues, shared_from_this());
 
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5794,7 +5794,7 @@ Node::disconnectInput(int inputNumber)
 } // Node::disconnectInput
 
 int
-Node::disconnectInputInternal(Node* input, bool useGuiValues)
+Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
 {
     assert(_imp->inputsInitialized);
     int found = -1;
@@ -5804,7 +5804,7 @@ Node::disconnectInputInternal(Node* input, bool useGuiValues)
         if (!useGuiValues) {
             for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
                 NodePtr curInput = _imp->inputs[i].lock();
-                if (curInput.get() == input) {
+                if (curInput == input) {
                     inputShared = curInput;
                     found = (int)i;
                     break;
@@ -5813,7 +5813,7 @@ Node::disconnectInputInternal(Node* input, bool useGuiValues)
         } else {
             for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
                 NodePtr curInput = _imp->guiInputs[i].lock();
-                if (curInput.get() == input) {
+                if (curInput == input) {
                     inputShared = curInput;
                     found = (int)i;
                     break;
@@ -5831,7 +5831,7 @@ Node::disconnectInputInternal(Node* input, bool useGuiValues)
                 _imp->guiInputs[found].reset();
             }
         }
-        input->disconnectOutput(useGuiValues, this);
+        input->disconnectOutput(useGuiValues, shared_from_this());
         Q_EMIT inputChanged(found);
         bool mustCallEnd = false;
         if (!useGuiValues) {
@@ -5866,7 +5866,7 @@ Node::disconnectInputInternal(Node* input, bool useGuiValues)
 }
 
 int
-Node::disconnectInput(Node* input)
+Node::disconnectInput(const NodePtr& input)
 {
 
     bool useGuiValues = isNodeRendering();
@@ -5876,7 +5876,7 @@ Node::disconnectInput(Node* input)
 
 int
 Node::disconnectOutput(bool useGuiValues,
-                       const Node* output)
+                       const NodeConstPtr& output)
 {
     assert(output);
     int ret = -1;
@@ -5885,7 +5885,7 @@ Node::disconnectOutput(bool useGuiValues,
         if (!useGuiValues) {
             int ret = 0;
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
-                if (it->lock().get() == output) {
+                if (it->lock() == output) {
                     _imp->outputs.erase(it);
                     break;
                 }
@@ -5893,7 +5893,7 @@ Node::disconnectOutput(bool useGuiValues,
         }
         int ret = 0;
         for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it, ++ret) {
-            if (it->lock().get() == output) {
+            if (it->lock() == output) {
                 _imp->guiOutputs.erase(it);
                 break;
             }
@@ -6084,7 +6084,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
             NodePtr input = _imp->guiInputs[i].lock();
             if (input) {
-                input->disconnectOutput(false, this);
+                input->disconnectOutput(false, shared_from_this());
             }
         }
     }
@@ -6116,7 +6116,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
             }
         }
         if (dc) {
-            int inputNb = output->getInputIndex(this);
+            int inputNb = output->getInputIndex(shared_from_this());
             if (inputNb != -1) {
                 _imp->deactivatedState.insert( make_pair(*it, inputNb) );
 
@@ -6124,7 +6124,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 if (inputToConnectTo) {
                     output->replaceInputInternal(inputToConnectTo, inputNb, false);
                 } else {
-                    ignore_result( output->disconnectInputInternal(this, false) );
+                    ignore_result( output->disconnectInputInternal(shared_from_this(), false) );
                 }
             }
         }
@@ -7116,12 +7116,12 @@ Node::getPersistentMessage(QString* message,
 }
 
 void
-Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
+Node::clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
 {
-    if ( std::find(markedNodes.begin(), markedNodes.end(), this) != markedNodes.end() ) {
+    if ( std::find(markedNodes.begin(), markedNodes.end(), shared_from_this()) != markedNodes.end() ) {
         return;
     }
-    markedNodes.push_back(this);
+    markedNodes.push_back(shared_from_this());
     clearPersistentMessageInternal();
 
     int nInputs = getMaxInputCount();
@@ -7163,7 +7163,7 @@ Node::clearPersistentMessage(bool recurse)
         return;
     }
     if (recurse) {
-        std::list<Node*> markedNodes;
+        std::list<NodePtr> markedNodes;
         clearPersistentMessageRecursive(markedNodes);
     } else {
         clearPersistentMessageInternal();
@@ -7316,8 +7316,8 @@ Node::getRenderInstancesSharedMutex()
 
 static void
 refreshPreviewsRecursivelyUpstreamInternal(double time,
-                                           Node* node,
-                                           std::list<Node*>& marked)
+                                           const NodePtr& node,
+                                           std::list<NodePtr>& marked)
 {
     if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
         return;
@@ -7342,15 +7342,15 @@ refreshPreviewsRecursivelyUpstreamInternal(double time,
 void
 Node::refreshPreviewsRecursivelyUpstream(double time)
 {
-    std::list<Node*> marked;
+    std::list<NodePtr> marked;
 
-    refreshPreviewsRecursivelyUpstreamInternal(time, this, marked);
+    refreshPreviewsRecursivelyUpstreamInternal(time, shared_from_this(), marked);
 }
 
 static void
 refreshPreviewsRecursivelyDownstreamInternal(double time,
-                                             Node* node,
-                                             std::list<Node*>& marked)
+                                             const NodePtr& node,
+                                             std::list<NodePtr>& marked)
 {
     if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
         return;
@@ -7378,8 +7378,8 @@ Node::refreshPreviewsRecursivelyDownstream(double time)
     if ( !getNodeGui() ) {
         return;
     }
-    std::list<Node*> marked;
-    refreshPreviewsRecursivelyDownstreamInternal(time, this, marked);
+    std::list<NodePtr> marked;
+    refreshPreviewsRecursivelyDownstreamInternal(time, shared_from_this(), marked);
 }
 
 void
@@ -8696,7 +8696,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
 
             NodesList nodes = isGroup->getNodes();
-            std::list<Node*> markedNodes;
+            std::list<NodePtr> markedNodes;
             for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 //This will not trigger a hash recomputation
                 (*it)->incrementKnobsAge_internal();
@@ -8865,12 +8865,12 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,
                                                const ChannelSelector& selector,
                                                ImageComponents* comp) const
 {
-    Node* node = 0;
+    NodePtr node;
 
     if (inputNb == -1) {
-        node = _publicInterface;
+        node = _publicInterface->shared_from_this();
     } else {
-        node = _publicInterface->getInput(inputNb).get();
+        node = _publicInterface->getInput(inputNb);
     }
 
     KnobChoicePtr layerKnob = selector.layer.lock();
@@ -9996,7 +9996,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
 } // Node::refreshAllInputRelatedData
 
 bool
-Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
+Node::refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes)
 {
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
@@ -10006,7 +10006,7 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
         }
     }
 
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    std::list<NodePtr>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), shared_from_this());
 
     if ( found != markedNodes.end() ) {
         return false;
@@ -10025,7 +10025,7 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
     }
 
 
-    markedNodes.push_back(this);
+    markedNodes.push_back(shared_from_this());
 
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
 
@@ -10087,16 +10087,16 @@ Node::markAllInputRelatedDataDirty()
 }
 
 void
-Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,
+Node::markInputRelatedDataDirtyRecursiveInternal(std::list<NodePtr>& markedNodes,
                                                  bool recurse)
 {
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    std::list<NodePtr>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), shared_from_this());
 
     if ( found != markedNodes.end() ) {
         return;
     }
     markAllInputRelatedDataDirty();
-    markedNodes.push_back(this);
+    markedNodes.push_back(shared_from_this());
     if (recurse) {
         NodesList outputs;
         getOutputsWithGroupRedirection(outputs);
@@ -10109,13 +10109,13 @@ Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,
 void
 Node::markInputRelatedDataDirtyRecursive()
 {
-    std::list<Node*> marked;
+    std::list<NodePtr> marked;
 
     markInputRelatedDataDirtyRecursiveInternal(marked, true);
 }
 
 void
-Node::refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes)
+Node::refreshInputRelatedDataRecursiveInternal(std::list<NodePtr>& markedNodes)
 {
     if ( getApp()->isCreatingNodeTree() ) {
         return;
@@ -10133,7 +10133,7 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes)
 void
 Node::refreshInputRelatedDataRecursive()
 {
-    std::list<Node*> markedNodes;
+    std::list<NodePtr> markedNodes;
 
     refreshInputRelatedDataRecursiveInternal(markedNodes);
 }
@@ -10265,7 +10265,7 @@ Node::isSettingsPanelMinimized() const
 }
 
 bool
-Node::isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const
+Node::isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const
 {
     NodeGuiIPtr gui = _imp->guiPointer.lock();
 
@@ -10277,10 +10277,10 @@ Node::isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const
         return parent->isSettingsPanelVisible();
     }
 
-    if ( recursionList.find(this) != recursionList.end() ) {
+    if ( recursionList.find(shared_from_this()) != recursionList.end() ) {
         return false;
     }
-    recursionList.insert(this);
+    recursionList.insert(shared_from_this());
 
     {
         NodePtr master = getMasterNode();
@@ -10301,7 +10301,7 @@ Node::isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const
 bool
 Node::isSettingsPanelVisible() const
 {
-    std::set<const Node*> tmplist;
+    std::set<NodeConstPtr> tmplist;
 
     return isSettingsPanelVisibleInternal(tmplist);
 }
@@ -11555,7 +11555,7 @@ InspectorNode::connectInput(const NodePtr& input,
 
     assert(input);
 
-    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+    if ( !checkIfConnectingInputIsOk( input ) ) {
         return false;
     }
 

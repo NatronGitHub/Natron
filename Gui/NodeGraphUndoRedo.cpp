@@ -365,10 +365,10 @@ RemoveMultipleNodesCommand::redo()
                 NodesList::const_iterator found = std::find(outputsToRestore.begin(), outputsToRestore.end(), output);
 
                 if ( found != outputsToRestore.end() ) {
-                    InspectorNode* inspector = dynamic_cast<InspectorNode*>( output.get() );
+                    InspectorNodePtr inspector = isInspectorNode(output);
                     ///if the node is an inspector, when disconnecting the active input just activate another input instead
                     if (inspector) {
-                        const std::vector<NodeWPtr > & inputs = inspector->getGuiInputs();
+                        const std::vector<NodeWPtr> & inputs = inspector->getGuiInputs();
                         ///set as active input the first non null input
                         for (std::size_t i = 0; i < inputs.size(); ++i) {
                             NodePtr input = inputs[i].lock();

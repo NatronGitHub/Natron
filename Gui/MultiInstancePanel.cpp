@@ -107,7 +107,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 typedef std::list < std::pair<boost::weak_ptr<Node>, bool> > Nodes;
 
 KnobDoublePtr
-getCenterKnobForTracker(Node* node)
+getCenterKnobForTracker(const NodePtr& node)
 {
     KnobIPtr knob = node->getKnobByName(kTrackCenterName);
 
@@ -191,24 +191,24 @@ public:
         KnobIntPtr isInt = isKnobInt(ref);
         KnobHelperPtr ret;
         if (isInt) {
-            KnobIntPtr intKnb = AppManager::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            KnobIntPtr intKnb = AppManager::createKnob<KnobInt>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
             intKnb->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
             intKnb->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
             ret = intKnb;
         } else if ( isKnobBool(ref) ) {
-            ret = AppManager::createKnob<KnobBool>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobBool>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if (isDouble) {
-            KnobDoublePtr dblKnob = AppManager::createKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            KnobDoublePtr dblKnob = AppManager::createKnob<KnobDouble>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
             dblKnob->setMinimumsAndMaximums( isDouble->getMinimums(), isDouble->getMaximums() );
             dblKnob->setDisplayMinimumsAndMaximums( isDouble->getDisplayMinimums(), isDouble->getDisplayMaximums() );
             ret = dblKnob;
         } else if (isChoice) {
-            KnobChoicePtr choice = AppManager::createKnob<KnobChoice>(publicInterface,
+            KnobChoicePtr choice = AppManager::createKnob<KnobChoice>(publicInterface->shared_from_this(),
                                                                                       ref->getLabel(), ref->getDimension(), declaredByPlugin);
             choice->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getEntriesHelp_mt_safe() );
             ret = choice;
         } else if (isString) {
-            KnobStringPtr strKnob = AppManager::createKnob<KnobString>(publicInterface,
+            KnobStringPtr strKnob = AppManager::createKnob<KnobString>(publicInterface->shared_from_this(),
                                                                                        ref->getLabel(), ref->getDimension(), declaredByPlugin);
             if ( isString->isCustomKnob() ) {
                 strKnob->setAsCustom();
@@ -224,24 +224,24 @@ public:
             }
             ret = strKnob;
         } else if ( isKnobParametric(ref) ) {
-            ret = AppManager::createKnob<KnobParametric>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobParametric>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( isKnobColor(ref) ) {
-            ret = AppManager::createKnob<KnobColor>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobColor>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( isKnobPath(ref) ) {
-            ret = AppManager::createKnob<KnobPath>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobPath>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( isKnobFile(ref) ) {
-            ret = AppManager::createKnob<KnobFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobFile>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( isKnobOutputFile(ref) ) {
-            ret = AppManager::createKnob<KnobOutputFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobOutputFile>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if (isButton) {
-            KnobButtonPtr btn = AppManager::createKnob<KnobButton>(publicInterface,
+            KnobButtonPtr btn = AppManager::createKnob<KnobButton>(publicInterface->shared_from_this(),
                                                                                    ref->getLabel(), ref->getDimension(), declaredByPlugin);
             ///set the name prior to calling setIconForButton
             btn->setName( ref->getName() );
             publicInterface->setIconForButton(btn);
             ret = btn;
         } else if ( isKnobPage(ref) ) {
-            ret = AppManager::createKnob<KnobPage>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobPage>(publicInterface->shared_from_this(), ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else {
             return;
         }
@@ -264,7 +264,7 @@ public:
 
     void removeRow(int index);
 
-    void getInstanceSpecificKnobs(const Node* node,
+    void getInstanceSpecificKnobs(const NodeConstPtr& node,
                                   std::list<KnobIPtr >* knobs) const
     {
         const std::vector<KnobIPtr > & instanceKnobs = node->getKnobs();
@@ -287,7 +287,7 @@ public:
         }
     }
 
-    void getNodesFromSelection(const QModelIndexList & indexes, std::list<std::pair<Node*, bool> >* nodes);
+    void getNodesFromSelection(const QModelIndexList & indexes, std::list<std::pair<NodePtr, bool> >* nodes);
 
     void pushUndoCommand(QUndoCommand* cmd)
     {
@@ -475,7 +475,7 @@ MultiInstancePanel::initializeKnobs()
             if (!other) {
                 throw std::logic_error("MultiInstancePanel::initializeKnobs");
             }
-            KnobPagePtr otherPage = isKnobPage( other.get() );
+            KnobPagePtr otherPage = isKnobPage(other);
             assert(otherPage);
 
             if (!otherPage) {
@@ -598,7 +598,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsLayout->addStretch();
 
     ///Deactivate the main-instance since this is more convenient this way for the user.
-    //_imp->getMainInstance()->deactivate(std::list<Node* >(),false,false,false,false);
+    //_imp->getMainInstance()->deactivate(std::list<NodePtr>(),false,false,false,false);
     _imp->guiCreated = true;
 } // createMultiInstanceGui
 
@@ -859,7 +859,7 @@ MultiInstancePanel::clearSelection()
 }
 
 void
-MultiInstancePanel::selectNodes(const std::list<Node*> & nodes,
+MultiInstancePanel::selectNodes(const std::list<NodePtr> & nodes,
                                 bool addToSelection)
 {
     //_imp->view->selectionModel()->blockSignals(true);
@@ -877,7 +877,7 @@ MultiInstancePanel::selectNodes(const std::list<Node*> & nodes,
 
 
     QItemSelection newSelection;
-    for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         int i = 0;
         for (std::list< std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = _imp->instances.begin();
              it2 != _imp->instances.end(); ++it2, ++i) {
@@ -1087,15 +1087,15 @@ MultiInstancePanel::isSettingsPanelVisible() const
 void
 MultiInstancePanel::onSettingsPanelClosed(bool closed)
 {
-    std::list<Node*> selection;
+    std::list<NodePtr> selection;
 
     getSelectedInstances(&selection);
 
-    std::list<Node*>::iterator next = selection.begin();
+    std::list<NodePtr>::iterator next = selection.begin();
     if ( next != selection.end() ) {
         ++next;
     }
-    for (std::list<Node*>::iterator it = selection.begin();
+    for (std::list<NodePtr>::iterator it = selection.begin();
          it != selection.end();
          ++it) {
         if (closed) {
@@ -1115,7 +1115,7 @@ void
 MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                                        const QItemSelection & oldSelection)
 {
-    std::list<std::pair<Node*, bool> > previouslySelectedInstances;
+    std::list<std::pair<NodePtr, bool> > previouslySelectedInstances;
     QModelIndexList oldIndexes = oldSelection.indexes();
 
     _imp->getNodesFromSelection(oldIndexes, &previouslySelectedInstances);
@@ -1123,7 +1123,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     bool copyOnUnSlave = previouslySelectedInstances.size()  <= 1;
 
     /// new selection
-    std::list<std::pair<Node*, bool> > newlySelectedInstances;
+    std::list<std::pair<NodePtr, bool> > newlySelectedInstances;
     QModelIndexList newIndexes = newSelection.indexes();
     _imp->getNodesFromSelection(newIndexes, &newlySelectedInstances);
 
@@ -1131,17 +1131,17 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
 
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
-    std::list<std::pair<Node*, bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
+    std::list<std::pair<NodePtr, bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
     if ( nextPreviouslySelected != previouslySelectedInstances.end() ) {
         ++nextPreviouslySelected;
     }
 
 
-    for (std::list<std::pair<Node*, bool> >::iterator it = previouslySelectedInstances.begin();
+    for (std::list<std::pair<NodePtr, bool> >::iterator it = previouslySelectedInstances.begin();
          it != previouslySelectedInstances.end(); ++it) {
         ///if the item is in the new selection, don't consider it
         bool skip = false;
-        for (std::list<std::pair<Node*, bool> >::iterator it2 = newlySelectedInstances.begin();
+        for (std::list<std::pair<NodePtr, bool> >::iterator it2 = newlySelectedInstances.begin();
              it2 != newlySelectedInstances.end(); ++it2) {
             if (it2->first == it->first) {
                 skip = true;
@@ -1183,15 +1183,15 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
         }
     } // for(it)
     std::list<SequenceTime> allKeysToAdd;
-    std::list<std::pair<Node*, bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
+    std::list<std::pair<NodePtr, bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
     if ( nextNewlySelected != newlySelectedInstances.end() ) {
         ++nextNewlySelected;
     }
-    for (std::list<std::pair<Node*, bool> >::iterator it = newlySelectedInstances.begin();
+    for (std::list<std::pair<NodePtr, bool> >::iterator it = newlySelectedInstances.begin();
          it != newlySelectedInstances.end(); ++it) {
         ///if the item is in the old selection, don't consider it
         bool skip = false;
-        for (std::list<std::pair<Node*, bool> >::iterator it2 = previouslySelectedInstances.begin();
+        for (std::list<std::pair<NodePtr, bool> >::iterator it2 = previouslySelectedInstances.begin();
              it2 != previouslySelectedInstances.end(); ++it2) {
             if (it2->first == it->first) {
                 skip = true;
@@ -1265,7 +1265,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
 
 void
 MultiInstancePanelPrivate::getNodesFromSelection(const QModelIndexList & indexes,
-                                                 std::list<std::pair<Node*, bool> >* nodes)
+                                                 std::list<std::pair<NodePtr, bool> >* nodes)
 {
     std::set<int> rows;
 
@@ -1404,7 +1404,7 @@ MultiInstancePanel::onItemRightClicked(TableItem* item)
     NodePtr instance = _imp->getInstanceFromItem(item);
 
     if (instance) {
-        showMenuForInstance( instance.get() );
+        showMenuForInstance(instance);
     }
 }
 
@@ -1434,7 +1434,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
             std::advance(it, i);
             KnobIPtr enabledKnob = it->first.lock()->getKnobByName(kDisableNodeKnobName);
             assert(enabledKnob);
-            KnobBoolPtr bKnob = isKnobBool( enabledKnob.get() );
+            KnobBoolPtr bKnob = isKnobBool(enabledKnob);
             assert(bKnob);
             bKnob->setValue(!checked);
             QItemSelection sel;
@@ -1568,7 +1568,7 @@ MultiInstancePanel::onInstanceKnobValueChanged(ViewSpec /*view*/,
 } // onInstanceKnobValueChanged
 
 void
-MultiInstancePanel::getSelectedInstances(std::list<Node*>* instances) const
+MultiInstancePanel::getSelectedInstances(std::list<NodePtr>* instances) const
 {
     const QItemSelection selection = _imp->view->selectionModel()->selection();
     QModelIndexList indexes = selection.indexes();
@@ -1589,7 +1589,7 @@ MultiInstancePanel::getSelectedInstances(std::list<Node*>* instances) const
 void
 MultiInstancePanel::resetSelectedInstances()
 {
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     _imp->view->selectionModel()->clear();
@@ -1600,7 +1600,7 @@ void
 MultiInstancePanel::resetAllInstances()
 {
     _imp->view->selectionModel()->clear();
-    std::list<Node*> all;
+    std::list<NodePtr> all;
     for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
         all.push_back( it->first.lock().get() );
     }
@@ -1608,17 +1608,17 @@ MultiInstancePanel::resetAllInstances()
 }
 
 void
-MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
+MultiInstancePanel::resetInstances(const std::list<NodePtr> & instances)
 {
     if ( instances.empty() ) {
         return;
     }
 
-    std::list<Node*>::const_iterator next = instances.begin();
+    std::list<NodePtr>::const_iterator next = instances.begin();
     if ( next != instances.end() ) {
         ++next;
     }
-    for (std::list<Node*>::const_iterator it = instances.begin();
+    for (std::list<NodePtr>::const_iterator it = instances.begin();
          it != instances.end();
          ++it) {
         //invalidate the cache by incrementing the age
@@ -1655,16 +1655,16 @@ MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
 void
 MultiInstancePanel::onButtonTriggered(const KnobButtonPtr& button)
 {
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
 
     ///Forward the button click event to all the selected instances
     double time = getApp()->getTimeLine()->currentFrame();
-    for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+    for (std::list<NodePtr>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobIPtr k = (*it)->getKnobByName( button->getName() );
         assert( k && isKnobButton(k) );
-        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(), eValueChangedReasonUserEdited, time, ViewIdx(0), true);
+        (*it)->getEffectInstance()->onKnobValueChanged_public(k, eValueChangedReasonUserEdited, time, ViewIdx(0), true);
     }
 }
 
@@ -1713,7 +1713,7 @@ MultiInstancePanel::onKnobValueChanged(const KnobIPtr& k,
                             isString->clone(k);
                         }
 
-                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited, time, view, true);
+                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob, eValueChangedReasonPluginEdited, time, view, true);
                         ret = true;
                     }
                 }
@@ -1766,9 +1766,9 @@ public:
     {
     }
 
-    void createTransformFromSelection(const std::list<Node*> & selection, bool linked, ExportTransformTypeEnum type);
+    void createTransformFromSelection(const std::list<NodePtr> & selection, bool linked, ExportTransformTypeEnum type);
 
-    void createCornerPinFromSelection(const std::list<Node*> & selection, bool linked, bool useTransformRefFrame, bool invert);
+    void createCornerPinFromSelection(const std::list<NodePtr> & selection, bool linked, bool useTransformRefFrame, bool invert);
 
     bool getTrackInstancesForButton(std::vector<KnobButtonPtr>* trackButtons, const std::string& buttonName);
 };
@@ -1912,7 +1912,7 @@ TrackerPanelV1::setIconForButton(const KnobButtonPtr& knob)
 void
 TrackerPanelV1::onAverageTracksButtonClicked()
 {
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
@@ -1945,7 +1945,7 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
 
-    for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+    for (std::list<NodePtr>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobDoublePtr dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini, maxi;
@@ -2046,7 +2046,7 @@ bool
 TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButtonPtr>* trackButtons,
                                                   const std::string& buttonName)
 {
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     publicInterface->getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
@@ -2055,10 +2055,10 @@ TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButtonPtr>* tr
         return false;
     }
 
-    KnobButtonPtr prevBtn = isKnobButton( publicInterface->getKnobByName(buttonName).get() );
+    KnobButtonPtr prevBtn = isKnobButton( publicInterface->getKnobByName(buttonName) );
     assert(prevBtn);
     if (prevBtn) {
-        for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+        for (std::list<NodePtr>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
             if ( !(*it)->getEffectInstance() ) {
                 return false;
             }
@@ -2147,7 +2147,7 @@ TrackerPanelV1::trackPrevious(const ViewerInstancePtr& /*viewer*/)
 
     return false;
 #if 0
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
@@ -2177,7 +2177,7 @@ TrackerPanelV1::trackNext(const ViewerInstancePtr& /*viewer*/)
 
     return false;
 #if 0
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
@@ -2203,10 +2203,10 @@ TrackerPanelV1::trackNext(const ViewerInstancePtr& /*viewer*/)
 void
 TrackerPanelV1::clearAllAnimationForSelection()
 {
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
-    for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+    for (std::list<NodePtr>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         const std::vector<KnobIPtr > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
@@ -2220,10 +2220,10 @@ void
 TrackerPanelV1::clearBackwardAnimationForSelection()
 {
     double time = getApp()->getTimeLine()->currentFrame();
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
-    for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+    for (std::list<NodePtr>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         const std::vector<KnobIPtr > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
@@ -2237,10 +2237,10 @@ void
 TrackerPanelV1::clearForwardAnimationForSelection()
 {
     double time = getApp()->getTimeLine()->currentFrame();
-    std::list<Node*> selectedInstances;
+    std::list<NodePtr> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
-    for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+    for (std::list<NodePtr>::const_iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         const std::vector<KnobIPtr > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
@@ -2254,7 +2254,7 @@ void
 TrackerPanelV1::onExportButtonClicked()
 {
     int index = _imp->exportChoice->activeIndex();
-    std::list<Node*> selection;
+    std::list<NodePtr> selection;
 
     getSelectedInstances(&selection);
     ///This is the full list, decomment when everything will be possible to do
@@ -2308,7 +2308,7 @@ TrackerPanelV1::onExportButtonClicked()
 } // TrackerPanelV1::onExportButtonClicked
 
 void
-TrackerPanelPrivateV1::createTransformFromSelection(const std::list<Node*> & /*selection*/,
+TrackerPanelPrivateV1::createTransformFromSelection(const std::list<NodePtr> & /*selection*/,
                                                     bool /*linked*/,
                                                     ExportTransformTypeEnum /*type*/)
 {
@@ -2316,7 +2316,7 @@ TrackerPanelPrivateV1::createTransformFromSelection(const std::list<Node*> & /*s
 
 namespace  {
 KnobDoublePtr
-getCornerPinPoint(Node* node,
+getCornerPinPoint(const NodePtr& node,
                   bool isFrom,
                   int index)
 {
@@ -2332,7 +2332,7 @@ getCornerPinPoint(Node* node,
 }
 
 void
-TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & selection,
+TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<NodePtr> & selection,
                                                     bool linked,
                                                     bool useTransformRefFrame,
                                                     bool invert)
@@ -2346,7 +2346,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
 
     KnobDoublePtr centers[4];
     int i = 0;
-    for (std::list<Node*>::const_iterator it = selection.begin(); it != selection.end(); ++it, ++i) {
+    for (std::list<NodePtr>::const_iterator it = selection.begin(); it != selection.end(); ++it, ++i) {
         centers[i] = getCenterKnobForTracker(*it);
         assert(centers[i]);
     }
@@ -2388,7 +2388,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
         assert(toPoints[i]);
         if (!linked) {
-            toPoints[i]->cloneAndUpdateGui( centers[i].get() );
+            toPoints[i]->cloneAndUpdateGui(centers[i]);
         } else {
             EffectInstancePtr effect = isEffectInstance( centers[i]->getHolder() );
             assert(effect);

@@ -1069,7 +1069,7 @@ void
 ViewerTab::connectToInput(int inputNb,
                           bool isASide)
 {
-    InspectorNode* node = dynamic_cast<InspectorNode*>( getInternalNode()->getNode().get() );
+    InspectorNodePtr node = isInspectorNode( getInternalNode()->getNode() );
 
     assert(node);
     if (!node) {

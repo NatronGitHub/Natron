@@ -659,11 +659,11 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
         assert(newToolKnob && newGroupKnob);
         if (newToolKnob && newGroupKnob) {
 
-            KnobButton* oldIsButton = oldToolKnob ? isKnobButton( oldToolKnob ) : 0;
-            KnobButton* newIsButton = isKnobButton( newToolKnob );
+            KnobButtonPtr oldIsButton = oldToolKnob ? isKnobButton( oldToolKnob ) : KnobButtonPtr();
+            KnobButtonPtr newIsButton = isKnobButton( newToolKnob );
             assert(newIsButton);
 
-            KnobGroupPtr oldIsGroup = oldGroupKnob ? isKnobGroup( oldGroupKnob ) : 0;
+            KnobGroupPtr oldIsGroup = oldGroupKnob ? isKnobGroup( oldGroupKnob ) : KnobGroupPtr();
             KnobGroupPtr newIsGroup = isKnobGroup( newGroupKnob );
             assert(newIsGroup);
             if (newIsButton && newIsGroup) {

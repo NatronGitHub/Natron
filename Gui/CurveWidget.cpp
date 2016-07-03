@@ -2095,9 +2095,9 @@ CurveWidget::importCurveFromAscii()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    std::vector<CurveGuiPtr > curves;
+    std::vector<CurveGuiPtr> curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
+        KnobCurveGuiPtr isKnobCurve = boost::dynamic_pointer_cast<KnobCurveGui>(*it);
         if ( (*it)->isVisible() && isKnobCurve ) {
             KnobIPtr knob = isKnobCurve->getInternalKnob();
             KnobStringBasePtr isString = isKnobStringBase(knob);

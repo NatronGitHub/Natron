@@ -65,7 +65,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 static void
-makeFullyQualifiedLabel(Node* node,
+makeFullyQualifiedLabel(const NodePtr& node,
                         std::string* ret)
 {
     NodeCollectionPtr parent = node->getGroup();
@@ -982,9 +982,9 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( wrapperNode.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
     QObject::connect( _imp->viewerNode, SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
     QObject::connect( _imp->viewerNode, SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( wrapperNode.get() );
+    InspectorNodePtr isInspector = isInspectorNode(wrapperNode);
     if (isInspector) {
-        QObject::connect( isInspector, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
+        QObject::connect( isInspector.get(), SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
     }
     QObject::connect( _imp->viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
                       SLOT(onColorSpaceComboBoxChanged(int)) );

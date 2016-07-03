@@ -64,7 +64,7 @@ public:
     /**
      * @brief If this is a parent multi-instance, returns whether the given node is selected by the user or not
      **/
-    virtual bool isSelectedInParentMultiInstance(const Node* node) const = 0;
+    virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const = 0;
 
     /**
      * @brief Set the position of the node in the nodegraph.

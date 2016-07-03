@@ -147,6 +147,7 @@ class Image;
 class ImageComponents;
 class ImageKey;
 class ImageParams;
+class InspectorNode;
 class JoinViewsNode;
 class KeyFrame;
 class KnobBool;
@@ -290,6 +291,7 @@ typedef boost::shared_ptr<const GroupKnobSerialization> GroupKnobSerializationCo
 typedef boost::shared_ptr<GroupOutput> GroupOutputPtr;
 typedef boost::shared_ptr<Image> ImagePtr;
 typedef boost::shared_ptr<ImageParams> ImageParamsPtr;
+typedef boost::shared_ptr<InspectorNode> InspectorNodePtr;
 typedef boost::shared_ptr<JoinViewsNode> JoinViewsNodePtr;
 typedef boost::shared_ptr<KnobBool> KnobBoolPtr;
 typedef boost::shared_ptr<KnobButton> KnobButtonPtr;

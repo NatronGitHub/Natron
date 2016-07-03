@@ -73,7 +73,7 @@ public:
 
     virtual ~NodeGraph();
 
-    static void makeFullyQualifiedLabel(Node* node, std::string* ret);
+    static void makeFullyQualifiedLabel(const NodePtr& node, std::string* ret);
     NodeCollectionPtr getGroup() const;
     const std::list< NodeGuiPtr > & getSelectedNodes() const;
     NodeGuiPtr createNodeGUI(const NodePtr & node,

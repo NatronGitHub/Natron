@@ -426,7 +426,7 @@ NodeCollection::clearNodes(bool emitSignal)
 }
 
 void
-NodeCollection::checkNodeName(const Node* node,
+NodeCollection::checkNodeName(const NodeConstPtr& node,
                               const std::string& baseName,
                               bool appendDigit,
                               bool errorIfExists,
@@ -473,7 +473,7 @@ NodeCollection::checkNodeName(const Node* node,
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( (it->get() != node) && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
+            if ( (*it != node) && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
                 foundNodeWithName = true;
                 break;
             }
@@ -507,7 +507,7 @@ NodeCollection::initNodeName(const std::string& pluginLabel,
         baseName = baseName.substr(0, baseName.size() - 3);
     }
 
-    checkNodeName(0, baseName, true, false, nodeName);
+    checkNodeName(NodeConstPtr(), baseName, true, false, nodeName);
 }
 
 bool
@@ -584,7 +584,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
     }
 
 
-    if (output->disconnectInput( input.get() ) < 0) {
+    if (output->disconnectInput( input ) < 0) {
         return false;
     }
 
@@ -861,12 +861,12 @@ NodeCollection::fixPathName(const std::string& oldName,
 
 bool
 NodeCollection::checkIfNodeLabelExists(const std::string & n,
-                                       const Node* caller) const
+                                       const NodeConstPtr& caller) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
+        if ( (*it != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -876,12 +876,12 @@ NodeCollection::checkIfNodeLabelExists(const std::string & n,
 
 bool
 NodeCollection::checkIfNodeNameExists(const std::string & n,
-                                      const Node* caller) const
+                                      const NodeConstPtr& caller) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
+        if ( (*it != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -937,7 +937,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
         (*it)->markAllInputRelatedDataDirty();
     }
 
-    std::list<Node*> markedNodes;
+    std::list<NodePtr> markedNodes;
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
         it->output.node->forceRefreshAllInputRelatedData();
     }
@@ -1289,7 +1289,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         if (!output) {
             continue;
         }
-        int idx = output->getInputIndex( thisNode.get() );
+        int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
         output->onInputChanged(idx);
     }
@@ -1325,7 +1325,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         if (!output) {
             continue;
         }
-        int idx = output->getInputIndex( thisNode.get() );
+        int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
         output->onInputChanged(idx);
     }

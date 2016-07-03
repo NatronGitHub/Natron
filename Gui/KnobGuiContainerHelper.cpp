@@ -782,7 +782,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
              */
 
             KnobIPtr parentParent = closestParentGroupTab->getParentKnob();
-            KnobGroupPtr parentParentIsGroup = isKnobGroup( parentParent.get() );
+            KnobGroupPtr parentParentIsGroup = isKnobGroup(parentParent);
             KnobPagePtr parentParentIsPage = isKnobPage(parentParent);
 
             assert(parentParentIsGroup || parentParentIsPage);
@@ -1087,7 +1087,7 @@ KnobGuiContainerHelper::recreateUserKnobs(bool restorePageIndex)
 
         KnobPagePtr page = getUserPageKnob();
         if (page) {
-            userPages.push_back( page.get() );
+            userPages.push_back( page );
         }
         for (std::list<KnobPagePtr>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
             deleteKnobGui( (*it)->shared_from_this() );

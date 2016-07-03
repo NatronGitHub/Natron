@@ -264,10 +264,10 @@ public:
     virtual void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
     virtual void removeKeyFrameIndicator(SequenceTime time) OVERRIDE FINAL;
     virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
-    virtual void addNodesKeyframesToTimeline(const std::list<Node*> & nodes) OVERRIDE FINAL;
-    virtual void addNodeKeyframesToTimeline(Node* node) OVERRIDE FINAL;
-    virtual void removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes) OVERRIDE FINAL;
-    virtual void removeNodeKeyframesFromTimeline(Node* node) OVERRIDE FINAL;
+    virtual void addNodesKeyframesToTimeline(const std::list<NodePtr> & nodes) OVERRIDE FINAL;
+    virtual void addNodeKeyframesToTimeline(const NodePtr& node) OVERRIDE FINAL;
+    virtual void removeNodesKeyframesFromTimeline(const std::list<NodePtr> & nodes) OVERRIDE FINAL;
+    virtual void removeNodeKeyframesFromTimeline(const NodePtr& node) OVERRIDE FINAL;
     virtual void getKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
     virtual void removeAllUserKeyframesIndicators() OVERRIDE FINAL;
     virtual void addUserKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;

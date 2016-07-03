@@ -125,7 +125,7 @@ class DSMoveKeysAndNodesCommand
 
 public:
     DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                              const std::vector<boost::shared_ptr<DSNode> >& nodes,
+                              const std::vector<DSNodePtr >& nodes,
                               double dt,
                               DopeSheetEditor *model,
                               QUndoCommand *parent = 0);
@@ -144,7 +144,7 @@ private:
 
 private:
     DSKeyPtrList _keys;
-    std::vector<boost::shared_ptr<DSNode> > _nodes;
+    std::vector<DSNodePtr > _nodes;
     NodesWList _allDifferentNodes;
     double _dt;
     DopeSheetEditor *_model;
@@ -184,7 +184,7 @@ private:
         CurvePtr newCurve;
     };
 
-    typedef std::map<boost::shared_ptr<DSKnob>, TransformKeyData> TransformKeys;
+    typedef std::map<DSKnobPtr, TransformKeyData> TransformKeys;
 
     bool _firstRedoCalled;
     Transform::Matrix3x3 _transform;
@@ -203,7 +203,7 @@ class DSLeftTrimReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSLeftTrimReaderCommand)
 
 public:
-    DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+    DSLeftTrimReaderCommand(const DSNodePtr &reader,
                             double oldTime,
                             double newTime,
                             QUndoCommand *parent = 0);
@@ -237,7 +237,7 @@ class DSRightTrimReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSRightTrimReaderCommand)
 
 public:
-    DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+    DSRightTrimReaderCommand(const DSNodePtr &reader,
                              double oldTime,
                              double newTime,
                              DopeSheetEditor * /*model*/,
@@ -271,7 +271,7 @@ class DSSlipReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSSlipReaderCommand)
 
 public:
-    DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
+    DSSlipReaderCommand(const DSNodePtr &reader,
                         double dt,
                         DopeSheetEditor *model,
                         QUndoCommand *parent = 0);
@@ -383,7 +383,7 @@ class DSPasteKeysCommand
 
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                       const std::list<boost::shared_ptr<DSKnob> >& dstKnobs,
+                       const std::list<DSKnobPtr >& dstKnobs,
                        bool pasteRelativeToRefTime,
                        DopeSheetEditor *model,
                        QUndoCommand *parent = 0);

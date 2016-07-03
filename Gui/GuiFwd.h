@@ -99,6 +99,7 @@ NATRON_NAMESPACE_ENTER;
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
+class BackdropGui;
 class BoundAction;
 class Button;
 class ChannelsComboBox;
@@ -135,7 +136,9 @@ class KnobCurveGui;
 class KnobGui;
 class KnobGuiContainerI;
 class KnobGuiContainerHelper;
+class KnobGuiDouble;
 class KnobGuiFactory;
+class KnobGuiInt;
 class KnobGuiTable;
 class KnobGuiLayers;
 class KnobHolder;
@@ -200,7 +203,10 @@ namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
 
+typedef boost::shared_ptr<BackdropGui> BackdropGuiPtr;
 typedef boost::shared_ptr<CurveGui> CurveGuiPtr;
+typedef boost::shared_ptr<DSNode> DSNodePtr;
+typedef boost::shared_ptr<DSKnob> DSKnobPtr;
 typedef boost::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
 typedef boost::shared_ptr<KnobCurveGui> KnobCurveGuiPtr;
 typedef boost::shared_ptr<KnobGui> KnobGuiPtr;

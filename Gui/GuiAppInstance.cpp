@@ -520,13 +520,13 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>( nodegui.get() );
+            BackdropGuiPtr isBd = isBackdropGui(nodegui);
             if (!isBd) {
                 NodeGuiPtr selectedNode;
                 if ( !serialization && (selectedNodes.size() == 1) ) {
                     selectedNode = selectedNodes.front();
-                    BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>( selectedNode.get() );
-                    if (isBackdropGui) {
+                    BackdropGuiPtr isBdGui = isBackdropGui(selectedNode);
+                    if (isBdGui) {
                         selectedNode.reset();
                     }
                 }
@@ -1096,7 +1096,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         NodeGuiPtr selectedNode;
         if ( !selectedNodes.empty() ) {
             selectedNode = selectedNodes.front();
-            if ( dynamic_cast<BackdropGui*>( selectedNode.get() ) ) {
+            if (isBackdropGui(selectedNode) ) {
                 selectedNode.reset();
             }
         }
@@ -1488,16 +1488,16 @@ GuiAppInstance::getUserKeyframes(std::list<SequenceTime>* keys) const
 }
 
 void
-GuiAppInstance::addNodesKeyframesToTimeline(const std::list<Node*> & nodes)
+GuiAppInstance::addNodesKeyframesToTimeline(const std::list<NodePtr> & nodes)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    std::list<Node*>::const_iterator next = nodes.begin();
+    std::list<NodePtr>::const_iterator next = nodes.begin();
     if ( next != nodes.end() ) {
         ++next;
     }
-    for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->showKeyframesOnTimeline( next == nodes.end() );
 
         // increment for next iteration
@@ -1508,7 +1508,7 @@ GuiAppInstance::addNodesKeyframesToTimeline(const std::list<Node*> & nodes)
 }
 
 void
-GuiAppInstance::addNodeKeyframesToTimeline(Node* node)
+GuiAppInstance::addNodeKeyframesToTimeline(NodePtr node)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1517,16 +1517,16 @@ GuiAppInstance::addNodeKeyframesToTimeline(Node* node)
 }
 
 void
-GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes)
+GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<NodePtr> & nodes)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    std::list<Node*>::const_iterator next = nodes.begin();
+    std::list<NodePtr>::const_iterator next = nodes.begin();
     if ( next != nodes.end() ) {
         ++next;
     }
-    for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->hideKeyframesFromTimeline( next == nodes.end() );
 
         // increment for next iteration
@@ -1537,7 +1537,7 @@ GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes)
 }
 
 void
-GuiAppInstance::removeNodeKeyframesFromTimeline(Node* node)
+GuiAppInstance::removeNodeKeyframesFromTimeline(consr NodePtr& node)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );

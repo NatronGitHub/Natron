@@ -63,7 +63,7 @@ NodeGraph::checkForHints(bool shiftdown,
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
 
     //Ignore hints for backdrops
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( selectedNode.get() );
+    BackdropGui* isBd =isBackdropGui( selectedNode.get() );
 
     if (isBd) {
         return;

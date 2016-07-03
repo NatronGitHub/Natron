@@ -253,7 +253,7 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( internalNode.get() );
+    InspectorNodePtr isInspector = isInspectorNode(internalNode);
     if (isInspector) {
         QObject::connect( isInspector, SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }
@@ -483,7 +483,7 @@ NodeGui::createPanel(QVBoxLayout* container,
         assert(container);
         MultiInstancePanelPtr multiPanel;
         if ( node->isTrackerNodePlugin() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
-            multiPanel.reset( new TrackerPanelV1(thisAsShared) );
+            multiPanel = TrackerPanelV1::create(thisAsShared);
 
             ///This is valid only if the node is a multi-instance and this is the main instance.
             ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
@@ -557,7 +557,7 @@ NodeGui::createGui()
 
     NodePtr node = getNode();
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>(this);
+    BackdropGui* isBd =isBackdropGui(this);
 
     if ( !isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
         QPixmap pix(iconFilePath);
@@ -1127,7 +1127,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if ( !isVisible() || dynamic_cast<BackdropGui*>(this) || dynamic_cast<BackdropGui*>(item) ) {
+    if ( !isVisible() ||isBackdropGui(this) ||isBackdropGui(item) ) {
         return;
     }
     item->stackBefore(this);
@@ -1429,7 +1429,7 @@ NodeGui::initializeInputs()
 
     refreshDashedStateOfEdges();
 
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( node.get() );
+    InspectorNodePtr isInspector = isInspectorNode(node);
     if (isInspector) {
         initializeInputsForInspector();
     } else {
@@ -1530,7 +1530,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     }
 
     NodePtr node = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( node.get() );
+    InspectorNodePtr isInspector = isInspectorNode(node);
     if (isInspector) {
         bool isViewer = node->isEffectViewerInstance() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
@@ -1634,7 +1634,7 @@ NodeGui::refreshCurrentBrush()
 }
 
 bool
-NodeGui::isSelectedInParentMultiInstance(const Node* node) const
+NodeGui::isSelectedInParentMultiInstance(const NodeConstPtr& node) const
 {
     MultiInstancePanelPtr multiInstance = getMultiInstancePanel();
 
@@ -1715,7 +1715,7 @@ NodeGui::connectEdge(int edgeNumber)
 
     NodePtr node = getNode();
     assert(node);
-    if ( dynamic_cast<InspectorNode*>( node.get() ) ) {
+    if ( isInspectorNode(node) ) {
         initializeInputsForInspector();
     }
 
@@ -2327,9 +2327,9 @@ NodeGui::onAllKnobsSlaved(bool b)
 }
 
 static QString
-makeLinkString(Node* masterNode,
+makeLinkString(const NodePtr& masterNode,
                const KnobIPtr& master,
-               Node* slaveNode,
+               const NodePtr& slaveNode,
                const KnobIPtr& slave)
 {
     QString tt = QString::fromUtf8("<p>");

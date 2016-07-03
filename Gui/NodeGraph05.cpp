@@ -54,7 +54,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                                      const NodeGuiPtr &selected,
                                      bool autoConnect)
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( node.get() );
+    BackdropGuiPtr isBd = isBackdropGui(node);
 
     if (isBd) {
         return;

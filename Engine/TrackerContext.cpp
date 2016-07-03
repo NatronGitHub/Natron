@@ -742,7 +742,7 @@ TrackerContext::endSelection(TrackSelectionReason reason)
 #if 0
 static
 KnobDoublePtr
-getCornerPinPoint(Node* node,
+getCornerPinPoint(const NodePtr& node,
                   bool isFrom,
                   int index)
 {
@@ -760,7 +760,7 @@ getCornerPinPoint(Node* node,
 
 static
 KnobDoublePtr
-getCornerPinPoint(Node* node,
+getCornerPinPoint(const NodePtr& node,
                   bool isFrom,
                   int index)
 {
@@ -835,13 +835,13 @@ TrackerContext::exportTrackDataFromExportOptions()
 
 
         for (unsigned int i = 0; i < 4; ++i) {
-            cornerPinFromPoints[i] = getCornerPinPoint(createdNode.get(), true, i);
+            cornerPinFromPoints[i] = getCornerPinPoint(createdNode, true, i);
             assert(cornerPinFromPoints[i]);
             for (int j = 0; j < cornerPinFromPoints[i]->getDimension(); ++j) {
                 cornerPinFromPoints[i]->setValue(_imp->fromPoints[i].lock()->getValueAtTime(timeForFromPoints, j), ViewSpec(0), j);
             }
 
-            cornerPinToPoints[i] = getCornerPinPoint(createdNode.get(), false, i);
+            cornerPinToPoints[i] = getCornerPinPoint(createdNode, false, i);
             assert(cornerPinToPoints[i]);
             if (!linked) {
                 cornerPinToPoints[i]->cloneAndUpdateGui( _imp->toPoints[i].lock() );

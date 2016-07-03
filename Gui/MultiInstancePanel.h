@@ -86,7 +86,7 @@ public:
 
     NodeGuiPtr getMainInstanceGui() const;
 
-    void getSelectedInstances(std::list<Node*>* instances) const;
+    void getSelectedInstances(std::list<NodePtr>* instances) const;
 
     void resetAllInstances();
 
@@ -100,7 +100,7 @@ public:
 
     void selectNode(const NodePtr & node, bool addToSelection);
 
-    void selectNodes(const std::list<Node*> & nodes, bool addToSelection);
+    void selectNodes(const std::list<NodePtr> & nodes, bool addToSelection);
 
     void removeNodeFromSelection(const NodePtr & node);
 
@@ -162,7 +162,7 @@ private:
 
     virtual void onButtonTriggered(const KnobButtonPtr& button);
 
-    void resetInstances(const std::list<Node*> & instances);
+    void resetInstances(const std::list<NodePtr> & instances);
 
     void removeInstancesInternal();
 

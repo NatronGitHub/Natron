@@ -315,10 +315,10 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 }
 
 static bool
-isRotoPaintNodeInputRecursive(Node* node,
+isRotoPaintNodeInputRecursive(const NodePtr& node,
                               const NodePtr& rotoPaintNode)
 {
-    if ( node == rotoPaintNode.get() ) {
+    if ( node == rotoPaintNode ) {
         return true;
     }
     int maxInputs = node->getMaxInputCount();
@@ -328,7 +328,7 @@ isRotoPaintNodeInputRecursive(Node* node,
             if (input == rotoPaintNode) {
                 return true;
             } else {
-                bool ret = isRotoPaintNodeInputRecursive(input.get(), rotoPaintNode);
+                bool ret = isRotoPaintNodeInputRecursive(input, rotoPaintNode);
                 if (ret) {
                     return true;
                 }
@@ -340,7 +340,7 @@ isRotoPaintNodeInputRecursive(Node* node,
 }
 
 static void
-updateLastStrokeDataRecursively(Node* node,
+updateLastStrokeDataRecursively(const NodePtr& node,
                                 const NodePtr& rotoPaintNode,
                                 const RectD& lastStrokeBbox,
                                 bool invalidate)
@@ -352,14 +352,14 @@ updateLastStrokeDataRecursively(Node* node,
             node->setLastPaintStrokeDataNoRotopaint();
         }
 
-        if ( node == rotoPaintNode.get() ) {
+        if ( node == rotoPaintNode ) {
             return;
         }
         int maxInputs = node->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = node->getInput(i);
             if (input) {
-                updateLastStrokeDataRecursively(input.get(), rotoPaintNode, lastStrokeBbox, invalidate);
+                updateLastStrokeDataRecursively(input, rotoPaintNode, lastStrokeBbox, invalidate);
             }
         }
     }
@@ -407,7 +407,7 @@ public:
     virtual ~ViewerParallelRenderArgsSetter()
     {
         if (rotoNode) {
-            updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
+            updateLastStrokeDataRecursively(viewerNode, rotoNode, RectD(), true);
         }
         if (viewerInputNode) {
             viewerInputNode->getEffectInstance()->invalidateParallelRenderArgsTLS();
@@ -521,7 +521,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                     for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
                         (*it)->prepareForNextPaintStrokeRender();
                     }
-                    updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
+                    updateLastStrokeDataRecursively(thisNode, rotoPaintNode, lastStrokeBbox, false);
                 } else {
                     ///The drawing is already up to date: all changes have been taken into account for this event
                     args[i].reset();
@@ -702,8 +702,8 @@ ViewerInstance::renderViewer(ViewIdx view,
 } // ViewerInstance::renderViewer
 
 static bool
-checkTreeCanRender_internal(Node* node,
-                            std::list<Node*>& marked)
+checkTreeCanRender_internal(const NodePtr& node,
+                            std::list<NodePtr>& marked)
 {
     if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
         return true;
@@ -722,7 +722,7 @@ checkTreeCanRender_internal(Node* node,
         if (!input) {
             return false;
         } else {
-            bool ret = checkTreeCanRender_internal(input.get(), marked);
+            bool ret = checkTreeCanRender_internal(input, marked);
             if (!ret) {
                 return false;
             }
@@ -736,9 +736,9 @@ checkTreeCanRender_internal(Node* node,
  * @brief Returns false if the tree has unconnected mandatory inputs
  **/
 static bool
-checkTreeCanRender(Node* node)
+checkTreeCanRender(const NodePtr& node)
 {
-    std::list<Node*> marked;
+    std::list<NodePtr> marked;
     bool ret = checkTreeCanRender_internal(node, marked);
 
     return ret;
@@ -1256,7 +1256,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
 
     // Before rendering we check that all mandatory inputs in the graph are connected else we fail
-    if ( !outArgs->activeInputToRender || !checkTreeCanRender( outArgs->activeInputToRender->getNode().get() ) ) {
+    if ( !outArgs->activeInputToRender || !checkTreeCanRender( outArgs->activeInputToRender->getNode() ) ) {
         return eViewerRenderRetCodeFail;
     }
 
@@ -3311,7 +3311,7 @@ ViewerInstance::getActiveInputs(int & a,
                                 int &b) const
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+    InspectorNodePtr isInspector = isInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3323,7 +3323,7 @@ void
 ViewerInstance::setInputA(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+    InspectorNodePtr isInspector = isInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3337,7 +3337,7 @@ void
 ViewerInstance::setInputB(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+    InspectorNodePtr isInspector = isInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {

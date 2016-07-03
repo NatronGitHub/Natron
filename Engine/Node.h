@@ -400,7 +400,7 @@ public:
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
      **/
-    int getInputIndex(const Node* node) const;
+    int getInputIndex(const NodeConstPtr& node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -587,7 +587,7 @@ public:
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
-    virtual int disconnectInput(Node* input);
+    virtual int disconnectInput(const NodePtr& input);
 
     /**
      * @brief Same as:
@@ -611,10 +611,10 @@ private:
 
     bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
 
-    int disconnectInputInternal(Node* input, bool useGuiInputs);
+    int disconnectInputInternal(const NodePtr& input, bool useGuiInputs);
 
 
-    bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
+    bool isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const;
 
 public:
 
@@ -669,7 +669,7 @@ private:
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues, const Node* output);
+    int disconnectOutput(bool useGuiValues, const NodeConstPtr& output);
 
 public:
 
@@ -830,7 +830,7 @@ public:
 
 private:
 
-    void clearPersistentMessageRecursive(std::list<Node*>& markedNodes);
+    void clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes);
 
     void clearPersistentMessageInternal();
 
@@ -1079,7 +1079,7 @@ public:
      * @brief Attempts to detect cycles considering input being an input of this node.
      * Returns true if it couldn't detect any cycle, false otherwise.
      **/
-    bool checkIfConnectingInputIsOk(Node* input) const;
+    bool checkIfConnectingInputIsOk(const NodePtr& input) const;
 
     bool isForceCachingEnabled() const;
 
@@ -1327,7 +1327,7 @@ private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
-    void computeHashRecursive(std::list<Node*>& marked);
+    void computeHashRecursive(std::list<NodePtr>& marked);
 
     /**
      * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
@@ -1339,7 +1339,7 @@ private:
 
     void refreshCreatedViews(const KnobIPtr& knob);
 
-    void refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes);
+    void refreshInputRelatedDataRecursiveInternal(std::list<NodePtr>& markedNodes);
 
     void refreshInputRelatedDataRecursive();
 
@@ -1351,11 +1351,11 @@ private:
 
     void markInputRelatedDataDirtyRecursive();
 
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes, bool recurse);
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<NodePtr>& markedNodes, bool recurse);
 
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
 
-    bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
+    bool refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
@@ -1516,7 +1516,7 @@ private:
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.
      **/
-    void isNodeUpstream(const Node* input, bool* ok) const;
+    void isNodeUpstream(const NodeConstPtr& input, bool* ok) const;
 
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
@@ -1583,6 +1583,11 @@ private:
     int _activeInputs[2]; //< indexes of the inputs used for the wipe
 };
 
+inline InspectorNodePtr
+isInspectorNode(const NodePtr& node)
+{
+    return boost::dynamic_pointer_cast<InspectorNode>(node);
+}
 
 class RenderingFlagSetter
 {

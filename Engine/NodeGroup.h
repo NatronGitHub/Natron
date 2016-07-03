@@ -111,7 +111,7 @@ public:
      * @param errorIfExists If a node with the same script-name exists, error
      * This function throws a runtime exception with the error message in case of error.
      **/
-    void checkNodeName(const Node* node, const std::string& baseName, bool appendDigit, bool errorIfExists, std::string* nodeName);
+    void checkNodeName(const NodeConstPtr& node, const std::string& baseName, bool appendDigit, bool errorIfExists, std::string* nodeName);
 
     /**
      * @brief Returns true if there is one or more nodes in the collection.
@@ -152,12 +152,12 @@ public:
     /**
      * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeNameExists(const std::string & n, const Node* caller) const;
+    bool checkIfNodeNameExists(const std::string & n, const NodeConstPtr& caller) const;
 
     /**
      * @brief Returns true if a node has the give label n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeLabelExists(const std::string & n, const Node* caller) const;
+    bool checkIfNodeLabelExists(const std::string & n, const NodeConstPtr& caller) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
