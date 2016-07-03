@@ -2817,31 +2817,38 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
     if (glContext) {
         storage.isGPUTexture = glContext->isGPUContext();
     }
+
+    boost::scoped_ptr<ImageLocker> imgLocker;
+
+    if (glContext && glContext->isGPUContext()) {
+        // Do not cache when in GPU mode
+        image.reset( new Image(*key, params) );
+    } else {
+        /*
+         Lock the image so that other threads wait before they can access it
+         */
+        imgLocker.reset(new ImageLocker(node->getEffectInstance().get()));
+        bool isCached = appPTR->getImageOrCreate(*key, params, imgLocker.get(), &image);
+        if (!image) {
+            std::stringstream ss;
+            ss << "Failed to allocate an image of ";
+            std::size_t size = storage.bounds.area() * storage.numComponents * storage.dataTypeSize;
+            ss << printAsRAM( size ).toStdString();
+            Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
+
+            return image;
+        }
+
+
+        if (isCached) {
+            imgLocker->lock(image);
+        }
+
+
+        ///Does nothing if image is already alloc
+        image->allocateMemory();
+    }
     
-    /*
-       Lock the image so that other threads wait before they can access it
-     */
-    ImageLocker imgLocker(node->getEffectInstance().get());
-    bool isCached = appPTR->getImageOrCreate(*key, params, &imgLocker, &image);
-    if (!image) {
-        std::stringstream ss;
-        ss << "Failed to allocate an image of ";
-        std::size_t size = storage.bounds.area() * storage.numComponents * storage.dataTypeSize;
-        ss << printAsRAM( size ).toStdString();
-        Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
-
-        return image;
-    }
-
-
-    if (isCached) {
-        imgLocker.lock(image);
-    }
-
-
-    ///Does nothing if image is already alloc
-    image->allocateMemory();
-
     // Ok now reattach the context if using mesa because we have the buffer
     boost::scoped_ptr<Image::WriteAccess> wacc;
     if (glContext && !glContext->isGPUContext()) {
@@ -3739,9 +3746,14 @@ RotoContextPrivate::renderFeather_cairo(const PolygonData& inArgs, double shapeC
 
 
 template <typename GL>
-void renderBezier_gl_internal_begin(const OSGLContextPtr& glContext, int target, int texID)
+void renderBezier_gl_internal_begin(const OSGLContextPtr& glContext, const ImagePtr& image)
 {
+
+    int target = image->getGLTextureTarget();
+    int texID = image->getGLTextureID();
+
     GLuint fboID = glContext->getFBOId();
+
 
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
     GL::glEnable(target);
@@ -3756,16 +3768,31 @@ void renderBezier_gl_internal_begin(const OSGLContextPtr& glContext, int target,
 
     GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
-    
+
+
+    RectI bounds = image->getBounds();
+    Image::setupGLViewport<GL>(bounds, bounds);
+
+
+    GL::glClearColor(0, 0, 0, 0);
+    GL::glClear(GL_COLOR_BUFFER_BIT);
+    glCheckError(GL);
+
+    GL::glEnable(GL_BLEND);
+    GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 }
 
 
 template <typename GL>
-void renderBezier_gl_internal_end(int target)
+void renderBezier_gl_internal_end(const ImagePtr& image)
 {
+    int target = image->getGLTextureTarget();
 
     GL::glBindTexture(target, 0);
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GL::glDisable(GL_BLEND);
     glCheckError(GL);
 }
 
@@ -3791,7 +3818,7 @@ void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int 
     GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
 
 
-    GL::glDrawElements(primitiveType, nbIds, GL_UNSIGNED_INT, 0);
+    GL::glDrawElements(primitiveType, nbIds * sizeof(GLuint), GL_UNSIGNED_INT, 0);
 
     GL::glDisableClientState(GL_COLOR_ARRAY);
     GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3801,6 +3828,7 @@ void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int 
     glCheckError(GL);
 
 }
+
 
 void
 RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double /*time*/, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel, const boost::shared_ptr<Image> &image)
@@ -3814,7 +3842,7 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
 
     RamBuffer<float> verticesArray;
     RamBuffer<float> colorsArray;
-    RamBuffer<int> indicesArray;
+    RamBuffer<unsigned int> indicesArray;
 
     double mbOpacity = 1. / ((endTime - startTime + 1) / mbFrameStep);
 
@@ -3822,12 +3850,16 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
 
     OSGLContext::RampTypeEnum type = OSGLContext::eRampTypeLinear;
     boost::shared_ptr<GLShaderBase> rampShader;
+    boost::shared_ptr<GLShaderBase> fillShader;
     if (glContext->isGPUContext()) {
         rampShader = glContext->getOrCreateRampShader<GL_GPU>(type);
+        fillShader = glContext->getOrCreateFillShader<GL_GPU>();
     } else {
         rampShader = glContext->getOrCreateRampShader<GL_CPU>(type);
+        fillShader = glContext->getOrCreateFillShader<GL_CPU>();
     }
 
+    
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
         double fallOff = bezier->getFeatherFallOff(t);
@@ -3845,18 +3877,21 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
         computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
 
         if (glContext->isGPUContext()) {
-            renderBezier_gl_internal_begin<GL_GPU>(glContext, (image)->getGLTextureTarget(), (image)->getGLTextureID());
+            renderBezier_gl_internal_begin<GL_GPU>(glContext, image);
         } else {
-            renderBezier_gl_internal_begin<GL_CPU>(glContext, (image)->getGLTextureTarget(), (image)->getGLTextureID());
+            renderBezier_gl_internal_begin<GL_CPU>(glContext, image);
         }
+
 
         rampShader->bind();
         OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity};
         rampShader->setUniform("fillColor", fillColor);
         rampShader->setUniform("fallOff", (float)fallOff);
 
+
         // First upload the feather mesh
         {
+
             int nbVertices = data.featherMesh.size();
             if (!nbVertices) {
                 continue;
@@ -3869,7 +3904,7 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
             // Fill buffer
             float* v_data = verticesArray.getData();
             float* c_data = colorsArray.getData();
-            int* i_data = indicesArray.getData();
+            unsigned int* i_data = indicesArray.getData();
 
             for (std::size_t i = 0; i < data.featherMesh.size(); ++i) {
                 v_data[0] = data.featherMesh[i].x;
@@ -3897,6 +3932,10 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
             }
         }
 
+        rampShader->unbind();
+        fillShader->bind();
+        fillShader->setUniform("fillColor", fillColor);
+        
         int nbVertices = data.bezierPolygonJoined.size();
         if (!nbVertices) {
             continue;
@@ -3911,7 +3950,7 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
         float* c_data = colorsArray.getData();
         for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i) {
             v_data[0] = data.bezierPolygonJoined[i].x;
-            v_data[1] = data.featherMesh[i].y;
+            v_data[1] = data.bezierPolygonJoined[i].y;
 
             c_data[0] = shapeColor[0];
             c_data[1] = shapeColor[1];
@@ -3970,16 +4009,14 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
 
         }
 
-        rampShader->unbind();
+
         if (glContext->isGPUContext()) {
-            renderBezier_gl_internal_end<GL_GPU>((image)->getGLTextureTarget());
+            renderBezier_gl_internal_end<GL_GPU>(image);
         } else {
-            renderBezier_gl_internal_end<GL_CPU>((image)->getGLTextureTarget());
+            renderBezier_gl_internal_end<GL_CPU>(image);
         }
 
-
-        
-    }
+    } // for (double t = startTime; t <= endTime; t+=mbFrameStep) {
 } // RotoContextPrivate::renderBezier_gl
 
 

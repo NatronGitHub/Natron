@@ -89,7 +89,7 @@ const char* rotoRamp_FragmentShader =
 "\n"
 "void main() {\n"
 "	gl_FragColor = fillColor;\n"
-"   float t;\n"
+"   float t = gl_FragColor.a;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
 "#endif\n"
@@ -102,7 +102,7 @@ const char* rotoRamp_FragmentShader =
 "#ifdef RAMP_SMOOTH\n"
 "   t = t * t * (3 - 2 * t); \n"
 "#endif\n"
-"   gl_FragColor.a = gl_Color.a * t;\n"
+"   gl_FragColor.a = gl_Color.a * pow(t,fallOff);\n"
 "}";
 
 NATRON_NAMESPACE_EXIT;
