@@ -7437,7 +7437,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
     EffectInstancePtr isEffect = isEffectInstance( master->getHolder() );
     NodePtr parentNode;
     if (!isEffect) {
-        TrackMarkerPtr isMarker = boost::dynamic_pointer_cast<TrackMarker>( master->getHolder() );
+        TrackMarkerPtr isMarker = isTrackMarker( master->getHolder() );
         if (isMarker) {
             parentNode = isMarker->getContext()->getNode();
         }

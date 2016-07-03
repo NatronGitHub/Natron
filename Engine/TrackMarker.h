@@ -245,6 +245,11 @@ private:
     boost::scoped_ptr<TrackMarkerPrivate> _imp;
 };
 
+inline TrackMarkerPtr
+isTrackMarker(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<TrackMarker>(holder);
+}
 
 class TrackMarkerPM
     : public TrackMarker
@@ -287,6 +292,13 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 };
+
+inline TrackMarkerPMPtr
+isTrackMarkerPM(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<TrackMarkerPM>(holder);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

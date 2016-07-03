@@ -1746,7 +1746,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
         return false;
     }
 
-    TrackMarkerPMPtr isTrackerPM = boost::dynamic_pointer_cast<TrackMarkerPM>( track->natronMarker );
+    TrackMarkerPMPtr isTrackerPM = isTrackMarkerPM( track->natronMarker );
     bool ret;
     if (isTrackerPM) {
         ret = TrackerContextPrivate::trackStepTrackerPM(isTrackerPM, args, time);

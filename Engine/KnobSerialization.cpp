@@ -106,7 +106,7 @@ ValueSerialization::initForSave(const KnobIPtr & knob,
         NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( m.second->getHolder() );
         assert(holder);
 
-        TrackMarkerPtr isMarker = boost::dynamic_pointer_cast<TrackMarker>(holder);
+        TrackMarkerPtr isMarker = isTrackMarker(holder);
         if (isMarker) {
             _master.masterTrackName = isMarker->getScriptName_mt_safe();
             _master.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
