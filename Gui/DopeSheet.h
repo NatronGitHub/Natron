@@ -391,10 +391,10 @@ public:
 
 Q_SIGNALS:
     void modelChanged();
-    void nodeAdded(DSNode *dsNode);
-    void nodeAboutToBeRemoved(DSNode *dsNode);
-    void nodeRemoved(DSNode *dsNode);
-    void keyframeSetOrRemoved(DSKnob *dsKnob);
+    void nodeAdded(const DSNodePtr& dsNode);
+    void nodeAboutToBeRemoved(const DSNodePtr& dsNode);
+    void nodeRemoved(const DSNodePtr& dsNode);
+    void keyframeSetOrRemoved(const DSKnobPtr& dsKnob);
 
 private: /* functions */
     DSNodePtr createDSNode(const NodeGuiPtr &nodeGui, DopeSheetItemType itemType);

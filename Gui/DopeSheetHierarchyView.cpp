@@ -281,9 +281,9 @@ public:
     ~HierarchyViewPrivate();
 
     /* functions */
-    void checkKnobsVisibleState(DSNode *dsNode);
-    void checkNodeVisibleState(DSNode *dsNode);
-    void checkKnobVisibleState(DSKnob *dsKnob);
+    void checkKnobsVisibleState(const DSNodePtr& dsNode);
+    void checkNodeVisibleState(const DSNodePtr& dsNode);
+    void checkKnobVisibleState(const DSKnobPtr& dsKnob);
 
     // item related
     QRect getBranchRect(QTreeWidgetItem *item) const;
@@ -293,10 +293,10 @@ public:
     DSNodePtr itemBelowIsNode(QTreeWidgetItem *item) const;
 
     // item painting
-    void drawPluginIconArea(QPainter *p, DSNodePtr dsNode, const QRect &rowRect, bool drawPluginIcon) const;
+    void drawPluginIconArea(QPainter *p, const DSNodePtr& dsNode, const QRect &rowRect, bool drawPluginIcon) const;
     void drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect);
     void drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const;
-    void drawNodeBottomSeparation(QPainter *p, DSNodePtr dsNode, DSNodePtr nodeBelow, const QRect &rowRect) const;
+    void drawNodeBottomSeparation(QPainter *p, const DSNodePtr& dsNode, const DSNodePtr& nodeBelow, const QRect &rowRect) const;
 
     QColor getDullColor(const QColor &color) const;
 
@@ -325,7 +325,7 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
+HierarchyViewPrivate::checkKnobsVisibleState(const DSNodePtr& dsNode)
 {
     const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
@@ -339,7 +339,7 @@ HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
         }
 
         if (knobContext->getDimension() <= 0) {
-            checkKnobVisibleState( knobContext.get() );
+            checkKnobVisibleState( knobContext );
         }
     }
 }
@@ -348,7 +348,7 @@ HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
+HierarchyViewPrivate::checkNodeVisibleState(const DSKnobPtr& dsNode)
 {
     NodeGuiPtr nodeGui = dsNode->getNodeGui();
     DopeSheetItemType nodeType = dsNode->getItemType();
@@ -374,7 +374,7 @@ HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
+HierarchyViewPrivate::checkKnobVisibleState(const DSKnobPtr& dsKnob)
 {
     int dim = dsKnob->getDimension();
     KnobGuiPtr knobGui = dsKnob->getKnobGui();
@@ -400,7 +400,7 @@ HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
     QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
     treeItem->setHidden(!showContext);
     treeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showContext);
-}
+}}
 
 /**
  * @brief Returns the branch rect of 'item'.

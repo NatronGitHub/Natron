@@ -1014,7 +1014,7 @@ DopeSheetViewPrivate::drawRows() const
             }
 
             {
-                DSNodePtr group = model->getGroupDSNode( dsNode.get() );
+                DSNodePtr group = model->getGroupDSNode( dsNode );
                 if (group) {
                     drawGroupOverlay(dsNode, group);
                 }
@@ -1898,13 +1898,13 @@ DopeSheetViewPrivate::computeReaderRange(const DSNodePtr& reader)
     {
         DSNodePtr isInGroup = model->getGroupDSNode(reader);
         if (isInGroup) {
-            computeGroupRange( isInGroup.get() );
+            computeGroupRange( isInGroup );
         }
     }
     {
         DSNodePtr isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader);
         if (isConnectedToTimeNode) {
-            computeNodeRange( isConnectedToTimeNode.get() );
+            computeNodeRange( isConnectedToTimeNode );
         }
     }
 
@@ -2089,7 +2089,7 @@ DopeSheetViewPrivate::computeGroupRange(const DSNodePtr& group)
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it);
-        DSNodePtr dsNode = model->findDSNode( node.get() );
+        DSNodePtr dsNode = model->findDSNode(node);
 
         if (!dsNode) {
             continue;
@@ -2101,9 +2101,9 @@ DopeSheetViewPrivate::computeGroupRange(const DSNodePtr& group)
             continue;
         }
 
-        computeNodeRange( dsNode.get() );
+        computeNodeRange(dsNode);
 
-        std::map<DSNode *, FrameRange >::iterator found = nodeRanges.find( dsNode.get() );
+        std::map<DSNodePtr, FrameRange >::iterator found = nodeRanges.find(dsNode);
         if ( found != nodeRanges.end() ) {
             times.insert(found->second.first);
             times.insert(found->second.second);
@@ -2308,7 +2308,7 @@ DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect,
             }
         }
 
-        std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find( dsNode.get() );
+        std::map<DSNodePtr, FrameRange >::const_iterator foundRange = nodeRanges.find( dsNode );
         if ( foundRange != nodeRanges.end() ) {
             QPoint visualRectCenter = hierarchyView->visualItemRect( dsNode->getTreeItem() ).center();
             QPointF center = zoomContext.toZoomCoordinates( visualRectCenter.x(), visualRectCenter.y() );
@@ -2612,7 +2612,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
         }
 
         // Also append the range of the clip if this is a Reader/Group/Time node
-        std::map<DSNode *, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find( dsNode.get() );
+        std::map<DSNodePtr, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find( dsNode );
         if ( foundRange != _imp->nodeRanges.end() ) {
             const FrameRange& range = foundRange->second;
             if ( !dimFirstKeys.empty() ) {
@@ -2943,7 +2943,7 @@ DopeSheetView::onTimeLineBoundariesChanged(int,
 }
 
 void
-DopeSheetView::onNodeAdded(DSNode *dsNode)
+DopeSheetView::onNodeAdded(const DSNodePtr& dsNode)
 {
     DopeSheetItemType nodeType = dsNode->getItemType();
     NodePtr node = dsNode->getInternalNode();
@@ -3016,22 +3016,22 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
     {
         DSNodePtr parentGroupDSNode = _imp->model->getGroupDSNode(dsNode);
         if (parentGroupDSNode) {
-            _imp->computeGroupRange( parentGroupDSNode.get() );
+            _imp->computeGroupRange( parentGroupDSNode );
         }
     }
 } // DopeSheetView::onNodeAdded
 
 void
-DopeSheetView::onNodeAboutToBeRemoved(DSNode *dsNode)
+DopeSheetView::onNodeAboutToBeRemoved(const DSNodePtr& dsNode)
 {
     {
         DSNodePtr parentGroupDSNode = _imp->model->getGroupDSNode(dsNode);
         if (parentGroupDSNode) {
-            _imp->computeGroupRange( parentGroupDSNode.get() );
+            _imp->computeGroupRange( parentGroupDSNode );
         }
     }
 
-    std::map<DSNode *, FrameRange>::iterator toRemove = _imp->nodeRanges.find(dsNode);
+    std::map<DSNodePtr, FrameRange>::iterator toRemove = _imp->nodeRanges.find(dsNode);
 
     if ( toRemove != _imp->nodeRanges.end() ) {
         _imp->nodeRanges.erase(toRemove);
@@ -3065,9 +3065,9 @@ DopeSheetView::onKeyframeChanged()
     }
 
     {
-        DSNodePtr parentGroupDSNode = _imp->model->getGroupDSNode( dsNode.get() );
+        DSNodePtr parentGroupDSNode = _imp->model->getGroupDSNode( dsNode );
         if (parentGroupDSNode) {
-            _imp->computeGroupRange( parentGroupDSNode.get() );
+            _imp->computeGroupRange( parentGroupDSNode );
         }
     }
 }
@@ -3325,7 +3325,7 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
             DSTreeItemNodeMap nodes = _imp->model->getItemNodeMap();
             for (DSTreeItemNodeMap::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 if ( it->second->isRangeDrawingEnabled() ) {
-                    std::map<DSNode *, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find( it->second.get() );
+                    std::map<DSNodePtr, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find( it->second );
                     if ( foundRange == _imp->nodeRanges.end() ) {
                         continue;
                     }

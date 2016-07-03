@@ -206,7 +206,7 @@ private Q_SLOTS:
      * This slot is automatically called after the dope sheet model
      * created 'dsNode'.
      */
-    void onNodeAdded(DSNode *dsNode);
+    void onNodeAdded(const DSNodePtr& dsNode);
 
     /**
      * @brief Removes the item associated with 'dsNode' from the hierarchy
@@ -215,7 +215,7 @@ private Q_SLOTS:
      * This slot is automatically called just before the dope sheet model
      * remove 'dsNode'.
      */
-    void onNodeAboutToBeRemoved(DSNode *dsNode);
+    void onNodeAboutToBeRemoved(const DSNodePtr& dsNode);
 
     /**
      * @brief Checks if the item associated with 'dsKnob' must be shown
@@ -227,7 +227,7 @@ private Q_SLOTS:
      * This slot is automatically called when a keyframe associated with
      * 'dsKnob' is set or removed.
      */
-    void onKeyframeSetOrRemoved(DSKnob *dsKnob);
+    void onKeyframeSetOrRemoved(const DSKnobPtr& dsKnob);
 
     /**
      * @brief Check the selected state of the knob context items which have

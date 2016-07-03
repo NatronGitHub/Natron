@@ -151,8 +151,8 @@ public:
     ~DopeSheetPrivate();
 
     /* functions */
-    Node * getNearestTimeFromOutputs_recursive(const NodePtr& node, std::list<NodePtr>& markedNodes) const;
-    Node * getNearestReaderFromInputs_recursive(const NodePtr& node, std::list<NodePtr>& markedNodes) const;
+    NodePtr getNearestTimeFromOutputs_recursive(const NodePtr& node, std::list<NodePtr>& markedNodes) const;
+    NodePtr getNearestReaderFromInputs_recursive(const NodePtr& node, std::list<NodePtr>& markedNodes) const;
     void getInputsConnected_recursive(const NodePtr& node, std::vector<DSNodePtr> *result) const;
 
     void pushUndoCommand(QUndoCommand *cmd);
@@ -201,7 +201,7 @@ DopeSheetPrivate::getNearestTimeFromOutputs_recursive(const NodePtr& node,
     const NodesWList &outputs = node->getGuiOutputs();
 
     if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
-        return 0;
+        return NodePtr();
     }
     markedNodes.push_back(node);
     for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
@@ -211,7 +211,7 @@ DopeSheetPrivate::getNearestTimeFromOutputs_recursive(const NodePtr& node,
         if ( (pluginID == PLUGINID_OFX_RETIME)
              || ( pluginID == PLUGINID_OFX_TIMEOFFSET)
              || ( pluginID == PLUGINID_OFX_FRAMERANGE) ) {
-            return output.get();
+            return output;
         } else {
             NodePtr ret =  getNearestTimeFromOutputs_recursive(output, markedNodes);
             if (ret) {
@@ -220,10 +220,10 @@ DopeSheetPrivate::getNearestTimeFromOutputs_recursive(const NodePtr& node,
         }
     }
 
-    return 0;
+    return NodePtr();
 }
 
-Node *
+NodePtr
 DopeSheetPrivate::getNearestReaderFromInputs_recursive(const NodePtr& node,
                                                        std::list<NodePtr>& markedNodes) const
 {
@@ -974,7 +974,7 @@ void
 DopeSheet::onNodeNameChanged(const QString &name)
 {
     Node *node = qobject_cast<Node *>( sender() );
-    DSNodePtr dsNode = findDSNode(node);
+    DSNodePtr dsNode = findDSNode(node->shared_from_this());
 
     if (dsNode) {
         dsNode->getTreeItem()->setText(0, name);
