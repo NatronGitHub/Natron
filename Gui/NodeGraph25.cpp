@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 void
-NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
+NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& nearbyNode)
 {
     if (!nearbyNode) {
         return;
@@ -151,7 +151,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
 void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    NodeGui* nearbyNode;
+    NodeGuiPtr nearbyNode;
     Edge* nearbyEdge;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
@@ -393,7 +393,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
         if (_imp->_selection.size() == 1) {
-            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front().get());
+            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front());
         } else {
             accept = false;
         }

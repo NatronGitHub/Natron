@@ -706,11 +706,11 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
             KnobHolderPtr masterHolder = master.second->getHolder();
             if (masterHolder) {
-                TrackMarkerPtr isTrackMarker = isTrackMarker(masterHolder);
-                if (isTrackMarker) {
-                    knobName.append( isTrackMarker->getContext()->getNode()->getScriptName() );
+                TrackMarkerPtr isMarker = isTrackMarker(masterHolder);
+                if (isMarker) {
+                    knobName.append( isMarker->getContext()->getNode()->getScriptName() );
                     knobName += '.';
-                    knobName += isTrackMarker->getScriptName_mt_safe();
+                    knobName += isMarker->getScriptName_mt_safe();
                 }
             }
 
@@ -807,7 +807,7 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
 
     if (ret) {
         NodeGuiIPtr groupNodeGuiI = effect->getNode()->getNodeGui();
-        NodeGui* groupNodeGui = dynamic_cast<NodeGui*>( groupNodeGuiI.get() );
+        NodeGuiPtr groupNodeGui = isNodeGui( groupNodeGuiI );
         assert(groupNodeGui);
         if (groupNodeGui) {
             groupNodeGui->ensurePanelCreated();

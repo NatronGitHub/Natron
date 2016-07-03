@@ -1508,7 +1508,7 @@ GuiAppInstance::addNodesKeyframesToTimeline(const std::list<NodePtr> & nodes)
 }
 
 void
-GuiAppInstance::addNodeKeyframesToTimeline(NodePtr node)
+GuiAppInstance::addNodeKeyframesToTimeline(const NodePtr& node)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1537,7 +1537,7 @@ GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<NodePtr> & node
 }
 
 void
-GuiAppInstance::removeNodeKeyframesFromTimeline(consr NodePtr& node)
+GuiAppInstance::removeNodeKeyframesFromTimeline(const NodePtr& node)
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );

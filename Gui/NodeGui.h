@@ -136,13 +136,18 @@ public:
 
     typedef std::vector<Edge*> InputEdges;
 
-public:
+protected: // parent of DotGui, BackdropGui,
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     NodeGui(QGraphicsItem *parent = 0);
 
 public:
+    static NodeGuiPtr create(QGraphicsItem *parent = 0) WARN_UNUSED_RETURN
+    {
+        return NodeGuiPtr( new NodeGui(parent) );
+    }
+
     void initialize(NodeGraph* dag,
                     const NodePtr & internalNode);
 
@@ -686,6 +691,12 @@ private:
     bool identityStateSet;
     boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
 };
+
+inline NodeGuiPtr
+isNodeGui(const NodeGuiIPtr& nodeGuiI)
+{
+    return boost::dynamic_pointer_cast<NodeGui>(nodeGuiI);
+}
 
 NATRON_NAMESPACE_EXIT;
 

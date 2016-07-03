@@ -2011,7 +2011,7 @@ DopeSheetViewPrivate::computeTimeOffsetRange(const DSNodePtr& timeOffset)
     {
         DSNodePtr nearestReader = model->findDSNode( model->getNearestReader(timeOffset) );
         if (nearestReader) {
-            assert( nodeRanges.find( nearestReader ) != nodeRanges );
+            assert( nodeRanges.find( nearestReader ) != nodeRanges.end() );
             FrameRange nearestReaderRange = nodeRanges.find( nearestReader )->second; // map::at() is C++11
 
             // Retrieve the time offset values
@@ -3089,14 +3089,14 @@ DopeSheetView::onRangeNodeChanged(ViewSpec /*view*/,
             if (!effectInstance) {
                 return;
             }
-            dsNode = _imp->model->findDSNode( effectInstance->getNode().get() );
+            dsNode = _imp->model->findDSNode( effectInstance->getNode() );
         }
     }
 
     if (!dsNode) {
         return;
     }
-    _imp->computeNodeRange( dsNode.get() );
+    _imp->computeNodeRange( dsNode );
 
     //Since this function is called a lot, let a chance to Qt to concatenate events
     //NB: updateGL() does not concatenate
@@ -3110,7 +3110,7 @@ DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
     {
         DSNodePtr dsNode = _imp->model->findParentDSNode(item);
         if (dsNode) {
-            _imp->computeRangesBelow( dsNode.get() );
+            _imp->computeRangesBelow( dsNode );
         }
     }
 

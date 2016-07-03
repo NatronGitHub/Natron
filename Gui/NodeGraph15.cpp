@@ -138,7 +138,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         assert(nodeHoldingEdge);
 
 
-        NodeGui* nearbyNode;
+        NodeGuiPtr nearbyNode;
         Edge* nearbyEdge;
         NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 

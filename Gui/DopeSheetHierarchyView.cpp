@@ -348,7 +348,7 @@ HierarchyViewPrivate::checkKnobsVisibleState(const DSNodePtr& dsNode)
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkNodeVisibleState(const DSKnobPtr& dsNode)
+HierarchyViewPrivate::checkNodeVisibleState(const DSNodePtr& dsNode)
 {
     NodeGuiPtr nodeGui = dsNode->getNodeGui();
     DopeSheetItemType nodeType = dsNode->getItemType();
@@ -400,7 +400,7 @@ HierarchyViewPrivate::checkKnobVisibleState(const DSKnobPtr& dsKnob)
     QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
     treeItem->setHidden(!showContext);
     treeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showContext);
-}}
+}
 
 /**
  * @brief Returns the branch rect of 'item'.
@@ -471,7 +471,7 @@ DSNodePtr HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
 
 void
 HierarchyViewPrivate::drawPluginIconArea(QPainter *p,
-                                         DSNodePtr dsNode,
+                                         const DSNodePtr& dsNode,
                                          const QRect &rowRect,
                                          bool drawPluginIcon) const
 {
@@ -552,8 +552,8 @@ HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p,
 
 void
 HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p,
-                                               DSNodePtr dsNode,
-                                               DSNodePtr nodeBelow,
+                                               const DSNodePtr& dsNode,
+                                               const DSNodePtr& nodeBelow,
                                                const QRect &rowRect) const
 {
     int lineWidth = (appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() / 2);
@@ -931,8 +931,8 @@ HierarchyView::onNodeAdded(const DSNodePtr& dsNode)
 
         moveItem( n->getTreeItem(), dsNode->getTreeItem() );
 
-        _imp->checkKnobsVisibleState( n.get() );
-        _imp->checkNodeVisibleState( n.get() );
+        _imp->checkKnobsVisibleState( n );
+        _imp->checkNodeVisibleState( n );
 
         n->getTreeItem()->setExpanded(true);
     }
@@ -965,8 +965,8 @@ HierarchyView::onNodeAboutToBeRemoved(const DSNodePtr& dsNode)
         moveItem(nodeItem, newParent);
 
         DSNodePtr dss = _imp->dopeSheetModel->mapNameItemToDSNode(nodeItem);
-        _imp->checkKnobsVisibleState( dss.get() );
-        _imp->checkNodeVisibleState( dss.get() );
+        _imp->checkKnobsVisibleState( dss );
+        _imp->checkNodeVisibleState( dss );
 
         nodeItem->setExpanded(true);
     }
@@ -976,13 +976,13 @@ HierarchyView::onNodeAboutToBeRemoved(const DSNodePtr& dsNode)
 }
 
 void
-HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
+HierarchyView::onKeyframeSetOrRemoved(const DSKnobPtr& dsKnob)
 {
     _imp->checkKnobVisibleState(dsKnob);
 
     // Check the node item
     DSNodePtr parentNode = _imp->dopeSheetModel->findParentDSNode( dsKnob->getTreeItem() );
-    _imp->checkNodeVisibleState( parentNode.get() );
+    _imp->checkNodeVisibleState( parentNode );
 }
 
 void

@@ -87,7 +87,7 @@ void
 NodeGraph::showSelectedNodeSettingsPanel()
 {
     if (_imp->_selection.size() == 1) {
-        showNodePanel(false, false, _imp->_selection.front().get());
+        showNodePanel(false, false, _imp->_selection.front());
     }
 }
 
@@ -353,7 +353,7 @@ NodeGraph::decloneSelectedNodes()
 
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        BackdropGui* isBd =isBackdropGui(*it);
+        BackdropGuiPtr isBd = isBackdropGui(*it);
         if (isBd) {
             ///Also copy all nodes within the backdrop
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
@@ -410,13 +410,13 @@ NodeGraph::invalidateAllNodesParenting()
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem(*it);
+            (*it)->scene()->removeItem((*it).get());
         }
     }
     for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem(*it);
+            (*it)->scene()->removeItem((*it).get());
         }
     }
 }

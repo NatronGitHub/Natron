@@ -511,10 +511,10 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->replaceInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc ) );
             }
         } else if (internalOldSrc && !internalNewSrc) {
-            internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+            internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc ) );
         } else if (!internalOldSrc && internalNewSrc) {
             Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
             bool connectionOk = ret == Node::eCanConnectInput_ok ||
@@ -523,7 +523,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->connectInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc ) );
             }
         }
     }
@@ -1733,7 +1733,7 @@ GroupFromSelectionCommand::redo()
                 if (!output) {
                     continue;
                 }
-                int inputIdx = output->getInputIndex(foundOriginalOutputNode->getNode().get());
+                int inputIdx = output->getInputIndex(foundOriginalOutputNode->getNode());
                 assert(inputIdx != -1);
                 output->replaceInput(isGrp->getNode(), inputIdx);
                 OutputLink& link = _outputLinks[*it2];

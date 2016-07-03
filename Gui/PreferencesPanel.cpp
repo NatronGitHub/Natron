@@ -363,7 +363,7 @@ public:
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
     : QWidget(parent)
-    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>() )
+    , KnobGuiContainerHelper( appPTR->getCurrentSettings(), boost::shared_ptr<QUndoStack>() )
     , _imp( new PreferencesPanelPrivate(this, parent) )
 {
 }

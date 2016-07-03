@@ -44,13 +44,18 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-private:
+private: // derives from NodeGui
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     BackdropGui(QGraphicsItem* parent = 0);
 
 public:
+    static NodeGuiPtr create(QGraphicsItem *parent = 0) WARN_UNUSED_RETURN
+    {
+        return NodeGuiPtr( new BackdropGui(parent) );
+    }
+
     virtual ~BackdropGui();
 
     void refreshTextLabelFromKnob();
@@ -88,7 +93,7 @@ private:
 };
 
 inline BackdropGuiPtr
-isBackdropGui(const NodeGuiPtr& nodeGui)
+isBackdropGui(const NodeGuiIPtr& nodeGui)
 {
     return boost::dynamic_pointer_cast<BackdropGui>(nodeGui);
 }

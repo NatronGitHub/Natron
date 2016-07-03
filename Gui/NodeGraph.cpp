@@ -72,7 +72,7 @@ NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
     }
     ret->insert(0, toPreprend);
     if (isParentGrp) {
-        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+        makeFullyQualifiedLabel(isParentGrp->getNode(), ret);
     }
 }
 
@@ -99,7 +99,7 @@ NodeGraph::NodeGraph(Gui* gui,
         }
         setScriptName(newName);
         std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
+        makeFullyQualifiedLabel(isGrp->getNode(), &label);
         setLabel(label);
         QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
         QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );

@@ -101,7 +101,7 @@ struct PickKnobDialogPrivate
         if (!selectedKnob) {
             return;
         }
-        KnobParametricPtr isParametric = isKnobParametric( selectedKnob->getKnob().get() );
+        KnobParametricPtr isParametric = isKnobParametric( selectedKnob->getKnob() );
         if (isParametric) {
             useAliasCheckBox->setChecked(true);
         }

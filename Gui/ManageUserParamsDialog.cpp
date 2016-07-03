@@ -291,7 +291,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const KnobsVec& knobs,
                                                std::list<KnobIPtr>& markedKnobs)
 {
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        if ( std::find( markedKnobs.begin(), markedKnobs.end(), it2->get() ) != markedKnobs.end() ) {
+        if ( std::find( markedKnobs.begin(), markedKnobs.end(), *it2 ) != markedKnobs.end() ) {
             continue;
         }
 

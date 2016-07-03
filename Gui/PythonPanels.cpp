@@ -168,7 +168,7 @@ DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
 struct PyModalDialogPrivate
 {
     Gui* gui;
-    DialogParamHolder* holder;
+    DialogParamHolderPtr holder;
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
     QWidget* centerContainer;
@@ -288,7 +288,7 @@ PyModalDialog::~PyModalDialog()
 {
 }
 
-DialogParamHolder*
+DialogParamHolderPtr
 PyModalDialog::getKnobsHolder() const
 {
     return _imp->holder;

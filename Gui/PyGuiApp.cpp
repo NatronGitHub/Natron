@@ -399,9 +399,9 @@ GuiApp::selectAllNodes(Group* group)
     if ( appPTR->isBackground() ) {
         return;
     }
-    NodeGraph* graph = 0;
+    NodeGraph* graph = NULL;
     NodeCollectionPtr collection;
-    NodeGroupPtr isGroup = 0;
+    NodeGroupPtr isGroup = NodeGroupPtr();
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
@@ -460,9 +460,9 @@ GuiApp::clearSelection(Group* group)
         return;
     }
 
-    NodeGraph* graph = 0;
+    NodeGraph* graph = NULL;
     NodeCollectionPtr collection;
-    NodeGroupPtr isGroup = 0;
+    NodeGroupPtr isGroup = NodeGroupPtr();
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
@@ -509,7 +509,7 @@ GuiApp::getActiveViewer() const
     if (!tab) {
         return 0;
     }
-    ViewerInstance* instance = tab->getInternalNode();
+    ViewerInstancePtr instance = tab->getInternalNode();
     if (!instance) {
         return 0;
     }

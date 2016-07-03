@@ -76,7 +76,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
         if ( nodegui->isVisible() ) {
             NodeCollectionPtr isInCollection = (*it)->getGroup();
-            NodeGroupPtr isCollectionAGroup = isNodeGroup( isInCollection.get() );
+            NodeGroupPtr isCollectionAGroup = isNodeGroup( isInCollection );
             if (!isCollectionAGroup) {
                 ///Nodes within a group will be serialized recursively in the node group serialization
                 NodeGuiSerialization state;
@@ -141,9 +141,9 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             assert(holder);
 
             EffectInstancePtr isEffect = isEffectInstance(holder);
-            Project* isProject = dynamic_cast<Project*>(holder);
+            ProjectPtr isProj = isProject(holder);
 
-            if (isProject) {
+            if (isProj) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
             } else if (isEffect) {
                 _openedPanelsOrdered.push_back( isEffect->getNode()->getFullyQualifiedName() );

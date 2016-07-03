@@ -512,7 +512,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     layout->addSpacing(20);
 
     std::list<KnobIPtr > instanceSpecificKnobs;
-    _imp->getInstanceSpecificKnobs(_imp->getMainInstance().get(), &instanceSpecificKnobs);
+    _imp->getInstanceSpecificKnobs(_imp->getMainInstance(), &instanceSpecificKnobs);
 
     _imp->view = new TableView( layout->parentWidget() );
     QObject::connect( _imp->view, SIGNAL(deleteKeyPressed()), this, SLOT(onDeleteKeyPressed()) );
@@ -881,7 +881,7 @@ MultiInstancePanel::selectNodes(const std::list<NodePtr> & nodes,
         int i = 0;
         for (std::list< std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = _imp->instances.begin();
              it2 != _imp->instances.end(); ++it2, ++i) {
-            if (it2->first.lock().get() == *it) {
+            if (it2->first.lock() == *it) {
                 QItemSelection sel( _imp->model->index(i, 0), _imp->model->index(i, _imp->view->columnCount() - 1) );
                 newSelection.merge(sel, QItemSelectionModel::Select);
                 break;
@@ -1171,7 +1171,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
         it->first->getEffectInstance()->endChanges();
 
         for (Nodes::iterator it2 = _imp->instances.begin(); it2 != _imp->instances.end(); ++it2) {
-            if (it2->first.lock().get() == it->first) {
+            if (it2->first.lock() == it->first) {
                 it2->second = false;
                 break;
             }
@@ -1235,7 +1235,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
             }
         }
         for (Nodes::iterator it2 = _imp->instances.begin(); it2 != _imp->instances.end(); ++it2) {
-            if (it2->first.lock().get() == it->first) {
+            if (it2->first.lock() == it->first) {
                 it2->second = true;
                 break;
             }
@@ -1582,7 +1582,7 @@ MultiInstancePanel::getSelectedInstances(std::list<NodePtr>* instances) const
         assert( *it >= 0 && *it < (int)_imp->instances.size() );
         std::list< std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = _imp->instances.begin();
         std::advance(it2, *it);
-        instances->push_back( it2->first.lock().get() );
+        instances->push_back( it2->first.lock() );
     }
 }
 
@@ -1602,7 +1602,7 @@ MultiInstancePanel::resetAllInstances()
     _imp->view->selectionModel()->clear();
     std::list<NodePtr> all;
     for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
-        all.push_back( it->first.lock().get() );
+        all.push_back( it->first.lock() );
     }
     resetInstances(all);
 }
@@ -1939,7 +1939,7 @@ TrackerPanelV1::onAverageTracksButtonClicked()
 
     newInstance->updateEffectLabelKnob(newName);
 
-    KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
+    KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance );
     std::list<KnobDoublePtr > centers;
     RangeD keyframesRange;
     keyframesRange.min = INT_MAX;
@@ -2362,7 +2362,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<NodePtr> & s
 
     ///Move the node on the right of the tracker node
     NodeGuiIPtr cornerPinGui_i = cornerPin->getNodeGui();
-    NodeGui* cornerPinGui = dynamic_cast<NodeGui*>( cornerPinGui_i.get() );
+    NodeGuiPtr cornerPinGui = isNodeGui( cornerPinGui_i );
     assert(cornerPinGui);
 
     NodeGuiPtr mainInstanceGui = publicInterface->getMainInstanceGui();
@@ -2379,13 +2379,13 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<NodePtr> & s
     double timeForFromPoints = useTransformRefFrame ? referenceFrame->getValue() : app->getTimeLine()->currentFrame();
 
     for (unsigned int i = 0; i < selection.size(); ++i) {
-        fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
+        fromPoints[i] = getCornerPinPoint(cornerPin, true, i);
         assert(fromPoints[i] && centers[i]);
         for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
             fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints, j), ViewSpec::all(), j);
         }
 
-        toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
+        toPoints[i] = getCornerPinPoint(cornerPin, false, i);
         assert(toPoints[i]);
         if (!linked) {
             toPoints[i]->cloneAndUpdateGui(centers[i]);

@@ -247,7 +247,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output_i) {
                     continue;
                 }
-                NodeGui* outputGui = dynamic_cast<NodeGui*>( output_i.get() );
+                NodeGuiPtr outputGui = isNodeGui( output_i );
                 assert(outputGui);
                 if (outputGui) {
                     outputGui->moveBelowPositionRecursively(createdNodeRect);

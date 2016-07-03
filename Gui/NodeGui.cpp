@@ -255,7 +255,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     InspectorNodePtr isInspector = isInspectorNode(internalNode);
     if (isInspector) {
-        QObject::connect( isInspector, SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
+        QObject::connect( isInspector.get(), SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }
 
     createGui();
@@ -557,7 +557,7 @@ NodeGui::createGui()
 
     NodePtr node = getNode();
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
-    BackdropGui* isBd =isBackdropGui(this);
+    BackdropGuiPtr isBd = isBackdropGui( shared_from_this() );
 
     if ( !isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
         QPixmap pix(iconFilePath);
@@ -629,10 +629,10 @@ NodeGui::createGui()
 
     onAvailableViewsChanged();
 
-    GroupInputPtr isGroupInput = node->isEffectGroupInput();
-    GroupOutputPtr isGroupOutput = isGroupOutput( node->getEffectInstance() );
+    GroupInputPtr isGrpInput = node->isEffectGroupInput();
+    GroupOutputPtr isGrpOutput = isGroupOutput( node->getEffectInstance() );
 
-    if (!isGroupInput && !isGroupOutput) {
+    if (!isGrpInput && !isGrpOutput) {
         QGradientStops ptGrad;
         ptGrad.push_back( qMakePair( 0., QColor(0, 0, 255) ) );
         ptGrad.push_back( qMakePair( 0.5, QColor(0, 50, 200) ) );
@@ -967,7 +967,7 @@ NodeGui::refreshPositionEnd(double x,
 
         for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
             if ( (*it)->isVisible() && (it->get() != this) && (*it)->intersects(bbox) ) {
-                setAboveItem(*it);
+                setAboveItem((*it).get());
             }
         }
     }
@@ -1127,7 +1127,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if ( !isVisible() ||isBackdropGui(this) ||isBackdropGui(item) ) {
+    if ( !isVisible() || isBackdropGui( shared_from_this() ) || dynamic_cast<BackdropGui*>(item) ) {
         return;
     }
     item->stackBefore(this);
@@ -1645,7 +1645,7 @@ NodeGui::isSelectedInParentMultiInstance(const NodeConstPtr& node) const
     const std::list< std::pair<NodeWPtr, bool > >& instances = multiInstance->getInstances();
     for (std::list< std::pair<NodeWPtr, bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         NodePtr instance = it->first.lock();
-        if (instance.get() == node) {
+        if (instance == node) {
             return it->second;
         }
     }
@@ -1848,7 +1848,7 @@ NodeGui::showGui()
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
 
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance() );
+        OfxEffectInstancePtr ofxNode = isOfxEffectInstance( node->getEffectInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
@@ -1877,12 +1877,12 @@ NodeGui::activate(bool triggerRender)
         showGui();
     } else {
         ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance() );
+        OfxEffectInstancePtr ofxNode = isOfxEffectInstance( node->getEffectInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
     }
-    _graph->restoreFromTrash(this);
+    _graph->restoreFromTrash( shared_from_this() );
     //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
@@ -1962,15 +1962,15 @@ NodeGui::deactivate(bool triggerRender)
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance() );
+    OfxEffectInstancePtr ofxNode = !node ? OfxEffectInstancePtr() : isOfxEffectInstance( node->getEffectInstance() );
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
     if (_graph) {
-        _graph->moveToTrash(this);
+        _graph->moveToTrash( shared_from_this() );
         if ( _graph->getGui() ) {
-            _graph->getGui()->getCurveEditor()->removeNode(this);
-            _graph->getGui()->getDopeSheetEditor()->removeNode(this);
+            _graph->getGui()->getCurveEditor()->removeNode( shared_from_this() );
+            _graph->getGui()->getDopeSheetEditor()->removeNode( shared_from_this() );
         }
     }
 
@@ -2214,7 +2214,7 @@ NodeGui::refreshRenderingIndicator()
             _inputEdges[i]->turnOffRenderingColor();
         }
     }
-    ViewerInstancePtr isViewer = boost::dynamic_pointer_cast<ViewerInstancePtr>(effect);
+    ViewerInstancePtr isViewer = isViewerInstance(effect);
     if (isViewer) {
         ViewerGL* hasUI = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (hasUI) {
@@ -2443,7 +2443,7 @@ NodeGui::onKnobsLinksChanged()
                 foundGuiLink->second.knobs.push_back(k);
                 QString fullToolTip;
                 for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                    QString tt = makeLinkString( masterNode.get(), it2->master.lock().get(), node.get(), it2->slave.lock().get() );
+                    QString tt = makeLinkString( masterNode, it2->master.lock(), node, it2->slave.lock() );
                     fullToolTip.append(tt);
                 }
             } else {
@@ -2461,7 +2461,7 @@ NodeGui::onKnobsLinksChanged()
                 arrow->setColor( QColor(143, 201, 103) );
                 arrow->setArrowHeadColor( QColor(200, 255, 200) );
 
-                QString tt = makeLinkString( masterNode.get(), it->master.lock().get(), node.get(), it->slave.lock().get() );
+                QString tt = makeLinkString( masterNode, it->master.lock(), node, it->slave.lock() );
                 arrow->setToolTip(tt);
                 if ( !getDagGui()->areKnobLinksVisible() ) {
                     arrow->setVisible(false);
@@ -2534,10 +2534,10 @@ NodeGui::destroyGui()
 
 
     //Remove from curve editor
-    guiObj->getCurveEditor()->removeNode(this);
+    guiObj->getCurveEditor()->removeNode( shared_from_this() );
 
     //Remove from dope sheet
-    guiObj->getDopeSheetEditor()->removeNode(this);
+    guiObj->getDopeSheetEditor()->removeNode( shared_from_this() );
 
 
     //Remove nodegraph if group
@@ -3754,7 +3754,7 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
     if (!overlayInteract) {
         return;
     }
-    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract.get());
     if (!isViewer) {
         return;
     }
@@ -3782,7 +3782,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!overlayInteract) {
         return false;
     }
-    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
+    ViewerGLPtr isViewer = isViewerGL(overlayInteract);
     if (!isViewer) {
         return false;
     }
@@ -3829,7 +3829,7 @@ public:
 };
 
 GroupKnobDialog::GroupKnobDialog(Gui* gui,
-                                 const KnobGroupConstPtr group)
+                                 const KnobGroupConstPtr& group)
     : NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
 {
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
@@ -3875,7 +3875,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!overlayInteract) {
         return;
     }
-    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
+    ViewerGLPtr isViewer = isViewerGL(overlayInteract);
     if (!isViewer) {
         return;
     }
@@ -3884,7 +3884,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!rightClickKnob) {
         return;
     }
-    KnobChoicePtr isChoice = isKnobChoice( rightClickKnob.get() );
+    KnobChoicePtr isChoice = isKnobChoice( rightClickKnob );
     if (!isChoice) {
         return;
     }

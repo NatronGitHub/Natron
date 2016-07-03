@@ -340,7 +340,7 @@ public:
      **/
     void addNode(NodeGuiPtr node);
 
-    void removeNode(NodeGui* node);
+    void removeNode(const NodeGuiPtr& node);
 
     void setTreeWidgetWidth(int width);
 

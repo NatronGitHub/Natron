@@ -56,7 +56,8 @@ NATRON_NAMESPACE_ENTER;
  * OpenGL related code as well as user events.
  **/
 class ViewerGL
-    : public QGLWidget, public OpenGLViewerI
+    : public QGLWidget
+    , public OpenGLViewerI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -626,6 +627,12 @@ private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
+
+inline ViewerGLPtr
+isViewerGL(const OverlaySupportPtr& overlaySupport)
+{
+    return boost::dynamic_pointer_cast<ViewerGL>(overlaySupport);
+}
 
 NATRON_NAMESPACE_EXIT;
 

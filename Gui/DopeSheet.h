@@ -343,15 +343,15 @@ public:
     // Model specific
     DSTreeItemNodeMap getItemNodeMap() const;
 
-    void addNode(NodeGuiPtr nodeGui);
-    void removeNode(NodeGui *node);
+    void addNode(const NodeGuiPtr& nodeGui);
+    void removeNode(const NodeGuiPtr& node);
 
     DSNodePtr mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
     DSKnobPtr mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
     DSNodePtr findParentDSNode(QTreeWidgetItem *treeItem) const;
     DSNodePtr findDSNode(const NodePtr& node) const;
     DSNodePtr findDSNode(const KnobIPtr &knob) const;
-    DSKnobPtr findDSKnob(const KnobGui* knobGui) const;
+    DSKnobPtr findDSKnob(const KnobGuiConstPtr& knobGui) const;
 
     bool isPartOfGroup(const DSNodePtr& dsNode) const;
     DSNodePtr getGroupDSNode(const DSNodePtr& dsNode) const;

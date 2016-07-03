@@ -105,9 +105,9 @@ public:
     const NodesGuiList & getAllActiveNodes() const;
     NodesGuiList getAllActiveNodes_mt_safe() const;
 
-    void moveToTrash(NodeGui* node);
+    void moveToTrash(const NodeGuiPtr& node);
 
-    void restoreFromTrash(NodeGui* node);
+    void restoreFromTrash(const NodeGuiPtr& node);
 
     QGraphicsItem* getRootItem() const;
     virtual void notifyGuiClosing() OVERRIDE FINAL;
@@ -249,7 +249,7 @@ public Q_SLOTS:
 
 private:
 
-    void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
+    void showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& nearbyNode);
 
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
 
@@ -289,10 +289,10 @@ private:
         eNearbyItemEdgeBendPoint,
     };
 
-    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGui*>* nodes) const;
+    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGuiPtr>* nodes) const;
 
     NearbyItemEnum hasItemNearbyMouse(const QPoint& mousePosViewport,
-                                      NodeGui** node,
+                                      NodeGuiPtr* node,
                                       Edge** edge);
 
     void moveRootInternal(double dx, double dy);

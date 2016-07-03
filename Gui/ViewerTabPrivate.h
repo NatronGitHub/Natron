@@ -64,7 +64,7 @@ struct ViewerTabPrivate
     ViewerTab* publicInterface; // can not be a smart ptr
 
     /*OpenGL viewer*/
-    ViewerGL* viewer;
+    ViewerGLPtr viewer;
     QWidget* viewerContainer;
     QHBoxLayout* viewerLayout;
     QWidget* viewerSubContainer;

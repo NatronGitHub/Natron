@@ -112,7 +112,7 @@ ProjectGui::create(const ProjectPtr& projectInternal,
     QObject::connect( projectInternal.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobsGui()) );
 
     _panel = new DockablePanel(_gui,
-                               projectInternal.get(),
+                               projectInternal,
                                container,
                                DockablePanel::eHeaderModeReadOnlyName,
                                false,
@@ -310,7 +310,7 @@ loadNodeGuiSerialization(Gui* gui,
         std::list<std::string> grouping;
         nGui->getNode()->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
-        BackdropGui* isBd =isBackdropGui( nGui.get() );
+        BackdropGuiPtr isBd = isBackdropGui( nGui );
         float defR, defG, defB;
 
         if ( iseffect->isReader() ) {
@@ -478,12 +478,12 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         NodePtr node = getGui()->getApp()->createNode(args);
         NodeGuiIPtr gui_i = node->getNodeGui();
         assert(gui_i);
-        BackdropGui* bd =isBackdropGui( gui_i.get() );
+        BackdropGuiPtr bd = isBackdropGui( gui_i );
         assert(bd);
         if (bd) {
             bd->setPos(x, y);
             bd->resize(w, h);
-            KnobStringPtr iStr = isKnobString( labelSerialization.get() );
+            KnobStringPtr iStr = isKnobString( labelSerialization );
             assert(iStr);
             if (iStr) {
                 bd->onLabelChanged( QString::fromUtf8( iStr->getValue().c_str() ) );

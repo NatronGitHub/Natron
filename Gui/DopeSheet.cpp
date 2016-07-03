@@ -230,7 +230,7 @@ DopeSheetPrivate::getNearestReaderFromInputs_recursive(const NodePtr& node,
     const std::vector<NodeWPtr > &inputs = node->getGuiInputs();
 
     if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
-        return 0;
+        return NodePtr();
     }
     markedNodes.push_back(node);
     for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
@@ -247,7 +247,7 @@ DopeSheetPrivate::getNearestReaderFromInputs_recursive(const NodePtr& node,
         if (pluginID == PLUGINID_NATRON_READ) {
 #endif
 
-            return input.get();
+            return input;
         } else {
             NodePtr ret = getNearestReaderFromInputs_recursive(input, markedNodes);
             if (ret) {
@@ -256,7 +256,7 @@ DopeSheetPrivate::getNearestReaderFromInputs_recursive(const NodePtr& node,
         }
     }
 
-    return NULL;
+    return NodePtr();
 }
 
 void
@@ -310,7 +310,7 @@ DopeSheet::getItemNodeMap() const
 }
 
 void
-DopeSheet::addNode(NodeGuiPtr nodeGui)
+DopeSheet::addNode(const NodeGuiPtr& nodeGui)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
@@ -367,18 +367,18 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
 
     _imp->treeItemNodeMap.insert( TreeItemAndDSNode(dsNode->getTreeItem(), dsNode) );
 
-    Q_EMIT nodeAdded( dsNode.get() );
+    Q_EMIT nodeAdded( dsNode );
 } // DopeSheet::addNode
 
 void
-DopeSheet::removeNode(NodeGui *node)
+DopeSheet::removeNode(const NodeGuiPtr& node)
 {
     DSTreeItemNodeMap::iterator toRemove = _imp->treeItemNodeMap.end();
 
     for (DSTreeItemNodeMap::iterator it = _imp->treeItemNodeMap.begin();
          it != _imp->treeItemNodeMap.end();
          ++it) {
-        if ( (*it).second->getNodeGui().get() == node ) {
+        if ( (*it).second->getNodeGui() == node ) {
             toRemove = it;
 
             break;
@@ -393,7 +393,7 @@ DopeSheet::removeNode(NodeGui *node)
 
     _imp->selectionModel->onNodeAboutToBeRemoved(dsNode);
 
-    Q_EMIT nodeAboutToBeRemoved( dsNode.get() );
+    Q_EMIT nodeAboutToBeRemoved( dsNode );
 
     _imp->treeItemNodeMap.erase(toRemove);
 }
@@ -481,7 +481,7 @@ DSNodePtr DopeSheet::findDSNode(const KnobIPtr &knob) const
     return DSNodePtr();
 }
 
-DSKnobPtr DopeSheet::findDSKnob(const KnobGui* knobGui) const
+DSKnobPtr DopeSheet::findDSKnob(const KnobGuiConstPtr& knobGui) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         DSNodePtr dsNode = (*it).second;
@@ -490,7 +490,7 @@ DSKnobPtr DopeSheet::findDSKnob(const KnobGui* knobGui) const
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             DSKnobPtr dsKnob = (*knobIt).second;
 
-            if (dsKnob->getKnobGui().get() == knobGui) {
+            if (dsKnob->getKnobGui() == knobGui) {
                 return dsKnob;
             }
         }
@@ -537,7 +537,7 @@ std::vector<DSNodePtr > DopeSheet::getImportantNodes(const DSNodePtr& dsNode) co
             }
         }
     } else if ( dsNode->isTimeNode() ) {
-        _imp->getInputsConnected_recursive(dsNode->getInternalNode().get(), &ret);
+        _imp->getInputsConnected_recursive(dsNode->getInternalNode(), &ret);
     }
 
 
@@ -989,9 +989,9 @@ DopeSheet::onKeyframeSetOrRemoved()
     if (!k) {
         return;
     }
-    DSKnobPtr dsKnob = findDSKnob(k);
+    DSKnobPtr dsKnob = findDSKnob(k->shared_from_this());
     if (dsKnob) {
-        Q_EMIT keyframeSetOrRemoved( dsKnob.get() );
+        Q_EMIT keyframeSetOrRemoved( dsKnob );
     }
 
     Q_EMIT modelChanged();

@@ -147,13 +147,13 @@ DopeSheetEditor::~DopeSheetEditor()
 {}
 
 void
-DopeSheetEditor::addNode(NodeGuiPtr nodeGui)
+DopeSheetEditor::addNode(const NodeGuiPtr& nodeGui)
 {
     _imp->model->addNode(nodeGui);
 }
 
 void
-DopeSheetEditor::removeNode(NodeGui *node)
+DopeSheetEditor::removeNode(const NodeGuiPtr& node)
 {
     _imp->model->removeNode(node);
 }

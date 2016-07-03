@@ -536,7 +536,7 @@ DockablePanel::onKnobsRecreated()
     if (isNodePanel) {
         NodeGuiPtr node = isNodePanel->getNode();
 
-        getGui()->getCurveEditor()->removeNode( node.get() );
+        getGui()->getCurveEditor()->removeNode( node );
         getGui()->getCurveEditor()->addNode(node);
 
         getGui()->removeNodeGuiFromDopeSheetEditor(node);

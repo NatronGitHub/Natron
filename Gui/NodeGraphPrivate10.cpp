@@ -182,7 +182,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
                 label = ss.str();
             }
             ++no;
-        } while ( grp->checkIfNodeLabelExists( label, n.get() ) );
+        } while ( grp->checkIfNodeLabelExists( label, n ) );
 
         n->setLabel(label);
     } else {

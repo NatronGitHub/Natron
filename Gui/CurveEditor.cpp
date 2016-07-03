@@ -367,13 +367,13 @@ CurveEditor::addNode(NodeGuiPtr node)
 }
 
 void
-CurveEditor::removeNode(NodeGui* node)
+CurveEditor::removeNode(const NodeGuiPtr& node)
 {
     RotoContextPtr roto = node->getNode()->getRotoContext();
 
     if (!roto) {
         for (std::list<NodeCurveEditorContext*>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( (*it)->getNode().get() == node ) {
+            if ( (*it)->getNode() == node ) {
                 const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
                 for (NodeCurveEditorContext::Elements::const_iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
                     if ( (*it2)->getCurve() == _imp->selectedKnobCurve.lock() ) {
@@ -388,7 +388,7 @@ CurveEditor::removeNode(NodeGui* node)
         }
     } else {
         for (std::list<RotoCurveEditorContext*>::iterator it = _imp->rotos.begin(); it != _imp->rotos.end(); ++it) {
-            if ( (*it)->getNode().get() == node ) {
+            if ( (*it)->getNode() == node ) {
                 delete *it;
                 _imp->rotos.erase(it);
                 break;

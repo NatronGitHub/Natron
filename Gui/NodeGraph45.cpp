@@ -406,7 +406,7 @@ FindNodeDialog::selectNextResult()
     std::advance(it, _imp->currentFindIndex);
 
     _imp->graph->selectNode(*it, false);
-    _imp->graph->centerOnItem(*it);
+    _imp->graph->centerOnItem((*it).get());
 
 
     QString text = QString::fromUtf8("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg( _imp->nodeResults.size() );
@@ -592,7 +592,7 @@ NodeGraph::onGroupNameChanged(const QString& /*name*/)
     assert(isGrp);
     if (isGrp) {
         std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
+        makeFullyQualifiedLabel(isGrp->getNode(), &label);
         setLabel(label);
         TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
         if (parent) {

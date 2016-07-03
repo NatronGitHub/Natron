@@ -63,7 +63,7 @@ NodeGraph::checkForHints(bool shiftdown,
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
 
     //Ignore hints for backdrops
-    BackdropGui* isBd =isBackdropGui( selectedNode.get() );
+    BackdropGuiPtr isBd = isBackdropGui( selectedNode );
 
     if (isBd) {
         return;
@@ -90,11 +90,11 @@ NodeGraph::checkForHints(bool shiftdown,
     NodePtr selectedNodeInternalNode = selectedNode->getNode();
     bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
     Edge* edge = 0;
-    std::set<NodeGui*> nodesWithinRect;
+    std::set<NodeGuiPtr> nodesWithinRect;
     getNodesWithinViewportRect(visibleWidgetRect(), &nodesWithinRect);
 
     {
-        for (std::set<NodeGui*>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
+        for (std::set<NodeGuiPtr>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
             bool isAlreadyAnOutput = false;
             const NodesWList& outputs = internalNode->getGuiOutputs();
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
@@ -111,7 +111,7 @@ NodeGraph::checkForHints(bool shiftdown,
                 continue;
             }
             QRectF nodeBbox = (*it)->boundingRectWithEdges();
-            if ( ( (*it) != selectedNode.get() ) && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR) ) {
+            if ( ( (*it) != selectedNode ) && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR) ) {
                 if (doMergeHints) {
                     //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
 
@@ -415,14 +415,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if ( groupEdited && (_imp->_evtState != eEventStateSelectionRect) && (_imp->_evtState != eEventStateDraggingArrow) ) {
         // Set cursor
 
-        std::set<NodeGui*> visibleNodes;
+        std::set<NodeGuiPtr> visibleNodes;
         getNodesWithinViewportRect(visibleWidgetRect(), &visibleNodes);
 
         NodeGuiPtr selected;
         Edge* selectedEdge = 0;
         bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
 
-        for (std::set<NodeGui*>::iterator it = visibleNodes.begin(); it != visibleNodes.end(); ++it) {
+        for (std::set<NodeGuiPtr>::iterator it = visibleNodes.begin(); it != visibleNodes.end(); ++it) {
             QPointF evpt = (*it)->mapFromScene(newPos);
             QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
             if ( (*it)->isActive() && bbox.intersects(sceneR) ) {

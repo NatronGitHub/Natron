@@ -110,9 +110,9 @@ public:
     };
 };
 
-class OfxImageEffectInstance;
 class OfxOverlayInteract
-    :  public OFX::Host::ImageEffect::OverlayInteract, public NatronOverlayInteractSupport
+    : public OFX::Host::ImageEffect::OverlayInteract
+    , public NatronOverlayInteractSupport
 {
 public:
 
@@ -297,7 +297,8 @@ public:
 };
 
 class OfxParamOverlayInteract
-    : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
+    : public OFX::Host::Interact::Instance
+    , public NatronOverlayInteractSupport
 {
 
 

@@ -442,6 +442,12 @@ private:
     boost::scoped_ptr<ProjectPrivate> _imp;
 };
 
+inline ProjectPtr
+isProject(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<Project>(holder);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_PROJECT_H

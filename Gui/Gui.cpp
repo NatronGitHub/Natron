@@ -312,7 +312,7 @@ Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
 void
 Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
 {
-    _imp->_curveEditor->removeNode( node.get() );
+    _imp->_curveEditor->removeNode( node );
 }
 
 void
@@ -324,7 +324,7 @@ Gui::addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node)
 void
 Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
 {
-    _imp->_dopeSheetEditor->removeNode( node.get() );
+    _imp->_dopeSheetEditor->removeNode( node );
 }
 
 void
