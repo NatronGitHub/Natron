@@ -173,6 +173,7 @@ SOURCES += \
     RotoLayer.cpp \
     RotoPaint.cpp \
     RotoPaintInteract.cpp \
+    RotoShapeRenderNode.cpp \
     RotoSmear.cpp \
     RotoStrokeItem.cpp \
     RotoUndoCommand.cpp \
@@ -394,6 +395,7 @@ HEADERS += \
     RotoPaint.h \
     RotoPaintInteract.h \
     RotoPoint.h \
+    RotoShapeRenderNode.h \
     RotoSmear.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \

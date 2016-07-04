@@ -179,7 +179,7 @@ public:
                             int majorVersion,
                             int minorVersion,
                             bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
+    Plugin* getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;

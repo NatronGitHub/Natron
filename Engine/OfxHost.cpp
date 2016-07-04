@@ -975,10 +975,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                                                        new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
                                                        p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
                                                        p->getVersionMajor(), p->getVersionMinor(), isDeprecated );
-        bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
+        /*bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
-        }
+        }*/
 
         PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
         {

@@ -197,7 +197,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
         break;
     case eRotoStrokeTypeSolid:
-        pluginId = QString::fromUtf8(PLUGINID_OFX_ROTO);
+        pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
         break;
     case eRotoStrokeTypeClone:
     case eRotoStrokeTypeReveal:

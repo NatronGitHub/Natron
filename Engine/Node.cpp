@@ -938,7 +938,7 @@ Node::load(const CreateNodeArgs& args)
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     const QString& pluginID = _imp->plugin->getPluginID();
-    if ( isRotoPaintingNode() || ( pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) {
+    if ( isRotoPaintingNode() ) ) {
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
 
@@ -6729,14 +6729,6 @@ Node::isOpenFXNode() const
     return _imp->effect->isOpenFX();
 }
 
-bool
-Node::isRotoNode() const
-{
-    ///Runs only in the main thread (checked by getName())
-
-    ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    return getPluginID() == PLUGINID_OFX_ROTO;
-}
 
 /**
  * @brief Returns true if the node is a rotopaint node
