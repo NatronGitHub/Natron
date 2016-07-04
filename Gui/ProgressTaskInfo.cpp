@@ -265,7 +265,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         _imp->refreshButtons();
     }
     NodePtr node = getNode();
-    OutputEffectInstancePtr effect = isOutputEffectInstance( node->getEffectInstance() );
+    OutputEffectInstancePtr effect = toOutputEffectInstance( node->getEffectInstance() );
     node->getApp()->removeRenderFromQueue(effect);
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
@@ -299,7 +299,7 @@ ProgressTaskInfo::restartTask()
         } else {
             firstFrame =  _imp->lastRenderedFrame;
         }
-        AppInstance::RenderWork w( isOutputEffectInstance( node->getEffectInstance() ),
+        AppInstance::RenderWork w( toOutputEffectInstance( node->getEffectInstance() ),
                                    firstFrame,
                                    _imp->lastFrame,
                                    _imp->frameStep,

@@ -96,7 +96,7 @@ KnobGuiGroup::KnobGuiGroup(KnobIPtr knob,
     , _children()
     , _childrenToEnable()
     , _tabGroup(0)
-    , _knob( isKnobGroup(knob) )
+    , _knob( toKnobGroup(knob) )
 {
 }
 

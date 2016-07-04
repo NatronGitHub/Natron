@@ -481,7 +481,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             {
                 KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
                 if (foundCursorKnob) {
-                    KnobStringPtr isStringKnob = isKnobString(foundCursorKnob);
+                    KnobStringPtr isStringKnob = toKnobString(foundCursorKnob);
                     _imp->cursorKnob = isStringKnob;
                 }
             }
@@ -490,21 +490,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
                 KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
                 if (foundSelKnob) {
-                    KnobIntPtr isIntKnob = isKnobInt(foundSelKnob);
+                    KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
                     _imp->selectionRectangleStateKnob = isIntKnob;
                 }
             }
             {
                 KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
                 if (foundTextKnob) {
-                    KnobStringPtr isStringKnob = isKnobString(foundTextKnob);
+                    KnobStringPtr isStringKnob = toKnobString(foundTextKnob);
                     _imp->undoRedoTextKnob = isStringKnob;
                 }
             }
             {
                 KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
                 if (foundUndoRedoKnob) {
-                    KnobBoolPtr isBool = isKnobBool(foundUndoRedoKnob);
+                    KnobBoolPtr isBool = toKnobBool(foundUndoRedoKnob);
                     _imp->undoRedoStateKnob = isBool;
                 }
             }

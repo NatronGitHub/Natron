@@ -218,7 +218,7 @@ KnobWidgetDnD::startDrag()
 
 
     QString knobLine;
-    EffectInstancePtr isEffect = isEffectInstance( internalKnob->getHolder() );
+    EffectInstancePtr isEffect = toEffectInstance( internalKnob->getHolder() );
     if (isEffect) {
         knobLine.append( QString::fromUtf8( isEffect->getNode()->getFullyQualifiedName().c_str() ) );
         knobLine += QLatin1Char('.');
@@ -377,12 +377,12 @@ KnobWidgetDnD::drop(QDropEvent* e)
 
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
             if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier) ) {
-                EffectInstancePtr effect = isEffectInstance( source->getHolder() );
+                EffectInstancePtr effect = toEffectInstance( source->getHolder() );
                 if (!effect) {
                     return false;
                 }
                 NodeCollectionPtr group = effect->getNode()->getGroup();
-                NodeGroupPtr isGroup = isNodeGroup( group );
+                NodeGroupPtr isGroup = toNodeGroup( group );
                 std::string expr;
                 std::stringstream ss;
                 if (isGroup) {

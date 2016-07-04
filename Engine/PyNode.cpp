@@ -201,7 +201,7 @@ Effect::Effect(const NodePtr& node)
     if (node) {
         NodeGroupPtr grp;
         if ( node->getEffectInstance() ) {
-            grp = isNodeGroup( node->getEffectInstance()->shared_from_this() );
+            grp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
             init( boost::dynamic_pointer_cast<NodeCollection>(grp) );
         }
     }
@@ -352,20 +352,20 @@ Param*
 Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
     int dims = knob->getDimension();
-    KnobIntPtr isInt = isKnobInt(knob);
-    KnobDoublePtr isDouble = isKnobDouble(knob);
-    KnobBoolPtr isBool = isKnobBool(knob);
-    KnobChoicePtr isChoice = isKnobChoice(knob);
-    KnobColorPtr isColor = isKnobColor(knob);
-    KnobStringPtr isString = isKnobString(knob);
-    KnobFilePtr isFile = isKnobFile(knob);
-    KnobOutputFilePtr isOutputFile = isKnobOutputFile(knob);
-    KnobPathPtr isPath = isKnobPath(knob);
-    KnobButtonPtr isButton = isKnobButton(knob);
-    KnobGroupPtr isGroup = isKnobGroup(knob);
-    KnobPagePtr isPage = isKnobPage(knob);
-    KnobParametricPtr isParametric = isKnobParametric(knob);
-    KnobSeparatorPtr isSep = isKnobSeparator(knob);
+    KnobIntPtr isInt = toKnobInt(knob);
+    KnobDoublePtr isDouble = toKnobDouble(knob);
+    KnobBoolPtr isBool = toKnobBool(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobColorPtr isColor = toKnobColor(knob);
+    KnobStringPtr isString = toKnobString(knob);
+    KnobFilePtr isFile = toKnobFile(knob);
+    KnobOutputFilePtr isOutputFile = toKnobOutputFile(knob);
+    KnobPathPtr isPath = toKnobPath(knob);
+    KnobButtonPtr isButton = toKnobButton(knob);
+    KnobGroupPtr isGroup = toKnobGroup(knob);
+    KnobPagePtr isPage = toKnobPage(knob);
+    KnobParametricPtr isParametric = toKnobParametric(knob);
+    KnobSeparatorPtr isSep = toKnobSeparator(knob);
 
     if (isInt) {
         switch (dims) {

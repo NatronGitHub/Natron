@@ -348,7 +348,7 @@ Gui::createViewerGui(const NodePtr& viewer)
     if (!collection) {
         return;
     }
-    NodeGroupPtr isGrp = isNodeGroup(collection);
+    NodeGroupPtr isGrp = toNodeGroup(collection);
     if (isGrp) {
         NodeGraphI* graph_i = isGrp->getNodeGraph();
         assert(graph_i);

@@ -72,7 +72,7 @@ KnobGuiFile::KnobGuiFile(KnobIPtr knob,
     , _lastOpened()
     , _lastModificationDates()
 {
-    KnobFilePtr k = isKnobFile(knob);
+    KnobFilePtr k = toKnobFile(knob);
 
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
@@ -94,7 +94,7 @@ void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
     KnobFilePtr knob = _knob.lock();
-    EffectInstancePtr holderIsEffect = isEffectInstance( knob->getHolder() );
+    EffectInstancePtr holderIsEffect = toEffectInstance( knob->getHolder() );
 
     if ( holderIsEffect && holderIsEffect->isReader() && (knob->getName() == kOfxImageEffectFileParamName) ) {
         TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
@@ -252,7 +252,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
     if (!knob) {
         return false;
     }
-    EffectInstancePtr effect = isEffectInstance( knob->getHolder() );
+    EffectInstancePtr effect = toEffectInstance( knob->getHolder() );
     assert(effect);
     if ( !effect || !effect->getNode()->isActivated() ) {
         return false;
@@ -468,7 +468,7 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobIPtr knob,
     , _lineEdit(0)
     , _openFileButton(0)
 {
-    _knob = isKnobOutputFile(knob);
+    _knob = toKnobOutputFile(knob);
     assert( _knob.lock() );
     QObject::connect( _knob.lock().get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
 }
@@ -721,7 +721,7 @@ KnobGuiPath::KnobGuiPath(KnobIPtr knob,
     , _lineEdit(0)
     , _openFileButton(0)
 {
-    _knob = isKnobPath(knob);
+    _knob = toKnobPath(knob);
     assert( _knob.lock() );
 }
 

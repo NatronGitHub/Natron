@@ -72,7 +72,7 @@ public:
 };
 
 inline DotPtr
-isDot(const EffectInstancePtr& effect)
+toDot(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<Dot>(effect);
 }

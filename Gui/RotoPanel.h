@@ -80,7 +80,7 @@ public:
 
     void setLastRightClickedItem(QTreeWidgetItem* item);
 
-    void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
+    void makeCustomWidgetsForItem(const RotoDrawableItemPtr& item,
                                   QTreeWidgetItem* treeItem = NULL);
 
     NodeGuiPtr getNode() const;

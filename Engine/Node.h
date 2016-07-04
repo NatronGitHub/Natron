@@ -645,8 +645,8 @@ public:
      * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
      * Do not use that anywhere else.
      **/
-    void attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke);
-    boost::shared_ptr<RotoDrawableItem> getAttachedRotoItem() const;
+    void attachRotoItem(const RotoDrawableItemPtr& stroke);
+    RotoDrawableItemPtr getAttachedRotoItem() const;
 
 
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
@@ -1584,7 +1584,7 @@ private:
 };
 
 inline InspectorNodePtr
-isInspectorNode(const NodePtr& node)
+toInspectorNode(const NodePtr& node)
 {
     return boost::dynamic_pointer_cast<InspectorNode>(node);
 }

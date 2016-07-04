@@ -207,7 +207,7 @@ KnobGuiBool::KnobGuiBool(KnobIPtr knob,
     : KnobGui(knob, container)
     , _checkBox(0)
 {
-    _knob = isKnobBool(knob);
+    _knob = toKnobBool(knob);
 }
 
 void

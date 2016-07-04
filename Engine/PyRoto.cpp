@@ -134,7 +134,7 @@ ItemBase::getParam(const QString& name) const
 
 Layer::Layer(const RotoItemPtr& item)
     : ItemBase(item)
-    , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
+    , _layer( toRotoLayer(item) )
 {
 }
 
@@ -176,7 +176,7 @@ Layer::getChildren() const
 
 BezierCurve::BezierCurve(const RotoItemPtr& item)
     : ItemBase(item)
-    , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
+    , _bezier( toBezier(item) )
 {
 }
 
@@ -557,15 +557,15 @@ Roto::getItemByName(const QString& name) const
     if (!item) {
         return 0;
     }
-    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    RotoLayerPtr isLayer = toRotoLayer(item);
     if (isLayer) {
         return new Layer(item);
     }
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+    BezierPtr isBezier = toBezier(item);
     if (isBezier) {
         return new BezierCurve(item);
     }
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
     if (isStroke) {
         return new ItemBase(item);
     }

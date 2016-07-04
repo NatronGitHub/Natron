@@ -68,7 +68,7 @@ void
 KnobFile::reloadFile()
 {
     assert( getHolder() );
-    EffectInstancePtr effect = isEffectInstance( getHolder() );
+    EffectInstancePtr effect = toEffectInstance( getHolder() );
     if (effect) {
         effect->purgeCaches();
         effect->clearPersistentMessage(false);

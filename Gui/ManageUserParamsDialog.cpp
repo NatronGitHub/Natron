@@ -146,7 +146,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     : QDialog(parent)
     , _imp( new ManageUserParamsDialogPrivate(panel) )
 {
-    EffectInstancePtr effect = isEffectInstance( panel->getHolder() );
+    EffectInstancePtr effect = toEffectInstance( panel->getHolder() );
     QString title = QString::fromUtf8("User Parameters");
 
     if (effect) {
@@ -180,7 +180,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     std::list<KnobIPtr> markedKnobs;
     const KnobsVec& knobs = panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPagePtr page = isKnobPage(*it);
+        KnobPagePtr page = toKnobPage(*it);
         if (page) {
             TreeItem pageItem;
             /* if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
@@ -272,7 +272,7 @@ createTextForKnob(const KnobIPtr& knob)
         KnobIPtr listener = listeners.begin()->first.lock();
         if ( listener && (listener->getAliasMaster() == knob) ) {
             text += QString::fromUtf8(" (alias of ");
-            EffectInstancePtr effect = isEffectInstance( listener->getHolder() );
+            EffectInstancePtr effect = toEffectInstance( listener->getHolder() );
             if (effect) {
                 text += QString::fromUtf8( effect->getScriptName_mt_safe().c_str() );
                 text += QLatin1Char('.');
@@ -305,7 +305,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const KnobsVec& knobs,
         i.item->setExpanded(true);
         items.push_back(i);
 
-        KnobGroupPtr isGrp = isKnobGroup(*it2);
+        KnobGroupPtr isGrp = toKnobGroup(*it2);
         if (isGrp) {
             KnobsVec children = isGrp->getChildren();
             initializeKnobs(children, i.item, markedKnobs);
@@ -375,11 +375,11 @@ ManageUserParamsDialog::onAddClicked()
     if ( !selection.isEmpty() ) {
         std::list<TreeItem>::const_iterator item = _imp->findItemForTreeItem( selection.front() );
         if ( item != _imp->items.end() ) {
-            KnobPagePtr isPage = isKnobPage( item->knob );
+            KnobPagePtr isPage = toKnobPage( item->knob );
             if (isPage) {
                 selectedPageName = isPage->getName();
             } else {
-                KnobGroupPtr isGrp = isKnobGroup( item->knob );
+                KnobGroupPtr isGrp = toKnobGroup( item->knob );
                 if (isGrp) {
                     selectedGroupName = isGrp->getName();
                     KnobPagePtr topLevelPage = isGrp->getTopLevelPage();
@@ -444,7 +444,7 @@ ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
         }
     }
 
-    KnobPagePtr isPage = isKnobPage(knob);
+    KnobPagePtr isPage = toKnobPage(knob);
     if (!parent && !isPage) {
         //Default to user page
         for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
@@ -536,7 +536,7 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                         QTreeWidgetItem* parent = it->item->parent();
                         KnobIPtr knob = dialog.getKnob();
                         KnobIPtr newParentKnob = knob->getParentKnob();
-                        KnobPagePtr isPage = isKnobPage( it->knob );
+                        KnobPagePtr isPage = toKnobPage( it->knob );
 
                         if (parent) {
                             if (oldParentKnob != newParentKnob) {
@@ -653,7 +653,7 @@ ManageUserParamsDialog::onUpClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            KnobPagePtr isPage = isKnobPage(knob);
+            KnobPagePtr isPage = toKnobPage(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }
@@ -731,7 +731,7 @@ ManageUserParamsDialog::onDownClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            KnobPagePtr isPage = isKnobPage(knob);
+            KnobPagePtr isPage = toKnobPage(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }
@@ -774,8 +774,8 @@ ManageUserParamsDialog::onSelectionChanged()
         // }
         for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
-                KnobPagePtr isPage = isKnobPage( it->knob );
-                KnobGroupPtr isGroup = isKnobGroup( it->knob );
+                KnobPagePtr isPage = toKnobPage( it->knob );
+                KnobGroupPtr isGroup = toKnobGroup( it->knob );
                 if (isPage) {
                     if ( !isPage->isUserKnob() ) {
                         canDelete = false;

@@ -81,7 +81,7 @@ public:
 };
 
 inline GroupOutputPtr
-isGroupOutput(const EffectInstancePtr& effect)
+toGroupOutput(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<GroupOutput>(effect);
 }

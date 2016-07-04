@@ -929,7 +929,7 @@ Gui::exportGroupAsPythonScript(const NodeCollectionPtr& collection)
     NodesList nodes = collection->getNodes();
     bool hasOutput = false;
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && isGroupOutput( (*it)->getEffectInstance() ) ) {
+        if ( (*it)->isActivated() && toGroupOutput( (*it)->getEffectInstance() ) ) {
             hasOutput = true;
             break;
         }

@@ -63,7 +63,7 @@ NodeGraph::checkForHints(bool shiftdown,
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
 
     //Ignore hints for backdrops
-    BackdropGuiPtr isBd = isBackdropGui( selectedNode );
+    BackdropGuiPtr isBd = toBackdropGui( selectedNode );
 
     if (isBd) {
         return;
@@ -390,7 +390,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
     bool mustUpdate = true;
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = isNodeGroup(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {

@@ -486,7 +486,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     NodeCollectionPtr collection;
     if ( tab->getInternalNode() && tab->getInternalNode()->getNode() ) {
         NodeCollectionPtr collection = tab->getInternalNode()->getNode()->getGroup();
-        isGrp = isNodeGroup(collection);
+        isGrp = toNodeGroup(collection);
     }
 
 
@@ -1036,7 +1036,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     if (openedProject != -1) {
         AppInstancePtr instance = appPTR->getAppInstance(openedProject);
         if (instance) {
-            GuiAppInstancePtr guiApp = isGuiAppInstance(instance);
+            GuiAppInstancePtr guiApp = toGuiAppInstance(instance);
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
 

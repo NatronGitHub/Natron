@@ -1851,11 +1851,11 @@ Settings::saveSettings(const KnobsVec& knobs,
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobStringBasePtr isString = isKnobStringBase(knobs[i]);
-        KnobIntBasePtr isInt = isKnobIntBase(knobs[i]);
-        KnobChoicePtr isChoice = isKnobChoice(knobs[i]);
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knobs[i]);
-        KnobBoolBasePtr isBool = isKnobBoolBase(knobs[i]);
+        KnobStringBasePtr isString = toKnobStringBase(knobs[i]);
+        KnobIntBasePtr isInt = toKnobIntBase(knobs[i]);
+        KnobChoicePtr isChoice = toKnobChoice(knobs[i]);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knobs[i]);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1928,11 +1928,11 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobStringBasePtr isString = isKnobStringBase(knobs[i]);
-        KnobIntBasePtr isInt = isKnobIntBase(knobs[i]);
-        KnobChoicePtr isChoice = isKnobChoice(knobs[i]);
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knobs[i]);
-        KnobBoolBasePtr isBool = isKnobBoolBase(knobs[i]);
+        KnobStringBasePtr isString = toKnobStringBase(knobs[i]);
+        KnobIntBasePtr isInt = toKnobIntBase(knobs[i]);
+        KnobChoicePtr isChoice = toKnobChoice(knobs[i]);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knobs[i]);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
 
@@ -2478,8 +2478,8 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
-        KnobPagePtr isPage = isKnobPage(*it);
-        KnobSeparatorPtr isSep = isKnobSeparator(*it);
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobSeparatorPtr isSep = toKnobSeparator(*it);
         if (isPage) {
             if (isPage->getParentKnob()) {
                 ms << "### " << knobLabel << "\n\n";
@@ -3508,7 +3508,7 @@ Settings::restoreDefaultAppearance()
     std::vector< KnobIPtr > children = _appearanceTab->getChildren();
 
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobColorPtr isColorKnob = isKnobColor(children[i]);
+        KnobColorPtr isColorKnob = toKnobColor(children[i]);
         if ( isColorKnob && isColorKnob->isSimplified() ) {
             isColorKnob->blockValueChanges();
             for (int j = 0; j < isColorKnob->getDimension(); ++j) {

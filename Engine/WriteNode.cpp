@@ -292,7 +292,7 @@ void
 WriteNodePrivate::placeWriteNodeKnobsInPage()
 {
     KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
-    KnobPagePtr isPage = isKnobPage(pageKnob);
+    KnobPagePtr isPage = toKnobPage(pageKnob);
 
     if (!isPage) {
         return;
@@ -336,7 +336,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
                 isSecret = children[foundSep]->getIsSecret();
             }
             if (foundSep < (int)children.size()) {
-                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep]));
+                separatorKnob.lock()->setSecret(toKnobSeparator(children[foundSep]));
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
@@ -364,8 +364,8 @@ WriteNodePrivate::cloneGenericKnobs()
         KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = isKnobChoice(*it2);
-                KnobChoicePtr serializedIsChoice = isKnobChoice( serializedKnob );;
+                KnobChoicePtr isChoice = toKnobChoice(*it2);
+                KnobChoicePtr serializedIsChoice = toKnobChoice( serializedKnob );;
                 if (isChoice && serializedIsChoice) {
                     const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
                     assert(extraData);
@@ -420,7 +420,7 @@ WriteNodePrivate::destroyWriteNode()
             }
 
             //Keep pages around they will be re-used
-            KnobPagePtr isPage = isKnobPage(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
             if (isPage) {
                 continue;
             }
@@ -481,7 +481,7 @@ WriteNodePrivate::destroyWriteNode()
 void
 WriteNodePrivate::createDefaultWriteNode()
 {
-    NodeGroupPtr isGrp = isNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
     CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isGrp );
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
@@ -537,7 +537,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 
     for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob() );
+            KnobStringBasePtr isString = toKnobStringBase( (*it)->getKnob() );
             assert(isString);
             if (isString) {
                 filePattern = isString->getValue();
@@ -567,7 +567,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobIPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
         assert(originalFrameRangeKnob);
-        KnobIntPtr originalFrameRange = isKnobInt( originalFrameRangeKnob );
+        KnobIntPtr originalFrameRange = toKnobInt( originalFrameRangeKnob );
         if (originalFrameRange) {
             originalFrameRange->setValues(first, last, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         }
@@ -575,7 +575,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobIPtr firstFrameKnob = readNode->getKnobByName(kParamFirstFrame);
         assert(firstFrameKnob);
-        KnobIntPtr firstFrame = isKnobInt( firstFrameKnob );
+        KnobIntPtr firstFrame = toKnobInt( firstFrameKnob );
         if (firstFrame) {
             firstFrame->setValue(first);
         }
@@ -583,7 +583,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobIPtr lastFrameKnob = readNode->getKnobByName(kParamLastFrame);
         assert(lastFrameKnob);
-        KnobIntPtr lastFrame = isKnobInt( lastFrameKnob );
+        KnobIntPtr lastFrame = toKnobInt( lastFrameKnob );
         if (lastFrame) {
             lastFrame->setValue(last);
         }
@@ -595,7 +595,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 {
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    NodeGroupPtr isGrp = isNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
     std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     NodePtr writeNode = embeddedPlugin.lock();
 
@@ -659,7 +659,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         return;
     }
 
-    NodeGroupPtr isGrp = isNodeGroup( _publicInterface->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
     NodePtr input = inputNode.lock(), output = outputNode.lock();
     //NodePtr maskInput;
     assert( (input && output) || (!input && !output) );
@@ -803,7 +803,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     KnobIPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        outputFileKnob = isKnobOutputFile(knob);
+        outputFileKnob = toKnobOutputFile(knob);
     }
 } // WriteNodePrivate::createWriteNode
 
@@ -1006,7 +1006,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
     QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
 
     if ( !_imp->renderButtonKnob.lock() ) {
-        _imp->renderButtonKnob = isKnobButton( getKnobByName("startRender") );
+        _imp->renderButtonKnob = toKnobButton( getKnobByName("startRender") );
         assert( _imp->renderButtonKnob.lock() );
     }
 
@@ -1046,7 +1046,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
 void
 WriteNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
 {
-    _imp->renderButtonKnob = isKnobButton( getKnobByName("startRender") );
+    _imp->renderButtonKnob = toKnobButton( getKnobByName("startRender") );
     assert( _imp->renderButtonKnob.lock() );
 
     assert(serialization);

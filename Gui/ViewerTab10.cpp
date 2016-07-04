@@ -497,7 +497,7 @@ ViewerTab::~ViewerTab()
         if (_imp->viewerNode) {
             NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
-                NodeGroupPtr isGrp = isNodeGroup(collection);
+                NodeGroupPtr isGrp = toNodeGroup(collection);
                 if (isGrp) {
                     NodeGraphI* graph_i = isGrp->getNodeGraph();
                     if (graph_i) {

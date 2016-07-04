@@ -76,7 +76,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
         if ( nodegui->isVisible() ) {
             NodeCollectionPtr isInCollection = (*it)->getGroup();
-            NodeGroupPtr isCollectionAGroup = isNodeGroup( isInCollection );
+            NodeGroupPtr isCollectionAGroup = toNodeGroup( isInCollection );
             if (!isCollectionAGroup) {
                 ///Nodes within a group will be serialized recursively in the node group serialization
                 NodeGuiSerialization state;
@@ -140,8 +140,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             KnobHolderPtr holder = (*it)->getHolder();
             assert(holder);
 
-            EffectInstancePtr isEffect = isEffectInstance(holder);
-            ProjectPtr isProj = isProject(holder);
+            EffectInstancePtr isEffect = toEffectInstance(holder);
+            ProjectPtr isProj = toProject(holder);
 
             if (isProj) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
@@ -255,7 +255,7 @@ ApplicationWindowSerialization::initialize(bool mainWindow,
                 child_asPane->initialize(isTabWidget);
             } else if (isPanel) {
                 ///A named knob holder is a knob holder which has a unique name.
-                NamedKnobHolderPtr isNamedHolder = boost::dynamic_pointer_cast<NamedKnobHolder>(isPanel);
+                NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>(isPanel);
                 if (isNamedHolder) {
                     child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
                 } else {
@@ -292,10 +292,10 @@ PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
     std::list<NATRON_PYTHON_NAMESPACE::Param*> parameters = tab->getParams();
     for (std::list<NATRON_PYTHON_NAMESPACE::Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
         KnobIPtr knob = (*it)->getInternalKnob();
-        KnobGroupPtr isGroup = isKnobGroup(knob);
-        KnobPagePtr isPage = isKnobPage(knob);
-        KnobButton* isButton = isKnobButton(knob);
-        //KnobChoicePtr isChoice = isKnobChoice(knob);
+        KnobGroupPtr isGroup = toKnobGroup(knob);
+        KnobPagePtr isPage = toKnobPage(knob);
+        KnobButtonPtr isButton = toKnobButton(knob);
+        //KnobChoicePtr isChoice = toKnobChoice(knob);
 
         if (!isGroup && !isPage && !isButton) {
             KnobSerializationPtr k( new KnobSerialization(knob) );

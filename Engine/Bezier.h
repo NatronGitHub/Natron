@@ -666,6 +666,13 @@ private:
     boost::scoped_ptr<BezierPrivate> _imp;
 };
 
+inline BezierPtr
+toBezier(const RotoItemPtr& item)
+{
+    return boost::dynamic_pointer_cast<Bezier>(item);
+}
+
+
 NATRON_NAMESPACE_EXIT;
 
 

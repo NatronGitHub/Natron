@@ -1081,12 +1081,12 @@ TabWidget::removeTab(int index,
          */
         NodeCollectionPtr collect = isGraph->getGroup();
         assert(collect);
-        NodeGroupPtr isGroup = isNodeGroup( collect );
+        NodeGroupPtr isGroup = toNodeGroup( collect );
         if (isGroup) {
             collect = isGroup->getNode()->getGroup();
             if (collect) {
                 NodeGraph* parentGraph = 0;
-                isGroup  = isNodeGroup( collect );
+                isGroup  = toNodeGroup( collect );
                 if (isGroup) {
                     parentGraph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
                 } else {

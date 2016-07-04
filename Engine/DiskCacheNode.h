@@ -156,7 +156,7 @@ private:
 };
 
 inline DiskCacheNodePtr
-isDiskCacheNode(const EffectInstancePtr& effect)
+toDiskCacheNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<DiskCacheNode>(effect);
 }

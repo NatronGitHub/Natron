@@ -256,7 +256,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = isGuiAppInstance( shared_from_this() );
+    boost::shared_ptr<GuiAppInstance> thisShared = toGuiAppInstance( shared_from_this() );
     assert(thisShared);
     _imp->_gui = new Gui(thisShared);
     _imp->_gui->createGui();
@@ -520,12 +520,12 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {
-            BackdropGuiPtr isBd = isBackdropGui(nodegui);
+            BackdropGuiPtr isBd = toBackdropGui(nodegui);
             if (!isBd) {
                 NodeGuiPtr selectedNode;
                 if ( !serialization && (selectedNodes.size() == 1) ) {
                     selectedNode = selectedNodes.front();
-                    BackdropGuiPtr isBdGui = isBackdropGui(selectedNode);
+                    BackdropGuiPtr isBdGui = toBackdropGui(selectedNode);
                     if (isBdGui) {
                         selectedNode.reset();
                     }
@@ -1080,7 +1080,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
-        NodeGroupPtr isGrp = isNodeGroup(collection);
+        NodeGroupPtr isGrp = toNodeGroup(collection);
         if (isGrp) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -1096,7 +1096,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         NodeGuiPtr selectedNode;
         if ( !selectedNodes.empty() ) {
             selectedNode = selectedNodes.front();
-            if (isBackdropGui(selectedNode) ) {
+            if (toBackdropGui(selectedNode) ) {
                 selectedNode.reset();
             }
         }

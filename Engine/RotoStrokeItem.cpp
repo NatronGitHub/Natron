@@ -328,7 +328,7 @@ RotoStrokeItem::appendPoint(bool newStroke,
     assert( QThread::currentThread() == qApp->thread() );
 
 
-    RotoStrokeItemPtr thisShared = boost::dynamic_pointer_cast<RotoStrokeItem>( shared_from_this() );
+    RotoStrokeItemPtr thisShared = toRotoStrokeItem( shared_from_this() );
     assert(thisShared);
     {
         QMutexLocker k(&itemMutex);

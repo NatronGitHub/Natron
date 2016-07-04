@@ -208,7 +208,7 @@ KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
     : KnobGui(knob, container)
     , _comboBox(0)
 {
-    KnobChoicePtr k = isKnobChoice(knob);
+    KnobChoicePtr k = toKnobChoice(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
@@ -357,7 +357,7 @@ KnobGuiChoice::onItemNewSelected()
         }
         KnobHolderPtr holder = _knob.lock()->getHolder();
         assert(holder);
-        EffectInstancePtr effect = isEffectInstance(holder);
+        EffectInstancePtr effect = toEffectInstance(holder);
         assert(effect);
         if (effect) {
             assert( effect->getNode() );

@@ -733,8 +733,8 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     QFontMetrics fm( _widget->font() );
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        if (!isBezier) {
+        BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+        if (!isBezierGui) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it2)->key.getTime(), (*it2)->key.getValue() );
                 topLeftWidget.ry() += yOffset;
@@ -760,8 +760,8 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        if (!isBezier) {
+        BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+        if (!isBezierGui) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 QPointF leftTanPt = zoomCtx.toWidgetCoordinates( (*it2)->leftTan.first, (*it2)->leftTan.second );
                 QPointF rightTanPt = zoomCtx.toWidgetCoordinates( (*it2)->rightTan.first, (*it2)->rightTan.second );
@@ -794,8 +794,8 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
     QFontMetrics fm( _widget->font() );
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        if (!isBezier) {
+        BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+        if (!isBezierGui) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                 QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( (*it2)->leftTan.first, (*it2)->leftTan.second );

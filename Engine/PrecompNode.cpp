@@ -380,7 +380,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
     if (read) {
         KnobIPtr knob = read->getKnobByName("onMissingFrame");
         if (knob) {
-            KnobChoicePtr choice = isKnobChoice(knob);
+            KnobChoicePtr choice = toKnobChoice(knob);
             if (choice) {
                 choice->setValue( errorBehaviourKnbo.lock()->getValue() );
             }
@@ -457,7 +457,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     app.lock()->getProject()->getNodes_recursive(nodes, true);
     PrecompNodePtr precomp;
     if (setPartOfPrecomp) {
-        precomp = isPrecompNode( _publicInterface->shared_from_this() );
+        precomp = toPrecompNode( _publicInterface->shared_from_this() );
         assert(precomp);
 
         //extract all inputs of the tree
@@ -553,7 +553,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    KnobOutputFilePtr fileKnob = isKnobOutputFile(fileNameKnob);
+    KnobOutputFilePtr fileKnob = toKnobOutputFile(fileNameKnob);
     if (!fileKnob) {
         return;
     }
@@ -588,7 +588,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    PrecompNodePtr precomp = isPrecompNode( _publicInterface->shared_from_this() );
+    PrecompNodePtr precomp = toPrecompNode( _publicInterface->shared_from_this() );
     assert(precomp);
     read->setPrecompNode(precomp);
 
@@ -641,8 +641,8 @@ PrecompNodePrivate::setFirstAndLastFrame()
     }
     KnobIPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
     KnobIPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
-    KnobIntPtr firstFrame = isKnobInt(writefirstFrameKnob);
-    KnobIntPtr lastFrame = isKnobInt(writelastFrameKnob);
+    KnobIntPtr firstFrame = toKnobInt(writefirstFrameKnob);
+    KnobIntPtr lastFrame = toKnobInt(writelastFrameKnob);
     if (firstFrame) {
         firstFrameKnob.lock()->setValue( firstFrame->getValue() );
     }
@@ -678,7 +678,7 @@ PrecompNodePrivate::launchPreRender()
 
         return;
     }
-    AppInstance::RenderWork w(isOutputEffectInstance( output->getEffectInstance() ),
+    AppInstance::RenderWork w(toOutputEffectInstance( output->getEffectInstance() ),
                               firstFrameKnob.lock()->getValue(),
                               lastFrameKnob.lock()->getValue(),
                               1,
@@ -704,7 +704,7 @@ PrecompNode::onPreRenderFinished()
     if (!output) {
         return;
     }
-    OutputEffectInstancePtr writer = isOutputEffectInstance( output->getEffectInstance() );
+    OutputEffectInstancePtr writer = toOutputEffectInstance( output->getEffectInstance() );
     assert(writer);
     if (writer) {
         RenderEnginePtr engine = writer->getRenderEngine();

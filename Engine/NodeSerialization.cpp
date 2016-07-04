@@ -72,8 +72,8 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         std::vector< KnobIPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
         std::list<KnobIPtr > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
-            KnobGroupPtr isGroup = isKnobGroup(knobs[i]);
-            KnobPagePtr isPage = isKnobPage(knobs[i]);
+            KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
+            KnobPagePtr isPage = toKnobPage(knobs[i]);
 
             if (isPage) {
                 _pagesIndexes.push_back( knobs[i]->getName() );

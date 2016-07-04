@@ -200,8 +200,8 @@ Param::setAddNewLine(bool a)
 
     KnobIPtr parentKnob = knob->getParentKnob();
     if (parentKnob) {
-        KnobGroupPtr parentIsGrp = isKnobGroup(parentKnob);
-        KnobPagePtr parentIsPage = isKnobPage(parentKnob);
+        KnobGroupPtr parentIsGrp = toKnobGroup(parentKnob);
+        KnobPagePtr parentIsPage = toKnobPage(parentKnob);
         assert(parentIsGrp || parentIsPage);
         KnobsVec children;
         if (parentIsGrp) {
@@ -1521,7 +1521,7 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 ////////////////////StringParam
 
 StringParam::StringParam(const KnobStringPtr& knob)
-    : StringParamBase( isKnobStringBase(knob) )
+    : StringParamBase( toKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1561,7 +1561,7 @@ StringParam::setType(StringParam::TypeEnum type)
 /////////////////////FileParam
 
 FileParam::FileParam(const KnobFilePtr& knob)
-    : StringParamBase( isKnobStringBase(knob) )
+    : StringParamBase( toKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1606,7 +1606,7 @@ FileParam::reloadFile()
 /////////////////////OutputFileParam
 
 OutputFileParam::OutputFileParam(const KnobOutputFilePtr& knob)
-    : StringParamBase( isKnobStringBase(knob) )
+    : StringParamBase( toKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1639,7 +1639,7 @@ OutputFileParam::openFile()
 ////////////////////PathParam
 
 PathParam::PathParam(const KnobPathPtr& knob)
-    : StringParamBase( isKnobStringBase(knob) )
+    : StringParamBase( toKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1661,7 +1661,7 @@ PathParam::setAsMultiPathTable()
 
 ButtonParam::ButtonParam(const KnobButtonPtr& knob)
     : Param(knob)
-    , _buttonKnob( isKnobButton(knob) )
+    , _buttonKnob( toKnobButton(knob) )
 {
 }
 
@@ -1679,7 +1679,7 @@ ButtonParam::trigger()
 
 SeparatorParam::SeparatorParam(const KnobSeparatorPtr& knob)
     : Param(knob)
-    , _separatorKnob( isKnobSeparator(knob) )
+    , _separatorKnob( toKnobSeparator(knob) )
 {
 }
 
@@ -1691,7 +1691,7 @@ SeparatorParam::~SeparatorParam()
 
 GroupParam::GroupParam(const KnobGroupPtr& knob)
     : Param(knob)
-    , _groupKnob( isKnobGroup(knob) )
+    , _groupKnob( toKnobGroup(knob) )
 {
 }
 
@@ -1733,7 +1733,7 @@ GroupParam::getIsOpened() const
 
 PageParam::PageParam(const KnobPagePtr& knob)
     : Param(knob)
-    , _pageKnob( isKnobPage(knob) )
+    , _pageKnob( toKnobPage(knob) )
 {
 }
 

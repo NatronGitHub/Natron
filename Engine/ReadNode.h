@@ -164,7 +164,7 @@ private:
 };
 
 inline ReadNodePtr
-isReadNode(const EffectInstancePtr& effect)
+toReadNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<ReadNode>(effect);
 }

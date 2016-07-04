@@ -473,7 +473,7 @@ ProgressPanel::startTask(const NodePtr& node,
     }
     if (!process) {
         if ( node->getEffectInstance()->isOutput() ) {
-            OutputEffectInstancePtr isOutput = isOutputEffectInstance( node->getEffectInstance() );
+            OutputEffectInstancePtr isOutput = toOutputEffectInstance( node->getEffectInstance() );
             if (isOutput) {
                 RenderEnginePtr engine = isOutput->getRenderEngine();
                 assert(engine);

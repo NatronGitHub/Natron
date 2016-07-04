@@ -198,14 +198,14 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
     KnobHolderPtr holder = getHolder();
 
     if (holder) {
-        EffectInstancePtr effect = isEffectInstance(holder);
+        EffectInstancePtr effect = toEffectInstance(holder);
         if (!effect) {
             return;
         }
         if ( !effect->getNode() ) {
             return;
         }
-        KnobDoublePtr thisSharedDouble = isKnobDouble(shared_from_this());
+        KnobDoublePtr thisSharedDouble = toKnobDouble(shared_from_this());
         assert(thisSharedDouble);
         if (handle) {
             effect->getNode()->addPositionInteract(thisSharedDouble,
@@ -346,7 +346,7 @@ KnobDouble::denormalize(const int dimension,
                         const double time,
                         const double value) const
 {
-    EffectInstancePtr effect = isEffectInstance( getHolder() );
+    EffectInstancePtr effect = toEffectInstance( getHolder() );
 
     assert(effect);
     if (!effect) {
@@ -371,7 +371,7 @@ KnobDouble::normalize(const int dimension,
                       const double time,
                       const double value) const
 {
-    EffectInstancePtr effect = isEffectInstance( getHolder() );
+    EffectInstancePtr effect = toEffectInstance( getHolder() );
 
     assert(effect);
     if (!effect) {
@@ -501,7 +501,7 @@ KnobChoice::cloneExtraData(const KnobIPtr& other,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
-    KnobChoicePtr isChoice = isKnobChoice(other);
+    KnobChoicePtr isChoice = toKnobChoice(other);
 
     if (!isChoice) {
         return;
@@ -516,7 +516,7 @@ KnobChoice::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
                                             int /*dimension*/,
                                             int /*otherDimension*/)
 {
-    KnobChoicePtr isChoice = isKnobChoice(other);
+    KnobChoicePtr isChoice = toKnobChoice(other);
 
     if (!isChoice) {
         return false;
@@ -540,7 +540,7 @@ KnobChoice::cloneExtraData(const KnobIPtr& other,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
-    KnobChoicePtr isChoice = isKnobChoice(other);
+    KnobChoicePtr isChoice = toKnobChoice(other);
 
     if (!isChoice) {
         return;
@@ -715,7 +715,7 @@ KnobChoice::refreshMenu()
         // In OpenFX we reset the menu with a button
         KnobIPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
         if (hasRefreshButton) {
-            KnobButtonPtr button = isKnobButton(hasRefreshButton);
+            KnobButtonPtr button = toKnobButton(hasRefreshButton);
             if (button) {
                 button->trigger();
             }
@@ -829,7 +829,7 @@ KnobChoice::getActiveEntryText_mt_safe()
     std::pair<int, KnobIPtr> master = getMaster(0);
 
     if (master.second) {
-        KnobChoicePtr isChoice = isKnobChoice(master.second);
+        KnobChoicePtr isChoice = toKnobChoice(master.second);
         if (isChoice) {
             return isChoice->getActiveEntryText_mt_safe();
         }
@@ -1018,7 +1018,7 @@ KnobChoice::choiceRestoration(const KnobChoicePtr& knob,
 void
 KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
 {
-    KnobChoicePtr isChoice = isKnobChoice(slave);
+    KnobChoicePtr isChoice = toKnobChoice(slave);
 
     if (isChoice) {
         populateChoices(isChoice->getEntries_mt_safe(),
@@ -1055,7 +1055,7 @@ KnobChoice::handleSignalSlotsForAliasLink(const KnobIPtr& alias,
                                           bool connect)
 {
     assert(alias);
-    KnobChoicePtr aliasIsChoice = isKnobChoice(alias);
+    KnobChoicePtr aliasIsChoice = toKnobChoice(alias);
     if (!aliasIsChoice) {
         return;
     }
@@ -1643,7 +1643,7 @@ KnobParametric::getCurveColor(int dimension,
     assert( dimension < (int)_curvesColor.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = isKnobParametric(master.second);
+        KnobParametricPtr m = toKnobParametric(master.second);
         assert(m);
 
         return m->getCurveColor(dimension, r, g, b);
@@ -1681,7 +1681,7 @@ KnobParametric::getDefaultParametricCurve(int dimension) const
     assert( dimension >= 0 && dimension < (int)_curves.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = isKnobParametric(master.second);
+        KnobParametricPtr m = toKnobParametric(master.second);
         assert(m);
 
         return m->getDefaultParametricCurve(dimension);
@@ -1697,7 +1697,7 @@ CurvePtr KnobParametric::getParametricCurve(int dimension) const
     assert( dimension < (int)_curves.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = isKnobParametric(master.second);
+        KnobParametricPtr m = toKnobParametric(master.second);
         assert(m);
 
         return m->getParametricCurve(dimension);
@@ -1944,7 +1944,7 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametricPtr isParametric = isKnobParametric(other);
+    KnobParametricPtr isParametric = toKnobParametric(other);
 
     if (!isParametric) {
         return;
@@ -1969,7 +1969,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
                                                 int otherDimension)
 {
     ///Mt-safe as Curve is MT-safe
-    KnobParametricPtr isParametric = isKnobParametric(other);
+    KnobParametricPtr isParametric = toKnobParametric(other);
 
     if (!isParametric) {
         return false;
@@ -1998,7 +1998,7 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametricPtr isParametric = isKnobParametric(other);
+    KnobParametricPtr isParametric = toKnobParametric(other);
 
     if (!isParametric) {
         return;
@@ -2077,7 +2077,7 @@ KnobParametric::hasModificationsVirtual(int dimension) const
 void
 KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
 {
-    KnobParametricPtr isParametric = isKnobParametric(slave);
+    KnobParametricPtr isParametric = toKnobParametric(slave);
 
     if (isParametric) {
         _defaultCurves.resize( isParametric->_defaultCurves.size() );

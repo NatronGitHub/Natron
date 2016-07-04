@@ -397,7 +397,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         // Fallback on the flag set on the node that requested the render in OutputSchedulerThread
         if (treeRoot) {
-            OutputEffectInstancePtr effect = isOutputEffectInstance(treeRoot);
+            OutputEffectInstancePtr effect = toOutputEffectInstance(treeRoot);
             assert(effect);
             if (effect) {
                 return effect->isSequentialRenderBeingAborted();
@@ -421,7 +421,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         // If this node can start sequential renders (e.g: start playback like on the viewer or render on disk) and it is already doing a sequential render, abort
         // this render
-        OutputEffectInstancePtr isRenderEffect = isOutputEffectInstance(treeRoot);
+        OutputEffectInstancePtr isRenderEffect = toOutputEffectInstance(treeRoot);
         if (isRenderEffect) {
             if ( isRenderEffect->isDoingSequentialRender() ) {
                 return true;
@@ -733,7 +733,7 @@ EffectInstance::getImage(int inputNb,
 
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
     RotoContextPtr roto;
-    boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
 
     if (attachedStroke) {
         roto = attachedStroke->getContext();
@@ -1396,7 +1396,7 @@ EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* n
     // If the node is in a group, notify also the group
     NodeCollectionPtr group = node->getGroup();
     if (group) {
-        NodeGroupPtr isGroupNode = isNodeGroup(group);
+        NodeGroupPtr isGroupNode = toNodeGroup(group);
         if (isGroupNode) {
             _didGroupEmit = isGroupNode->getNode()->notifyRenderingStarted();
         }
@@ -1411,7 +1411,7 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
     if (_didGroupEmit) {
         NodeCollectionPtr group = _node->getGroup();
         if (group) {
-            NodeGroupPtr isGroupNode = isNodeGroup(group);
+            NodeGroupPtr isGroupNode = toNodeGroup(group);
             if (isGroupNode) {
                 isGroupNode->getNode()->notifyRenderingEnded();
             }
@@ -3021,7 +3021,7 @@ EffectInstance::openImageFileKnob()
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
-            KnobFilePtr fk = isKnobFile(knobs[i]);
+            KnobFilePtr fk = toKnobFile(knobs[i]);
             assert(fk);
             if ( fk->isInputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3031,7 +3031,7 @@ EffectInstance::openImageFileKnob()
                 break;
             }
         } else if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            KnobOutputFilePtr fk = isKnobOutputFile(knobs[i]);
+            KnobOutputFilePtr fk = toKnobOutputFile(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3200,7 +3200,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            KnobOutputFilePtr fk = isKnobOutputFile(knobs[i]);
+            KnobOutputFilePtr fk = toKnobOutputFile(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 fk->setValue(pattern);
@@ -3787,7 +3787,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
 
     bool ret = false;
-    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     if ( ( rotoItem && !rotoItem->isActivated(time) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
         ret = true;
         *inputNb = getNode()->getPreferredInput();
@@ -4785,7 +4785,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && isKnobButton(k) && node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && toKnobButton(k) && node->isNodeDisabled() ) {
         return false;
     }
 
@@ -5159,7 +5159,7 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
             (*it)->hasOutputNodesConnected(&outputNodes);
         }
     } else {
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
         if (attachedStroke) {
             ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
             RotoContextPtr context = attachedStroke->getContext();

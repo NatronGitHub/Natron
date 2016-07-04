@@ -74,7 +74,7 @@ private:
     bool _rippleEditEnabled;
     boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     double _time; //< the time at which the change was made
-    std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
+    std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > _originalPoints, _selectedPoints, _pointsToDrag;
 };
@@ -124,7 +124,7 @@ private:
     boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     double _time; //< the time at which the change was made
-    std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
+    std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > _originalPoints, _selectedPoints;
 };
 
@@ -163,7 +163,7 @@ class RemovePointUndoCommand
 private:
     struct CurveDesc
     {
-        boost::shared_ptr<RotoDrawableItem> oldCurve, curve;
+        RotoDrawableItemPtr oldCurve, curve;
         std::list<int> points;
         RotoLayerPtr parentLayer;
         bool curveRemoved;
@@ -208,7 +208,7 @@ class RemoveCurveUndoCommand
 private:
     struct RemovedCurve
     {
-        boost::shared_ptr<RotoDrawableItem> curve;
+        RotoDrawableItemPtr curve;
         RotoLayerPtr layer;
         int indexInLayer;
     };
@@ -217,7 +217,7 @@ public:
 
 
     RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                           const std::list<boost::shared_ptr<RotoDrawableItem> > & curves);
+                           const std::list<RotoDrawableItemPtr > & curves);
 
     virtual ~RemoveCurveUndoCommand();
 
@@ -308,7 +308,7 @@ private:
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
     double _time; //< the time at which the change was made
-    std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
+    std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > _selectedPoints;
     BezierCPPtr _tangentBeingDragged, _oldCp, _oldFp;
     bool _left;

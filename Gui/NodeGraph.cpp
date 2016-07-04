@@ -64,7 +64,7 @@ NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
                                    std::string* ret)
 {
     NodeCollectionPtr parent = node->getGroup();
-    NodeGroupPtr isParentGrp = isNodeGroup(parent);
+    NodeGroupPtr isParentGrp = toNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -89,7 +89,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-    NodeGroupPtr isGrp = isNodeGroup( group );
+    NodeGroupPtr isGrp = toNodeGroup( group );
     if (isGrp) {
         std::string newName = isGrp->getNode()->getFullyQualifiedName();
         for (std::size_t i = 0; i < newName.size(); ++i) {
@@ -286,7 +286,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
     }
 
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = isNodeGroup(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -369,9 +369,9 @@ NodeGraph::createNodeGUI(const NodePtr & node,
                          const CreateNodeArgs& args)
 {
     NodeGuiPtr node_ui;
-    DotPtr isDotNode = isDot( node->getEffectInstance() );
-    BackdropPtr isBd = isBackdrop( node->getEffectInstance() );
-    NodeGroupPtr isGrp = isNodeGroup( node->getEffectInstance() );
+    DotPtr isDotNode = toDot( node->getEffectInstance() );
+    BackdropPtr isBd = toBackdrop( node->getEffectInstance() );
+    NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance() );
 
 
     if (isDotNode) {
@@ -385,7 +385,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     node_ui->initialize(this, node);
 
     if (isBd) {
-        BackdropGuiPtr bd = isBackdropGui(node_ui);
+        BackdropGuiPtr bd = toBackdropGui(node_ui);
         assert(bd);
         NodesGuiList selectedNodes = _imp->_selection;
         if ( bd && !selectedNodes.empty() ) {
@@ -413,7 +413,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         _imp->_nodes.push_back(node_ui);
     }
 
-    //NodeGroupPtr parentIsGroup = isNodeGroup(node->getGroup());;
+    //NodeGroupPtr parentIsGroup = toNodeGroup(node->getGroup());;
     const NodesList& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
     bool isTopLevelNodeBeingCreated = false;
     if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {

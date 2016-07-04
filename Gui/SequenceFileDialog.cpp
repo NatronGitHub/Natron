@@ -412,8 +412,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _model->setSequenceModeEnabled(isSequenceDialog ? true : false);
 
-    _view->setModel( _model );
-    _view->setItemDelegate( _itemDelegate );
+    _view->setModel( _model.get() );
+    _view->setItemDelegate( _itemDelegate.get() );
 
     QObject::connect( _model.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(updateView(QString)) );
     QObject::connect( _view, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(doubleClickOpen(QModelIndex)) );
@@ -3030,7 +3030,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     NodePtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
         KnobIPtr foundFileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
-        KnobFilePtr fileKnob = isKnobFile( foundFileKnob );
+        KnobFilePtr fileKnob = toKnobFile( foundFileKnob );
         if (fileKnob) {
             fileKnob->setValue(pattern);
         }

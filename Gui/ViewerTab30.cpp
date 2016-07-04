@@ -1069,7 +1069,7 @@ void
 ViewerTab::connectToInput(int inputNb,
                           bool isASide)
 {
-    InspectorNodePtr node = isInspectorNode( getInternalNode()->getNode() );
+    InspectorNodePtr node = toInspectorNode( getInternalNode()->getNode() );
 
     assert(node);
     if (!node) {

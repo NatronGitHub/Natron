@@ -1129,7 +1129,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         bool hasDifferentRods = false;
         int maxInput = getMaxInputCount();
         bool hasMask = false;
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
             RectD inputRod;

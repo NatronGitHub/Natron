@@ -199,7 +199,7 @@ KnobI::getTopLevelPage()
     }
 
     ////find in which page the knob should be
-    KnobPagePtr isTopLevelParentAPage = isKnobPage(parentKnobTmp);
+    KnobPagePtr isTopLevelParentAPage = toKnobPage(parentKnobTmp);
 
     return isTopLevelParentAPage;
 }
@@ -519,7 +519,7 @@ KnobHelper::deleteKnob()
             }
         }
 
-        EffectInstancePtr effect = isEffectInstance(holder);
+        EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
             if ( useHostOverlayHandle() ) {
                 effect->getNode()->removePositionHostOverlay( shared_from_this() );
@@ -2246,7 +2246,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
-    EffectInstancePtr effect = isEffectInstance(h);
+    EffectInstancePtr effect = toEffectInstance(h);
     if (!effect) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
@@ -2258,7 +2258,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     if (!collection) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
-    NodeGroupPtr isParentGrp = isNodeGroup(collection);
+    NodeGroupPtr isParentGrp = toNodeGroup(collection);
     std::string appID = node->getApp()->getAppIDString();
     std::string tabStr = addTab ? "    " : "";
     std::stringstream ss;
@@ -2298,7 +2298,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
 
     //If this node is a group, also define all nodes inside the group, though they will be referencable via
     //thisNode.childname but also with <NodeName.childname>
-    NodeGroupPtr isHolderGrp = isNodeGroup(effect);
+    NodeGroupPtr isHolderGrp = toNodeGroup(effect);
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
@@ -2416,7 +2416,7 @@ KnobHelper::validateExpression(const std::string& expression,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
-    EffectInstancePtr effect = isEffectInstance(holder);
+    EffectInstancePtr effect = toEffectInstance(holder);
     if (!effect) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
@@ -2683,7 +2683,7 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
     if (!holder) {
         return;
     }
-    EffectInstancePtr isEffect = isEffectInstance(holder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
     if (!isEffect) {
         return;
     }
@@ -2963,7 +2963,7 @@ KnobHelper::setName(const std::string & name,
     } while (foundItem);
 
 
-    EffectInstancePtr effect = isEffectInstance(holder);
+    EffectInstancePtr effect = toEffectInstance(holder);
     if (effect) {
         NodePtr node = effect->getNode();
         std::string effectScriptName = node->getScriptName_mt_safe();
@@ -3009,8 +3009,8 @@ KnobHelper::resetParent()
     KnobIPtr parent = _imp->parentKnob.lock();
 
     if (parent) {
-        KnobGroupPtr isGrp =  isKnobGroup(parent);
-        KnobPagePtr isPage = isKnobPage(parent);
+        KnobGroupPtr isGrp =  toKnobGroup(parent);
+        KnobPagePtr isPage = toKnobPage(parent);
         if (isGrp) {
             isGrp->removeKnob( shared_from_this() );
         } else if (isPage) {
@@ -4150,7 +4150,7 @@ KnobHelper::randomSeed(double time,
     KnobHolderPtr holder = getHolder();
 
     if (holder) {
-        EffectInstancePtr effect = isEffectInstance(holder);
+        EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
             hash = effect->getHash();
         }
@@ -4247,8 +4247,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         return KnobIPtr();
     }
 
-    EffectInstancePtr otherIsEffect = isEffectInstance(otherHolder);
-    EffectInstancePtr isEffect = isEffectInstance(holder);
+    EffectInstancePtr otherIsEffect = toEffectInstance(otherHolder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
     KnobBool* isBool = dynamic_cast<KnobBool*>(this);
     KnobInt* isInt = dynamic_cast<KnobInt*>(this);
     KnobDouble* isDbl = dynamic_cast<KnobDouble*>(this);
@@ -4396,7 +4396,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         NodeCollectionPtr collec;
         collec = isEffect->getNode()->getGroup();
 
-        NodeGroupPtr isCollecGroup = isNodeGroup(collec);
+        NodeGroupPtr isCollecGroup = toNodeGroup(collec);
         std::stringstream ss;
         if (isCollecGroup) {
             ss << "thisGroup." << newScriptName;
@@ -4436,19 +4436,19 @@ KnobI::areTypesCompatibleForSlave(const KnobIPtr& lhs,
     }
 
     //These are compatible types
-    KnobIntPtr lhsIsInt = isKnobInt(lhs);
-    KnobIntPtr rhsIsInt = isKnobInt(rhs);
-    KnobDoublePtr lhsIsDouble = isKnobDouble(lhs);
-    KnobColorPtr lhsIsColor = isKnobColor(lhs);
-    KnobDoublePtr rhsIsDouble = isKnobDouble(rhs);
-    KnobColorPtr rhsIsColor = isKnobColor(rhs);
+    KnobIntPtr lhsIsInt = toKnobInt(lhs);
+    KnobIntPtr rhsIsInt = toKnobInt(rhs);
+    KnobDoublePtr lhsIsDouble = toKnobDouble(lhs);
+    KnobColorPtr lhsIsColor = toKnobColor(lhs);
+    KnobDoublePtr rhsIsDouble = toKnobDouble(rhs);
+    KnobColorPtr rhsIsColor = toKnobColor(rhs);
 #pragma message WARN("BUG? is a double param really compatible with an int param?")
     if ( (lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt) ) {
         return true;
     }
 
-    /*  KnobChoicePtr lhsIsChoice = isKnobChoice(lhs);
-       KnobChoicePtr rhsIsChoice = isKnobChoice(rhs);
+    /*  KnobChoicePtr lhsIsChoice = toKnobChoice(lhs);
+       KnobChoicePtr rhsIsChoice = toKnobChoice(rhs);
        if (lhsIsChoice || rhsIsChoice) {
           return false;
        }
@@ -4541,7 +4541,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
     std::list<KnobIPtr> knobsToInspectRecursive;
 
     for (std::set<KnobIPtr>::iterator it = deps.begin(); it != deps.end(); ++it) {
-        EffectInstancePtr effect  = isEffectInstance( (*it)->getHolder() );
+        EffectInstancePtr effect  = toEffectInstance( (*it)->getHolder() );
         if (effect) {
             NodePtr node = effect->getNode();
 
@@ -4858,12 +4858,12 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
 bool
 KnobHolder::moveKnobOneStepUp(const KnobIPtr& knob)
 {
-    if ( !knob->isUserKnob() && !isKnobPage(knob) ) {
+    if ( !knob->isUserKnob() && !toKnobPage(knob) ) {
         return false;
     }
     KnobIPtr parent = knob->getParentKnob();
-    KnobGroupPtr parentIsGrp = isKnobGroup(parent);
-    KnobPagePtr parentIsPage = isKnobPage(parent);
+    KnobGroupPtr parentIsGrp = toKnobGroup(parent);
+    KnobPagePtr parentIsPage = toKnobPage(parent);
 
     //the knob belongs to a group/page , change its index within the group instead
     bool moveOk = false;
@@ -4930,12 +4930,12 @@ KnobHolder::moveKnobOneStepUp(const KnobIPtr& knob)
 bool
 KnobHolder::moveKnobOneStepDown(const KnobIPtr& knob)
 {
-    if ( !knob->isUserKnob() && !isKnobPage(knob) ) {
+    if ( !knob->isUserKnob() && !toKnobPage(knob) ) {
         return false;
     }
     KnobIPtr parent = knob->getParentKnob();
-    KnobGroupPtr parentIsGrp = isKnobGroup(parent);
-    KnobPagePtr parentIsPage = isKnobPage(parent);
+    KnobGroupPtr parentIsGrp = toKnobGroup(parent);
+    KnobPagePtr parentIsPage = toKnobPage(parent);
 
     //the knob belongs to a group/page , change its index within the group instead
     bool moveOk = false;
@@ -5006,7 +5006,7 @@ KnobHolder::getUserPageKnob() const
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             if ( (*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE ) {
-                return isKnobPage(*it);
+                return toKnobPage(*it);
             }
         }
     }
@@ -5044,7 +5044,7 @@ KnobHolder::createIntKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobInt(existingKnob);
+        return toKnobInt(existingKnob);
     }
     KnobIntPtr ret = AppManager::createKnob<KnobInt>(shared_from_this(), label, dimension, false);
     ret->setName(name);
@@ -5068,7 +5068,7 @@ KnobHolder::createDoubleKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobDouble(existingKnob);
+        return toKnobDouble(existingKnob);
     }
     KnobDoublePtr ret = AppManager::createKnob<KnobDouble>(shared_from_this(), label, dimension, false);
     ret->setName(name);
@@ -5092,7 +5092,7 @@ KnobHolder::createColorKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobColor(existingKnob);
+        return toKnobColor(existingKnob);
     }
     KnobColorPtr ret = AppManager::createKnob<KnobColor>(shared_from_this(), label, dimension, false);
     ret->setName(name);
@@ -5115,7 +5115,7 @@ KnobHolder::createBoolKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobBool(existingKnob);
+        return toKnobBool(existingKnob);
     }
     KnobBoolPtr ret = AppManager::createKnob<KnobBool>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5138,7 +5138,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobChoice(existingKnob);
+        return toKnobChoice(existingKnob);
     }
     KnobChoicePtr ret = AppManager::createKnob<KnobChoice>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5161,7 +5161,7 @@ KnobHolder::createButtonKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobButton(existingKnob);
+        return toKnobButton(existingKnob);
     }
     KnobButtonPtr ret = AppManager::createKnob<KnobButton>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5184,7 +5184,7 @@ KnobHolder::createSeparatorKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobSeparator(existingKnob);
+        return toKnobSeparator(existingKnob);
     }
     KnobSeparatorPtr ret = AppManager::createKnob<KnobSeparator>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5208,7 +5208,7 @@ KnobHolder::createStringKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobString(existingKnob);
+        return toKnobString(existingKnob);
     }
     KnobStringPtr ret = AppManager::createKnob<KnobString>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5231,7 +5231,7 @@ KnobHolder::createFileKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobFile(existingKnob);
+        return toKnobFile(existingKnob);
     }
     KnobFilePtr ret = AppManager::createKnob<KnobFile>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5254,7 +5254,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobOutputFile(existingKnob);
+        return toKnobOutputFile(existingKnob);
     }
     KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5277,7 +5277,7 @@ KnobHolder::createPathKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobPath(existingKnob);
+        return toKnobPath(existingKnob);
     }
     KnobPathPtr ret = AppManager::createKnob<KnobPath>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5300,7 +5300,7 @@ KnobHolder::createGroupKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobGroup(existingKnob);
+        return toKnobGroup(existingKnob);
     }
     KnobGroupPtr ret = AppManager::createKnob<KnobGroup>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5323,7 +5323,7 @@ KnobHolder::createPageKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobPage(existingKnob);
+        return toKnobPage(existingKnob);
     }
     KnobPagePtr ret = AppManager::createKnob<KnobPage>(shared_from_this(), label, 1, false);
     ret->setName(name);
@@ -5347,7 +5347,7 @@ KnobHolder::createParametricKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return isKnobParametric(existingKnob);
+        return toKnobParametric(existingKnob);
     }
     KnobParametricPtr ret = AppManager::createKnob<KnobParametric>(shared_from_this(), label, nbCurves, false);
     ret->setName(name);
@@ -5935,8 +5935,8 @@ KnobHolder::restoreDefaultValues()
     beginChanges();
 
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        KnobButtonPtr isBtn = isKnobButton(_imp->knobs[i]);
-        KnobSeparatorPtr isSeparator = isKnobSeparator(_imp->knobs[i]);
+        KnobButtonPtr isBtn = toKnobButton(_imp->knobs[i]);
+        KnobSeparatorPtr isSeparator = toKnobSeparator(_imp->knobs[i]);
 
         ///Don't restore buttons and the node label
         if ( ( !isBtn || isBtn->getIsCheckable() ) && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
@@ -6018,7 +6018,7 @@ KnobHolder::getPageIndex(const KnobPagePtr page) const
     int pageIndex = 0;
 
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
-        KnobPagePtr ispage = isKnobPage(_imp->knobs[i]);
+        KnobPagePtr ispage = toKnobPage(_imp->knobs[i]);
         if (ispage) {
             if (page == ispage) {
                 return pageIndex;

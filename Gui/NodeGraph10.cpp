@@ -128,7 +128,7 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
     for (std::set<NodeGuiPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isVisible() && (*it)->isActive() ) {
             QPointF localPoint = (*it)->mapFromScene( mapToScene(mousePosViewport) );
-            BackdropGuiPtr isBd = isBackdropGui(*it);
+            BackdropGuiPtr isBd = toBackdropGui(*it);
             if (isBd) {
                 if ( isBd->isNearbyNameFrame(localPoint) ) {
                     *node = *it;
@@ -194,7 +194,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
 
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = isNodeGroup(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -248,7 +248,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
-            BackdropGuiPtr isBd = isBackdropGui( selectedNode );
+            BackdropGuiPtr isBd = toBackdropGui( selectedNode );
             if (!isBd) {
                 _imp->_magnifiedNode = selectedNode;
             }
@@ -269,7 +269,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
             for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackdropGuiPtr isBd = isBackdropGui(*it);
+                BackdropGuiPtr isBd = toBackdropGui(*it);
                 if (isBd) {
                     NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(*it, nodesWithin) );

@@ -493,7 +493,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             if ( !it->filename.isEmpty() ) {
                 KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
                 if (fileKnob) {
-                    KnobOutputFilePtr outFile = isKnobOutputFile(fileKnob);
+                    KnobOutputFilePtr outFile = toKnobOutputFile(fileKnob);
                     if (outFile) {
                         outFile->setValue( it->filename.toStdString() );
                     }
@@ -514,7 +514,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             if (!output) {
                 throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
-            GroupOutputPtr isGrpOutput = isGroupOutput( output->getEffectInstance() );
+            GroupOutputPtr isGrpOutput = toGroupOutput( output->getEffectInstance() );
             if (!isGrpOutput) {
                 throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
@@ -672,7 +672,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
             KnobIPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
             if (fileKnob) {
-                KnobFilePtr outFile = isKnobFile(fileKnob);
+                KnobFilePtr outFile = toKnobFile(fileKnob);
                 if (outFile) {
                     outFile->setValue( it->filename.toStdString() );
                 }
@@ -1315,7 +1315,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    NodeGroupPtr isGrp = isNodeGroup( node->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
@@ -1761,7 +1761,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstancePtr& wri
         *sequenceName = QString();
         KnobIPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
-            KnobStringBasePtr isString = isKnobStringBase(fileKnob);
+            KnobStringBasePtr isString = toKnobStringBase(fileKnob);
             assert(isString);
             if (isString) {
                 *sequenceName = QString::fromUtf8( isString->getValue().c_str() );

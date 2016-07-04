@@ -407,7 +407,7 @@ struct RotoPaintPrivate
 ///the feather point and its associated control point
 typedef std::pair<BezierCPPtr, BezierCPPtr > SelectedCP;
 typedef std::list< SelectedCP > SelectedCPs;
-typedef std::list< boost::shared_ptr<RotoDrawableItem> > SelectedItems;
+typedef std::list< RotoDrawableItemPtr > SelectedItems;
 
 enum EventStateEnum
 {
@@ -656,7 +656,7 @@ public:
 
     void onCurveLockedChangedRecursive(const RotoItemPtr & item, bool* ret);
 
-    bool removeItemFromSelection(const boost::shared_ptr<RotoDrawableItem>& b);
+    bool removeItemFromSelection(const RotoDrawableItemPtr& b);
 
     void computeSelectedCpsBBOX();
 
@@ -728,12 +728,12 @@ public:
      * @brief Set the selection to be the given beziers and the given control points.
      * This can only be called on the main-thread.
      **/
-    void setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & selectedBeziers,
+    void setSelection(const std::list<RotoDrawableItemPtr > & selectedBeziers,
                       const std::list<std::pair<BezierCPPtr, BezierCPPtr > > & selectedCps);
     void setSelection(const BezierPtr & curve,
                       const std::pair<BezierCPPtr, BezierCPPtr > & point);
 
-    void getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* selectedBeziers,
+    void getSelection(std::list<RotoDrawableItemPtr >* selectedBeziers,
                       std::list<std::pair<BezierCPPtr, BezierCPPtr > >* selectedCps);
 
     void setBuiltBezier(const BezierPtr & curve);
@@ -763,7 +763,7 @@ public:
      * @brief Calls RotoContext::removeItem but also clears some pointers if they point to
      * this curve. For undo/redo purpose.
      **/
-    void removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve);
+    void removeCurve(const RotoDrawableItemPtr& curve);
 };
 
 NATRON_NAMESPACE_EXIT;

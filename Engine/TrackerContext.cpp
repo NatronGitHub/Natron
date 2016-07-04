@@ -750,7 +750,7 @@ getCornerPinPoint(const NodePtr& node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = isKnobDouble(knob);
+    KnobDoublePtr  ret = toKnobDouble(knob);
     assert(ret);
 
     return ret;
@@ -768,7 +768,7 @@ getCornerPinPoint(const NodePtr& node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = isKnobDouble(knob);
+    KnobDoublePtr  ret = toKnobDouble(knob);
     assert(ret);
 
     return ret;
@@ -857,7 +857,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         {
             KnobIPtr knob = createdNode->getKnobByName(kCornerPinParamMatrix);
             if (knob) {
-                KnobDoublePtr isType = isKnobDouble(knob);
+                KnobDoublePtr isType = toKnobDouble(knob);
                 if (isType) {
                     isType->cloneAndUpdateGui( _imp->cornerPinMatrix.lock() );
                 }
@@ -868,7 +868,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     case eTrackerTransformNodeTransform: {
         KnobIPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
         if (translateKnob) {
-            KnobDoublePtr isDbl = isKnobDouble(translateKnob);
+            KnobDoublePtr isDbl = toKnobDouble(translateKnob);
             if (isDbl) {
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->translate.lock() );
@@ -881,7 +881,7 @@ TrackerContext::exportTrackDataFromExportOptions()
 
         KnobIPtr scaleKnob = createdNode->getKnobByName(kTransformParamScale);
         if (scaleKnob) {
-            KnobDoublePtr isDbl = isKnobDouble(scaleKnob);
+            KnobDoublePtr isDbl = toKnobDouble(scaleKnob);
             if (isDbl) {
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->scale.lock() );
@@ -894,7 +894,7 @@ TrackerContext::exportTrackDataFromExportOptions()
 
         KnobIPtr rotateKnob = createdNode->getKnobByName(kTransformParamRotate);
         if (rotateKnob) {
-            KnobDoublePtr isDbl = isKnobDouble(rotateKnob);
+            KnobDoublePtr isDbl = toKnobDouble(rotateKnob);
             if (isDbl) {
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->rotate.lock() );
@@ -905,7 +905,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         }
         KnobIPtr centerKnob = createdNode->getKnobByName(kTransformParamCenter);
         if (centerKnob) {
-            KnobDoublePtr isDbl = isKnobDouble(centerKnob);
+            KnobDoublePtr isDbl = toKnobDouble(centerKnob);
             if (isDbl) {
                 isDbl->cloneAndUpdateGui( _imp->center.lock() );
             }
@@ -916,7 +916,7 @@ TrackerContext::exportTrackDataFromExportOptions()
 
     KnobIPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
     if (cpInvertKnob) {
-        KnobBoolPtr isBool = isKnobBool(cpInvertKnob);
+        KnobBoolPtr isBool = toKnobBool(cpInvertKnob);
         if (isBool) {
             if (!linked) {
                 isBool->cloneAndUpdateGui( _imp->invertTransform.lock() );
@@ -929,7 +929,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamMotionBlur);
         if (knob) {
-            KnobDoublePtr isType = isKnobDouble(knob);
+            KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->motionBlur.lock() );
             }
@@ -938,7 +938,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamShutter);
         if (knob) {
-            KnobDoublePtr isType = isKnobDouble(knob);
+            KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->shutter.lock() );
             }
@@ -947,7 +947,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamShutterOffset);
         if (knob) {
-            KnobChoicePtr isType = isKnobChoice(knob);
+            KnobChoicePtr isType = toKnobChoice(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->shutterOffset.lock() );
             }
@@ -956,7 +956,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamCustomShutterOffset);
         if (knob) {
-            KnobDoublePtr isType = isKnobDouble(knob);
+            KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->customShutterOffset.lock() );
             }
@@ -1746,7 +1746,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
         return false;
     }
 
-    TrackMarkerPMPtr isTrackerPM = isTrackMarkerPM( track->natronMarker );
+    TrackMarkerPMPtr isTrackerPM = toTrackMarkerPM( track->natronMarker );
     bool ret;
     if (isTrackerPM) {
         ret = TrackerContextPrivate::trackStepTrackerPM(isTrackerPM, args, time);

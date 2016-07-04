@@ -97,7 +97,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
         }
         KnobParametricPtr isParametric;
         if (knob) {
-            isParametric = isKnobParametric(knob);
+            isParametric = toKnobParametric(knob);
         }
 
         if (add && isSetKeyCommand) {
@@ -141,10 +141,10 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-                            KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-                            KnobIntBasePtr isInt = isKnobIntBase(knob);
-                            KnobStringBasePtr isString = isKnobStringBase(knob);
+                            KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+                            KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+                            KnobIntBasePtr isInt = toKnobIntBase(knob);
+                            KnobStringBasePtr isString = toKnobStringBase(knob);
                             if (isDouble) {
                                 isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
                             } else if (isBool) {
@@ -156,7 +156,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             }
                         }
                     } else {
-                        KnobParametricPtr parametricKnob = isKnobParametric( isKnobCurve->getInternalKnob() );
+                        KnobParametricPtr parametricKnob = toKnobParametric( isKnobCurve->getInternalKnob() );
 
                         if (parametricKnob) {
                             StatusEnum st = parametricKnob->deleteControlPoint( eValueChangedReasonUserEdited, it->dimension,
@@ -227,7 +227,7 @@ SetKeysCommand::undo()
 
     if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = isKnobParametric(knob);
+        KnobParametricPtr isParametric = toKnobParametric(knob);
         if (!isParametric) {
             knob->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *_oldCurve);
         } else {
@@ -280,7 +280,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 knob->beginChanges();
                 knob->blockValueChanges();
             }
-            isParametric = isKnobParametric(knob);
+            isParametric = toKnobParametric(knob);
         }
 
         if (guiKnob && isKnobCurve && !isParametric) {
@@ -301,10 +301,10 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-                            KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-                            KnobIntBasePtr isInt = isKnobIntBase(knob);
-                            KnobStringBasePtr isString = isKnobStringBase(knob);
+                            KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+                            KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+                            KnobIntBasePtr isInt = toKnobIntBase(knob);
+                            KnobStringBasePtr isString = toKnobStringBase(knob);
                             if (isDouble) {
                                 isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
                             } else if (isBool) {
@@ -316,7 +316,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             }
                         }
                     } else {
-                        KnobParametricPtr knob = isKnobParametric( isKnobCurve->getInternalKnob() );
+                        KnobParametricPtr knob = toKnobParametric( isKnobCurve->getInternalKnob() );
 
                         if (knob) {
                             StatusEnum st = knob->deleteControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(),
@@ -398,7 +398,7 @@ moveKeys(CurveGui* curve,
         }
     } else if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = isKnobParametric(knob);
+        KnobParametricPtr isParametric = toKnobParametric(knob);
 
         if (!isParametric) {
             std::vector<KeyFrame> keysToChange( vect.size() );
@@ -579,7 +579,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->key->curve.get() );
         if (isKnobCurve) {
             KnobIPtr knob = isKnobCurve->getInternalKnob();
-            KnobParametricPtr isParametric = isKnobParametric(knob);
+            KnobParametricPtr isParametric = toKnobParametric(knob);
 
             if (isParametric) {
                 int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
@@ -752,7 +752,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
     if (isKnobCurve) {
         KnobIPtr attachedKnob = isKnobCurve->getInternalKnob();
         assert(attachedKnob);
-        KnobParametricPtr isParametric = isKnobParametric(attachedKnob);
+        KnobParametricPtr isParametric = toKnobParametric(attachedKnob);
         double left = undo ? _oldLeft : _newLeft;
         double right = undo ? _oldRight : _newRight;
         KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
@@ -873,7 +873,7 @@ transform(const Transform::Matrix3x3& matrix,
 
     if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = isKnobParametric(knob);
+        KnobParametricPtr isParametric = toKnobParametric(knob);
 
         if (isParametric) {
             CurvePtr internalCurve = curve->getInternalCurve();

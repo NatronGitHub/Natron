@@ -310,7 +310,7 @@ loadNodeGuiSerialization(Gui* gui,
         std::list<std::string> grouping;
         nGui->getNode()->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
-        BackdropGuiPtr isBd = isBackdropGui( nGui );
+        BackdropGuiPtr isBd = toBackdropGui( nGui );
         float defR, defG, defB;
 
         if ( iseffect->isReader() ) {
@@ -478,12 +478,12 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         NodePtr node = getGui()->getApp()->createNode(args);
         NodeGuiIPtr gui_i = node->getNodeGui();
         assert(gui_i);
-        BackdropGuiPtr bd = isBackdropGui( gui_i );
+        BackdropGuiPtr bd = toBackdropGui( gui_i );
         assert(bd);
         if (bd) {
             bd->setPos(x, y);
             bd->resize(w, h);
-            KnobStringPtr iStr = isKnobString( labelSerialization );
+            KnobStringPtr iStr = toKnobString( labelSerialization );
             assert(iStr);
             if (iStr) {
                 bd->onLabelChanged( QString::fromUtf8( iStr->getValue().c_str() ) );

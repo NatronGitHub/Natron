@@ -65,6 +65,13 @@ private: // derives from KnobHolder
                       UserParamHolder* widget);
 
 public:
+    static KnobHolderPtr create(const QString& uniqueID,
+                                const AppInstancePtr& app,
+                                UserParamHolder* widget)
+    {
+        return KnobHolderPtr( new DialogParamHolder(uniqueID, app, widget) );
+    }
+
     virtual ~DialogParamHolder();
 
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;

@@ -971,7 +971,7 @@ Bezier::dequeueGuiActions()
     QMutexLocker k(&itemMutex);
 
     if (mustCopy) {
-        BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+        BezierPtr this_shared = toBezier( shared_from_this() );
         assert(this_shared);
         BezierCPs::iterator fit = _imp->featherPoints.begin();
         for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -991,7 +991,7 @@ void
 Bezier::copyInternalPointsToGuiPoints()
 {
     assert( !itemMutex.tryLock() );
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = toBezier( shared_from_this() );
     assert(this_shared);
     BezierCPs::iterator fit = _imp->featherPoints.begin();
     for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1022,7 +1022,7 @@ Bezier::clearAllPoints()
 void
 Bezier::clone(const RotoItem* other)
 {
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = toBezier( shared_from_this() );
 
     assert(this_shared);
 
@@ -1095,7 +1095,7 @@ Bezier::addControlPoint(double x,
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
     BezierCPPtr p;
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = toBezier( shared_from_this() );
     assert(this_shared);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
@@ -1153,7 +1153,7 @@ Bezier::addControlPointAfterIndex(int index,
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = toBezier( shared_from_this() );
     assert(this_shared);
 
     BezierCPPtr p( new BezierCP(this_shared) );
@@ -3267,7 +3267,7 @@ Bezier::save(const RotoItemSerializationPtr& obj) const
 void
 Bezier::load(const RotoItemSerialization & obj)
 {
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = toBezier( shared_from_this() );
 
     assert(this_shared);
 

@@ -69,7 +69,7 @@ KnobGui::initialize()
     if (!_imp->isInViewerUIKnob) {
         knob->setKnobGuiPointer(thisShared);
     }
-    KnobHelperPtr helper = isKnobHelper(knob);
+    KnobHelperPtr helper = toKnobHelper(knob);
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
@@ -230,7 +230,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
     }
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
-    KnobParametricPtr isParametric = isKnobParametric(knob);
+    KnobParametricPtr isParametric = toKnobParametric(knob);
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
         _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
@@ -686,12 +686,12 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
     ///find-out to which node that master knob belongs to
     KnobHolderPtr holder = knob->getHolder();
-    EffectInstancePtr isEffect = isEffectInstance(holder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
     NodeCollectionPtr collec;
     NodeGroupPtr isCollecGroup;
     if (isEffect) {
         collec = isEffect->getNode()->getGroup();
-        isCollecGroup = isNodeGroup(collec);
+        isCollecGroup = toNodeGroup(collec);
     }
 
 
@@ -706,7 +706,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
             KnobHolderPtr masterHolder = master.second->getHolder();
             if (masterHolder) {
-                TrackMarkerPtr isMarker = isTrackMarker(masterHolder);
+                TrackMarkerPtr isMarker = toTrackMarker(masterHolder);
                 if (isMarker) {
                     knobName.append( isMarker->getContext()->getNode()->getScriptName() );
                     knobName += '.';
@@ -781,7 +781,7 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
         }
     }
 
-    EffectInstancePtr isEffect = isEffectInstance( knob->getHolder() );
+    EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
     if (!isEffect) {
         return KnobIPtr();
     }
@@ -807,7 +807,7 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
 
     if (ret) {
         NodeGuiIPtr groupNodeGuiI = effect->getNode()->getNodeGui();
-        NodeGuiPtr groupNodeGui = isNodeGui( groupNodeGuiI );
+        NodeGuiPtr groupNodeGui = toNodeGui( groupNodeGuiI );
         assert(groupNodeGui);
         if (groupNodeGui) {
             groupNodeGui->ensurePanelCreated();

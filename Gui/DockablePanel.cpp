@@ -117,10 +117,10 @@ DockablePanel::DockablePanel(Gui* gui,
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::NoFocus);
 
-    EffectInstancePtr isEffect = isEffectInstance(holder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
     QString pluginLabelVersioned;
     if (isEffect) {
-        if ( isGroupOutput(isEffect) ) {
+        if ( toGroupOutput(isEffect) ) {
             headerMode = eHeaderModeReadOnlyName;
         }
 
@@ -183,7 +183,7 @@ DockablePanel::DockablePanel(Gui* gui,
             QObject::connect( _imp->_centerNodeButton, SIGNAL(clicked()), this, SLOT(onCenterButtonClicked()) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
 
-            NodeGroupPtr isGroup = isNodeGroup(isEffect);
+            NodeGroupPtr isGroup = toNodeGroup(isEffect);
             if ( isGroup && (isGroup->getPluginID() == PLUGINID_NATRON_GROUP) ) {
                 QPixmap enterPix;
                 appPTR->getIcon(NATRON_PIXMAP_ENTER_GROUP, iconSize, &enterPix);
@@ -556,7 +556,7 @@ DockablePanel::onPageIndexChanged(int index)
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         if (it->second->tab == curTab) {
             setCurrentPage(it->second);
-            EffectInstancePtr isEffect = isEffectInstance(_imp->_holder);
+            EffectInstancePtr isEffect = toEffectInstance(_imp->_holder);
             if ( isEffect && isEffect->getNode()->hasOverlay() ) {
                 isEffect->getApp()->redrawAllViewers();
             }
@@ -609,7 +609,7 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
     if (_imp->_helpButton) {
         _imp->_helpToolTip = QString::fromUtf8( pluginDesc.c_str() );
         _imp->_helpButton->setToolTip( helpString() );
-        EffectInstancePtr iseffect = isEffectInstance(_imp->_holder);
+        EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
         if (iseffect) {
             _imp->_pluginID = QString::fromUtf8( pluginID.c_str() );
             _imp->_pluginVersionMajor = version;
@@ -669,10 +669,10 @@ DockablePanel::onRestoreDefaultsButtonClicked()
         for (std::list<std::pair<boost::weak_ptr<Node>, bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             const std::vector<KnobIPtr > & knobs = it->first.lock()->getKnobs();
             for (std::vector<KnobIPtr >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                KnobButtonPtr isBtn = isKnobButton(*it2);
-                KnobPagePtr isPage = isKnobPage(*it2);
-                KnobGroupPtr isGroup = isKnobGroup(*it2);
-                KnobSeparatorPtr isSeparator = isKnobSeparator(*it2);
+                KnobButtonPtr isBtn = toKnobButton(*it2);
+                KnobPagePtr isPage = toKnobPage(*it2);
+                KnobGroupPtr isGroup = toKnobGroup(*it2);
+                KnobSeparatorPtr isSeparator = toKnobSeparator(*it2);
                 if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it2)->getName() != kUserLabelKnobName ) &&
                      ( (*it2)->getName() != kNatronOfxParamStringSublabelName ) ) {
                     knobsList.push_back(*it2);
@@ -683,10 +683,10 @@ DockablePanel::onRestoreDefaultsButtonClicked()
     } else {
         const std::vector<KnobIPtr > & knobs = _imp->_holder->getKnobs();
         for (std::vector<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            KnobButtonPtr isBtn = isKnobButton(*it);
-            KnobPagePtr isPage = isKnobPage(*it);
-            KnobGroupPtr isGroup = isKnobGroup(*it);
-            KnobSeparatorPtr isSeparator = isKnobSeparator(*it);
+            KnobButtonPtr isBtn = toKnobButton(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
+            KnobGroupPtr isGroup = toKnobGroup(*it);
+            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
             if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it)->getName() != kUserLabelKnobName ) ) {
                 knobsList.push_back(*it);
             }
@@ -765,7 +765,7 @@ DockablePanel::onKnobsInitialized()
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (isNodePanel) {
         NodeCollectionPtr collec = isNodePanel->getNode()->getNode()->getGroup();
-        NodeGroupPtr isGroup = isNodeGroup(collec);
+        NodeGroupPtr isGroup = toNodeGroup(collec);
         if (isGroup) {
             if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
                 setEnabled(false);
@@ -848,7 +848,7 @@ DockablePanel::helpString() const
     //Base help
     QString tt;
     bool isMarkdown = false;
-    EffectInstancePtr iseffect = isEffectInstance(_imp->_holder);
+    EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
 
     if (iseffect) {
         isMarkdown = iseffect->isPluginDescriptionInMarkdown();
@@ -893,7 +893,7 @@ DockablePanel::helpString() const
 void
 DockablePanel::showHelp()
 {
-    EffectInstancePtr iseffect = isEffectInstance(_imp->_holder);
+    EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
 
     if (iseffect) {
         NodePtr node = iseffect->getNode();
@@ -1417,7 +1417,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 
     assert(emitter);
 
-    EffectInstancePtr isEffect = isEffectInstance(_imp->_holder);
+    EffectInstancePtr isEffect = toEffectInstance(_imp->_holder);
     if (isEffect) {
         NodePtr master = isEffect->getNode()->getMasterNode();
         Menu menu(this);
@@ -1472,10 +1472,10 @@ DockablePanel::setKeyOnAllParameters()
                     AddKeysCommand::KeyToAdd k;
                     KeyFrame kf;
                     kf.setTime(time);
-                    KnobIntBasePtr isInt = isKnobIntBase(knob);
-                    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+                    KnobIntBasePtr isInt = toKnobIntBase(knob);
+                    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
                     AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-                    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+                    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
 
                     if (isInt) {
                         kf.setValue( isInt->getValueAtTime(time, i) );
@@ -1564,7 +1564,7 @@ DockablePanel::onEnterInGroupClicked()
     if (!effect) {
         throw std::logic_error("");
     }
-    NodeGroupPtr group = isNodeGroup(effect);
+    NodeGroupPtr group = toNodeGroup(effect);
     assert(group);
     if (!group) {
         throw std::logic_error("");
@@ -1609,8 +1609,8 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
         const KnobsGuiMapping& knobsMap = getKnobsMapping();
         for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
             KnobIPtr knob = it->first.lock();
-            KnobGroupPtr isGroup = isKnobGroup(knob);
-            KnobParametricPtr isParametric = isKnobParametric(knob);
+            KnobGroupPtr isGroup = toKnobGroup(knob);
+            KnobParametricPtr isParametric = toKnobParametric(knob);
             if (!isGroup && !isParametric) {
                 _imp->_knobsVisibilityBeforeHideModif.insert( std::make_pair( it->second, it->second->isSecretRecursive() ) );
                 if ( !knob->hasModifications() ) {

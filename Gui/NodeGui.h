@@ -693,7 +693,7 @@ private:
 };
 
 inline NodeGuiPtr
-isNodeGui(const NodeGuiIPtr& nodeGuiI)
+toNodeGui(const NodeGuiIPtr& nodeGuiI)
 {
     return boost::dynamic_pointer_cast<NodeGui>(nodeGuiI);
 }

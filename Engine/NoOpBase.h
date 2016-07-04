@@ -125,7 +125,7 @@ private:
 };
 
 inline NoOpBasePtr
-isNoOpBase(const EffectInstancePtr& effect)
+toNoOpBase(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<NoOpBase>(effect);
 }

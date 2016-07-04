@@ -168,7 +168,7 @@ private:
 };
 
 inline TrackerNodePtr
-isTrackerNode(const EffectInstancePtr& effect)
+toTrackerNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<TrackerNode>(effect);
 }

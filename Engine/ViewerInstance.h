@@ -443,7 +443,7 @@ private:
 };
 
 inline ViewerInstancePtr
-isViewerInstance(const EffectInstancePtr& effect)
+toViewerInstance(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<ViewerInstance>(effect);
 }

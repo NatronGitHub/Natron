@@ -402,7 +402,7 @@ OfxParamToKnob::onChoiceMenuPopulated()
     if (!knob) {
         return;
     }
-    KnobChoicePtr isChoice = isKnobChoice(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
     if (!isChoice) {
         return;
     }
@@ -4333,7 +4333,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     }
 
     StatusEnum stat;
-    EffectInstancePtr effect = isEffectInstance( _knob.lock()->getHolder() );
+    EffectInstancePtr effect = toEffectInstance( _knob.lock()->getHolder() );
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
     // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
 #ifdef DEBUG

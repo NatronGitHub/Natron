@@ -56,25 +56,25 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER;
 
 inline KnobBoolBasePtr
-isKnobBoolBase(const KnobIPtr& knob)
+toKnobBoolBase(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobBoolBase>(knob);
 }
 
 inline KnobDoubleBasePtr
-isKnobDoubleBase(const KnobIPtr& knob)
+toKnobDoubleBase(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
 }
 
 inline KnobIntBasePtr
-isKnobIntBase(const KnobIPtr& knob)
+toKnobIntBase(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobIntBase>(knob);
 }
 
 inline KnobStringBasePtr
-isKnobStringBase(const KnobIPtr& knob)
+toKnobStringBase(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobStringBase>(knob);
 }
@@ -167,7 +167,7 @@ private:
 };
 
 inline KnobIntPtr
-isKnobInt(const KnobIPtr& knob)
+toKnobInt(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobInt>(knob);
 }
@@ -227,7 +227,7 @@ private:
 };
 
 inline KnobBoolPtr
-isKnobBool(const KnobIPtr& knob)
+toKnobBool(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobBool>(knob);
 }
@@ -425,7 +425,7 @@ private:
 };
 
 inline KnobDoublePtr
-isKnobDouble(const KnobIPtr& knob)
+toKnobDouble(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobDouble>(knob);
 }
@@ -516,7 +516,7 @@ private:
 };
 
 inline KnobButtonPtr
-isKnobButton(const KnobIPtr& knob)
+toKnobButton(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobButton>(knob);
 }
@@ -694,7 +694,7 @@ private:
 };
 
 inline KnobChoicePtr
-isKnobChoice(const KnobIPtr& knob)
+toKnobChoice(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobChoice>(knob);
 }
@@ -747,7 +747,7 @@ private:
 };
 
 inline KnobSeparatorPtr
-isKnobSeparator(const KnobIPtr& knob)
+toKnobSeparator(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobSeparator>(knob);
 }
@@ -845,7 +845,7 @@ private:
 };
 
 inline KnobColorPtr
-isKnobColor(const KnobIPtr& knob)
+toKnobColor(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobColor>(knob);
 }
@@ -968,7 +968,7 @@ private:
 };
 
 inline KnobStringPtr
-isKnobString(const KnobIPtr& knob)
+toKnobString(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobString>(knob);
 }
@@ -1045,7 +1045,7 @@ private:
 };
 
 inline KnobGroupPtr
-isKnobGroup(const KnobIPtr& knob)
+toKnobGroup(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobGroup>(knob);
 }
@@ -1119,7 +1119,7 @@ private:
 };
 
 inline KnobPagePtr
-isKnobPage(const KnobIPtr& knob)
+toKnobPage(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobPage>(knob);
 }
@@ -1239,7 +1239,7 @@ private:
 };
 
 inline KnobParametricPtr
-isKnobParametric(const KnobIPtr& knob)
+toKnobParametric(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobParametric>(knob);
 }
@@ -1393,7 +1393,7 @@ private:
 };
 
 inline KnobTablePtr
-isKnobTable(const KnobIPtr& knob)
+toKnobTable(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobTable>(knob);
 }

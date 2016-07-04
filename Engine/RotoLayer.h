@@ -116,6 +116,12 @@ private:
     boost::scoped_ptr<RotoLayerPrivate> _imp;
 };
 
+inline RotoLayerPtr
+toRotoLayer(const RotoItemPtr& item)
+{
+    return boost::dynamic_pointer_cast<RotoLayer>(item);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoLayer_h

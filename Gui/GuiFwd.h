@@ -134,6 +134,7 @@ class KeyBoundAction;
 class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;
+class KnobGuiColor;
 class KnobGuiContainerI;
 class KnobGuiContainerHelper;
 class KnobGuiDouble;
@@ -212,6 +213,10 @@ typedef boost::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
 typedef boost::shared_ptr<KnobCurveGui> KnobCurveGuiPtr;
 typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
 typedef boost::shared_ptr<KnobGui const> KnobGuiConstPtr;
+typedef boost::shared_ptr<KnobGuiDouble> KnobGuiDoublePtr;
+typedef boost::shared_ptr<KnobGuiColor> KnobGuiColorPtr;
+typedef boost::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
+
 typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;

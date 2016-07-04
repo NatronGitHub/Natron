@@ -1071,7 +1071,7 @@ OutputSchedulerThread::startRender()
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
     EffectInstancePtr effect = _imp->outputEffect.lock();
-    WriteNodePtr isWrite = isWriteNode( effect );
+    WriteNodePtr isWrite = toWriteNode( effect );
     if (isWrite) {
         NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
         if (embeddedWriter) {
@@ -1157,7 +1157,7 @@ OutputSchedulerThread::stopRender()
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
     EffectInstancePtr effect = _imp->outputEffect.lock();
-    WriteNodePtr isWrite = isWriteNode( effect );
+    WriteNodePtr isWrite = toWriteNode( effect );
     if (isWrite) {
         NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
         if (embeddedWriter) {
@@ -2247,7 +2247,7 @@ private:
             EffectInstancePtr activeInputToRender;
             //if (renderDirectly) {
             activeInputToRender = output;
-            WriteNodePtr isWrite = isWriteNode(output);
+            WriteNodePtr isWrite = toWriteNode(output);
             if (isWrite) {
                 NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
                 if (embeddedWriter) {
@@ -2547,7 +2547,7 @@ DefaultScheduler::aboutToStartRender()
     }
 
     // Activate the internal writer node for a write node
-    WriteNodePtr isWrite = isWriteNode( effect );
+    WriteNodePtr isWrite = toWriteNode( effect );
     if (isWrite) {
         isWrite->onSequenceRenderStarted();
     }
@@ -3057,7 +3057,7 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    ViewerInstancePtr isViewer = isViewerInstance( _imp->output.lock() );
+    ViewerInstancePtr isViewer = toViewerInstance( _imp->output.lock() );
     if (!isViewer) {
         qDebug() << "RenderEngine::renderCurrentFrame for a writer is unsupported";
 
@@ -3357,7 +3357,7 @@ RenderEngine::notifyFrameProduced(const BufferableObjectList& frames,
 OutputSchedulerThread*
 ViewerRenderEngine::createScheduler(const OutputEffectInstancePtr& effect)
 {
-    return new ViewerDisplayScheduler( this, isViewerInstance(effect) );
+    return new ViewerDisplayScheduler( this, toViewerInstance(effect) );
 }
 
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////

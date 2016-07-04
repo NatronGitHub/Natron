@@ -177,7 +177,7 @@ struct PyModalDialogPrivate
 
     PyModalDialogPrivate(Gui* gui)
         : gui(gui)
-        , holder(0)
+        , holder()
         , mainLayout(0)
         , panel(0)
         , centerContainer(0)
@@ -193,7 +193,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
 {
-    _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
+    _imp->holder = DialogParamHolder::create( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);

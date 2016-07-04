@@ -154,6 +154,12 @@ private:
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
+inline RotoStrokeItemPtr
+toRotoStrokeItem(const RotoItemPtr& item)
+{
+    return boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoStrokeItem_h

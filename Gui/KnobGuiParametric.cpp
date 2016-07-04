@@ -96,7 +96,7 @@ KnobGuiParametric::KnobGuiParametric(KnobIPtr knob,
     , _resetButton(NULL)
     , _curves()
 {
-    _knob = isKnobParametric(knob);
+    _knob = toKnobParametric(knob);
     QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)) );
 }
 

@@ -136,7 +136,7 @@ RotoDrawableItem::addKnob(const KnobIPtr& knob)
 void
 RotoDrawableItem::setNodesThreadSafetyForRotopainting()
 {
-    assert( boost::dynamic_pointer_cast<RotoStrokeItem>( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
+    assert( toRotoStrokeItem( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
 
     getContext()->getNode()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(true);
@@ -179,9 +179,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     QString pluginId;
     RotoStrokeType type;
-    boost::shared_ptr<RotoDrawableItem> thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
     assert(thisShared);
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(thisShared);
 
     if (isStroke) {
         type = isStroke->getBrushType();
@@ -288,7 +288,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     assert(mergeOperatorKnob);
-    KnobChoicePtr mergeOp = isKnobChoice(mergeOperatorKnob);
+    KnobChoicePtr mergeOp = toKnobChoice(mergeOperatorKnob);
     assert(mergeOp);
 
     KnobChoicePtr compOp = getOperatorKnob();
@@ -309,7 +309,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (type == eRotoStrokeTypeBlur) {
             double strength = isStroke->getBrushEffectKnob()->getValue();
             KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            KnobDoublePtr isDbl = isKnobDouble(knob);
+            KnobDoublePtr isDbl = toKnobDouble(knob);
             if (isDbl) {
                 isDbl->setValues(strength, strength, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
             }
@@ -435,7 +435,7 @@ findPreviousOfItemInLayer(const RotoLayerPtr& layer,
             }
 
             //Cycle through a layer that is at the same level
-            RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*found);
+            RotoLayerPtr isLayer = toRotoLayer(*found);
             if (isLayer) {
                 RotoDrawableItemPtr si = findPreviousOfItemInLayer(isLayer, RotoItemPtr());
                 if (si) {
@@ -521,7 +521,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
 
     if (knob == compKnob) {
         KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        KnobChoicePtr mergeOp = isKnobChoice(mergeOperatorKnob);
+        KnobChoicePtr mergeOp = toKnobChoice(mergeOperatorKnob);
         if (mergeOp) {
             mergeOp->setValueFromLabel(compKnob->getEntry( compKnob->getValue() ), 0);
         }
@@ -534,7 +534,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
 #ifdef NATRON_ROTO_INVERTIBLE
     else if (knob == invertKnob) {
         KnobIPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
-        KnobBoolPtr mergeMaskInv = isKnobBool( mergeMaskInvertKnob );
+        KnobBoolPtr mergeMaskInv = toKnobBool( mergeMaskInvertKnob );
         if (mergeMaskInv) {
             mergeMaskInv->setValue( invertKnob->getValue() );
         }
@@ -552,7 +552,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
         switch (type) {
         case eRotoStrokeTypeBlur: {
             KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            KnobDoublePtr isDbl = isKnobDouble(knob);
+            KnobDoublePtr isDbl = toKnobDouble(knob);
             if (isDbl) {
                 isDbl->setValues(strength, strength, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             }
@@ -575,7 +575,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
         } else {
             offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
         }
-        KnobIntPtr offset = isKnobInt(offsetKnob);
+        KnobIntPtr offset = toKnobInt(offsetKnob);
         if (offset) {
             double value = _imp->timeOffset->getValue();
             offset->setValue(value);
@@ -587,61 +587,61 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
         if (knob == _imp->cloneTranslate) {
             KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            KnobDoublePtr translate = isKnobDouble(translateKnob);
+            KnobDoublePtr translate = toKnobDouble(translateKnob);
             if (translate) {
                 translate->clone(_imp->cloneTranslate);
             }
         } else if (knob == _imp->cloneRotate) {
             KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            KnobDoublePtr rotate = isKnobDouble(rotateKnob);
+            KnobDoublePtr rotate = toKnobDouble(rotateKnob);
             if (rotate) {
                 rotate->clone(_imp->cloneRotate);
             }
         } else if (knob == _imp->cloneScale) {
             KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            KnobDoublePtr scale = isKnobDouble(scaleKnob);
+            KnobDoublePtr scale = toKnobDouble(scaleKnob);
             if (scale) {
                 scale->clone(_imp->cloneScale);
             }
         } else if (knob == _imp->cloneScaleUniform) {
             KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            KnobBoolPtr uniform = isKnobBool(uniformKnob);
+            KnobBoolPtr uniform = toKnobBool(uniformKnob);
             if (uniform) {
                 uniform->clone(_imp->cloneScaleUniform);
             }
         } else if (knob == _imp->cloneSkewX) {
             KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            KnobDoublePtr skewX = isKnobDouble(skewxKnob);
+            KnobDoublePtr skewX = toKnobDouble(skewxKnob);
             if (skewX) {
                 skewX->clone(_imp->cloneSkewX);
             }
         } else if (knob == _imp->cloneSkewY) {
             KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            KnobDoublePtr skewY = isKnobDouble(skewyKnob);
+            KnobDoublePtr skewY = toKnobDouble(skewyKnob);
             if (skewY) {
                 skewY->clone(_imp->cloneSkewY);
             }
         } else if (knob == _imp->cloneSkewOrder) {
             KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            KnobChoicePtr skewOrder = isKnobChoice(skewOrderKnob);
+            KnobChoicePtr skewOrder = toKnobChoice(skewOrderKnob);
             if (skewOrder) {
                 skewOrder->clone(_imp->cloneSkewOrder);
             }
         } else if (knob == _imp->cloneCenter) {
             KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            KnobDoublePtr center = isKnobDouble(centerKnob);
+            KnobDoublePtr center = toKnobDouble(centerKnob);
             if (center) {
                 center->clone(_imp->cloneCenter);
             }
         } else if (knob == _imp->cloneFilter) {
             KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            KnobChoicePtr filter = isKnobChoice(filterKnob);
+            KnobChoicePtr filter = toKnobChoice(filterKnob);
             if (filter) {
                 filter->clone(_imp->cloneFilter);
             }
         } else if (knob == _imp->cloneBlackOutside) {
             KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            KnobBoolPtr bo = isKnobBool(boKnob);
+            KnobBoolPtr bo = toKnobBool(boKnob);
             if (bo) {
                 bo->clone(_imp->cloneBlackOutside);
             }
@@ -949,59 +949,59 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
 
     KnobChoicePtr compKnob = getOperatorKnob();
     KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    KnobChoicePtr mergeOp = isKnobChoice( mergeOperatorKnob );
+    KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
     if (mergeOp) {
         mergeOp->setValueFromLabel(compKnob->getEntry( compKnob->getValue() ), 0);
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
         KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-        KnobDoublePtr translate = isKnobDouble( translateKnob );
+        KnobDoublePtr translate = toKnobDouble( translateKnob );
         if (translate) {
             translate->clone( _imp->cloneTranslate );
         }
         KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-        KnobDoublePtr rotate = isKnobDouble( rotateKnob );
+        KnobDoublePtr rotate = toKnobDouble( rotateKnob );
         if (rotate) {
             rotate->clone( _imp->cloneRotate );
         }
         KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-        KnobDoublePtr scale = isKnobDouble( scaleKnob );
+        KnobDoublePtr scale = toKnobDouble( scaleKnob );
         if (scale) {
             scale->clone( _imp->cloneScale );
         }
         KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-        KnobBoolPtr uniform = isKnobBool( uniformKnob );
+        KnobBoolPtr uniform = toKnobBool( uniformKnob );
         if (uniform) {
             uniform->clone( _imp->cloneScaleUniform );
         }
         KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-        KnobDoublePtr skewX = isKnobDouble( skewxKnob );
+        KnobDoublePtr skewX = toKnobDouble( skewxKnob );
         if (skewX) {
             skewX->clone( _imp->cloneSkewX );
         }
         KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-        KnobDoublePtr skewY = isKnobDouble( skewyKnob );
+        KnobDoublePtr skewY = toKnobDouble( skewyKnob );
         if (skewY) {
             skewY->clone( _imp->cloneSkewY );
         }
         KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-        KnobChoicePtr skewOrder = isKnobChoice( skewOrderKnob );
+        KnobChoicePtr skewOrder = toKnobChoice( skewOrderKnob );
         if (skewOrder) {
             skewOrder->clone( _imp->cloneSkewOrder );
         }
         KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-        KnobDoublePtr center = isKnobDouble( centerKnob );
+        KnobDoublePtr center = toKnobDouble( centerKnob );
         if (center) {
             center->clone( _imp->cloneCenter );
         }
         KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-        KnobChoicePtr filter = isKnobChoice( filterKnob );
+        KnobChoicePtr filter = toKnobChoice( filterKnob );
         if (filter) {
             filter->clone( _imp->cloneFilter );
         }
         KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-        KnobBoolPtr bo = isKnobBool( boKnob );
+        KnobBoolPtr bo = toKnobBool( boKnob );
         if (bo) {
             bo->clone( _imp->cloneBlackOutside );
         }
@@ -1014,13 +1014,13 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         } else {
             offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
         }
-        KnobIntPtr offset = isKnobInt( offsetKnob );
+        KnobIntPtr offset = toKnobInt( offsetKnob );
         if (offset) {
             offset->clone( _imp->timeOffset );
         }
     } else if (type == eRotoStrokeTypeBlur) {
         KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        KnobDoublePtr isDbl = isKnobDouble(knob);
+        KnobDoublePtr isDbl = toKnobDouble(knob);
         if (isDbl) {
             isDbl->clone( _imp->effectStrength );
         }

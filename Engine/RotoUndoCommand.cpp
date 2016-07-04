@@ -419,7 +419,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
     int indexToRemove = curve->getControlPointIndex(cp);
     desc.curveRemoved = false; //set in the redo()
     desc.parentLayer =
-        boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( curve->getParentLayer()->getScriptName() ) );
+        toRotoLayer( roto->getContext()->getItemByName( curve->getParentLayer()->getScriptName() ) );
     assert(desc.parentLayer);
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
@@ -443,9 +443,9 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
             cp = it->first;
         }
         assert( cp && cp->getBezier() && roto && roto->getContext() );
-        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
+        BezierPtr curve = toBezier( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
         assert(curve);
-        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(curve);
+        RotoStrokeItemPtr isStroke = toRotoStrokeItem(curve);
         std::list< CurveDesc >::iterator foundCurve = _curves.end();
         for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
             if (it2->curve == curve) {
@@ -463,7 +463,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
             CurveDesc curveDesc;
             curveDesc.curveRemoved = false; //set in the redo()
             curveDesc.parentLayer =
-                boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( cp->getBezier()->getParentLayer()->getScriptName() ) );
+                toRotoLayer( roto->getContext()->getItemByName( cp->getBezier()->getParentLayer()->getScriptName() ) );
             assert(curveDesc.parentLayer);
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
@@ -498,7 +498,7 @@ RemovePointUndoCommand::undo()
         return;
     }
 
-    std::list<boost::shared_ptr<RotoDrawableItem> > selection;
+    std::list<RotoDrawableItemPtr > selection;
     SelectedCpList cpSelection;
 
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
@@ -530,7 +530,7 @@ RemovePointUndoCommand::redo()
 
     std::list<BezierPtr > toRemove;
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        BezierPtr isBezier = toBezier(it->curve);
         if (!isBezier) {
             continue;
         }
@@ -566,16 +566,16 @@ RemovePointUndoCommand::redo()
 //////////////////////////
 
 RemoveCurveUndoCommand::RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                               const std::list<boost::shared_ptr<RotoDrawableItem> > & curves)
+                                               const std::list<RotoDrawableItemPtr > & curves)
     : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _curves()
 {
-    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+    for (std::list<RotoDrawableItemPtr >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         RemovedCurve r;
         r.curve = *it;
-        r.layer = boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
+        r.layer = toRotoLayer( roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
         assert(r.layer);
         r.indexInLayer = r.layer->getChildIndex(*it);
         assert(r.indexInLayer != -1);
@@ -596,11 +596,11 @@ RemoveCurveUndoCommand::undo()
     if (!roto) {
         return;
     }
-    std::list<boost::shared_ptr<RotoDrawableItem> > selection;
+    std::list<RotoDrawableItemPtr > selection;
 
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        BezierPtr isBezier = toBezier(it->curve);
         if (isBezier) {
             selection.push_back(isBezier);
         }
@@ -971,7 +971,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const boost::shared_ptr<Rot
     , _oldPoint()
     , _newPoint(point)
 {
-    _curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( point.first->getBezier()->getScriptName() ) );
+    _curve = toBezier( roto->getContext()->getItemByName( point.first->getBezier()->getScriptName() ) );
     assert(_curve);
     _oldPoint.first.reset( new BezierCP(*_newPoint.first) );
     _oldPoint.second.reset( new BezierCP(*_newPoint.second) );
@@ -1466,7 +1466,7 @@ MakeBezierUndoCommand::redo()
             parentItem =  roto->getContext()->getItemByName( _newCurve->getParentLayer()->getScriptName() );
         }
         if (parentItem) {
-            _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+            _parentLayer = toRotoLayer(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_newCurve);
         }
     } else {
@@ -1627,7 +1627,7 @@ MakeEllipseUndoCommand::redo()
         }
         RotoItemPtr parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
-            _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+            _parentLayer = toRotoLayer(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_curve);
         }
     }
@@ -1759,7 +1759,7 @@ MakeRectangleUndoCommand::redo()
         }
         RotoItemPtr parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
-            _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+            _parentLayer = toRotoLayer(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_curve);
         }
     }

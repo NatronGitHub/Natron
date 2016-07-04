@@ -82,7 +82,7 @@ BackdropGuiPrivate::getLabelValue() const
     KnobIPtr k = _publicInterface->getNode()->getKnobByName("Label");
 
     assert(k);
-    KnobStringPtr isStr = isKnobString(k);
+    KnobStringPtr isStr = toKnobString(k);
     assert(isStr);
 
     return isStr ? isStr->getValue() : "";

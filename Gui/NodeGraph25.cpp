@@ -226,7 +226,7 @@ void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = isNodeGroup(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool groupEdited = true;
 
     if (isGroup) {

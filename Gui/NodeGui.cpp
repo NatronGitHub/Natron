@@ -248,12 +248,12 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
-    OutputEffectInstancePtr isOutput = isOutputEffectInstance( internalNode->getEffectInstance() );
+    OutputEffectInstancePtr isOutput = toOutputEffectInstance( internalNode->getEffectInstance() );
     if (isOutput) {
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
-    InspectorNodePtr isInspector = isInspectorNode(internalNode);
+    InspectorNodePtr isInspector = toInspectorNode(internalNode);
     if (isInspector) {
         QObject::connect( isInspector.get(), SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }
@@ -279,7 +279,7 @@ NodeGui::initialize(NodeGraph* dag,
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         KnobIPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
-        KnobStringPtr strKnob = isKnobString(knob);
+        KnobStringPtr strKnob = toKnobString(knob);
         if (strKnob) {
             onNodeExtraLabelChanged( QString::fromUtf8( strKnob->getValue().c_str() ) );
         }
@@ -557,7 +557,7 @@ NodeGui::createGui()
 
     NodePtr node = getNode();
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
-    BackdropGuiPtr isBd = isBackdropGui( shared_from_this() );
+    BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
 
     if ( !isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
         QPixmap pix(iconFilePath);
@@ -630,7 +630,7 @@ NodeGui::createGui()
     onAvailableViewsChanged();
 
     GroupInputPtr isGrpInput = node->isEffectGroupInput();
-    GroupOutputPtr isGrpOutput = isGroupOutput( node->getEffectInstance() );
+    GroupOutputPtr isGrpOutput = toGroupOutput( node->getEffectInstance() );
 
     if (!isGrpInput && !isGrpOutput) {
         QGradientStops ptGrad;
@@ -1127,7 +1127,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if ( !isVisible() || isBackdropGui( shared_from_this() ) || dynamic_cast<BackdropGui*>(item) ) {
+    if ( !isVisible() || toBackdropGui( shared_from_this() ) || dynamic_cast<BackdropGui*>(item) ) {
         return;
     }
     item->stackBefore(this);
@@ -1429,7 +1429,7 @@ NodeGui::initializeInputs()
 
     refreshDashedStateOfEdges();
 
-    InspectorNodePtr isInspector = isInspectorNode(node);
+    InspectorNodePtr isInspector = toInspectorNode(node);
     if (isInspector) {
         initializeInputsForInspector();
     } else {
@@ -1530,7 +1530,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     }
 
     NodePtr node = getNode();
-    InspectorNodePtr isInspector = isInspectorNode(node);
+    InspectorNodePtr isInspector = toInspectorNode(node);
     if (isInspector) {
         bool isViewer = node->isEffectViewerInstance() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
@@ -1715,7 +1715,7 @@ NodeGui::connectEdge(int edgeNumber)
 
     NodePtr node = getNode();
     assert(node);
-    if ( isInspectorNode(node) ) {
+    if ( toInspectorNode(node) ) {
         initializeInputsForInspector();
     }
 
@@ -1848,7 +1848,7 @@ NodeGui::showGui()
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
 
-        OfxEffectInstancePtr ofxNode = isOfxEffectInstance( node->getEffectInstance() );
+        OfxEffectInstancePtr ofxNode = toOfxEffectInstance( node->getEffectInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
@@ -1877,7 +1877,7 @@ NodeGui::activate(bool triggerRender)
         showGui();
     } else {
         ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstancePtr ofxNode = isOfxEffectInstance( node->getEffectInstance() );
+        OfxEffectInstancePtr ofxNode = toOfxEffectInstance( node->getEffectInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
@@ -1962,7 +1962,7 @@ NodeGui::deactivate(bool triggerRender)
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstancePtr ofxNode = !node ? OfxEffectInstancePtr() : isOfxEffectInstance( node->getEffectInstance() );
+    OfxEffectInstancePtr ofxNode = !node ? OfxEffectInstancePtr() : toOfxEffectInstance( node->getEffectInstance() );
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
@@ -2214,7 +2214,7 @@ NodeGui::refreshRenderingIndicator()
             _inputEdges[i]->turnOffRenderingColor();
         }
     }
-    ViewerInstancePtr isViewer = isViewerInstance(effect);
+    ViewerInstancePtr isViewer = toViewerInstance(effect);
     if (isViewer) {
         ViewerGL* hasUI = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (hasUI) {
@@ -3782,7 +3782,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!overlayInteract) {
         return false;
     }
-    ViewerGLPtr isViewer = isViewerGL(overlayInteract);
+    ViewerGLPtr isViewer = toViewerGL(overlayInteract);
     if (!isViewer) {
         return false;
     }
@@ -3875,7 +3875,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!overlayInteract) {
         return;
     }
-    ViewerGLPtr isViewer = isViewerGL(overlayInteract);
+    ViewerGLPtr isViewer = toViewerGL(overlayInteract);
     if (!isViewer) {
         return;
     }
@@ -3884,7 +3884,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!rightClickKnob) {
         return;
     }
-    KnobChoicePtr isChoice = isKnobChoice( rightClickKnob );
+    KnobChoicePtr isChoice = toKnobChoice( rightClickKnob );
     if (!isChoice) {
         return;
     }
@@ -3893,14 +3893,14 @@ NodeGui::onRightClickMenuKnobPopulated()
         return;
     }
 
-    Menu m(isViewer);
+    Menu m(isViewer.get());
     for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
         KnobIPtr knob = node->getKnobByName(*it);
         if (!knob) {
             // Plug-in specified invalid knob name in the menu
             continue;
         }
-        KnobButtonPtr button = isKnobButton(knob);
+        KnobButtonPtr button = toKnobButton(knob);
         if (!button) {
             // Plug-in must only use buttons inside menu
             continue;
@@ -3937,7 +3937,7 @@ NodeGui::onRightClickActionTriggered()
         // Plug-in specified invalid knob name in the menu
         return;
     }
-    KnobButtonPtr button = isKnobButton(knob);
+    KnobButtonPtr button = toKnobButton(knob);
     if (!button) {
         // Plug-in must only use buttons inside menu
         return;

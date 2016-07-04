@@ -2171,7 +2171,7 @@ public:
              it != selectedItems.end(); ++it) {
             int lvl = (*it)->getHierarchyLevel();
             if (lvl > minLevel) {
-                RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+                RotoLayerPtr isLayer = toRotoLayer(*it);
                 if (isLayer) {
                     minLayer = isLayer;
                 } else {

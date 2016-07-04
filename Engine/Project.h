@@ -443,7 +443,7 @@ private:
 };
 
 inline ProjectPtr
-isProject(const KnobHolderPtr& holder)
+toProject(const KnobHolderPtr& holder)
 {
     return boost::dynamic_pointer_cast<Project>(holder);
 }

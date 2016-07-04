@@ -365,7 +365,7 @@ RemoveMultipleNodesCommand::redo()
                 NodesList::const_iterator found = std::find(outputsToRestore.begin(), outputsToRestore.end(), output);
 
                 if ( found != outputsToRestore.end() ) {
-                    InspectorNodePtr inspector = isInspectorNode(output);
+                    InspectorNodePtr inspector = toInspectorNode(output);
                     ///if the node is an inspector, when disconnecting the active input just activate another input instead
                     if (inspector) {
                         const std::vector<NodeWPtr> & inputs = inspector->getGuiInputs();
@@ -1583,7 +1583,7 @@ GroupFromSelectionCommand::redo()
 
     NodeGroupPtr isGrp;
     if (_firstRedoCalled) {
-        isGrp = isNodeGroup(_group.lock()->getNode()->getEffectInstance());
+        isGrp = toNodeGroup(_group.lock()->getNode()->getEffectInstance());
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
@@ -1598,7 +1598,7 @@ GroupFromSelectionCommand::redo()
 
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
 
-        isGrp = isNodeGroup( containerNode->getEffectInstance()->shared_from_this() );
+        isGrp = toNodeGroup( containerNode->getEffectInstance()->shared_from_this() );
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");

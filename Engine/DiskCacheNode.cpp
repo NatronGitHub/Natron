@@ -156,7 +156,7 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
         }
     } else if (_imp->preRender.lock() == k) {
         AppInstance::RenderWork w;
-        w.writer = isOutputEffectInstance( shared_from_this() );
+        w.writer = toOutputEffectInstance( shared_from_this() );
         assert(w.writer);
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;

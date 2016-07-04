@@ -134,7 +134,7 @@ protected:
 };
 
 inline OutputEffectInstancePtr
-isOutputEffectInstance(const EffectInstancePtr& effect)
+toOutputEffectInstance(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<OutputEffectInstance>(effect);
 }

@@ -532,7 +532,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 static QString
 tooltipFromKnob(const KnobIPtr& knob)
 {
-    KnobChoicePtr isChoice = isKnobChoice(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
     QString tt = QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( knob->getName().c_str() ) );
     QString realTt;
 

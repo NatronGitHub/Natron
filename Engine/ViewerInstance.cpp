@@ -203,7 +203,7 @@ ViewerInstance::~ViewerInstance()
 RenderEngine*
 ViewerInstance::createRenderEngine()
 {
-    boost::shared_ptr<ViewerInstance> thisShared = isViewerInstance( shared_from_this() );
+    boost::shared_ptr<ViewerInstance> thisShared = toViewerInstance( shared_from_this() );
 
     return new ViewerRenderEngine(thisShared);
 }
@@ -3311,7 +3311,7 @@ ViewerInstance::getActiveInputs(int & a,
                                 int &b) const
 {
     NodePtr n = getNode();
-    InspectorNodePtr isInspector = isInspectorNode(n);
+    InspectorNodePtr isInspector = toInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3323,7 +3323,7 @@ void
 ViewerInstance::setInputA(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNodePtr isInspector = isInspectorNode(n);
+    InspectorNodePtr isInspector = toInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3337,7 +3337,7 @@ void
 ViewerInstance::setInputB(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNodePtr isInspector = isInspectorNode(n);
+    InspectorNodePtr isInspector = toInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {

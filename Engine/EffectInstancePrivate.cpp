@@ -436,7 +436,7 @@ EffectInstance::Implementation::runChangedParamCallback(const KnobIPtr& k,
     }
 
     std::string thisGroupVar;
-    NodeGroupPtr isParentGrp = isNodeGroup(collection);
+    NodeGroupPtr isParentGrp = toNodeGroup(collection);
     if (isParentGrp) {
         std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
         std::string nodeFullName = appID + "." + nodeName;

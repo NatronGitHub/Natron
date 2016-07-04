@@ -336,7 +336,7 @@ GuiApp::selectNode(Effect* effect,
     if (!nodeUi) {
         return;
     }
-    NodeGroupPtr isGroup = isNodeGroup(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     NodeGraph* graph = 0;
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -378,7 +378,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     if (printWarn) {
         getInternalGuiApp()->appendToScriptEditor( tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
     } else {
-        NodeGroupPtr isGroup = isNodeGroup(collection);
+        NodeGroupPtr isGroup = toNodeGroup(collection);
         NodeGraph* graph = 0;
         if (isGroup) {
             graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -405,7 +405,7 @@ GuiApp::selectAllNodes(Group* group)
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
-            isGroup = isNodeGroup(collection);
+            isGroup = toNodeGroup(collection);
             if (isGroup) {
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
@@ -439,7 +439,7 @@ GuiApp::deselectNode(Effect* effect)
     if (!nodeUi) {
         return;
     }
-    NodeGroupPtr isGroup = isNodeGroup(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     NodeGraph* graph = 0;
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -466,7 +466,7 @@ GuiApp::clearSelection(Group* group)
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
-            isGroup = isNodeGroup(collection);
+            isGroup = toNodeGroup(collection);
             if (isGroup) {
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }

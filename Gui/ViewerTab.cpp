@@ -69,7 +69,7 @@ makeFullyQualifiedLabel(const NodePtr& node,
                         std::string* ret)
 {
     NodeCollectionPtr parent = node->getGroup();
-    NodeGroupPtr isParentGrp = isNodeGroup(parent);
+    NodeGroupPtr isParentGrp = toNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -982,7 +982,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( wrapperNode.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
     QObject::connect( _imp->viewerNode, SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
     QObject::connect( _imp->viewerNode, SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
-    InspectorNodePtr isInspector = isInspectorNode(wrapperNode);
+    InspectorNodePtr isInspector = toInspectorNode(wrapperNode);
     if (isInspector) {
         QObject::connect( isInspector.get(), SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
     }

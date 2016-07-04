@@ -338,13 +338,13 @@ private:
 };
 
 inline AbstractOfxEffectInstancePtr
-isAbstractOfxEffectInstance(const EffectInstancePtr& effect)
+toAbstractOfxEffectInstance(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<AbstractOfxEffectInstance>(effect);
 }
 
 inline OfxEffectInstancePtr
-isOfxEffectInstance(const EffectInstancePtr& effect)
+toOfxEffectInstance(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<OfxEffectInstance>(effect);
 }

@@ -2015,7 +2015,7 @@ DopeSheetViewPrivate::computeTimeOffsetRange(const DSNodePtr& timeOffset)
             FrameRange nearestReaderRange = nodeRanges.find( nearestReader )->second; // map::at() is C++11
 
             // Retrieve the time offset values
-            KnobIntBasePtr timeOffsetKnob = isKnobIntBase( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset) );
+            KnobIntBasePtr timeOffsetKnob = toKnobIntBase( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset) );
             assert(timeOffsetKnob);
 
             int timeOffsetValue = timeOffsetKnob->getValue();
@@ -3084,7 +3084,7 @@ DopeSheetView::onRangeNodeChanged(ViewSpec /*view*/,
         KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender);
         if (knobHandler) {
             KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
-            EffectInstancePtr effectInstance = isEffectInstance(holder);
+            EffectInstancePtr effectInstance = toEffectInstance(holder);
             assert(effectInstance);
             if (!effectInstance) {
                 return;

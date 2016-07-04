@@ -125,7 +125,7 @@ private:
 };
 
 inline WriteNodePtr
-isWriteNode(const EffectInstancePtr& effect)
+toWriteNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<WriteNode>(effect);
 }

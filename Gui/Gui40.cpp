@@ -129,7 +129,7 @@ Gui::openRecentFile()
         if (openedProject != -1) {
             AppInstancePtr instance = appPTR->getAppInstance(openedProject);
             if (instance) {
-                GuiAppInstancePtr guiApp = isGuiAppInstance(instance);
+                GuiAppInstancePtr guiApp = toGuiAppInstance(instance);
                 assert(guiApp);
                 if (guiApp) {
                     guiApp->getGui()->activateWindow();
@@ -783,7 +783,7 @@ Gui::renderSelectedNode()
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = isOutputEffectInstance(effect);
+                w.writer = toOutputEffectInstance(effect);
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
@@ -806,7 +806,7 @@ Gui::renderSelectedNode()
 #endif
                 if (writer) {
                     AppInstance::RenderWork w;
-                    w.writer = isOutputEffectInstance( writer->getEffectInstance() );
+                    w.writer = toOutputEffectInstance( writer->getEffectInstance() );
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;

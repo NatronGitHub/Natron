@@ -327,7 +327,7 @@ void
 ReadNodePrivate::placeReadNodeKnobsInPage()
 {
     KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
-    KnobPagePtr isPage = isKnobPage(pageKnob);
+    KnobPagePtr isPage = toKnobPage(pageKnob);
 
     if (!isPage) {
         return;
@@ -373,7 +373,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
                 isSecret = children[foundSep]->getIsSecret();
             }
             if (foundSep < (int)children.size()) {
-                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep]));
+                separatorKnob.lock()->setSecret(toKnobSeparator(children[foundSep]));
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
@@ -393,8 +393,8 @@ ReadNodePrivate::cloneGenericKnobs()
         KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = isKnobChoice(*it2);
-                KnobChoicePtr serializedIsChoice = isKnobChoice(serializedKnob);;
+                KnobChoicePtr isChoice = toKnobChoice(*it2);
+                KnobChoicePtr serializedIsChoice = toKnobChoice(serializedKnob);;
                 if (isChoice && serializedIsChoice) {
                     const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
                     assert(extraData);
@@ -451,7 +451,7 @@ ReadNodePrivate::destroyReadNode()
             }
 
             //Keep pages around they will be re-used
-            KnobPagePtr isPage = isKnobPage(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
             if (isPage) {
                 continue;
             }
@@ -573,7 +573,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 
     for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob() );
+            KnobStringBasePtr isString = toKnobStringBase( (*it)->getKnob() );
             assert(isString);
             if (isString) {
                 filePattern = isString->getValue();
@@ -720,7 +720,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        inputFileKnob = isKnobFile(knob);
+        inputFileKnob = toKnobFile(knob);
     }
 } // ReadNodePrivate::createReadNode
 
@@ -1175,7 +1175,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
         KnobIPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
         if (hasMetaDatasKnob) {
-            KnobButtonPtr showMetasKnob = isKnobButton(hasMetaDatasKnob);
+            KnobButtonPtr showMetasKnob = toKnobButton(hasMetaDatasKnob);
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

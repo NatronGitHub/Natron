@@ -408,13 +408,13 @@ private:
 };
 
 inline NodeGroupPtr
-isNodeGroup(const EffectInstancePtr& effect)
+toNodeGroup(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<NodeGroup>(effect);
 }
 
 inline NodeGroupPtr
-isNodeGroup(const NodeCollectionPtr& group)
+toNodeGroup(const NodeCollectionPtr& group)
 {
     return boost::dynamic_pointer_cast<NodeGroup>(group);
 }

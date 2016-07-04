@@ -287,7 +287,7 @@ private:
 };
 
 inline GuiAppInstancePtr
-isGuiAppInstance(const AppInstancePtr& instance)
+toGuiAppInstance(const AppInstancePtr& instance)
 {
     return boost::dynamic_pointer_cast<GuiAppInstance>(instance);
 }

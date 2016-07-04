@@ -210,8 +210,8 @@ StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
     NodePtr node = getNode();
-    boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
-    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoDrawableItemPtr item = node->getAttachedRotoItem();
+    RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
     RotoContextPtr context = stroke->getContext();
 
     assert(context);

@@ -139,7 +139,7 @@ private:
 };
 
 inline OneViewNodePtr
-isOneViewNode(const EffectInstancePtr& effect)
+toOneViewNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<OneViewNode>(effect);
 }

@@ -531,7 +531,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
                                                EffectInstancePtr associatedNode,
                                                OfxRectD* ret) const
 {
-    boost::shared_ptr<RotoDrawableItem> attachedStroke;
+    RotoDrawableItemPtr attachedStroke;
     EffectInstancePtr effect = getEffectHolder();
 
     if (effect) {

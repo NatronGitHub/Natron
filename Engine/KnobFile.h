@@ -296,19 +296,19 @@ private:
 };
 
 inline KnobFilePtr
-isKnobFile(const KnobIPtr& knob)
+toKnobFile(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobFile>(knob);
 }
 
 inline KnobOutputFilePtr
-isKnobOutputFile(const KnobIPtr& knob)
+toKnobOutputFile(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobOutputFile>(knob);
 }
 
 inline KnobPathPtr
-isKnobPath(const KnobIPtr& knob)
+toKnobPath(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobPath>(knob);
 }

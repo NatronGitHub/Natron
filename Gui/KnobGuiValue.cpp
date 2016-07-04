@@ -98,7 +98,7 @@ struct KnobGuiValuePrivate
     KnobGuiValuePrivate(KnobIPtr knob)
         : knob(knob)
         , intKnob( boost::dynamic_pointer_cast<KnobIntBase >(knob) )
-        , doubleKnob( isKnobDoubleBase(knob) )
+        , doubleKnob( toKnobDoubleBase(knob) )
         , spinBoxes()
         , container(0)
         , slider(0)
@@ -1248,7 +1248,7 @@ KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
 KnobGuiInt::KnobGuiInt(KnobIPtr knob,
                        KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( isKnobInt(knob) )
+    , _knob( toKnobInt(knob) )
 {
 }
 

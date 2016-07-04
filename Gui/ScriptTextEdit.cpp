@@ -470,7 +470,7 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
         _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
 
         if (fromKnob) {
-            EffectInstancePtr isEffect = isEffectInstance( fromKnob->getHolder() );
+            EffectInstancePtr isEffect = toEffectInstance( fromKnob->getHolder() );
             if (isEffect) {
                 QString toAppend;
                 toAppend.append( QString::fromUtf8( isEffect->getNode()->getFullyQualifiedName().c_str() ) );

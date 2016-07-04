@@ -93,7 +93,7 @@ private:
 };
 
 inline BackdropGuiPtr
-isBackdropGui(const NodeGuiIPtr& nodeGui)
+toBackdropGui(const NodeGuiIPtr& nodeGui)
 {
     return boost::dynamic_pointer_cast<BackdropGui>(nodeGui);
 }

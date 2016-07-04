@@ -206,7 +206,7 @@ public:
 
     RotoItemEditorContext(QTreeWidget* tree,
                           CurveEditor* widget,
-                          const boost::shared_ptr<RotoDrawableItem>& curve,
+                          const RotoDrawableItemPtr& curve,
                           RotoCurveEditorContext* context);
 
     virtual ~RotoItemEditorContext();
@@ -216,7 +216,7 @@ public:
     void preventItemDeletion();
 
     QTreeWidgetItem* getItem() const;
-    boost::shared_ptr<RotoDrawableItem> getRotoItem() const;
+    RotoDrawableItemPtr getRotoItem() const;
 
     QString getName() const;
 

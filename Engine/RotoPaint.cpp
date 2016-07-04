@@ -186,7 +186,7 @@ void
 RotoPaint::initializeKnobs()
 {
     //This page is created in the RotoContext, before initializeKnobs() is called.
-    KnobPagePtr generalPage = isKnobPage( getKnobByName("General") );
+    KnobPagePtr generalPage = toKnobPage( getKnobByName("General") );
 
     assert(generalPage);
 
@@ -1133,11 +1133,11 @@ RotoPaint::onKnobsLoaded()
     if (toolbar) {
         KnobsVec toolbarChildren = toolbar->getChildren();
         for (std::size_t i = 0; i < toolbarChildren.size(); ++i) {
-            KnobGroupPtr isChildGroup = isKnobGroup(toolbarChildren[i]);
+            KnobGroupPtr isChildGroup = toKnobGroup(toolbarChildren[i]);
             if ( isChildGroup && isChildGroup->getValue() ) {
                 KnobsVec toolbuttonsChildren = isChildGroup->getChildren();
                 for (KnobsVec::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
-                    KnobButtonPtr isButton = isKnobButton(*it);
+                    KnobButtonPtr isButton = toKnobButton(*it);
                     if ( isButton && isButton->getValue() ) {
                         _imp->ui->setCurrentTool(isButton);
                         _imp->ui->onRoleChangedInternal(isChildGroup);
@@ -1170,8 +1170,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     }
     bool ret = true;
     KnobIPtr kShared = k->shared_from_this();
-    KnobButtonPtr isBtn = isKnobButton(kShared);
-    KnobGroupPtr isGrp = isKnobGroup(kShared);
+    KnobButtonPtr isBtn = toKnobButton(kShared);
+    KnobGroupPtr isGrp = toKnobGroup(kShared);
     if ( isBtn && _imp->ui->onToolChangedInternal(isBtn) ) {
         return true;
     } else if ( isGrp && _imp->ui->onRoleChangedInternal(isGrp) ) {
@@ -1197,7 +1197,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->ui->cloneOffset.first = _imp->ui->cloneOffset.second = 0;
     } else if ( k == _imp->ui->addKeyframeButton.lock() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr isBezier = toBezier(*it);
             if (!isBezier) {
                 continue;
             }
@@ -1206,7 +1206,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         getNode()->getRotoContext()->evaluateChange();
     } else if ( k == _imp->ui->removeKeyframeButton.lock() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr isBezier = toBezier(*it);
             if (!isBezier) {
                 continue;
             }
@@ -1252,8 +1252,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->ui->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
         if ( _imp->ui->selectedItems.empty() ) {
-            std::list<boost::shared_ptr<RotoDrawableItem> > bez = ctx->getCurvesByRenderOrder();
-            for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = bez.begin(); it != bez.end(); ++it) {
+            std::list<RotoDrawableItemPtr > bez = ctx->getCurvesByRenderOrder();
+            for (std::list<RotoDrawableItemPtr >::const_iterator it = bez.begin(); it != bez.end(); ++it) {
                 ctx->select(*it, RotoItem::eSelectionReasonOverlayInteract);
                 _imp->ui->selectedItems.push_back(*it);
             }
@@ -1261,7 +1261,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             ///select all the control points of all selected beziers
             _imp->ui->selectedCps.clear();
             for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-                BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+                BezierPtr isBezier = toBezier(*it);
                 if (!isBezier) {
                     continue;
                 }
@@ -1436,7 +1436,7 @@ RotoPaint::isIdentity(double time,
         }
     }
 
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = node->getRotoContext()->getCurvesByRenderOrder();
+    std::list<RotoDrawableItemPtr > items = node->getRotoContext()->getCurvesByRenderOrder();
     if ( items.empty() ) {
         *inputNb = 0;
         *inputTime = time;
@@ -1451,7 +1451,7 @@ StatusEnum
 RotoPaint::render(const RenderActionArgs& args)
 {
     RotoContextPtr roto = getNode()->getRotoContext();
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
+    std::list<RotoDrawableItemPtr > items = roto->getCurvesByRenderOrder();
     ImageBitDepthEnum bgDepth = getBitDepth(0);
     std::list<ImageComponents> neededComps;
 
@@ -1655,7 +1655,7 @@ RotoPaint::drawOverlay(double time,
                        const RenderScale & /*renderScale*/,
                        ViewIdx /*view*/)
 {
-    std::list< boost::shared_ptr<RotoDrawableItem> > drawables = getNode()->getRotoContext()->getCurvesByRenderOrder();
+    std::list< RotoDrawableItemPtr > drawables = getNode()->getRotoContext()->getCurvesByRenderOrder();
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
 
@@ -1676,14 +1676,14 @@ RotoPaint::drawOverlay(double time,
 
         double cpWidth = kControlPointMidSize * 2;
         glPointSize(cpWidth);
-        for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
             }
 
 
-            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-            RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
+            BezierPtr isBezier = toBezier(*it);
+            RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
             if (isStroke) {
                 if (_imp->ui->selectedTool != eRotoToolSelectAll) {
                     continue;
@@ -2005,7 +2005,7 @@ RotoPaint::drawOverlay(double time,
                 } // if ( ( selected != _imp->ui->selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)
             glCheckError();
-        } // for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        } // for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
 
         if ( _imp->isPaintByDefault &&
              ( ( _imp->ui->selectedRole == eRotoRoleMergeBrush) ||
@@ -2123,9 +2123,9 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
     bool featherVisible = _imp->ui->isFeatherVisible();
     RotoContextPtr ctx = getNode()->getRotoContext();
     assert(ctx);
-    std::list<boost::shared_ptr<RotoDrawableItem> > curves = ctx->getCurvesByRenderOrder();
-    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+    std::list<RotoDrawableItemPtr > curves = ctx->getCurvesByRenderOrder();
+    for (std::list<RotoDrawableItemPtr >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+        BezierPtr isBezier = toBezier(*it);
         if ( (*it)->isLockedRecursive() ) {
             continue;
         }
@@ -2718,7 +2718,7 @@ RotoPaint::onOverlayPenMotion(double time,
         if ( (_imp->ui->state != eEventStateDraggingControlPoint) && (_imp->ui->state != eEventStateDraggingSelectedControlPoints) ) {
             for (SelectedItems::const_iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
                 int index = -1;
-                BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+                BezierPtr isBezier = toBezier(*it);
                 if (isBezier) {
                     std::pair<BezierCPPtr, BezierCPPtr > nb =
                         isBezier->isNearbyControlPoint(pos.x(), pos.y(), cpTol, Bezier::eControlPointSelectionPrefWhateverFirst, &index);

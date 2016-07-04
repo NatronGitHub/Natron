@@ -620,7 +620,7 @@ KnobStringBase::getValueFromMasterAt(double time,
                                         int dimension,
                                         const KnobIPtr& master)
 {
-    KnobStringBasePtr isString = isKnobStringBase(master);
+    KnobStringBasePtr isString = toKnobStringBase(master);
     assert(isString); //< other data types aren't supported
     if (isString) {
         return isString->getValueAtTime(time, dimension, view, false);
@@ -637,7 +637,7 @@ KnobStringBase::getValueFromMaster(ViewSpec view,
                                       const KnobIPtr& master,
                                       bool /*clamp*/)
 {
-    KnobStringBasePtr isString = isKnobStringBase(master);
+    KnobStringBasePtr isString = toKnobStringBase(master);
     assert(isString); //< other data types aren't supported
     if (isString) {
         return isString->getValue(dimension, view, false);
@@ -654,9 +654,9 @@ Knob<T>::getValueFromMasterAt(double time,
                               int dimension,
                               const KnobIPtr& master)
 {
-    KnobIntBasePtr isInt = isKnobIntBase(master);
-    KnobBoolBasePtr isBool = isKnobBoolBase(master);
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(master);
+    KnobIntBasePtr isInt = toKnobIntBase(master);
+    KnobBoolBasePtr isBool = toKnobBoolBase(master);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(master);
     assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
     if (isInt) {
         return isInt->getValueAtTime(time, dimension, view);
@@ -676,9 +676,9 @@ Knob<T>::getValueFromMaster(ViewSpec view,
                             const KnobIPtr& master,
                             bool clamp)
 {
-    KnobIntBasePtr isInt = isKnobIntBase(master);
-    KnobBoolBasePtr isBool = isKnobBoolBase(master);
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(master);
+    KnobIntBasePtr isInt = toKnobIntBase(master);
+    KnobBoolBasePtr isBool = toKnobBoolBase(master);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(master);
     assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
     if (isInt) {
         return (T)isInt->getValue(dimension, view, clamp);
@@ -1046,7 +1046,7 @@ Knob<T>::setValue(const T & v,
 
 #ifdef DEBUG
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
-        EffectInstancePtr isEffect = isEffectInstance(holder);
+        EffectInstancePtr isEffect = toEffectInstance(holder);
         if (isEffect) {
             isEffect->checkCanSetValueAndWarn();
         }
@@ -1246,7 +1246,7 @@ Knob<T>::setValues(const T& value0,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = isEffectInstance(holder);
+        effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1309,7 +1309,7 @@ Knob<T>::setValues(const T& value0,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = isEffectInstance(holder);
+        effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1352,7 +1352,7 @@ Knob<T>::setValues(const T& value0,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = isEffectInstance(holder);
+        effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1451,7 +1451,7 @@ Knob<T>::setValueAtTime(double time,
 
 #ifdef DEBUG
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
-        EffectInstancePtr isEffect = isEffectInstance(holder);
+        EffectInstancePtr isEffect = toEffectInstance(holder);
         if (isEffect) {
             isEffect->checkCanSetValueAndWarn();
         }
@@ -1598,7 +1598,7 @@ Knob<T>::setValuesAtTime(double time,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = isEffectInstance(holder);
+        effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1651,7 +1651,7 @@ Knob<T>::setValuesAtTime(double time,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = isEffectInstance(holder);
+        effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1706,7 +1706,7 @@ Knob<T>::setValuesAtTime(double time,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = isEffectInstance(holder);
+        effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1860,9 +1860,9 @@ Knob<T>::getKeyFrameValueByIndex(ViewSpec view,
     std::pair<int, KnobIPtr > master = getMaster(dimension);
 
     if (master.second) {
-        KnobIntBasePtr isInt = isKnobIntBase(master.second);
-        KnobBoolBasePtr isBool = isKnobBoolBase(master.second);
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase(master.second);
+        KnobIntBasePtr isInt = toKnobIntBase(master.second);
+        KnobBoolBasePtr isBool = toKnobBoolBase(master.second);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(master.second);
         assert( master.second->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
         if (isInt) {
             return isInt->getKeyFrameValueByIndex(view, master.first, index, ok);
@@ -1899,7 +1899,7 @@ KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
     std::pair<int, KnobIPtr > master = getMaster(dimension);
 
     if (master.second) {
-        KnobStringBasePtr isString = isKnobStringBase(master.second);
+        KnobStringBasePtr isString = toKnobStringBase(master.second);
         assert(isString); //< other data types aren't supported
         if (isString) {
             return isString->getKeyFrameValueByIndex(view, master.first, index, ok);
@@ -2607,7 +2607,7 @@ KnobStringBase::cloneValues(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobStringBasePtr isString = isKnobStringBase(other);
+    KnobStringBasePtr isString = toKnobStringBase(other);
     ///Can only clone strings
     assert(isString);
     if (isString) {
@@ -2621,9 +2621,9 @@ Knob<T>::cloneValues(const KnobIPtr& other,
                      int dimension,
                      int otherDimension)
 {
-    KnobIntBasePtr isInt = isKnobIntBase(other);
-    KnobBoolBasePtr isBool = isKnobBoolBase(other);
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(other);
+    KnobIntBasePtr isInt = toKnobIntBase(other);
+    KnobBoolBasePtr isBool = toKnobBoolBase(other);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(other);
     assert(isInt || isBool || isDouble);
 
     QMutexLocker k(&_valueMutex);
@@ -2642,7 +2642,7 @@ KnobStringBase::cloneValuesAndCheckIfChanged(const KnobIPtr& other,
                                                 int dimension,
                                                 int otherDimension)
 {
-    KnobStringBasePtr isString = isKnobStringBase(other);
+    KnobStringBasePtr isString = toKnobStringBase(other);
     assert( (dimension == otherDimension) || (dimension != -1) );
     ///Can only clone strings
     assert(isString);
@@ -2659,9 +2659,9 @@ Knob<T>::cloneValuesAndCheckIfChanged(const KnobIPtr& other,
                                       int dimension,
                                       int otherDimension)
 {
-    KnobIntBasePtr isInt = isKnobIntBase(other);
-    KnobBoolBasePtr isBool = isKnobBoolBase(other);
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(other);
+    KnobIntBasePtr isInt = toKnobIntBase(other);
+    KnobBoolBasePtr isBool = toKnobBoolBase(other);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(other);
     assert(isInt || isBool || isDouble);
 
     QMutexLocker k(&_valueMutex);

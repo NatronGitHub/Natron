@@ -129,7 +129,7 @@ private:
 };
 
 inline PrecompNodePtr
-isPrecompNode(const EffectInstancePtr& effect)
+toPrecompNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<PrecompNode>(effect);
 }

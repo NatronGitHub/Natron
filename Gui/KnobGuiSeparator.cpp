@@ -89,7 +89,7 @@ KnobGuiSeparator::KnobGuiSeparator(KnobIPtr knob,
     : KnobGui(knob, container)
     , _line(0)
 {
-    _knob = isKnobSeparator(knob);
+    _knob = toKnobSeparator(knob);
 }
 
 void

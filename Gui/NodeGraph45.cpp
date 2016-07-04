@@ -587,7 +587,7 @@ NodeGraph::expandSelectedGroups()
 void
 NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
-    NodeGroupPtr isGrp = isNodeGroup( getGroup() );
+    NodeGroupPtr isGrp = toNodeGroup( getGroup() );
 
     assert(isGrp);
     if (isGrp) {
@@ -610,7 +610,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
     if (!group) {
         return;
     }
-    NodeGroupPtr isGrp = isNodeGroup( group );
+    NodeGroupPtr isGrp = toNodeGroup( group );
     if (!isGrp) {
         return;
     }
@@ -668,7 +668,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         NodesList allNodes;
         group->getActiveNodes(&allNodes);
         // If the group is a Group node, append to all nodes reachable through links
-        NodeGroupPtr isGroupNode = isNodeGroup(group);
+        NodeGroupPtr isGroupNode = toNodeGroup(group);
         if (isGroupNode) {
             allNodes.push_back(isGroupNode->getNode());
         }

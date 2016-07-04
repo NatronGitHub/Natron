@@ -135,7 +135,7 @@ ColorPickerLabel::setEnabledMode(bool enabled)
         _pickingEnabled = false;
         setColor(_currentColor);
         if (_knob) {
-            _knob->getGui()->removeColorPicker( isKnobColor( _knob->getKnob() ) );
+            _knob->getGui()->removeColorPicker( toKnobColor( _knob->getKnob() ) );
         }
     }
 }
@@ -205,7 +205,7 @@ ColorPickerLabel::setColor(const QColor & color)
 KnobGuiColor::KnobGuiColor(KnobIPtr knob,
                            KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( isKnobColor(knob) )
+    , _knob( toKnobColor(knob) )
     , _colorLabel(0)
     , _colorDialogButton(0)
     , _lastColor( knob->getDimension() )

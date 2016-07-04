@@ -1713,7 +1713,7 @@ private:
 };
 
 inline KnobHelperPtr
-isKnobHelper(const KnobIPtr& knob)
+toKnobHelper(const KnobIPtr& knob)
 {
     return boost::dynamic_pointer_cast<KnobHelper>(knob);
 }

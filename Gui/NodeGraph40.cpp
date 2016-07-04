@@ -261,7 +261,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
 
         ///Also copy all nodes within the backdrop
-        BackdropGuiPtr isBd =isBackdropGui(*it);
+        BackdropGuiPtr isBd =toBackdropGui(*it);
         if (isBd) {
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
@@ -353,7 +353,7 @@ NodeGraph::decloneSelectedNodes()
 
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        BackdropGuiPtr isBd = isBackdropGui(*it);
+        BackdropGuiPtr isBd = toBackdropGui(*it);
         if (isBd) {
             ///Also copy all nodes within the backdrop
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);

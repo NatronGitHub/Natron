@@ -1185,7 +1185,7 @@ Node::getPaintStrokeRoD(double time,
     if (duringPaintStroke) {
         *bbox = getPaintStrokeRoD_duringPainting();
     } else {
-        boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
+        RotoDrawableItemPtr stroke = _imp->paintStroke.lock();
         if (!stroke) {
             throw std::logic_error("");
         }
@@ -1236,8 +1236,8 @@ Node::getLastPaintStrokePoints(double time,
             }
         }
     } else {
-        boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
-        RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+        RotoDrawableItemPtr item = _imp->paintStroke.lock();
+        RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
         assert(stroke);
         if (!stroke) {
             throw std::logic_error("");
@@ -1255,8 +1255,8 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     std::list<RectI> restToRender;
-    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
-    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoDrawableItemPtr item = _imp->paintStroke.lock();
+    RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
 
     assert(stroke);
     if (!stroke) {
@@ -1531,7 +1531,7 @@ Node::computeHashInternal()
         _imp->hash.append(_imp->knobsAge);
 
         ///append all inputs hash
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+        RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
         NodePtr attachedStrokeContextNode;
         if (attachedStroke) {
             attachedStrokeContextNode = attachedStroke->getContext()->getNode();
@@ -1628,7 +1628,7 @@ Node::computeHashRecursive(std::list<NodePtr>& marked)
         assert(*it);
 
         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = (*it)->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = (*it)->getAttachedRotoItem();
         if ( isRotoPaint && attachedStroke && (attachedStroke->getContext()->getNode().get() == this) ) {
             continue;
         }
@@ -1717,10 +1717,10 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
         for (U32 j = 0; j < nodeKnobs.size(); ++j) {
             if (nodeKnobs[j]->getName() == params[i]) {
                 
-                KnobBoolBasePtr isBool = isKnobBoolBase(nodeKnobs[j]);
-                boost::shared_ptr<KnobIntBase > isInt = isKnobIntBase(nodeKnobs[j]);
-                boost::shared_ptr<KnobDoubleBase > isDbl = isKnobDoubleBase(nodeKnobs[j]);
-                KnobStringBasePtr isStr = isKnobStringBase(nodeKnobs[j]);
+                KnobBoolBasePtr isBool = toKnobBoolBase(nodeKnobs[j]);
+                boost::shared_ptr<KnobIntBase > isInt = toKnobIntBase(nodeKnobs[j]);
+                boost::shared_ptr<KnobDoubleBase > isDbl = toKnobDoubleBase(nodeKnobs[j]);
+                KnobStringBasePtr isStr = toKnobStringBase(nodeKnobs[j]);
                 int nDims = nodeKnobs[j]->getDimension();
 
                 std::string propName = kCreateNodeArgsPropParamValue;
@@ -1811,7 +1811,7 @@ Node::restoreSublabel()
         if (foundNatronCustomTag == -1) {
             KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
             if (sublabelKnob) {
-                KnobStringPtr sublabelKnobIsString = isKnobString(sublabelKnob);
+                KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
                 if (sublabelKnobIsString) {
                     QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
                     if ( !sublabel.isEmpty() ) {
@@ -1863,13 +1863,13 @@ Node::loadKnob(const KnobIPtr & knob,
 
             knob->cloneDefaultValues(serializedKnob);
 
-            KnobChoicePtr isChoice = isKnobChoice(knob);
+            KnobChoicePtr isChoice = toKnobChoice(knob);
             if (isChoice) {
                 const TypeExtraData* extraData = (*it)->getExtraData();
                 const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                 assert(choiceData);
                 if (choiceData) {
-                    KnobChoicePtr choiceSerialized = isKnobChoice(serializedKnob);
+                    KnobChoicePtr choiceSerialized = toKnobChoice(serializedKnob);
                     assert(choiceSerialized);
                     if (choiceSerialized) {
                         isChoice->choiceRestoration(choiceSerialized, choiceData);
@@ -2028,7 +2028,7 @@ Node::getPagesOrder() const
     std::list<std::string> ret;
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPagePtr ispage = isKnobPage(*it);
+        KnobPagePtr ispage = toKnobPage(*it);
         if (ispage) {
             ret.push_back( ispage->getName() );
         }
@@ -2050,7 +2050,7 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
             page->setAsUserKnob(true);
             page->setName( (*it)->getName() );
         } else {
-            page = isKnobPage(found);
+            page = toKnobPage(found);
         }
         if (page) {
             _imp->restoreUserKnobsRecursive( (*it)->getChildren(), KnobGroupPtr(), page );
@@ -2076,7 +2076,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (!found) {
                 grp = AppManager::createKnob<KnobGroup>(effect, isGrp->getLabel(), 1, false);
             } else {
-                grp = isKnobGroup(found);
+                grp = toKnobGroup(found);
                 if (!grp) {
                     continue;
                 }
@@ -2096,18 +2096,18 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             assert( isRegular->isUserKnob() );
             KnobIPtr sKnob = isRegular->getKnob();
             KnobIPtr knob;
-            KnobIntPtr isInt = isKnobInt(sKnob);
-            KnobDoublePtr isDbl = isKnobDouble(sKnob);
-            KnobBoolPtr isBool = isKnobBool(sKnob);
-            KnobChoicePtr isChoice = isKnobChoice(sKnob);
-            KnobColorPtr isColor = isKnobColor(sKnob);
-            KnobStringPtr isStr = isKnobString(sKnob);
-            KnobFilePtr isFile = isKnobFile(sKnob);
-            KnobOutputFilePtr isOutFile = isKnobOutputFile(sKnob);
-            KnobPathPtr isPath = isKnobPath(sKnob);
-            KnobButtonPtr isBtn = isKnobButton(sKnob);
-            KnobSeparatorPtr isSep = isKnobSeparator(sKnob);
-            KnobParametricPtr isParametric = isKnobParametric(sKnob);
+            KnobIntPtr isInt = toKnobInt(sKnob);
+            KnobDoublePtr isDbl = toKnobDouble(sKnob);
+            KnobBoolPtr isBool = toKnobBool(sKnob);
+            KnobChoicePtr isChoice = toKnobChoice(sKnob);
+            KnobColorPtr isColor = toKnobColor(sKnob);
+            KnobStringPtr isStr = toKnobString(sKnob);
+            KnobFilePtr isFile = toKnobFile(sKnob);
+            KnobOutputFilePtr isOutFile = toKnobOutputFile(sKnob);
+            KnobPathPtr isPath = toKnobPath(sKnob);
+            KnobButtonPtr isBtn = toKnobButton(sKnob);
+            KnobSeparatorPtr isSep = toKnobSeparator(sKnob);
+            KnobParametricPtr isParametric = toKnobParametric(sKnob);
 
             assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep || isParametric);
 
@@ -2118,7 +2118,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobInt>(effect, isRegular->getLabel(),
                                                         sKnob->getDimension(), false);
                 } else {
-                    k = isKnobInt(found);
+                    k = toKnobInt(found);
                     if (!k) {
                         continue;
                     }
@@ -2143,7 +2143,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobDouble>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = isKnobDouble(found);
+                    k = toKnobDouble(found);
                     if (!k) {
                         continue;
                     }
@@ -2164,7 +2164,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 knob = k;
 
                 if ( isRegular->getUseHostOverlayHandle() ) {
-                    KnobDoublePtr isDbl = isKnobDouble(knob);
+                    KnobDoublePtr isDbl = toKnobDouble(knob);
                     if (isDbl) {
                         isDbl->setHasHostOverlayHandle(true);
                     }
@@ -2175,7 +2175,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobBool>(effect, isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = isKnobBool(found);
+                    k = toKnobBool(found);
                     if (!k) {
                         continue;
                     }
@@ -2187,7 +2187,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobChoice>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = isKnobChoice(found);
+                    k = toKnobChoice(found);
                     if (!k) {
                         continue;
                     }
@@ -2204,7 +2204,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobColor>(effect, isRegular->getLabel(),
                                                           sKnob->getDimension(), false);
                 } else {
-                    k = isKnobColor(found);
+                    k = toKnobColor(found);
                     if (!k) {
                         continue;
                     }
@@ -2229,7 +2229,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobString>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = isKnobString(found);
+                    k = toKnobString(found);
                     if (!k) {
                         continue;
                     }
@@ -2253,7 +2253,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobFile>(effect, isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = isKnobFile(found);
+                    k = toKnobFile(found);
                     if (!k) {
                         continue;
                     }
@@ -2270,7 +2270,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobOutputFile>(effect, isRegular->getLabel(),
                                                                sKnob->getDimension(), false);
                 } else {
-                    k = isKnobOutputFile(found);
+                    k = toKnobOutputFile(found);
                     if (!k) {
                         continue;
                     }
@@ -2287,7 +2287,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobPath>(effect, isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = isKnobPath(found);
+                    k = toKnobPath(found);
                     if (!k) {
                         continue;
                     }
@@ -2304,7 +2304,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobButton>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = isKnobButton(found);
+                    k = toKnobButton(found);
                     if (!k) {
                         continue;
                     }
@@ -2316,7 +2316,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobSeparator>(effect, isRegular->getLabel(),
                                                               sKnob->getDimension(), false);
                 } else {
-                    k = isKnobSeparator(found);
+                    k = toKnobSeparator(found);
                     if (!k) {
                         continue;
                     }
@@ -2327,7 +2327,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (!found) {
                     k = AppManager::createKnob<KnobParametric>(effect, isRegular->getLabel(), sKnob->getDimension(), false);
                 } else {
-                    k = isKnobParametric(found);
+                    k = toKnobParametric(found);
                     if (!k) {
                         continue;
                     }
@@ -2343,10 +2343,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (isChoice) {
                 const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
                 assert(data);
-                KnobChoicePtr createdKnob = isKnobChoice(knob);
+                KnobChoicePtr createdKnob = toKnobChoice(knob);
                 assert(createdKnob);
                 if (data && createdKnob) {
-                    KnobChoicePtr sKnobChoice = isKnobChoice(sKnob);
+                    KnobChoicePtr sKnobChoice = toKnobChoice(sKnob);
                     if (sKnobChoice) {
                         createdKnob->choiceRestoration(sKnobChoice, data);
                     }
@@ -2844,7 +2844,7 @@ Node::getPreferredInputNode() const
     PrecompNodePtr isPrecomp = isEffectPrecompNode();
 
     if (isInput) {
-        NodeGroupPtr isGroup = isNodeGroup(getGroup());
+        NodeGroupPtr isGroup = toNodeGroup(getGroup());
         assert(isGroup);
         if (!isGroup) {
             return NodePtr();
@@ -2921,7 +2921,7 @@ prependGroupNameRecursive(const NodePtr& group,
     name.insert(0, ".");
     name.insert( 0, group->getScriptName_mt_safe() );
     NodeCollectionPtr hasParentGroup = group->getGroup();
-    NodeGroupPtr isGrp = isNodeGroup(hasParentGroup);
+    NodeGroupPtr isGrp = toNodeGroup(hasParentGroup);
     if (isGrp) {
         prependGroupNameRecursive(isGrp->getNode(), name);
     }
@@ -2937,7 +2937,7 @@ Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
         prependGroupNameRecursive(parent, ret);
     } else {
         NodeCollectionPtr hasParentGroup = getGroup();
-        NodeGroupPtr isGrp = isNodeGroup(hasParentGroup);
+        NodeGroupPtr isGrp = toNodeGroup(hasParentGroup);
         if (isGrp) {
             NodePtr grpNode = isGrp->getNode();
             if (grpNode) {
@@ -3345,7 +3345,7 @@ Node::findRightClickMenuKnob(const KnobsVec& knobs)
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
             KnobIPtr rightClickKnob = knobs[i];
-            KnobChoicePtr isChoice = isKnobChoice(rightClickKnob);
+            KnobChoicePtr isChoice = toKnobChoice(rightClickKnob);
             if (isChoice) {
                 QObject::connect( isChoice.get(), SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
             }
@@ -3383,15 +3383,15 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
             }
         }
         if (formatSize && formatPar) {
-            _imp->pluginFormatKnobs.formatChoice = isKnobChoice(formatKnob);
+            _imp->pluginFormatKnobs.formatChoice = toKnobChoice(formatKnob);
             formatSize->setEvaluateOnChange(false);
             formatPar->setEvaluateOnChange(false);
             formatSize->setSecret(true);
             formatSize->setSecretByDefault(true);
             formatPar->setSecret(true);
             formatPar->setSecretByDefault(true);
-            _imp->pluginFormatKnobs.size = isKnobInt(formatSize);
-            _imp->pluginFormatKnobs.par = isKnobDouble(formatPar);
+            _imp->pluginFormatKnobs.size = toKnobInt(formatSize);
+            _imp->pluginFormatKnobs.par = toKnobDouble(formatPar);
 
             std::vector<std::string> formats;
             int defValue;
@@ -3808,7 +3808,7 @@ Node::getOrCreateMainPage()
     KnobPagePtr mainPage;
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        KnobPagePtr p = isKnobPage(knobs[i]);
+        KnobPagePtr p = toKnobPage(knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
              (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             mainPage = p;
@@ -3853,7 +3853,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         KnobBoolPtr enabled;
         for (std::size_t j = 0; j < knobs.size(); ++j) {
             if (knobs[j]->getOriginalName() == channelNames[i]) {
-                foundEnabled[i] = isKnobBool(knobs[j]);
+                foundEnabled[i] = toKnobBool(knobs[j]);
                 break;
             }
         }
@@ -4041,7 +4041,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
                 if (i > 0) {
                     KnobsVec::iterator prev = it;
                     --prev;
-                    if ( !isKnobSeparator(*prev) ) {
+                    if ( !toKnobSeparator(*prev) ) {
                         KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(_imp->effect, std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
@@ -4189,7 +4189,7 @@ Node::getFrameStepKnobValue() const
     if (!knob) {
         return 1;
     }
-    KnobIntPtr k = isKnobInt(knob);
+    KnobIntPtr k = toKnobInt(knob);
 
     if (!k) {
         return 1;
@@ -4358,17 +4358,17 @@ Node::makeDocumentation(bool genHTML) const
 
         QString defValuesStr, knobType;
         std::vector<std::pair<QString, QString> > dimsDefaultValueStr;
-        KnobIntPtr isInt = isKnobInt(*it);
-        KnobChoicePtr isChoice = isKnobChoice(*it);
-        KnobBoolPtr isBool = isKnobBool(*it);
-        KnobDoublePtr isDbl = isKnobDouble(*it);
-        KnobStringPtr isString = isKnobString(*it);
-        KnobSeparatorPtr isSep = isKnobSeparator(*it);
-        KnobButtonPtr isBtn = isKnobButton(*it);
-        KnobParametricPtr isParametric = isKnobParametric(*it);
-        KnobGroupPtr isGroup = isKnobGroup(*it);
-        KnobPagePtr isPage = isKnobPage(*it);
-        KnobColorPtr isColor = isKnobColor(*it);
+        KnobIntPtr isInt = toKnobInt(*it);
+        KnobChoicePtr isChoice = toKnobChoice(*it);
+        KnobBoolPtr isBool = toKnobBool(*it);
+        KnobDoublePtr isDbl = toKnobDouble(*it);
+        KnobStringPtr isString = toKnobString(*it);
+        KnobSeparatorPtr isSep = toKnobSeparator(*it);
+        KnobButtonPtr isBtn = toKnobButton(*it);
+        KnobParametricPtr isParametric = toKnobParametric(*it);
+        KnobGroupPtr isGroup = toKnobGroup(*it);
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobColorPtr isColor = toKnobColor(*it);
 
         if (isInt) {
             knobType = tr("Integer");
@@ -4606,11 +4606,11 @@ Node::setEffect(const EffectInstancePtr& effect)
     NodePtr thisShared = shared_from_this();
     NodePtr ioContainer = _imp->ioContainer.lock();
     if (ioContainer) {
-        ReadNodePtr isReader = isReadNode( ioContainer->getEffectInstance() );
+        ReadNodePtr isReader = toReadNode( ioContainer->getEffectInstance() );
         if (isReader) {
             isReader->setEmbeddedReader(thisShared);
         } else {
-            WriteNodePtr isWriter = isWriteNode( ioContainer->getEffectInstance() );
+            WriteNodePtr isWriter = toWriteNode( ioContainer->getEffectInstance() );
             assert(isWriter);
             if (isWriter) {
                 isWriter->setEmbeddedWriter(thisShared);
@@ -4677,7 +4677,7 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
         //The node is a group input,  jump to the corresponding input of the group
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
-        isGrp = isNodeGroup(collection);
+        isGrp = toNodeGroup(collection);
         if (isGrp) {
             return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(useGuiInput, node), useGuiInput);
         }
@@ -4719,7 +4719,7 @@ applyNodeRedirectionsDownstream(int recurseCounter,
         if (!collection) {
             return;
         }
-        isGrp = isNodeGroup(collection);
+        isGrp = toNodeGroup(collection);
         if (isGrp) {
             NodesWList groupOutputs;
             if (useGuiOutputs) {
@@ -4793,7 +4793,7 @@ Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const
 {
     OutputEffectInstancePtr thisWriter = isEffectOutput();
 
-    if ( thisWriter && thisWriter->isOutput() && !isGroupOutput(thisWriter) ) {
+    if ( thisWriter && thisWriter->isOutput() && !toGroupOutput(thisWriter) ) {
         std::list<OutputEffectInstancePtr>::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
         if ( alreadyExists == writers->end() ) {
             writers->push_back(thisWriter);
@@ -5472,7 +5472,7 @@ void
 Node::Implementation::ifGroupForceHashChangeOfInputs()
 {
     ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
-    NodeGroupPtr isGrp = isNodeGroup(effect);
+    NodeGroupPtr isGrp = toNodeGroup(effect);
 
     if ( isGrp && !isGrp->getApp()->isCreatingNodeTree() ) {
         NodesList inputsOutputs;
@@ -5979,7 +5979,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
     if (unslaveKnobs) {
         ///For all knobs that have listeners, invalidate expressions
-        NodeGroupPtr isParentGroup = isNodeGroup(parentCol);
+        NodeGroupPtr isParentGroup = toNodeGroup(parentCol);
         KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobI::ListenerDimsMap listeners;
@@ -5997,7 +5997,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                     continue;
                 }
 
-                EffectInstancePtr isEffect = isEffectInstance(holder);
+                EffectInstancePtr isEffect = toEffectInstance(holder);
                 if (!isEffect) {
                     continue;
                 }
@@ -6006,7 +6006,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 if (!effectParent) {
                     continue;
                 }
-                NodeGroupPtr isEffectParentGroup = isNodeGroup(effectParent);
+                NodeGroupPtr isEffectParentGroup = toNodeGroup(effectParent);
                 if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
                     continue;
                 }
@@ -6750,61 +6750,61 @@ Node::isRotoPaintingNode() const
 ViewerInstancePtr
 Node::isEffectViewerInstance() const
 {
-    return isViewerInstance(_imp->effect);
+    return toViewerInstance(_imp->effect);
 }
 
 NodeGroupPtr
 Node::isEffectNodeGroup() const
 {
-    return isNodeGroup(_imp->effect);
+    return toNodeGroup(_imp->effect);
 }
 
 PrecompNodePtr
 Node::isEffectPrecompNode() const
 {
-    return isPrecompNode(_imp->effect);
+    return toPrecompNode(_imp->effect);
 }
 
 OutputEffectInstancePtr
 Node::isEffectOutput() const
 {
-    return isOutputEffectInstance(_imp->effect);
+    return toOutputEffectInstance(_imp->effect);
 }
 
 GroupInputPtr
 Node::isEffectGroupInput() const
 {
-    return isGroupInput(_imp->effect);
+    return toGroupInput(_imp->effect);
 }
 
 GroupOutputPtr
 Node::isEffectGroupOutput() const
 {
-    return isGroupOutput(_imp->effect);
+    return toGroupOutput(_imp->effect);
 }
 
 ReadNodePtr
 Node::isEffectReadNode() const
 {
-    return isReadNode(_imp->effect);
+    return toReadNode(_imp->effect);
 }
 
 WriteNodePtr
 Node::isEffectWriteNode() const
 {
-    return isWriteNode(_imp->effect);
+    return toWriteNode(_imp->effect);
 }
 
 BackdropPtr
 Node::isEffectBackdrop() const
 {
-    return isBackdrop(_imp->effect);
+    return toBackdrop(_imp->effect);
 }
 
 OneViewNodePtr
 Node::isEffectOneViewNode() const
 {
-    return isOneViewNode(_imp->effect);
+    return toOneViewNode(_imp->effect);
 }
 
 RotoContextPtr
@@ -6826,7 +6826,7 @@ Node::getRotoAge() const
         return _imp->rotoContext->getAge();
     }
 
-    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+    RotoDrawableItemPtr item = _imp->paintStroke.lock();
     if (item) {
         return item->getContext()->getAge();
     }
@@ -7060,7 +7060,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
 #endif
         // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
         if ( !isPartOfProject() && getGroup() ) {
-            NodeGroupPtr isGroup = isNodeGroup(getGroup());
+            NodeGroupPtr isGroup = toNodeGroup(getGroup());
             if (isGroup) {
                 isGroup->setPersistentMessage(type, content);
             }
@@ -7390,7 +7390,7 @@ Node::onAllKnobsSlaved(bool isSlave,
     assert( QThread::currentThread() == qApp->thread() );
 
     if (isSlave) {
-        EffectInstancePtr effect = isEffectInstance(master);
+        EffectInstancePtr effect = toEffectInstance(master);
         assert(effect);
         if (effect) {
             NodePtr masterNode = effect->getNode();
@@ -7434,10 +7434,10 @@ Node::onKnobSlaved(const KnobIPtr& slave,
 
 
     ///If the holder isn't an effect, ignore it too
-    EffectInstancePtr isEffect = isEffectInstance( master->getHolder() );
+    EffectInstancePtr isEffect = toEffectInstance( master->getHolder() );
     NodePtr parentNode;
     if (!isEffect) {
-        TrackMarkerPtr isMarker = isTrackMarker( master->getHolder() );
+        TrackMarkerPtr isMarker = toTrackMarker( master->getHolder() );
         if (isMarker) {
             parentNode = isMarker->getContext()->getNode();
         }
@@ -7819,7 +7819,7 @@ Node::onInputChanged(int inputNb,
      */
     GroupOutputPtr isGroupOutput = isEffectGroupOutput();
     if (isGroupOutput) {
-        NodeGroupPtr containerGroup = isNodeGroup( isGroupOutput->getNode()->getGroup() );
+        NodeGroupPtr containerGroup = toNodeGroup( isGroupOutput->getNode()->getGroup() );
         if (containerGroup) {
             std::map<NodePtr, int> groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
@@ -7886,9 +7886,9 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         }
     } else if ( _imp->effect->isWriter() ) {
         KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
-        KnobOutputFilePtr isFile = isKnobOutputFile(fileKnob);
+        KnobOutputFilePtr isFile = toKnobOutputFile(fileKnob);
         if (isFile && sublabelKnob) {
-            KnobStringBasePtr isString = isKnobStringBase(sublabelKnob);
+            KnobStringBasePtr isString = toKnobStringBase(sublabelKnob);
 
             std::string pattern = isFile->getValue();
             if (isString) {
@@ -7904,7 +7904,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         /*
            Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
          */
-        KnobOutputFilePtr fileParam = isKnobOutputFile(fileKnob);
+        KnobOutputFilePtr fileParam = toKnobOutputFile(fileKnob);
         if (fileParam) {
             std::string pattern = fileParam->getValue();
             std::size_t foundViewPattern = pattern.find_first_of("%v");
@@ -7915,7 +7915,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
                 //We found view pattern
                 KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
                 if (viewsKnob) {
-                    KnobChoicePtr viewsSelector = isKnobChoice(viewsKnob);
+                    KnobChoicePtr viewsSelector = toKnobChoice(viewsKnob);
                     if (viewsSelector) {
                         viewsSelector->setSecret(true);
                     }
@@ -7974,9 +7974,9 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
     ///Set the originalFrameRange parameter of the reader if it has one.
     KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
     if (knob) {
-        KnobIntPtr originalFrameRange = isKnobInt(knob);
+        KnobIntPtr originalFrameRange = toKnobInt(knob);
         if ( originalFrameRange && (originalFrameRange->getDimension() == 2) ) {
-            KnobFilePtr isFile = isKnobFile(fileKnob);
+            KnobFilePtr isFile = toKnobFile(fileKnob);
             assert(isFile);
             if (!isFile) {
                 throw std::logic_error("Node::computeFrameRangeForReader");
@@ -8508,7 +8508,7 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    KnobStringPtr availableViewsKnob = isKnobString(knob);
+    KnobStringPtr availableViewsKnob = toKnobString(knob);
     if (!availableViewsKnob) {
         return;
     }
@@ -8533,7 +8533,7 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
 
     if ( !missingViews.isEmpty() ) {
         KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
-        KnobFilePtr inputFileKnob = isKnobFile(fileKnob);
+        KnobFilePtr inputFileKnob = toKnobFile(fileKnob);
         if (inputFileKnob) {
             std::string filename = inputFileKnob->getValue();
             std::stringstream ss;
@@ -8707,7 +8707,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         Q_EMIT nodeExtraLabelChanged( QString::fromUtf8( _imp->nodeLabelKnob.lock()->getValue().c_str() ) );
     } else if (what->getName() == kNatronOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
-        KnobStringPtr strKnob = isKnobString(what);
+        KnobStringPtr strKnob = toKnobString(what);
         if (strKnob) {
             QString operation = QString::fromUtf8( strKnob->getValue().c_str() );
             if ( !operation.isEmpty() ) {
@@ -8768,7 +8768,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
     }
 
     if (!ret) {
-        KnobGroupPtr isGroup = isKnobGroup(what);
+        KnobGroupPtr isGroup = toKnobGroup(what);
         if ( isGroup && isGroup->getIsDialog() ) {
             NodeGuiIPtr gui = getNodeGui();
             if (gui) {
@@ -8809,7 +8809,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                  || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
                 NodeCollectionPtr col = isInput->getNode()->getGroup();
                 assert(col);
-                NodeGroupPtr isGrp = isNodeGroup(col);
+                NodeGroupPtr isGrp = toNodeGroup(col);
                 assert(isGrp);
                 if (isGrp) {
                     ///Refresh input arrows of the node to reflect the state
@@ -9193,7 +9193,7 @@ Node::isNodeDisabled() const
 {
     KnobBoolPtr b = _imp->disableNodeKnob.lock();
     bool thisDisabled = b ? b->getValue() : false;
-    NodeGroupPtr isContainerGrp = isNodeGroup( getGroup() );
+    NodeGroupPtr isContainerGrp = toNodeGroup( getGroup() );
 
     if (isContainerGrp) {
         return thisDisabled || isContainerGrp->getNode()->isNodeDisabled();
@@ -9297,7 +9297,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         int dim = knobs[i]->getDimension();
-        KnobFilePtr isFile = isKnobFile(knobs[i]);
+        KnobFilePtr isFile = toKnobFile(knobs[i]);
         if (isFile) {
             ///skip file knobs
             continue;
@@ -9449,7 +9449,7 @@ Node::updateEffectLabelKnob(const QString & name)
         return;
     }
     KnobIPtr knob = getKnobByName(kNatronOfxParamStringSublabelName);
-    KnobStringPtr strKnob = isKnobString(knob);
+    KnobStringPtr strKnob = toKnobString(knob);
     if (strKnob) {
         strKnob->setValue( name.toStdString() );
     }
@@ -9702,7 +9702,7 @@ addIdentityNodesRecursively(NodeConstPtr caller,
         if (isGroupOutput) {
             NodeCollectionPtr collection = output->getGroup();
             assert(collection);
-            NodeGroupPtr isGrp = isNodeGroup(collection);
+            NodeGroupPtr isGrp = toNodeGroup(collection);
             if (isGrp) {
                 NodesWList groupOutputs;
                 isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
@@ -9780,7 +9780,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 }
             }
 
-            RotoPaintPtr isRoto = isRotoPaint( output->getEffectInstance() );
+            RotoPaintPtr isRoto = toRotoPaint( output->getEffectInstance() );
             if (isRoto) {
                 // THe roto internally makes multiple references to the input so cache it
                 return true;
@@ -9816,7 +9816,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 //Users wants it cached
                 return true;
             }
-            NodeGroupPtr parentIsGroup = isNodeGroup( getGroup() );
+            NodeGroupPtr parentIsGroup = toNodeGroup( getGroup() );
             if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput(false).get() == this) ) {
                 //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
                 return true;
@@ -9837,14 +9837,14 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 return true;
             }
 
-            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+            RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
             if ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() ) {
                 ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
                 return true;
             }
         } else {
             // outputs == 0, never cache, unless explicitly set or rotopaint internal node
-            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+            RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
 
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
                    ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() );
@@ -10307,7 +10307,7 @@ Node::isSettingsPanelVisible() const
 }
 
 void
-Node::attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke)
+Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->paintStroke = stroke;
@@ -10322,7 +10322,7 @@ Node::setUseAlpha0ToConvertFromRGBToRGBA(bool use)
     _imp->useAlpha0ToConvertFromRGBToRGBA = use;
 }
 
-boost::shared_ptr<RotoDrawableItem>
+RotoDrawableItemPtr
 Node::getAttachedRotoItem() const
 {
     return _imp->paintStroke.lock();
@@ -10701,7 +10701,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
         runOnNodeCreatedCBInternal(cb, userEdited);
     }
 
-    NodeGroupPtr isGroup = isNodeGroup(group);
+    NodeGroupPtr isGroup = toNodeGroup(group);
     KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
     if (!nodeCreatedCbKnob && isGroup) {
         cb = isGroup->getNode()->getAfterNodeCreatedCallback();
@@ -10734,7 +10734,7 @@ Node::Implementation::runOnNodeDeleteCB()
     }
 
 
-    NodeGroupPtr isGroup = isNodeGroup(group);
+    NodeGroupPtr isGroup = toNodeGroup(group);
     KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
     if (!nodeDeletedKnob && isGroup) {
         NodePtr grpNode = isGroup->getNode();
@@ -10852,7 +10852,7 @@ Node::Implementation::runInputChangedCallback(int index,
     }
 
     std::string thisGroupVar;
-    NodeGroupPtr isParentGrp = isNodeGroup(collection);
+    NodeGroupPtr isParentGrp = toNodeGroup(collection);
     if (isParentGrp) {
         std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
         std::string nodeFullName = appID + "." + nodeName;
@@ -10888,7 +10888,7 @@ Node::getChannelSelectorKnob(int inputNb) const
                 return KnobChoicePtr();
             }
 
-            return isKnobChoice(knob);
+            return toKnobChoice(knob);
         }
 
         return KnobChoicePtr();
@@ -11497,7 +11497,7 @@ Node::addUserComponents(const ImageComponents& comps)
     }
     {
         ///Set the selector to the new channel
-        KnobChoicePtr layerChoice = isKnobChoice(outputLayerKnob);
+        KnobChoicePtr layerChoice = toKnobChoice(outputLayerKnob);
         if (layerChoice) {
             layerChoice->setValueFromLabel(comps.getLayerName(), 0);
         }

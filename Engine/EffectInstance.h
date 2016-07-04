@@ -2261,7 +2261,7 @@ public:
 typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
 
 inline EffectInstancePtr
-isEffectInstance(const KnobHolderPtr& effect)
+toEffectInstance(const KnobHolderPtr& effect)
 {
     return boost::dynamic_pointer_cast<EffectInstance>(effect);
 }

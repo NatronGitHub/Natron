@@ -526,7 +526,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     } else if (paramType == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        KnobGroupPtr isGroup = isKnobGroup(knob);
+        KnobGroupPtr isGroup = toKnobGroup(knob);
         assert(isGroup);
         if (isGroup) {
             bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
@@ -553,7 +553,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             qDebug() << "- " << ret->getProperties().getStringProperty(kOfxParamPropPageChild, i).c_str();
         }
 #endif
-        KnobPagePtr isPage = isKnobPage(knob);
+        KnobPagePtr isPage = toKnobPage(knob);
         assert(isPage);
         if (isPage) {
             bool isInToolbar = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextIsInToolbar);
@@ -567,7 +567,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         if (isToggableButton) {
-            KnobButtonPtr isBtn = isKnobButton(knob);
+            KnobButtonPtr isBtn = toKnobButton(knob);
             assert(isBtn);
             if (isBtn) {
                 isBtn->setCheckable(true);
@@ -721,7 +721,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
             boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
-            pageData->page = isKnobPage(associatedKnob);
+            pageData->page = toKnobPage(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
             for (std::map<int, OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
@@ -805,7 +805,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             continue;
         }
 
-        KnobPagePtr isPage = isKnobPage(knob);
+        KnobPagePtr isPage = toKnobPage(knob);
         if (isPage) {
             continue;
         }

@@ -66,7 +66,7 @@ void
 moveReader(const NodePtr &reader,
            double dt)
 {
-    KnobIntBasePtr startingTimeKnob = isKnobIntBase( reader->getKnobByName(kReaderParamNameStartingTime) );
+    KnobIntBasePtr startingTimeKnob = toKnobIntBase( reader->getKnobByName(kReaderParamNameStartingTime) );
     assert(startingTimeKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -76,7 +76,7 @@ void
 moveTimeOffset(const NodePtr& node,
                double dt)
 {
-    KnobIntBasePtr timeOffsetKnob = isKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset) );
+    KnobIntBasePtr timeOffsetKnob = toKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset) );
     assert(timeOffsetKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -86,7 +86,7 @@ void
 moveFrameRange(const NodePtr& node,
                double dt)
 {
-    KnobIntBasePtr frameRangeKnob = isKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange) );
+    KnobIntBasePtr frameRangeKnob = toKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange) );
     assert(frameRangeKnob);
     frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
@@ -191,7 +191,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobHolderPtr holder = (*it)->getContext()->getInternalKnob()->getHolder();
         assert(holder);
-        EffectInstancePtr isEffect = isEffectInstance(holder);
+        EffectInstancePtr isEffect = toEffectInstance(holder);
         if (isEffect) {
             nodesSet.insert( isEffect->getNode() );
         }
@@ -531,7 +531,7 @@ DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     KnobHolderPtr holder = firstFrameKnob->getHolder();
-    EffectInstancePtr effectInstance = isEffectInstance(holder);
+    EffectInstancePtr effectInstance = toEffectInstance(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -618,7 +618,7 @@ DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     KnobHolderPtr holder = lastFrameKnob->getHolder();
-    EffectInstancePtr effectInstance = isEffectInstance(holder);
+    EffectInstancePtr effectInstance = toEffectInstance(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -753,7 +753,7 @@ DSSlipReaderCommand::slipReader(double dt)
     QObject::disconnect( startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
                          view, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
     KnobHolderPtr holder = lastFrameKnob->getHolder();
-    EffectInstancePtr effectInstance = isEffectInstance(holder);
+    EffectInstancePtr effectInstance = toEffectInstance(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -930,10 +930,10 @@ DSPasteKeysCommand::redo()
 void
 DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
 {
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-    KnobIntBasePtr isInt = isKnobIntBase(knob);
-    KnobStringBasePtr isString = isKnobStringBase(knob);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    KnobStringBasePtr isString = toKnobStringBase(knob);
 
 
     if (isDouble) {

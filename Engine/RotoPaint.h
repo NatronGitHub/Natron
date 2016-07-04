@@ -222,13 +222,13 @@ private:
 };
 
 inline RotoPaintPtr
-isRotoPaint(const EffectInstancePtr& effect)
+toRotoPaint(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<RotoPaint>(effect);
 }
 
 inline RotoNodePtr
-isRotoNode(const EffectInstancePtr& effect)
+toRotoNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<RotoNode>(effect);
 }

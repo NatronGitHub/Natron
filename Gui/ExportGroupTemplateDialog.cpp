@@ -266,7 +266,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 3);
 
     // If this node is already a PyPlug, pre-fill the dialog with existing information
-    NodeGroupPtr isGroupNode = isNodeGroup(group);
+    NodeGroupPtr isGroupNode = toNodeGroup(group);
     if (isGroupNode) {
         NodePtr pyPlug = isGroupNode->getNode();
         std::string pluginID = pyPlug->getPluginID();

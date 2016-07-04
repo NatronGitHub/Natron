@@ -187,6 +187,12 @@ private:
     bool _useSimplifiedUI;
 };
 
+inline KnobGuiColorPtr
+toKnobGuiColor(const KnobGuiIPtr& knobGui)
+{
+    return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiColor_h

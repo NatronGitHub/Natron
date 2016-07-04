@@ -210,7 +210,7 @@ public:
      **/
     bool isRotoPaintTreeConcatenatable() const;
 
-    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items, int* blendingMode);
+    static bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items, int* blendingMode);
 
     void getGlobalMotionBlurSettings(const double time,
                                      double* startTime,
@@ -253,7 +253,7 @@ public:
     void select(const RotoItemPtr & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void select(const std::list<boost::shared_ptr<RotoDrawableItem> > & beziers, RotoItem::SelectionReasonEnum reason);
+    void select(const std::list<RotoDrawableItemPtr > & beziers, RotoItem::SelectionReasonEnum reason);
     void select(const std::list<RotoItemPtr > & items, RotoItem::SelectionReasonEnum reason);
 
     /**
@@ -286,7 +286,7 @@ public:
     /**
      * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
      **/
-    std::list< boost::shared_ptr<RotoDrawableItem> > getSelectedCurves() const;
+    std::list< RotoDrawableItemPtr > getSelectedCurves() const;
 
 
     /**
@@ -299,7 +299,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder(bool onlyActivated = true) const;
+    std::list< RotoDrawableItemPtr > getCurvesByRenderOrder(bool onlyActivated = true) const;
 
     int getNCurves() const;
 

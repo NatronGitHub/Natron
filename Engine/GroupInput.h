@@ -95,7 +95,7 @@ public:
 };
 
 inline GroupInputPtr
-isGroupInput(const EffectInstancePtr& effect)
+toGroupInput(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<GroupInput>(effect);
 }

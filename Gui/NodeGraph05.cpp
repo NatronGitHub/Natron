@@ -54,7 +54,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                                      const NodeGuiPtr &selected,
                                      bool autoConnect)
 {
-    BackdropGuiPtr isBd = isBackdropGui(node);
+    BackdropGuiPtr isBd = toBackdropGui(node);
 
     if (isBd) {
         return;
@@ -247,7 +247,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output_i) {
                     continue;
                 }
-                NodeGuiPtr outputGui = isNodeGui( output_i );
+                NodeGuiPtr outputGui = toNodeGui( output_i );
                 assert(outputGui);
                 if (outputGui) {
                     outputGui->moveBelowPositionRecursively(createdNodeRect);
@@ -274,7 +274,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                            Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
                            internal nodes of the tree
                          */
-                        boost::shared_ptr<RotoDrawableItem> stroke = it->first->getAttachedRotoItem();
+                        RotoDrawableItemPtr stroke = it->first->getAttachedRotoItem();
                         if ( stroke && (stroke->getContext()->getNode() == selectedNodeInternal) ) {
                             continue;
                         }

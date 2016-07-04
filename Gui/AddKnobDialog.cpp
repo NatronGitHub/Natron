@@ -364,19 +364,19 @@ static ParamDataTypeEnum
 getChoiceIndexFromKnobType(const KnobIPtr& knob)
 {
     int dim = knob->getDimension();
-    KnobIntPtr isInt = isKnobInt(knob);
+    KnobIntPtr isInt = toKnobInt(knob);
     KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    KnobColorPtr isColor = isKnobColor(knob);
-    KnobChoicePtr isChoice = isKnobChoice(knob);
-    KnobBoolPtr isBool = isKnobBool(knob);
-    KnobStringPtr isStr = isKnobString(knob);
-    KnobFilePtr isFile = isKnobFile(knob);
-    KnobOutputFilePtr isOutputFile = isKnobOutputFile(knob);
-    KnobPathPtr isPath = isKnobPath(knob);
-    KnobGroupPtr isGrp = isKnobGroup(knob);
-    KnobPagePtr isPage = isKnobPage(knob);
-    KnobButtonPtr isBtn = isKnobButton(knob);
-    KnobSeparatorPtr isSep = isKnobSeparator(knob);
+    KnobColorPtr isColor = toKnobColor(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobBoolPtr isBool = toKnobBool(knob);
+    KnobStringPtr isStr = toKnobString(knob);
+    KnobFilePtr isFile = toKnobFile(knob);
+    KnobOutputFilePtr isOutputFile = toKnobOutputFile(knob);
+    KnobPathPtr isPath = toKnobPath(knob);
+    KnobGroupPtr isGrp = toKnobGroup(knob);
+    KnobPagePtr isPage = toKnobPage(knob);
+    KnobButtonPtr isBtn = toKnobButton(knob);
+    KnobSeparatorPtr isSep = toKnobSeparator(knob);
 
     if (isInt) {
         if (dim == 1) {
@@ -441,7 +441,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     assert( !knob || knob->isUserKnob() );
 
     {
-        EffectInstancePtr effect = isEffectInstance( panel->getHolder() );
+        EffectInstancePtr effect = toEffectInstance( panel->getHolder() );
         QString title = QString::fromUtf8("Add Parameter");
         if (!knob) {
             // Add...
@@ -542,8 +542,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             bool startNewLine = true;
             KnobIPtr parentKnob = _imp->knob->getParentKnob();
             if (parentKnob) {
-                KnobGroupPtr parentIsGrp = isKnobGroup(parentKnob);
-                KnobPagePtr parentIsPage = isKnobPage(parentKnob);
+                KnobGroupPtr parentIsGrp = toKnobGroup(parentKnob);
+                KnobPagePtr parentIsPage = toKnobPage(parentKnob);
                 assert(parentIsGrp || parentIsPage);
                 KnobsVec children;
                 if (parentIsGrp) {
@@ -636,7 +636,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->menuItemsEdit->setToolTip(tt);
         _imp->mainLayout->addRow(_imp->menuItemsLabel, _imp->menuItemsEdit);
 
-        KnobChoicePtr isChoice = isKnobChoice(knob);
+        KnobChoicePtr isChoice = toKnobChoice(knob);
         if (isChoice) {
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
             std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
@@ -664,7 +664,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
 
-        KnobStringPtr isStr = isKnobString(knob);
+        KnobStringPtr isStr = toKnobString(knob);
         if (isStr) {
             if ( isStr && isStr->isMultiLine() ) {
                 _imp->multiLine->setChecked(true);
@@ -685,7 +685,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->richText);
         _imp->mainLayout->addRow(_imp->richTextLabel, optContainer);
 
-        KnobStringPtr isStr = isKnobString(knob);
+        KnobStringPtr isStr = toKnobString(knob);
         if (isStr) {
             if ( isStr && isStr->isMultiLine() && isStr->usesRichText() ) {
                 _imp->richText->setChecked(true);
@@ -703,8 +703,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->sequenceDialog);
         _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
 
-        KnobFilePtr isFile = isKnobFile(knob);
-        KnobOutputFilePtr isOutFile = isKnobOutputFile(knob);
+        KnobFilePtr isFile = toKnobFile(knob);
+        KnobOutputFilePtr isOutFile = toKnobOutputFile(knob);
         if (isFile) {
             if ( isFile->isInputImageFile() ) {
                 _imp->sequenceDialog->setChecked(true);
@@ -726,7 +726,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->multiPath);
         _imp->mainLayout->addRow(_imp->multiPathLabel, optContainer);
 
-        KnobPathPtr isStr = isKnobPath(knob);
+        KnobPathPtr isStr = toKnobPath(knob);
         if (isStr) {
             if ( isStr && isStr->isMultiPath() ) {
                 _imp->multiPath->setChecked(true);
@@ -744,7 +744,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->groupAsTab);
         _imp->mainLayout->addRow(_imp->groupAsTabLabel, optContainer);
 
-        KnobGroupPtr isGrp = isKnobGroup(knob);
+        KnobGroupPtr isGrp = toKnobGroup(knob);
         if (isGrp) {
             if ( isGrp && isGrp->isTab() ) {
                 _imp->groupAsTab->setChecked(true);
@@ -791,8 +791,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         dminMaxLayout->addStretch();
 
         KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
-        KnobIntPtr isInt = isKnobInt(knob);
-        KnobColorPtr isColor = isKnobColor(knob);
+        KnobIntPtr isInt = toKnobInt(knob);
+        KnobColorPtr isColor = toKnobColor(knob);
 
 
         if (isDbl) {
@@ -870,11 +870,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
 
 
-        KnobDoubleBasePtr isDbl = isKnobDoubleBase(knob);
-        KnobIntBasePtr isInt = isKnobIntBase(knob);
-        KnobBoolPtr isBool = isKnobBool(knob);
-        KnobStringBasePtr isStr = isKnobStringBase(knob);
-        KnobChoicePtr isChoice = isKnobChoice(knob);
+        KnobDoubleBasePtr isDbl = toKnobDoubleBase(knob);
+        KnobIntBasePtr isInt = toKnobIntBase(knob);
+        KnobBoolPtr isBool = toKnobBool(knob);
+        KnobStringBasePtr isStr = toKnobStringBase(knob);
+        KnobChoicePtr isChoice = toKnobChoice(knob);
 
         if (isChoice) {
             _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).c_str() ) );
@@ -912,7 +912,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             continue;
         }
         if ( knob->isUserKnob() ) {
-            KnobGroupPtr isGrp = isKnobGroup(knob);
+            KnobGroupPtr isGrp = toKnobGroup(knob);
             if (isGrp) {
                 _imp->userGroups.push_back(isGrp);
             }
@@ -944,7 +944,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
-            KnobPagePtr isPage = isKnobPage(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
             if (isPage) {
                 _imp->userPages.push_back(isPage);
             }
@@ -1000,7 +1000,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobPagePtr topLvlPage = knob->getTopLevelPage();
         if (topLvlPage) {
             KnobIPtr parent = knob->getParentKnob();
-            KnobGroupPtr isParentGrp = isKnobGroup(parent);
+            KnobGroupPtr isParentGrp = toKnobGroup(parent);
             if (isParentGrp) {
                 for (std::list<KnobGroupPtr>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
                     KnobPagePtr page = (*it)->getTopLevelPage();
@@ -1582,7 +1582,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
 
     KnobHolderPtr holder = panel->getHolder();
     assert(holder);
-    EffectInstancePtr isEffect = isEffectInstance(holder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
     assert(isEffect);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -1676,7 +1676,7 @@ AddKnobDialog::onOkClicked()
         KnobHolderPtr holder = _imp->panel->getHolder();
         assert(holder);
 
-        NodeGroupPtr isHolderGroup = isNodeGroup( isEffectInstance(holder) );
+        NodeGroupPtr isHolderGroup = toNodeGroup( toEffectInstance(holder) );
         if (isHolderGroup) {
             //Check if the group has a node with the exact same script name as the param script name, in which case we error
             //otherwise the attribute on the python object would be overwritten
@@ -1712,14 +1712,14 @@ AddKnobDialog::onOkClicked()
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
     } else {
-        oldKnobIsPage = isKnobPage(_imp->knob);
+        oldKnobIsPage = toKnobPage(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
-        effect = isEffectInstance( _imp->knob->getHolder() );
+        effect = toEffectInstance( _imp->knob->getHolder() );
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob);
         KnobIPtr parent = _imp->knob->getParentKnob();
-        KnobGroupPtr isParentGrp = isKnobGroup(parent);
+        KnobGroupPtr isParentGrp = toKnobGroup(parent);
         if ( isParentGrp && ( isParentGrp == _imp->getSelectedGroup() ) ) {
             KnobsVec children = isParentGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
@@ -1801,7 +1801,7 @@ AddKnobDialog::onOkClicked()
             _imp->knob->clone( _imp->originalKnobSerialization->getKnob() );
         }
 
-        KnobStringPtr isLabelKnob = isKnobString(_imp->knob);
+        KnobStringPtr isLabelKnob = toKnobString(_imp->knob);
         if ( isLabelKnob && isLabelKnob->isLabel() ) {
             ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
             ///so we have to force a reset to the default value.
@@ -1829,7 +1829,7 @@ AddKnobDialog::onOkClicked()
         KnobGroupPtr group = _imp->getSelectedGroup();
         KnobGroupPtr shrdGrp;
         if (group) {
-            shrdGrp = isKnobGroup( group->shared_from_this() );
+            shrdGrp = toKnobGroup( group->shared_from_this() );
         }
 
         try {
@@ -1849,13 +1849,13 @@ AddKnobDialog::onOkClicked()
             return;
         }
 
-        KnobColorPtr isColor = isKnobColor(_imp->knob);
+        KnobColorPtr isColor = toKnobColor(_imp->knob);
         KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(_imp->knob);
-        KnobIntPtr isInt = isKnobInt(_imp->knob);
-        KnobStringBasePtr isStr = isKnobStringBase(_imp->knob);
-        KnobGroupPtr isGrp = isKnobGroup(_imp->knob);
-        KnobBoolPtr isBool = isKnobBool(_imp->knob);
-        KnobChoicePtr isChoice = isKnobChoice(_imp->knob);
+        KnobIntPtr isInt = toKnobInt(_imp->knob);
+        KnobStringBasePtr isStr = toKnobStringBase(_imp->knob);
+        KnobGroupPtr isGrp = toKnobGroup(_imp->knob);
+        KnobBoolPtr isBool = toKnobBool(_imp->knob);
+        KnobChoicePtr isChoice = toKnobChoice(_imp->knob);
         if (isColor || isDbl) {
             _imp->setKnobMinMax<double>(_imp->knob);
         } else if (isInt) {
@@ -1892,8 +1892,8 @@ AddKnobDialog::onOkClicked()
     bool startNewLine = _imp->startNewLineBox->isChecked();
     KnobIPtr parentKnob = _imp->knob->getParentKnob();
     if (parentKnob) {
-        KnobGroupPtr parentIsGrp = isKnobGroup(parentKnob);
-        KnobPagePtr parentIsPage = isKnobPage(parentKnob);
+        KnobGroupPtr parentIsGrp = toKnobGroup(parentKnob);
+        KnobPagePtr parentIsPage = toKnobPage(parentKnob);
         assert(parentIsGrp || parentIsPage);
         KnobsVec children;
         if (parentIsGrp) {

@@ -239,6 +239,18 @@ private:
     virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;
 };
 
+inline KnobGuiDoublePtr
+toKnobGuiDouble(const KnobGuiIPtr& knobGui)
+{
+    return boost::dynamic_pointer_cast<KnobGuiDouble>(knobGui);
+}
+
+inline KnobGuiIntPtr
+toKnobGuiInt(const KnobGuiIPtr& knobGui)
+{
+    return boost::dynamic_pointer_cast<KnobGuiInt>(knobGui);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 

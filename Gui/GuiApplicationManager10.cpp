@@ -107,7 +107,7 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr appInstance = isGuiAppInstance(*it);
+        GuiAppInstancePtr appInstance = toGuiAppInstance(*it);
         if (appInstance) {
             Gui* gui = appInstance->getGui();
             assert(gui);
@@ -278,7 +278,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
     const AppInstanceVec & apps = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
-        GuiAppInstancePtr guiApp = isGuiAppInstance(*it);
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->setUndoRedoStackLimit(limit);
         }
@@ -361,7 +361,7 @@ void
 GuiApplicationManager::handleOpenFileRequest()
 {
     AppInstancePtr mainApp = getAppInstance(0);
-    GuiAppInstancePtr guiApp = isGuiAppInstance(mainApp);
+    GuiAppInstancePtr guiApp = toGuiAppInstance(mainApp);
 
     assert(guiApp);
     if (guiApp) {
@@ -388,7 +388,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
     std::list<GuiAppInstancePtr> guiApps;
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr app = isGuiAppInstance(*it);
+        GuiAppInstancePtr app = toGuiAppInstance(*it);
         if (app) {
             guiApps.push_back(app);
         }
@@ -406,7 +406,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         instances = getAppInstances();
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstancePtr ga = isGuiAppInstance(*it);
+            GuiAppInstancePtr ga = toGuiAppInstance(*it);
             if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
@@ -1026,7 +1026,7 @@ void
 GuiApplicationManager::showErrorLog()
 {
     hideSplashScreen();
-    GuiAppInstancePtr app = isGuiAppInstance( getTopLevelInstance() );
+    GuiAppInstancePtr app = toGuiAppInstance( getTopLevelInstance() );
     if (app) {
         app->getGui()->showErrorLog();
     }
@@ -1038,7 +1038,7 @@ GuiApplicationManager::clearLastRenderedTextures()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr guiApp = isGuiAppInstance(*it);
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->clearAllLastRenderedImages();
         }
@@ -1124,7 +1124,7 @@ GuiApplicationManager::reloadStylesheets()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr guiApp = isGuiAppInstance(*it);
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->reloadStylesheet();
         }
@@ -1137,7 +1137,7 @@ GuiApplicationManager::reloadScriptEditorFonts()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr guiApp = isGuiAppInstance(*it);
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->reloadScriptEditorFonts();
         }

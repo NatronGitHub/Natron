@@ -168,15 +168,15 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         break;
     }
     case eKnobClipBoardTypeCopyValue: {
-        KnobIntBasePtr isInt = isKnobIntBase( internalKnob );
-        KnobBoolBasePtr isBool = isKnobBoolBase( internalKnob );
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase( internalKnob );
-        KnobStringBasePtr isString = isKnobStringBase( internalKnob );
+        KnobIntBasePtr isInt = toKnobIntBase( internalKnob );
+        KnobBoolBasePtr isBool = toKnobBoolBase( internalKnob );
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase( internalKnob );
+        KnobStringBasePtr isString = toKnobStringBase( internalKnob );
 
-        KnobIntBasePtr isFromInt = isKnobIntBase( serializedKnob );
-        KnobBoolBasePtr isFromBool = isKnobBoolBase( serializedKnob );
-        KnobDoubleBasePtr isFromDouble = isKnobDoubleBase( serializedKnob );
-        KnobStringBasePtr isFromString = isKnobStringBase( serializedKnob );
+        KnobIntBasePtr isFromInt = toKnobIntBase( serializedKnob );
+        KnobBoolBasePtr isFromBool = toKnobBoolBase( serializedKnob );
+        KnobDoubleBasePtr isFromDouble = toKnobDoubleBase( serializedKnob );
+        KnobStringBasePtr isFromString = toKnobStringBase( serializedKnob );
 
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
@@ -247,7 +247,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
     vlist.push_back(v);
 
     KnobHolderPtr holder = knob->getKnob()->getHolder();
-    EffectInstancePtr effect = isEffectInstance(holder);
+    EffectInstancePtr effect = toEffectInstance(holder);
     QString holderName;
     if (effect) {
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
@@ -321,10 +321,10 @@ MultipleKnobEditsUndoCommand::undo()
             continue;
         }
         knob->beginChanges();
-        KnobIntBasePtr isInt = isKnobIntBase(knob);
-        KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-        KnobStringBasePtr isString = isKnobStringBase(knob);
+        KnobIntBasePtr isInt = toKnobIntBase(knob);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+        KnobStringBasePtr isString = toKnobStringBase(knob);
         KeyFrame k;
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
@@ -390,10 +390,10 @@ MultipleKnobEditsUndoCommand::redo()
             continue;
         }
         knob->beginChanges();
-        KnobIntBasePtr isInt = isKnobIntBase(knob);
-        KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-        KnobStringBasePtr isString = isKnobStringBase(knob);
+        KnobIntBasePtr isInt = toKnobIntBase(knob);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+        KnobStringBasePtr isString = toKnobStringBase(knob);
 
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KeyFrame k;
@@ -577,7 +577,7 @@ RestoreDefaultsCommand::redo()
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app;
     KnobHolderPtr holder = first->getHolder();
-    EffectInstancePtr isEffect = isEffectInstance(holder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
 
     if (holder) {
         app = holder->getApp();

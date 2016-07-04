@@ -306,7 +306,7 @@ NodeCollection::hasNodeRendering() const
                     return true;
                 }
             } else {
-                OutputEffectInstancePtr effect = isOutputEffectInstance( (*it)->getEffectInstance() );
+                OutputEffectInstancePtr effect = toOutputEffectInstance( (*it)->getEffectInstance() );
                 if ( effect && effect->getRenderEngine()->hasThreadsWorking() ) {
                     return true;
                 }
@@ -798,8 +798,8 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = isKnobStringBase(knobs[j]);
-                KnobStringPtr isStringKnob = isKnobString(isString);
+                KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
+                KnobStringPtr isStringKnob = toKnobString(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
@@ -834,8 +834,8 @@ NodeCollection::fixPathName(const std::string& oldName,
         if ( (*it)->isActivated() ) {
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = isKnobStringBase(knobs[j]);
-                KnobStringPtr isStringKnob = isKnobString(isString);
+                KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
+                KnobStringPtr isStringKnob = toKnobString(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
@@ -1171,7 +1171,7 @@ NodeGroup::isInputOptional(int inputNb) const
     if (!knob) {
         return false;
     }
-    KnobBoolPtr isBool = isKnobBool(knob);
+    KnobBoolPtr isBool = toKnobBool(knob);
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
@@ -1215,7 +1215,7 @@ NodeGroup::isInputMask(int inputNb) const
     if (!knob) {
         return false;
     }
-    KnobBoolPtr isBool = isKnobBool(knob);
+    KnobBoolPtr isBool = toKnobBool(knob);
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
@@ -1227,7 +1227,7 @@ NodeGroup::initializeKnobs()
     KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
 
     assert(nodePage);
-    KnobPagePtr isPage = isKnobPage(nodePage);
+    KnobPagePtr isPage = toKnobPage(nodePage);
     assert(isPage);
     _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Export as PyPlug") );
     _imp->exportAsTemplate->setName("exportAsPyPlug");
@@ -1267,7 +1267,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
             ///The input must have been tracked before
             assert(false);
         }
-        GroupOutputPtr isOutput = isGroupOutput( node->getEffectInstance() );
+        GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
                 if (it->lock()->getEffectInstance() == isOutput) {
@@ -1312,7 +1312,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
             _imp->guiInputs.push_back(node);
             thisNode->initializeInputs();
         }
-        GroupOutputPtr isOutput = isGroupOutput( node->getEffectInstance() );
+        GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             _imp->outputs.push_back(node);
             _imp->guiOutputs.push_back(node);
@@ -1595,15 +1595,15 @@ exportKnobValues(int indentLevel,
 {
     bool hasExportedValue = false;
 
-    KnobStringBasePtr isStr = isKnobStringBase(knob);
+    KnobStringBasePtr isStr = toKnobStringBase(knob);
     AnimatingKnobStringHelperPtr isAnimatedStr = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-    KnobIntBasePtr isInt = isKnobIntBase(knob);
-    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-    KnobParametricPtr isParametric = isKnobParametric(knob);
-    KnobChoicePtr isChoice = isKnobChoice(knob);
-    KnobGroupPtr isGrp = isKnobGroup(knob);
-    KnobStringPtr isStringKnob = isKnobString(knob);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+    KnobParametricPtr isParametric = toKnobParametric(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobGroupPtr isGrp = toKnobGroup(knob);
+    KnobStringPtr isStringKnob = toKnobString(knob);
 
     ///Don't export this kind of parameter. Mainly this is the html label of the node which is 99% of times empty
     if ( isStringKnob &&
@@ -1615,7 +1615,7 @@ exportKnobValues(int indentLevel,
         return false;
     }
 
-    EffectInstancePtr holderIsEffect = isEffectInstance( knob->getHolder() );
+    EffectInstancePtr holderIsEffect = toEffectInstance( knob->getHolder() );
 
     if (isChoice && holderIsEffect) {
         //Do not serialize mask channel selector if the mask is not enabled
@@ -1845,19 +1845,19 @@ exportUserKnob(int indentLevel,
                KnobPagePtr page,
                QTextStream& ts)
 {
-    KnobIntPtr isInt = isKnobInt(knob);
-    KnobDoublePtr isDouble = isKnobDouble(knob);
-    KnobBoolPtr isBool = isKnobBool(knob);
-    KnobChoicePtr isChoice = isKnobChoice(knob);
-    KnobColorPtr isColor = isKnobColor(knob);
-    KnobStringPtr isStr = isKnobString(knob);
-    KnobFilePtr isFile = isKnobFile(knob);
-    KnobOutputFilePtr isOutFile = isKnobOutputFile(knob);
-    KnobPathPtr isPath = isKnobPath(knob);
-    KnobGroupPtr isGrp = isKnobGroup(knob);
-    KnobButtonPtr isButton = isKnobButton(knob);
+    KnobIntPtr isInt = toKnobInt(knob);
+    KnobDoublePtr isDouble = toKnobDouble(knob);
+    KnobBoolPtr isBool = toKnobBool(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobColorPtr isColor = toKnobColor(knob);
+    KnobStringPtr isStr = toKnobString(knob);
+    KnobFilePtr isFile = toKnobFile(knob);
+    KnobOutputFilePtr isOutFile = toKnobOutputFile(knob);
+    KnobPathPtr isPath = toKnobPath(knob);
+    KnobGroupPtr isGrp = toKnobGroup(knob);
+    KnobButtonPtr isButton = toKnobButton(knob);
     KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
-    KnobParametricPtr isParametric = isKnobParametric(knob);
+    KnobParametricPtr isParametric = toKnobParametric(knob);
     boost::shared_ptr<KnobI > aliasedParam;
     {
         KnobI::ListenerDimsMap listeners;
@@ -1983,7 +1983,7 @@ exportUserKnob(int indentLevel,
                                                  ESC( isChoice->getName() ) +
                                                  QString::fromUtf8(", ") + ESC( isChoice->getLabel() ) + QString::fromUtf8(")") );
 
-        KnobChoicePtr aliasedIsChoice = isKnobChoice(aliasedParam);
+        KnobChoicePtr aliasedIsChoice = toKnobChoice(aliasedParam);
 
         if (!aliasedIsChoice) {
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
@@ -2246,8 +2246,8 @@ exportRotoLayer(int indentLevel,
     QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
     for (std::list<RotoItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        RotoLayerPtr isLayer = toRotoLayer(*it);
+        BezierPtr isBezier = toBezier(*it);
 
         if (isBezier) {
             double time;
@@ -2362,7 +2362,7 @@ exportAllNodeKnobs(int indentLevel,
         }
 
         if ( (*it2)->isUserKnob() ) {
-            KnobPagePtr isPage = isKnobPage(*it2);
+            KnobPagePtr isPage = toKnobPage(*it2);
             if (isPage) {
                 userPages.push_back(isPage);
             }
@@ -2453,7 +2453,7 @@ exportKnobLinks(int indentLevel,
             }
             hasExportedLink = true;
 
-            EffectInstancePtr aliasHolder = isEffectInstance( alias->getHolder() );
+            EffectInstancePtr aliasHolder = toEffectInstance( alias->getHolder() );
             assert(aliasHolder);
             if (!aliasHolder) {
                 throw std::logic_error("exportKnobLinks");
@@ -2491,7 +2491,7 @@ exportKnobLinks(int indentLevel,
                     }
                     hasExportedLink = true;
 
-                    EffectInstancePtr masterHolder = isEffectInstance( master.second->getHolder() );
+                    EffectInstancePtr masterHolder = toEffectInstance( master.second->getHolder() );
                     assert(masterHolder);
                     if (!masterHolder) {
                         throw std::logic_error("exportKnobLinks");

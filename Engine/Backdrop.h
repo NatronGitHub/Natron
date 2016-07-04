@@ -94,7 +94,7 @@ private:
 };
 
 inline BackdropPtr
-isBackdrop(const EffectInstancePtr& effect)
+toBackdrop(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<Backdrop>(effect);
 }

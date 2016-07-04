@@ -74,7 +74,7 @@ public:
         if (!app) {
             return 0;
         }
-        GuiAppInstancePtr guiApp = isGuiAppInstance(app);
+        GuiAppInstancePtr guiApp = toGuiAppInstance(app);
         if (!guiApp) {
             return 0;
         }

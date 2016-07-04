@@ -1016,7 +1016,7 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
         KnobIPtr hasParent = pageKnob->getParentKnob();
         KnobPagePtr parentPage;
         if (hasParent) {
-            parentPage = isKnobPage(hasParent);
+            parentPage = toKnobPage(hasParent);
             if (parentPage) {
                 // look in the tabs if it is created
                 for (std::size_t i = 0; i < tabs.size(); ++i) {

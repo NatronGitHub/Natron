@@ -246,7 +246,7 @@ private:
 };
 
 inline TrackMarkerPtr
-isTrackMarker(const KnobHolderPtr& holder)
+toTrackMarker(const KnobHolderPtr& holder)
 {
     return boost::dynamic_pointer_cast<TrackMarker>(holder);
 }
@@ -294,7 +294,7 @@ private:
 };
 
 inline TrackMarkerPMPtr
-isTrackMarkerPM(const KnobHolderPtr& holder)
+toTrackMarkerPM(const KnobHolderPtr& holder)
 {
     return boost::dynamic_pointer_cast<TrackMarkerPM>(holder);
 }

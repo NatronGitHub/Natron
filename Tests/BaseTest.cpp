@@ -234,7 +234,7 @@ TEST_F(BaseTest, GenerateDot)
 
     KnobIPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE(frameRange);
-    KnobIntPtr knob = isKnobInt(frameRange);
+    KnobIntPtr knob = toKnobInt(frameRange);
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);
     knob->setValue(1, ViewSpec::all(), 1);
@@ -252,7 +252,7 @@ TEST_F(BaseTest, GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = isOutputEffectInstance( writer->getEffectInstance() );
+    w.writer = toOutputEffectInstance( writer->getEffectInstance() );
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;

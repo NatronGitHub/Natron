@@ -144,14 +144,14 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
-    EffectInstancePtr isEffect = isEffectInstance( from->getKnob()->getHolder() );
+    EffectInstancePtr isEffect = toEffectInstance( from->getKnob()->getHolder() );
     assert(isEffect);
     if (!isEffect) {
         throw std::logic_error("");
     }
     NodeCollectionPtr group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
-    NodeGroupPtr isGroup = isNodeGroup( group );
+    NodeGroupPtr isGroup = toNodeGroup( group );
     if (isGroup) {
         _imp->allNodes.push_back( isGroup->getNode() );
     }
@@ -204,9 +204,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     KnobIPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
-            KnobButtonPtr isButton = isKnobButton(knobs[j]);
-            KnobPagePtr isPage = isKnobPage(knobs[j]);
-            KnobGroupPtr isGroup = isKnobGroup(knobs[j]);
+            KnobButtonPtr isButton = toKnobButton(knobs[j]);
+            KnobPagePtr isPage = toKnobPage(knobs[j]);
+            KnobGroupPtr isGroup = toKnobGroup(knobs[j]);
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;

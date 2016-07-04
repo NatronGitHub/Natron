@@ -502,14 +502,14 @@ DSKnobPtr DopeSheet::findDSKnob(const KnobGuiConstPtr& knobGui) const
 bool
 DopeSheet::isPartOfGroup(const DSNodePtr& dsNode) const
 {
-    NodeGroupPtr parentGroup = isNodeGroup( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = toNodeGroup( dsNode->getInternalNode()->getGroup() );
 
     return (parentGroup);
 }
 
 DSNodePtr DopeSheet::getGroupDSNode(const DSNodePtr& dsNode) const
 {
-    NodeGroupPtr parentGroup = isNodeGroup( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = toNodeGroup( dsNode->getInternalNode()->getGroup() );
     DSNodePtr parentGroupDSNode;
 
     if (parentGroup) {

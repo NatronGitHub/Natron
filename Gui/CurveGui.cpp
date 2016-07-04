@@ -280,7 +280,7 @@ CurveGui::drawCurve(int curveIndex,
     double x2;
     const double widgetWidth = _curveWidget->width();
     KeyFrameSet keyframes;
-    BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(this);
+    BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>(this);
     KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(this);
     bool hasDrawnExpr = false;
     if (isKnobCurve) {
@@ -300,9 +300,9 @@ CurveGui::drawCurve(int curveIndex,
         }
     }
 
-    if (isBezier) {
+    if (isBezierGui) {
         std::set<double> keys;
-        isBezier->getBezier()->getKeyframeTimes(&keys);
+        isBezierGui->getBezier()->getKeyframeTimes(&keys);
         int i = 0;
         for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
             keyframes.insert( KeyFrame(*it, i) );
@@ -358,7 +358,7 @@ CurveGui::drawCurve(int curveIndex,
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
-        if (!isBezier && _selected) {
+        if (!isBezierGui && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
             if ( (curveYRange.min != INT_MIN && curveYRange.min != !std::numeric_limits<double>::infinity()) && (curveYRange.max != INT_MAX && curveYRange.max != std::numeric_limits<double>::infinity()) ) {
@@ -464,7 +464,7 @@ CurveGui::drawCurve(int curveIndex,
             glVertex2f(x, y);
             glEnd();
 
-            if ( !isBezier && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            if ( !isBezierGui && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 QFontMetrics m( _curveWidget->getFont() );
 
 
@@ -518,7 +518,7 @@ CurveGui::drawCurve(int curveIndex,
                 glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
                 glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
                 glEnd();
-            } // if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            } // if ( !isBezierGui && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
         } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
     } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
@@ -644,7 +644,7 @@ KnobCurveGui::evaluate(bool useExpr,
     if (useExpr) {
         return knob->getValueAtWithExpression(x, ViewIdx(0), _dimension);
     } else {
-        KnobParametricPtr isParametric = isKnobParametric(knob);
+        KnobParametricPtr isParametric = toKnobParametric(knob);
         if (isParametric) {
             return isParametric->getParametricCurve(_dimension)->getValueAt(x);
         } else {
@@ -659,7 +659,7 @@ CurvePtr
 KnobCurveGui::getInternalCurve() const
 {
     KnobIPtr knob = getInternalKnob();
-    KnobParametricPtr isParametric = isKnobParametric(knob);
+    KnobParametricPtr isParametric = toKnobParametric(knob);
 
     if (!knob || !isParametric) {
         return CurveGui::getInternalCurve();

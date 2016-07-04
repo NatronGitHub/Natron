@@ -938,7 +938,7 @@ CurveEditor::findCurve(const KnobGuiPtr& knob,
     KnobHolderPtr holder = knob->getKnob()->getHolder();
 
     assert(holder);
-    EffectInstancePtr effect = isEffectInstance(holder);
+    EffectInstancePtr effect = toEffectInstance(holder);
     assert(effect);
 
     std::list<CurveGuiPtr > ret;
@@ -1073,13 +1073,13 @@ struct RotoItemEditorContextPrivate
 {
     CurveEditor* widget;
     RotoCurveEditorContext* context;
-    boost::shared_ptr<RotoDrawableItem> curve;
+    RotoDrawableItemPtr curve;
     QTreeWidgetItem* nameItem;
     std::list<NodeCurveEditorElement*> knobs;
     bool doDeleteItem;
 
     RotoItemEditorContextPrivate(CurveEditor* widget,
-                                 const boost::shared_ptr<RotoDrawableItem>& curve,
+                                 const RotoDrawableItemPtr& curve,
                                  RotoCurveEditorContext* context)
         : widget(widget)
         , context(context)
@@ -1093,7 +1093,7 @@ struct RotoItemEditorContextPrivate
 
 RotoItemEditorContext::RotoItemEditorContext(QTreeWidget* tree,
                                              CurveEditor* widget,
-                                             const boost::shared_ptr<RotoDrawableItem>& curve,
+                                             const RotoDrawableItemPtr& curve,
                                              RotoCurveEditorContext* context)
     : _imp( new RotoItemEditorContextPrivate(widget, curve, context) )
 {
@@ -1129,7 +1129,7 @@ RotoItemEditorContext::preventItemDeletion()
     _imp->doDeleteItem = false;
 }
 
-boost::shared_ptr<RotoDrawableItem>
+RotoDrawableItemPtr
 RotoItemEditorContext::getRotoItem() const
 {
     return _imp->curve;
@@ -1357,13 +1357,13 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
                       SLOT(onItemRemoved(RotoItemPtr,int)) );
     QObject::connect( rotoCtx.get(), SIGNAL(itemInserted(int,int)), this, SLOT(itemInserted(int,int)) );
     QObject::connect( rotoCtx.get(), SIGNAL(itemLabelChanged(RotoItemPtr)), this, SLOT(onItemNameChanged(RotoItemPtr)) );
-    std::list<boost::shared_ptr<RotoDrawableItem> > curves = rotoCtx->getCurvesByRenderOrder();
+    std::list<RotoDrawableItemPtr > curves = rotoCtx->getCurvesByRenderOrder();
 
-    for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = curves.begin(); it != curves.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
-        if (isBezier) {
-            BezierEditorContext* c = new BezierEditorContext(tree, widget, isBezier, this);
+    for (std::list<RotoDrawableItemPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
+        BezierPtr isBezierItem = toBezier(*it);
+        RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
+        if (isBezierItem) {
+            BezierEditorContext* c = new BezierEditorContext(tree, widget, isBezierItem, this);
             _imp->curves.push_back(c);
         } else if (isStroke) {
             RotoItemEditorContext* c = new RotoItemEditorContext(tree, widget, isStroke, this);
@@ -1460,8 +1460,8 @@ RotoCurveEditorContext::itemInserted(int,
 
     assert(roto);
     RotoItemPtr item = roto->getLastInsertedItem();
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    BezierPtr isBezier = toBezier(item);
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
     if (isBezier) {
         BezierEditorContext* b = new BezierEditorContext(_imp->tree, _imp->widget, isBezier, this);
         _imp->curves.push_back(b);
@@ -1504,7 +1504,7 @@ RotoCurveEditorContext::findElement(const KnobGuiPtr& knob,
         return ret;
     }
 
-    EffectInstancePtr effect = isEffectInstance(holder);
+    EffectInstancePtr effect = toEffectInstance(holder);
     if (!effect) {
         return ret;
     }
@@ -1514,10 +1514,10 @@ RotoCurveEditorContext::findElement(const KnobGuiPtr& knob,
         return ret;
     }
 
-    std::list<boost::shared_ptr<RotoDrawableItem> > selectedBeziers = roto->getSelectedCurves();
+    std::list<RotoDrawableItemPtr > selectedBeziers = roto->getSelectedCurves();
 
     for (std::list<RotoItemEditorContext*>::const_iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
-        for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it2 = selectedBeziers.begin(); it2 != selectedBeziers.end(); ++it2) {
+        for (std::list<RotoDrawableItemPtr >::iterator it2 = selectedBeziers.begin(); it2 != selectedBeziers.end(); ++it2) {
             if ( *it2 == (*it)->getRotoItem() ) {
                 NodeCurveEditorElement* found = (*it)->findElement(knob, dimension);
                 if (found) {
@@ -1602,7 +1602,7 @@ CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
         assert(knob);
         KnobHolderPtr holder = knob->getHolder();
         if (holder) {
-            EffectInstancePtr effect = isEffectInstance(holder);
+            EffectInstancePtr effect = toEffectInstance(holder);
             assert(effect);
             if (effect) {
                 ss << effect->getNode()->getFullyQualifiedName();

@@ -142,7 +142,7 @@ private:
 };
 
 inline RotoSmearPtr
-isRotoSmear(const EffectInstancePtr& effect)
+toRotoSmear(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<RotoSmear>(effect);
 }

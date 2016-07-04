@@ -137,7 +137,7 @@ private:
 };
 
 inline JoinViewsNodePtr
-isJoinViewsNode(const EffectInstancePtr& effect)
+toJoinViewsNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<JoinViewsNode>(effect);
 }

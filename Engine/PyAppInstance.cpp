@@ -76,7 +76,7 @@ App::getCollectionFromGroup(Group* group) const
         } else if (isEffect) {
             NodePtr node = isEffect->getInternalNode();
             assert(node);
-            NodeGroupPtr isGrp = isNodeGroup( node->getEffectInstance()->shared_from_this() );
+            NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {
@@ -309,7 +309,7 @@ App::renderInternal(bool forceBlocking,
 
         return;
     }
-    w.writer = isOutputEffectInstance( node->getEffectInstance() );
+    w.writer = toOutputEffectInstance( node->getEffectInstance() );
     if (!w.writer) {
         std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
@@ -353,7 +353,7 @@ App::renderInternal(bool forceBlocking,
 
             return;
         }
-        w.writer = isOutputEffectInstance( node->getEffectInstance() );
+        w.writer = toOutputEffectInstance( node->getEffectInstance() );
         if ( !w.writer || !w.writer->isOutput() ) {
             std::cerr << tr("Invalid write node").toStdString() << std::endl;
 

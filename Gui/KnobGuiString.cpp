@@ -368,7 +368,7 @@ KnobGuiString::KnobGuiString(KnobIPtr knob,
     , _boldActivated(false)
     , _italicActivated(false)
 {
-    _knob = isKnobString(knob);
+    _knob = toKnobString(knob);
 }
 
 void

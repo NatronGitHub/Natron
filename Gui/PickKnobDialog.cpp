@@ -101,7 +101,7 @@ struct PickKnobDialogPrivate
         if (!selectedKnob) {
             return;
         }
-        KnobParametricPtr isParametric = isKnobParametric( selectedKnob->getKnob() );
+        KnobParametricPtr isParametric = toKnobParametric( selectedKnob->getKnob() );
         if (isParametric) {
             useAliasCheckBox->setChecked(true);
         }
@@ -143,7 +143,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     NodePtr node = nodeGui->getNode();
     NodeGroupPtr isGroup = node->isEffectNodeGroup();
     NodeCollectionPtr collec = node->getGroup();
-    NodeGroupPtr isCollecGroup = isNodeGroup(collec);
+    NodeGroupPtr isCollecGroup = toNodeGroup(collec);
     NodesList collectNodes = collec->getNodes();
     for (NodesList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
         if ( !(*it)->getParentMultiInstance() && (*it)->isActivated() && ( (*it)->getKnobs().size() > 0 ) ) {
@@ -199,12 +199,12 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     const KnobsVec& knobs = node->getKnobs();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isUserKnob() ) {
-            KnobPagePtr isPage = isKnobPage(knobs[i]);
+            KnobPagePtr isPage = toKnobPage(knobs[i]);
             if (isPage) {
                 _imp->pages.push_back(isPage);
                 _imp->destPageCombo->addItem( QString::fromUtf8( isPage->getName().c_str() ) );
             } else {
-                KnobGroupPtr isGrp = isKnobGroup(knobs[i]);
+                KnobGroupPtr isGrp = toKnobGroup(knobs[i]);
                 if (isGrp) {
                     _imp->groups.push_back(isGrp);
                 }
@@ -337,8 +337,8 @@ PickKnobDialog::onNodeComboEditingFinished()
     const std::vector< KnobIPtr > & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() ) {
-            KnobPagePtr isPage = isKnobPage(knobs[j]);
-            KnobGroupPtr isGroup = isKnobGroup(knobs[j]);
+            KnobPagePtr isPage = toKnobPage(knobs[j]);
+            KnobGroupPtr isGroup = toKnobGroup(knobs[j]);
             if (!isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;

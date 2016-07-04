@@ -128,7 +128,7 @@ void
 TabGroup::removeTab(const KnobGroupPtr& group)
 {
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
-        if (_imp->tabs[i].groupKnob.lock().get() == group) {
+        if (_imp->tabs[i].groupKnob.lock() == group) {
             _imp->tabWidget->removeTab(i);
             _imp->tabs.erase(_imp->tabs.begin() + i);
         }
@@ -143,7 +143,7 @@ TabGroup::refreshTabSecretNess(const KnobGroupPtr& groupKnob,
     bool oneVisible = false;
 
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
-        if (_imp->tabs[i].groupKnob.lock().get() == groupKnob) {
+        if (_imp->tabs[i].groupKnob.lock() == groupKnob) {
             _imp->tabs[i].visible = isVisible;
             if (!isVisible) {
                 _imp->tabs[i].tab->hide();
@@ -184,7 +184,7 @@ TabGroup::onGroupKnobSecretChanged()
         return;
     }
 
-    KnobGroupPtr groupKnob = isKnobGroup(knob);
+    KnobGroupPtr groupKnob = toKnobGroup(knob);
     if (!groupKnob) {
         return;
     }

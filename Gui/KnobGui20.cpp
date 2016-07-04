@@ -283,7 +283,7 @@ KnobGui::linkTo(int dimension)
     KnobIPtr thisKnob = getKnob();
 
     assert(thisKnob);
-    EffectInstancePtr isEffect = isEffectInstance( thisKnob->getHolder() );
+    EffectInstancePtr isEffect = toEffectInstance( thisKnob->getHolder() );
     if (!isEffect) {
         return;
     }
@@ -325,14 +325,14 @@ KnobGui::linkTo(int dimension)
                 }
             }
 
-            EffectInstancePtr otherEffect = isEffectInstance( otherKnob->getHolder() );
+            EffectInstancePtr otherEffect = toEffectInstance( otherKnob->getHolder() );
             if (!otherEffect) {
                 return;
             }
 
             std::stringstream expr;
             NodeCollectionPtr thisCollection = isEffect->getNode()->getGroup();
-            NodeGroupPtr otherIsGroup = isNodeGroup(otherEffect);
+            NodeGroupPtr otherIsGroup = toNodeGroup(otherEffect);
             if ( otherIsGroup == thisCollection ) {
                 expr << "thisGroup"; // make expression generic if possible
             } else {
@@ -381,10 +381,10 @@ void
 KnobGui::resetDefault(int dimension)
 {
     KnobIPtr knob = getKnob();
-    KnobButtonPtr isBtn = isKnobButton(knob);
-    KnobPagePtr isPage = isKnobPage(knob);
-    KnobGroupPtr isGroup = isKnobGroup(knob);
-    KnobSeparatorPtr isSeparator = isKnobSeparator(knob);
+    KnobButtonPtr isBtn = toKnobButton(knob);
+    KnobPagePtr isPage = toKnobPage(knob);
+    KnobGroupPtr isGroup = toKnobGroup(knob);
+    KnobSeparatorPtr isSeparator = toKnobSeparator(knob);
 
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<KnobIPtr > knobs;
@@ -456,10 +456,10 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
 {
     KnobIPtr knob = getKnob();
 
-    KnobIntBasePtr isInt = isKnobIntBase(knob);
-    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
-    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
-    KnobStringBasePtr isString = isKnobStringBase(knob);
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobStringBasePtr isString = toKnobStringBase(knob);
 
     if (isInt) {
         pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), isInt->getValue(dim), v.toInt(), dim) );
@@ -748,7 +748,7 @@ void
 KnobGui::onFrozenChanged(bool frozen)
 {
     KnobIPtr knob = getKnob();
-    KnobButtonPtr isBtn = isKnobButton(knob);
+    KnobButtonPtr isBtn = toKnobButton(knob);
 
     if ( isBtn && !isBtn->isRenderButton() ) {
         return;

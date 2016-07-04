@@ -213,44 +213,44 @@ Curve::Curve(const KnobIPtr& owner,
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
     bool found = false;
     // use RTTI to guess curve type
-    if ( !found && isKnobDouble(owner) ) {
+    if ( !found && toKnobDouble(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeDouble;
         found = true;
     }
-    if ( !found && isKnobColor(owner) ) {
+    if ( !found && toKnobColor(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeDouble;
         found = true;
     }
-    if ( !found && isKnobInt(owner) ) {
+    if ( !found && toKnobInt(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeInt;
         found = true;
     }
-    if ( !found && isKnobChoice(owner) ) {
+    if ( !found && toKnobChoice(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
         found = true;
     }
-    if ( !found && isKnobString(owner) ) {
+    if ( !found && toKnobString(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeString;
         found = true;
     }
-    if ( !found && isKnobFile(owner) ) {
+    if ( !found && toKnobFile(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeString;
         found = true;
     }
-    if ( !found && isKnobOutputFile(owner) ) {
+    if ( !found && toKnobOutputFile(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeString;
         found = true;
     }
-    if ( !found && isKnobPath(owner) ) {
+    if ( !found && toKnobPath(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeString;
         found = true;
     }
-    if ( !found && isKnobBool(owner) ) {
+    if ( !found && toKnobBool(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeBool;
         found = true;
     }
     
-    if ( !found && isKnobParametric(owner) ) {
+    if ( !found && toKnobParametric(owner) ) {
         _imp->isParametric = true;
         found = true;
     }
@@ -1014,8 +1014,8 @@ Curve::YRange Curve::getCurveYRange() const
     }
     KnobIPtr owner = _imp->owner.lock();
     if (owner) {
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase(owner);
-        KnobIntBasePtr isInt = isKnobIntBase(owner);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(owner);
+        KnobIntBasePtr isInt = toKnobIntBase(owner);
         if (isDouble) {
             double min = isDouble->getMinimum(_imp->dimensionInOwner);
             if (min <= -DBL_MAX) {
