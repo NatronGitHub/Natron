@@ -543,7 +543,11 @@ OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
                                , int height
                                , void* buffer)
 {
-    assert(_imp && (_imp->_platformContext || _imp->_osmesaContext));
+    assert(_imp && (_imp->_platformContext
+#ifdef HAVE_OSMESA
+                    || _imp->_osmesaContext
+#endif
+                    ));
 
     QMutexLocker k(&_imp->renderOwningContextMutex);
     while (_imp->renderOwningContext && _imp->renderOwningContext != abortInfo) {
