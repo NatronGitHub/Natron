@@ -14,7 +14,16 @@ Natron will work on Windows 7, 8.x, 10 with latest updates.
 The basic requirements are:
 
  * x86 compatible CPU (Core2 x86_64 or higher recommended)
- * OpenGL 1.5 compatible graphics card (OpenGL 2.0 or higher recommended)
+ * OpenGL 2.0 or higher with the following extensions:
+    * **GL_ARB_texture_non_power_of_two** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_vertex_array_object** or GL_APPLE_vertex_array_object *(OpenGL rendering only)*
+    * **GL_ARB_framebuffer_object** or GL_EXT_framebuffer_object *(OpenGL rendering only)*
+    * **GL_ARB_texture_float** *(OpenGL rendering only)*
+
+If you don't have the minimum required OpenGL extensions we provide a Software OpenGL solution, install the package *Software OpenGL* from the installer. If you have the portable ZIP file copy *bin\\mesa\\opengl32.dll* to *bin\\*.
 
 Download
 --------
