@@ -1311,6 +1311,12 @@ RotoDrawableItem::getLifeTimeFrameKnob() const
     return _imp->lifeTimeFrame;
 }
 
+boost::shared_ptr<KnobChoice>
+RotoDrawableItem::getFallOffRampTypeKnob() const
+{
+    return _imp->fallOffRampType;
+}
+
 boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getMotionBlurAmountKnob() const
 {

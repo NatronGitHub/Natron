@@ -3779,6 +3779,7 @@ void renderBezier_gl_internal_begin(const OSGLContextPtr& glContext, const Image
     glCheckError(GL);
 
     GL::glEnable(GL_BLEND);
+    GL::glBlendEquation(GL_MAX);
     GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
@@ -3797,7 +3798,7 @@ void renderBezier_gl_internal_end(const ImagePtr& image)
 }
 
 template <typename GL>
-void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int vboColorsID, int iboID, unsigned int primitiveType, const void* verticesData, const void* colorsData, const void* idsData, bool uploadVertices = true)
+void renderBezier_gl_singleDrawElements(int nbVertices, int nbIds, int vboVerticesID, int vboColorsID, int iboID, unsigned int primitiveType, const void* verticesData, const void* colorsData, const void* idsData, bool uploadVertices = true)
 {
 
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
@@ -3818,7 +3819,7 @@ void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int 
     GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
 
 
-    GL::glDrawElements(primitiveType, nbIds * sizeof(GLuint), GL_UNSIGNED_INT, 0);
+    GL::glDrawElements(primitiveType, nbIds, GL_UNSIGNED_INT, 0);
 
     GL::glDisableClientState(GL_COLOR_ARRAY);
     GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3827,6 +3828,28 @@ void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int 
     GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError(GL);
 
+}
+
+template <typename GL>
+void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsigned int primitiveType, const void* verticesData, const int* perDrawCount, const void** perDrawIdsPtr, int drawCount, bool uploadVertices = true)
+{
+
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    if (uploadVertices) {
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+    }
+    GL::glEnableClientState(GL_VERTEX_ARRAY);
+    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+
+    GL::glMultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
+
+    GL::glDisableClientState(GL_COLOR_ARRAY);
+    GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GL::glDisableClientState(GL_VERTEX_ARRAY);
+
+    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glCheckError(GL);
+    
 }
 
 
@@ -3848,7 +3871,11 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
 
     double shapeOpacity = opacity * mbOpacity;
 
-    OSGLContext::RampTypeEnum type = OSGLContext::eRampTypeLinear;
+    OSGLContext::RampTypeEnum type;
+    {
+        boost::shared_ptr<KnobChoice> typeKnob = bezier->getFallOffRampTypeKnob();
+        type = (OSGLContext::RampTypeEnum)typeKnob->getValue();
+    }
     boost::shared_ptr<GLShaderBase> rampShader;
     boost::shared_ptr<GLShaderBase> fillShader;
     if (glContext->isGPUContext()) {
@@ -3906,7 +3933,10 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
             float* c_data = colorsArray.getData();
             unsigned int* i_data = indicesArray.getData();
 
-            for (std::size_t i = 0; i < data.featherMesh.size(); ++i) {
+            for (std::size_t i = 0; i < data.featherMesh.size(); ++i,
+                 v_data += 2,
+                 c_data += 4,
+                 ++i_data) {
                 v_data[0] = data.featherMesh[i].x;
                 v_data[1] = data.featherMesh[i].y;
                 i_data[0] = i;
@@ -3919,16 +3949,12 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
                 } else {
                     c_data[3] = 0.;
                 }
-
-                v_data += 2;
-                c_data += 4;
-                ++i_data;
             }
 
             if (glContext->isGPUContext()) {
-                renderBezier_gl_internal<GL_GPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
+                renderBezier_gl_singleDrawElements<GL_GPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
             } else {
-                renderBezier_gl_internal<GL_CPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
+                renderBezier_gl_singleDrawElements<GL_CPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
             }
         }
 
@@ -3942,69 +3968,78 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
         }
 
         verticesArray.resize(nbVertices * 2);
-        colorsArray.resize(nbVertices * 4);
 
 
         // Fill buffer
         float* v_data = verticesArray.getData();
-        float* c_data = colorsArray.getData();
-        for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i) {
+        for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i, v_data += 2) {
             v_data[0] = data.bezierPolygonJoined[i].x;
             v_data[1] = data.bezierPolygonJoined[i].y;
-
-            c_data[0] = shapeColor[0];
-            c_data[1] = shapeColor[1];
-            c_data[2] = shapeColor[2];
-            c_data[3] = shapeOpacity;
-
-
-            v_data += 2;
-            c_data += 4;
         }
 
         bool hasUploadedVertices = false;
         {
             // Render internal triangles
-            for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
-                int nbIds = data.internalTriangles[i].indices.size();
-                if (nbIds) {
-                    hasUploadedVertices = true;
-                    if (glContext->isGPUContext()) {
-                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalTriangles[i].indices[0]));
-                    } else {
-                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalTriangles[i].indices[0]));
-                    }
+            // Merge all set of GL_TRIANGLES into a single call of glMultiDrawElements
+            int drawCount = (int)data.internalTriangles.size();
+
+            if (drawCount) {
+                std::vector<const void*> perDrawsIDVec(drawCount);
+                std::vector<int> perDrawCount(drawCount);
+                for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalTriangles[i].indices[0]);
+                    perDrawCount[i] = (int)data.internalTriangles[i].indices.size();
                 }
+                if (glContext->isGPUContext()) {
+                    renderBezier_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
+                } else {
+                    renderBezier_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
+                }
+                hasUploadedVertices = true;
+
             }
+
 
         }
         {
             // Render internal triangle fans
-            for (std::size_t i = 0; i < data.internalFans.size(); ++i) {
-                int nbIds = data.internalFans[i].indices.size();
-                if (nbIds) {
-                    if (glContext->isGPUContext()) {
-                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), !hasUploadedVertices);
-                    } else {
-                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), !hasUploadedVertices);
-                    }
-                    hasUploadedVertices = true;
+
+            int drawCount = (int)data.internalFans.size();
+
+            if (drawCount) {
+                std::vector<const void*> perDrawsIDVec(drawCount);
+                std::vector<int> perDrawCount(drawCount);
+                for (std::size_t i = 0; i < data.internalFans.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalFans[i].indices[0]);
+                    perDrawCount[i] = (int)data.internalFans[i].indices.size();
                 }
+                if (glContext->isGPUContext()) {
+                    renderBezier_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
+                } else {
+                    renderBezier_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
+                }
+                hasUploadedVertices = true;
             }
 
         }
         {
             // Render internal triangle strips
-            for (std::size_t i = 0; i < data.internalStrips.size(); ++i) {
-                int nbIds = data.internalStrips[i].indices.size();
-                if (nbIds) {
-                    if (glContext->isGPUContext()) {
-                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), !hasUploadedVertices);
-                    } else {
-                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), !hasUploadedVertices);
-                    }
-                    hasUploadedVertices = true;
+
+            int drawCount = (int)data.internalStrips.size();
+
+            if (drawCount) {
+                std::vector<const void*> perDrawsIDVec(drawCount);
+                std::vector<int> perDrawCount(drawCount);
+                for (std::size_t i = 0; i < data.internalStrips.size(); ++i) {
+                    perDrawsIDVec[i] = (const void*)(&data.internalStrips[i].indices[0]);
+                    perDrawCount[i] = (int)data.internalStrips[i].indices.size();
                 }
+                if (glContext->isGPUContext()) {
+                    renderBezier_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
+                } else {
+                    renderBezier_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
+                }
+                hasUploadedVertices = true;
             }
 
         }
@@ -4077,9 +4112,9 @@ static void tess_vertex_callback(void* data /*per-vertex client data*/, void *po
            (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
            (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
 
-    int* p = (int*)data;
+    unsigned int* p = (unsigned int*)data;
     assert(p);
-    assert(*p >= 0 && *p < (int)myData->bezierPolygonJoined.size());
+    assert(*p >= 0 && *p < myData->bezierPolygonJoined.size());
 #ifndef NDEBUG
     assert(myData->bezierPolygonJoined[*p].x >= myData->bezierBbox.x1 && myData->bezierPolygonJoined[*p].x <= myData->bezierBbox.x2 &&
            myData->bezierPolygonJoined[*p].y >= myData->bezierBbox.y1 && myData->bezierPolygonJoined[*p].y <= myData->bezierBbox.y2);
@@ -4114,7 +4149,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
 
     assert(myData->bezierPolygonIndices.size() == myData->bezierPolygonJoined.size());
 
-    int* vertexData =  new int;
+    unsigned int* vertexData =  new unsigned int;
     *vertexData = myData->bezierPolygonJoined.size();
 
     myData->bezierPolygonIndices.push_back(vertexData);
@@ -4124,7 +4159,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
     new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
     new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
     new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
-    assert(*vertexData >= 0 && *vertexData < (int)myData->bezierPolygonIndices.size());
+    assert(*vertexData >= 0 && *vertexData < myData->bezierPolygonIndices.size());
     *dataOut = (void*)vertexData;
 
 }
@@ -4344,7 +4379,13 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
     // Join the internal polygon into a single vector of vertices now that we don't need per-bezier segments separation.
     // we will need the indices for libtess
     for (std::vector<std::vector<ParametricPoint> >::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it) {
-        outArgs->bezierPolygonJoined.insert(outArgs->bezierPolygonJoined.end(), it->begin(), it->end());
+
+        // don't add the first vertex which is the same as the last vertex of the last segment
+        std::vector<ParametricPoint>::const_iterator start = it->begin();
+        ++start;
+        outArgs->bezierPolygonJoined.insert(outArgs->bezierPolygonJoined.end(), start, it->end());
+
+
     }
     outArgs->bezierPolygon.clear();
 
@@ -4352,10 +4393,10 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
 
     for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
         double coords[3] = {outArgs->bezierPolygonJoined[i].x, outArgs->bezierPolygonJoined[i].y, 1.};
-        int* vertexData =  new int;
+        unsigned int* vertexData =  new unsigned int;
         *vertexData = i;
         outArgs->bezierPolygonIndices[i] = vertexData;
-        assert(*vertexData >= 0 && *vertexData < (int)outArgs->bezierPolygonJoined.size());
+        assert(*vertexData >= 0 && *vertexData < outArgs->bezierPolygonJoined.size());
         libtess_gluTessVertex(tesselator, coords, (void*)(vertexData) /*per-vertex client data*/);
     }
 
@@ -4383,7 +4424,7 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
 
         int c = 0;
         int coonsPatchStart = -1;
-        for (std::vector<int>::const_iterator it2 = it->indices.begin(); it2!=it->indices.end(); ++it2) {
+        for (std::vector<unsigned int>::const_iterator it2 = it->indices.begin(); it2!=it->indices.end(); ++it2) {
             if (c == 0) {
                 cairo_mesh_pattern_begin_patch(mesh);
                 cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*it2].x, inArgs.bezierPolygonJoined[*it2].y);
@@ -4419,14 +4460,14 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
     for (std::vector<RotoTriangleFans>::const_iterator it = inArgs.internalFans.begin(); it!=inArgs.internalFans.end(); ++it ) {
 
         assert(it->indices.size() >= 3);
-        std::vector<int>::const_iterator cur = it->indices.begin();
+        std::vector<unsigned int>::const_iterator cur = it->indices.begin();
         int fanStart = *cur;
         ++cur;
-        std::vector<int>::const_iterator next = cur;
+        std::vector<unsigned int>::const_iterator next = cur;
         ++next;
         for (;next != it->indices.end();) {
             cairo_mesh_pattern_begin_patch(mesh);
-            assert(fanStart < (int)inArgs.bezierPolygonJoined.size() && *cur < (int)inArgs.bezierPolygonJoined.size() && *next < (int)inArgs.bezierPolygonJoined.size());
+            assert(fanStart < inArgs.bezierPolygonJoined.size() && *cur < inArgs.bezierPolygonJoined.size() && *next < inArgs.bezierPolygonJoined.size());
             const ParametricPoint &p0 = inArgs.bezierPolygonJoined[fanStart];
             const ParametricPoint &p3 = p0;
             const ParametricPoint &p1 = inArgs.bezierPolygonJoined[*cur];
@@ -4459,13 +4500,13 @@ RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double 
 
         assert(it->indices.size() >= 3);
 
-        std::vector<int>::const_iterator cur = it->indices.begin();
+        std::vector<unsigned int>::const_iterator cur = it->indices.begin();
         int prevPrev = *cur;
         ++cur;
         int prev = *cur;
         ++cur;
         for (; cur != it->indices.end(); ++cur) {
-            assert(prevPrev < (int)inArgs.bezierPolygonJoined.size() && prev < (int)inArgs.bezierPolygonJoined.size() && *cur < (int)inArgs.bezierPolygonJoined.size());
+            assert(prevPrev < inArgs.bezierPolygonJoined.size() && prev < inArgs.bezierPolygonJoined.size() && *cur < inArgs.bezierPolygonJoined.size());
             cairo_mesh_pattern_begin_patch(mesh);
             const ParametricPoint &p0 = inArgs.bezierPolygonJoined[prevPrev];
             const ParametricPoint &p3 = p0;

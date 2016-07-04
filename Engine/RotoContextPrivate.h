@@ -100,6 +100,25 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoFeatherFallOffHint \
     "Controls the rate at which the feather is applied on the selected shape(s)."
 
+#define kRotoFeatherFallOffType "fallOffType"
+#define kRotoFeatherFallOffTypeLabel ""
+#define kRotoFeatherFallOffTypeHint "Select the type of interpolation used to create the fall-off ramp between the inner shape and the outter feather edge"
+
+#define kRotoFeatherFallOffTypeLinear "Linear"
+#define kRotoFeatherFallOffTypeLinearHint "Linear ramp"
+
+#define kRotoFeatherFallOffTypePLinear "PLinear"
+#define kRotoFeatherFallOffTypePLinearHint "Perceptually linear ramp in Rec.709"
+
+#define kRotoFeatherFallOffTypeEaseIn "Ease-in"
+#define kRotoFeatherFallOffTypeEaseInHint "Catmull-Rom spline, smooth start, linear end (a.k.a. smooth0)"
+
+#define kRotoFeatherFallOffTypeEaseOut "Ease-out"
+#define kRotoFeatherFallOffTypeEaseOutHint "Catmull-Rom spline, linear start, smooth end (a.k.a. smooth1)"
+
+#define kRotoFeatherFallOffTypeSmooth "Smooth"
+#define kRotoFeatherFallOffTypeSmoothHint "Traditional smoothstep ramp"
+
 #define kRotoActivatedParam "activated"
 #define kRotoActivatedParamLabel "Activated"
 #define kRotoActivatedHint \
@@ -373,17 +392,17 @@ struct RotoFeatherVertex
 
 struct RotoTriangleStrips
 {
-    std::vector<int> indices;
+    std::vector<unsigned  int> indices;
 };
 
 struct RotoTriangleFans
 {
-    std::vector<int> indices;
+    std::vector<unsigned int> indices;
 };
 
 struct RotoTriangles
 {
-    std::vector<int> indices;
+    std::vector<unsigned int> indices;
 };
 
 struct BezierPrivate
@@ -727,6 +746,8 @@ public:
     boost::shared_ptr<KnobDouble> feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     boost::shared_ptr<KnobDouble> featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                   //alpha value is half the original value when at half distance from the feather distance
+    boost::shared_ptr<KnobChoice> fallOffRampType;
+
     boost::shared_ptr<KnobChoice> lifeTime;
     boost::shared_ptr<KnobBool> activated; //< should the curve be visible/rendered ? (animable)
     boost::shared_ptr<KnobInt> lifeTimeFrame;
@@ -780,6 +801,7 @@ public:
         , opacity()
         , feather()
         , featherFallOff()
+        , fallOffRampType()
         , lifeTime()
         , activated()
         , lifeTimeFrame()
@@ -851,6 +873,26 @@ public:
         featherFallOff->setDisplayMaximum(5.);
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         knobs.push_back(featherFallOff);
+
+        fallOffRampType.reset( new KnobChoice(NULL, tr(kRotoFeatherFallOffTypeLabel), 1, true) );
+        fallOffRampType->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
+        fallOffRampType->setName(kRotoFeatherFallOffType);
+        fallOffRampType->populate();
+        {
+            std::vector<std::string> entries,helps;
+            entries.push_back(kRotoFeatherFallOffTypeLinear);
+            helps.push_back(kRotoFeatherFallOffTypeLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypePLinear);
+            helps.push_back(kRotoFeatherFallOffTypePLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseIn);
+            helps.push_back(kRotoFeatherFallOffTypeEaseInHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseOut);
+            helps.push_back(kRotoFeatherFallOffTypeEaseOutHint);
+            entries.push_back(kRotoFeatherFallOffTypeSmooth);
+            helps.push_back(kRotoFeatherFallOffTypeSmoothHint);
+            fallOffRampType->populateChoices(entries, helps);
+        }
+        knobs.push_back(fallOffRampType);
 
 
         lifeTime.reset( new KnobChoice(NULL, tr(kRotoDrawableItemLifeTimeParamLabel), 1, true) );
@@ -1295,6 +1337,7 @@ public:
     boost::weak_ptr<KnobDouble> opacity;
     boost::weak_ptr<KnobDouble> feather;
     boost::weak_ptr<KnobDouble> featherFallOff;
+    boost::weak_ptr<KnobChoice> fallOffType;
     boost::weak_ptr<KnobChoice> lifeTime;
     boost::weak_ptr<KnobBool> activated; //<allows to disable a shape on a specific frame range
     boost::weak_ptr<KnobInt> lifeTimeFrame;
@@ -1510,10 +1553,38 @@ public:
         featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOffKnob->setDefaultAllDimensionsEnabled(false);
         featherFallOffKnob->setIsPersistant(false);
+        featherFallOffKnob->setAddNewLine(false);
         shapePage->addKnob(featherFallOffKnob);
         knobs.push_back(featherFallOffKnob);
         shapeKnobs.push_back(featherFallOffKnob);
         featherFallOff = featherFallOffKnob;
+
+
+        boost::shared_ptr<KnobChoice> fallOffRampTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoFeatherFallOffTypeLabel), 1, true);
+        fallOffRampTypeKnob->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
+        fallOffRampTypeKnob->setName(kRotoFeatherFallOffType);
+        fallOffRampTypeKnob->populate();
+        fallOffRampTypeKnob->setDefaultAllDimensionsEnabled(false);
+        fallOffRampTypeKnob->setIsPersistant(false);
+        {
+            std::vector<std::string> entries,helps;
+            entries.push_back(kRotoFeatherFallOffTypeLinear);
+            helps.push_back(kRotoFeatherFallOffTypeLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypePLinear);
+            helps.push_back(kRotoFeatherFallOffTypePLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseIn);
+            helps.push_back(kRotoFeatherFallOffTypeEaseInHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseOut);
+            helps.push_back(kRotoFeatherFallOffTypeEaseOutHint);
+            entries.push_back(kRotoFeatherFallOffTypeSmooth);
+            helps.push_back(kRotoFeatherFallOffTypeSmoothHint);
+            fallOffRampTypeKnob->populateChoices(entries, helps);
+        }
+        shapePage->addKnob(fallOffRampTypeKnob);
+        fallOffType = fallOffRampTypeKnob;
+        shapeKnobs.push_back(fallOffRampTypeKnob);
+        knobs.push_back(fallOffRampTypeKnob);
+
 
         {
             boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushSourceColorLabel), 1, true);
@@ -2197,7 +2268,7 @@ public:
         std::vector<ParametricPoint> bezierPolygonJoined;
 
         // indices (from 0 to n) of the points in bezierPoygonJoined
-        std::vector<int*> bezierPolygonIndices;
+        std::vector<unsigned int*> bezierPolygonIndices;
 
         // The computed mesh for the feather
         std::vector<RotoFeatherVertex> featherMesh;

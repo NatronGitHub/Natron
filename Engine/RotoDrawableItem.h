@@ -169,6 +169,7 @@ public:
     boost::shared_ptr<KnobDouble> getShutterOffsetKnob() const;
     boost::shared_ptr<KnobDouble> getShutterKnob() const;
     boost::shared_ptr<KnobChoice> getShutterTypeKnob() const;
+    boost::shared_ptr<KnobChoice> getFallOffRampTypeKnob() const;
 
     void setKeyframeOnAllTransformParameters(double time);
 
