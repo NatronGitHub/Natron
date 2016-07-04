@@ -697,8 +697,11 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                     AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
                     AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
                     rdata.error = tr("Error creating OpenGL context.");
+                    vdata.error = rdata.error;
                     rdata.hasRequirements = false;
                     vdata.hasRequirements = false;
+                    AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering);
+                    AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer);
                 }
 
 
@@ -709,13 +712,17 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
                 rdata.hasRequirements = false;
                 vdata.hasRequirements = false;
+                vdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
                 rdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
+                AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering);
+                AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer);
                 checkRenderingReq = false;
             }
+            if (!glContext) {
+                return false;
+            }
         }
-        if (createOpenGLContext && !glContext) {
-            return false;
-        }
+
         // The following requires a valid OpenGL context to be created
         _imp->initGl(checkRenderingReq);
         if (createOpenGLContext) {

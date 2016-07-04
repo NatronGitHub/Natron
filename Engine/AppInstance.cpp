@@ -599,13 +599,6 @@ AppInstance::loadInternal(const CLArgs& cl,
         return;
     }
 
-    if (getAppID() == 0) {
-        QString missingOpenGLError;
-        if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeViewer, &missingOpenGLError) ) {
-            throw std::runtime_error( missingOpenGLError.toStdString() );
-        }
-    }
-
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun) ||
            ( appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) ) ) {

@@ -694,6 +694,46 @@ extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArray;
 }
 
 void
+AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type)
+{
+    switch (type) {
+        case eOpenGLRequirementsTypeViewer: {
+            str += QLatin1String("\n");
+            str += tr("%1 requires at least OpenGL %2.%3 with the following extensions so the viewer works appropriately: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
+            str += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object");
+            str += QLatin1String("\n");
+            QString glVersion = appPTR->getOpenGLVersion();
+            if (!glVersion.isEmpty()) {
+                str += tr("Your OpenGL version ");
+                str += glVersion;
+            }
+#ifdef __NATRON_WIN32__
+            str += tr("To fix this: Re-start the installer, select \"Package manager\" and then install the \"Software OpenGL\" component.\n");
+            str += tr("If you don't have the installer you can manually copy opengl32.dll located in the \"bin\mesa\" directory of your %1 installation to the \"bin\" directory.").arg(QLatin1String(NATRON_APPLICATION_NAME));
+#endif
+        }    break;
+        case eOpenGLRequirementsTypeRendering: {
+            str += QLatin1String("<br />");
+            str += tr("%1 requires at least OpenGL %2.%3 with the following extensions to perform OpenGL rendering: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
+            str += QLatin1String("<br />");
+            str += QString::fromUtf8("GL_ARB_vertex_buffer_object <br /> GL_ARB_pixel_buffer_object <br /> GL_ARB_vertex_array_object or GL_APPLE_vertex_array_object <br /> GL_ARB_framebuffer_object or GL_EXT_framebuffer_object <br /> GL_ARB_texture_float");
+            str += QLatin1String("<br /");
+            QString glVersion = appPTR->getOpenGLVersion();
+            if (!glVersion.isEmpty()) {
+                str += tr("Your OpenGL version ");
+                str += glVersion;
+            }
+            str += QLatin1String("</p>");
+            
+
+        }    break;
+    }
+
+
+
+}
+
+void
 AppManagerPrivate::initGl(bool checkRenderingReq)
 {
     // Private should not lock
@@ -760,19 +800,8 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         !GLAD_GL_ARB_pixel_buffer_object ||
         !GLAD_GL_ARB_vertex_buffer_object) {
 
-        viewerReq.error = tr("Failed to load OpenGL. %1 requires at least OpenGL %2.%3 with the following extensions so the viewer works appropriately: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
-        viewerReq.error += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object");
-        viewerReq.error += QLatin1String("\n");
-        QString glVersion = appPTR->getOpenGLVersion();
-        if (!glVersion.isEmpty()) {
-            viewerReq.error += tr("Your OpenGL version ");
-            viewerReq.error += glVersion;
-        }
-#ifdef __NATRON_WIN32__
-        viewerReq.error += tr("To fix this: Re-start the installer, select \"Package manager\" and then install the \"Software OpenGL\" component.\n");
-        viewerReq.error += tr("If you don't have the installer you can manually copy opengl32.dll located in the \"bin\mesa\" directory of your %1 installation to the \"bin\" directory.").arg(QLatin1String(NATRON_APPLICATION_NAME));
-#endif
-
+        viewerReq.error = tr("Failed to load OpenGL.");
+        addOpenGLRequirementsString(viewerReq.error, eOpenGLRequirementsTypeViewer);
         viewerReq.hasRequirements = false;
         renderingReq.hasRequirements = false;
 #ifdef DEBUG
@@ -789,17 +818,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         {
             renderingReq.error += QLatin1String("<p>");
             renderingReq.error += tr("Failed to load OpenGL.");
-            renderingReq.error += QLatin1String("<br />");
-            renderingReq.error += tr("%1 requires at least OpenGL %2.%3 with the following extensions to perform OpenGL rendering: ").arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(NATRON_OPENGL_VERSION_REQUIRED_MAJOR).arg(NATRON_OPENGL_VERSION_REQUIRED_MINOR);
-            renderingReq.error += QLatin1String("<br />");
-            renderingReq.error += QString::fromUtf8("GL_ARB_vertex_buffer_object <br /> GL_ARB_pixel_buffer_object <br /> GL_ARB_vertex_array_object or GL_APPLE_vertex_array_object <br /> GL_ARB_framebuffer_object or GL_EXT_framebuffer_object <br /> GL_ARB_texture_float");
-            renderingReq.error += QLatin1String("<br /");
-            QString glVersion = appPTR->getOpenGLVersion();
-            if (!glVersion.isEmpty()) {
-                renderingReq.error += tr("Your OpenGL version ");
-                renderingReq.error += glVersion;
-            }
-            renderingReq.error += QLatin1String("</p>");
+            addOpenGLRequirementsString(renderingReq.error, eOpenGLRequirementsTypeRendering);
 
 
             renderingReq.hasRequirements = false;
