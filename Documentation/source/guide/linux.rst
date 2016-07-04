@@ -18,10 +18,18 @@ Natron will work on any distribution released after 2010, this includes (but not
 
 The basic requirements are:
 
+ * x86 compatible CPU (Core2 x86_64 or higher recommended)
  * Linux 2.6.18 and higher
  * Glibc 2.12 and higher
  * libgcc 4.4 and higher
- * Working X11 and OpenGL (Mesa/Nvidia/Catalyst)
+ * OpenGL 2.0 or higher with the following extensions:
+    * **GL_ARB_texture_non_power_of_two** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
+    * **GL_ARB_vertex_array_object** or **GL_APPLE_vertex_array_object** *(OpenGL rendering only)*
+    * **GL_ARB_framebuffer_object** or **GL_EXT_framebuffer_object** *(OpenGL rendering only)*
+    * **GL_ARB_texture_float** *(OpenGL rendering only)*
 
 Download
 --------
