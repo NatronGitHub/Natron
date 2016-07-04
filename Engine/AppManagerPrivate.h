@@ -199,6 +199,8 @@ public:
 
     void restoreCaches();
 
+    static void addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type);
+
     bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled);
 
     void cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled);
