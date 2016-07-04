@@ -24,6 +24,9 @@
 
 #include "RotoShapeRenderNode.h"
 
+#include "Engine/Node.h"
+#include "Engine/RotoStrokeItem.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct RotoShapeRenderNodePrivate
@@ -64,8 +67,24 @@ RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) 
 }
 
 StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(U64 /*hash*/, double time, const RenderScale & /*scale*/, ViewIdx /*view*/, RectD* rod)
 {
+   
+    
+    RectD maskRod;
+    NodePtr node = getNode();
+    try {
+        node->getPaintStrokeRoD(time, &maskRod);
+    } catch (...) {
+    }
+    
+    if ( rod->isNull() ) {
+        *rod = maskRod;
+    } else {
+        rod->merge(maskRod);
+    }
+    
+    return eStatusOK;
 
 }
 
@@ -78,13 +97,34 @@ RotoShapeRenderNode::isIdentity(double time,
                 ViewIdx* inputView,
                 int* inputNb)
 {
-
+    *inputView = view;
+    RectD maskRod;
+    NodePtr node = getNode();
+    node->getPaintStrokeRoD(time, &maskRod);
+    
+    RectI maskPixelRod;
+    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
+    if ( !maskPixelRod.intersects(roi) ) {
+        *inputTime = time;
+        *inputNb = 0;
+        
+        return true;
+    }
+    
+    return false;
 }
 
 StatusEnum
 RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
-
+    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    assert(rotoItem);
+    if (!rotoItem) {
+        return eStatusFailed;
+    }
+    
+    OSGLContextPtr maskContext = gpuGlContext ? gpuGlContext : cpuGlContext;
+    inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, rotoSrcRod, maskContext, renderInfo, returnStorage);
 } // RotoShapeRenderNode::render
 
 NATRON_NAMESPACE_EXIT;

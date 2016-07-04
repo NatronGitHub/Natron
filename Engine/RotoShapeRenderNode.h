@@ -121,6 +121,11 @@ public:
     {
         return false;
     }
+    
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
+    {
+        return ePluginOpenGLRenderSupportYes;
+    }
 
 private:
 
