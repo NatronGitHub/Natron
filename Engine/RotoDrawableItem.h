@@ -226,7 +226,7 @@ private:
                                                 const std::list<std::list<std::pair<Point, double> > >& strokes,
                                                 const boost::shared_ptr<Image> &image);
 
-    boost::shared_ptr<Image> renderMaskInternal_gl(const OSGLContextPtr& glContext,
+    void renderMaskInternal_gl(const OSGLContextPtr& glContext,
                                                    const double startTime,
                                                    const double endTime,
                                                    const double timeStep,
@@ -234,7 +234,9 @@ private:
                                                    const bool inverted,
                                                    const unsigned int mipmapLevel,
                                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                   const boost::shared_ptr<Image> &image);
+                                                   const RectI& bounds,
+                                                   int target,
+                                                   int texID);
 
 
 Q_SIGNALS:

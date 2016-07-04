@@ -111,7 +111,7 @@ OSGLContext_osmesa::makeContextCurrent(const OSGLContext_osmesa* context,
                                        int height,
                                        void* buffer)
 {
-    if ( !OSMesaMakeCurrent( context->_imp->ctx, buffer, type, width, height ) ) {
+    if ( !OSMesaMakeCurrent( context ? context->_imp->ctx : 0, buffer, type, width, height ) ) {
         return false;
     }
     return true;
