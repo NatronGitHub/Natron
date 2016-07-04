@@ -19,8 +19,8 @@ The basic requirements are:
     * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
     * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
     * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_array_object** or GL_APPLE_vertex_array_object *(OpenGL rendering only)*
-    * **GL_ARB_framebuffer_object** or GL_EXT_framebuffer_object *(OpenGL rendering only)*
+    * **GL_ARB_vertex_array_object** or **GL_APPLE_vertex_array_object** *(OpenGL rendering only)*
+    * **GL_ARB_framebuffer_object** or **GL_EXT_framebuffer_object** *(OpenGL rendering only)*
     * **GL_ARB_texture_float** *(OpenGL rendering only)*
 
 If you don't have the minimum required OpenGL extensions we provide a Software OpenGL solution, install the package *Software OpenGL* from the installer. If you have the portable ZIP file copy *bin\\mesa\\opengl32.dll* to *bin\\*.
