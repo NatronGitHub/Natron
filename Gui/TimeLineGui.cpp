@@ -202,7 +202,7 @@ struct TimelineGuiPrivate
 };
 
 TimeLineGui::TimeLineGui(const ViewerInstancePtr& viewer,
-                         TimeLinePtr timeline,
+                         const TimeLinePtr& timeline,
                          Gui* gui,
                          ViewerTab* viewerTab)
     : QGLWidget(viewerTab)
@@ -826,7 +826,8 @@ void
 TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
-        _imp->gui->getApp()->setLastViewerUsingTimeline( _imp->viewer->getNode() );
+        ViewerInstancePtr viewer = _imp->viewer.lock();
+        _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
         _imp->seekingTimeline = true;
         _imp->timeline->onFrameChanged(time);
         _imp->seekingTimeline = false;
@@ -894,8 +895,9 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         update();
     } else if ( (_imp->state == eTimelineStateDraggingCursor) && !onEditingFinishedOnly ) {
         if ( tseq != _imp->timeline->currentFrame() ) {
+            ViewerInstancePtr viewer = _imp->viewer.lock();
             _imp->gui->setDraftRenderEnabled(true);
-            _imp->gui->getApp()->setLastViewerUsingTimeline( _imp->viewer->getNode() );
+            _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
             _imp->seekingTimeline = true;
             _imp->timeline->onFrameChanged(tseq);
             _imp->seekingTimeline = false;
@@ -1006,7 +1008,8 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             double t = toTimeLine( e->x() );
             SequenceTime tseq = std::floor(t + 0.5);
             if ( ( tseq != _imp->timeline->currentFrame() ) ) {
-                _imp->gui->getApp()->setLastViewerUsingTimeline( _imp->viewer->getNode() );
+                ViewerInstancePtr viewer = _imp->viewer.lock();
+                _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
                 _imp->timeline->onFrameChanged(tseq);
             }
         } else if (autoProxyEnabled && wasScrubbing) {

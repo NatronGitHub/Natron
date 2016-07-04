@@ -80,7 +80,7 @@ ViewerTab::onColorSpaceComboBoxChanged(int v)
         throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
     }
     _imp->viewer->setLut( (int)colorspace );
-    _imp->viewerNode->onColorSpaceChanged(colorspace);
+    _imp->viewerNode.lock()->onColorSpaceChanged(colorspace);
 }
 
 void
@@ -161,7 +161,7 @@ ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
         _imp->playbackMode = mode;
     }
     _imp->playbackMode_Button->setIcon( QIcon(pix) );
-    _imp->viewerNode->getRenderEngine()->setPlaybackMode(mode);
+    _imp->viewerNode.lock()->getRenderEngine()->setPlaybackMode(mode);
 }
 
 PlaybackModeEnum
@@ -175,7 +175,8 @@ ViewerTab::getPlaybackMode() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    PlaybackModeEnum mode = viewerNode->getRenderEngine()->getPlaybackMode();
 
     mode = (PlaybackModeEnum)( ( (int)mode + 1 ) % 3 );
     QPixmap pix;
@@ -197,7 +198,7 @@ ViewerTab::togglePlaybackMode()
         _imp->playbackMode = mode;
     }
     _imp->playbackMode_Button->setIcon( QIcon(pix) );
-    _imp->viewerNode->getRenderEngine()->setPlaybackMode(mode);
+    viewerNode->getRenderEngine()->setPlaybackMode(mode);
 }
 
 void
@@ -237,16 +238,17 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
         if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
-        getGui()->getApp()->setLastViewerUsingTimeline( _imp->viewerNode->getNode() );
+        getGui()->getApp()->setLastViewerUsingTimeline( viewerNode->getNode() );
         std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
         }
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
+        viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
     }
 }
 
@@ -306,7 +308,8 @@ ViewerTab::onEngineStarted(bool forward)
 void
 ViewerTab::onSetDownPlaybackButtonsTimeout()
 {
-    if ( !_imp->viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    if ( !viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
         const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ( (*it)->_imp->play_Forward_Button ) {
@@ -332,7 +335,8 @@ ViewerTab::onEngineStopped()
     // Don't set the playback buttons up now, do it a bit later, maybe the user will restart playback  just aftewards
     _imp->mustSetUpPlaybackButtonsTimer.start(200);
 
-    _imp->currentFrameBox->setValue( _imp->viewerNode->getTimeline()->currentFrame() );
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    _imp->currentFrameBox->setValue( viewerNode->getTimeline()->currentFrame() );
 
     if ( getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
         getGui()->onFreezeUIButtonClicked(false);
@@ -367,16 +371,17 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
         if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
-        getGui()->getApp()->setLastViewerUsingTimeline( _imp->viewerNode->getNode() );
+        getGui()->getApp()->setLastViewerUsingTimeline( viewerNode->getNode() );
         std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
         }
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
+        viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
     }
 }
 
@@ -386,12 +391,13 @@ ViewerTab::refresh(bool enableRenderStats)
     //Check if readers files have changed on disk
     getGui()->getApp()->checkAllReadersModificationDate(false);
     abortRendering();
-    _imp->viewerNode->forceFullComputationOnNextFrame();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->forceFullComputationOnNextFrame();
     if (!enableRenderStats) {
-        _imp->viewerNode->renderCurrentFrame(true);
+        viewerNode->renderCurrentFrame(true);
     } else {
         getGui()->getOrCreateRenderStatsDialog()->show();
-        _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
+        viewerNode->renderCurrentFrameWithRenderStats(false);
     }
 }
 
@@ -469,7 +475,8 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     }
 
     if ( _imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine() ) {
-        _imp->viewerNode->renderCurrentFrame(true);
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        viewerNode->renderCurrentFrame(true);
     }
 }
 
@@ -484,7 +491,8 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->viewerNode->renderCurrentFrame(true);
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        viewerNode->renderCurrentFrame(true);
     } else {
         _imp->viewer->update();
     }
@@ -494,8 +502,9 @@ ViewerTab::~ViewerTab()
 {
     if ( getGui() ) {
         NodeGraph* graph = 0;
-        if (_imp->viewerNode) {
-            NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        if (viewerNode) {
+            NodeCollectionPtr collection = viewerNode->getNode()->getGroup();
             if (collection) {
                 NodeGroupPtr isGrp = toNodeGroup(collection);
                 if (isGrp) {
@@ -508,7 +517,7 @@ ViewerTab::~ViewerTab()
                     graph = getGui()->getNodeGraph();
                 }
             }
-            _imp->viewerNode->invalidateUiContext();
+            viewerNode->invalidateUiContext();
         } else {
             graph = getGui()->getNodeGraph();
         }
@@ -892,7 +901,8 @@ ViewerTab::setDisplayChannels(int i,
         channels = eDisplayChannelsRGB;
         break;
     }
-    _imp->viewerNode->setDisplayChannels(channels, setBothInputs);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setDisplayChannels(channels, setBothInputs);
 }
 
 void
@@ -907,7 +917,8 @@ ViewerTab::eventFilter(QObject *target,
 {
     if (e->type() == QEvent::MouseButtonPress) {
         if ( getGui() && getGui()->getApp() ) {
-            NodeGuiIPtr gui_i = _imp->viewerNode->getNode()->getNodeGui();
+            ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+            NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
             assert(gui_i);
             NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             getGui()->selectNode(gui);
@@ -951,7 +962,8 @@ ViewerTab::onViewsComboboxChanged(int index)
         _imp->currentViewIndex = ViewIdx(index);
     }
     abortRendering();
-    _imp->viewerNode->renderCurrentFrame(true);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->renderCurrentFrame(true);
 }
 
 void
@@ -975,7 +987,8 @@ ViewerTab::previousView()
         _imp->currentViewIndex = idx;
     }
     abortRendering();
-    _imp->viewerNode->renderCurrentFrame(true);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->renderCurrentFrame(true);
 }
 
 void
@@ -999,7 +1012,8 @@ ViewerTab::nextView()
         _imp->currentViewIndex = idx;
     }
     abortRendering();
-    _imp->viewerNode->renderCurrentFrame(true);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->renderCurrentFrame(true);
 }
 
 NATRON_NAMESPACE_EXIT;

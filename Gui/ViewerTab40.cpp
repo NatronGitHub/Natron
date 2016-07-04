@@ -69,7 +69,8 @@ ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
     NodePtr inp;
-    const std::vector<NodeWPtr > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    const std::vector<NodeWPtr > &inputs  = viewerNode->getNode()->getGuiInputs();
 
     if ( (inputNb >= 0) && ( inputNb < (int)inputs.size() ) ) {
         inp = inputs[inputNb].lock();
@@ -141,7 +142,8 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    RenderEnginePtr engine = _imp->viewerNode->getRenderEngine();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    RenderEnginePtr engine = viewerNode->getRenderEngine();
 
     assert(engine);
     if (connect) {
@@ -168,12 +170,13 @@ ViewerTab::setViewerPaused(bool paused,
 {
     _imp->pauseButton->setChecked(paused);
     _imp->pauseButton->setDown(paused);
-    _imp->viewerNode->setViewerPaused(paused, allInputs);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setViewerPaused(paused, allInputs);
     abortRendering();
-    if ( !_imp->viewerNode->getApp()->getProject()->isLoadingProject() ) {
+    if ( !viewerNode->getApp()->getProject()->isLoadingProject() ) {
         if (!paused) {
             // Refresh the viewer
-            _imp->viewerNode->renderCurrentFrame(true);
+            viewerNode->renderCurrentFrame(true);
         }
     }
 }
@@ -181,7 +184,8 @@ ViewerTab::setViewerPaused(bool paused,
 bool
 ViewerTab::isViewerPaused(int texIndex) const
 {
-    return _imp->viewerNode->isViewerPaused(texIndex);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    return viewerNode->isViewerPaused(texIndex);
 }
 
 void
@@ -696,12 +700,13 @@ ViewerTab::setCheckerboardEnabled(bool enabled)
 void
 ViewerTab::onSpinboxFpsChangedInternal(double fps)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if ( !getGui() ) {
         //might be caled from a focus out event when leaving gui
         return;
     }
     _imp->fpsBox->setValue(fps);
-    _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);
+    viewerNode->getRenderEngine()->setDesiredFPS(fps);
     {
         QMutexLocker k(&_imp->fpsMutex);
         _imp->fps = fps;
@@ -729,13 +734,14 @@ ViewerTab::getDesiredFps() const
 void
 ViewerTab::setDesiredFps(double fps)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     {
         QMutexLocker l(&_imp->fpsMutex);
         _imp->fps = fps;
         _imp->userFps = fps;
     }
     _imp->fpsBox->setValue(fps);
-    _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);
+    viewerNode->getRenderEngine()->setDesiredFPS(fps);
 }
 
 void
@@ -755,7 +761,8 @@ ViewerTab::setProjection(double zoomLeft,
 void
 ViewerTab::refreshViewerRenderingState()
 {
-    int value = _imp->viewerNode->getNode()->getIsNodeRenderingCounter();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    int value = viewerNode->getNode()->getIsNodeRenderingCounter();
 
     if (value >= 1) {
         _imp->refreshButton->setIcon(_imp->iconRefreshOn);
@@ -826,8 +833,9 @@ ViewerTab::onInternalNodeLabelChanged(const QString& name)
 void
 ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     // always running in the main thread
-    std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
+    std::string newName = viewerNode->getNode()->getFullyQualifiedName();
     std::string oldName = getScriptName();
 
     for (std::size_t i = 0; i < newName.size(); ++i) {
@@ -850,7 +858,8 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 void
 ViewerTab::refreshLayerAndAlphaChannelComboBox()
 {
-    if (!_imp->viewerNode) {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    if (!viewerNode) {
         return;
     }
 
@@ -910,7 +919,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
                 alphaCurChoice = _imp->alphaChannelChoice->itemText(0);
             }
 
-            _imp->viewerNode->setAlphaChannel(*it, alphaChoice, false);
+            viewerNode->setAlphaChannel(*it, alphaChoice, false);
         }
     }
 
@@ -933,7 +942,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
 
     if ( foundCurIt == components.end() ) {
         _imp->layerChoice->setCurrentText_no_emit(layerCurChoice);
-        _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
+        viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
     } else {
         int layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
         assert(layerIdx != -1);
@@ -950,7 +959,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
                 setDisplayChannels(1, true);
             }
         }
-        _imp->viewerNode->setActiveLayer(*foundCurIt, false);
+        viewerNode->setActiveLayer(*foundCurIt, false);
     }
 
     if ( ( alphaCurChoice == QString::fromUtf8("-") ) || alphaCurChoice.isEmpty() || ( foundCurAlphaIt == components.end() ) ) {
@@ -971,13 +980,13 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
 
     if ( ( foundCurAlphaIt == components.end() ) || foundAlphaChannel.empty() ) {
         _imp->alphaChannelChoice->setCurrentText_no_emit(alphaCurChoice);
-        _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
+        viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     } else {
         int layerIdx = _imp->alphaChannelChoice->itemIndex(alphaCurChoice);
         assert(layerIdx != -1);
         _imp->alphaChannelChoice->setCurrentIndex_no_emit(layerIdx);
 
-        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
+        viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
     }
 
     {
@@ -990,6 +999,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
 void
 ViewerTab::onAlphaChannelComboChanged(int index)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     std::set<ImageComponents> components;
 
     _imp->getComponentsAvailabel(&components);
@@ -1006,19 +1016,20 @@ ViewerTab::onAlphaChannelComboChanged(int index)
         } else {
             for (U32 j = 0; j < channels.size(); ++j, ++i) {
                 if (i == index) {
-                    _imp->viewerNode->setAlphaChannel(*it, channels[j], true);
+                    viewerNode->setAlphaChannel(*it, channels[j], true);
 
                     return;
                 }
             }
         }
     }
-    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
+    viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
 }
 
 void
 ViewerTab::onLayerComboChanged(int index)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     std::set<ImageComponents> components;
 
     _imp->getComponentsAvailabel(&components);
@@ -1036,12 +1047,12 @@ ViewerTab::onLayerComboChanged(int index)
     for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
         chanCount += it->getComponentsNames().size();
         if (i == index) {
-            _imp->viewerNode->setActiveLayer(*it, true);
+            viewerNode->setActiveLayer(*it, true);
 
             ///If it has an alpha channel, set it
             if (it->getComponentsNames().size() == 4) {
                 _imp->alphaChannelChoice->setCurrentIndex_no_emit(chanCount - 1);
-                _imp->viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3], true);
+                viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3], true);
             }
 
             return;
@@ -1049,8 +1060,8 @@ ViewerTab::onLayerComboChanged(int index)
     }
 
     _imp->alphaChannelChoice->setCurrentIndex_no_emit(0);
-    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
-    _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
+    viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
+    viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
 }
 
 QString
@@ -1081,6 +1092,7 @@ ViewerTab::setCurrentLayers(const QString& layer,
 void
 ViewerTab::onGainToggled(bool clicked)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     double value;
 
     if (clicked) {
@@ -1094,12 +1106,13 @@ ViewerTab::onGainToggled(bool clicked)
 
     double gain = std::pow(2, value);
     _imp->viewer->setGain(gain);
-    _imp->viewerNode->onGainChanged(gain);
+    viewerNode->onGainChanged(gain);
 }
 
 void
 ViewerTab::onGainSliderChanged(double v)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if ( !_imp->toggleGainButton->isChecked() ) {
         _imp->toggleGainButton->setChecked(true);
         _imp->toggleGainButton->setDown(true);
@@ -1107,13 +1120,14 @@ ViewerTab::onGainSliderChanged(double v)
     _imp->gainBox->setValue(v);
     double gain = std::pow(2, v);
     _imp->viewer->setGain(gain);
-    _imp->viewerNode->onGainChanged(gain);
+    viewerNode->onGainChanged(gain);
     _imp->lastFstopValue = v;
 }
 
 void
 ViewerTab::onGainSpinBoxValueChanged(double v)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if ( !_imp->toggleGainButton->isChecked() ) {
         _imp->toggleGainButton->setChecked(true);
         _imp->toggleGainButton->setDown(true);
@@ -1121,13 +1135,14 @@ ViewerTab::onGainSpinBoxValueChanged(double v)
     _imp->gainSlider->seekScalePosition(v);
     double gain = std::pow(2, v);
     _imp->viewer->setGain(gain);
-    _imp->viewerNode->onGainChanged(gain);
+    viewerNode->onGainChanged(gain);
     _imp->lastFstopValue = v;
 }
 
 void
 ViewerTab::onGammaToggled(bool clicked)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     double value;
 
     if (clicked) {
@@ -1139,32 +1154,34 @@ ViewerTab::onGammaToggled(bool clicked)
     _imp->gammaBox->setValue(value);
     _imp->gammaSlider->seekScalePosition(value);
     _imp->viewer->setGamma(value);
-    _imp->viewerNode->onGammaChanged(value);
+    viewerNode->onGammaChanged(value);
 }
 
 void
 ViewerTab::onGammaSliderValueChanged(double value)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if ( !_imp->toggleGammaButton->isChecked() ) {
         _imp->toggleGammaButton->setChecked(true);
         _imp->toggleGammaButton->setDown(true);
     }
     _imp->gammaBox->setValue(value);
     _imp->viewer->setGamma(value);
-    _imp->viewerNode->onGammaChanged(value);
+    viewerNode->onGammaChanged(value);
     _imp->lastGammaValue = value;
 }
 
 void
 ViewerTab::onGammaSpinBoxValueChanged(double value)
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if ( !_imp->toggleGammaButton->isChecked() ) {
         _imp->toggleGammaButton->setChecked(true);
         _imp->toggleGammaButton->setDown(true);
     }
     _imp->gammaSlider->seekScalePosition(value);
     _imp->viewer->setGamma(value);
-    _imp->viewerNode->onGammaChanged(value);
+    viewerNode->onGammaChanged(value);
     _imp->lastGammaValue = value;
 }
 
@@ -1302,9 +1319,10 @@ ViewerTab::toggleTripleSync(bool toggled)
 void
 ViewerTab::onPanelMadeCurrent()
 {
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     // Refresh the image since so far the viewer was probably not in sync with internal data
-    if ( _imp->viewerNode && getGui() && !getGui()->getApp()->getProject()->isLoadingProject() && getGui()->getApp()->getNodesBeingCreated().empty() ) {
-        _imp->viewerNode->renderCurrentFrame(true);
+    if ( viewerNode && getGui() && !getGui()->getApp()->getProject()->isLoadingProject() && getGui()->getApp()->getNodesBeingCreated().empty() ) {
+        viewerNode->renderCurrentFrame(true);
     }
 }
 

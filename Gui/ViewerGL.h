@@ -628,12 +628,6 @@ private:
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
-inline ViewerGLPtr
-toViewerGL(OverlaySupport* overlaySupport)
-{
-    return boost::dynamic_pointer_cast<ViewerGL>(overlaySupport);
-}
-
 NATRON_NAMESPACE_EXIT;
 
 #endif // GLVIEWER_H

@@ -223,7 +223,6 @@ typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
 typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
 typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
 typedef boost::shared_ptr<TrackerPanelV1> TrackerPanelV1Ptr;
-typedef boost::shared_ptr<ViewerGL> ViewerGLPtr;
 typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
 typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
 typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;

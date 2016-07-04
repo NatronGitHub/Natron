@@ -3754,7 +3754,7 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
     if (!overlayInteract) {
         return;
     }
-    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract.get());
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
     if (!isViewer) {
         return;
     }
@@ -3782,7 +3782,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!overlayInteract) {
         return false;
     }
-    ViewerGLPtr isViewer = toViewerGL(overlayInteract);
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
     if (!isViewer) {
         return false;
     }
@@ -3875,7 +3875,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!overlayInteract) {
         return;
     }
-    ViewerGLPtr isViewer = toViewerGL(overlayInteract);
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
     if (!isViewer) {
         return;
     }
@@ -3893,7 +3893,7 @@ NodeGui::onRightClickMenuKnobPopulated()
         return;
     }
 
-    Menu m(isViewer.get());
+    Menu m(isViewer);
     for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
         KnobIPtr knob = node->getKnobByName(*it);
         if (!knob) {

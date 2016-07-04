@@ -65,11 +65,11 @@ private: // derives from KnobHolder
                       UserParamHolder* widget);
 
 public:
-    static KnobHolderPtr create(const QString& uniqueID,
-                                const AppInstancePtr& app,
-                                UserParamHolder* widget)
+    static DialogParamHolderPtr create(const QString& uniqueID,
+                                       const AppInstancePtr& app,
+                                       UserParamHolder* widget)
     {
-        return KnobHolderPtr( new DialogParamHolder(uniqueID, app, widget) );
+        return DialogParamHolderPtr( new DialogParamHolder(uniqueID, app, widget) );
     }
 
     virtual ~DialogParamHolder();
@@ -112,7 +112,7 @@ public:
 
     void addWidget(QWidget* widget);
 
-    DialogParamHolder* getKnobsHolder() const;
+    DialogParamHolderPtr getKnobsHolder() const;
 
 private:
 

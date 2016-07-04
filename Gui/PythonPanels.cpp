@@ -327,7 +327,7 @@ PyModalDialog::getParam(const QString& scriptName) const
 
 struct PyPanelPrivate
 {
-    DialogParamHolder* holder;
+    DialogParamHolderPtr holder;
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
     QWidget* centerContainer;
@@ -337,7 +337,7 @@ struct PyPanelPrivate
 
 
     PyPanelPrivate()
-        : holder(0)
+        : holder()
         , mainLayout(0)
         , panel(0)
         , centerContainer(0)
@@ -379,7 +379,7 @@ PyPanel::PyPanel(const QString& scriptName,
 
 
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
+        _imp->holder = DialogParamHolder::create( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);

@@ -70,7 +70,8 @@ ViewerTab::isClippedToProject() const
 std::string
 ViewerTab::getColorSpace() const
 {
-    ViewerColorSpaceEnum lut = (ViewerColorSpaceEnum)_imp->viewerNode->getLutType();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    ViewerColorSpaceEnum lut = (ViewerColorSpaceEnum)viewerNode->getLutType();
 
     switch (lut) {
     case eViewerColorSpaceLinear:
@@ -101,7 +102,9 @@ ViewerTab::setUserRoIEnabled(bool b)
 bool
 ViewerTab::isAutoContrastEnabled() const
 {
-    return _imp->viewerNode->isAutoContrastEnabled();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+
+    return viewerNode->isAutoContrastEnabled();
 }
 
 void
@@ -114,7 +117,8 @@ ViewerTab::setAutoContrastEnabled(bool b)
     _imp->gammaSlider->setEnabled(!b);
     _imp->gammaBox->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
-    _imp->viewerNode->onAutoContrastChanged(b, true);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->onAutoContrastChanged(b, true);
 }
 
 void
@@ -147,7 +151,8 @@ ViewerTab::setGain(double d)
     _imp->gainBox->setValue(fstop);
     _imp->gainSlider->seekScalePosition(fstop);
     _imp->viewer->setGain(d);
-    _imp->viewerNode->onGainChanged(d);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->onGainChanged(d);
     _imp->toggleGainButton->setDown(d != 1.);
     _imp->toggleGainButton->setChecked(d != 1.);
     _imp->lastFstopValue = fstop;
@@ -156,7 +161,8 @@ ViewerTab::setGain(double d)
 double
 ViewerTab::getGain() const
 {
-    return _imp->viewerNode->getGain();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    return viewerNode->getGain();
 }
 
 void
@@ -164,7 +170,8 @@ ViewerTab::setGamma(double gamma)
 {
     _imp->gammaBox->setValue(gamma);
     _imp->gammaSlider->seekScalePosition(gamma);
-    _imp->viewerNode->onGammaChanged(gamma);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->onGammaChanged(gamma);
     _imp->viewer->setGamma(gamma);
     _imp->toggleGammaButton->setDown(gamma != 1.);
     _imp->toggleGammaButton->setChecked(gamma != 1.);
@@ -174,7 +181,8 @@ ViewerTab::setGamma(double gamma)
 double
 ViewerTab::getGamma() const
 {
-    return _imp->viewerNode->getGamma();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    return viewerNode->getGamma();
 }
 
 void
@@ -184,14 +192,16 @@ ViewerTab::setMipMapLevel(int level)
         _imp->renderScaleCombo->setCurrentIndex(level - 1);
     }
 
-    _imp->viewerNode->onMipMapLevelChanged(level);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->onMipMapLevelChanged(level);
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
 int
 ViewerTab::getMipMapLevel() const
 {
-    return _imp->viewerNode->getMipMapLevel();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    return viewerNode->getMipMapLevel();
 }
 
 void
@@ -203,7 +213,8 @@ ViewerTab::setRenderScaleActivated(bool act)
 bool
 ViewerTab::getRenderScaleActivated() const
 {
-    return _imp->viewerNode->getMipMapLevel() != 0;
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    return viewerNode->getMipMapLevel() != 0;
 }
 
 void
@@ -221,7 +232,8 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
 DisplayChannelsEnum
 ViewerTab::getChannels() const
 {
-    return _imp->viewerNode->getChannels(0);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    return viewerNode->getChannels(0);
 }
 
 std::string
@@ -256,7 +268,8 @@ ViewerTab::getChannelsString(DisplayChannelsEnum c)
 std::string
 ViewerTab::getChannelsString() const
 {
-    DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    DisplayChannelsEnum c = viewerNode->getChannels(0);
 
     return getChannelsString(c);
 }
@@ -287,7 +300,7 @@ ViewerTab::getInternalNode() const
 void
 ViewerTab::discardInternalNodePointer()
 {
-    _imp->viewerNode.reset(0);
+    _imp->viewerNode.reset();
 }
 
 void
@@ -301,11 +314,12 @@ ViewerTab::onAutoContrastChanged(bool b)
     _imp->gammaBox->setEnabled(!b);
     _imp->gammaSlider->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if (!b) {
-        _imp->viewerNode->onGainChanged( std::pow( 2, _imp->gainBox->value() ) );
-        _imp->viewerNode->onGammaChanged( _imp->gammaBox->value() );
+        viewerNode->onGainChanged( std::pow( 2, _imp->gainBox->value() ) );
+        viewerNode->onGammaChanged( _imp->gammaBox->value() );
     }
-    _imp->viewerNode->onAutoContrastChanged(b, true);
+    viewerNode->onAutoContrastChanged(b, true);
 }
 
 void
@@ -318,7 +332,8 @@ ViewerTab::onRenderScaleComboIndexChanged(int index)
     } else {
         level = 0;
     }
-    _imp->viewerNode->onMipMapLevelChanged(level);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->onMipMapLevelChanged(level);
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
@@ -906,7 +921,8 @@ ViewerTab::setInputA(int index)
         return;
     }
     _imp->firstInputImage->setCurrentIndex(comboboxIndex);
-    _imp->viewerNode->setInputA(index);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setInputA(index);
 
     abortViewersAndRefresh();
 }
@@ -925,7 +941,8 @@ ViewerTab::setInputB(int index)
         return;
     }
     _imp->secondInputImage->setCurrentIndex(comboboxIndex);
-    _imp->viewerNode->setInputB(index);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setInputB(index);
     abortViewersAndRefresh();
 }
 
@@ -933,7 +950,8 @@ void
 ViewerTab::getActiveInputs(int* a,
                            int* b) const
 {
-    _imp->viewerNode->getActiveInputs(*a, *b);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->getActiveInputs(*a, *b);
 }
 
 void
@@ -956,8 +974,9 @@ ViewerTab::switchInputAAndB()
     if (inputBIndex == inputAIndex) {
         return;
     }
-    _imp->viewerNode->setInputA(inputBIndex);
-    _imp->viewerNode->setInputB(inputAIndex);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setInputA(inputBIndex);
+    viewerNode->setInputB(inputAIndex);
 
     abortViewersAndRefresh();
 }
@@ -974,7 +993,8 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
             break;
         }
     }
-    _imp->viewerNode->setInputA(inputIndex);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setInputA(inputIndex);
 
     abortViewersAndRefresh();
 }
@@ -991,7 +1011,8 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             break;
         }
     }
-    _imp->viewerNode->setInputB(inputIndex);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->setInputB(inputIndex);
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
         //setCompositingOperator(eViewerCompositingOperatorNone);
@@ -1016,7 +1037,8 @@ ViewerTab::onActiveInputsChanged()
 {
     int activeInputs[2];
 
-    _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
     ViewerTabPrivate::InputNamesMap::iterator foundA = _imp->inputNamesMap.find(activeInputs[0]);
     if ( foundA != _imp->inputNamesMap.end() ) {
         int indexInA = _imp->firstInputImage->itemIndex(foundA->second.name);
@@ -1108,12 +1130,13 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
 {
     int activeInputs[2];
 
-    _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstancePtr input0 = activeInputs[0] != -1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstancePtr();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
+    EffectInstancePtr input0 = activeInputs[0] != -1 ? viewerNode->getInput(activeInputs[0]) : EffectInstancePtr();
     if (input0) {
         _imp->fpsBox->setValue( input0->getFrameRate() );
     } else {
-        EffectInstancePtr input1 = activeInputs[1] != -1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstancePtr();
+        EffectInstancePtr input1 = activeInputs[1] != -1 ? viewerNode->getInput(activeInputs[1]) : EffectInstancePtr();
         if (input1) {
             _imp->fpsBox->setValue( input1->getFrameRate() );
         } else {

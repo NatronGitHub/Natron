@@ -232,7 +232,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false), mat);
         mat = Transform::matMul( mat, Transform::matCanonicalToPixel(par, 1, 1, false) );
         *transform = Transform::matMul(*transform, mat);
-        bool isOk = getOverlayTransform(time, view, target, input.get(), transform);
+        bool isOk = getOverlayTransform(time, view, target, input, transform);
 
         return isOk;
     }
@@ -318,7 +318,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     ///Cycle through optional inputs...
-    for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
@@ -337,11 +337,12 @@ void
 ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
 {
     int activeInputIdx[2];
-
-    viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
+    ViewerInstancePtr v = viewerNode.lock();
+    
+    v->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
     EffectInstancePtr activeInput[2] = {EffectInstancePtr(), EffectInstancePtr()};
     for (int i = 0; i < 2; ++i) {
-        activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
+        activeInput[i] = v->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
             activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
