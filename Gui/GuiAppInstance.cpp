@@ -1076,7 +1076,9 @@ void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                                         const NodeSerializationPtr& serialization, bool autoConnect)
 {
-    if (autoConnect && !serialization) {
+    NodeGuiIPtr node_gui_i = node->getNodeGui();
+    assert(node_gui_i);
+    if (autoConnect && !serialization && node_gui_i) {
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
@@ -1100,12 +1102,10 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                 selectedNode.reset();
             }
         }
-        NodeGuiIPtr node_gui_i = node->getNodeGui();
-        assert(node_gui_i);
         NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
-
+ 
     AppInstance::onGroupCreationFinished(node, serialization, autoConnect);
 
     /*std::list<ViewerInstancePtr> viewers;
