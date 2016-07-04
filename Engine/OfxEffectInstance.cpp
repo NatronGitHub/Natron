@@ -2196,7 +2196,7 @@ OfxEffectInstance::drawOverlay(double time,
 }
 
 void
-OfxEffectInstance::setCurrentViewportForOverlays(const OverlaySupportPtr& viewport)
+OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 {
     if (_imp->overlayInteract) {
         _imp->overlayInteract->setCallingViewport(viewport);

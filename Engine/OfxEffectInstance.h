@@ -208,7 +208,7 @@ public:
     virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool canHandleRenderScaleForOverlays() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setCurrentViewportForOverlays(const OverlaySupportPtr& viewport) OVERRIDE FINAL;
+    virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool knobChanged(const KnobIPtr& k,

@@ -589,7 +589,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
             return false;
         }
 
-        OverlaySupportPtr overlay = getCurrentViewportForOverlays();
+        OverlaySupport* overlay = getCurrentViewportForOverlays();
         ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {
@@ -721,7 +721,7 @@ TrackerNode::drawOverlay(double time,
                          ViewIdx /*view*/)
 {
     double pixelScaleX, pixelScaleY;
-    OverlaySupportPtr overlay = getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getCurrentViewportForOverlays();
 
     assert(overlay);
     overlay->getPixelScale(pixelScaleX, pixelScaleY);
@@ -1291,7 +1291,7 @@ TrackerNode::onOverlayPenDown(double time,
                               PenType /*pen*/)
 {
     std::pair<double, double> pixelScale;
-    OverlaySupportPtr overlay = getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getCurrentViewportForOverlays();
 
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
@@ -1533,7 +1533,7 @@ TrackerNode::onOverlayPenMotion(double time,
                                 double /*timestamp*/)
 {
     std::pair<double, double> pixelScale;
-    OverlaySupportPtr overlay = getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getCurrentViewportForOverlays();
 
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);

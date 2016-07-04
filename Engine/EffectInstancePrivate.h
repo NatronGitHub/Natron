@@ -206,7 +206,7 @@ public:
     bool runningClipPreferences; //only used on main thread
 
     // set during interact actions on main-thread
-    OverlaySupportPtr overlaysViewport;
+    OverlaySupport* overlaysViewport;
     mutable QMutex attachedContextsMutex;
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext

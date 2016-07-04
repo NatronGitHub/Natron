@@ -629,7 +629,7 @@ private:
 };
 
 inline ViewerGLPtr
-toViewerGL(const OverlaySupportPtr& overlaySupport)
+toViewerGL(OverlaySupport* overlaySupport)
 {
     return boost::dynamic_pointer_cast<ViewerGL>(overlaySupport);
 }

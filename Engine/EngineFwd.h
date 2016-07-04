@@ -331,7 +331,6 @@ typedef boost::shared_ptr<OpenGLViewerI> OpenGLViewerIPtr;
 typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<OSGLContextAttacher> OSGLContextAttacherPtr;
 typedef boost::shared_ptr<OutputEffectInstance> OutputEffectInstancePtr;
-typedef boost::shared_ptr<OverlaySupport> OverlaySupportPtr;
 typedef boost::shared_ptr<ParallelRenderArgs> ParallelRenderArgsPtr;
 typedef boost::shared_ptr<PrecompNode> PrecompNodePtr;
 typedef boost::shared_ptr<ProcessHandler> ProcessHandlerPtr;

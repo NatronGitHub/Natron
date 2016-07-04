@@ -8476,7 +8476,7 @@ Node::setCurrentCursor(const QString& customCursorFilePath)
 }
 
 void
-Node::setCurrentViewportForHostOverlays(const OverlaySupportPtr& viewPort)
+Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 {
     NodeGuiIPtr nodeGui = getNodeGui();
 

@@ -3338,7 +3338,7 @@ NodeGui::hasHostOverlay() const
 }
 
 void
-NodeGui::setCurrentViewportForHostOverlays(const OverlaySupportPtr& viewPort)
+NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 {
     if (_hostOverlay) {
         _hostOverlay->setCallingViewport(viewPort);
@@ -3750,7 +3750,7 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
     if (!node) {
         return;
     }
-    OverlaySupportPtr overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return;
     }
@@ -3778,7 +3778,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!node) {
         return false;
     }
-    OverlaySupportPtr overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return false;
     }
@@ -3871,7 +3871,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!node) {
         return;
     }
-    OverlaySupportPtr overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return;
     }

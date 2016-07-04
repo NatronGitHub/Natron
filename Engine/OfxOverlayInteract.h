@@ -46,7 +46,7 @@ class NatronOverlayInteractSupport
 
 protected:
 
-    OverlaySupportPtr _viewport;
+    OverlaySupport* _viewport;
     
 
 public:
@@ -76,9 +76,9 @@ public:
         return _lastColorPicker;
     }
 
-    void setCallingViewport(const OverlaySupportPtr& viewport);
+    void setCallingViewport(OverlaySupport* viewport);
 
-    OverlaySupportPtr getLastCallingViewport() const;
+    OverlaySupport* getLastCallingViewport() const;
 
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();
@@ -101,12 +101,12 @@ public:
     class OGLContextSaver
     {
     public:
-        OGLContextSaver(const OverlaySupportPtr& viewport);
+        OGLContextSaver(OverlaySupport* viewport);
 
         ~OGLContextSaver();
 
     private:
-        OverlaySupportPtr _viewport;
+        OverlaySupport* _viewport;
     };
 };
 

@@ -64,6 +64,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/MergingEnum.h"
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"

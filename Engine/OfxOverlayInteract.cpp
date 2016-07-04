@@ -40,7 +40,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(const OverlaySupportPtr& viewport)
+NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
     : _viewport(viewport)
 {
     assert(_viewport);
@@ -227,7 +227,7 @@ OfxParamOverlayInteract::OfxParamOverlayInteract(const KnobIPtr& knob,
     : OFX::Host::Interact::Instance(desc, effectInstance)
     , NatronOverlayInteractSupport()
 {
-    setCallingViewport(knob);
+    setCallingViewport( knob.get() );
 }
 
 bool
@@ -248,12 +248,12 @@ NatronOverlayInteractSupport::~NatronOverlayInteractSupport()
 }
 
 void
-NatronOverlayInteractSupport::setCallingViewport(const OverlaySupportPtr& viewport)
+NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport)
 {
     _viewport = viewport;
 }
 
-OverlaySupportPtr
+OverlaySupport*
 NatronOverlayInteractSupport::getLastCallingViewport() const
 {
     return _viewport;

@@ -452,7 +452,7 @@ void
 TrackerContext::trackSelectedMarkers(int start,
                                      int end,
                                      int frameStep,
-                                     const OverlaySupportPtr& viewer)
+                                     OverlaySupport* viewer)
 {
     std::list<TrackMarkerPtr > markers;
     {
@@ -1264,7 +1264,7 @@ void
 TrackerContext::drawInternalNodesOverlay(double time,
                                          const RenderScale& renderScale,
                                          ViewIdx view,
-                                         const OverlaySupportPtr& viewer)
+                                         OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return;
@@ -1287,7 +1287,7 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
                                               double pressure,
                                               double timestamp,
                                               PenType pen,
-                                              const OverlaySupportPtr& viewer)
+                                              OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1312,7 +1312,7 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
                                                 const QPointF & pos,
                                                 double pressure,
                                                 double timestamp,
-                                                const OverlaySupportPtr& viewer)
+                                                OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1337,7 +1337,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
                                             const QPointF & pos,
                                             double pressure,
                                             double timestamp,
-                                            const OverlaySupportPtr& viewer)
+                                            OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1360,7 +1360,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
                                               ViewIdx view,
                                               Key key,
                                               KeyboardModifiers modifiers,
-                                              const OverlaySupportPtr& viewer)
+                                              OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1383,7 +1383,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
                                             ViewIdx view,
                                             Key key,
                                             KeyboardModifiers modifiers,
-                                            const OverlaySupportPtr& viewer)
+                                            OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1406,7 +1406,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
                                                 ViewIdx view,
                                                 Key key,
                                                 KeyboardModifiers modifiers,
-                                                const OverlaySupportPtr& viewer)
+                                                OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1427,7 +1427,7 @@ bool
 TrackerContext::onOverlayFocusGainedInternalNodes(double time,
                                                   const RenderScale & renderScale,
                                                   ViewIdx view,
-                                                  const OverlaySupportPtr& viewer)
+                                                  OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;
@@ -1448,7 +1448,7 @@ bool
 TrackerContext::onOverlayFocusLostInternalNodes(double time,
                                                 const RenderScale & renderScale,
                                                 ViewIdx view,
-                                                const OverlaySupportPtr& viewer)
+                                                OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
         return false;

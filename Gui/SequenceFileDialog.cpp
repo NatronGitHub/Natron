@@ -1060,7 +1060,7 @@ SequenceFileDialog::updateView(const QString &directory)
 
     assert(directoryItem);
 
-    QModelIndex index = _model->index( directoryItem );
+    QModelIndex index = _model->index( directoryItem.get() );
     /*update the view to show the newly loaded directory*/
     setRootIndex(index);
 

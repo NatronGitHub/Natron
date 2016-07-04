@@ -104,7 +104,7 @@ Tracker::startTracking(const std::list<Track*>& marks,
     for (std::list<Track*>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
         markers.push_back( (*it)->getInternalMarker() );
     }
-    _ctx->trackMarkers(markers, start, end, forward, OverlaySupportPtr());
+    _ctx->trackMarkers(markers, start, end, forward, (OverlaySupport*)(NULL));
 }
 
 void
