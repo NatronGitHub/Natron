@@ -3243,11 +3243,12 @@ AppManager::getAppTLS() const
 QString
 AppManager::getOpenGLVersion() const
 {
-    if (!glad_glGetString) {
+
+    if (!_imp->hasInitializedOpenGLFunctions) {
         return QString();
     }
-    QString glslVer = QString::fromUtf8( (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION) );
-    QString openglVer = QString::fromUtf8( (const char*)glGetString(GL_VERSION) );
+    QString glslVer = QString::fromUtf8( (const char*)GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
+    QString openglVer = QString::fromUtf8( (const char*)GL_GPU::glGetString(GL_VERSION) );
 
     return openglVer + QString::fromUtf8(", GLSL ") + glslVer;
 }
