@@ -3746,7 +3746,7 @@ RotoContextPrivate::renderFeather_cairo(const PolygonData& inArgs, double shapeC
 template <typename GL>
 void renderBezier_gl_bindFrameBuffer(const OSGLContextPtr& glContext, int target, int texID)
 {
-    GLuint fboID = glContext->getFBOId();
+    GLuint fboID = glContext->getOrCreateFBOId();
 
 
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);

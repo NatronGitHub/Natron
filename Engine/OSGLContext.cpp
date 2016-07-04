@@ -295,9 +295,6 @@ struct OSGLContextPrivate
 
     }
 
-    // Create PBO and FBO if needed
-    void init();
-
     template <typename GL> ShadersContainer<GL>& getShadersContainer() const;
 
 
@@ -436,14 +433,28 @@ OSGLContext::isGPUContext() const
 }
 
 unsigned int
-OSGLContext::getPBOId() const
+OSGLContext::getOrCreatePBOId()
 {
+    if (!_imp->pboID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glGenBuffers(1, &_imp->pboID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_imp->pboID);
+        }
+    }
     return _imp->pboID;
 }
 
 unsigned int
-OSGLContext::getFBOId() const
+OSGLContext::getOrCreateFBOId()
 {
+    if (!_imp->fboID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glGenFramebuffers(1, &_imp->fboID);
+        } else {
+            GL_CPU::glGenFramebuffers(1, &_imp->fboID);
+        }
+    }
     return _imp->fboID;
 }
 
@@ -564,11 +575,6 @@ OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
 
     setContextCurrentNoRender(width, height, buffer);
 
-    // The first time this context is made current, allocate the PBO and FBO
-    // This is thread-safe
-    if (!_imp->pboID) {
-        _imp->init();
-    }
 }
 
 
@@ -609,17 +615,6 @@ OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
     }
 }
 
-void
-OSGLContextPrivate::init()
-{
-    if (useGPUContext) {
-        GL_GPU::glGenBuffers(1, &pboID);
-        GL_GPU::glGenFramebuffers(1, &fboID);
-    } else {
-        GL_CPU::glGenBuffers(1, &pboID);
-        GL_CPU::glGenFramebuffers(1, &fboID);
-    }
-}
 
 bool
 OSGLContext::stringInExtensionString(const char* string,

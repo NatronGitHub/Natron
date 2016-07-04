@@ -88,9 +88,9 @@ public:
      **/
     bool isGPUContext() const;
 
-    unsigned int getPBOId() const;
+    unsigned int getOrCreatePBOId();
 
-    unsigned int getFBOId() const;
+    unsigned int getOrCreateFBOId();
 
     unsigned int getOrCreateVBOVerticesId();
 

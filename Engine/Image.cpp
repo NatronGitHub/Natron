@@ -1130,7 +1130,7 @@ pasteFromGL(const Image & src,
         // OpenGL texture to OpenGL texture
 
         RectI srcBounds = src.getBounds();
-        GLuint fboID = glContext->getFBOId();
+        GLuint fboID = glContext->getOrCreateFBOId();
 
         GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         GL::glEnable(target);
@@ -1159,7 +1159,7 @@ pasteFromGL(const Image & src,
             // no intersection between roi and the bounds of the other image
             return;
         }
-        GLuint pboID = glContext->getPBOId();
+        GLuint pboID = glContext->getOrCreatePBOId();
         GL::glEnable(target);
 
         // bind PBO to update texture source
@@ -1228,7 +1228,7 @@ pasteFromGL(const Image & src,
             return;
         }
 
-        GLuint fboID = glContext->getFBOId();
+        GLuint fboID = glContext->getOrCreateFBOId();
 
         int srcTarget = src.getGLTextureTarget();
 
@@ -1389,7 +1389,7 @@ void fillGL(const RectI & roi,
     assert(glContext);
     boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateFillShader<GL>();
     assert(shader);
-    GLuint fboID = glContext->getFBOId();
+    GLuint fboID = glContext->getOrCreateFBOId();
 
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
     GL::glEnable(target);

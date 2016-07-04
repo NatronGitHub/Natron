@@ -200,7 +200,7 @@ void applyMaskMixGL(const Image* maskImg,
     assert(!originalImg || originalImg->getStorageMode() == eStorageModeGLTex);
     boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateMaskMixShader<GL>(maskImg != 0, maskInvert);
     assert(shader);
-    GLuint fboID = glContext->getFBOId();
+    GLuint fboID = glContext->getOrCreateFBOId();
 
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
     GL::glEnable(target);

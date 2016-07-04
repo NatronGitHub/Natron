@@ -1528,7 +1528,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
         throw std::runtime_error("No OpenGL context attached");
     }
 
-    GLuint pboID = context->getPBOId();
+    GLuint pboID = context->getOrCreatePBOId();
     assert(pboID != 0);
     GL::glEnable(GL_TEXTURE_2D);
     // bind PBO to update texture source
@@ -2481,7 +2481,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         glContextAttacher->attach();
 
 
-        GLuint fboID = glContext->getFBOId();
+        GLuint fboID = glContext->getOrCreateFBOId();
         GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         glCheckError(GL_GPU);
     }
