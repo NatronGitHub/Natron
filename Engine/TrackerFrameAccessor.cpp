@@ -322,6 +322,14 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         }
     }
 
+    EffectInstPtr effect;
+    if (_imp->trackerInput) {
+        effect = _imp->trackerInput->getEffectInstance();
+    }
+    if (!effect) {
+        return (mv::FrameAccessor::Key)0;
+    }
+
     // Not in accessor cache, call renderRoI
     RenderScale scale;
     scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)downscale );
@@ -330,11 +338,11 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     RectD precomputedRoD;
     if (!region) {
         bool isProjectFormat;
-        StatusEnum stat = _imp->trackerInput->getEffectInstance()->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
         if (stat == eStatusFailed) {
             return (mv::FrameAccessor::Key)0;
         }
-        double par = _imp->trackerInput->getEffectInstance()->getAspectRatio(-1);
+        double par = effect->getAspectRatio(-1);
         precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
     }
 
@@ -375,7 +383,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         eStorageModeRAM /*returnOpenGLTex*/,
                                         frame);
     std::map<ImageComponents, ImagePtr> planes;
-    EffectInstance::RenderRoIRetCode stat = _imp->trackerInput->getEffectInstance()->renderRoI(args, &planes);
+    EffectInstance::RenderRoIRetCode stat = effect->renderRoI(args, &planes);
     if ( (stat != EffectInstance::eRenderRoIRetCodeOk) || planes.empty() ) {
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Failed to call renderRoI on input at frame" << frame << "with RoI x1="

@@ -1120,6 +1120,11 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         return;
     }
 
+    if (!getNode()->getInput(0)) {
+        Q_EMIT trackingFinished();
+        return;
+    }
+
     ViewerInstancePtr viewer;
     if (overlayInteract) {
         viewer = overlayInteract->getInternalViewerNode();
