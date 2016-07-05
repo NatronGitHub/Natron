@@ -75,7 +75,7 @@ class NodeSerialization
 {
 public:
 
-    typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
+    typedef std::list<KnobSerializationPtr> KnobValues;
 
     ///Used to serialize
     explicit NodeSerialization(const NodePtr & n,
@@ -225,7 +225,7 @@ public:
         return _userPages;
     }
 
-    const std::list< boost::shared_ptr<NodeSerialization> >& getNodesCollection() const
+    const std::list< NodeSerializationPtr >& getNodesCollection() const
     {
         return _children;
     }
@@ -258,7 +258,7 @@ private:
     std::list<std::string> _pagesIndexes;
 
     ///If this node is a group or a multi-instance, this is the children
-    std::list< boost::shared_ptr<NodeSerialization> > _children;
+    std::list< NodeSerializationPtr > _children;
     std::string _pythonModule;
     unsigned int _pythonModuleVersion;
     std::list<ImageComponents> _userComponents;
@@ -309,7 +309,7 @@ private:
         int nodesCount = (int)_children.size();
         ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
-        for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _children.begin();
+        for (std::list< NodeSerializationPtr >::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
@@ -351,7 +351,7 @@ private:
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
         ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
         for (int i = 0; i < _nbKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
+            KnobSerializationPtr ks(new KnobSerialization);
             ar & ::boost::serialization::make_nvp("item", *ks);
             _knobsValues.push_back(ks);
         }
@@ -420,7 +420,7 @@ private:
             ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
+                NodeSerializationPtr s(new NodeSerialization);
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }

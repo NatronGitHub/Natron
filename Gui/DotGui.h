@@ -49,9 +49,17 @@ NATRON_NAMESPACE_ENTER;
 class DotGui
     : public NodeGui
 {
-public:
+private: // derives from NodeGui
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     DotGui(QGraphicsItem *parent = 0);
+
+public:
+    static NodeGuiPtr create(QGraphicsItem *parent = 0) WARN_UNUSED_RETURN
+    {
+        return NodeGuiPtr( new DotGui(parent) );
+    }
 
 private:
 

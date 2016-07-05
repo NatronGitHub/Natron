@@ -61,7 +61,7 @@ struct CurvePrivate
     std::map<double, double> resultCache; //< a cache for interpolations
 #endif
 
-    KnobI* owner;
+    KnobIWPtr owner;
     int dimensionInOwner;
     CurveTypeEnum type;
     double xMin, xMax;
@@ -76,7 +76,7 @@ struct CurvePrivate
 #ifdef NATRON_CURVE_USE_CACHE
         , resultCache()
 #endif
-        , owner(NULL)
+        , owner()
         , dimensionInOwner(-1)
         , type(eCurveTypeDouble)
         , xMin(INT_MIN)

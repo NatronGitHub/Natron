@@ -46,14 +46,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    DiskCacheNode(const NodePtr& node);
+
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new DiskCacheNode(n);
+        return EffectInstancePtr( new DiskCacheNode(node) );
     }
-
-    DiskCacheNode(NodePtr node);
 
     virtual ~DiskCacheNode();
 
@@ -144,7 +145,7 @@ public:
 
 private:
 
-    virtual bool knobChanged(KnobI* k,
+    virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
@@ -153,6 +154,12 @@ private:
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };
+
+inline DiskCacheNodePtr
+toDiskCacheNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<DiskCacheNode>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

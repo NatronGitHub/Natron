@@ -28,6 +28,9 @@
 #include "Global/Macros.h"
 
 #include <cstddef>
+#include <list>
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -58,7 +61,7 @@ public:
     virtual std::size_t sizeInRAM() const = 0;
 };
 
-typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
+typedef std::list<BufferableObjectPtr > BufferableObjectList;
 
 NATRON_NAMESPACE_EXIT;
 

@@ -62,19 +62,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiButton(knob, container);
     }
 
-    KnobGuiButton(KnobPtr knob,
+    KnobGuiButton(KnobIPtr knob,
                   KnobGuiContainerI *container);
 
     virtual ~KnobGuiButton() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool shouldCreateLabel() const OVERRIDE FINAL
     {

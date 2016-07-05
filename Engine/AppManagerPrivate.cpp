@@ -284,7 +284,7 @@ AppManagerPrivate::declareSettingsToPython()
 
 template <typename T>
 void
-saveCache(Cache<T>* cache)
+saveCache(const boost::shared_ptr<Cache<T> >& cache)
 {
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     FStreamsSupport::ofstream ofile;
@@ -312,14 +312,14 @@ saveCache(Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<FrameEntry>( _viewerCache.get() );
-    saveCache<Image>( _diskCache.get() );
+    saveCache<FrameEntry>( _viewerCache );
+    saveCache<Image>( _diskCache );
 } // saveCaches
 
 template <typename T>
 void
 restoreCache(AppManagerPrivate* p,
-             Cache<T>* cache)
+             const boost::shared_ptr<Cache<T> >& cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
@@ -361,8 +361,8 @@ void
 AppManagerPrivate::restoreCaches()
 {
     if ( !appPTR->isBackground() ) {
-        restoreCache<FrameEntry>( this, _viewerCache.get() );
-        restoreCache<Image>( this, _diskCache.get() );
+        restoreCache<FrameEntry>( this, _viewerCache );
+        restoreCache<Image>( this, _diskCache );
     }
 } // restoreCaches
 

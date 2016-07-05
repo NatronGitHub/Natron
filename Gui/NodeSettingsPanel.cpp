@@ -61,13 +61,13 @@ using std::make_pair;
 NATRON_NAMESPACE_ENTER;
 
 
-NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
+NodeSettingsPanel::NodeSettingsPanel(const MultiInstancePanelPtr & multiPanel,
                                      Gui* gui,
                                      const NodeGuiPtr &NodeUi,
                                      QVBoxLayout* container,
                                      QWidget *parent)
     : DockablePanel(gui,
-                    multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>( multiPanel.get() ) : NodeUi->getNode()->getEffectInstance().get(),
+                    multiPanel ? boost::dynamic_pointer_cast<KnobHolder>( multiPanel ) : NodeUi->getNode()->getEffectInstance(),
                     container,
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
@@ -218,13 +218,13 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         return;
     }
 
-    std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
+    std::list<NodeSerializationPtr > nodeSerialization;
     try {
         int nNodes;
         boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("NodesCount", nNodes);
         for (int i = 0; i < nNodes; ++i) {
-            boost::shared_ptr<NodeSerialization> node( new NodeSerialization() );
+            NodeSerializationPtr node( new NodeSerialization() );
             iArchive >> boost::serialization::make_nvp("Node", *node);
             nodeSerialization.push_back(node);
         }
@@ -282,13 +282,13 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     }
 
     NodeGuiPtr node = getNode();
-    std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
+    std::list<NodeSerializationPtr > nodeSerialization;
     node->serializeInternal(nodeSerialization);
     try {
         int nNodes = nodeSerialization.size();
         boost::archive::xml_oarchive oArchive(ofile);
         oArchive << boost::serialization::make_nvp("NodesCount", nNodes);
-        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = nodeSerialization.begin();
+        for (std::list<NodeSerializationPtr >::iterator it = nodeSerialization.begin();
              it != nodeSerialization.end(); ++it) {
             oArchive << boost::serialization::make_nvp("Node", **it);
         }

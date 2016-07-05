@@ -52,20 +52,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobFile(holder, description, dimension, declaredByPlugin);
-    }
-
-    KnobFile(KnobHolder* holder,
+    KnobFile(const KnobHolderPtr& holder,
              const std::string &description,
              int dimension,
              bool declaredByPlugin);
+
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobFile(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobFilePtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobFilePtr(new KnobFile(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
 
     virtual ~KnobFile();
 
@@ -114,26 +125,38 @@ private:
 /******************************KnobOutputFile**************************************/
 
 class KnobOutputFile
-    :  public QObject, public Knob<std::string>
+    :  public QObject, public KnobStringBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobOutputFile(holder, description, dimension, declaredByPlugin);
-    }
-
-    KnobOutputFile(KnobHolder* holder,
+    KnobOutputFile(const KnobHolderPtr& holder,
                    const std::string &description,
                    int dimension,
                    bool declaredByPlugin);
+
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobOutputFile(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobOutputFilePtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobOutputFilePtr(new KnobOutputFile(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
     static const std::string & typeNameStatic();
 
     void setAsOutputImageFile()
@@ -191,20 +214,32 @@ private:
 class KnobPath
     : public KnobTable
 {
-public:
+private: // derives from KnobI
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
-                                  const std::string &description,
-                                  int dimension,
-                                  bool declaredByPlugin = true)
-    {
-        return new KnobPath(holder, description, dimension, declaredByPlugin);
-    }
-
-    KnobPath(KnobHolder* holder,
+    KnobPath(const KnobHolderPtr& holder,
              const std::string &description,
              int dimension,
              bool declaredByPlugin);
+
+public:
+    static KnobHelperPtr create(const KnobHolderPtr& holder,
+                                const std::string &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobHelperPtr(new KnobPath(holder, label, dimension, declaredByPlugin));
+    }
+
+    static KnobPathPtr create(const KnobHolderPtr& holder,
+                                const QString &label,
+                                int dimension,
+                                bool declaredByPlugin = true)
+    {
+        return KnobPathPtr(new KnobPath(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
     static const std::string & typeNameStatic();
 
     void setMultiPath(bool b);
@@ -259,6 +294,24 @@ private:
     bool _isMultiPath;
     bool _isStringList;
 };
+
+inline KnobFilePtr
+toKnobFile(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobFile>(knob);
+}
+
+inline KnobOutputFilePtr
+toKnobOutputFile(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+}
+
+inline KnobPathPtr
+toKnobPath(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobPath>(knob);
+}
 
 NATRON_NAMESPACE_EXIT;
 

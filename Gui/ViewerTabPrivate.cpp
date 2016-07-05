@@ -49,7 +49,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
-                                   ViewerInstance* node)
+                                   const ViewerInstancePtr& node)
     : publicInterface(publicInterface)
     , viewer(NULL)
     , viewerContainer(NULL)
@@ -160,14 +160,14 @@ bool
 ViewerTabPrivate::getOverlayTransform(double time,
                                       ViewIdx view,
                                       const NodePtr& target,
-                                      EffectInstance* currentNode,
+                                      const EffectInstancePtr& currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    if ( currentNode == target->getEffectInstance() ) {
         return true;
     }
     RenderScale s(1.);
-    EffectInstPtr input;
+    EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
     if ( !currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform() ) {
@@ -179,20 +179,20 @@ ViewerTabPrivate::getOverlayTransform(double time,
         //No transfo matrix found, pass to the input...
 
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<EffectInstance*> nonOptionalInputs;
-        std::list<EffectInstance*> optionalInputs;
+        std::list<EffectInstancePtr> nonOptionalInputs;
+        std::list<EffectInstancePtr> optionalInputs;
         int maxInp = currentNode->getMaxInputCount();
 
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            EffectInstPtr inp = currentNode->getInput(i);
+            EffectInstancePtr inp = currentNode->getInput(i);
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
-                    optionalInputs.push_back( inp.get() );
+                    optionalInputs.push_back(inp);
                 } else {
-                    nonOptionalInputs.push_back( inp.get() );
+                    nonOptionalInputs.push_back(inp);
                 }
             }
         }
@@ -202,7 +202,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
 
         ///Cycle through all non optional inputs first
-        for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
@@ -213,7 +213,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
 
         ///Cycle through optional inputs...
-        for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+        for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
@@ -232,7 +232,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false), mat);
         mat = Transform::matMul( mat, Transform::matCanonicalToPixel(par, 1, 1, false) );
         *transform = Transform::matMul(*transform, mat);
-        bool isOk = getOverlayTransform(time, view, target, input.get(), transform);
+        bool isOk = getOverlayTransform(time, view, target, input, transform);
 
         return isOk;
     }
@@ -241,7 +241,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
 } // ViewerTabPrivate::getOverlayTransform
 
 static double
-transformTimeForNode(EffectInstance* currentNode,
+transformTimeForNode(const EffectInstancePtr& currentNode,
                      double inTime)
 {
     U64 nodeHash = currentNode->getHash();
@@ -268,10 +268,10 @@ bool
 ViewerTabPrivate::getTimeTransform(double time,
                                    ViewIdx view,
                                    const NodePtr& target,
-                                   EffectInstance* currentNode,
+                                   const EffectInstancePtr& currentNode,
                                    double *newTime) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    if ( currentNode == target->getEffectInstance() ) {
         *newTime = time;
 
         return true;
@@ -284,20 +284,20 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<EffectInstance*> nonOptionalInputs;
-    std::list<EffectInstance*> optionalInputs;
+    std::list<EffectInstancePtr> nonOptionalInputs;
+    std::list<EffectInstancePtr> optionalInputs;
     int maxInp = currentNode->getMaxInputCount();
 
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
-        EffectInstPtr inp = currentNode->getInput(i);
+        EffectInstancePtr inp = currentNode->getInput(i);
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
-                optionalInputs.push_back( inp.get() );
+                optionalInputs.push_back(inp);
             } else {
-                nonOptionalInputs.push_back( inp.get() );
+                nonOptionalInputs.push_back(inp);
             }
         }
     }
@@ -307,7 +307,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     ///Cycle through all non optional inputs first
-    for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
@@ -318,7 +318,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     ///Cycle through optional inputs...
-    for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
@@ -337,11 +337,12 @@ void
 ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
 {
     int activeInputIdx[2];
-
-    viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstPtr activeInput[2] = {EffectInstPtr(), EffectInstPtr()};
+    ViewerInstancePtr v = viewerNode.lock();
+    
+    v->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
+    EffectInstancePtr activeInput[2] = {EffectInstancePtr(), EffectInstancePtr()};
     for (int i = 0; i < 2; ++i) {
-        activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
+        activeInput[i] = v->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
             activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);

@@ -112,7 +112,7 @@ public:
     explicit DopeSheetView(DopeSheet *model,
                            HierarchyView *hierarchyView,
                            Gui *gui,
-                           const boost::shared_ptr<TimeLine> &timeline,
+                           const TimeLinePtr &timeline,
                            QWidget *parent = 0);
 
     virtual ~DopeSheetView() OVERRIDE;
@@ -213,7 +213,7 @@ public Q_SLOTS:
      * This slot is automatically called after the dope sheet model
      * created 'dsNode'.
      */
-    void onNodeAdded(DSNode *dsNode);
+    void onNodeAdded(const DSNodePtr& dsNode);
 
     /**
      * @brief Doesn't handle 'dsNode' for the next refreshes of the view.
@@ -221,7 +221,7 @@ public Q_SLOTS:
      * This slot is automatically called just before the dope sheet model
      * remove 'dsNode'.
      */
-    void onNodeAboutToBeRemoved(DSNode *dsNode);
+    void onNodeAboutToBeRemoved(const DSNodePtr& dsNode);
 
     /**
      * @brief If the node associated with the affected keyframe is contained

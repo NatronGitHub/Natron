@@ -157,7 +157,7 @@ public:
     /**
      * @brief An empty curve, held by owner. This is the "normal" constructor.
      **/
-    Curve(KnobI* owner,
+    Curve(const KnobIPtr& owner,
           int dimensionInOwner);
 
     Curve(const Curve & other);

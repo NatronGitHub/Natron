@@ -64,7 +64,7 @@ public:
     /**
      * @brief If this is a parent multi-instance, returns whether the given node is selected by the user or not
      **/
-    virtual bool isSelectedInParentMultiInstance(const Node* node) const = 0;
+    virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const = 0;
 
     /**
      * @brief Set the position of the node in the nodegraph.
@@ -140,8 +140,8 @@ public:
                                            ViewIdx view) = 0;
     virtual bool hasHostOverlay() const = 0;
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
-    virtual bool hasHostOverlayForParam(const KnobI* param) = 0;
-    virtual void removePositionHostOverlay(KnobI* knob) = 0;
+    virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) = 0;
+    virtual void removePositionHostOverlay(const KnobIPtr& knob) = 0;
     virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
                                        const std::string& pluginLabel,
                                        const std::string& pluginID,
@@ -170,7 +170,7 @@ public:
     /**
      * @brief Make up a dialog with the content of the group
      **/
-    virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;
+    virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

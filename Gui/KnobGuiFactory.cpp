@@ -59,7 +59,7 @@ using std::pair;
 /*Class inheriting KnobGui, must have a function named BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef KnobHelper *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
-typedef KnobGui *(*KnobGuiBuilder)(KnobPtr knob, KnobGuiContainerI* panel);
+typedef KnobGui *(*KnobGuiBuilder)(KnobIPtr knob, KnobGuiContainerI* panel);
 
 /***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
@@ -80,7 +80,7 @@ static std::pair<std::string, LibraryBinary *>
 knobGuiFactoryEntry()
 {
     std::string stub;
-    boost::scoped_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
+    KnobHelperPtr knob( K::create(KnobHolderPtr(), stub, 1) );
     std::map<std::string, void (*)()> functions;
 
     functions.insert( make_pair("BuildKnobGui", ( void (*)() ) & KG::BuildKnobGui) );
@@ -110,7 +110,7 @@ KnobGuiFactory::loadBultinKnobs()
 }
 
 KnobGui *
-KnobGuiFactory::createGuiForKnob(KnobPtr knob,
+KnobGuiFactory::createGuiForKnob(KnobIPtr knob,
                                  KnobGuiContainerI *container) const
 {
     assert(knob);

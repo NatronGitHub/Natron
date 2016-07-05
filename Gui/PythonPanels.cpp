@@ -65,7 +65,7 @@ struct DialogParamHolderPrivate
 };
 
 DialogParamHolder::DialogParamHolder(const QString& uniqueID,
-                                     const AppInstPtr& app,
+                                     const AppInstancePtr& app,
                                      UserParamHolder* widget)
     : NamedKnobHolder(app)
     , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
@@ -91,7 +91,7 @@ DialogParamHolder::setParamChangedCallback(const QString& callback)
 }
 
 bool
-DialogParamHolder::onKnobValueChanged(KnobI* k,
+DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
                                       double time,
                                       ViewSpec view,
@@ -99,7 +99,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
 {
     std::string callback;
     {
-        QMutexLocker k(&_imp->paramChangedCBMutex);
+        QMutexLocker l(&_imp->paramChangedCBMutex);
         callback = _imp->paramChangedCB;
     }
 
@@ -168,7 +168,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
 struct PyModalDialogPrivate
 {
     Gui* gui;
-    DialogParamHolder* holder;
+    DialogParamHolderPtr holder;
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
     QWidget* centerContainer;
@@ -177,7 +177,7 @@ struct PyModalDialogPrivate
 
     PyModalDialogPrivate(Gui* gui)
         : gui(gui)
-        , holder(0)
+        , holder()
         , mainLayout(0)
         , panel(0)
         , centerContainer(0)
@@ -193,7 +193,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
 {
-    _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
+    _imp->holder = DialogParamHolder::create( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
@@ -288,7 +288,7 @@ PyModalDialog::~PyModalDialog()
 {
 }
 
-DialogParamHolder*
+DialogParamHolderPtr
 PyModalDialog::getKnobsHolder() const
 {
     return _imp->holder;
@@ -316,7 +316,7 @@ PyModalDialog::setParamChangedCallback(const QString& callback)
 Param*
 PyModalDialog::getParam(const QString& scriptName) const
 {
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -327,7 +327,7 @@ PyModalDialog::getParam(const QString& scriptName) const
 
 struct PyPanelPrivate
 {
-    DialogParamHolder* holder;
+    DialogParamHolderPtr holder;
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
     QWidget* centerContainer;
@@ -337,7 +337,7 @@ struct PyPanelPrivate
 
 
     PyPanelPrivate()
-        : holder(0)
+        : holder()
         , mainLayout(0)
         , panel(0)
         , centerContainer(0)
@@ -379,7 +379,7 @@ PyPanel::PyPanel(const QString& scriptName,
 
 
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
+        _imp->holder = DialogParamHolder::create( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);
@@ -438,7 +438,7 @@ PyPanel::getParam(const QString& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
     if (!knob) {
         return 0;
     }

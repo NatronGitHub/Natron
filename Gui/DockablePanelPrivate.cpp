@@ -62,7 +62,7 @@ NATRON_NAMESPACE_ENTER;
 
 DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
                                            Gui* gui,
-                                           KnobHolder* holder,
+                                           const KnobHolderPtr& holder,
                                            QVBoxLayout* container,
                                            DockablePanel::HeaderModeEnum headerMode,
                                            bool useScrollAreasForTabs,

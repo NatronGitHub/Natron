@@ -46,7 +46,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    KnobGuiTable(KnobPtr knob,
+    KnobGuiTable(KnobIPtr knob,
                  KnobGuiContainerI *container);
 
     virtual ~KnobGuiTable() OVERRIDE;
@@ -123,19 +123,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiLayers(knob, container);
     }
 
-    KnobGuiLayers(KnobPtr knob,
+    KnobGuiLayers(KnobIPtr knob,
                   KnobGuiContainerI *container);
 
     virtual ~KnobGuiLayers() OVERRIDE;
 
 
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 private:
 

@@ -55,8 +55,8 @@ struct PasteUndoCommandPrivate
     KnobClipBoardType type;
     int fromDimension;
     int targetDimension;
-    boost::shared_ptr<KnobSerialization> originalSerialization;
-    KnobPtr fromKnob;
+    KnobSerializationPtr originalSerialization;
+    KnobIPtr fromKnob;
 
     PasteUndoCommandPrivate()
         : knob()
@@ -72,7 +72,7 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
                                    KnobClipBoardType type,
                                    int fromDimension,
                                    int targetDimension,
-                                   const KnobPtr& fromKnob)
+                                   const KnobIPtr& fromKnob)
     : QUndoCommand(0)
     , _imp( new PasteUndoCommandPrivate() )
 {
@@ -142,17 +142,17 @@ PasteUndoCommand::redo()
 } // undo
 
 void
-PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob,
+PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
                            bool isRedo)
 {
-    KnobPtr internalKnob = _imp->knob.lock()->getKnob();
+    KnobIPtr internalKnob = _imp->knob.lock()->getKnob();
 
     switch (_imp->type) {
     case eKnobClipBoardTypeCopyAnim: {
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
             if ( ( _imp->targetDimension == -1) || ( i == _imp->targetDimension) ) {
-                boost::shared_ptr<Curve> fromCurve;
+                CurvePtr fromCurve;
                 if ( ( i == _imp->targetDimension) && ( _imp->fromDimension != -1) ) {
                     fromCurve = serializedKnob->getCurve(ViewIdx(0), _imp->fromDimension);
                 } else {
@@ -168,15 +168,15 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob,
         break;
     }
     case eKnobClipBoardTypeCopyValue: {
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
+        KnobIntBasePtr isInt = toKnobIntBase( internalKnob );
+        KnobBoolBasePtr isBool = toKnobBoolBase( internalKnob );
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase( internalKnob );
+        KnobStringBasePtr isString = toKnobStringBase( internalKnob );
 
-        Knob<int>* isFromInt = dynamic_cast<Knob<int>*>( serializedKnob.get() );
-        Knob<bool>* isFromBool = dynamic_cast<Knob<bool>*>( serializedKnob.get() );
-        Knob<double>* isFromDouble = dynamic_cast<Knob<double>*>( serializedKnob.get() );
-        Knob<std::string>* isFromString = dynamic_cast<Knob<std::string>*>( serializedKnob.get() );
+        KnobIntBasePtr isFromInt = toKnobIntBase( serializedKnob );
+        KnobBoolBasePtr isFromBool = toKnobBoolBase( serializedKnob );
+        KnobDoubleBasePtr isFromDouble = toKnobDoubleBase( serializedKnob );
+        KnobStringBasePtr isFromString = toKnobStringBase( serializedKnob );
 
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
@@ -246,8 +246,8 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
     v.setValueRetCode = -1;
     vlist.push_back(v);
 
-    KnobHolder* holder = knob->getKnob()->getHolder();
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    KnobHolderPtr holder = knob->getKnob()->getHolder();
+    EffectInstancePtr effect = toEffectInstance(holder);
     QString holderName;
     if (effect) {
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
@@ -260,39 +260,39 @@ MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
 }
 
-KnobPtr
-MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobPtr & originalKnob)
+KnobIPtr
+MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
 {
     const std::string & typeName = originalKnob->typeName();
-    KnobPtr copy;
+    KnobIPtr copy;
     int dimension = originalKnob->getDimension();
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        copy.reset( new KnobInt(NULL, std::string(), dimension, false) );
+        copy = KnobInt::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        copy.reset( new KnobBool(NULL, std::string(), dimension, false) );
+        copy = KnobBool::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        copy.reset( new KnobDouble(NULL, std::string(), dimension, false) );
+        copy = KnobDouble::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        copy.reset( new KnobChoice(NULL, std::string(), dimension, false) );
+        copy = KnobChoice::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        copy.reset( new KnobString(NULL, std::string(), dimension, false) );
+        copy = KnobString::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        copy.reset( new KnobParametric(NULL, std::string(), dimension, false) );
+        copy = KnobParametric::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        copy.reset( new KnobColor(NULL, std::string(), dimension, false) );
+        copy = KnobColor::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        copy.reset( new KnobPath(NULL, std::string(), dimension, false) );
+        copy = KnobPath::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        copy.reset( new KnobFile(NULL, std::string(), dimension, false) );
+        copy = KnobFile::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        copy.reset( new KnobOutputFile(NULL, std::string(), dimension, false) );
+        copy = KnobOutputFile::create(KnobHolderPtr(), std::string(), dimension, false);
     }
 
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
     if (!copy) {
-        return KnobPtr();
+        return KnobIPtr();
     }
     copy->populate();
 
@@ -306,7 +306,7 @@ void
 MultipleKnobEditsUndoCommand::undo()
 {
     assert( !knobs.empty() );
-    KnobHolder* holder = knobs.begin()->first.lock()->getKnob()->getHolder();
+    KnobHolderPtr holder = knobs.begin()->first.lock()->getKnob()->getHolder();
     if (holder) {
         holder->beginChanges();
     }
@@ -316,15 +316,15 @@ MultipleKnobEditsUndoCommand::undo()
         if (!knobUI) {
             continue;
         }
-        KnobPtr knob = knobUI->getKnob();
+        KnobIPtr knob = knobUI->getKnob();
         if (!knob) {
             continue;
         }
         knob->beginChanges();
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KnobIntBasePtr isInt = toKnobIntBase(knob);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+        KnobStringBasePtr isString = toKnobStringBase(knob);
         KeyFrame k;
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
@@ -374,7 +374,7 @@ void
 MultipleKnobEditsUndoCommand::redo()
 {
     assert( !knobs.empty() );
-    KnobHolder* holder = knobs.begin()->first.lock()->getKnob()->getHolder();
+    KnobHolderPtr holder = knobs.begin()->first.lock()->getKnob()->getHolder();
     if (holder) {
         holder->beginChanges();
     }
@@ -385,15 +385,15 @@ MultipleKnobEditsUndoCommand::redo()
         if (!knobUI) {
             continue;
         }
-        KnobPtr knob = knobUI->getKnob();
+        KnobIPtr knob = knobUI->getKnob();
         if (!knob) {
             continue;
         }
         knob->beginChanges();
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KnobIntBasePtr isInt = toKnobIntBase(knob);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+        KnobStringBasePtr isString = toKnobStringBase(knob);
 
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KeyFrame k;
@@ -510,7 +510,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 }
 
 RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
-                                               const std::list<KnobPtr > & knobs,
+                                               const std::list<KnobIPtr > & knobs,
                                                int targetDim,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
@@ -518,7 +518,7 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
     , _targetDim(targetDim)
     , _knobs()
 {
-    for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         _knobs.push_front(*it);
         _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
     }
@@ -530,26 +530,26 @@ RestoreDefaultsCommand::undo()
     assert( _clones.size() == _knobs.size() );
 
     std::list<SequenceTime> times;
-    KnobPtr first = _knobs.front().lock();
-    AppInstPtr app = first->getHolder()->getApp();
+    KnobIPtr first = _knobs.front().lock();
+    AppInstancePtr app = first->getHolder()->getApp();
     assert(app);
-    std::list<KnobWPtr >::const_iterator itClone = _clones.begin();
-    for (std::list<KnobWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
-        KnobPtr itKnob = it->lock();
+    std::list<KnobIWPtr >::const_iterator itClone = _clones.begin();
+    for (std::list<KnobIWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
+        KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
-        KnobPtr itCloneKnob = itClone->lock();
+        KnobIPtr itCloneKnob = itClone->lock();
         if (!itCloneKnob) {
             continue;
         }
-        itKnob->cloneAndUpdateGui( itCloneKnob.get() );
+        itKnob->cloneAndUpdateGui( itCloneKnob );
 
         if ( itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
             for (int i = 0; i < dim; ++i) {
                 if ( (i == _targetDim) || (_targetDim == -1) ) {
-                    boost::shared_ptr<Curve> c = itKnob->getCurve(ViewIdx(0), i);
+                    CurvePtr c = itKnob->getCurve(ViewIdx(0), i);
                     if (c) {
                         KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -574,10 +574,10 @@ void
 RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
-    KnobPtr first = _knobs.front().lock();
-    AppInstPtr app;
-    KnobHolder* holder = first->getHolder();
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    KnobIPtr first = _knobs.front().lock();
+    AppInstancePtr app;
+    KnobHolderPtr holder = first->getHolder();
+    EffectInstancePtr isEffect = toEffectInstance(holder);
 
     if (holder) {
         app = holder->getApp();
@@ -588,8 +588,8 @@ RestoreDefaultsCommand::redo()
     /*
        First reset all knobs values, this will not call instanceChanged action
      */
-    for (std::list<KnobWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        KnobPtr itKnob = it->lock();
+    for (std::list<KnobIWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
@@ -597,7 +597,7 @@ RestoreDefaultsCommand::redo()
             int dim = itKnob->getDimension();
             for (int i = 0; i < dim; ++i) {
                 if ( (i == _targetDim) || (_targetDim == -1) ) {
-                    boost::shared_ptr<Curve> c = itKnob->getCurve(ViewIdx(0), i);
+                    CurvePtr c = itKnob->getCurve(ViewIdx(0), i);
                     if (c) {
                         KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -632,13 +632,13 @@ RestoreDefaultsCommand::redo()
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-    for (std::list<KnobWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        KnobPtr itKnob = it->lock();
+    for (std::list<KnobIWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
         if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->onKnobValueChanged_public(itKnob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+            itKnob->getHolder()->onKnobValueChanged_public(itKnob, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
         }
     }
 
@@ -665,7 +665,7 @@ RestoreDefaultsCommand::redo()
     setText( tr("Restore default value(s)") );
 } // RestoreDefaultsCommand::redo
 
-SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
+SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
                                            bool hasRetVar,
                                            int dimension,
                                            const std::string& expr,
@@ -687,7 +687,7 @@ SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
 void
 SetExpressionCommand::undo()
 {
-    KnobPtr knob = _knob.lock();
+    KnobIPtr knob = _knob.lock();
 
     if (!knob) {
         return;
@@ -708,7 +708,7 @@ SetExpressionCommand::undo()
 void
 SetExpressionCommand::redo()
 {
-    KnobPtr knob = _knob.lock();
+    KnobIPtr knob = _knob.lock();
 
     if (!knob) {
         return;

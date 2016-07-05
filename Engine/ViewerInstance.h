@@ -46,7 +46,7 @@ typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    EffectInstPtr activeInputToRender;
+    EffectInstancePtr activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
@@ -70,10 +70,17 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class ViewerCurrentFrameRequestScheduler;
 
-public:
-    static EffectInstance* BuildEffect(NodePtr n) WARN_UNUSED_RETURN;
+private: // derives from EffectInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    ViewerInstance(const NodePtr& node);
 
-    ViewerInstance(NodePtr node);
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN;
+
+    ViewerInstancePtr shared_from_this() {
+        return boost::dynamic_pointer_cast<ViewerInstance>(KnobHolder::shared_from_this());
+    }
 
     virtual ~ViewerInstance();
 
@@ -121,7 +128,7 @@ public:
                                                                 U64 viewerHash,
                                                                 bool canAbort,
                                                                 const NodePtr& rotoPaintNode,
-                                                                const boost::shared_ptr<RenderStats>& stats,
+                                                                const RenderStatsPtr& stats,
                                                                 ViewerArgs* outArgs);
 
 private:
@@ -135,7 +142,7 @@ private:
                                                          U64 viewerHash,
                                                          const NodePtr& rotoPaintNode,
                                                          const AbortableRenderInfoPtr& abortInfo,
-                                                         const boost::shared_ptr<RenderStats>& stats,
+                                                         const RenderStatsPtr& stats,
                                                          ViewerArgs* outArgs);
 
 
@@ -163,7 +170,7 @@ private:
                                                const bool useCache,
                                                const bool isDraftMode,
                                                const unsigned int mipmapLevel,
-                                               const boost::shared_ptr<RenderStats>& stats,
+                                               const RenderStatsPtr& stats,
                                                ViewerArgs* outArgs);
 
 
@@ -177,7 +184,7 @@ private:
     ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
                                              const U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
-                                             const boost::shared_ptr<RenderStats>& stats,
+                                             const RenderStatsPtr& stats,
                                              ViewerArgs* outArgs);
 
 public:
@@ -202,15 +209,15 @@ public:
                                      bool useTLS,
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
+                                     const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
 
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
                                                      bool canAbort,
                                                      ViewIdx view,
                                                      U64 viewerHash,
                                                      const NodePtr& rotoPaintNode,
-                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
-                                                     const boost::shared_ptr<RenderStats>& stats,
+                                                     const RotoStrokeItemPtr& strokeItem,
+                                                     const RenderStatsPtr& stats,
                                                      boost::shared_ptr<ViewerArgs>* argsA,
                                                      boost::shared_ptr<ViewerArgs>* argsB);
 
@@ -284,7 +291,7 @@ public:
 
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
-    boost::shared_ptr<TimeLine> getTimeline() const;
+    TimeLinePtr getTimeline() const;
 
     void getTimelineBounds(int* first, int* last) const;
 
@@ -424,7 +431,7 @@ private:
                                               const NodePtr& rotoPaintNode,
                                               bool useTLS,
                                               const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                              const boost::shared_ptr<RenderStats>& stats,
+                                              const RenderStatsPtr& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
 
@@ -434,6 +441,12 @@ private:
 
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
+
+inline ViewerInstancePtr
+toViewerInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<ViewerInstance>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

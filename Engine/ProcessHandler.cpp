@@ -45,7 +45,7 @@
 NATRON_NAMESPACE_ENTER;
 
 ProcessHandler::ProcessHandler(const QString & projectPath,
-                               OutputEffectInstance* writer)
+                               const OutputEffectInstancePtr& writer)
     : _process(new QProcess)
     , _writer(writer)
     , _ipcServer(0)

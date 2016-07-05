@@ -65,11 +65,11 @@ NATRON_NAMESPACE_ENTER;
 
 
 static void
-makeFullyQualifiedLabel(Node* node,
+makeFullyQualifiedLabel(const NodePtr& node,
                         std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
+    NodeCollectionPtr parent = node->getGroup();
+    NodeGroupPtr isParentGrp = toNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -77,7 +77,7 @@ makeFullyQualifiedLabel(Node* node,
     }
     ret->insert(0, toPreprend);
     if (isParentGrp) {
-        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+        makeFullyQualifiedLabel(isParentGrp->getNode(), ret);
     }
 }
 
@@ -99,7 +99,7 @@ addSpacer(QBoxLayout* layout)
 ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                      const std::list<NodeGuiPtr>& activePluginsContext,
                      Gui* gui,
-                     ViewerInstance* node,
+                     const ViewerInstancePtr& node,
                      QWidget* parent)
     : QWidget(parent)
     , PanelWidget(this, gui)
@@ -115,7 +115,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     }
     setScriptName(nodeName);
     std::string label;
-    makeFullyQualifiedLabel(node->getNode().get(), &label);
+    makeFullyQualifiedLabel(node->getNode(), &label);
     setLabel(label);
 
     NodePtr internalNode = node->getNode();
@@ -718,7 +718,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playbackMode_Button->setToolTip( GuiUtils::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal) );
 
 
-    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
+    TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
     QPixmap tripleSyncUnlockPix, tripleSyncLockedPix;
     appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &tripleSyncUnlockPix);
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, pixmapIconSize, &tripleSyncLockedPix);
@@ -974,17 +974,18 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     manageTimelineSlot(false, timeline);
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToPreviousKeyframe()) );
-    NodePtr wrapperNode = _imp->viewerNode->getNode();
-    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
-    QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    NodePtr wrapperNode = viewerNode->getNode();
+    RenderEnginePtr engine = viewerNode->getRenderEngine();
+    QObject::connect( viewerNode.get(), SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
-    QObject::connect( _imp->viewerNode, SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
-    QObject::connect( _imp->viewerNode, SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( wrapperNode.get() );
+    QObject::connect( viewerNode.get(), SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
+    QObject::connect( viewerNode.get(), SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
+    InspectorNodePtr isInspector = toInspectorNode(wrapperNode);
     if (isInspector) {
-        QObject::connect( isInspector, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
+        QObject::connect( isInspector.get(), SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
     }
     QObject::connect( _imp->viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
                       SLOT(onColorSpaceComboBoxChanged(int)) );
@@ -1009,7 +1010,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->refreshButton, SIGNAL(clicked()), this, SLOT(refresh()) );
     QObject::connect( _imp->pauseButton, SIGNAL(clicked(bool)), this, SLOT(onPauseViewerButtonClicked(bool)) );
     QObject::connect( _imp->centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()) );
-    QObject::connect( _imp->viewerNode, SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
+    QObject::connect( viewerNode.get(), SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
     QObject::connect( _imp->fpsBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinboxFpsChanged(double)) );
     QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
     QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
@@ -1036,7 +1037,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
-    _imp->viewerNode->setUiContext( getViewer() );
+    _imp->viewerNode.lock()->setUiContext( getViewer() );
 
     refreshLayerAndAlphaChannelComboBox();
 

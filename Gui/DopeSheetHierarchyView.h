@@ -151,7 +151,7 @@ public:
      * @brief Returns a pointer to the DSKnob associated with the item at
      * the coordinates (0, y) in the tree widget's viewport.
      */
-    boost::shared_ptr<DSKnob> getDSKnobAt(int y) const;
+    DSKnobPtr getDSKnobAt(int y) const;
 
     /**
      * @brief Returns true if 'item' is fully visible.
@@ -175,7 +175,7 @@ public:
 
     void setCanResizeOtherWidget(bool canResize);
 
-    void getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const;
+    void getSelectedDSKnobs(std::list<DSKnobPtr >* knobs) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
@@ -206,7 +206,7 @@ private Q_SLOTS:
      * This slot is automatically called after the dope sheet model
      * created 'dsNode'.
      */
-    void onNodeAdded(DSNode *dsNode);
+    void onNodeAdded(const DSNodePtr& dsNode);
 
     /**
      * @brief Removes the item associated with 'dsNode' from the hierarchy
@@ -215,7 +215,7 @@ private Q_SLOTS:
      * This slot is automatically called just before the dope sheet model
      * remove 'dsNode'.
      */
-    void onNodeAboutToBeRemoved(DSNode *dsNode);
+    void onNodeAboutToBeRemoved(const DSNodePtr& dsNode);
 
     /**
      * @brief Checks if the item associated with 'dsKnob' must be shown
@@ -227,7 +227,7 @@ private Q_SLOTS:
      * This slot is automatically called when a keyframe associated with
      * 'dsKnob' is set or removed.
      */
-    void onKeyframeSetOrRemoved(DSKnob *dsKnob);
+    void onKeyframeSetOrRemoved(const DSKnobPtr& dsKnob);
 
     /**
      * @brief Check the selected state of the knob context items which have

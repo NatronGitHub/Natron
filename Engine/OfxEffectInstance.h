@@ -57,9 +57,10 @@ NATRON_NAMESPACE_ENTER;
 class AbstractOfxEffectInstance
     : public OutputEffectInstance
 {
-public:
-
-    AbstractOfxEffectInstance(NodePtr node)
+protected: // derives from EffectInstance, parent of OfxEffectInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    AbstractOfxEffectInstance(const NodePtr& node)
         : OutputEffectInstance(node)
     {
     }
@@ -69,6 +70,12 @@ public:
     : OutputEffectInstance(other)
     {
     }
+
+public:
+    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    //{
+    //    return EffectInstancePtr( new AbstractOfxEffectInstance(node) );
+    //}
 
     virtual ~AbstractOfxEffectInstance()
     {
@@ -101,10 +108,18 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-    OfxEffectInstance(NodePtr node);
+private: // derives from EffectInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    OfxEffectInstance(const NodePtr& node);
 
     OfxEffectInstance(const OfxEffectInstance& other);
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new OfxEffectInstance(node) );
+    }
 
     virtual ~OfxEffectInstance();
 
@@ -196,7 +211,7 @@ public:
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
-    virtual bool knobChanged(KnobI* k,
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
@@ -275,7 +290,7 @@ public:
     virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum attachOpenGLContext(OpenGLContextEffectDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
-    virtual EffectInstPtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual EffectInstancePtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
@@ -286,7 +301,7 @@ public:
     virtual StatusEnum getTransform(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    EffectInstPtr* inputToTransform,
+                                    EffectInstancePtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -321,6 +336,18 @@ private:
 
     boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
 };
+
+inline AbstractOfxEffectInstancePtr
+toAbstractOfxEffectInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<AbstractOfxEffectInstance>(effect);
+}
+
+inline OfxEffectInstancePtr
+toOfxEffectInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<OfxEffectInstance>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

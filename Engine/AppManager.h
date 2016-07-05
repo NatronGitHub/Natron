@@ -86,7 +86,7 @@ public:
     }
 };
 
-typedef std::vector<AppInstPtr> AppInstanceVec;
+typedef std::vector<AppInstancePtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
@@ -142,12 +142,12 @@ public:
 
     bool isLoaded() const;
 
-    AppInstPtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
-    AppInstPtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstancePtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstancePtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
 private:
 
-    AppInstPtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    AppInstancePtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
 
 public:
 
@@ -156,7 +156,7 @@ public:
     {
     }
 
-    EffectInstPtr createOFXEffect(NodePtr node,
+    EffectInstancePtr createOFXEffect(const NodePtr& node,
                                   const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                   , bool allowFileDialogs,
@@ -164,7 +164,7 @@ public:
 #endif
                                   ) const;
 
-    AppInstPtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    AppInstancePtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
     int getNumInstances() const WARN_UNUSED_RETURN;
 
@@ -173,7 +173,7 @@ public:
     void setAsTopLevelInstance(int appID);
 
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
-    AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
+    AppInstancePtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
                             int majorVersion,
@@ -188,18 +188,18 @@ public:
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
-    bool getImage(const ImageKey & key, std::list<boost::shared_ptr<Image> >* returnValue) const;
+    bool getImage(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
 
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
-                          boost::shared_ptr<Image>* returnValue) const;
+    bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
+                          ImagePtr* returnValue) const;
 
-    bool getImage_diskCache(const ImageKey & key, std::list<boost::shared_ptr<Image> >* returnValue) const;
+    bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
 
-    bool getImageOrCreate_diskCache(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
-                                    boost::shared_ptr<Image>* returnValue) const;
+    bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
+                                    ImagePtr* returnValue) const;
 
     bool getTexture(const FrameKey & key,
                     std::list<FrameEntryPtr>* returnValue) const;
@@ -219,7 +219,7 @@ public:
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
 
-    void removeFromNodeCache(const boost::shared_ptr<Image> & image);
+    void removeFromNodeCache(const ImagePtr & image);
     void removeFromViewerCache(const FrameEntryPtr & texture);
 
     void removeFromNodeCache(U64 hash);
@@ -234,12 +234,12 @@ public:
 
     void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
-    boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
+    SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    boost::shared_ptr<K> createKnob(const KnobHolderPtr& holder,
                                     const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
@@ -249,7 +249,7 @@ public:
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    boost::shared_ptr<K> createKnob(const KnobHolderPtr& holder,
                                     const QString &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
@@ -282,12 +282,12 @@ public:
     /**
      * @brief Called when the instance is exited
      **/
-    void quit(const AppInstPtr& instance);
+    void quit(const AppInstancePtr& instance);
 
     /**
      * @brief Same as quit except that it blocks until all processing is done instead of doing it in a separate thread.
      **/
-    void quitNow(const AppInstPtr& instance);
+    void quitNow(const AppInstancePtr& instance);
 
     /*
        @brief Calls quit() on all AppInstance's
@@ -627,7 +627,7 @@ protected:
     template <typename PLUGIN>
     void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
 
-    virtual AppInstPtr makeNewInstance(int appID) const;
+    virtual AppInstancePtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {
     }

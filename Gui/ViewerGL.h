@@ -56,7 +56,8 @@ NATRON_NAMESPACE_ENTER;
  * OpenGL related code as well as user events.
  **/
 class ViewerGL
-    : public QGLWidget, public OpenGLViewerI
+    : public QGLWidget
+    , public OpenGLViewerI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -282,7 +283,7 @@ public:
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
-    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
+    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL;
 
 public:
 
@@ -368,7 +369,7 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    ViewerInstance* getInternalNode() const;
+    ViewerInstancePtr getInternalNode() const;
     ViewerTab* getViewerTab() const;
 
     /**
@@ -380,7 +381,7 @@ public:
      * @brief Returns the cursor position in canonical coordinates
      **/
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    virtual ViewerInstance* getInternalViewerNode() const OVERRIDE FINAL;
+    virtual ViewerInstancePtr getInternalViewerNode() const OVERRIDE FINAL;
 
     /**
      * @brief can only be called on the main-thread

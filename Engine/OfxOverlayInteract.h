@@ -100,19 +100,19 @@ public:
     // an RAII class to save OpenGL context
     class OGLContextSaver
     {
-public:
+    public:
         OGLContextSaver(OverlaySupport* viewport);
 
         ~OGLContextSaver();
 
-private:
-        OverlaySupport* const _viewport;
+    private:
+        OverlaySupport* _viewport;
     };
 };
 
-class OfxImageEffectInstance;
 class OfxOverlayInteract
-    :  public OFX::Host::ImageEffect::OverlayInteract, public NatronOverlayInteractSupport
+    : public OFX::Host::ImageEffect::OverlayInteract
+    , public NatronOverlayInteractSupport
 {
 public:
 
@@ -297,14 +297,15 @@ public:
 };
 
 class OfxParamOverlayInteract
-    : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
+    : public OFX::Host::Interact::Instance
+    , public NatronOverlayInteractSupport
 {
 
 
 
 public:
 
-    OfxParamOverlayInteract(KnobI* knob,
+    OfxParamOverlayInteract(const KnobIPtr& knob,
                             OFX::Host::Interact::Descriptor &desc,
                             void *effectInstance);
 

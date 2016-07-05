@@ -265,7 +265,7 @@ public:
     Button* prefsHelp;
     Button* cancelB;
     Button* okB;
-    std::vector<KnobI*> changedKnobs;
+    std::vector<KnobIPtr> changedKnobs;
     bool pluginSettingsChanged;
     bool closeIsOK;
     Label* pluginFilterLabel;
@@ -362,7 +362,7 @@ public:
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
     : QWidget(parent)
-    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>() )
+    , KnobGuiContainerHelper( appPTR->getCurrentSettings(), boost::shared_ptr<QUndoStack>() )
     , _imp( new PreferencesPanelPrivate(this, parent) )
 {
 }
@@ -718,7 +718,7 @@ PreferencesPanel::createGui()
     QGridLayout* pluginsFrameLayout = 0;
     QTreeWidgetItem* uiTabTreeItem = 0;
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
-        boost::shared_ptr<KnobPage> pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
+        KnobPagePtr pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
         if (pageKnob->getName() == "plugins") {
             pluginsFrameLayout = _imp->tabs[i].page.lock()->gridLayout;
         } else if (pageKnob->getName() == "userInterfacePage") {
@@ -755,7 +755,7 @@ PreferencesPanel::createGui()
     QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
     QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
     QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
-    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobI*)), this, SLOT(onSettingChanged(KnobI*)) );
+    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobIPtr)), this, SLOT(onSettingChanged(KnobIPtr)) );
 
 
     // Create plug-ins view
@@ -1009,13 +1009,13 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
     }
 
     QTreeWidgetItem* parentItem = 0;
-    boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
+    KnobPagePtr pageKnob = page->pageKnob.lock();
     if (pageKnob) {
         // In the preferences, there may be sub-pages
-        KnobPtr hasParent = pageKnob->getParentKnob();
-        boost::shared_ptr<KnobPage> parentPage;
+        KnobIPtr hasParent = pageKnob->getParentKnob();
+        KnobPagePtr parentPage;
         if (hasParent) {
-            parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
+            parentPage = toKnobPage(hasParent);
             if (parentPage) {
                 // look in the tabs if it is created
                 for (std::size_t i = 0; i < tabs.size(); ++i) {
@@ -1082,7 +1082,7 @@ PreferencesPanel::onPageLabelChanged(const KnobPageGuiPtr& page)
 }
 
 void
-PreferencesPanel::onSettingChanged(KnobI* knob)
+PreferencesPanel::onSettingChanged(const KnobIPtr& knob)
 {
     for (U32 i = 0; i < _imp->changedKnobs.size(); ++i) {
         if (_imp->changedKnobs[i] == knob) {
@@ -1170,7 +1170,7 @@ void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
     if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) ) {
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         if ( !_imp->changedKnobs.empty() ) {
             settings->beginChanges();
             settings->restoreKnobsFromSettings(_imp->changedKnobs);

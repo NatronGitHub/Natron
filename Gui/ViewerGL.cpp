@@ -205,7 +205,7 @@ ViewerGL::resizeGL(int w,
     glCheckError();
     _imp->ms = eMouseStateUndefined;
     assert(_imp->viewerTab);
-    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
+    ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
 
     bool isLoadingProject = _imp->viewerTab->getGui() &&
@@ -319,7 +319,7 @@ ViewerGL::paintGL()
 
         ///Determine whether we need to draw each texture or not
         int activeInputs[2];
-        ViewerInstance* internalViewer = _imp->viewerTab->getInternalNode();
+        ViewerInstancePtr internalViewer = _imp->viewerTab->getInternalNode();
         if (!internalViewer) {
             return;
         }
@@ -1224,7 +1224,7 @@ ViewerGL::getPboID(int index)
     }
 }
 
-ViewerInstance*
+ViewerInstancePtr
 ViewerGL::getInternalViewerNode() const
 {
     return getInternalNode();
@@ -1518,7 +1518,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->displayTextures[0].time = time;
         _imp->displayTextures[1].time = time;
     } else {
-        ViewerInstance* internalNode = getInternalNode();
+        ViewerInstancePtr internalNode = getInternalNode();
         _imp->displayTextures[textureIndex].isVisible = true;
         _imp->displayTextures[textureIndex].gain = gain;
         _imp->displayTextures[textureIndex].gamma = gamma;
@@ -1681,7 +1681,7 @@ ViewerGL::clearLastRenderedImage()
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    ViewerInstance* internalNode = getInternalNode();
+    ViewerInstancePtr internalNode = getInternalNode();
 
     for (int i = 0; i < 2; ++i) {
         for (U32 j = 0; j < _imp->displayTextures[i].lastRenderedTiles.size(); ++j) {
@@ -1768,7 +1768,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+        NodeGuiIPtr gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
         assert(gui_i);
         NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
         _imp->viewerTab->getGui()->selectNode(gui);
@@ -2729,7 +2729,7 @@ ViewerGL::checkIfViewPortRoIValidOrRender()
     for (int i = 0; i < 2; ++i) {
         if ( !checkIfViewPortRoIValidOrRenderForInput(i) ) {
             if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
-                ViewerInstance* viewer = getInternalNode();
+                ViewerInstancePtr viewer = getInternalNode();
                 assert(viewer);
                 if (viewer) {
                     viewer->getRenderEngine()->abortRenderingAutoRestart();
@@ -2787,7 +2787,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         return QGLWidget::wheelEvent(e);
     }
 
-    boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+    NodeGuiIPtr nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
     NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
     gui->selectNode(nodeGui);
 
@@ -3124,7 +3124,7 @@ ViewerGL::setClipToDisplayWindow(bool b)
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         _imp->clipToDisplayWindow = b;
     }
-    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
+    ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if ( viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
@@ -3727,7 +3727,7 @@ ViewerGL::getCurrentView() const
     return _imp->viewerTab->getCurrentView();
 }
 
-ViewerInstance*
+ViewerInstancePtr
 ViewerGL::getInternalNode() const
 {
     return _imp->viewerTab->getInternalNode();
@@ -3815,7 +3815,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
     Format dispW = getDisplayWindow();
     RectD canonicalDispW = dispW.toCanonicalFormat();
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
@@ -4082,7 +4082,7 @@ ViewerGL::getSelectionRectangle(double &left,
     top = std::max( topLeft.y(), btmRight.y() );
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerGL::getTimeline() const
 {
     return _imp->viewerTab->getTimeLine();

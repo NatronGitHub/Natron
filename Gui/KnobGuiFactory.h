@@ -53,7 +53,7 @@ public:
     ~KnobGuiFactory();
 
 
-    KnobGui * createGuiForKnob(KnobPtr knob, KnobGuiContainerI *container) const;
+    KnobGui * createGuiForKnob(KnobIPtr knob, KnobGuiContainerI *container) const;
 
 private:
     const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const

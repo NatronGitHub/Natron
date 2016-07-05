@@ -88,17 +88,24 @@ public:
 
     struct Implementation;
 
-public:
+protected: // parent of InspectorNode
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    Node(const AppInstPtr& app,
-         const boost::shared_ptr<NodeCollection>& group,
+    Node(const AppInstancePtr& app,
+         const NodeCollectionPtr& group,
          Plugin* plugin);
 
 public:
+    static NodePtr create(const AppInstancePtr& app,
+                          const NodeCollectionPtr& group,
+                          Plugin* plugin)
+    {
+        return NodePtr( new Node(app, group, plugin) );
+    }
+
     virtual ~Node();
 
-    boost::shared_ptr<NodeCollection> getGroup() const;
+    NodeCollectionPtr getGroup() const;
 
     /**
      * @brief Returns true if this node is a "user" node. For internal invisible node, this would return false.
@@ -114,8 +121,10 @@ public:
      **/
     void switchInternalPlugin(Plugin* plugin);
 
-    void setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp);
-    boost::shared_ptr<PrecompNode> isPartOfPrecomp() const;
+    void setPrecompNode(const PrecompNodePtr& precomp);
+
+    //
+    PrecompNodePtr isPartOfPrecomp() const;
 
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
@@ -131,7 +140,7 @@ public:
     void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
 
 
-    void loadKnob(const KnobPtr & knob, const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
+    void loadKnob(const KnobIPtr & knob, const std::list<KnobSerializationPtr> & serialization,
                   bool updateKnobGui = false);
 
     ///Set values for Knobs given their serialization
@@ -194,9 +203,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setEffect(const EffectInstPtr& liveInstance);
+    void setEffect(const EffectInstancePtr& liveInstance);
 
-    EffectInstPtr getEffectInstance() const;
+    EffectInstancePtr getEffectInstance() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
@@ -226,7 +235,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    const std::vector< KnobPtr > & getKnobs() const;
+    const std::vector< KnobIPtr > & getKnobs() const;
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
@@ -236,9 +245,9 @@ public:
 
 
     /*Returns in viewers the list of all the viewers connected to this node*/
-    void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
+    void hasViewersConnected(std::list<ViewerInstancePtr>* viewers) const;
 
-    void hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const;
+    void hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -288,14 +297,32 @@ public:
      **/
     bool isRotoPaintingNode() const;
 
-    ViewerInstance* isEffectViewer() const;
-    NodeGroup* isEffectGroup() const;
+    ViewerInstancePtr isEffectViewerInstance() const;
+
+    NodeGroupPtr isEffectNodeGroup() const;
+
+    PrecompNodePtr isEffectPrecompNode() const;
+
+    OutputEffectInstancePtr isEffectOutput() const;
+
+    GroupInputPtr isEffectGroupInput() const;
+
+    GroupOutputPtr isEffectGroupOutput() const;
+
+    ReadNodePtr isEffectReadNode() const;
+
+    WriteNodePtr isEffectWriteNode() const;
+
+    BackdropPtr isEffectBackdrop() const;
+
+    OneViewNodePtr isEffectOneViewNode() const;
 
     /**
      * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
      **/
-    boost::shared_ptr<RotoContext> getRotoContext() const;
-    boost::shared_ptr<TrackerContext> getTrackerContext() const;
+    RotoContextPtr getRotoContext() const;
+
+    TrackerContextPtr getTrackerContext() const;
 
     U64 getRotoAge() const;
 
@@ -333,7 +360,7 @@ public:
      **/
     int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
 
-    int isMaskChannelKnob(const KnobI* knob) const;
+    int isMaskChannelKnob(const KnobIConstPtr& knob) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -373,7 +400,7 @@ public:
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
      **/
-    int getInputIndex(const Node* node) const;
+    int getInputIndex(const NodeConstPtr& node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -475,7 +502,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                         double par,
                                                         const ImageComponents& components,
                                                         ImageBitDepthEnum depth) const;
@@ -560,7 +587,7 @@ public:
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
-    virtual int disconnectInput(Node* input);
+    virtual int disconnectInput(const NodePtr& input);
 
     /**
      * @brief Same as:
@@ -570,9 +597,9 @@ public:
      **/
     bool replaceInput(const NodePtr& input, int inputNumber);
 
-    void setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui);
+    void setNodeGuiPointer(const NodeGuiIPtr& gui);
 
-    boost::shared_ptr<NodeGuiI> getNodeGui() const;
+    NodeGuiIPtr getNodeGui() const;
 
     bool isSettingsPanelVisible() const;
 
@@ -584,10 +611,10 @@ private:
 
     bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
 
-    int disconnectInputInternal(Node* input, bool useGuiInputs);
+    int disconnectInputInternal(const NodePtr& input, bool useGuiInputs);
 
 
-    bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
+    bool isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const;
 
 public:
 
@@ -618,8 +645,8 @@ public:
      * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
      * Do not use that anywhere else.
      **/
-    void attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke);
-    boost::shared_ptr<RotoDrawableItem> getAttachedRotoItem() const;
+    void attachRotoItem(const RotoDrawableItemPtr& stroke);
+    RotoDrawableItemPtr getAttachedRotoItem() const;
 
 
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
@@ -642,7 +669,7 @@ private:
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues, const Node* output);
+    int disconnectOutput(bool useGuiValues, const NodeConstPtr& output);
 
 public:
 
@@ -681,7 +708,7 @@ public:
     std::string getPluginIconFilePath() const;
 
     /*============================*/
-    AppInstPtr getApp() const;
+    AppInstancePtr getApp() const;
 
     /* @brief Make this node inactive. It will appear
        as if it was removed from the graph editor
@@ -732,7 +759,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    KnobPtr getKnobByName(const std::string & name) const;
+    KnobIPtr getKnobByName(const std::string & name) const;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -803,7 +830,7 @@ public:
 
 private:
 
-    void clearPersistentMessageRecursive(std::list<Node*>& markedNodes);
+    void clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes);
 
     void clearPersistentMessageInternal();
 
@@ -853,9 +880,9 @@ public:
 
     U64 getKnobsAge() const;
 
-    void onAllKnobsSlaved(bool isSlave, KnobHolder* master);
+    void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master);
 
-    void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master, int dimension, bool isSlave);
+    void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master, int dimension, bool isSlave);
 
     NodePtr getMasterNode() const;
 
@@ -870,16 +897,16 @@ public:
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
      **/
-    void lock(const boost::shared_ptr<Image>& entry);
-    bool tryLock(const boost::shared_ptr<Image>& entry);
-    void unlock(const boost::shared_ptr<Image>& entry);
+    void lock(const ImagePtr& entry);
+    bool tryLock(const ImagePtr& entry);
+    void unlock(const ImagePtr& entry);
 
 
     /**
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Image> getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
+    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
 
     void beginInputEdition();
 
@@ -887,13 +914,13 @@ public:
 
     void onInputChanged(int inputNb, bool isInputA = true);
 
-    bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
+    bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
 
     void setNodeDisabled(bool disabled);
 
-    boost::shared_ptr<KnobBool> getDisabledKnob() const;
+    KnobBoolPtr getDisabledKnob() const;
 
     bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
 
@@ -958,8 +985,8 @@ public:
     struct KnobLink
     {
         ///The knob being slaved
-        KnobWPtr slave;
-        KnobWPtr master;
+        KnobIWPtr slave;
+        KnobIWPtr master;
 
         ///The master node to which the knob is slaved to
         NodeWPtr masterNode;
@@ -990,34 +1017,34 @@ private:
 
     void findRightClickMenuKnob(const KnobsVec& knobs);
 
-    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage);
+    void createNodePage(const KnobPagePtr& settingsPage);
 
     void createInfoPage();
 
     void createPythonPage();
 
-    void createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    void createHostMixKnob(const KnobPagePtr& mainPage);
 
 #ifndef NATRON_ENABLE_IO_META_NODES
-    void createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    void createWriterFrameStepKnob(const KnobPagePtr& mainPage);
 #endif
 
     void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
-                             const boost::shared_ptr<KnobPage>& mainPage,
+                             const KnobPagePtr& mainPage,
                              bool addNewLineOnLastMask,
-                             KnobPtr* lastKnobCreated);
+                             KnobIPtr* lastKnobCreated);
 
-    boost::shared_ptr<KnobPage> getOrCreateMainPage();
+    KnobPagePtr getOrCreateMainPage();
 
-    void createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage, const std::string& label);
+    void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);
 
-    void findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage);
+    void findOrCreateChannelEnabled(const KnobPagePtr& mainPage);
 
     void createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                                 const std::vector<std::string>& inputLabels,
-                                const boost::shared_ptr<KnobPage>& mainPage,
-                                KnobPtr* lastKnobBeforeAdvancedOption);
+                                const KnobPagePtr& mainPage,
+                                KnobIPtr* lastKnobBeforeAdvancedOption);
 
 public:
 
@@ -1035,7 +1062,7 @@ public:
     bool hasAnimatedKnob() const;
 
 
-    void setNodeIsRendering(std::list<NodeWPtr>& nodes);
+    void setNodeIsRendering(NodesWList& nodes);
     void unsetNodeIsRendering();
 
     /**
@@ -1052,7 +1079,7 @@ public:
      * @brief Attempts to detect cycles considering input being an input of this node.
      * Returns true if it couldn't detect any cycle, false otherwise.
      **/
-    bool checkIfConnectingInputIsOk(Node* input) const;
+    bool checkIfConnectingInputIsOk(const NodePtr& input) const;
 
     bool isForceCachingEnabled() const;
 
@@ -1104,11 +1131,11 @@ public:
     std::string getAfterNodeCreatedCallback() const;
     std::string getBeforeNodeRemovalCallback() const;
 
-    void onFileNameParameterChanged(KnobI* fileKnob);
+    void onFileNameParameterChanged(const KnobIPtr& fileKnob);
 
     static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
 
-    void computeFrameRangeForReader(KnobI* fileKnob);
+    void computeFrameRangeForReader(const KnobIPtr& fileKnob);
 
     bool getOverlayColor(double* r, double* g, double* b) const;
 
@@ -1174,37 +1201,37 @@ public:
                                    const RenderScale& renderScale,
                                    ViewIdx view) WARN_UNUSED_RETURN;
 
-    void addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
-                             const boost::shared_ptr<KnobBool>& interactive);
+    void addPositionInteract(const KnobDoublePtr& position,
+                             const KnobBoolPtr& interactive);
 
-    void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                              const boost::shared_ptr<KnobDouble>& scale,
-                              const boost::shared_ptr<KnobBool>& scaleUniform,
-                              const boost::shared_ptr<KnobDouble>& rotate,
-                              const boost::shared_ptr<KnobDouble>& skewX,
-                              const boost::shared_ptr<KnobDouble>& skewY,
-                              const boost::shared_ptr<KnobChoice>& skewOrder,
-                              const boost::shared_ptr<KnobDouble>& center,
-                              const boost::shared_ptr<KnobBool>& invert,
-                              const boost::shared_ptr<KnobBool>& interactive);
+    void addTransformInteract(const KnobDoublePtr& translate,
+                              const KnobDoublePtr& scale,
+                              const KnobBoolPtr& scaleUniform,
+                              const KnobDoublePtr& rotate,
+                              const KnobDoublePtr& skewX,
+                              const KnobDoublePtr& skewY,
+                              const KnobChoicePtr& skewOrder,
+                              const KnobDoublePtr& center,
+                              const KnobBoolPtr& invert,
+                              const KnobBoolPtr& interactive);
 
-    void addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
-                              const boost::shared_ptr<KnobDouble>& from2,
-                              const boost::shared_ptr<KnobDouble>& from3,
-                              const boost::shared_ptr<KnobDouble>& from4,
-                              const boost::shared_ptr<KnobDouble>& to1,
-                              const boost::shared_ptr<KnobDouble>& to2,
-                              const boost::shared_ptr<KnobDouble>& to3,
-                              const boost::shared_ptr<KnobDouble>& to4,
-                              const boost::shared_ptr<KnobBool>& enable1,
-                              const boost::shared_ptr<KnobBool>& enable2,
-                              const boost::shared_ptr<KnobBool>& enable3,
-                              const boost::shared_ptr<KnobBool>& enable4,
-                              const boost::shared_ptr<KnobChoice>& overlayPoints,
-                              const boost::shared_ptr<KnobBool>& invert,
-                              const boost::shared_ptr<KnobBool>& interactive);
+    void addCornerPinInteract(const KnobDoublePtr& from1,
+                              const KnobDoublePtr& from2,
+                              const KnobDoublePtr& from3,
+                              const KnobDoublePtr& from4,
+                              const KnobDoublePtr& to1,
+                              const KnobDoublePtr& to2,
+                              const KnobDoublePtr& to3,
+                              const KnobDoublePtr& to4,
+                              const KnobBoolPtr& enable1,
+                              const KnobBoolPtr& enable2,
+                              const KnobBoolPtr& enable3,
+                              const KnobBoolPtr& enable4,
+                              const KnobChoicePtr& overlayPoints,
+                              const KnobBoolPtr& invert,
+                              const KnobBoolPtr& interactive);
 
-    void removePositionHostOverlay(KnobI* knob);
+    void removePositionHostOverlay(const KnobIPtr& knob);
 
     void initializeHostOverlays();
 
@@ -1212,7 +1239,7 @@ public:
 
     void setCurrentViewportForHostOverlays(OverlaySupport* viewPort);
 
-    bool hasHostOverlayForParam(const KnobI* knob) const;
+    bool hasHostOverlayForParam(const KnobIConstPtr& knob) const;
 
     void setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
                                      const std::string& pluginLabel,
@@ -1233,7 +1260,7 @@ public:
 
     bool getProcessChannel(int channelIndex) const;
 
-    boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
+    KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
 
     bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, ImageComponents *layer) const;
 
@@ -1272,7 +1299,7 @@ public:
 
     void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool loadingProject);
 
-    bool handleFormatKnob(KnobI* knob);
+    bool handleFormatKnob(const KnobIPtr& knob);
 
     QString makeDocumentation(bool genHTML) const;
 
@@ -1300,7 +1327,7 @@ private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
-    void computeHashRecursive(std::list<Node*>& marked);
+    void computeHashRecursive(std::list<NodePtr>& marked);
 
     /**
      * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
@@ -1310,9 +1337,9 @@ private:
 
     void refreshEnabledKnobsLabel(const ImageComponents& layer);
 
-    void refreshCreatedViews(KnobI* knob);
+    void refreshCreatedViews(const KnobIPtr& knob);
 
-    void refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes);
+    void refreshInputRelatedDataRecursiveInternal(std::list<NodePtr>& markedNodes);
 
     void refreshInputRelatedDataRecursive();
 
@@ -1324,11 +1351,11 @@ private:
 
     void markInputRelatedDataDirtyRecursive();
 
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes, bool recurse);
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<NodePtr>& markedNodes, bool recurse);
 
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
 
-    bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
+    bool refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
@@ -1482,14 +1509,14 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
 
-    void setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes);
+    void setNodeIsRenderingInternal(NodesWList& markedNodes);
 
 
     /**
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.
      **/
-    void isNodeUpstream(const Node* input, bool* ok) const;
+    void isNodeUpstream(const NodeConstPtr& input, bool* ok) const;
 
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
@@ -1512,11 +1539,21 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from Node
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
+    InspectorNode(const AppInstancePtr& app,
+                  const NodeCollectionPtr& group,
+                  Plugin* plugin);
+
 public:
 
-    InspectorNode(const AppInstPtr& app,
-                  const boost::shared_ptr<NodeCollection>& group,
-                  Plugin* plugin);
+    static NodePtr create(const AppInstancePtr& app,
+                          const NodeCollectionPtr& group,
+                          Plugin* plugin)
+    {
+        return NodePtr( new InspectorNode(app, group, plugin) );
+    }
 
     virtual ~InspectorNode();
 
@@ -1554,11 +1591,16 @@ private:
     int _activeInputs[2]; //< indexes of the inputs used for the wipe
 };
 
+inline InspectorNodePtr
+toInspectorNode(const NodePtr& node)
+{
+    return boost::dynamic_pointer_cast<InspectorNode>(node);
+}
 
 class RenderingFlagSetter
 {
     NodeWPtr node;
-    std::list<NodeWPtr> nodes;
+    NodesWList nodes;
 
 public:
 

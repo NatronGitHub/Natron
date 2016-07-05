@@ -62,18 +62,18 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         _inputs.clear();
 
         if ( n->isOpenFXNode() ) {
-            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() );
+            OfxEffectInstancePtr effect = boost::dynamic_pointer_cast<OfxEffectInstance>( n->getEffectInstance() );
             assert(effect);
             if (effect) {
                 effect->syncPrivateData_other_thread();
             }
         }
 
-        std::vector< KnobPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
-        std::list<KnobPtr > userPages;
+        std::vector< KnobIPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
+        std::list<KnobIPtr > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
-            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
-            KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
+            KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
+            KnobPagePtr isPage = toKnobPage(knobs[i]);
 
             if (isPage) {
                 _pagesIndexes.push_back( knobs[i]->getName() );
@@ -89,14 +89,14 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                 ///For choice do a deepclone because we need entries
                 //bool doCopyKnobs = isChoice ? true : copyKnobs;
 
-                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+                KnobSerializationPtr newKnobSer( new KnobSerialization(knobs[i]) );
                 _knobsValues.push_back(newKnobSer);
             }
         }
 
         _nbKnobs = (int)_knobsValues.size();
 
-        for (std::list<KnobPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        for (std::list<KnobIPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization(*it) );
             _userPages.push_back(s);
         }
@@ -129,7 +129,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             _masterNodeName = masterNode->getFullyQualifiedName();
         }
 
-        boost::shared_ptr<RotoContext> roto = n->getRotoContext();
+        RotoContextPtr roto = n->getRotoContext();
         if ( roto && !roto->isEmpty() ) {
             _hasRotoContext = true;
             roto->save(&_rotoContext);
@@ -137,7 +137,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             _hasRotoContext = false;
         }
 
-        boost::shared_ptr<TrackerContext> tracker = n->getTrackerContext();
+        TrackerContextPtr tracker = n->getTrackerContext();
         if (tracker) {
             _hasTrackerContext = true;
             tracker->save(&_trackerContext);
@@ -146,7 +146,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         }
 
 
-        NodeGroup* isGrp = n->isEffectGroup();
+        NodeGroupPtr isGrp = n->isEffectNodeGroup();
         if (isGrp) {
             NodesList nodes;
             isGrp->getActiveNodes(&nodes);
@@ -155,7 +155,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
 
             for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 if ( (*it)->isPartOfProject() ) {
-                    boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+                    NodeSerializationPtr state( new NodeSerialization(*it) );
                     _children.push_back(state);
                 }
             }
@@ -170,7 +170,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
                 assert( (*it)->getParentMultiInstance() );
                 if ( (*it)->isActivated() ) {
-                    boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+                    NodeSerializationPtr state( new NodeSerialization(*it) );
                     _children.push_back(state);
                 }
             }

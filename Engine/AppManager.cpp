@@ -337,7 +337,7 @@ AppManager::~AppManager()
         appsEmpty = _imp->_appInstances.empty();
     }
     while (!appsEmpty) {
-        AppInstPtr front;
+        AppInstancePtr front;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
             front = _imp->_appInstances.front();
@@ -390,7 +390,7 @@ class QuitInstanceArgs
 {
 public:
 
-    AppInstWPtr instance;
+    AppInstanceWPtr instance;
 
     QuitInstanceArgs()
         : GenericWatcherCallerArgs()
@@ -410,7 +410,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
         return;
     }
 
-    AppInstPtr instance = inArgs->instance.lock();
+    AppInstancePtr instance = inArgs->instance.lock();
 
     instance->aboutToQuit();
 
@@ -429,7 +429,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 }
 
 void
-AppManager::quitNow(const AppInstPtr& instance)
+AppManager::quitNow(const AppInstancePtr& instance)
 {
     NodesList nodesToWatch;
 
@@ -445,7 +445,7 @@ AppManager::quitNow(const AppInstPtr& instance)
 }
 
 void
-AppManager::quit(const AppInstPtr& instance)
+AppManager::quit(const AppInstancePtr& instance)
 {
     boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
 
@@ -465,7 +465,7 @@ AppManager::quitApplication()
     }
 
     while (!appsEmpty) {
-        AppInstPtr app;
+        AppInstancePtr app;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
             app = _imp->_appInstances.front();
@@ -597,7 +597,7 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
 
-    _imp->_settings.reset( new Settings() );
+    _imp->_settings = Settings::create();
     _imp->_settings->initializeKnobsPublic();
 
     bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
@@ -787,9 +787,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
-        _imp->_diskCache.reset( new Cache<Image>("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
+        _imp->_nodeCache.reset( new ImageCache("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
+        _imp->_diskCache.reset( new ImageCache("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
+        _imp->_viewerCache.reset( new FrameEntryCache("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
         _imp->setViewerCacheTileSize();
     } catch (std::logic_error) {
         // ignore
@@ -861,7 +861,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         args = cl;
     }
 
-    AppInstPtr mainInstance = newAppInstance(args, false);
+    AppInstancePtr mainInstance = newAppInstance(args, false);
 
     hideSplashScreen();
 
@@ -930,17 +930,17 @@ AppManagerPrivate::setViewerCacheTileSize()
     _viewerCache->setTiled(true, tileSize);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
                                    bool alwaysBackground,
                                    bool makeEmptyInstance)
 {
-    AppInstPtr instance;
+    AppInstancePtr instance;
 
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance.reset( new AppInstance(_imp->_availableID) );
+        instance = AppInstance::create(_imp->_availableID);
     }
 
     {
@@ -976,21 +976,21 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     return instance;
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newBackgroundInstance(const CLArgs& cl,
                                   bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, true, makeEmptyInstance);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newAppInstance(const CLArgs& cl,
                            bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, false, makeEmptyInstance);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::getAppInstance(int appID) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
@@ -1001,7 +1001,7 @@ AppManager::getAppInstance(int appID) const
         }
     }
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 int
@@ -1136,7 +1136,7 @@ AppManager::wipeAndCreateDiskCacheStructure()
     _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::getTopLevelInstance () const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
@@ -1147,7 +1147,7 @@ AppManager::getTopLevelInstance () const
         }
     }
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 bool
@@ -1314,10 +1314,10 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
                                   bool isDeprecated,
                                   bool internalUseOnly)
 {
-    EffectInstPtr node( PLUGIN::BuildEffect( NodePtr() ) );
+    EffectInstancePtr node( PLUGIN::create( NodePtr() ) );
     std::map<std::string, void (*)()> functions;
 
-    functions.insert( std::make_pair("BuildEffect", ( void (*)() ) & PLUGIN::BuildEffect) );
+    functions.insert( std::make_pair("create", ( void (*)() ) (EffectBuilder)PLUGIN::create) );
     LibraryBinary *binary = new LibraryBinary(functions);
     assert(binary);
 
@@ -1549,7 +1549,7 @@ addToPythonPathFunctor(const QDir& directory)
     if (!ok) {
         std::string message = QCoreApplication::translate("AppManager", "Could not add %1 to python path:").arg( directory.absolutePath() ).toStdString() + ' ' + err;
         std::cerr << message << std::endl;
-        AppInstPtr topLevel = appPTR->getTopLevelInstance();
+        AppInstancePtr topLevel = appPTR->getTopLevelInstance();
         if (topLevel) {
             topLevel->appendToScriptEditor( message.c_str() );
         }
@@ -1966,8 +1966,8 @@ AppManager::getPluginBinary(const QString & pluginId,
     return 0;
 }
 
-EffectInstPtr
-AppManager::createOFXEffect(NodePtr node,
+EffectInstancePtr
+AppManager::createOFXEffect(const NodePtr& node,
                             const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                             ,
@@ -1985,7 +1985,7 @@ AppManager::createOFXEffect(NodePtr node,
 }
 
 void
-AppManager::removeFromNodeCache(const boost::shared_ptr<Image> & image)
+AppManager::removeFromNodeCache(const ImagePtr & image)
 {
     _imp->_nodeCache->removeEntry(image);
 }
@@ -2026,7 +2026,7 @@ AppManager::getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
     std::size_t nodeCacheDisk = 0;
     const Node* isNode = dynamic_cast<const Node*>(holder);
     if (isNode) {
-        ViewerInstance* isViewer = isNode->isEffectViewer();
+        ViewerInstancePtr isViewer = isNode->isEffectViewerInstance();
         if (isViewer) {
             _imp->_viewerCache->getMemoryStatsForCacheEntryHolder(holder, &viewerCacheMem, &viewerCacheDisk);
         }
@@ -2084,30 +2084,30 @@ AppManager::setNumberOfThreads(int threadsNb)
 
 bool
 AppManager::getImage(const ImageKey & key,
-                     std::list<boost::shared_ptr<Image> >* returnValue) const
+                     std::list<ImagePtr >* returnValue) const
 {
     return _imp->_nodeCache->get(key, returnValue);
 }
 
 bool
 AppManager::getImageOrCreate(const ImageKey & key,
-                             const boost::shared_ptr<ImageParams>& params,
-                             boost::shared_ptr<Image>* returnValue) const
+                             const ImageParamsPtr& params,
+                             ImagePtr* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
 AppManager::getImage_diskCache(const ImageKey & key,
-                               std::list<boost::shared_ptr<Image> >* returnValue) const
+                               std::list<ImagePtr >* returnValue) const
 {
     return _imp->_diskCache->get(key, returnValue);
 }
 
 bool
 AppManager::getImageOrCreate_diskCache(const ImageKey & key,
-                                       const boost::shared_ptr<ImageParams>& params,
-                                       boost::shared_ptr<Image>* returnValue) const
+                                       const ImageParamsPtr& params,
+                                       ImagePtr* returnValue) const
 {
     return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
 }
@@ -2157,7 +2157,7 @@ AppManager::getOrActivateViewerCacheSignalEmitter() const
     return _imp->_viewerCache->activateSignalEmitter();
 }
 
-boost::shared_ptr<Settings> AppManager::getCurrentSettings() const
+SettingsPtr AppManager::getCurrentSettings() const
 {
     return _imp->_settings;
 }
@@ -2171,10 +2171,10 @@ AppManager::setLoadingStatus(const QString & str)
     std::cout << str.toStdString() << std::endl;
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr( new AppInstance(appID) );
+    return AppInstance::create(appID);
 }
 
 void
@@ -2190,7 +2190,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSpec>("ViewSpec");
-    qRegisterMetaType<boost::shared_ptr<Node> >("boost::shared_ptr<Node>");
+    qRegisterMetaType<NodePtr >("NodePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
@@ -2554,7 +2554,7 @@ AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (instance == NULL) {
+    if (!instance) {
         // instance may be NULL if using OfxDialogSuiteV1
         OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
         instance = tls->lastEffectCallingMainEntry;
@@ -3038,7 +3038,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
     QMutexLocker k(&_imp->_appInstancesMutex);
 
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        boost::shared_ptr<Project> proj = (*it)->getProject();
+        ProjectPtr proj = (*it)->getProject();
         if (proj) {
             QString path = proj->getProjectPath();
             QString name = proj->getProjectFilename();
@@ -3303,7 +3303,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, useHtml);
     } else {
@@ -3318,7 +3318,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3332,7 +3332,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, useHtml);
     } else {
@@ -3347,7 +3347,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3361,7 +3361,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, useHtml);
     } else {
@@ -3376,7 +3376,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3392,7 +3392,7 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton);
     } else {
@@ -3412,7 +3412,7 @@ Dialogs::questionDialog(const std::string & title,
                         bool* stopAsking)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     } else {

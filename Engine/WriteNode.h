@@ -64,12 +64,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new WriteNode(n);
-    }
-
     /**
      * @brief Returns if the given plug-in is compatible with this WriteNode container.
      * by default all nodes which inherits GenericWriter in OpenFX are.
@@ -77,7 +71,17 @@ public:
     static bool isBundledWriter(const std::string& pluginID, bool wasProjectCreatedWithLowerCaseIDs);
     bool isBundledWriter(const std::string& pluginID);
 
-    WriteNode(NodePtr n);
+private: // derives from EffectInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    WriteNode(const NodePtr& n);
+
+public:
+
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new WriteNode(node) );
+    }
 
     virtual ~WriteNode();
 
@@ -117,14 +121,20 @@ private:
 
     virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization) OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI* k,
+    virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization) OVERRIDE FINAL;
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     boost::scoped_ptr<WriteNodePrivate> _imp;
 };
+
+inline WriteNodePtr
+toWriteNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<WriteNode>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

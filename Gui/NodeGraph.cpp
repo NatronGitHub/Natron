@@ -60,11 +60,11 @@ NATRON_NAMESPACE_ENTER;
 
 
 void
-NodeGraph::makeFullyQualifiedLabel(Node* node,
+NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
                                    std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
+    NodeCollectionPtr parent = node->getGroup();
+    NodeGroupPtr isParentGrp = toNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -72,12 +72,12 @@ NodeGraph::makeFullyQualifiedLabel(Node* node,
     }
     ret->insert(0, toPreprend);
     if (isParentGrp) {
-        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+        makeFullyQualifiedLabel(isParentGrp->getNode(), ret);
     }
 }
 
 NodeGraph::NodeGraph(Gui* gui,
-                     const boost::shared_ptr<NodeCollection>& group,
+                     const NodeCollectionPtr& group,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
@@ -89,7 +89,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( group.get() );
+    NodeGroupPtr isGrp = toNodeGroup( group );
     if (isGrp) {
         std::string newName = isGrp->getNode()->getFullyQualifiedName();
         for (std::size_t i = 0; i < newName.size(); ++i) {
@@ -99,7 +99,7 @@ NodeGraph::NodeGraph(Gui* gui,
         }
         setScriptName(newName);
         std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
+        makeFullyQualifiedLabel(isGrp->getNode(), &label);
         setLabel(label);
         QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
         QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );
@@ -230,7 +230,7 @@ NodeGraph::getSelectedNodes() const
     return _imp->_selection;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 NodeGraph::getGroup() const
 {
     return _imp->group.lock();
@@ -245,7 +245,7 @@ NodeGraph::getRootItem() const
 void
 NodeGraph::notifyGuiClosing()
 {
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
 
     if (group) {
         group->discardNodeGraphPointer();
@@ -276,7 +276,7 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
-    AppInstPtr app;
+    AppInstancePtr app;
 
     if ( getGui() ) {
         app = getGui()->getApp();
@@ -285,8 +285,8 @@ NodeGraph::paintEvent(QPaintEvent* e)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -369,23 +369,23 @@ NodeGraph::createNodeGUI(const NodePtr & node,
                          const CreateNodeArgs& args)
 {
     NodeGuiPtr node_ui;
-    Dot* isDot = dynamic_cast<Dot*>( node->getEffectInstance().get() );
-    Backdrop* isBd = dynamic_cast<Backdrop*>( node->getEffectInstance().get() );
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( node->getEffectInstance().get() );
+    DotPtr isDotNode = toDot( node->getEffectInstance() );
+    BackdropPtr isBd = toBackdrop( node->getEffectInstance() );
+    NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance() );
 
 
-    if (isDot) {
-        node_ui.reset( new DotGui(_imp->_nodeRoot) );
+    if (isDotNode) {
+        node_ui = DotGui::create(_imp->_nodeRoot);
     } else if (isBd) {
-        node_ui.reset( new BackdropGui(_imp->_nodeRoot) );
+        node_ui = BackdropGui::create(_imp->_nodeRoot);
     } else {
-        node_ui.reset( new NodeGui(_imp->_nodeRoot) );
+        node_ui = NodeGui::create(_imp->_nodeRoot);
     }
     assert(node_ui);
     node_ui->initialize(this, node);
 
     if (isBd) {
-        BackdropGui* bd = dynamic_cast<BackdropGui*>( node_ui.get() );
+        BackdropGuiPtr bd = toBackdropGui(node_ui);
         assert(bd);
         NodesGuiList selectedNodes = _imp->_selection;
         if ( bd && !selectedNodes.empty() ) {
@@ -413,14 +413,14 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         _imp->_nodes.push_back(node_ui);
     }
 
-    //NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
-    const std::list<NodePtr>& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
+    //NodeGroupPtr parentIsGroup = toNodeGroup(node->getGroup());;
+    const NodesList& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
     bool isTopLevelNodeBeingCreated = false;
     if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
         isTopLevelNodeBeingCreated = true;
     }
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
     if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {

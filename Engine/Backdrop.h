@@ -45,14 +45,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    Backdrop(const NodePtr& node);
+
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new Backdrop(n);
+        return EffectInstancePtr( new Backdrop(node) );
     }
-
-    Backdrop(NodePtr node);
 
     virtual ~Backdrop();
 
@@ -83,7 +84,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual bool knobChanged(KnobI * k,
+    virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,
@@ -91,6 +92,12 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
     boost::scoped_ptr<BackdropPrivate> _imp;
 };
+
+inline BackdropPtr
+toBackdrop(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<Backdrop>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

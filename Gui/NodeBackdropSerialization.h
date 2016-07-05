@@ -83,7 +83,7 @@ public:
         w = width; h = height;
     }
 
-    KnobPtr getLabelSerialization() const
+    KnobIPtr getLabelSerialization() const
     {
         return label->getKnob();
     }
@@ -111,7 +111,7 @@ private:
     double posY;
     int width, height;
     std::string name;
-    boost::shared_ptr<KnobSerialization> label;
+    KnobSerializationPtr label;
     float r, g, b;
     std::string masterBackdropName;
     bool selected;

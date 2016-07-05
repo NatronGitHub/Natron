@@ -118,9 +118,9 @@ public:
     /**
      * @brief Returns for a viewer the internal viewer node
      **/
-    virtual ViewerInstance* getInternalViewerNode() const
+    virtual ViewerInstancePtr getInternalViewerNode() const
     {
-        return 0;
+        return ViewerInstancePtr();
     }
 
     /**

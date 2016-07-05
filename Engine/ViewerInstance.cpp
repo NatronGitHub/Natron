@@ -105,7 +105,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static void scaleToTexture8bits(const RectI& roi,
                                 const RenderViewerArgs & args,
-                                ViewerInstance* viewer,
+                                const ViewerInstancePtr& viewer,
                                 const UpdateViewerParams::CachedTile& tile,
                                 U32* output);
 static void scaleToTexture32bits(const RectI& roi,
@@ -117,7 +117,7 @@ static MinMaxVal findAutoContrastVminVmax(boost::shared_ptr<const Image> inputIm
                                                          const RectI & rect);
 static void renderFunctor(const RectI& roi,
                           const RenderViewerArgs & args,
-                          ViewerInstance* viewer,
+                          const ViewerInstancePtr& viewer,
                           UpdateViewerParams::CachedTile tile);
 
 /**
@@ -158,16 +158,16 @@ ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
     return lut;
 }
 
-EffectInstance*
-ViewerInstance::BuildEffect(NodePtr n)
+EffectInstancePtr
+ViewerInstance::create(const NodePtr& node)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return new ViewerInstance(n);
+    return EffectInstancePtr( new ViewerInstance(node) );
 }
 
-ViewerInstance::ViewerInstance(NodePtr node)
+ViewerInstance::ViewerInstance(const NodePtr& node)
     : OutputEffectInstance(node)
     , _imp( new ViewerInstancePrivate(this) )
 {
@@ -203,7 +203,7 @@ ViewerInstance::~ViewerInstance()
 RenderEngine*
 ViewerInstance::createRenderEngine()
 {
-    boost::shared_ptr<ViewerInstance> thisShared = boost::dynamic_pointer_cast<ViewerInstance>( shared_from_this() );
+    boost::shared_ptr<ViewerInstance> thisShared = toViewerInstance( shared_from_this() );
 
     return new ViewerRenderEngine(thisShared);
 }
@@ -282,7 +282,7 @@ ViewerInstance::getFrameRange(double *first,
     int activeInputs[2];
 
     getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstPtr n1 = getInput(activeInputs[0]);
+    EffectInstancePtr n1 = getInput(activeInputs[0]);
     if (n1) {
         n1->getFrameRange_public(n1->getRenderHash(), &inpFirst, &inpLast);
     }
@@ -292,7 +292,7 @@ ViewerInstance::getFrameRange(double *first,
     inpFirst = 1;
     inpLast = 1;
 
-    EffectInstPtr n2 = getInput(activeInputs[1]);
+    EffectInstancePtr n2 = getInput(activeInputs[1]);
     if (n2) {
         n2->getFrameRange_public(n2->getRenderHash(), &inpFirst, &inpLast);
         if (inpFirst < *first) {
@@ -315,10 +315,10 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 }
 
 static bool
-isRotoPaintNodeInputRecursive(Node* node,
+isRotoPaintNodeInputRecursive(const NodePtr& node,
                               const NodePtr& rotoPaintNode)
 {
-    if ( node == rotoPaintNode.get() ) {
+    if ( node == rotoPaintNode ) {
         return true;
     }
     int maxInputs = node->getMaxInputCount();
@@ -328,7 +328,7 @@ isRotoPaintNodeInputRecursive(Node* node,
             if (input == rotoPaintNode) {
                 return true;
             } else {
-                bool ret = isRotoPaintNodeInputRecursive(input.get(), rotoPaintNode);
+                bool ret = isRotoPaintNodeInputRecursive(input, rotoPaintNode);
                 if (ret) {
                     return true;
                 }
@@ -340,7 +340,7 @@ isRotoPaintNodeInputRecursive(Node* node,
 }
 
 static void
-updateLastStrokeDataRecursively(Node* node,
+updateLastStrokeDataRecursively(const NodePtr& node,
                                 const NodePtr& rotoPaintNode,
                                 const RectD& lastStrokeBbox,
                                 bool invalidate)
@@ -352,14 +352,14 @@ updateLastStrokeDataRecursively(Node* node,
             node->setLastPaintStrokeDataNoRotopaint();
         }
 
-        if ( node == rotoPaintNode.get() ) {
+        if ( node == rotoPaintNode ) {
             return;
         }
         int maxInputs = node->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = node->getInput(i);
             if (input) {
-                updateLastStrokeDataRecursively(input.get(), rotoPaintNode, lastStrokeBbox, invalidate);
+                updateLastStrokeDataRecursively(input, rotoPaintNode, lastStrokeBbox, invalidate);
             }
         }
     }
@@ -386,7 +386,7 @@ public:
                                    const NodePtr& rotoPaintNode,
                                    const NodePtr& viewerInput,
                                    bool draftMode,
-                                   const boost::shared_ptr<RenderStats>& stats)
+                                   const RenderStatsPtr& stats)
         : ParallelRenderArgsSetter(time, view, isRenderUserInteraction, isSequential, abortInfo, treeRoot, textureIndex, timeline, rotoPaintNode, isAnalysis, draftMode, stats)
         , rotoNode(rotoPaintNode)
         , viewerNode(treeRoot)
@@ -400,14 +400,14 @@ public:
             U64 nodeHash = viewerInput->getHashValue();
 
 
-            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, 1, boost::shared_ptr<NodeFrameRequest>(), _openGLContext.lock(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), viewerInput->getCurrentOpenGLRenderSupport(), doNanHandling, draftMode, stats);
+            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, 1, NodeFrameRequestPtr(), _openGLContext.lock(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), viewerInput->getCurrentOpenGLRenderSupport(), doNanHandling, draftMode, stats);
         }
     }
 
     virtual ~ViewerParallelRenderArgsSetter()
     {
         if (rotoNode) {
-            updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
+            updateLastStrokeDataRecursively(viewerNode, rotoNode, RectD(), true);
         }
         if (viewerInputNode) {
             viewerInputNode->getEffectInstance()->invalidateParallelRenderArgsTLS();
@@ -421,8 +421,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              ViewIdx view,
                                              U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
-                                             const boost::shared_ptr<RotoStrokeItem>& activeStroke,
-                                             const boost::shared_ptr<RenderStats>& stats,
+                                             const RotoStrokeItemPtr& activeStroke,
+                                             const RenderStatsPtr& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
                                              boost::shared_ptr<ViewerArgs>* argsB)
 {
@@ -476,7 +476,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         NodesList rotoPaintNodes;
         if (rotoPaintNode) {
             if (activeStroke) {
-                EffectInstPtr rotoLive = rotoPaintNode->getEffectInstance();
+                EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
                 assert(rotoLive);
                 bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
                 assert(ok);
@@ -506,7 +506,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 lastAge = getApp()->getStrokeLastIndex();
 
                 //Get the active paint stroke so far and its multi-stroke index
-                boost::shared_ptr<RotoStrokeItem> currentlyPaintedStroke;
+                RotoStrokeItemPtr currentlyPaintedStroke;
                 int currentlyPaintedStrokeMultiIndex;
                 getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
 
@@ -521,7 +521,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                     for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
                         (*it)->prepareForNextPaintStrokeRender();
                     }
-                    updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
+                    updateLastStrokeDataRecursively(thisNode, rotoPaintNode, lastStrokeBbox, false);
                 } else {
                     ///The drawing is already up to date: all changes have been taken into account for this event
                     args[i].reset();
@@ -617,7 +617,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                             const boost::shared_ptr<RenderStats>& stats)
+                             const RenderStatsPtr& stats)
 {
     if (!_imp->uiContext) {
         return eViewerRenderRetCodeFail;
@@ -653,7 +653,7 @@ ViewerInstance::renderViewer(ViewIdx view,
             }
             if (args[i]) {
                 ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, useTLS, request,
-                                               i == 0 ? stats : boost::shared_ptr<RenderStats>(),
+                                               i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
                 // Reset the rednering flag
@@ -702,8 +702,8 @@ ViewerInstance::renderViewer(ViewIdx view,
 } // ViewerInstance::renderViewer
 
 static bool
-checkTreeCanRender_internal(Node* node,
-                            std::list<Node*>& marked)
+checkTreeCanRender_internal(const NodePtr& node,
+                            std::list<NodePtr>& marked)
 {
     if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
         return true;
@@ -722,7 +722,7 @@ checkTreeCanRender_internal(Node* node,
         if (!input) {
             return false;
         } else {
-            bool ret = checkTreeCanRender_internal(input.get(), marked);
+            bool ret = checkTreeCanRender_internal(input, marked);
             if (!ret) {
                 return false;
             }
@@ -736,9 +736,9 @@ checkTreeCanRender_internal(Node* node,
  * @brief Returns false if the tree has unconnected mandatory inputs
  **/
 static bool
-checkTreeCanRender(Node* node)
+checkTreeCanRender(const NodePtr& node)
 {
-    std::list<Node*> marked;
+    std::list<NodePtr> marked;
     bool ret = checkTreeCanRender_internal(node, marked);
 
     return ret;
@@ -815,7 +815,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         U64 viewerHash,
                                                         bool canAbort,
                                                         const NodePtr& rotoPaintNode,
-                                                        const boost::shared_ptr<RenderStats>& stats,
+                                                        const RenderStatsPtr& stats,
                                                         ViewerArgs* outArgs)
 {
     AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
@@ -957,7 +957,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                                        const bool useCache,
                                        const bool isDraftMode,
                                        const unsigned int mipmapLevel,
-                                       const boost::shared_ptr<RenderStats>& stats,
+                                       const RenderStatsPtr& stats,
                                        ViewerArgs* outArgs)
 {
     // Roi is the coordinates of the 4 corners of the texture in the bounds with the current zoom
@@ -1128,7 +1128,7 @@ ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
                                      const U64 viewerHash,
                                      const NodePtr& rotoPaintNode,
-                                     const boost::shared_ptr<RenderStats>& stats,
+                                     const RenderStatsPtr& stats,
                                      ViewerArgs* outArgs)
 {
     // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
@@ -1219,7 +1219,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  U64 viewerHash,
                                                  const NodePtr& rotoPaintNode,
                                                  const AbortableRenderInfoPtr& abortInfo,
-                                                 const boost::shared_ptr<RenderStats>& stats,
+                                                 const RenderStatsPtr& stats,
                                                  ViewerArgs* outArgs)
 {
     // Just redraw if the viewer is paused
@@ -1249,14 +1249,14 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
 
     // The active input providing the image is the first upstream non disabled node
-    EffectInstPtr upstreamInput = getInput(outArgs->activeInputIndex);
+    EffectInstancePtr upstreamInput = getInput(outArgs->activeInputIndex);
     outArgs->activeInputToRender.reset();
     if (upstreamInput) {
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
     }
 
     // Before rendering we check that all mandatory inputs in the graph are connected else we fail
-    if ( !outArgs->activeInputToRender || !checkTreeCanRender( outArgs->activeInputToRender->getNode().get() ) ) {
+    if ( !outArgs->activeInputToRender || !checkTreeCanRender( outArgs->activeInputToRender->getNode() ) ) {
         return eViewerRenderRetCodeFail;
     }
 
@@ -1278,7 +1278,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       const NodePtr& rotoPaintNode,
                                       bool useTLS,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                      const boost::shared_ptr<RenderStats>& stats,
+                                      const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
 {
     // We are in the render thread, we may not have computed the RoD and lookup the cache yet
@@ -1502,7 +1502,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                     requestedComponents,
                                                                     imageDepth,
                                                                     false /*calledFromGetImage*/,
-                                                                    this,
+                                                                    shared_from_this(),
                                                                     eStorageModeRAM /*returnStorage*/,
                                                                     inArgs.params->time) );
                 retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
@@ -1838,7 +1838,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                 renderFunctor(viewerRenderRoI,
                               args,
-                              this,
+                              shared_from_this(),
                               *it);
             }
         } else {
@@ -1907,7 +1907,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 QReadLocker k(&_imp->gammaLookupMutex);
                 for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                     renderFunctor(viewerRenderRoI,
-                                  args, this, *it);
+                                  args, shared_from_this(), *it);
                 }
             } else {
                 QReadLocker k(&_imp->gammaLookupMutex);
@@ -1915,7 +1915,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                    boost::bind(&renderFunctor,
                                                viewerRenderRoI,
                                                args,
-                                               this,
+                                               shared_from_this(),
                                                _1) ).waitForFinished();
             }
 
@@ -1977,7 +1977,7 @@ ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
 void
 renderFunctor(const RectI& roi,
               const RenderViewerArgs & args,
-              ViewerInstance* viewer,
+              const ViewerInstancePtr& viewer,
               UpdateViewerParams::CachedTile tile)
 {
     if ( (args.bitDepth == eImageBitDepthFloat) ) {
@@ -2112,7 +2112,7 @@ void
 scaleToTexture8bits_generic(const RectI& roi,
                             const RenderViewerArgs & args,
                             int nComps,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* tileBuffer)
 {
@@ -2343,7 +2343,7 @@ template <typename PIX, int maxValue, int nComps, bool opaque, bool matteOverlay
 void
 scaleToTexture8bits_internal(const RectI& roi,
                              const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
+                             const ViewerInstancePtr& viewer,
                              const UpdateViewerParams::CachedTile& tile,
                              U32* output)
 {
@@ -2354,7 +2354,7 @@ template <typename PIX, int maxValue, int nComps, bool opaque, int rOffset, int 
 void
 scaleToTexture8bitsForMatte(const RectI& roi,
                             const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* output)
 {
@@ -2371,7 +2371,7 @@ template <typename PIX, int maxValue, bool opaque, int rOffset, int gOffset, int
 void
 scaleToTexture8bitsForDepthForComponents(const RectI& roi,
                                          const RenderViewerArgs & args,
-                                         ViewerInstance* viewer,
+                                         const ViewerInstancePtr& viewer,
                                          const UpdateViewerParams::CachedTile& tile,
                                          U32* output)
 {
@@ -2405,7 +2405,7 @@ template <typename PIX, int maxValue, bool opaque>
 void
 scaleToTexture8bitsForPremult(const RectI& roi,
                               const RenderViewerArgs & args,
-                              ViewerInstance* viewer,
+                              const ViewerInstancePtr& viewer,
                               const UpdateViewerParams::CachedTile& tile,
                               U32* output)
 {
@@ -2456,7 +2456,7 @@ template <typename PIX, int maxValue>
 void
 scaleToTexture8bitsForDepth(const RectI& roi,
                             const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* output)
 {
@@ -2475,7 +2475,7 @@ scaleToTexture8bitsForDepth(const RectI& roi,
 void
 scaleToTexture8bits(const RectI& roi,
                     const RenderViewerArgs & args,
-                    ViewerInstance* viewer,
+                    const ViewerInstancePtr& viewer,
                     const UpdateViewerParams::CachedTile& tile,
                     U32* output)
 {
@@ -2894,7 +2894,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
 
 
         NodePtr rotoPaintNode;
-        boost::shared_ptr<RotoStrokeItem> curStroke;
+        RotoStrokeItemPtr curStroke;
         bool isDrawing = false;
         instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
@@ -3311,7 +3311,7 @@ ViewerInstance::getActiveInputs(int & a,
                                 int &b) const
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+    InspectorNodePtr isInspector = toInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3323,7 +3323,7 @@ void
 ViewerInstance::setInputA(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+    InspectorNodePtr isInspector = toInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3337,7 +3337,7 @@ void
 ViewerInstance::setInputB(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+    InspectorNodePtr isInspector = toInspectorNode(n);
 
     assert(isInspector);
     if (isInspector) {
@@ -3353,7 +3353,7 @@ ViewerInstance::getLastRenderedTime() const
     return _imp->uiContext ? _imp->uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerInstance::getTimeline() const
 {
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();

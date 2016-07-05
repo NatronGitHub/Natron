@@ -111,7 +111,7 @@ RotoPaintInteract::redrawOverlays()
     p->publicInterface->redrawOverlayInteract();
 }
 
-boost::shared_ptr<RotoContext>
+RotoContextPtr
 RotoPaintInteract::getContext()
 {
     return p->publicInterface->getNode()->getRotoContext();
@@ -120,7 +120,7 @@ RotoPaintInteract::getContext()
 bool
 RotoPaintInteract::isFeatherVisible() const
 {
-    boost::shared_ptr<KnobButton> b =  displayFeatherEnabledButton.lock();
+    KnobButtonPtr b =  displayFeatherEnabledButton.lock();
 
     if (b) {
         return b->getValue();
@@ -132,7 +132,7 @@ RotoPaintInteract::isFeatherVisible() const
 bool
 RotoPaintInteract::isStickySelectionEnabled() const
 {
-    boost::shared_ptr<KnobButton> b =  stickySelectionEnabledButton.lock();
+    KnobButtonPtr b =  stickySelectionEnabledButton.lock();
 
     if (b) {
         return b->getValue();
@@ -144,7 +144,7 @@ RotoPaintInteract::isStickySelectionEnabled() const
 bool
 RotoPaintInteract::isMultiStrokeEnabled() const
 {
-    boost::shared_ptr<KnobBool> b =  multiStrokeEnabled.lock();
+    KnobBoolPtr b =  multiStrokeEnabled.lock();
 
     if (b) {
         return b->getValue();
@@ -156,14 +156,14 @@ RotoPaintInteract::isMultiStrokeEnabled() const
 bool
 RotoPaintInteract::isBboxClickAnywhereEnabled() const
 {
-    boost::shared_ptr<KnobButton> b = bboxClickAnywhereButton.lock();
+    KnobButtonPtr b = bboxClickAnywhereButton.lock();
 
     return b ? b->getValue() : false;
 }
 
 void
 RotoPaintInteract::drawSelectedCp(double time,
-                                  const boost::shared_ptr<BezierCP> & cp,
+                                  const BezierCPPtr & cp,
                                   double x,
                                   double y,
                                   const Transform::Matrix3x3& transform)
@@ -484,7 +484,7 @@ RotoPaintInteract::clearCPSSelection()
 void
 RotoPaintInteract::clearBeziersSelection()
 {
-    boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr ctx = p->publicInterface->getNode()->getRotoContext();
 
     assert(ctx);
     ctx->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
@@ -492,9 +492,9 @@ RotoPaintInteract::clearBeziersSelection()
 }
 
 bool
-RotoPaintInteract::removeItemFromSelection(const boost::shared_ptr<RotoDrawableItem>& b)
+RotoPaintInteract::removeItemFromSelection(const RotoDrawableItemPtr& b)
 {
-    boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr ctx = p->publicInterface->getNode()->getRotoContext();
 
     assert(ctx);
     for (SelectedItems::iterator fb = selectedItems.begin(); fb != selectedItems.end(); ++fb) {
@@ -544,7 +544,7 @@ handleControlPointMaximum(double time,
 }
 
 bool
-RotoPaintInteract::getRoleForGroup(const boost::shared_ptr<KnobGroup>& k,
+RotoPaintInteract::getRoleForGroup(const KnobGroupPtr& k,
                                    RotoRoleEnum* role) const
 {
     bool ret = true;
@@ -571,7 +571,7 @@ RotoPaintInteract::getRoleForGroup(const boost::shared_ptr<KnobGroup>& k,
 }
 
 bool
-RotoPaintInteract::getToolForAction(const boost::shared_ptr<KnobButton>& k,
+RotoPaintInteract::getToolForAction(const KnobButtonPtr& k,
                                     RotoToolEnum* tool) const
 {
     bool ret = true;
@@ -628,7 +628,7 @@ RotoPaintInteract::getToolForAction(const boost::shared_ptr<KnobButton>& k,
 } // RotoPaintInteract::getToolForAction
 
 bool
-RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& roleGroup)
+RotoPaintInteract::onRoleChangedInternal(const KnobGroupPtr& roleGroup)
 {
     RotoRoleEnum role;
 
@@ -687,7 +687,7 @@ RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& rol
 } // RotoPaintInteract::onRoleChangedInternal
 
 bool
-RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& actionButton)
+RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
 {
     RotoToolEnum tool;
 
@@ -756,21 +756,21 @@ RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& ac
 } // RotoPaintInteract::onToolChangedInternal
 
 void
-RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
+RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
 {
     if (!tool) {
         return;
     }
-    KnobPtr parentKnob = tool->getParentKnob();
-    boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+    KnobIPtr parentKnob = tool->getParentKnob();
+    KnobGroupPtr parentGroup = toKnobGroup(parentKnob);
     assert(parentGroup);
     if (!parentGroup) {
         return;
     }
 
 
-    boost::shared_ptr<KnobGroup> curGroup = selectedToolRole.lock();
-    boost::shared_ptr<KnobButton> curTool = selectedToolAction.lock();
+    KnobGroupPtr curGroup = selectedToolRole.lock();
+    KnobButtonPtr curTool = selectedToolAction.lock();
     if ( curGroup && (curGroup != parentGroup) ) {
         curGroup->setValue(false);
     }
@@ -829,7 +829,7 @@ RotoPaintInteract::getSelectedCpsBBOXCenter()
 }
 
 void
-RotoPaintInteract::handleBezierSelection(const boost::shared_ptr<Bezier> & curve)
+RotoPaintInteract::handleBezierSelection(const BezierPtr & curve)
 {
     ///find out if the bezier is already selected.
     bool found = false;
@@ -848,15 +848,15 @@ RotoPaintInteract::handleBezierSelection(const boost::shared_ptr<Bezier> & curve
         }
         selectedItems.push_back(curve);
 
-        boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+        RotoContextPtr ctx = p->publicInterface->getNode()->getRotoContext();
         assert(ctx);
         ctx->select(curve, RotoItem::eSelectionReasonOverlayInteract);
     }
 }
 
 void
-RotoPaintInteract::handleControlPointSelection(const std::pair<boost::shared_ptr<BezierCP>,
-                                                               boost::shared_ptr<BezierCP> > & p)
+RotoPaintInteract::handleControlPointSelection(const std::pair<BezierCPPtr,
+                                                               BezierCPPtr > & p)
 {
     ///find out if the cp is already selected.
     SelectedCPs::iterator foundCP = selectedCps.end();
@@ -888,9 +888,9 @@ RotoPaintInteract::handleControlPointSelection(const std::pair<boost::shared_ptr
 }
 
 void
-RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*cp*/)
+RotoPaintInteract::showMenuForControlPoint(const BezierCPPtr& /*cp*/)
 {
-    boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
+    KnobChoicePtr menu = rightClickMenuKnob.lock();
 
     if (!menu) {
         return;
@@ -909,9 +909,9 @@ RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*
 } // showMenuForControlPoint
 
 void
-RotoPaintInteract::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
+RotoPaintInteract::showMenuForCurve(const BezierPtr & curve)
 {
-    boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
+    KnobChoicePtr menu = rightClickMenuKnob.lock();
 
     if (!menu) {
         return;
@@ -940,10 +940,10 @@ RotoPaintInteract::onBreakMultiStrokeTriggered()
 }
 
 static bool
-isBranchConnectedToRotoNodeRecursive(Node* node,
-                                     const Node* rotoNode,
+isBranchConnectedToRotoNodeRecursive(const NodePtr& node,
+                                     const NodeConstPtr& rotoNode,
                                      int* recursion,
-                                     std::list<Node*>& markedNodes)
+                                     std::list<NodePtr>& markedNodes)
 {
     assert(recursion);
     if (!node) {
@@ -958,7 +958,7 @@ isBranchConnectedToRotoNodeRecursive(Node* node,
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr inp = node->getInput(i);
         if (inp) {
-            if ( isBranchConnectedToRotoNodeRecursive(inp.get(), rotoNode, recursion, markedNodes) ) {
+            if ( isBranchConnectedToRotoNodeRecursive(inp, rotoNode, recursion, markedNodes) ) {
                 return true;
             }
         }
@@ -971,19 +971,19 @@ void
 RotoPaintInteract::checkViewersAreDirectlyConnected()
 {
     NodePtr rotoNode = p->publicInterface->getNode();
-    std::list<ViewerInstance*> viewers;
+    std::list<ViewerInstancePtr> viewers;
 
     rotoNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         NodePtr viewerNode = (*it)->getNode();
         int maxInputs = viewerNode->getMaxInputCount();
         int hasBranchConnectedToRoto = -1;
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = viewerNode->getInput(i);
             if (input) {
-                std::list<Node*> markedNodes;
+                std::list<NodePtr> markedNodes;
                 int recursion = 0;
-                if ( isBranchConnectedToRotoNodeRecursive(input.get(), rotoNode.get(), &recursion, markedNodes) ) {
+                if ( isBranchConnectedToRotoNodeRecursive(input, rotoNode, &recursion, markedNodes) ) {
                     if (recursion == 0) {
                         //This viewer is already connected to the Roto node directly.
                         break;
@@ -1048,7 +1048,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
         return;
     }
 
-    boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr context = p->publicInterface->getNode()->getRotoContext();
 
 
     if (prepareForLater || !strokeBeingPaint) {
@@ -1059,27 +1059,27 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
             return;
         }
         std::string name = context->generateUniqueName(itemName);
-        strokeBeingPaint.reset( new RotoStrokeItem( strokeType, context, name, boost::shared_ptr<RotoLayer>() ) );
+        strokeBeingPaint.reset( new RotoStrokeItem( strokeType, context, name, RotoLayerPtr() ) );
         strokeBeingPaint->createNodes(false);
     }
 
 
     assert(strokeBeingPaint);
-    boost::shared_ptr<KnobColor> colorKnob = strokeBeingPaint->getColorKnob();
-    boost::shared_ptr<KnobChoice> operatorKnob = strokeBeingPaint->getOperatorKnob();
-    boost::shared_ptr<KnobDouble> opacityKnob = strokeBeingPaint->getOpacityKnob();
-    boost::shared_ptr<KnobDouble> sizeKnob = strokeBeingPaint->getBrushSizeKnob();
-    boost::shared_ptr<KnobDouble> hardnessKnob = strokeBeingPaint->getBrushHardnessKnob();
-    boost::shared_ptr<KnobBool> pressureOpaKnob = strokeBeingPaint->getPressureOpacityKnob();
-    boost::shared_ptr<KnobBool> pressureSizeKnob = strokeBeingPaint->getPressureSizeKnob();
-    boost::shared_ptr<KnobBool> pressureHardnessKnob = strokeBeingPaint->getPressureHardnessKnob();
-    boost::shared_ptr<KnobBool> buildUpKnob = strokeBeingPaint->getBuildupKnob();
-    boost::shared_ptr<KnobChoice> timeOffsetModeKnob = strokeBeingPaint->getTimeOffsetModeKnob();
-    boost::shared_ptr<KnobChoice> sourceTypeKnob = strokeBeingPaint->getBrushSourceTypeKnob();
-    boost::shared_ptr<KnobInt> timeOffsetKnob = strokeBeingPaint->getTimeOffsetKnob();
-    boost::shared_ptr<KnobDouble> translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
-    boost::shared_ptr<KnobDouble> effectKnob = strokeBeingPaint->getBrushEffectKnob();
-    boost::shared_ptr<KnobColor> colorWheel = colorWheelButton.lock();
+    KnobColorPtr colorKnob = strokeBeingPaint->getColorKnob();
+    KnobChoicePtr operatorKnob = strokeBeingPaint->getOperatorKnob();
+    KnobDoublePtr opacityKnob = strokeBeingPaint->getOpacityKnob();
+    KnobDoublePtr sizeKnob = strokeBeingPaint->getBrushSizeKnob();
+    KnobDoublePtr hardnessKnob = strokeBeingPaint->getBrushHardnessKnob();
+    KnobBoolPtr pressureOpaKnob = strokeBeingPaint->getPressureOpacityKnob();
+    KnobBoolPtr pressureSizeKnob = strokeBeingPaint->getPressureSizeKnob();
+    KnobBoolPtr pressureHardnessKnob = strokeBeingPaint->getPressureHardnessKnob();
+    KnobBoolPtr buildUpKnob = strokeBeingPaint->getBuildupKnob();
+    KnobChoicePtr timeOffsetModeKnob = strokeBeingPaint->getTimeOffsetModeKnob();
+    KnobChoicePtr sourceTypeKnob = strokeBeingPaint->getBrushSourceTypeKnob();
+    KnobIntPtr timeOffsetKnob = strokeBeingPaint->getTimeOffsetKnob();
+    KnobDoublePtr translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
+    KnobDoublePtr effectKnob = strokeBeingPaint->getBrushEffectKnob();
+    KnobColorPtr colorWheel = colorWheelButton.lock();
     double color[4];
     for (int i = 0; i < 3; ++i) {
         color[i] = colorWheel->getValue(i);
@@ -1110,7 +1110,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     buildUpKnob->setValue(buildUp);
     effectKnob->setValue(effectValue);
     if (!prepareForLater) {
-        boost::shared_ptr<KnobInt> lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
+        KnobIntPtr lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue( context->getTimelineCurrentTime() );
     }
     if ( (strokeType == eRotoStrokeTypeClone) || (strokeType == eRotoStrokeTypeReveal) ) {
@@ -1120,7 +1120,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
         translateKnob->setValues(-cloneOffset.first, -cloneOffset.second, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
-        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
+        RotoLayerPtr layer = context->findDeepestSelectedLayer();
         if (!layer) {
             layer = context->getOrCreateBaseLayer();
         }
@@ -1441,7 +1441,7 @@ RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
     return false;
 }
 
-std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> >
+std::pair<BezierCPPtr, BezierCPPtr >
 RotoPaintInteract::isNearbyFeatherBar(double time,
                                       const std::pair<double, double> & pixelScale,
                                       const QPointF & pos) const
@@ -1450,8 +1450,8 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
     double acceptance = 10 * pixelScale.second;
 
     for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it->get() );
+        BezierPtr isBezier = toBezier(*it);
+        RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
         assert(isStroke || isBezier);
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
             continue;
@@ -1469,8 +1469,8 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
         Transform::Matrix3x3 transform;
         isBezier->getTransformAtTime(time, &transform);
 
-        const std::list<boost::shared_ptr<BezierCP> > & fps = isBezier->getFeatherPoints();
-        const std::list<boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
+        const std::list<BezierCPPtr > & fps = isBezier->getFeatherPoints();
+        const std::list<BezierCPPtr > & cps = isBezier->getControlPoints();
         assert( cps.size() == fps.size() );
 
         int cpCount = (int)cps.size();
@@ -1479,18 +1479,18 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
         }
 
 
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
+        std::list<BezierCPPtr >::const_iterator itF = fps.begin();
+        std::list<BezierCPPtr >::const_iterator nextF = itF;
         if ( nextF != fps.end() ) {
             ++nextF;
         }
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator prevF = fps.end();
+        std::list<BezierCPPtr >::const_iterator prevF = fps.end();
         if ( prevF != fps.begin() ) {
             --prevF;
         }
         bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(true, time);
 
-        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
+        for (std::list<BezierCPPtr >::const_iterator itCp = cps.begin();
              itCp != cps.end();
              ++itCp) {
             if ( prevF == fps.end() ) {
@@ -1571,15 +1571,15 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
         } // for(itCp)
     }
 
-    return std::make_pair( boost::shared_ptr<BezierCP>(), boost::shared_ptr<BezierCP>() );
+    return std::make_pair( BezierCPPtr(), BezierCPPtr() );
 } // isNearbyFeatherBar
 
 void
-RotoPaintInteract::setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & drawables,
-                                const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
+RotoPaintInteract::setSelection(const std::list<RotoDrawableItemPtr > & drawables,
+                                const std::list<std::pair<BezierCPPtr, BezierCPPtr > > & points)
 {
     selectedItems.clear();
-    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+    for (std::list<RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         if (*it) {
             selectedItems.push_back(*it);
         }
@@ -1595,8 +1595,8 @@ RotoPaintInteract::setSelection(const std::list<boost::shared_ptr<RotoDrawableIt
 }
 
 void
-RotoPaintInteract::setSelection(const boost::shared_ptr<Bezier> & curve,
-                                const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point)
+RotoPaintInteract::setSelection(const BezierPtr & curve,
+                                const std::pair<BezierCPPtr, BezierCPPtr > & point)
 {
     selectedItems.clear();
     if (curve) {
@@ -1613,21 +1613,21 @@ RotoPaintInteract::setSelection(const boost::shared_ptr<Bezier> & curve,
 }
 
 void
-RotoPaintInteract::getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* beziers,
-                                std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >* points)
+RotoPaintInteract::getSelection(std::list<RotoDrawableItemPtr >* beziers,
+                                std::list<std::pair<BezierCPPtr, BezierCPPtr > >* points)
 {
     *beziers = selectedItems;
     *points = selectedCps;
 }
 
 void
-RotoPaintInteract::setBuiltBezier(const boost::shared_ptr<Bezier> & curve)
+RotoPaintInteract::setBuiltBezier(const BezierPtr & curve)
 {
     assert(curve);
     builtBezier = curve;
 }
 
-boost::shared_ptr<Bezier> RotoPaintInteract::getBezierBeingBuild() const
+BezierPtr RotoPaintInteract::getBezierBeingBuild() const
 {
     return builtBezier;
 }
@@ -1638,7 +1638,7 @@ RotoPaintInteract::smoothSelectedCurve()
     std::pair<double, double> pixelScale;
 
     p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-    boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr context = p->publicInterface->getNode()->getRotoContext();
     double time = context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1651,14 +1651,14 @@ RotoPaintInteract::smoothSelectedCurve()
         }
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = toBezier(*it);
             if (bezier) {
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = bezier;
-                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-                std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                const std::list<BezierCPPtr > & cps = bezier->getControlPoints();
+                const std::list<BezierCPPtr > & fps = bezier->getFeatherPoints();
+                std::list<BezierCPPtr >::const_iterator itFp = fps.begin();
+                for (std::list<BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
                     data.newPoints.push_back( std::make_pair(*it, *itFp) );
                 }
                 datas.push_back(data);
@@ -1680,7 +1680,7 @@ RotoPaintInteract::cuspSelectedCurve()
     std::pair<double, double> pixelScale;
 
     p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-    boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr context = p->publicInterface->getNode()->getRotoContext();
     double time = context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1693,14 +1693,14 @@ RotoPaintInteract::cuspSelectedCurve()
         }
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = toBezier(*it);
             if (bezier) {
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = bezier;
-                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-                std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                const std::list<BezierCPPtr > & cps = bezier->getControlPoints();
+                const std::list<BezierCPPtr > & fps = bezier->getFeatherPoints();
+                std::list<BezierCPPtr >::const_iterator itFp = fps.begin();
+                for (std::list<BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
                     data.newPoints.push_back( std::make_pair(*it, *itFp) );
                 }
                 datas.push_back(data);
@@ -1730,7 +1730,7 @@ RotoPaintInteract::removeFeatherForSelectedCurve()
         }
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = toBezier(*it);
             if (bezier) {
                 RemoveFeatherUndoCommand::RemoveFeatherData data;
                 data.curve = bezier;
@@ -1769,19 +1769,19 @@ bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                 int y)
 {
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > points;
+    std::list< std::pair<BezierCPPtr, BezierCPPtr > > points;
 
     if ( !selectedCps.empty() ) {
         points = selectedCps;
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = toBezier(*it);
             if (bezier) {
-                const std::list< boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-                const std::list< boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-                std::list< boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
+                const std::list< BezierCPPtr > & cps = bezier->getControlPoints();
+                const std::list< BezierCPPtr > & fps = bezier->getFeatherPoints();
+                std::list< BezierCPPtr >::const_iterator fpIt = fps.begin();
                 assert( fps.empty() || fps.size() == cps.size() );
-                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+                for (std::list< BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
                     points.push_back( std::make_pair(*it, *fpIt) );
                     if ( !fps.empty() ) {
                         ++fpIt;
@@ -1808,11 +1808,11 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
 }
 
 void
-RotoPaintInteract::onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem> & item,
+RotoPaintInteract::onCurveLockedChangedRecursive(const RotoItemPtr & item,
                                                  bool* ret)
 {
-    boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(item);
-    boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    BezierPtr b = toBezier(item);
+    RotoLayerPtr layer = toRotoLayer(item);
 
     if (b) {
         if ( item->isLockedRecursive() ) {
@@ -1836,15 +1836,15 @@ RotoPaintInteract::onCurveLockedChangedRecursive(const boost::shared_ptr<RotoIte
             }
         }
     } else if (layer) {
-        const std::list<boost::shared_ptr<RotoItem> > & items = layer->getItems();
-        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+        const std::list<RotoItemPtr > & items = layer->getItems();
+        for (std::list<RotoItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
             onCurveLockedChangedRecursive(*it, ret);
         }
     }
 }
 
 void
-RotoPaintInteract::removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve)
+RotoPaintInteract::removeCurve(const RotoDrawableItemPtr& curve)
 {
     if (curve == builtBezier) {
         builtBezier.reset();

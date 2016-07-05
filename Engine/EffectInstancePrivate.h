@@ -157,7 +157,7 @@ public:
     Implementation(const Implementation& other);
 
 public:
-    EffectInstance* _publicInterface;
+    EffectInstance* _publicInterface; // can not be a smart ptr
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
     boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
@@ -200,7 +200,7 @@ public:
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    std::list< boost::weak_ptr<KnobI> > overlaySlaves;
+    std::list< KnobIWPtr > overlaySlaves;
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
     bool runningClipPreferences; //only used on main thread
@@ -215,21 +215,21 @@ public:
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
-    EffectInstance* mainInstance; // pointer to the main-instance if this instance is a clone
+    EffectInstancePtr mainInstance; // pointer to the main-instance if this instance is a clone
     bool isDoingInstanceSafeRender; // true if this intance is rendering
     mutable QMutex renderClonesMutex;
-    std::list<EffectInstPtr> renderClonesPool;
+    std::list<EffectInstancePtr> renderClonesPool;
 
-    void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
+    void runChangedParamCallback(const KnobIPtr& k, bool userEdited, const std::string & callback);
 
     void setDuringInteractAction(bool b);
 
 #if NATRON_ENABLE_TRIMAP
-    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img);
+    void markImageAsBeingRendered(const ImagePtr & img);
 
-    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi, const boost::shared_ptr<Image> & img);
+    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi, const ImagePtr & img);
 
-    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, bool renderFailed);
+    void unmarkImageAsBeingRendered(const ImagePtr & img, bool renderFailed);
 #endif
 
     /**
@@ -276,8 +276,8 @@ public:
                          ViewIdx view,
                          bool isIdentity,
                          double identityTime,
-                         const EffectInstPtr& identityInput,
-                         const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                         const EffectInstancePtr& identityInput,
+                         const ComponentsNeededMapPtr& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
@@ -290,7 +290,7 @@ public:
         ~ScopedRenderArgs();
     };
 
-    void addInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
+    void addInputImageTempPointer(int inputNb, const ImagePtr & img);
 
     void clearInputImagePointers();
 
@@ -310,11 +310,11 @@ public:
         ViewIdx view;
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
-        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        ComponentsNeededMapPtr  compsNeeded;
         ImageComponents outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
-        boost::shared_ptr<ImagePlanesToRender> planes;
+        ImagePlanesToRenderPtr planes;
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
@@ -335,9 +335,9 @@ public:
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
                                                   const ImageComponents & outputClipPrefsComps,
-                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                  const ComponentsNeededMapPtr & compsNeeded,
                                                   const std::bitset<4>& processChannels,
-                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
+                                                  const ImagePlanesToRenderPtr & planes);
 
 
     ///These are the image passed to the plug-in to render
@@ -373,14 +373,14 @@ public:
                                           const ImageBitDepthEnum outputClipPrefDepth,
                                           const ImageComponents & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
-                                          const boost::shared_ptr<Image> & originalInputImage,
-                                          const boost::shared_ptr<Image> & maskImage,
+                                          const ImagePtr & originalInputImage,
+                                          const ImagePtr & maskImage,
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
 
     static bool aborted(bool isRenderResponseToUserInteraction,
                         const AbortableRenderInfoPtr& abortInfo,
-                        const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
+                        const EffectInstancePtr& treeRoot)  WARN_UNUSED_RETURN;
 
     void checkMetadata(NodeMetadata &metadata);
 };

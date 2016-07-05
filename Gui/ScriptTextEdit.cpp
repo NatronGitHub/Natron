@@ -69,7 +69,7 @@ struct PyHighLightRule
 
 struct PySyntaxHighlighterPrivate
 {
-    PySyntaxHighlighter* publicInterface;
+    PySyntaxHighlighter* publicInterface; // can not be a smart ptr
     QStringList keywords;
     QStringList operators;
     QStringList braces;
@@ -272,7 +272,7 @@ PySyntaxHighlighterPrivate::reload()
     basicStyles.clear();
 
     double r, g, b;
-    boost::shared_ptr<Settings> s = appPTR->getCurrentSettings();
+    SettingsPtr s = appPTR->getCurrentSettings();
     s->getSEKeywordColor(&r, &g, &b);
     basicStyles.insert( QString::fromUtf8("keyword"), getTextCharFormat( r, g, b, QString::fromUtf8("bold") ) );
 
@@ -465,12 +465,12 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     QStringList formats = e->mimeData()->formats();
     if ( formats.contains( QLatin1String(KNOB_DND_MIME_DATA_KEY) ) ) {
         int cbDim;
-        KnobPtr fromKnob;
+        KnobIPtr fromKnob;
         QDrag* drag;
         _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
 
         if (fromKnob) {
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>( fromKnob->getHolder() );
+            EffectInstancePtr isEffect = toEffectInstance( fromKnob->getHolder() );
             if (isEffect) {
                 QString toAppend;
                 toAppend.append( QString::fromUtf8( isEffect->getNode()->getFullyQualifiedName().c_str() ) );

@@ -169,12 +169,12 @@ NodeGraph::getAllActiveNodes_mt_safe() const
 }
 
 void
-NodeGraph::moveToTrash(NodeGui* node)
+NodeGraph::moveToTrash(const NodeGuiPtr& node)
 {
     assert(node);
     for (NodesGuiList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
-        if (it->get() == node) {
+        if (*it == node) {
             (*it)->setUserSelected(false);
             _imp->_selection.erase(it);
             break;
@@ -183,7 +183,7 @@ NodeGraph::moveToTrash(NodeGui* node)
 
     QMutexLocker l(&_imp->_nodesMutex);
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ( (*it).get() == node ) {
+        if ( *it == node ) {
             _imp->_nodesTrash.push_back(*it);
             _imp->_nodes.erase(it);
             break;
@@ -192,12 +192,12 @@ NodeGraph::moveToTrash(NodeGui* node)
 }
 
 void
-NodeGraph::restoreFromTrash(NodeGui* node)
+NodeGraph::restoreFromTrash(const NodeGuiPtr& node)
 {
     assert(node);
     QMutexLocker l(&_imp->_nodesMutex);
     for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        if ( (*it).get() == node ) {
+        if ( *it == node ) {
             _imp->_nodes.push_back(*it);
             _imp->_nodesTrash.erase(it);
             break;

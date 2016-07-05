@@ -45,15 +45,22 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+protected: // derives from EffectInstance, parent of RotoNode
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    RotoPaint(const NodePtr& node,
+              bool isPaintByDefault);
 
-    static EffectInstance* BuildEffect(NodePtr n)
+public:
+    static EffectInstancePtr create(const NodePtr& node,
+                                    bool isPaintByDefault) WARN_UNUSED_RETURN
     {
-        return new RotoPaint(n, true);
+        return EffectInstancePtr( new RotoPaint(node, isPaintByDefault) );
     }
 
-    RotoPaint(NodePtr node,
-              bool isPaintByDefault);
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new RotoPaint(node, true) );
+    }
 
     virtual ~RotoPaint();
 
@@ -165,7 +172,7 @@ private:
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI* k,
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
@@ -196,21 +203,35 @@ private:
 class RotoNode
     : public RotoPaint
 {
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    RotoNode(const NodePtr& node)
+        : RotoPaint(node, false) {}
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new RotoNode(n);
+        return EffectInstancePtr( new RotoNode(node) );
     }
 
-    RotoNode(NodePtr node)
-        : RotoPaint(node, false) {}
+private:
 
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
+
+inline RotoPaintPtr
+toRotoPaint(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<RotoPaint>(effect);
+}
+
+inline RotoNodePtr
+toRotoNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<RotoNode>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -99,6 +99,7 @@ NATRON_NAMESPACE_ENTER;
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
+class BackdropGui;
 class BoundAction;
 class Button;
 class ChannelsComboBox;
@@ -133,9 +134,12 @@ class KeyBoundAction;
 class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;
+class KnobGuiColor;
 class KnobGuiContainerI;
 class KnobGuiContainerHelper;
+class KnobGuiDouble;
 class KnobGuiFactory;
+class KnobGuiInt;
 class KnobGuiTable;
 class KnobGuiLayers;
 class KnobHolder;
@@ -152,6 +156,7 @@ class NodeGraph;
 class NodeGraphPixmapItem;
 class NodeGraphTextItem;
 class NodeGui;
+class NodeGuiI;
 class NodeGuiSerialization;
 class NodeSerialization;
 class NodeSettingsPanel;
@@ -200,22 +205,41 @@ namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
 
+typedef boost::shared_ptr<BackdropGui> BackdropGuiPtr;
+typedef boost::shared_ptr<CurveGui> CurveGuiPtr;
+typedef boost::shared_ptr<DSNode> DSNodePtr;
+typedef boost::shared_ptr<DSKnob> DSKnobPtr;
+typedef boost::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
+typedef boost::shared_ptr<KnobCurveGui> KnobCurveGuiPtr;
+typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
+typedef boost::shared_ptr<KnobGui const> KnobGuiConstPtr;
+typedef boost::shared_ptr<KnobGuiDouble> KnobGuiDoublePtr;
+typedef boost::shared_ptr<KnobGuiColor> KnobGuiColorPtr;
+typedef boost::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
+
+typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
+typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
+typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
+typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
+typedef boost::shared_ptr<TrackerPanelV1> TrackerPanelV1Ptr;
+typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
+typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
+typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
+typedef std::list<NodeGuiPtr> NodesGuiList;
+
 NATRON_PYTHON_NAMESPACE_ENTER;
+class DialogParamHolder;
 class GuiApp;
 class PyModalDialog;
 class PyPanel;
 class PyTabWidget;
+
+typedef boost::shared_ptr<DialogParamHolder> DialogParamHolderPtr;
+
 NATRON_PYTHON_NAMESPACE_EXIT;
 
-typedef boost::shared_ptr<GuiAppInstance> GuiAppInstPtr;
-typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
-typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
-typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
-typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
-typedef std::list<NodeGuiPtr> NodesGuiList;
-typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
-typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
-typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
+
 NATRON_NAMESPACE_EXIT;
 
 

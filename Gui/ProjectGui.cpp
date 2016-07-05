@@ -101,7 +101,7 @@ ProjectGui::initializeKnobsGui()
 }
 
 void
-ProjectGui::create(boost::shared_ptr<Project> projectInternal,
+ProjectGui::create(const ProjectPtr& projectInternal,
                    QVBoxLayout* container,
                    QWidget* parent)
 
@@ -112,7 +112,7 @@ ProjectGui::create(boost::shared_ptr<Project> projectInternal,
     QObject::connect( projectInternal.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobsGui()) );
 
     _panel = new DockablePanel(_gui,
-                               projectInternal.get(),
+                               projectInternal,
                                container,
                                DockablePanel::eHeaderModeReadOnlyName,
                                false,
@@ -140,7 +140,7 @@ ProjectGui::setVisible(bool visible)
 void
 ProjectGui::createNewFormat()
 {
-    boost::shared_ptr<Project> project = _project.lock();
+    ProjectPtr project = _project.lock();
     AddFormatDialog dialog( project.get(), _gui->getApp()->getGui() );
 
     if ( dialog.exec() ) {
@@ -168,7 +168,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     project->getViewers(&_viewers);
 
 
-    for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
         _copyFromViewerCombo->addItem( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) );
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
@@ -243,7 +243,7 @@ AddFormatDialog::onCopyFromViewer()
 {
     QString activeText = _copyFromViewerCombo->itemText( _copyFromViewerCombo->activeIndex() );
 
-    for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
         if ( (*it)->getNode()->getLabel() == activeText.toStdString() ) {
             ViewerTab* tab = _gui->getViewerTabForInstance(*it);
             RectD f = tab->getViewer()->getRoD(0);
@@ -281,7 +281,7 @@ static
 void
 loadNodeGuiSerialization(Gui* gui,
                          const std::map<std::string, ViewerData > & viewersProjections,
-                         const boost::shared_ptr<Settings>& settings,
+                         const SettingsPtr& settings,
                          double leftBound,
                          double rightBound,
                          const NodeGuiSerialization& serialization)
@@ -293,7 +293,7 @@ loadNodeGuiSerialization(Gui* gui,
         return;
     }
 
-    boost::shared_ptr<NodeGuiI> nGui_i = internalNode->getNodeGui();
+    NodeGuiIPtr nGui_i = internalNode->getNodeGui();
     assert(nGui_i);
     NodeGuiPtr nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
 
@@ -304,13 +304,13 @@ loadNodeGuiSerialization(Gui* gui,
         nGui->togglePreview();
     }
 
-    EffectInstPtr iseffect = nGui->getNode()->getEffectInstance();
+    EffectInstancePtr iseffect = nGui->getNode()->getEffectInstance();
 
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;
         nGui->getNode()->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
-        BackdropGui* isBd = dynamic_cast<BackdropGui*>( nGui.get() );
+        BackdropGuiPtr isBd = toBackdropGui( nGui );
         float defR, defG, defB;
 
         if ( iseffect->isReader() ) {
@@ -370,7 +370,7 @@ loadNodeGuiSerialization(Gui* gui,
         }
     }
 
-    ViewerInstance* viewer = nGui->getNode()->isEffectViewer();
+    ViewerInstancePtr viewer = nGui->getNode()->isEffectViewerInstance();
     if (viewer) {
         std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
         if ( found != viewersProjections.end() ) {
@@ -448,7 +448,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
 
 
     ///default color for nodes
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     const std::list<NodeGuiSerialization> & nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
         loadNodeGuiSerialization(_gui, viewersProjections, settings, leftBound, rightBound,  *it);
@@ -469,21 +469,21 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         int w, h;
         it->getSize(w, h);
 
-        KnobPtr labelSerialization = it->getLabelSerialization();
+        KnobIPtr labelSerialization = it->getLabelSerialization();
         CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, _project.lock() );
         args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         
         NodePtr node = getGui()->getApp()->createNode(args);
-        boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+        NodeGuiIPtr gui_i = node->getNodeGui();
         assert(gui_i);
-        BackdropGui* bd = dynamic_cast<BackdropGui*>( gui_i.get() );
+        BackdropGuiPtr bd = toBackdropGui( gui_i );
         assert(bd);
         if (bd) {
             bd->setPos(x, y);
             bd->resize(w, h);
-            KnobString* iStr = dynamic_cast<KnobString*>( labelSerialization.get() );
+            KnobStringPtr iStr = toKnobString( labelSerialization );
             assert(iStr);
             if (iStr) {
                 bd->onLabelChanged( QString::fromUtf8( iStr->getValue().c_str() ) );
@@ -508,7 +508,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         } else {
             NodePtr node = getInternalProject()->getNodeByFullySpecifiedName(*it);
             if (node) {
-                boost::shared_ptr<NodeGuiI> nodeGui_i = node->getNodeGui();
+                NodeGuiIPtr nodeGui_i = node->getNodeGui();
                 assert(nodeGui_i);
                 NodeGui* nodeGui = dynamic_cast<NodeGui*>( nodeGui_i.get() );
                 assert(nodeGui);
@@ -552,7 +552,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
             NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
             if (panel) {
                 panel->restore( QString::fromUtf8( (*it)->userData.c_str() ) );
-                for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it2 = (*it)->knobs.begin(); it2 != (*it)->knobs.end(); ++it2) {
+                for (std::list<KnobSerializationPtr>::iterator it2 = (*it)->knobs.begin(); it2 != (*it)->knobs.end(); ++it2) {
                     NATRON_PYTHON_NAMESPACE::Param* param = panel->getParam( QString::fromUtf8( (*it2)->getName().c_str() ) );
                     if (param) {
                         param->getInternalKnob()->clone( (*it2)->getKnob() );
@@ -606,16 +606,16 @@ ProjectGui::clearColorPickers()
 }
 
 void
-ProjectGui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
+ProjectGui::registerNewColorPicker(KnobColorPtr knob)
 {
     clearColorPickers();
     _colorPickersEnabled.push_back(knob);
 }
 
 void
-ProjectGui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
+ProjectGui::removeColorPicker(KnobColorPtr knob)
 {
-    std::vector<boost::shared_ptr<KnobColor> >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
+    std::vector<KnobColorPtr >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
 
     if ( found != _colorPickersEnabled.end() ) {
         _colorPickersEnabled.erase(found);
@@ -631,7 +631,7 @@ ProjectGui::setPickersColor(double r,
     if ( _colorPickersEnabled.empty() ) {
         return;
     }
-    boost::shared_ptr<KnobColor> first = _colorPickersEnabled.front();
+    KnobColorPtr first = _colorPickersEnabled.front();
 
     for (U32 i = 0; i < _colorPickersEnabled.size(); ++i) {
         if ( !_colorPickersEnabled[i]->areAllDimensionsEnabled() ) {

@@ -84,25 +84,25 @@ using std::make_pair;
 
 //=============================BUTTON_KNOB_GUI===================================
 
-KnobGuiButton::KnobGuiButton(KnobPtr knob,
+KnobGuiButton::KnobGuiButton(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _button(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobButton>(knob);
+    _knob = toKnobButton(knob);
 }
 
 void
 KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    KnobButtonPtr knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
     QString onIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
     QString offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
-        EffectInstance* isEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
+        EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
@@ -113,7 +113,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         }
     }
     if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
-        EffectInstance* isEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
+        EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
@@ -177,7 +177,7 @@ KnobGuiButton::removeSpecificGui()
 void
 KnobGuiButton::emitValueChanged(bool clicked)
 {
-    boost::shared_ptr<KnobButton> k = _knob.lock();
+    KnobButtonPtr k = _knob.lock();
 
     assert(k);
 
@@ -206,7 +206,7 @@ KnobGuiButton::_show()
 void
 KnobGuiButton::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobButton> k = _knob.lock();
+    KnobButtonPtr k = _knob.lock();
 
     if ( k->getIsCheckable() ) {
         bool checked = k->getValue();
@@ -218,7 +218,7 @@ KnobGuiButton::updateGUI(int /*dimension*/)
 void
 KnobGuiButton::setEnabled()
 {
-    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    KnobButtonPtr knob = _knob.lock();
     bool b = knob->isEnabled(0);
 
     _button->setEnabled(b);
@@ -231,7 +231,7 @@ KnobGuiButton::setReadOnly(bool readOnly,
     _button->setEnabled(!readOnly);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiButton::getKnob() const
 {
     return _knob.lock();

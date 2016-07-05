@@ -54,7 +54,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                                      const NodeGuiPtr &selected,
                                      bool autoConnect)
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( node.get() );
+    BackdropGuiPtr isBd = toBackdropGui(node);
 
     if (isBd) {
         return;
@@ -144,7 +144,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     }
 
 
-    boost::shared_ptr<Project> proj = getGui()->getApp()->getProject();
+    ProjectPtr proj = getGui()->getApp()->getProject();
 
 
     ///default
@@ -198,7 +198,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 Q_UNUSED(ok);
             }
         } else {
-            //ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewer();
+            //ViewerInstancePtr isSelectedViewer = selectedNodeInternal->isEffectViewerInstance();
             //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
             /*    position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
                 position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
@@ -243,11 +243,11 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output) {
                     continue;
                 }
-                boost::shared_ptr<NodeGuiI> output_i = output->getNodeGui();
+                NodeGuiIPtr output_i = output->getNodeGui();
                 if (!output_i) {
                     continue;
                 }
-                NodeGui* outputGui = dynamic_cast<NodeGui*>( output_i.get() );
+                NodeGuiPtr outputGui = toNodeGui( output_i );
                 assert(outputGui);
                 if (outputGui) {
                     outputGui->moveBelowPositionRecursively(createdNodeRect);
@@ -274,7 +274,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                            Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
                            internal nodes of the tree
                          */
-                        boost::shared_ptr<RotoDrawableItem> stroke = it->first->getAttachedRotoItem();
+                        RotoDrawableItemPtr stroke = it->first->getAttachedRotoItem();
                         if ( stroke && (stroke->getContext()->getNode() == selectedNodeInternal) ) {
                             continue;
                         }

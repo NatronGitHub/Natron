@@ -206,7 +206,7 @@ natronImageToLibMvFloatImage(bool enabledChannels[3],
 struct TrackerFrameAccessorPrivate
 {
     const TrackerContext* context;
-    boost::shared_ptr<Node> trackerInput;
+    NodePtr trackerInput;
     mutable QMutex cacheMutex;
     FrameAccessorCache cache;
     bool enabledChannels[3];
@@ -360,7 +360,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               NodePtr(), // rotoPaintNode
                                               true, //isAnalysis
                                               false, //draftMode
-                                              boost::shared_ptr<RenderStats>() ); // Stats
+                                              RenderStatsPtr() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         downscale,
@@ -371,7 +371,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         components,
                                         eImageBitDepthFloat,
                                         true,
-                                        _imp->context->getNode()->getEffectInstance().get(),
+                                        _imp->context->getNode()->getEffectInstance(),
                                         eStorageModeRAM /*returnOpenGLTex*/,
                                         frame);
     std::map<ImageComponents, ImagePtr> planes;

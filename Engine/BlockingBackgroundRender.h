@@ -39,17 +39,17 @@ class BlockingBackgroundRender
     bool _running;
     QWaitCondition _runningCond;
     QMutex _runningMutex;
-    OutputEffectInstance* _writer;
+    OutputEffectInstancePtr _writer;
 
 public:
 
-    BlockingBackgroundRender(OutputEffectInstance* writer);
+    BlockingBackgroundRender(const OutputEffectInstancePtr& writer);
 
     virtual ~BlockingBackgroundRender()
     {
     }
 
-    OutputEffectInstance* getWriter() const
+    OutputEffectInstancePtr getWriter() const
     {
         return _writer;
     }

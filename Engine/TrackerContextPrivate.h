@@ -337,8 +337,9 @@ enum libmv_MarkerChannelEnum
     LIBMV_MARKER_CHANNEL_B = (1 << 2),
 };
 
-struct TrackMarkerAndOptions
+class TrackMarkerAndOptions
 {
+public:
     TrackMarkerPtr natronMarker;
     mv::Marker mvMarker;
     mv::TrackRegionOptions mvOptions;
@@ -354,16 +355,16 @@ class TrackerContextPrivate
 public:
 
 
-    TrackerContext * _publicInterface;
+    TrackerContext * _publicInterface; // can not be a smart ptr
     boost::weak_ptr<Node> node;
-    std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
+    std::list<KnobIWPtr > perTrackKnobs;
 
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     boost::weak_ptr<KnobBool> usePatternMatching;
     boost::weak_ptr<KnobChoice> patternMatchingScore;
 #endif
 
-    boost::weak_ptr<KnobPage> trackingPageKnob;
+    KnobPageWPtr trackingPageKnob;
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
@@ -378,13 +379,13 @@ public:
     boost::weak_ptr<KnobBool> exportLink;
     boost::weak_ptr<KnobButton> exportButton;
     NodeWPtr transformNode, cornerPinNode;
-    boost::weak_ptr<KnobPage> transformPageKnob;
+    KnobPageWPtr transformPageKnob;
     boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
     boost::weak_ptr<KnobChoice> transformType, motionType;
     boost::weak_ptr<KnobBool> robustModel;
     boost::weak_ptr<KnobDouble> fittingError;
     boost::weak_ptr<KnobDouble> fittingErrorWarnIfAbove;
-    boost::weak_ptr<KnobString> fittingErrorWarning;
+    KnobStringWPtr fittingErrorWarning;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
@@ -392,7 +393,7 @@ public:
     boost::weak_ptr<KnobInt> smoothCornerPin;
     boost::weak_ptr<KnobBool> autoGenerateTransform;
     boost::weak_ptr<KnobButton> generateTransformButton;
-    boost::weak_ptr<KnobString> transformOutOfDateLabel;
+    KnobStringWPtr transformOutOfDateLabel;
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobBool> disableTransform;
     boost::weak_ptr<KnobDouble> translate;
@@ -485,7 +486,7 @@ public:
 
 
     TrackerContextPrivate(TrackerContext* publicInterface,
-                          const boost::shared_ptr<Node> &node);
+                          const NodePtr &node);
 
     virtual ~TrackerContextPrivate()
     {
@@ -556,7 +557,7 @@ public:
                                            const libmv::TrackRegionResult* result,
                                            const TrackMarkerPtr& natronMarker);
     static bool trackStepLibMV(int trackIndex, const TrackArgs& args, int time);
-    static bool trackStepTrackerPM(TrackMarkerPM* tracker, const TrackArgs& args, int time);
+    static bool trackStepTrackerPM(const TrackMarkerPMPtr& tracker, const TrackArgs& args, int time);
 
 
     /**

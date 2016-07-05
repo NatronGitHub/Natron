@@ -136,13 +136,18 @@ public:
 
     typedef std::vector<Edge*> InputEdges;
 
-public:
+protected: // parent of DotGui, BackdropGui,
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     NodeGui(QGraphicsItem *parent = 0);
 
 public:
+    static NodeGuiPtr create(QGraphicsItem *parent = 0) WARN_UNUSED_RETURN
+    {
+        return NodeGuiPtr( new NodeGui(parent) );
+    }
+
     void initialize(NodeGraph* dag,
                     const NodePtr & internalNode);
 
@@ -176,7 +181,7 @@ public:
         return _graph;
     }
 
-    virtual bool isSelectedInParentMultiInstance(const Node* node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelMinimized() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setPosition(double x, double y) OVERRIDE FINAL;
@@ -253,7 +258,7 @@ public:
 
     void markInputNull(Edge* e);
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & getKnobs() const;
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & getKnobs() const;
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 
@@ -307,7 +312,7 @@ public:
 
     void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
 
-    boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
+    MultiInstancePanelPtr getMultiInstancePanel() const;
 
     void setParentMultiInstance(const NodeGuiPtr & parent);
 
@@ -325,9 +330,9 @@ public:
      * @brief Serialize this node. If this is a multi-instance node, every instance will
      * be serialized, hence the list.
      **/
-    void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const;
+    void serializeInternal(std::list<NodeSerializationPtr >& internalSerialization) const;
     void restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization);
+                         const std::list<NodeSerializationPtr >& internalSerialization);
 
     void setMergeHintActive(bool active);
 
@@ -384,8 +389,8 @@ public:
                                            ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
-    virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void removePositionHostOverlay(KnobI* knob) OVERRIDE FINAL;
+    virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void removePositionHostOverlay(const KnobIPtr& knob) OVERRIDE FINAL;
     virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
                                        const std::string& pluginLabel,
                                        const std::string& pluginID,
@@ -407,7 +412,7 @@ public:
      **/
     virtual void setCurrentCursor(CursorEnum defaultCursor) OVERRIDE FINAL;
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
-    virtual void showGroupKnobAsDialog(KnobGroup* group) OVERRIDE FINAL;
+    virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) OVERRIDE FINAL;
 
 protected:
 
@@ -638,8 +643,8 @@ private:
     ///For each knob that has a link to another parameter, display an arrow
     struct LinkedKnob
     {
-        KnobWPtr master;
-        KnobWPtr slave;
+        KnobIWPtr master;
+        KnobIWPtr slave;
 
         // Is this link valid (counter for all dimensions)
         int linkInValid;
@@ -686,6 +691,12 @@ private:
     bool identityStateSet;
     boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
 };
+
+inline NodeGuiPtr
+toNodeGui(const NodeGuiIPtr& nodeGuiI)
+{
+    return boost::dynamic_pointer_cast<NodeGui>(nodeGuiI);
+}
 
 NATRON_NAMESPACE_EXIT;
 

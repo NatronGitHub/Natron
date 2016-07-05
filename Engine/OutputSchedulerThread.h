@@ -50,14 +50,14 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
+typedef RenderStatsPtr RenderStatsPtr;
 
 struct BufferedFrame
 {
     ViewIdx view;
     double time;
     RenderStatsPtr stats;
-    boost::shared_ptr<BufferableObject> frame;
+    BufferableObjectPtr frame;
 
     BufferedFrame()
         : view(0)
@@ -105,10 +105,10 @@ class RenderThreadTask
 public:
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+    RenderThreadTask(const OutputEffectInstancePtr& output,
                      OutputSchedulerThread* scheduler);
 #else
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+    RenderThreadTask(const OutputEffectInstancePtr& output,
                      OutputSchedulerThread* scheduler,
                      const int time,
                      const bool useRenderStats,
@@ -207,7 +207,7 @@ public:
     };
 
     OutputSchedulerThread(RenderEngine* engine,
-                          const boost::shared_ptr<OutputEffectInstance>& effect,
+                          const OutputEffectInstancePtr& effect,
                           ProcessFrameModeEnum mode);
 
     virtual ~OutputSchedulerThread();
@@ -222,7 +222,7 @@ public:
     void appendToBuffer(double time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,
-                        const boost::shared_ptr<BufferableObject>& frame);
+                        const BufferableObjectPtr& frame);
     void appendToBuffer(double time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,
@@ -233,7 +233,7 @@ private:
     void appendToBuffer_internal(double time,
                                  ViewIdx view,
                                  const RenderStatsPtr& stats,
-                                 const boost::shared_ptr<BufferableObject>& frame,
+                                 const BufferableObjectPtr& frame,
                                  bool wakeThread);
 
 public:
@@ -478,7 +478,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     DefaultScheduler(RenderEngine* engine,
-                     const boost::shared_ptr<OutputEffectInstance>& effect);
+                     const OutputEffectInstancePtr& effect);
 
     virtual ~DefaultScheduler();
 
@@ -560,7 +560,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer);
+    ViewerCurrentFrameRequestScheduler(const ViewerInstancePtr& viewer);
 
     virtual ~ViewerCurrentFrameRequestScheduler();
 
@@ -637,11 +637,11 @@ class RenderEngine
 
 public:
 
-    RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output);
+    RenderEngine(const OutputEffectInstancePtr& output);
 
     virtual ~RenderEngine();
 
-    boost::shared_ptr<OutputEffectInstance> getOutput() const;
+    OutputEffectInstancePtr getOutput() const;
 
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
@@ -832,7 +832,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect);
+    virtual OutputSchedulerThread* createScheduler(const OutputEffectInstancePtr& effect);
 
 private:
 
@@ -867,7 +867,7 @@ class ViewerRenderEngine
 {
 public:
 
-    ViewerRenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
+    ViewerRenderEngine(const OutputEffectInstancePtr& output)
         : RenderEngine(output)
     {}
 
@@ -875,7 +875,7 @@ public:
 
 private:
 
-    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(const OutputEffectInstancePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 NATRON_NAMESPACE_EXIT;

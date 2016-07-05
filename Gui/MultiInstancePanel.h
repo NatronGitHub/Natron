@@ -58,9 +58,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
+protected: // derives from KnobHolder, parent of TrackerPanelV1
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     MultiInstancePanel(const NodeGuiPtr & node);
+
+public:
+    static MultiInstancePanelPtr create(const NodeGuiPtr& node) WARN_UNUSED_RETURN
+    {
+        return MultiInstancePanelPtr( new MultiInstancePanel(node) );
+    }
 
     virtual ~MultiInstancePanel();
 
@@ -80,13 +86,13 @@ public:
 
     NodeGuiPtr getMainInstanceGui() const;
 
-    void getSelectedInstances(std::list<Node*>* instances) const;
+    void getSelectedInstances(std::list<NodePtr>* instances) const;
 
     void resetAllInstances();
 
-    KnobPtr getKnobForItem(TableItem* item, int* dimension) const;
+    KnobIPtr getKnobForItem(TableItem* item, int* dimension) const;
     Gui* getGui() const;
-    virtual void setIconForButton(KnobButton* /*knob*/)
+    virtual void setIconForButton(const KnobButtonPtr& /*knob*/)
     {
     }
 
@@ -94,7 +100,7 @@ public:
 
     void selectNode(const NodePtr & node, bool addToSelection);
 
-    void selectNodes(const std::list<Node*> & nodes, bool addToSelection);
+    void selectNodes(const std::list<NodePtr> & nodes, bool addToSelection);
 
     void removeNodeFromSelection(const NodePtr & node);
 
@@ -148,20 +154,20 @@ protected:
     {
     }
 
-    virtual void showMenuForInstance(Node* /*instance*/)
+    virtual void showMenuForInstance(const NodePtr& /*instance*/)
     {
     }
 
 private:
 
-    virtual void onButtonTriggered(KnobButton* button);
+    virtual void onButtonTriggered(const KnobButtonPtr& button);
 
-    void resetInstances(const std::list<Node*> & instances);
+    void resetInstances(const std::list<NodePtr> & instances);
 
     void removeInstancesInternal();
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
@@ -177,17 +183,23 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from KnobHolder
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    TrackerPanelV1(const NodeGuiPtr & node);
 
-    TrackerPanelV1(const boost::shared_ptr<NodeGui> & node);
+public:
+    static TrackerPanelV1Ptr create(const NodeGuiPtr& node) WARN_UNUSED_RETURN
+    {
+        return TrackerPanelV1Ptr( new TrackerPanelV1(node) );
+    }
 
     virtual ~TrackerPanelV1();
 
     ///Each function below returns true if there is a selection, false otherwise
-    bool trackBackward(ViewerInstance* viewer);
-    bool trackForward(ViewerInstance* viewer);
-    bool trackPrevious(ViewerInstance* viewer);
-    bool trackNext(ViewerInstance* viewer);
+    bool trackBackward(const ViewerInstancePtr& viewer);
+    bool trackForward(const ViewerInstancePtr& viewer);
+    bool trackPrevious(const ViewerInstancePtr& viewer);
+    bool trackNext(const ViewerInstancePtr& viewer);
     void stopTracking();
     bool isTracking() const;
 
@@ -215,9 +227,9 @@ private:
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
-    virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
-    virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
-    virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
+    virtual void setIconForButton(const KnobButtonPtr& knob) OVERRIDE FINAL;
+    virtual void onButtonTriggered(const KnobButtonPtr& button) OVERRIDE FINAL;
+    virtual void showMenuForInstance(const NodePtr& item) OVERRIDE FINAL;
     boost::scoped_ptr<TrackerPanelPrivateV1> _imp;
 };
 

@@ -107,7 +107,7 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstancePtr appInstance = toGuiAppInstance(*it);
         if (appInstance) {
             Gui* gui = appInstance->getGui();
             assert(gui);
@@ -135,14 +135,14 @@ GuiApplicationManager::loadBuiltinNodePlugins(IOPluginsMap* readersMap,
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 }
 
-AppInstPtr
+AppInstancePtr
 GuiApplicationManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr( new GuiAppInstance(appID) );
+    return GuiAppInstance::create(appID);
 }
 
 KnobGui*
-GuiApplicationManager::createGuiForKnob(KnobPtr knob,
+GuiApplicationManager::createGuiForKnob(KnobIPtr knob,
                                         KnobGuiContainerI *container) const
 {
     return _imp->_knobGuiFactory->createGuiForKnob(knob, container);
@@ -278,7 +278,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
     const AppInstanceVec & apps = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->setUndoRedoStackLimit(limit);
         }
@@ -308,7 +308,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     QString fileCopy( QString::fromUtf8( filename.c_str() ) );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->getReaderPluginIDForFileType( ext.toStdString() );
-    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
 
     if ( !mainInstance || !mainInstance->getProject()->isGraphWorthLess() ) {
@@ -335,7 +335,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     NodesList allNodes = mainInstance->getProject()->getNodes();
     NodePtr viewerFound;
     for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-        if ( (*it)->isEffectViewer() ) {
+        if ( (*it)->isEffectViewerInstance() ) {
             viewerFound = *it;
             break;
         }
@@ -360,8 +360,8 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 void
 GuiApplicationManager::handleOpenFileRequest()
 {
-    AppInstPtr mainApp = getAppInstance(0);
-    GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( mainApp.get() );
+    AppInstancePtr mainApp = getAppInstance(0);
+    GuiAppInstancePtr guiApp = toGuiAppInstance(mainApp);
 
     assert(guiApp);
     if (guiApp) {
@@ -385,18 +385,18 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
 {
     ///make a copy of the map because it will be modified when closing projects
     AppInstanceVec instances = getAppInstances();
-    std::list<GuiAppInstPtr> guiApps;
+    std::list<GuiAppInstancePtr> guiApps;
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstPtr app = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+        GuiAppInstancePtr app = toGuiAppInstance(*it);
         if (app) {
             guiApps.push_back(app);
         }
     }
 
-    std::set<GuiAppInstPtr> triedInstances;
+    std::set<GuiAppInstancePtr> triedInstances;
     while ( !guiApps.empty() ) {
-        GuiAppInstPtr app = guiApps.front();
+        GuiAppInstancePtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
             app->getGui()->abortProject(true, warnUserForSave, true);
@@ -406,7 +406,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         instances = getAppInstances();
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstPtr ga = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+            GuiAppInstancePtr ga = toGuiAppInstance(*it);
             if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
@@ -1026,7 +1026,7 @@ void
 GuiApplicationManager::showErrorLog()
 {
     hideSplashScreen();
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( getTopLevelInstance().get() );
+    GuiAppInstancePtr app = toGuiAppInstance( getTopLevelInstance() );
     if (app) {
         app->getGui()->showErrorLog();
     }
@@ -1038,7 +1038,7 @@ GuiApplicationManager::clearLastRenderedTextures()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->clearAllLastRenderedImages();
         }
@@ -1124,7 +1124,7 @@ GuiApplicationManager::reloadStylesheets()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->reloadStylesheet();
         }
@@ -1137,7 +1137,7 @@ GuiApplicationManager::reloadScriptEditorFonts()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstancePtr guiApp = toGuiAppInstance(*it);
         if (guiApp) {
             guiApp->reloadScriptEditorFonts();
         }

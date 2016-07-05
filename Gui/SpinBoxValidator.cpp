@@ -40,25 +40,25 @@ struct NumericKnobValidatorPrivate
     KnobGuiWPtr knobUi;
 
     ///Only these knobs have spinboxes
-    KnobGuiDouble* isDoubleGui;
-    KnobGuiColor* isColorGui;
-    KnobGuiInt* isIntGui;
-    boost::weak_ptr<Knob<double> > isDouble;
-    boost::weak_ptr<Knob<int> > isInt;
+    KnobGuiDoublePtr isDoubleGui;
+    KnobGuiColorPtr isColorGui;
+    KnobGuiIntPtr isIntGui;
+    KnobDoubleBasePtr isDouble;
+    KnobIntBasePtr isInt;
 
     NumericKnobValidatorPrivate(const SpinBox* spinbox,
                                 const KnobGuiPtr& knob)
         : spinbox(spinbox)
         , knobUi(knob)
-        , isDoubleGui( dynamic_cast<KnobGuiDouble*>( knob.get() ) )
-        , isColorGui( dynamic_cast<KnobGuiColor*>( knob.get() ) )
-        , isIntGui( dynamic_cast<KnobGuiInt*>( knob.get() ) )
+        , isDoubleGui( toKnobGuiDouble(knob) )
+        , isColorGui( toKnobGuiColor(knob) )
+        , isIntGui( toKnobGuiInt(knob) )
     {
-        KnobPtr internalKnob = knob->getKnob();
+        KnobIPtr internalKnob = knob->getKnob();
 
-        isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
-        isInt = boost::dynamic_pointer_cast<Knob<int> >(internalKnob);
-        assert( isDouble.lock() || isInt.lock() );
+        isDouble = toKnobDoubleBase(internalKnob);
+        isInt = toKnobIntBase(internalKnob);
+        assert( isDouble || isInt );
     }
 };
 

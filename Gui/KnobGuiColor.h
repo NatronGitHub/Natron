@@ -115,13 +115,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiColor(knob, container);
     }
 
-    KnobGuiColor(KnobPtr knob,
+    KnobGuiColor(KnobIPtr knob,
                  KnobGuiContainerI *container);
 
     virtual ~KnobGuiColor() {}
@@ -186,6 +186,12 @@ private:
     std::vector<double> _lastColor;
     bool _useSimplifiedUI;
 };
+
+inline KnobGuiColorPtr
+toKnobGuiColor(const KnobGuiIPtr& knobGui)
+{
+    return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
+}
 
 NATRON_NAMESPACE_EXIT;
 

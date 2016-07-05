@@ -89,7 +89,7 @@ class DopeSheetEditor
 {
 public:
     DopeSheetEditor(Gui *gui,
-                    boost::shared_ptr<TimeLine> timeline,
+                    const TimeLinePtr& timeline,
                     QWidget *parent = 0);
     ~DopeSheetEditor();
 
@@ -99,13 +99,13 @@ public:
      *
      * The model will decide if the node should be accepted or discarded.
      */
-    void addNode(NodeGuiPtr nodeGui);
+    void addNode(const NodeGuiPtr& nodeGui);
 
     /**
      * @brief Tells to the dope sheet model to remove 'node' from the dope
      * sheet editor.
      */
-    void removeNode(NodeGui *node);
+    void removeNode(const NodeGuiPtr& node);
 
     /**
      * @brief Center the content of the dope sheet view on the timeline range

@@ -342,10 +342,10 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , metadatasMutex()
     , metadatas()
     , runningClipPreferences(false)
-    , overlaysViewport(0)
+    , overlaysViewport()
     , attachedContextsMutex(QMutex::Recursive)
     , attachedContexts()
-    , mainInstance(0)
+    , mainInstance()
     , isDoingInstanceSafeRender(false)
     , renderClonesMutex()
     , renderClonesPool()
@@ -353,7 +353,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
 }
 
 EffectInstance::Implementation::Implementation(const Implementation& other)
-: _publicInterface(0)
+: _publicInterface()
 , tlsData(other.tlsData)
 , duringInteractActionMutex()
 , duringInteractAction(other.duringInteractAction)
@@ -384,7 +384,7 @@ EffectInstance::Implementation::Implementation(const Implementation& other)
 }
 
 void
-EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
+EffectInstance::Implementation::runChangedParamCallback(const KnobIPtr& k,
                                                         bool userEdited,
                                                         const std::string & callback)
 {
@@ -429,14 +429,14 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string thisNodeVar = appID + ".";
     thisNodeVar.append( _publicInterface->getNode()->getFullyQualifiedName() );
 
-    boost::shared_ptr<NodeCollection> collection = _publicInterface->getNode()->getGroup();
+    NodeCollectionPtr collection = _publicInterface->getNode()->getGroup();
     assert(collection);
     if (!collection) {
         return;
     }
 
     std::string thisGroupVar;
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeGroupPtr isParentGrp = toNodeGroup(collection);
     if (isParentGrp) {
         std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
         std::string nodeFullName = appID + "." + nodeName;
@@ -487,7 +487,7 @@ EffectInstance::Implementation::setDuringInteractAction(bool b)
 
 #if NATRON_ENABLE_TRIMAP
 void
-EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img)
+EffectInstance::Implementation::markImageAsBeingRendered(const ImagePtr & img)
 {
     if ( !img->usesBitMap() ) {
         return;
@@ -505,7 +505,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
 
 bool
 EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi,
-                                                                            const boost::shared_ptr<Image> & img)
+                                                                            const ImagePtr & img)
 {
     if ( !img->usesBitMap() ) {
         return true;
@@ -556,7 +556,7 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(cons
 }
 
 void
-EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
+EffectInstance::Implementation::unmarkImageAsBeingRendered(const ImagePtr & img,
                                                            bool renderFailed)
 {
     if ( !img->usesBitMap() ) {
@@ -589,8 +589,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    ViewIdx view,
                                                                    bool isIdentity,
                                                                    double identityTime,
-                                                                   const EffectInstPtr& identityInput,
-                                                                   const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                                                                   const EffectInstancePtr& identityInput,
+                                                                   const ComponentsNeededMapPtr& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
                                                                    int firstFrame,
@@ -632,7 +632,7 @@ EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
 
 void
 EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
-                                                         const boost::shared_ptr<Image> & img)
+                                                         const ImagePtr & img)
 {
     EffectDataTLSPtr tls = tlsData->getTLSData();
 
