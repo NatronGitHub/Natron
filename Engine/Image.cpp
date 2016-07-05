@@ -663,7 +663,7 @@ Image::printUnrenderedPixels(const RectI& roi) const
     // ifdef DEBUG
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params,
+             const ImageParamsPtr& params,
              const CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
     , _useBitmap(true)
@@ -679,7 +679,7 @@ Image::Image(const ImageKey & key,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params)
+             const ImageParamsPtr& params)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
     , _useBitmap(false)
 {
@@ -713,7 +713,7 @@ Image::Image(const ImageComponents& components,
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
-                  boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
+                  ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
                                                                   bounds,
@@ -783,7 +783,7 @@ Image::makeKey(const CacheEntryHolder* holder,
     return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
@@ -799,7 +799,7 @@ Image::makeParams(const RectD & rod,
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -812,7 +812,7 @@ Image::makeParams(const RectD & rod,
                                                            textureTarget) );
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,    // the image rod in canonical coordinates
                   const RectI& bounds,
                   const double par,
@@ -832,7 +832,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -916,27 +916,30 @@ Image::setRoD(const RectD& rod)
 }
 
 void
-Image::resizeInternal(const Image* srcImg,
+Image::resizeInternal(const OSGLContexPtr& glContext,
+                      const Image* srcImg,
                       const RectI& srcBounds,
                       const RectI& merge,
                       bool fillWithBlackAndTransparent,
                       bool setBitmapTo1,
                       bool createInCache,
-                      boost::shared_ptr<Image>* outputImage)
+                      ImagePtr* outputImage)
 {
     ///Allocate to resized image
     if (!createInCache) {
         outputImage->reset( new Image( srcImg->getComponents(),
-                                       srcImg->getRoD(),
-                                       merge,
-                                       srcImg->getMipMapLevel(),
-                                       srcImg->getPixelAspectRatio(),
-                                       srcImg->getBitDepth(),
-                                       srcImg->getPremultiplication(),
-                                       srcImg->getFieldingOrder(),
-                                       srcImg->usesBitMap() ) );
+                                      srcImg->getRoD(),
+                                      merge,
+                                      srcImg->getMipMapLevel(),
+                                      srcImg->getPixelAspectRatio(),
+                                      srcImg->getBitDepth(),
+                                      srcImg->getPremultiplication(),
+                                      srcImg->getFieldingOrder(),
+                                      srcImg->usesBitMap(),
+                                      srcImg->getStorageMode(),
+                                      srcImg->getGLTextureTarget()) );
     } else {
-        boost::shared_ptr<ImageParams> params( new ImageParams( *srcImg->getParams() ) );
+        ImageParamsPtr params( new ImageParams( *srcImg->getParams() ) );
         params->setBounds(merge);
         outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI() ) );
         (*outputImage)->allocateMemory();
@@ -944,119 +947,127 @@ Image::resizeInternal(const Image* srcImg,
     ImageBitDepthEnum depth = srcImg->getBitDepth();
 
     if (fillWithBlackAndTransparent) {
-        /*
-           Compute the rectangles (A,B,C,D) where to set the image to 0
 
-           AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-           AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-           CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-         */
-        RectI aRect;
-        aRect.x1 = merge.x1;
-        aRect.y1 = srcBounds.y2;
-        aRect.y2 = merge.y2;
-        aRect.x2 = merge.x2;
+        if (srcImg->getStorageMode() == eStorageModeGLTex) {
+            (*outputImage)->fillBoundsZero();
+        } else {
+            /*
+             Compute the rectangles (A,B,C,D) where to set the image to 0
 
-        RectI bRect;
-        bRect.x1 = srcBounds.x2;
-        bRect.y1 = srcBounds.y1;
-        bRect.x2 = merge.x2;
-        bRect.y2 = srcBounds.y2;
+             AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+             AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+             CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+             CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+             */
+            RectI aRect;
+            aRect.x1 = merge.x1;
+            aRect.y1 = srcBounds.y2;
+            aRect.y2 = merge.y2;
+            aRect.x2 = merge.x2;
 
-        RectI cRect;
-        cRect.x1 = merge.x1;
-        cRect.y1 = merge.y1;
-        cRect.x2 = merge.x2;
-        cRect.y2 = srcBounds.y1;
+            RectI bRect;
+            bRect.x1 = srcBounds.x2;
+            bRect.y1 = srcBounds.y1;
+            bRect.x2 = merge.x2;
+            bRect.y2 = srcBounds.y2;
 
-        RectI dRect;
-        dRect.x1 = merge.x1;
-        dRect.y1 = srcBounds.y1;
-        dRect.x2 = srcBounds.x1;
-        dRect.y2 = srcBounds.y2;
+            RectI cRect;
+            cRect.x1 = merge.x1;
+            cRect.y1 = merge.y1;
+            cRect.x2 = merge.x2;
+            cRect.y2 = srcBounds.y1;
 
-        Image::WriteAccess wacc( outputImage->get() );
-        std::size_t pixelSize = srcImg->getComponentsCount() * getSizeOfForBitDepth(depth);
+            RectI dRect;
+            dRect.x1 = merge.x1;
+            dRect.y1 = srcBounds.y1;
+            dRect.x2 = srcBounds.x1;
+            dRect.y2 = srcBounds.y2;
 
-        if ( !aRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(aRect.x1, aRect.y1);
-            assert(pix);
-            double a = aRect.area();
-            std::size_t memsize = a * pixelSize;
-            std::memset(pix, 0, memsize);
-            if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
-                char* bm = wacc.bitmapAt(aRect.x1, aRect.y1);
-                assert(bm);
-                std::memset(bm, 1, a);
-            }
-        }
-        if ( !cRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(cRect.x1, cRect.y1);
-            assert(pix);
-            double a = cRect.area();
-            std::size_t memsize = a * pixelSize;
-            std::memset(pix, 0, memsize);
-            if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
-                char* bm = (char*)wacc.bitmapAt(cRect.x1, cRect.y1);
-                assert(bm);
-                std::memset(bm, 1, a);
-            }
-        }
-        if ( !bRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(bRect.x1, bRect.y1);
-            assert(pix);
-            int mw = merge.width();
-            std::size_t rowsize = mw * pixelSize;
-            int bw = bRect.width();
-            std::size_t rectRowSize = bw * pixelSize;
-            char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(bRect.x1, bRect.y1) : 0;
-            for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
-                std::memset(pix, 0, rectRowSize);
-                if (bm) {
-                    std::memset(bm, 1, bw);
-                    bm += mw;
+            Image::WriteAccess wacc( outputImage->get() );
+            std::size_t pixelSize = srcImg->getComponentsCount() * getSizeOfForBitDepth(depth);
+
+            if ( !aRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(aRect.x1, aRect.y1);
+                assert(pix);
+                double a = aRect.area();
+                std::size_t memsize = a * pixelSize;
+                std::memset(pix, 0, memsize);
+                if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
+                    char* bm = wacc.bitmapAt(aRect.x1, aRect.y1);
+                    assert(bm);
+                    std::memset(bm, 1, a);
                 }
             }
-        }
-        if ( !dRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(dRect.x1, dRect.y1);
-            assert(pix);
-            int mw = merge.width();
-            std::size_t rowsize = mw * pixelSize;
-            int dw = dRect.width();
-            std::size_t rectRowSize = dw * pixelSize;
-            char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(dRect.x1, dRect.y1) : 0;
-            for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
-                std::memset(pix, 0, rectRowSize);
-                if (bm) {
-                    std::memset(bm, 1, dw);
-                    bm += mw;
+            if ( !cRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(cRect.x1, cRect.y1);
+                assert(pix);
+                double a = cRect.area();
+                std::size_t memsize = a * pixelSize;
+                std::memset(pix, 0, memsize);
+                if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
+                    char* bm = (char*)wacc.bitmapAt(cRect.x1, cRect.y1);
+                    assert(bm);
+                    std::memset(bm, 1, a);
                 }
             }
+            if ( !bRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(bRect.x1, bRect.y1);
+                assert(pix);
+                int mw = merge.width();
+                std::size_t rowsize = mw * pixelSize;
+                int bw = bRect.width();
+                std::size_t rectRowSize = bw * pixelSize;
+                char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(bRect.x1, bRect.y1) : 0;
+                for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
+                    std::memset(pix, 0, rectRowSize);
+                    if (bm) {
+                        std::memset(bm, 1, bw);
+                        bm += mw;
+                    }
+                }
+            }
+            if ( !dRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(dRect.x1, dRect.y1);
+                assert(pix);
+                int mw = merge.width();
+                std::size_t rowsize = mw * pixelSize;
+                int dw = dRect.width();
+                std::size_t rectRowSize = dw * pixelSize;
+                char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(dRect.x1, dRect.y1) : 0;
+                for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
+                    std::memset(pix, 0, rectRowSize);
+                    if (bm) {
+                        std::memset(bm, 1, dw);
+                        bm += mw;
+                    }
+                }
+            } // if (srcImg->getStorageMode() == eStorageModeGLTex) {
         }
     } // fillWithBlackAndTransparent
 
-
-    switch (depth) {
-    case eImageBitDepthByte:
-        (*outputImage)->pasteFromForDepth<unsigned char>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
-        break;
-    case eImageBitDepthShort:
-        (*outputImage)->pasteFromForDepth<unsigned short>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        (*outputImage)->pasteFromForDepth<float>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
-        break;
-    case eImageBitDepthNone:
-        break;
+    if (srcImg->getStorageMode() == eStorageModeGLTex) {
+        (*outputImage)->pasteFrom(*srcImg, srcBounds, false, glContext);
+    } else {
+        switch (depth) {
+            case eImageBitDepthByte:
+                (*outputImage)->pasteFromForDepth<unsigned char>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
+                break;
+            case eImageBitDepthShort:
+                (*outputImage)->pasteFromForDepth<unsigned short>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
+                break;
+            case eImageBitDepthHalf:
+                assert(false);
+                break;
+            case eImageBitDepthFloat:
+                (*outputImage)->pasteFromForDepth<float>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
+                break;
+            case eImageBitDepthNone:
+                break;
+        }
     }
 } // Image::resizeInternal
 
@@ -1064,7 +1075,8 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
-                             boost::shared_ptr<Image>* output)
+                             ImagePtr* output,
+                             const OSGLContextPtr& glContext)
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
@@ -1076,18 +1088,17 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds,
     RectI merge = newBounds;
     merge.merge(_bounds);
 
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
+    resizeInternal(glContext, this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
 
     return true;
 }
 
 bool
-Image::ensureBounds(const RectI& newBounds,
+Image::ensureBounds(const OSGLContextPtr& glContext,
+                    const RectI& newBounds,
                     bool fillWithBlackAndTransparent,
                     bool setBitmapTo1)
 {
-    // OpenGL textures are not resizable yet
-    assert(_params->getStorageInfo().mode != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
         return false;
     }
@@ -1097,7 +1108,7 @@ Image::ensureBounds(const RectI& newBounds,
     merge.merge(_bounds);
 
     ImagePtr tmpImg;
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, false, &tmpImg);
+    resizeInternal(glContext, this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, false, &tmpImg);
 
 
     ///Change the size of the current buffer
@@ -1387,8 +1398,8 @@ void fillGL(const RectI & roi,
     }
 
     assert(glContext);
-    boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateFillShader<GL>();
-    assert(shader);
+   // boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateFillShader<GL>();
+   // assert(shader);
     GLuint fboID = glContext->getOrCreateFBOId();
 
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -1405,12 +1416,14 @@ void fillGL(const RectI & roi,
     GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
 
-    shader->bind();
+    /*shader->bind();
     OfxRGBAColourF fillColor = {r, g, b, a};
     shader->setUniform("fillColor", fillColor);
     Image::applyTextureMapping<GL>(bounds, realRoI);
-    shader->unbind();
+    shader->unbind();*/
 
+    GL::glClearColor(r, g, b, a);
+    GL::glClear(GL_COLOR_BUFFER_BIT);
 
     GL::glBindTexture(target, 0);
     glCheckError(GL);

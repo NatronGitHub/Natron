@@ -41,9 +41,17 @@ NATRON_NAMESPACE_ENTER;
 struct RotoShapeRenderNodePrivate;
 class RotoShapeRenderNode : public EffectInstance
 {
+    RotoShapeRenderNode(NodePtr n);
+
+
 public:
 
-    RotoShapeRenderNode(NodePtr n);
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new RotoShapeRenderNode(node) );
+    }
+
+
 
     virtual ~RotoShapeRenderNode();
 
@@ -122,12 +130,19 @@ public:
         return false;
     }
     
-    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL
     {
         return ePluginOpenGLRenderSupportYes;
     }
 
+    virtual bool isPaintingOverItselfEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+    
 private:
+
+    virtual void purgeCaches() OVERRIDE FINAL;
 
     virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,

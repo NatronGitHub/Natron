@@ -152,7 +152,7 @@ public:
 class NodeGraphPrivate
 {
 public:
-    NodeGraph* _publicInterface;
+    NodeGraph* _publicInterface; // can not be a smart ptr
     boost::weak_ptr<NodeCollection> group;
     QPoint _lastMousePos;
     QPointF _lastSelectionStartPointScene;
@@ -208,7 +208,7 @@ public:
 
 
     NodeGraphPrivate(NodeGraph* p,
-                     const boost::shared_ptr<NodeCollection>& group);
+                     const NodeCollectionPtr& group);
 
     QPoint getPyPlugUnlockPos() const;
 
@@ -225,10 +225,10 @@ public:
      * @brief Create a new node given the serialization of another one
      * @param offset[in] The offset applied to the new node position relative to the serialized node's position.
      **/
-    NodeGuiPtr pasteNode(const boost::shared_ptr<NodeSerialization> & internalSerialization,
+    NodeGuiPtr pasteNode(const NodeSerializationPtr & internalSerialization,
                          const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
                          const QPointF & offset,
-                         const boost::shared_ptr<NodeCollection>& group,
+                         const NodeCollectionPtr& group,
                          const std::string& parentName,
                          bool clone,
                          std::map<std::string, std::string>* oldNewScriptNameMapping);
@@ -239,7 +239,7 @@ public:
      * WARNING: The 2 lists must be ordered the same: each item in serializations corresponds to the same item in the newNodes
      * list. We're not using 2 lists to avoid a copy from the paste function.
      **/
-    void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
+    void restoreConnections(const std::list<NodeSerializationPtr > & serializations,
                             const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
                             const std::map<std::string, std::string>& oldNewScriptNamesMap);
 

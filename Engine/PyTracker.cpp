@@ -32,7 +32,7 @@
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-Track::Track(const boost::shared_ptr<TrackMarker>& marker)
+Track::Track(const TrackMarkerPtr& marker)
     : _marker(marker)
 {
 }
@@ -56,7 +56,7 @@ Track::getScriptName() const
 Param*
 Track::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _marker->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob = _marker->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -72,7 +72,7 @@ Track::reset()
     _marker->resetTrack();
 }
 
-Tracker::Tracker(const boost::shared_ptr<TrackerContext>& ctx)
+Tracker::Tracker(const TrackerContextPtr& ctx)
     : _ctx(ctx)
 {
 }
@@ -104,7 +104,7 @@ Tracker::startTracking(const std::list<Track*>& marks,
     for (std::list<Track*>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
         markers.push_back( (*it)->getInternalMarker() );
     }
-    _ctx->trackMarkers(markers, start, end, forward, 0);
+    _ctx->trackMarkers(markers, start, end, forward, (OverlaySupport*)(NULL));
 }
 
 void

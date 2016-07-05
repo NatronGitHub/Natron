@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-GuiApp::GuiApp(const GuiAppInstPtr& app)
+GuiApp::GuiApp(const GuiAppInstancePtr& app)
     : App(app)
     , _app(app)
 {
@@ -287,7 +287,7 @@ GuiApp::getSelectedNodes(Group* group) const
     if (group) {
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isEffect) {
-            NodeGroup* nodeGrp = isEffect->getInternalNode()->isEffectGroup();
+            NodeGroupPtr nodeGrp = isEffect->getInternalNode()->isEffectNodeGroup();
             if (nodeGrp) {
                 NodeGraphI* graph_i  = nodeGrp->getNodeGraph();
                 if (graph_i) {
@@ -327,7 +327,7 @@ GuiApp::selectNode(Effect* effect,
     if ( !effect || appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    NodeCollectionPtr collection = effect->getInternalNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -336,7 +336,7 @@ GuiApp::selectNode(Effect* effect,
     if (!nodeUi) {
         return;
     }
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     NodeGraph* graph = 0;
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -357,7 +357,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         return;
     }
     NodesGuiList selection;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
@@ -378,7 +378,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     if (printWarn) {
         getInternalGuiApp()->appendToScriptEditor( tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
     } else {
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+        NodeGroupPtr isGroup = toNodeGroup(collection);
         NodeGraph* graph = 0;
         if (isGroup) {
             graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -399,13 +399,13 @@ GuiApp::selectAllNodes(Group* group)
     if ( appPTR->isBackground() ) {
         return;
     }
-    NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection;
-    NodeGroup* isGroup = 0;
+    NodeGraph* graph = NULL;
+    NodeCollectionPtr collection;
+    NodeGroupPtr isGroup = NodeGroupPtr();
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
-            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            isGroup = toNodeGroup(collection);
             if (isGroup) {
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
@@ -430,7 +430,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    NodeCollectionPtr collection = effect->getInternalNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -439,7 +439,7 @@ GuiApp::deselectNode(Effect* effect)
     if (!nodeUi) {
         return;
     }
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     NodeGraph* graph = 0;
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -460,13 +460,13 @@ GuiApp::clearSelection(Group* group)
         return;
     }
 
-    NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection;
-    NodeGroup* isGroup = 0;
+    NodeGraph* graph = NULL;
+    NodeCollectionPtr collection;
+    NodeGroupPtr isGroup = NodeGroupPtr();
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
-            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            isGroup = toNodeGroup(collection);
             if (isGroup) {
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
@@ -493,7 +493,7 @@ GuiApp::getViewer(const QString& scriptName) const
         return 0;
     }
 
-    ViewerInstance* viewer = ptr->isEffectViewer();
+    ViewerInstancePtr viewer = ptr->isEffectViewerInstance();
     if (!viewer) {
         return 0;
     }
@@ -509,7 +509,7 @@ GuiApp::getActiveViewer() const
     if (!tab) {
         return 0;
     }
-    ViewerInstance* instance = tab->getInternalNode();
+    ViewerInstancePtr instance = tab->getInternalNode();
     if (!instance) {
         return 0;
     }
@@ -554,7 +554,7 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,
 PyViewer::PyViewer(const NodePtr& node)
     : _node(node)
 {
-    ViewerInstance* viewer = node->isEffectViewer();
+    ViewerInstancePtr viewer = node->isEffectViewerInstance();
 
     assert(viewer);
     ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewer->getUiContext() );
@@ -710,7 +710,7 @@ PyViewer::setAInput(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
+    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -735,7 +735,7 @@ PyViewer::setBInput(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
+    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }

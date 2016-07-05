@@ -69,13 +69,13 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 }
 
 void
-GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,
+GuiApplicationManagerPrivate::removePluginToolButtonInternal(const PluginGroupNodePtr& n,
                                                              const QStringList& grouping)
 {
     assert(grouping.size() > 0);
 
-    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin();
+    const std::list<PluginGroupNodePtr>& children = n->getChildren();
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin();
          it != children.end(); ++it) {
         if ( (*it)->getID() == grouping[0] ) {
             if (grouping.size() > 1) {
@@ -85,10 +85,10 @@ GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared
                 }
                 removePluginToolButtonInternal(*it, newGrouping);
                 if ( (*it)->getChildren().empty() ) {
-                    n->tryRemoveChild( it->get() );
+                    n->tryRemoveChild(*it);
                 }
             } else {
-                n->tryRemoveChild( it->get() );
+                n->tryRemoveChild(*it);
             }
             break;
         }
@@ -100,7 +100,7 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping
 {
     assert(grouping.size() > 0);
 
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _topLevelToolButtons.begin();
+    for (std::list<PluginGroupNodePtr>::iterator it = _topLevelToolButtons.begin();
          it != _topLevelToolButtons.end(); ++it) {
         if ( (*it)->getID() == grouping[0] ) {
             if (grouping.size() > 1) {
@@ -120,9 +120,9 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping
     }
 }
 
-boost::shared_ptr<PluginGroupNode>
-GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,
-                                                           const boost::shared_ptr<PluginGroupNode>& parent,
+PluginGroupNodePtr
+GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<PluginGroupNodePtr>& children,
+                                                           const PluginGroupNodePtr& parent,
                                                            const QStringList & grouping,
                                                            const QString & name,
                                                            const QStringList & groupingIcon,
@@ -134,7 +134,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<boost
     assert(grouping.size() > 0);
     assert( groupingIcon.size() == grouping.size() - 1 || groupingIcon.isEmpty() );
 
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         if ( (*it)->getID() == grouping[0] ) {
             if (grouping.size() > 1) {
                 QStringList newGrouping, newIconsGrouping;
@@ -161,7 +161,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<boost
     } else {
         iconFilePath = iconPath;
     }
-    boost::shared_ptr<PluginGroupNode> ret( new PluginGroupNode(grouping[0], grouping.size() == 1 ? name : grouping[0], iconFilePath, major, minor, isUserCreatable) );
+    PluginGroupNodePtr ret( new PluginGroupNode(grouping[0], grouping.size() == 1 ? name : grouping[0], iconFilePath, major, minor, isUserCreatable) );
     if (parent) {
         parent->tryAddChild(ret);
         ret->setParent(parent);
@@ -266,7 +266,7 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,
         _actionShortcuts.insert( std::make_pair(grouping, group) );
     }
 
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
+    GuiAppInstancePtr app = toGuiAppInstance( _publicInterface->getTopLevelInstance() );
     if (app) {
         app->getGui()->addShortcut(kA);
     }
@@ -379,7 +379,7 @@ GuiApplicationManagerPrivate::addMouseShortcut(const std::string & grouping,
         _actionShortcuts.insert( std::make_pair(groupingStr, group) );
     }
 
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
+    GuiAppInstancePtr app = toGuiAppInstance( _publicInterface->getTopLevelInstance() );
     if (app) {
         app->getGui()->addShortcut(mA);
     }
@@ -429,7 +429,7 @@ GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
         _actionShortcuts.insert( std::make_pair(groupingStr, group) );
     }
 
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
+    GuiAppInstancePtr app = toGuiAppInstance( _publicInterface->getTopLevelInstance() );
     if (app) {
         app->getGui()->addShortcut(kA);
     }

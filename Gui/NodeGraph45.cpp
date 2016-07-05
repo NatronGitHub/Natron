@@ -109,7 +109,7 @@ NodeGraph::toggleHideInputs()
 NodesGuiList
 NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( bd.get() );
+    BackdropGuiPtr isBd = boost::dynamic_pointer_cast<BackdropGui>( bd );
 
     if (!isBd) {
         return NodesGuiList();
@@ -144,10 +144,10 @@ NodeGraph::refreshAllKnobsGui()
 {
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it)->isSettingsPanelVisible() ) {
-            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = (*it)->getKnobs();
+            const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & knobs = (*it)->getKnobs();
 
-            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                KnobPtr knob = it2->first.lock();
+            for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+                KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if ( knob->isAnimated(i) ) {
@@ -406,7 +406,7 @@ FindNodeDialog::selectNextResult()
     std::advance(it, _imp->currentFindIndex);
 
     _imp->graph->selectNode(*it, false);
-    _imp->graph->centerOnItem( it->get() );
+    _imp->graph->centerOnItem((*it).get());
 
 
     QString text = QString::fromUtf8("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg( _imp->nodeResults.size() );
@@ -572,7 +572,7 @@ NodeGraph::expandSelectedGroups()
     NodesGuiList nodes;
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
+        NodeGroupPtr isGroup = (*it)->getNode()->isEffectNodeGroup();
         if ( isGroup && (isGroup->getPluginID() == PLUGINID_NATRON_GROUP) ) {
             nodes.push_back(*it);
         }
@@ -587,12 +587,12 @@ NodeGraph::expandSelectedGroups()
 void
 NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( getGroup().get() );
+    NodeGroupPtr isGrp = toNodeGroup( getGroup() );
 
     assert(isGrp);
     if (isGrp) {
         std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
+        makeFullyQualifiedLabel(isGrp->getNode(), &label);
         setLabel(label);
         TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
         if (parent) {
@@ -606,11 +606,11 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
     if (!group) {
         return;
     }
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( group.get() );
+    NodeGroupPtr isGrp = toNodeGroup( group );
     if (!isGrp) {
         return;
     }
@@ -637,7 +637,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 
 void
 NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                     const boost::shared_ptr<NodeCollection>& group,
+                                     const NodeCollectionPtr& group,
                                      std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes)
 {
     {
@@ -646,7 +646,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         _imp->copyNodesInternal(nodes, clipboard);
 
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
+        std::list<NodeSerializationPtr >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
             NodeGuiPtr node = _imp->pasteNode( *itOther, *it, QPointF(0, 0), group, std::string(), false, &oldNewScriptNamesMapping);
@@ -668,12 +668,12 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         NodesList allNodes;
         group->getActiveNodes(&allNodes);
         // If the group is a Group node, append to all nodes reachable through links
-        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
+        NodeGroupPtr isGroupNode = toNodeGroup(group);
         if (isGroupNode) {
             allNodes.push_back(isGroupNode->getNode());
         }
 
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSerialization = clipboard.nodes.begin();
+        std::list<NodeSerializationPtr >::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
             it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
         }

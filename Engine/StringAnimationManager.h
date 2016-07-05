@@ -44,7 +44,7 @@ struct StringAnimationManagerPrivate;
 class StringAnimationManager
 {
 public:
-    StringAnimationManager(const KnobI* knob);
+    StringAnimationManager(const KnobIConstPtr& knob);
 
     ~StringAnimationManager();
 

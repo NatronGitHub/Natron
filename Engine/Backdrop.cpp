@@ -34,7 +34,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct BackdropPrivate
 {
-    boost::weak_ptr<KnobString> knobLabel;
+    KnobStringWPtr knobLabel;
 
     BackdropPrivate()
         : knobLabel()
@@ -42,7 +42,7 @@ struct BackdropPrivate
     }
 };
 
-Backdrop::Backdrop(NodePtr node)
+Backdrop::Backdrop(const NodePtr& node)
     : NoOpBase(node)
     , _imp( new BackdropPrivate() )
 {
@@ -62,8 +62,8 @@ Backdrop::getPluginDescription() const
 void
 Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, tr("Label") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
+    KnobStringPtr knobLabel = AppManager::createKnob<KnobString>( shared_from_this(), tr("Label") );
 
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
@@ -75,13 +75,13 @@ Backdrop::initializeKnobs()
 }
 
 bool
-Backdrop::knobChanged(KnobI* k,
+Backdrop::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum /*reason*/,
                       ViewSpec /*view*/,
                       double /*time*/,
                       bool /*originatedFromMainThread*/)
 {
-    if ( k == _imp->knobLabel.lock().get() ) {
+    if ( k == _imp->knobLabel.lock() ) {
         QString text = QString::fromUtf8( _imp->knobLabel.lock()->getValue().c_str() );
         Q_EMIT labelChanged(text);
 

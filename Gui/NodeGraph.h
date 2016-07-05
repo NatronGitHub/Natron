@@ -67,14 +67,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     explicit NodeGraph(Gui* gui,
-                       const boost::shared_ptr<NodeCollection>& group,
+                       const NodeCollectionPtr& group,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
     virtual ~NodeGraph();
 
-    static void makeFullyQualifiedLabel(Node* node, std::string* ret);
-    boost::shared_ptr<NodeCollection> getGroup() const;
+    static void makeFullyQualifiedLabel(const NodePtr& node, std::string* ret);
+    NodeCollectionPtr getGroup() const;
     const std::list< NodeGuiPtr > & getSelectedNodes() const;
     NodeGuiPtr createNodeGUI(const NodePtr & node,
                              const CreateNodeArgs& args);
@@ -105,9 +105,9 @@ public:
     const NodesGuiList & getAllActiveNodes() const;
     NodesGuiList getAllActiveNodes_mt_safe() const;
 
-    void moveToTrash(NodeGui* node);
+    void moveToTrash(const NodeGuiPtr& node);
 
-    void restoreFromTrash(NodeGui* node);
+    void restoreFromTrash(const NodeGuiPtr& node);
 
     QGraphicsItem* getRootItem() const;
     virtual void notifyGuiClosing() OVERRIDE FINAL;
@@ -141,7 +141,7 @@ public:
     bool areOptionalInputsAutoHidden() const;
 
     void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                   const boost::shared_ptr<NodeCollection>& group,
+                                   const NodeCollectionPtr& group,
                                    std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes);
 
     virtual void onNodesCleared() OVERRIDE FINAL;
@@ -249,7 +249,7 @@ public Q_SLOTS:
 
 private:
 
-    void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
+    void showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& nearbyNode);
 
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
 
@@ -289,10 +289,10 @@ private:
         eNearbyItemEdgeBendPoint,
     };
 
-    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGui*>* nodes) const;
+    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGuiPtr>* nodes) const;
 
     NearbyItemEnum hasItemNearbyMouse(const QPoint& mousePosViewport,
-                                      NodeGui** node,
+                                      NodeGuiPtr* node,
                                       Edge** edge);
 
     void moveRootInternal(double dx, double dy);

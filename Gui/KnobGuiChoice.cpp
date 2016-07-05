@@ -203,12 +203,12 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
     ComboBox::focusOutEvent(e);
 }
 
-KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
+KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _comboBox(0)
 {
-    boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr k = toKnobChoice(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
@@ -252,7 +252,7 @@ void
 KnobGuiChoice::onEntryAppended(const QString& entry,
                                const QString& help)
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
 
     if ( knob->getHostCanAddOptions() &&
          ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
@@ -277,7 +277,7 @@ KnobGuiChoice::onEntriesReset()
 void
 KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
 
     if (!knob) {
         return;
@@ -292,7 +292,7 @@ KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
 void
 KnobGuiChoice::onRefreshMenuActionTriggered()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
 
     if (knob) {
         knob->refreshMenu();
@@ -302,7 +302,7 @@ KnobGuiChoice::onRefreshMenuActionTriggered()
 void
 KnobGuiChoice::onEntriesPopulated()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
 
     _comboBox->clear();
     std::vector<std::string> entries = knob->getEntries_mt_safe();
@@ -355,9 +355,9 @@ KnobGuiChoice::onItemNewSelected()
 
             return;
         }
-        KnobHolder* holder = _knob.lock()->getHolder();
+        KnobHolderPtr holder = _knob.lock()->getHolder();
         assert(holder);
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+        EffectInstancePtr effect = toEffectInstance(holder);
         assert(effect);
         if (effect) {
             assert( effect->getNode() );
@@ -392,7 +392,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     std::string activeEntry = knob->getActiveEntryText_mt_safe();
 
     if ( !activeEntry.empty() ) {
@@ -451,7 +451,7 @@ KnobGuiChoice::_show()
 void
 KnobGuiChoice::setEnabled()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     bool b = knob->isEnabled(0) && knob->getExpression(0).empty();
 
     _comboBox->setEnabled_natron(b);
@@ -470,7 +470,7 @@ KnobGuiChoice::setDirty(bool dirty)
     _comboBox->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiChoice::getKnob() const
 {
     return _knob.lock();

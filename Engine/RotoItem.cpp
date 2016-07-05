@@ -79,13 +79,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
 
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -112,9 +106,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 static RotoMetaTypesRegistration registration;
-RotoItem::RotoItem(const boost::shared_ptr<RotoContext>& context,
+RotoItem::RotoItem(const RotoContextPtr& context,
                    const std::string & name,
-                   boost::shared_ptr<RotoLayer> parent)
+                   RotoLayerPtr parent)
     : itemMutex()
     , _imp( new RotoItemPrivate(context, name, parent) )
 {
@@ -137,7 +131,7 @@ RotoItem::clone(const RotoItem*  other)
 }
 
 void
-RotoItem::setParentLayer(boost::shared_ptr<RotoLayer> layer)
+RotoItem::setParentLayer(RotoLayerPtr layer)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
@@ -155,7 +149,7 @@ RotoItem::setParentLayer(boost::shared_ptr<RotoLayer> layer)
     _imp->parentLayer = layer;
 }
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoItem::getParentLayer() const
 {
     QMutexLocker l(&itemMutex);
@@ -191,7 +185,7 @@ RotoItem::setGloballyActivated(bool a,
         QMutexLocker l(&itemMutex);
         _imp->globallyActivated = a;
     }
-    boost::shared_ptr<RotoContext> c = _imp->context.lock();
+    RotoContextPtr c = _imp->context.lock();
     if (c) {
         RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
         if (isDrawable) {
@@ -210,12 +204,12 @@ RotoItem::isGloballyActivated() const
 }
 
 static bool
-isDeactivated_imp(const boost::shared_ptr<RotoLayer>& item)
+isDeactivated_imp(const RotoLayerPtr& item)
 {
     if ( !item->isGloballyActivated() ) {
         return true;
     } else {
-        boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
+        RotoLayerPtr parent = item->getParentLayer();
         if (parent) {
             return isDeactivated_imp(parent);
         }
@@ -227,7 +221,7 @@ isDeactivated_imp(const boost::shared_ptr<RotoLayer>& item)
 bool
 RotoItem::isDeactivatedRecursive() const
 {
-    boost::shared_ptr<RotoLayer> parent;
+    RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
         if (!_imp->globallyActivated) {
@@ -291,12 +285,12 @@ RotoItem::getLocked() const
 
 static
 bool
-isLocked_imp(const boost::shared_ptr<RotoLayer>& item)
+isLocked_imp(const RotoLayerPtr& item)
 {
     if ( item->getLocked() ) {
         return true;
     } else {
-        boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
+        RotoLayerPtr parent = item->getParentLayer();
         if (parent) {
             return isLocked_imp(parent);
         }
@@ -308,7 +302,7 @@ isLocked_imp(const boost::shared_ptr<RotoLayer>& item)
 bool
 RotoItem::isLockedRecursive() const
 {
-    boost::shared_ptr<RotoLayer> parent;
+    RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
         if (_imp->locked) {
@@ -328,7 +322,7 @@ int
 RotoItem::getHierarchyLevel() const
 {
     int ret = 0;
-    boost::shared_ptr<RotoLayer> parent;
+    RotoLayerPtr parent;
 
     {
         QMutexLocker l(&itemMutex);
@@ -343,7 +337,7 @@ RotoItem::getHierarchyLevel() const
     return ret;
 }
 
-boost::shared_ptr<RotoContext>
+RotoContextPtr
 RotoItem::getContext() const
 {
     return _imp->context.lock();
@@ -366,7 +360,7 @@ RotoItem::setScriptName(const std::string & name)
         return false;
     }
 
-    boost::shared_ptr<RotoItem> existingItem = getContext()->getItemByName(name);
+    RotoItemPtr existingItem = getContext()->getItemByName(name);
     if ( existingItem && (existingItem.get() != this) ) {
         return false;
     }
@@ -379,7 +373,7 @@ RotoItem::setScriptName(const std::string & name)
         _imp->scriptName = cpy;
     }
     std::string newFullName = getFullyQualifiedName();
-    boost::shared_ptr<RotoContext> c = _imp->context.lock();
+    RotoContextPtr c = _imp->context.lock();
     if (c) {
         if (!oldNameEmpty) {
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
@@ -400,7 +394,7 @@ getScriptNameRecursive(RotoLayer* item,
 {
     scriptName->insert(0, ".");
     scriptName->insert( 0, item->getScriptName() );
-    boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
+    RotoLayerPtr parent = item->getParentLayer();
     if (parent) {
         getScriptNameRecursive(parent.get(), scriptName);
     }
@@ -410,7 +404,7 @@ std::string
 RotoItem::getFullyQualifiedName() const
 {
     std::string name = getScriptName();
-    boost::shared_ptr<RotoLayer> parent = getParentLayer();
+    RotoLayerPtr parent = getParentLayer();
 
     if (parent) {
         getScriptNameRecursive(parent.get(), &name);
@@ -442,7 +436,7 @@ RotoItem::setLabel(const std::string& label)
         QMutexLocker l(&itemMutex);
         _imp->label = label;
     }
-    boost::shared_ptr<RotoContext> c = _imp->context.lock();
+    RotoContextPtr c = _imp->context.lock();
 
     if (c) {
         c->onItemLabelChanged( shared_from_this() );
@@ -450,9 +444,9 @@ RotoItem::setLabel(const std::string& label)
 }
 
 void
-RotoItem::save(RotoItemSerialization *obj) const
+RotoItem::save(const RotoItemSerializationPtr& obj) const
 {
-    boost::shared_ptr<RotoLayer> parent;
+    RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
         obj->activated = _imp->globallyActivated;
@@ -506,7 +500,7 @@ RotoItem::load(const RotoItemSerialization &obj)
             _imp->scriptName = name;
         }
     }
-    boost::shared_ptr<RotoLayer> parent = getContext()->getLayerByName(obj.parentLayerName);
+    RotoLayerPtr parent = getContext()->getLayerByName(obj.parentLayerName);
 
     {
         QMutexLocker l(&itemMutex);
@@ -520,14 +514,14 @@ RotoItem::getRotoNodeName() const
     return getContext()->getRotoNodeName();
 }
 
-static boost::shared_ptr<RotoItem>
-getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer,
+static RotoItemPtr
+getPreviousInLayer(const RotoLayerPtr& layer,
                    const boost::shared_ptr<const RotoItem>& item)
 {
     RotoItems layerItems = layer->getItems_mt_safe();
 
     if ( layerItems.empty() ) {
-        return boost::shared_ptr<RotoItem>();
+        return RotoItemPtr();
     }
     RotoItems::iterator found = layerItems.end();
     if (item) {
@@ -550,9 +544,9 @@ getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer,
     }
 
     //Item was still not found, find in great parent layer
-    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
+    RotoLayerPtr parentLayer = layer->getParentLayer();
     if (!parentLayer) {
-        return boost::shared_ptr<RotoItem>();
+        return RotoItemPtr();
     }
     RotoItems greatParentItems = parentLayer->getItems_mt_safe();
 
@@ -564,19 +558,19 @@ getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer,
         }
     }
     assert( found != greatParentItems.end() );
-    boost::shared_ptr<RotoItem> ret = getPreviousInLayer(parentLayer, layer);
+    RotoItemPtr ret = getPreviousInLayer(parentLayer, layer);
     assert(ret != item);
 
     return ret;
 }
 
-boost::shared_ptr<RotoItem>
+RotoItemPtr
 RotoItem::getPreviousItemInLayer() const
 {
-    boost::shared_ptr<RotoLayer> layer = getParentLayer();
+    RotoLayerPtr layer = getParentLayer();
 
     if (!layer) {
-        return boost::shared_ptr<RotoItem>();
+        return RotoItemPtr();
     }
 
     return getPreviousInLayer( layer, shared_from_this() );

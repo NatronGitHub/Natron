@@ -39,16 +39,17 @@ NATRON_NAMESPACE_ENTER;
 class Dot
     : public NoOpBase
 {
-public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new Dot(n);
-    }
-
-    Dot(NodePtr n)
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    Dot(const NodePtr& n)
         : NoOpBase(n)
     {
+    }
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new Dot(node) );
     }
 
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
@@ -69,6 +70,12 @@ public:
         return "";
     }
 };
+
+inline DotPtr
+toDot(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<Dot>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

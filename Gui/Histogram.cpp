@@ -129,7 +129,7 @@ public:
     {
     }
 
-    boost::shared_ptr<Image> getHistogramImage(RectI* imagePortion) const;
+    ImagePtr getHistogramImage(RectI* imagePortion) const;
 
 
     void showMenu(const QPoint & globalPos);
@@ -353,7 +353,7 @@ Histogram::getViewerTextureInputDisplayed() const
     return textureIndex;
 }
 
-boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
+ImagePtr HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -378,12 +378,12 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         //no viewer selected
         imagePortion->clear();
 
-        return boost::shared_ptr<Image>();
+        return ImagePtr();
     } else if (index == 1) {
         //current viewer
         viewer = widget->getGui()->getActiveViewer();
     } else {
-        boost::shared_ptr<Image> ret;
+        ImagePtr ret;
         const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
@@ -956,7 +956,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 
 
     RectI rect;
-    boost::shared_ptr<Image> image = _imp->getHistogramImage(&rect);
+    ImagePtr image = _imp->getHistogramImage(&rect);
     if (image) {
         _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(), vmin, vmax, _imp->filterSize);
     } else {

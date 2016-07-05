@@ -46,7 +46,7 @@ class OfxMemory
 
 public:
 
-    OfxMemory(const EffectInstPtr& effect);
+    OfxMemory(const EffectInstancePtr& effect);
 
     virtual ~OfxMemory();
 

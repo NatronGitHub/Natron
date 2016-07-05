@@ -137,7 +137,7 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
-Project::Project(const AppInstPtr& appInstance)
+Project::Project(const AppInstancePtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
@@ -161,11 +161,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
 class LoadProjectSplashScreen_RAII
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
 
 public:
 
-    LoadProjectSplashScreen_RAII(const AppInstPtr& app,
+    LoadProjectSplashScreen_RAII(const AppInstancePtr& app,
                                  const QString& filename)
         : app(app)
     {
@@ -176,7 +176,7 @@ public:
 
     ~LoadProjectSplashScreen_RAII()
     {
-        AppInstPtr a = app.lock();
+        AppInstancePtr a = app.lock();
 
         if (a) {
             a->closeLoadPRojectSplashScreen();
@@ -718,9 +718,9 @@ Project::findAutoSaveForProject(const QString& projectPath,
 void
 Project::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Settings") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Settings") );
 
-    _imp->envVars = AppManager::createKnob<KnobPath>( this, tr("Project Paths") );
+    _imp->envVars = AppManager::createKnob<KnobPath>( shared_from_this(), tr("Project Paths") );
     _imp->envVars->setName("projectPaths");
     _imp->envVars->setHintToolTip( tr("Specify here project paths. Any path can be used "
                                       "in file paths and can be used between brackets, for example: \n"
@@ -747,7 +747,7 @@ Project::initializeKnobs()
 
     page->addKnob(_imp->envVars);
 
-    _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Output Format") );
+    _imp->formatKnob = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Output Format") );
     _imp->formatKnob->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
     _imp->formatKnob->setName("outputFormat");
 
@@ -770,11 +770,11 @@ Project::initializeKnobs()
 
     QObject::connect( _imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
 
-    _imp->addFormatKnob = AppManager::createKnob<KnobButton>( this, tr("New Format...") );
+    _imp->addFormatKnob = AppManager::createKnob<KnobButton>( shared_from_this(), tr("New Format...") );
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
 
-    _imp->previewMode = AppManager::createKnob<KnobBool>( this, tr("Auto Previews") );
+    _imp->previewMode = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Auto Previews") );
     _imp->previewMode->setName("autoPreviews");
     _imp->previewMode->setHintToolTip( tr("When checked, preview images on the node graph will be "
                                           "refreshed automatically. You can uncheck this option to improve performances.") );
@@ -785,7 +785,7 @@ Project::initializeKnobs()
     _imp->previewMode->setDefaultValue(autoPreviewEnabled, 0);
 
 
-    _imp->frameRange = AppManager::createKnob<KnobInt>(this, tr("Frame Range"), 2);
+    _imp->frameRange = AppManager::createKnob<KnobInt>(shared_from_this(), tr("Frame Range"), 2);
     _imp->frameRange->setDefaultValue(1, 0);
     _imp->frameRange->setDefaultValue(250, 1);
     _imp->frameRange->setDimensionName(0, "first");
@@ -800,7 +800,7 @@ Project::initializeKnobs()
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
 
-    _imp->lockFrameRange = AppManager::createKnob<KnobBool>( this, tr("Lock Range") );
+    _imp->lockFrameRange = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Lock Range") );
     _imp->lockFrameRange->setName("lockRange");
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
@@ -809,7 +809,7 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
 
-    _imp->frameRate = AppManager::createKnob<KnobDouble>( this, tr("Frame Rate") );
+    _imp->frameRate = AppManager::createKnob<KnobDouble>( shared_from_this(), tr("Frame Rate") );
     _imp->frameRate->setName("frameRate");
     _imp->frameRate->setHintToolTip( tr("The frame rate of the project. This will serve as a default value for all effects that don't produce "
                                         "special frame rates.") );
@@ -819,7 +819,7 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
 
-    _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
+    _imp->gpuSupport = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("GPU Rendering") );
     _imp->gpuSupport->setName("gpuRendering");
     {
         std::vector<std::string> entries;
@@ -840,9 +840,9 @@ Project::initializeKnobs()
     }
     page->addKnob(_imp->gpuSupport);
 
-    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
+    KnobPagePtr viewsPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Views") );
 
-    _imp->viewsList = AppManager::createKnob<KnobPath>( this, tr("Views List") );
+    _imp->viewsList = AppManager::createKnob<KnobPath>( shared_from_this(), tr("Views List") );
     _imp->viewsList->setName("viewsList");
     _imp->viewsList->setHintToolTip( tr("The list of the views in the project") );
     _imp->viewsList->setAnimationEnabled(false);
@@ -854,16 +854,16 @@ Project::initializeKnobs()
     _imp->viewsList->setDefaultValue(encodedDefaultViews);
     viewsPage->addKnob(_imp->viewsList);
 
-    _imp->setupForStereoButton = AppManager::createKnob<KnobButton>( this, tr("Setup views for stereo") );
+    _imp->setupForStereoButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Setup views for stereo") );
     _imp->setupForStereoButton->setName("setupForStereo");
     _imp->setupForStereoButton->setHintToolTip( tr("Quickly setup the views list for stereo") );
     _imp->setupForStereoButton->setEvaluateOnChange(false);
     viewsPage->addKnob(_imp->setupForStereoButton);
 
 
-    boost::shared_ptr<KnobPage> LayersPage = AppManager::createKnob<KnobPage>( this, tr("Layers") );
+    KnobPagePtr LayersPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Layers") );
 
-    _imp->defaultLayersList = AppManager::createKnob<KnobLayers>( this, tr("Default Layers") );
+    _imp->defaultLayersList = AppManager::createKnob<KnobLayers>( shared_from_this(), tr("Default Layers") );
     _imp->defaultLayersList->setName("defaultLayers");
     _imp->defaultLayersList->setHintToolTip( tr("The list of the default layers available in layers menus on nodes.") );
     _imp->defaultLayersList->setAnimationEnabled(false);
@@ -892,12 +892,12 @@ Project::initializeKnobs()
     LayersPage->addKnob(_imp->defaultLayersList);
 
 
-    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
+    KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( shared_from_this(), tr("LUT") );
     std::vector<std::string> colorSpaces;
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit Colorspace") );
+    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("8-Bit Colorspace") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
     _imp->colorSpace8u->setAnimationEnabled(false);
@@ -905,7 +905,7 @@ Project::initializeKnobs()
     _imp->colorSpace8u->setDefaultValue(0);
     lutPages->addKnob(_imp->colorSpace8u);
 
-    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit Colorspace") );
+    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("16-Bit Colorspace") );
     _imp->colorSpace16u->setName("defaultColorSpace16u");
     _imp->colorSpace16u->setHintToolTip( tr("Defines the color-space in which 16-bit integer images are assumed to be by default.") );
     _imp->colorSpace16u->setAnimationEnabled(false);
@@ -913,7 +913,7 @@ Project::initializeKnobs()
     _imp->colorSpace16u->setDefaultValue(2);
     lutPages->addKnob(_imp->colorSpace16u);
 
-    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( this, tr("32-Bit f.p Colorspace ") );
+    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("32-Bit f.p Colorspace ") );
     _imp->colorSpace32f->setName("defaultColorSpace32f");
     _imp->colorSpace32f->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
     _imp->colorSpace32f->setAnimationEnabled(false);
@@ -921,9 +921,9 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setDefaultValue(1);
     lutPages->addKnob(_imp->colorSpace32f);
 
-    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
+    KnobPagePtr infoPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Info").toStdString() );
 
-    _imp->projectName = AppManager::createKnob<KnobString>( this, tr("Project Name") );
+    _imp->projectName = AppManager::createKnob<KnobString>( shared_from_this(), tr("Project Name") );
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistant(false);
 //    _imp->projectName->setAsLabel();
@@ -932,7 +932,7 @@ Project::initializeKnobs()
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
 
-    _imp->projectPath = AppManager::createKnob<KnobString>( this, tr("Project path") );
+    _imp->projectPath = AppManager::createKnob<KnobString>( shared_from_this(), tr("Project path") );
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistant(false);
     _imp->projectPath->setAnimationEnabled(false);
@@ -940,7 +940,7 @@ Project::initializeKnobs()
     // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
 
-    _imp->natronVersion = AppManager::createKnob<KnobString>( this, tr("Saved With") );
+    _imp->natronVersion = AppManager::createKnob<KnobString>( shared_from_this(), tr("Saved With") );
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     // _imp->natronVersion->setAsLabel();
@@ -951,7 +951,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setDefaultValue( generateUserFriendlyNatronVersionName() );
     infoPage->addKnob(_imp->natronVersion);
 
-    _imp->originalAuthorName = AppManager::createKnob<KnobString>( this, tr("Original Author") );
+    _imp->originalAuthorName = AppManager::createKnob<KnobString>( shared_from_this(), tr("Original Author") );
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip( tr("The user name and host name of the original author of the project.") );
     //_imp->originalAuthorName->setAsLabel();
@@ -962,7 +962,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setDefaultValue(authorName);
     infoPage->addKnob(_imp->originalAuthorName);
 
-    _imp->lastAuthorName = AppManager::createKnob<KnobString>( this, tr("Last Author") );
+    _imp->lastAuthorName = AppManager::createKnob<KnobString>( shared_from_this(), tr("Last Author") );
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
     // _imp->lastAuthorName->setAsLabel();
@@ -973,7 +973,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->lastAuthorName);
 
 
-    _imp->projectCreationDate = AppManager::createKnob<KnobString>( this, tr("Created On") );
+    _imp->projectCreationDate = AppManager::createKnob<KnobString>( shared_from_this(), tr("Created On") );
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip( tr("The creation date of the project.") );
     //_imp->projectCreationDate->setAsLabel();
@@ -983,7 +983,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
     infoPage->addKnob(_imp->projectCreationDate);
 
-    _imp->saveDate = AppManager::createKnob<KnobString>( this, tr("Last Saved On") );
+    _imp->saveDate = AppManager::createKnob<KnobString>( shared_from_this(), tr("Last Saved On") );
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
     //_imp->saveDate->setAsLabel();
@@ -992,7 +992,7 @@ Project::initializeKnobs()
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
 
-    boost::shared_ptr<KnobString> comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
+    KnobStringPtr comments = AppManager::createKnob<KnobString>( shared_from_this(), tr("Comments") );
     comments->setName("comments");
     comments->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
                                  "and anything worth mentionning about it.") );
@@ -1000,8 +1000,8 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
 
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
-    _imp->onProjectLoadCB = AppManager::createKnob<KnobString>( this, tr("After Project Loaded") );
+    KnobPagePtr pythonPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Python") );
+    _imp->onProjectLoadCB = AppManager::createKnob<KnobString>( shared_from_this(), tr("After Project Loaded") );
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
                                               "is loaded either from an auto-save or by a user action. It will be called immediately after all "
@@ -1014,7 +1014,7 @@ Project::initializeKnobs()
     pythonPage->addKnob(_imp->onProjectLoadCB);
 
 
-    _imp->onProjectSaveCB = AppManager::createKnob<KnobString>( this, tr("Before Project Save") );
+    _imp->onProjectSaveCB = AppManager::createKnob<KnobString>( shared_from_this(), tr("Before Project Save") );
     _imp->onProjectSaveCB->setName("beforeProjectSave");
     _imp->onProjectSaveCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
                                               "is saved by the user. This will be called prior to actually saving the project and can be used "
@@ -1029,7 +1029,7 @@ Project::initializeKnobs()
     _imp->onProjectSaveCB->setDefaultValue(onProjectSave);
     pythonPage->addKnob(_imp->onProjectSaveCB);
 
-    _imp->onProjectCloseCB = AppManager::createKnob<KnobString>( this, tr("Before Project Close") );
+    _imp->onProjectCloseCB = AppManager::createKnob<KnobString>( shared_from_this(), tr("Before Project Close") );
     _imp->onProjectCloseCB->setName("beforeProjectClose");
     _imp->onProjectCloseCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
                                                "is closed or if the user closes the application while this project is opened. This is called "
@@ -1041,7 +1041,7 @@ Project::initializeKnobs()
     _imp->onProjectCloseCB->setValue(onProjectClose);
     pythonPage->addKnob(_imp->onProjectCloseCB);
 
-    _imp->onNodeCreated = AppManager::createKnob<KnobString>( this, tr("After Node Created") );
+    _imp->onNodeCreated = AppManager::createKnob<KnobString>( shared_from_this(), tr("After Node Created") );
     _imp->onNodeCreated->setName("afterNodeCreated");
     _imp->onNodeCreated->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
                                             "is created. The boolean variable userEdited will be set to True if the node was created "
@@ -1056,7 +1056,7 @@ Project::initializeKnobs()
     _imp->onNodeCreated->setDefaultValue(onNodeCreated);
     pythonPage->addKnob(_imp->onNodeCreated);
 
-    _imp->onNodeDeleted = AppManager::createKnob<KnobString>( this, tr("Before Node Removal") );
+    _imp->onNodeDeleted = AppManager::createKnob<KnobString>( shared_from_this(), tr("Before Node Removal") );
     _imp->onNodeDeleted->setName("beforeNodeRemoval");
     _imp->onNodeDeleted->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
                                             "is about to be deleted. This function will not be called when the project is closing.\n"
@@ -1404,7 +1404,7 @@ Project::toggleAutoPreview()
     _imp->previewMode->setValue( !_imp->previewMode->getValue() );
 }
 
-boost::shared_ptr<TimeLine> Project::getTimeLine() const
+TimeLinePtr Project::getTimeLine() const
 {
     return _imp->timeline;
 }
@@ -1452,7 +1452,7 @@ Project::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
 
 ///this function is only called on the main thread
 bool
-Project::onKnobValueChanged(KnobI* knob,
+Project::onKnobValueChanged(const KnobIPtr& knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
                             ViewSpec /*view*/,
@@ -1460,7 +1460,7 @@ Project::onKnobValueChanged(KnobI* knob,
 {
     bool ret = true;
 
-    if ( knob == _imp->viewsList.get() ) {
+    if ( knob == _imp->viewsList ) {
         /**
          * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
          * The only way to overcome this is to wipe the cache.
@@ -1474,14 +1474,14 @@ Project::onKnobValueChanged(KnobI* knob,
             forceComputeInputDependentDataOnAllTrees();
         }
         Q_EMIT projectViewsChanged();
-    } else if  ( knob == _imp->defaultLayersList.get() ) {
+    } else if  ( knob == _imp->defaultLayersList ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
             forceComputeInputDependentDataOnAllTrees();
         }
-    } else if ( knob == _imp->setupForStereoButton.get() ) {
+    } else if ( knob == _imp->setupForStereoButton ) {
         setupProjectForStereo();
-    } else if ( knob == _imp->formatKnob.get() ) {
+    } else if ( knob == _imp->formatKnob ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
@@ -1504,17 +1504,17 @@ Project::onKnobValueChanged(KnobI* knob,
             }
             Q_EMIT formatChanged(frmt);
         }
-    } else if ( knob == _imp->addFormatKnob.get() ) {
+    } else if ( knob == _imp->addFormatKnob ) {
         Q_EMIT mustCreateFormat();
-    } else if ( knob == _imp->previewMode.get() ) {
+    } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
-    }  else if ( knob == _imp->frameRate.get() ) {
+    }  else if ( knob == _imp->frameRate ) {
         forceComputeInputDependentDataOnAllTrees();
-    } else if ( knob == _imp->frameRange.get() ) {
+    } else if ( knob == _imp->frameRange ) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
-    } else if ( knob == _imp->gpuSupport.get() ) {
+    } else if ( knob == _imp->gpuSupport ) {
 
         refreshOpenGLRenderingFlagOnNodes();
     } else {
@@ -2374,7 +2374,7 @@ Project::getProjectFrameRate() const
     return _imp->frameRate->getValue();
 }
 
-boost::shared_ptr<KnobPath>
+KnobPathPtr
 Project::getEnvVarKnob() const
 {
     return _imp->envVars;
@@ -2636,7 +2636,7 @@ Project::onProjectFormatPopulated()
 }
 
 void
-Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
+Project::setTimeLine(const TimeLinePtr& timeline)
 {
     _imp->timeline = timeline;
 }

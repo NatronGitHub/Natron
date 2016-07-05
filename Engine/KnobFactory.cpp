@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelper* (*KnobBuilder)(KnobHolder* holder, const std::string &label, int dimension, bool declaredByPlugin);
+typedef KnobHelperPtr (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &label, int dimension, bool declaredByPlugin);
 
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory()
@@ -65,10 +65,10 @@ static std::pair<std::string, LibraryBinary *>
 knobFactoryEntry()
 {
     std::string stub;
-    //boost::shared_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
+    //KnobHelperPtr knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void (*)()> functions;
 
-    functions.insert( std::make_pair("BuildKnob", ( void (*)() ) & K::BuildKnob) );
+    functions.insert( std::make_pair("create", ( void (*)() ) (KnobBuilder)K::create) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(K::typeNameStatic(), knobPlugin);
@@ -94,8 +94,8 @@ KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobFactoryEntry<KnobLayers>() );
 }
 
-boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
-                                                      KnobHolder*  holder,
+KnobHelperPtr KnobFactory::createKnob(const std::string &id,
+                                                      const KnobHolderPtr& holder,
                                                       const std::string &label,
                                                       int dimension,
                                                       bool declaredByPlugin) const
@@ -103,16 +103,16 @@ boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(id);
 
     if ( it == _loadedKnobs.end() ) {
-        return boost::shared_ptr<KnobHelper>();
+        return KnobHelperPtr();
     } else {
-        std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
+        std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("create");
         if (!builderFunc.first) {
-            return boost::shared_ptr<KnobHelper>();
+            return KnobHelperPtr();
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        boost::shared_ptr<KnobHelper> knob( builder(holder, label, dimension, declaredByPlugin) );
+        KnobHelperPtr knob( builder(holder, label, dimension, declaredByPlugin) );
         if (!knob) {
-            boost::shared_ptr<KnobHelper>();
+            KnobHelperPtr();
         }
         knob->populate();
         if (holder) {

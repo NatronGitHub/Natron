@@ -77,7 +77,7 @@ public:
 
     friend class PanelWidget;
 
-    explicit Gui(const GuiAppInstPtr& app,
+    explicit Gui(const GuiAppInstancePtr& app,
                  QWidget* parent = 0);
 
     virtual ~Gui() OVERRIDE;
@@ -87,7 +87,7 @@ public:
      **/
     void createGui();
 
-    NodeGuiPtr createNodeGUI(NodePtr node,
+    NodeGuiPtr createNodeGUI(const NodePtr& node,
                              const CreateNodeArgs& args);
 
     void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
@@ -99,7 +99,7 @@ public:
 
     const NodesGuiList & getSelectedNodes() const;
 
-    void createViewerGui(NodePtr viewer);
+    void createViewerGui(const NodePtr& viewer);
 
     void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);
 
@@ -114,7 +114,7 @@ public:
 
     void setActiveViewer(ViewerTab* viewer);
     ViewerTab* getActiveViewer() const;
-    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
+    NodeCollectionPtr getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -129,7 +129,7 @@ public:
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(ViewerInstance* node, TabWidget* where);
+    ViewerTab* addNewViewerTab(const ViewerInstancePtr& node, TabWidget* where);
 
     void addViewerTab(ViewerTab* tab, TabWidget* where);
 
@@ -154,7 +154,7 @@ public:
 
     static void loadStyleSheet();
     ToolButton* findExistingToolButton(const QString & name) const;
-    ToolButton* findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin);
+    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& plugin);
 
     void sortAllPluginsToolButtons();
 
@@ -208,7 +208,7 @@ public:
      **/
     void selectNode(const NodeGuiPtr& node);
 
-    GuiAppInstPtr getApp() const;
+    GuiAppInstancePtr getApp() const;
 
     void updateViewsActions(int viewsCount);
 
@@ -311,9 +311,9 @@ public:
 
     void setColorPickersColor(double r, double g, double b, double a);
 
-    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
+    void registerNewColorPicker(KnobColorPtr knob);
 
-    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    void removeColorPicker(KnobColorPtr knob);
 
     void clearColorPickers();
 
@@ -331,11 +331,11 @@ public:
     void setMasterSyncViewer(ViewerTab* master);
     ViewerTab* getMasterSyncViewer() const;
 
-    void activateViewerTab(ViewerInstance* viewer);
+    void activateViewerTab(const ViewerInstancePtr& viewer);
 
-    void deactivateViewerTab(ViewerInstance* viewer);
+    void deactivateViewerTab(const ViewerInstancePtr& viewer);
 
-    ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
+    ViewerTab* getViewerTabForInstance(const ViewerInstancePtr& node) const;
     const NodesGuiList & getVisibleNodes() const;
     NodesGuiList getVisibleNodes_mt_safe() const;
 
@@ -344,11 +344,11 @@ public:
     void onRenderStarted(const QString & sequenceName,
                          int firstFrame, int lastFrame, int frameStep,
                          bool canPause,
-                         OutputEffectInstance* writer,
-                         const boost::shared_ptr<ProcessHandler> & process);
+                         const OutputEffectInstancePtr& writer,
+                         const ProcessHandlerPtr & process);
 
-    void onRenderRestarted(OutputEffectInstance* writer,
-                           const boost::shared_ptr<ProcessHandler> & process);
+    void onRenderRestarted(const OutputEffectInstancePtr& writer,
+                           const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
@@ -415,7 +415,7 @@ public:
 
     void checkNumberOfNonFloatingPanes();
 
-    AppInstPtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
+    AppInstancePtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
 
     bool isGUIFrozen() const;
 
@@ -459,7 +459,7 @@ public:
 
     void printAutoDeclaredVariable(const std::string& str);
 
-    void exportGroupAsPythonScript(NodeCollection* collection);
+    void exportGroupAsPythonScript(const NodeCollectionPtr& collection);
 
     void addMenuEntry(const QString& menuGrouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers);
 
@@ -498,7 +498,7 @@ public:
 
 #endif
 
-    AppInstPtr createNewProject();
+    AppInstancePtr createNewProject();
 
     /**
      * @brief Close project right away, without any user interaction.
@@ -553,11 +553,11 @@ Q_SIGNALS:
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
-    void s_doProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
+    void s_doProgressStartOnMainThread(const KnobHolderPtr& effect, const QString &message, const QString &messageid, bool canCancel);
 
-    void s_doProgressEndOnMainThread(KnobHolder* effect);
+    void s_doProgressEndOnMainThread(const KnobHolderPtr& effect);
 
-    void s_doProgressUpdateOnMainThread(KnobHolder* effect, double t);
+    void s_doProgressUpdateOnMainThread(const KnobHolderPtr& effect, double t);
 
     void s_showLogOnMainThread();
 
@@ -694,7 +694,7 @@ private:
 
     void setCurrentPanelFocus(PanelWidget* widget);
 
-    AppInstPtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
+    AppInstancePtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 

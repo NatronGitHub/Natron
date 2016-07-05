@@ -38,6 +38,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -58,7 +59,7 @@ struct RotoSmearPrivate
     }
 };
 
-RotoSmear::RotoSmear(NodePtr node)
+RotoSmear::RotoSmear(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new RotoSmearPrivate() )
 {
@@ -210,9 +211,9 @@ StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
     NodePtr node = getNode();
-    boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
-    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
-    boost::shared_ptr<RotoContext> context = stroke->getContext();
+    RotoDrawableItemPtr item = node->getAttachedRotoItem();
+    RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
+    RotoContextPtr context = stroke->getContext();
 
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
@@ -273,8 +274,8 @@ RotoSmear::render(const RenderActionArgs& args)
     //renderPoint is the final point we rendered, recorded for the next call to render when we are bulding up the smear
     std::pair<Point, double> prev, cur, renderPoint;
     bool bgInitialized = false;
-    CairoImageWrapper imgWrapper;
-    if ( !RotoContext::allocateAndRenderSingleDotStroke(brushSizePixel, brushHardness, opacity, imgWrapper) ) {
+    RotoShapeRenderCairo::CairoImageWrapper imgWrapper;
+    if ( !RotoShapeRenderCairo::allocateAndRenderSingleDotStroke_cairo(brushSizePixel, brushHardness, opacity, imgWrapper) ) {
         return eStatusFailed;
     }
 
@@ -310,7 +311,7 @@ RotoSmear::render(const RenderActionArgs& args)
         }
 
 
-        for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             assert(plane->second->getMipMapLevel() == mipmapLevel);
 
@@ -414,7 +415,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 cur = renderPoint;
                 distToNext = 0;
             } // while (it!=visiblePortion.end()) {
-        } // for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        } // for (std::list<std::pair<ImageComponents,ImagePtr > >::const_iterator plane = args.outputPlanes.begin();
 
         if (duringPainting && didPaint) {
             QMutexLocker k(&_imp->smearDataMutex);

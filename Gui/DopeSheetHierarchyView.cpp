@@ -48,9 +48,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
-
-
 ////////////////////////// HierarchyViewSelectionModel //////////////////////////
 
 HierarchyViewSelectionModel::HierarchyViewSelectionModel(DopeSheet* dopesheetModel,
@@ -97,7 +94,7 @@ HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelection,
 
             QTreeWidgetItem* treeItem = _view->getTreeItemForModelIndex(index);
             if (treeItem) {
-                boost::shared_ptr<DSNode> isDsNode = _dopesheetModel->mapNameItemToDSNode(treeItem);
+                DSNodePtr isDsNode = _dopesheetModel->mapNameItemToDSNode(treeItem);
 
                 if ( !isDsNode && index.parent().isValid() ) {
                     checkParentsSelectedStates(index, command, unitedSelection, &finalSelection);
@@ -156,7 +153,7 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
     {
         QModelIndex pIndex = index.parent();
         QTreeWidgetItem* treeItem = _view->getTreeItemForModelIndex(pIndex);
-        boost::shared_ptr<DSNode> isParentNode;
+        DSNodePtr isParentNode;
         if (treeItem) {
             isParentNode = _dopesheetModel->mapNameItemToDSNode(treeItem);
         }
@@ -284,22 +281,22 @@ public:
     ~HierarchyViewPrivate();
 
     /* functions */
-    void checkKnobsVisibleState(DSNode *dsNode);
-    void checkNodeVisibleState(DSNode *dsNode);
-    void checkKnobVisibleState(DSKnob *dsKnob);
+    void checkKnobsVisibleState(const DSNodePtr& dsNode);
+    void checkNodeVisibleState(const DSNodePtr& dsNode);
+    void checkKnobVisibleState(const DSKnobPtr& dsKnob);
 
     // item related
     QRect getBranchRect(QTreeWidgetItem *item) const;
     QRect getArrowRect(QTreeWidgetItem *item) const;
     QRect getParentArrowRect(QTreeWidgetItem *item, const QRect &branchRect) const;
 
-    boost::shared_ptr<DSNode> itemBelowIsNode(QTreeWidgetItem *item) const;
+    DSNodePtr itemBelowIsNode(QTreeWidgetItem *item) const;
 
     // item painting
-    void drawPluginIconArea(QPainter *p, boost::shared_ptr<DSNode> dsNode, const QRect &rowRect, bool drawPluginIcon) const;
+    void drawPluginIconArea(QPainter *p, const DSNodePtr& dsNode, const QRect &rowRect, bool drawPluginIcon) const;
     void drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect);
     void drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const;
-    void drawNodeBottomSeparation(QPainter *p, boost::shared_ptr<DSNode> dsNode, boost::shared_ptr<DSNode> nodeBelow, const QRect &rowRect) const;
+    void drawNodeBottomSeparation(QPainter *p, const DSNodePtr& dsNode, const DSNodePtr& nodeBelow, const QRect &rowRect) const;
 
     QColor getDullColor(const QColor &color) const;
 
@@ -328,12 +325,12 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
+HierarchyViewPrivate::checkKnobsVisibleState(const DSNodePtr& dsNode)
 {
     const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
     for (DSTreeItemKnobMap::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
-        boost::shared_ptr<DSKnob> knobContext = (*it).second;
+        DSKnobPtr knobContext = (*it).second;
         QTreeWidgetItem *knobItem = (*it).first;
 
         // Expand if it's a multidim root item
@@ -342,7 +339,7 @@ HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
         }
 
         if (knobContext->getDimension() <= 0) {
-            checkKnobVisibleState( knobContext.get() );
+            checkKnobVisibleState( knobContext );
         }
     }
 }
@@ -351,7 +348,7 @@ HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
+HierarchyViewPrivate::checkNodeVisibleState(const DSNodePtr& dsNode)
 {
     NodeGuiPtr nodeGui = dsNode->getNodeGui();
     DopeSheetItemType nodeType = dsNode->getItemType();
@@ -377,7 +374,7 @@ HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
  * @see HierarchyView::onKeyframeSetOrRemoved()
  */
 void
-HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
+HierarchyViewPrivate::checkKnobVisibleState(const DSKnobPtr& dsKnob)
 {
     int dim = dsKnob->getDimension();
     KnobGuiPtr knobGui = dsKnob->getKnobGui();
@@ -460,9 +457,9 @@ HierarchyViewPrivate::getParentArrowRect(QTreeWidgetItem *item,
  * @brief Returns the DSNode associated with the item below 'item', and a null
  * pointer if it don't exist.
  */
-boost::shared_ptr<DSNode> HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
+DSNodePtr HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
 {
-    boost::shared_ptr<DSNode> ret;
+    DSNodePtr ret;
     QTreeWidgetItem *itemBelow = q_ptr->itemBelow(item);
 
     if (itemBelow) {
@@ -474,7 +471,7 @@ boost::shared_ptr<DSNode> HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem 
 
 void
 HierarchyViewPrivate::drawPluginIconArea(QPainter *p,
-                                         boost::shared_ptr<DSNode> dsNode,
+                                         const DSNodePtr& dsNode,
                                          const QRect &rowRect,
                                          bool drawPluginIcon) const
 {
@@ -517,7 +514,7 @@ HierarchyViewPrivate::drawColoredIndicators(QPainter *p,
     QTreeWidgetItem *itemIt = item;
 
     while (itemIt) {
-        boost::shared_ptr<DSNode> parentDSNode = dopeSheetModel->findParentDSNode(itemIt);
+        DSNodePtr parentDSNode = dopeSheetModel->findParentDSNode(itemIt);
         QTreeWidgetItem *parentItem = parentDSNode->getTreeItem();
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
         QRect target = getArrowRect(parentItem);
@@ -539,7 +536,7 @@ HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p,
     int lineBegin = q_ptr->rect().left();
 
     {
-        boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode( item->parent() );
+        DSNodePtr parentNode = dopeSheetModel->mapNameItemToDSNode( item->parent() );
         if (parentNode) {
             lineBegin = getBranchRect( parentNode->getTreeItem() ).right() + 2;
         }
@@ -555,8 +552,8 @@ HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p,
 
 void
 HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p,
-                                               boost::shared_ptr<DSNode> dsNode,
-                                               boost::shared_ptr<DSNode> nodeBelow,
+                                               const DSNodePtr& dsNode,
+                                               const DSNodePtr& nodeBelow,
                                                const QRect &rowRect) const
 {
     int lineWidth = (appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() / 2);
@@ -567,7 +564,7 @@ HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p,
             lineBegin = getBranchRect( dsNode->getTreeItem() ).right() + 2;
         }
     } else {
-        boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode( nodeBelow->getTreeItem()->parent() );
+        DSNodePtr parentNode = dopeSheetModel->mapNameItemToDSNode( nodeBelow->getTreeItem()->parent() );
         if (parentNode) {
             lineBegin = getBranchRect( parentNode->getTreeItem() ).right() + 2;
         }
@@ -627,15 +624,15 @@ void
 HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
     std::vector<DopeSheetKey> keys;
-    std::vector<boost::shared_ptr<DSNode> > nodes;
+    std::vector<DSNodePtr > nodes;
 
     Q_FOREACH (QTreeWidgetItem * item, items) {
-        boost::shared_ptr<DSKnob> knobContext = dopeSheetModel->mapNameItemToDSKnob(item);
+        DSKnobPtr knobContext = dopeSheetModel->mapNameItemToDSKnob(item);
 
         if (knobContext) {
             dopeSheetModel->getSelectionModel()->makeDopeSheetKeyframesForKnob(knobContext, &keys);
         } else {
-            boost::shared_ptr<DSNode> nodeContext = dopeSheetModel->mapNameItemToDSNode(item);
+            DSNodePtr nodeContext = dopeSheetModel->mapNameItemToDSNode(item);
             if (nodeContext) {
                 nodes.push_back(nodeContext);
             }
@@ -687,11 +684,11 @@ HierarchyView::setCanResizeOtherWidget(bool canResize)
 }
 
 void
-HierarchyView::getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const
+HierarchyView::getSelectedDSKnobs(std::list<DSKnobPtr >* knobs) const
 {
     QList<QTreeWidgetItem*> items = selectedItems();
     for (QList<QTreeWidgetItem*>::iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<DSKnob> k = _imp->dopeSheetModel->mapNameItemToDSKnob(*it);
+        DSKnobPtr k = _imp->dopeSheetModel->mapNameItemToDSKnob(*it);
         if (k) {
             knobs->push_back(k);
         }
@@ -708,7 +705,7 @@ HierarchyView::resizeEvent(QResizeEvent* e)
     }
 }
 
-boost::shared_ptr<DSKnob> HierarchyView::getDSKnobAt(int y) const
+DSKnobPtr HierarchyView::getDSKnobAt(int y) const
 {
     QTreeWidgetItem *itemUnderPoint = itemAt(5, y);
 
@@ -774,7 +771,7 @@ HierarchyView::drawRow(QPainter *painter,
     QTreeWidgetItem *item = itemFromIndex(index);
     bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < eDopeSheetItemTypeKnobRoot);
     bool isTreeViewTopItem = !itemAbove(item);
-    boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->findParentDSNode(item);
+    DSNodePtr dsNode = _imp->dopeSheetModel->findParentDSNode(item);
     QRect rowRect = option.rect;
     QRect itemRect = visualItemRect(item);
     QRect branchRect( 0, rowRect.y(), itemRect.x(), rowRect.height() );
@@ -817,7 +814,7 @@ HierarchyView::drawRow(QPainter *painter,
         }
 
         {
-            boost::shared_ptr<DSNode> nodeBelow = _imp->itemBelowIsNode(item);
+            DSNodePtr nodeBelow = _imp->itemBelowIsNode(item);
             if (nodeBelow) {
                 _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, rowRect);
             }
@@ -833,7 +830,7 @@ HierarchyView::drawBranches(QPainter *painter,
                             const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    boost::shared_ptr<DSNode> parentDSNode = _imp->dopeSheetModel->findParentDSNode(item);
+    DSNodePtr parentDSNode = _imp->dopeSheetModel->findParentDSNode(item);
 
     {
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
@@ -908,11 +905,11 @@ HierarchyView::moveItem(QTreeWidgetItem *child,
 }
 
 void
-HierarchyView::onNodeAdded(DSNode *dsNode)
+HierarchyView::onNodeAdded(const DSNodePtr& dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
-    boost::shared_ptr<DSNode> isInputOfTimeNode = _imp->dopeSheetModel->getNearestTimeNodeFromOutputs(dsNode);
-    boost::shared_ptr<DSNode> isFromGroup = _imp->dopeSheetModel->getGroupDSNode(dsNode);
+    DSNodePtr isInputOfTimeNode = _imp->dopeSheetModel->getNearestTimeNodeFromOutputs(dsNode);
+    DSNodePtr isFromGroup = _imp->dopeSheetModel->getGroupDSNode(dsNode);
 
     if (isInputOfTimeNode) {
         isInputOfTimeNode->getTreeItem()->addChild(treeItem);
@@ -926,16 +923,16 @@ HierarchyView::onNodeAdded(DSNode *dsNode)
         addTopLevelItem(treeItem);
     }
 
-    std::vector<boost::shared_ptr<DSNode> > importantNodes = _imp->dopeSheetModel->getImportantNodes(dsNode);
-    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = importantNodes.begin();
+    std::vector<DSNodePtr > importantNodes = _imp->dopeSheetModel->getImportantNodes(dsNode);
+    for (std::vector<DSNodePtr >::const_iterator it = importantNodes.begin();
          it != importantNodes.end();
          ++it) {
-        boost::shared_ptr<DSNode> n = (*it);
+        DSNodePtr n = (*it);
 
         moveItem( n->getTreeItem(), dsNode->getTreeItem() );
 
-        _imp->checkKnobsVisibleState( n.get() );
-        _imp->checkNodeVisibleState( n.get() );
+        _imp->checkKnobsVisibleState( n );
+        _imp->checkNodeVisibleState( n );
 
         n->getTreeItem()->setExpanded(true);
     }
@@ -947,7 +944,7 @@ HierarchyView::onNodeAdded(DSNode *dsNode)
 }
 
 void
-HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
+HierarchyView::onNodeAboutToBeRemoved(const DSNodePtr& dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
@@ -967,9 +964,9 @@ HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     Q_FOREACH (QTreeWidgetItem * nodeItem, toMove) {
         moveItem(nodeItem, newParent);
 
-        boost::shared_ptr<DSNode> dss = _imp->dopeSheetModel->mapNameItemToDSNode(nodeItem);
-        _imp->checkKnobsVisibleState( dss.get() );
-        _imp->checkNodeVisibleState( dss.get() );
+        DSNodePtr dss = _imp->dopeSheetModel->mapNameItemToDSNode(nodeItem);
+        _imp->checkKnobsVisibleState( dss );
+        _imp->checkNodeVisibleState( dss );
 
         nodeItem->setExpanded(true);
     }
@@ -979,13 +976,13 @@ HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
 }
 
 void
-HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
+HierarchyView::onKeyframeSetOrRemoved(const DSKnobPtr& dsKnob)
 {
     _imp->checkKnobVisibleState(dsKnob);
 
     // Check the node item
-    boost::shared_ptr<DSNode> parentNode = _imp->dopeSheetModel->findParentDSNode( dsKnob->getTreeItem() );
-    _imp->checkNodeVisibleState( parentNode.get() );
+    DSNodePtr parentNode = _imp->dopeSheetModel->findParentDSNode( dsKnob->getTreeItem() );
+    _imp->checkNodeVisibleState( parentNode );
 }
 
 void
@@ -1000,9 +997,9 @@ HierarchyView::onKeyframeSelectionChanged(bool recurse)
     }
 
     // Retrieve the knob contexts with selected keyframes
-    std::set<boost::shared_ptr<DSKnob> > toCheck;
+    std::set<DSKnobPtr > toCheck;
     DSKeyPtrList selectedKeys;
-    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    std::vector<DSNodePtr > selectedNodes;
 
     _imp->dopeSheetModel->getSelectionModel()->getCurrentSelection(&selectedKeys, &selectedNodes);
 
@@ -1022,10 +1019,10 @@ HierarchyView::onKeyframeSelectionChanged(bool recurse)
     } else {
         std::set<QModelIndex> toSelect;
 
-        for (std::set<boost::shared_ptr<DSKnob> >::const_iterator toCheckIt = toCheck.begin();
+        for (std::set<DSKnobPtr >::const_iterator toCheckIt = toCheck.begin();
              toCheckIt != toCheck.end();
              ++toCheckIt) {
-            boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
+            DSKnobPtr dsKnob = (*toCheckIt);
             KnobGuiPtr knobGui = dsKnob->getKnobGui();
             assert(knobGui);
             int dim = dsKnob->getDimension();
@@ -1051,7 +1048,7 @@ HierarchyView::onKeyframeSelectionChanged(bool recurse)
             }
         }
 
-        for (std::vector<boost::shared_ptr<DSNode> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+        for (std::vector<DSNodePtr >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
             toSelect.insert( indexFromItem( (*it)->getTreeItem() ) );
         }
 
@@ -1079,7 +1076,7 @@ HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item,
 {
     Q_UNUSED(column);
 
-    boost::shared_ptr<DSNode> itemDSNode = _imp->dopeSheetModel->findParentDSNode(item);
+    DSNodePtr itemDSNode = _imp->dopeSheetModel->findParentDSNode(item);
     NodeGuiPtr nodeGui = itemDSNode->getNodeGui();
 
     // Move the nodeGui's settings panel on top

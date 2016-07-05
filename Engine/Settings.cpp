@@ -88,7 +88,7 @@ static const CPUDriverEnum defaultMesaDriver = eCPUDriverLLVMPipe;
 
 
 Settings::Settings()
-    : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
+    : KnobHolder( AppInstancePtr() ) // < Settings are process wide and do not belong to a single AppInstance
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
@@ -147,19 +147,19 @@ Settings::initializeKnobs()
 void
 Settings::initializeKnobsGeneral()
 {
-    _generalTab = AppManager::createKnob<KnobPage>( this, tr("General") );
+    _generalTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("General") );
 
-    _natronSettingsExist = AppManager::createKnob<KnobBool>( this, tr("Existing settings") );
+    _natronSettingsExist = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Existing settings") );
     _natronSettingsExist->setName("existingSettings");
     _natronSettingsExist->setSecretByDefault(true);
     _generalTab->addKnob(_natronSettingsExist);
 
-    _checkForUpdates = AppManager::createKnob<KnobBool>( this, tr("Always check for updates on start-up") );
+    _checkForUpdates = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Always check for updates on start-up") );
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_checkForUpdates);
 
-    _enableCrashReports = AppManager::createKnob<KnobBool>( this, tr("Enable crash reporting") );
+    _enableCrashReports = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Enable crash reporting") );
     _enableCrashReports->setName("enableCrashReports");
     _enableCrashReports->setHintToolTip( tr("When checked, if %1 crashes a window will pop-up asking you "
                                             "whether you want to upload the crash dump to the developers or not. "
@@ -171,13 +171,13 @@ Settings::initializeKnobsGeneral()
     _enableCrashReports->setAddNewLine(false);
     _generalTab->addKnob(_enableCrashReports);
 
-    _testCrashReportButton = AppManager::createKnob<KnobButton>( this, tr("Test Crash Reporting") );
+    _testCrashReportButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Test Crash Reporting") );
     _testCrashReportButton->setHintToolTip( tr("This button is for developers only to test whether the crash reporting system "
                                                "works correctly. Do not use this.") );
     _generalTab->addKnob(_testCrashReportButton);
 
 
-    _autoSaveDelay = AppManager::createKnob<KnobInt>( this, tr("Auto-save trigger delay") );
+    _autoSaveDelay = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Auto-save trigger delay") );
     _autoSaveDelay->setName("autoSaveDelay");
     _autoSaveDelay->disableSlider();
     _autoSaveDelay->setMinimum(0);
@@ -188,7 +188,7 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_autoSaveDelay);
 
 
-    _autoSaveUnSavedProjects = AppManager::createKnob<KnobBool>( this, tr("Enable Auto-save for unsaved projects") );
+    _autoSaveUnSavedProjects = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Enable Auto-save for unsaved projects") );
     _autoSaveUnSavedProjects->setName("autoSaveUnSavedProjects");
     _autoSaveUnSavedProjects->setHintToolTip( tr("When activated %1 will auto-save projects that have never been "
                                                  "saved and will prompt you on startup if an auto-save of that unsaved project was found. "
@@ -196,7 +196,7 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_autoSaveUnSavedProjects);
 
 
-    _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
+    _hostName = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
     _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
                                   "Changing it to the name of another application can help loading plugins which "
@@ -287,7 +287,7 @@ Settings::initializeKnobsGeneral()
     _hostName->setAddNewLine(false);
     _generalTab->addKnob(_hostName);
 
-    _customHostName = AppManager::createKnob<KnobString>( this, tr("Custom Host name") );
+    _customHostName = AppManager::createKnob<KnobString>( shared_from_this(), tr("Custom Host name") );
     _customHostName->setName("customHostName");
     _customHostName->setHintToolTip( tr("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                                         "Changing it to the name of another application can help loading some plugins which "
@@ -303,9 +303,9 @@ Settings::initializeKnobsGeneral()
 void
 Settings::initializeKnobsThreading()
 {
-    _threadingPage = AppManager::createKnob<KnobPage>( this, tr("Threading") );
+    _threadingPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Threading") );
 
-    _numberOfThreads = AppManager::createKnob<KnobInt>( this, tr("Number of render threads (0=\"guess\")") );
+    _numberOfThreads = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Number of render threads (0=\"guess\")") );
     _numberOfThreads->setName("noRenderThreads");
 
     QString numberOfThreadsToolTip = tr("Controls how many threads %1 should use to render. \n"
@@ -318,7 +318,7 @@ Settings::initializeKnobsThreading()
     _threadingPage->addKnob(_numberOfThreads);
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders = AppManager::createKnob<KnobInt>( this, tr("Number of parallel renders (0=\"guess\")") );
+    _numberOfParallelRenders = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Number of parallel renders (0=\"guess\")") );
     _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer."
                                                  "A value of 0 indicate that %1 should automatically determine "
                                                  "the best number of parallel renders to launch given your CPU activity. "
@@ -331,7 +331,7 @@ Settings::initializeKnobsThreading()
     _threadingPage->addKnob(_numberOfParallelRenders);
 #endif
 
-    _useThreadPool = AppManager::createKnob<KnobBool>( this, tr("Effects use thread-pool") );
+    _useThreadPool = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Effects use thread-pool") );
     _useThreadPool->setName("useThreadPool");
     _useThreadPool->setHintToolTip( tr("When checked, all effects will use a global thread-pool to do their processing instead of launching "
                                        "their own threads. "
@@ -343,7 +343,7 @@ Settings::initializeKnobsThreading()
                                        "make sure to uncheck this option first otherwise it will crash %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _threadingPage->addKnob(_useThreadPool);
 
-    _nThreadsPerEffect = AppManager::createKnob<KnobInt>( this, tr("Max threads usable per effect (0=\"guess\")") );
+    _nThreadsPerEffect = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Max threads usable per effect (0=\"guess\")") );
     _nThreadsPerEffect->setName("nThreadsPerEffect");
     _nThreadsPerEffect->setHintToolTip( tr("Controls how many threads a specific effect can use at most to do its processing. "
                                            "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
@@ -355,13 +355,13 @@ Settings::initializeKnobsThreading()
     _nThreadsPerEffect->disableSlider();
     _threadingPage->addKnob(_nThreadsPerEffect);
 
-    _renderInSeparateProcess = AppManager::createKnob<KnobBool>( this, tr("Render in a separate process") );
+    _renderInSeparateProcess = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Render in a separate process") );
     _renderInSeparateProcess->setName("renderNewProcess");
     _renderInSeparateProcess->setHintToolTip( tr("If true, %1 will render frames to disk in "
                                                  "a separate process so that if the main application crashes, the render goes on.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _threadingPage->addKnob(_renderInSeparateProcess);
 
-    _queueRenders = AppManager::createKnob<KnobBool>( this, tr("Append new renders to queue") );
+    _queueRenders = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Append new renders to queue") );
     _queueRenders->setHintToolTip( tr("When checked, renders will be queued in the Progress Panel and will start only when all "
                                       "other prior tasks are done.") );
     _queueRenders->setName("queueRenders");
@@ -371,9 +371,9 @@ Settings::initializeKnobsThreading()
 void
 Settings::initializeKnobsRendering()
 {
-    _renderingPage = AppManager::createKnob<KnobPage>( this, tr("Rendering") );
+    _renderingPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Rendering") );
 
-    _convertNaNValues = AppManager::createKnob<KnobBool>( this, tr("Convert NaN values") );
+    _convertNaNValues = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Convert NaN values") );
     _convertNaNValues->setName("convertNaNs");
     _convertNaNValues->setHintToolTip( tr("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
                                           "downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as "
@@ -381,7 +381,7 @@ Settings::initializeKnobsRendering()
                                           "undefined behavior.") );
     _renderingPage->addKnob(_convertNaNValues);
 
-    _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>( this, tr("Copy input image before rendering any plug-in") );
+    _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Copy input image before rendering any plug-in") );
     _pluginUseImageCopyForSource->setName("copyInputImage");
     _pluginUseImageCopyForSource->setHintToolTip( tr("If checked, when before rendering any node, %1 will copy "
                                                      "the input image to a local temporary image. This is to work-around some plug-ins "
@@ -391,7 +391,7 @@ Settings::initializeKnobsRendering()
                                                      "image allocation and copy before rendering any plug-in.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _renderingPage->addKnob(_pluginUseImageCopyForSource);
 
-    _activateRGBSupport = AppManager::createKnob<KnobBool>( this, tr("RGB components support") );
+    _activateRGBSupport = AppManager::createKnob<KnobBool>( shared_from_this(), tr("RGB components support") );
     _activateRGBSupport->setHintToolTip( tr("When checked %1 is able to process images with only RGB components "
                                             "(support for images with RGBA and Alpha components is always enabled). "
                                             "Un-checking this option may prevent plugins that do not well support RGB components from crashing %1. "
@@ -400,7 +400,7 @@ Settings::initializeKnobsRendering()
     _renderingPage->addKnob(_activateRGBSupport);
 
 
-    _activateTransformConcatenationSupport = AppManager::createKnob<KnobBool>( this, tr("Transforms concatenation support") );
+    _activateTransformConcatenationSupport = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Transforms concatenation support") );
     _activateTransformConcatenationSupport->setHintToolTip( tr("When checked %1 is able to concatenate transform effects "
                                                                "when they are chained in the compositing tree. This yields better results and faster "
                                                                "render times because the image is only filtered once instead of as many times as there are "
@@ -501,24 +501,24 @@ Settings::getActiveOpenGLRendererID() const
 void
 Settings::initializeKnobsGPU()
 {
-    _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU rendering") );
-    _openglRendererString = AppManager::createKnob<KnobString>( this, tr("Active OpenGL renderer") );
+    _gpuPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("GPU rendering") );
+    _openglRendererString = AppManager::createKnob<KnobString>( shared_from_this(), tr("Active OpenGL renderer") );
     _openglRendererString->setName("activeOpenGLRenderer");
     _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer.") );
     _openglRendererString->setAsLabel();
     _gpuPage->addKnob(_openglRendererString);
 
-    _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( this, tr("OpenGL renderer") );
+    _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("OpenGL renderer") );
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
     _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
 
-    _osmesaRenderers = AppManager::createKnob<KnobChoice>(this, tr("CPU OpenGL renderer"));
+    _osmesaRenderers = AppManager::createKnob<KnobChoice>(shared_from_this(), tr("CPU OpenGL renderer"));
     _osmesaRenderers->setName("cpuOpenGLRenderer");
     _osmesaRenderers->setHintToolTip(tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. You may select which driver OSMesa uses to perform it's CPU rendering. llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
     _gpuPage->addKnob(_osmesaRenderers);
 
-    _nOpenGLContexts = AppManager::createKnob<KnobInt>( this, tr("No. of OpenGL Contexts") );
+    _nOpenGLContexts = AppManager::createKnob<KnobInt>( shared_from_this(), tr("No. of OpenGL Contexts") );
     _nOpenGLContexts->setName("maxOpenGLContexts");
     _nOpenGLContexts->setMinimum(1);
     _nOpenGLContexts->setDisplayMinimum(1);
@@ -528,7 +528,7 @@ Settings::initializeKnobsGPU()
     _gpuPage->addKnob(_nOpenGLContexts);
 
 
-    _enableOpenGL = AppManager::createKnob<KnobChoice>( this, tr("OpenGL Rendering") );
+    _enableOpenGL = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("OpenGL Rendering") );
     _enableOpenGL->setName("enableOpenGLRendering");
     {
         std::vector<std::string> entries;
@@ -551,28 +551,28 @@ Settings::initializeKnobsGPU()
 void
 Settings::initializeKnobsProjectSetup()
 {
-    _projectsPage = AppManager::createKnob<KnobPage>( this, tr("Project Setup") );
+    _projectsPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Project Setup") );
 
-    _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>( this, tr("First image read set project format") );
+    _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>( shared_from_this(), tr("First image read set project format") );
     _firstReadSetProjectFormat->setName("autoProjectFormat");
     _firstReadSetProjectFormat->setHintToolTip( tr("If checked, the project size is set to this of the first image or video read within the project.") );
     _projectsPage->addKnob(_firstReadSetProjectFormat);
 
 
-    _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>( this, tr("Auto-preview enabled by default for new projects") );
+    _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Auto-preview enabled by default for new projects") );
     _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
     _autoPreviewEnabledForNewProjects->setHintToolTip( tr("If checked, then when creating a new project, the Auto-preview option"
                                                           " is enabled.") );
     _projectsPage->addKnob(_autoPreviewEnabledForNewProjects);
 
 
-    _fixPathsOnProjectPathChanged = AppManager::createKnob<KnobBool>( this, tr("Auto fix relative file-paths") );
+    _fixPathsOnProjectPathChanged = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Auto fix relative file-paths") );
     _fixPathsOnProjectPathChanged->setHintToolTip( tr("If checked, when a project-path changes (either the name or the value pointed to), %1 checks all file-path parameters in the project and tries to fix them.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
 
     _projectsPage->addKnob(_fixPathsOnProjectPathChanged);
 
-    _enableMappingFromDriveLettersToUNCShareNames = AppManager::createKnob<KnobBool>( this, tr("Use drive letters instead of server names (Windows only)") );
+    _enableMappingFromDriveLettersToUNCShareNames = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use drive letters instead of server names (Windows only)") );
     _enableMappingFromDriveLettersToUNCShareNames->setHintToolTip( tr("This is only relevant for Windows: If checked, %1 will not convert a path starting with a drive letter from the file dialog to a network share name. You may use this if for example you want to share a same project with several users across facilities with different servers but where users have all the same drive attached to a server.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _enableMappingFromDriveLettersToUNCShareNames->setName("useDriveLetters");
 #ifndef __NATRON_WIN32__
@@ -584,9 +584,9 @@ Settings::initializeKnobsProjectSetup()
 void
 Settings::initializeKnobsDocumentation()
 {
-    _documentationPage = AppManager::createKnob<KnobPage>( this, tr("Documentation") );
+    _documentationPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Documentation") );
 
-    _documentationSource = AppManager::createKnob<KnobChoice>( this, tr("Documentation Source") );
+    _documentationSource = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
     _documentationSource->appendChoice("Local");
@@ -596,7 +596,7 @@ Settings::initializeKnobsDocumentation()
     _documentationPage->addKnob(_documentationSource);
 
     /// used to store temp port for local webserver
-    _wwwServerPort = AppManager::createKnob<KnobInt>( this, tr("Documentation local port (0=auto)") );
+    _wwwServerPort = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Documentation local port (0=auto)") );
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setHintToolTip( tr("The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself.") );
     _documentationPage->addKnob(_wwwServerPort);
@@ -605,17 +605,17 @@ Settings::initializeKnobsDocumentation()
 void
 Settings::initializeKnobsUserInterface()
 {
-    _uiPage = AppManager::createKnob<KnobPage>( this, tr("User Interface") );
+    _uiPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("User Interface") );
     _uiPage->setName("userInterfacePage");
 
-    _notifyOnFileChange = AppManager::createKnob<KnobBool>( this, tr("Warn when a file changes externally") );
+    _notifyOnFileChange = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Warn when a file changes externally") );
     _notifyOnFileChange->setName("warnOnExternalChange");
     _notifyOnFileChange->setHintToolTip( tr("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
                                             "on the viewer. Turning this off will suspend the notification system.") );
     _uiPage->addKnob(_notifyOnFileChange);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    _filedialogForWriters = AppManager::createKnob<KnobBool>( this, tr("Prompt with file dialog when creating Write node") );
+    _filedialogForWriters = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Prompt with file dialog when creating Write node") );
     _filedialogForWriters->setName("writeUseDialog");
     _filedialogForWriters->setDefaultValue(true);
     _filedialogForWriters->setHintToolTip( tr("When checked, opens-up a file dialog when creating a Write node") );
@@ -623,21 +623,21 @@ Settings::initializeKnobsUserInterface()
 #endif
 
 
-    _renderOnEditingFinished = AppManager::createKnob<KnobBool>( this, tr("Refresh viewer only when editing is finished") );
+    _renderOnEditingFinished = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Refresh viewer only when editing is finished") );
     _renderOnEditingFinished->setName("renderOnEditingFinished");
     _renderOnEditingFinished->setHintToolTip( tr("When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves "
                                                  " or the timeline. This setting doesn't apply to roto splines editing.") );
     _uiPage->addKnob(_renderOnEditingFinished);
 
 
-    _linearPickers = AppManager::createKnob<KnobBool>( this, tr("Linear color pickers") );
+    _linearPickers = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Linear color pickers") );
     _linearPickers->setName("linearPickers");
     _linearPickers->setHintToolTip( tr("When activated, all colors picked from the color parameters are linearized "
                                        "before being fetched. Otherwise they are in the same colorspace "
                                        "as the viewer they were picked from.") );
     _uiPage->addKnob(_linearPickers);
 
-    _maxPanelsOpened = AppManager::createKnob<KnobInt>( this, tr("Maximum number of open settings panels (0=\"unlimited\")") );
+    _maxPanelsOpened = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum number of open settings panels (0=\"unlimited\")") );
     _maxPanelsOpened->setName("maxPanels");
     _maxPanelsOpened->setHintToolTip( tr("This property holds the maximum number of settings panels that can be "
                                          "held by the properties dock at the same time."
@@ -647,7 +647,7 @@ Settings::initializeKnobsUserInterface()
     _maxPanelsOpened->setMaximum(100);
     _uiPage->addKnob(_maxPanelsOpened);
 
-    _useCursorPositionIncrements = AppManager::createKnob<KnobBool>( this, tr("Value increments based on cursor position") );
+    _useCursorPositionIncrements = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Value increments based on cursor position") );
     _useCursorPositionIncrements->setName("cursorPositionAwareFields");
     _useCursorPositionIncrements->setHintToolTip( tr("When enabled, incrementing the value fields of parameters with the "
                                                      "mouse wheel or with arrow keys will increment the digits on the right "
@@ -657,14 +657,14 @@ Settings::initializeKnobsUserInterface()
                                                      "Shift (x10) or Control (/10) while incrementing.") );
     _uiPage->addKnob(_useCursorPositionIncrements);
 
-    _defaultLayoutFile = AppManager::createKnob<KnobFile>( this, tr("Default layout file") );
+    _defaultLayoutFile = AppManager::createKnob<KnobFile>( shared_from_this(), tr("Default layout file") );
     _defaultLayoutFile->setName("defaultLayout");
     _defaultLayoutFile->setHintToolTip( tr("When set, %1 uses the given layout file "
                                            "as default layout for new projects. You can export/import a layout to/from a file "
                                            "from the Layout menu. If empty, the default application layout is used.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _uiPage->addKnob(_defaultLayoutFile);
 
-    _loadProjectsWorkspace = AppManager::createKnob<KnobBool>( this, tr("Load workspace embedded within projects") );
+    _loadProjectsWorkspace = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Load workspace embedded within projects") );
     _loadProjectsWorkspace->setName("loadProjectWorkspace");
     _loadProjectsWorkspace->setHintToolTip( tr("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
                                                "will use your current layout.") );
@@ -674,8 +674,8 @@ Settings::initializeKnobsUserInterface()
 void
 Settings::initializeKnobsColorManagement()
 {
-    _ocioTab = AppManager::createKnob<KnobPage>( this, tr("Color-Management") );
-    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( this, tr("OpenColorIO config") );
+    _ocioTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Color-Management") );
+    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("OpenColorIO config") );
     _ocioConfigKnob->setName("ocioConfig");
 
     std::vector<std::string> configs;
@@ -708,19 +708,19 @@ Settings::initializeKnobsColorManagement()
 
     _ocioTab->addKnob(_ocioConfigKnob);
 
-    _customOcioConfigFile = AppManager::createKnob<KnobFile>( this, tr("Custom OpenColorIO config file") );
+    _customOcioConfigFile = AppManager::createKnob<KnobFile>( shared_from_this(), tr("Custom OpenColorIO config file") );
     _customOcioConfigFile->setName("ocioCustomConfigFile");
     _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
                                               "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
     _ocioTab->addKnob(_customOcioConfigFile);
 
-    _warnOcioConfigKnobChanged = AppManager::createKnob<KnobBool>( this, tr("Warn on OpenColorIO config change") );
+    _warnOcioConfigKnobChanged = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Warn on OpenColorIO config change") );
     _warnOcioConfigKnobChanged->setName("warnOCIOChanged");
     _warnOcioConfigKnobChanged->setHintToolTip( tr("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.") );
     _ocioTab->addKnob(_warnOcioConfigKnobChanged);
 
-    _ocioStartupCheck = AppManager::createKnob<KnobBool>( this, tr("Warn on startup if OpenColorIO config is not the default") );
+    _ocioStartupCheck = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Warn on startup if OpenColorIO config is not the default") );
     _ocioStartupCheck->setName("startupCheckOCIO");
     _ocioTab->addKnob(_ocioStartupCheck);
 } // Settings::initializeKnobsColorManagement
@@ -729,24 +729,24 @@ void
 Settings::initializeKnobsAppearance()
 {
     //////////////APPEARANCE TAB/////////////////
-    _appearanceTab = AppManager::createKnob<KnobPage>( this, tr("Appearance") );
+    _appearanceTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Appearance") );
 
-    _defaultAppearanceVersion = AppManager::createKnob<KnobInt>( this, tr("Appearance version") );
+    _defaultAppearanceVersion = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Appearance version") );
     _defaultAppearanceVersion->setName("appearanceVersion");
     _defaultAppearanceVersion->setSecretByDefault(true);
     _appearanceTab->addKnob(_defaultAppearanceVersion);
 
-    _systemFontChoice = AppManager::createKnob<KnobChoice>( this, tr("Font") );
+    _systemFontChoice = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Font") );
     _systemFontChoice->setHintToolTip( tr("List of all fonts available on your system") );
     _systemFontChoice->setName("systemFont");
     _systemFontChoice->setAddNewLine(false);
     _appearanceTab->addKnob(_systemFontChoice);
 
-    _fontSize = AppManager::createKnob<KnobInt>( this, tr("Font size") );
+    _fontSize = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Font size") );
     _fontSize->setName("fontSize");
     _appearanceTab->addKnob(_fontSize);
 
-    _qssFile = AppManager::createKnob<KnobFile>( this, tr("Stylesheet file (.qss)") );
+    _qssFile = AppManager::createKnob<KnobFile>( shared_from_this(), tr("Stylesheet file (.qss)") );
     _qssFile->setName("stylesheetFile");
     _qssFile->setHintToolTip( tr("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
                                  "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -756,88 +756,88 @@ Settings::initializeKnobsAppearance()
 void
 Settings::initializeKnobsGuiColors()
 {
-    _guiColorsTab = AppManager::createKnob<KnobPage>( this, tr("Main Window") );
+    _guiColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Main Window") );
     _appearanceTab->addKnob(_guiColorsTab);
 
-    _useBWIcons = AppManager::createKnob<KnobBool>( this, tr("Use black & white toolbutton icons") );
+    _useBWIcons = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use black & white toolbutton icons") );
     _useBWIcons->setName("useBwIcons");
     _useBWIcons->setHintToolTip( tr("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
                                     "effect upon the next launch of the application.") );
     _guiColorsTab->addKnob(_useBWIcons);
 
 
-    _sunkenColor =  AppManager::createKnob<KnobColor>(this, tr("Sunken"), 3);
+    _sunkenColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sunken"), 3);
     _sunkenColor->setName("sunken");
     _sunkenColor->setSimplified(true);
     _guiColorsTab->addKnob(_sunkenColor);
 
-    _baseColor =  AppManager::createKnob<KnobColor>(this, tr("Base"), 3);
+    _baseColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Base"), 3);
     _baseColor->setName("base");
     _baseColor->setSimplified(true);
     _guiColorsTab->addKnob(_baseColor);
 
-    _raisedColor =  AppManager::createKnob<KnobColor>(this, tr("Raised"), 3);
+    _raisedColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Raised"), 3);
     _raisedColor->setName("raised");
     _raisedColor->setSimplified(true);
     _guiColorsTab->addKnob(_raisedColor);
 
-    _selectionColor =  AppManager::createKnob<KnobColor>(this, tr("Selection"), 3);
+    _selectionColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Selection"), 3);
     _selectionColor->setName("selection");
     _selectionColor->setSimplified(true);
     _guiColorsTab->addKnob(_selectionColor);
 
-    _textColor =  AppManager::createKnob<KnobColor>(this, tr("Text"), 3);
+    _textColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Text"), 3);
     _textColor->setName("text");
     _textColor->setSimplified(true);
     _guiColorsTab->addKnob(_textColor);
 
-    _altTextColor =  AppManager::createKnob<KnobColor>(this, tr("Unmodified text"), 3);
+    _altTextColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Unmodified text"), 3);
     _altTextColor->setName("unmodifiedText");
     _altTextColor->setSimplified(true);
     _guiColorsTab->addKnob(_altTextColor);
 
-    _timelinePlayheadColor =  AppManager::createKnob<KnobColor>(this, tr("Timeline playhead"), 3);
+    _timelinePlayheadColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Timeline playhead"), 3);
     _timelinePlayheadColor->setName("timelinePlayhead");
     _timelinePlayheadColor->setSimplified(true);
     _guiColorsTab->addKnob(_timelinePlayheadColor);
 
 
-    _timelineBGColor =  AppManager::createKnob<KnobColor>(this, tr("Timeline background"), 3);
+    _timelineBGColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Timeline background"), 3);
     _timelineBGColor->setName("timelineBG");
     _timelineBGColor->setSimplified(true);
     _guiColorsTab->addKnob(_timelineBGColor);
 
-    _timelineBoundsColor =  AppManager::createKnob<KnobColor>(this, tr("Timeline bounds"), 3);
+    _timelineBoundsColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Timeline bounds"), 3);
     _timelineBoundsColor->setName("timelineBound");
     _timelineBoundsColor->setSimplified(true);
     _guiColorsTab->addKnob(_timelineBoundsColor);
 
-    _cachedFrameColor =  AppManager::createKnob<KnobColor>(this, tr("Cached frame"), 3);
+    _cachedFrameColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Cached frame"), 3);
     _cachedFrameColor->setName("cachedFrame");
     _cachedFrameColor->setSimplified(true);
     _guiColorsTab->addKnob(_cachedFrameColor);
 
-    _diskCachedFrameColor =  AppManager::createKnob<KnobColor>(this, tr("Disk cached frame"), 3);
+    _diskCachedFrameColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Disk cached frame"), 3);
     _diskCachedFrameColor->setName("diskCachedFrame");
     _diskCachedFrameColor->setSimplified(true);
     _guiColorsTab->addKnob(_diskCachedFrameColor);
 
-    _interpolatedColor =  AppManager::createKnob<KnobColor>(this, tr("Interpolated value"), 3);
+    _interpolatedColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Interpolated value"), 3);
     _interpolatedColor->setName("interpValue");
     _interpolatedColor->setSimplified(true);
     _guiColorsTab->addKnob(_interpolatedColor);
 
-    _keyframeColor =  AppManager::createKnob<KnobColor>(this, tr("Keyframe"), 3);
+    _keyframeColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Keyframe"), 3);
     _keyframeColor->setName("keyframe");
     _keyframeColor->setSimplified(true);
     _guiColorsTab->addKnob(_keyframeColor);
 
-    _trackerKeyframeColor =  AppManager::createKnob<KnobColor>(this, tr("Track User Keyframes"), 3);
+    _trackerKeyframeColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Track User Keyframes"), 3);
     _trackerKeyframeColor->setName("trackUserKeyframe");
     _trackerKeyframeColor->setSimplified(true);
     _guiColorsTab->addKnob(_trackerKeyframeColor);
 
-    _exprColor =  AppManager::createKnob<KnobColor>(this, tr("Expression"), 3);
+    _exprColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Expression"), 3);
     _exprColor->setName("exprColor");
     _exprColor->setSimplified(true);
     _guiColorsTab->addKnob(_exprColor);
@@ -846,20 +846,20 @@ Settings::initializeKnobsGuiColors()
 void
 Settings::initializeKnobsCurveEditorColors()
 {
-    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Curve Editor") );
+    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Curve Editor") );
     _appearanceTab->addKnob(_curveEditorColorsTab);
 
-    _curveEditorBGColor =  AppManager::createKnob<KnobColor>(this, tr("Background color"), 3);
+    _curveEditorBGColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Background color"), 3);
     _curveEditorBGColor->setName("curveEditorBG");
     _curveEditorBGColor->setSimplified(true);
     _curveEditorColorsTab->addKnob(_curveEditorBGColor);
 
-    _gridColor =  AppManager::createKnob<KnobColor>(this, tr("Grid color"), 3);
+    _gridColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Grid color"), 3);
     _gridColor->setName("curveditorGrid");
     _gridColor->setSimplified(true);
     _curveEditorColorsTab->addKnob(_gridColor);
 
-    _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(this, tr("Scale color"), 3);
+    _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale color"), 3);
     _curveEditorScaleColor->setName("curveeditorScale");
     _curveEditorScaleColor->setSimplified(true);
     _curveEditorColorsTab->addKnob(_curveEditorScaleColor);
@@ -868,30 +868,30 @@ Settings::initializeKnobsCurveEditorColors()
 void
 Settings::initializeKnobsDopeSheetColors()
 {
-    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Dope Sheet") );
+    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Dope Sheet") );
     _appearanceTab->addKnob(_dopeSheetEditorColorsTab);
 
-    _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Sheet background color"), 3);
+    _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet background color"), 3);
     _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
     _dopeSheetEditorBackgroundColor->setSimplified(true);
     _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorBackgroundColor);
 
-    _dopeSheetEditorRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Root section background color"), 4);
+    _dopeSheetEditorRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Root section background color"), 4);
     _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
     _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
 
-    _dopeSheetEditorKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Knob section background color"), 4);
+    _dopeSheetEditorKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Knob section background color"), 4);
     _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
     _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
 
-    _dopeSheetEditorScaleColor = AppManager::createKnob<KnobColor>(this, tr("Sheet scale color"), 3);
+    _dopeSheetEditorScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet scale color"), 3);
     _dopeSheetEditorScaleColor->setName("dopesheetScale");
     _dopeSheetEditorScaleColor->setSimplified(true);
     _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorScaleColor);
 
-    _dopeSheetEditorGridColor = AppManager::createKnob<KnobColor>(this, tr("Sheet grid color"), 3);
+    _dopeSheetEditorGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet grid color"), 3);
     _dopeSheetEditorGridColor->setName("dopesheetGrid");
     _dopeSheetEditorGridColor->setSimplified(true);
     _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorGridColor);
@@ -900,24 +900,24 @@ Settings::initializeKnobsDopeSheetColors()
 void
 Settings::initializeKnobsNodeGraphColors()
 {
-    _nodegraphColorsTab = AppManager::createKnob<KnobPage>( this, tr("Node Graph") );
+    _nodegraphColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Node Graph") );
     _appearanceTab->addKnob(_nodegraphColorsTab);
 
-    _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>( this, tr("Display plug-in icon on node-graph") );
+    _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Display plug-in icon on node-graph") );
     _usePluginIconsInNodeGraph->setName("usePluginIcons");
     _usePluginIconsInNodeGraph->setHintToolTip( tr("When checked, each node that has a plug-in icon will display it in the node-graph."
                                                    "Changing this option will not affect already existing nodes, unless a restart of Natron is made.") );
     _usePluginIconsInNodeGraph->setAddNewLine(false);
     _nodegraphColorsTab->addKnob(_usePluginIconsInNodeGraph);
 
-    _useAntiAliasing = AppManager::createKnob<KnobBool>( this, tr("Anti-Aliasing") );
+    _useAntiAliasing = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Anti-Aliasing") );
     _useAntiAliasing->setName("antiAliasing");
     _useAntiAliasing->setHintToolTip( tr("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
                                          " Changing this requires a restart of Natron") );
     _nodegraphColorsTab->addKnob(_useAntiAliasing);
 
 
-    _defaultNodeColor = AppManager::createKnob<KnobColor>(this, tr("Default node color"), 3);
+    _defaultNodeColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Default node color"), 3);
     _defaultNodeColor->setName("defaultNodeColor");
     _defaultNodeColor->setSimplified(true);
     _defaultNodeColor->setHintToolTip( tr("The default color used for newly created nodes.") );
@@ -925,85 +925,85 @@ Settings::initializeKnobsNodeGraphColors()
     _nodegraphColorsTab->addKnob(_defaultNodeColor);
 
 
-    _defaultBackdropColor =  AppManager::createKnob<KnobColor>(this, tr("Default backdrop color"), 3);
+    _defaultBackdropColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Default backdrop color"), 3);
     _defaultBackdropColor->setName("backdropColor");
     _defaultBackdropColor->setSimplified(true);
     _defaultBackdropColor->setHintToolTip( tr("The default color used for newly created backdrop nodes.") );
     _nodegraphColorsTab->addKnob(_defaultBackdropColor);
 
-    _defaultReaderColor =  AppManager::createKnob<KnobColor>(this, tr(PLUGIN_GROUP_IMAGE_READERS), 3);
+    _defaultReaderColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr(PLUGIN_GROUP_IMAGE_READERS), 3);
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setSimplified(true);
     _defaultReaderColor->setHintToolTip( tr("The color used for newly created Reader nodes.") );
     _nodegraphColorsTab->addKnob(_defaultReaderColor);
 
-    _defaultWriterColor =  AppManager::createKnob<KnobColor>(this, tr(PLUGIN_GROUP_IMAGE_WRITERS), 3);
+    _defaultWriterColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr(PLUGIN_GROUP_IMAGE_WRITERS), 3);
     _defaultWriterColor->setName("writerColor");
     _defaultWriterColor->setSimplified(true);
     _defaultWriterColor->setHintToolTip( tr("The color used for newly created Writer nodes.") );
     _nodegraphColorsTab->addKnob(_defaultWriterColor);
 
-    _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(this, tr("Generators"), 3);
+    _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Generators"), 3);
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setSimplified(true);
     _defaultGeneratorColor->setHintToolTip( tr("The color used for newly created Generator nodes.") );
     _nodegraphColorsTab->addKnob(_defaultGeneratorColor);
 
-    _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Color group"), 3);
+    _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Color group"), 3);
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setSimplified(true);
     _defaultColorGroupColor->setHintToolTip( tr("The color used for newly created Color nodes.") );
     _nodegraphColorsTab->addKnob(_defaultColorGroupColor);
 
-    _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Filter group"), 3);
+    _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Filter group"), 3);
     _defaultFilterGroupColor->setName("filterNodesColor");
     _defaultFilterGroupColor->setSimplified(true);
     _defaultFilterGroupColor->setHintToolTip( tr("The color used for newly created Filter nodes.") );
     _nodegraphColorsTab->addKnob(_defaultFilterGroupColor);
 
-    _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Transform group"), 3);
+    _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Transform group"), 3);
     _defaultTransformGroupColor->setName("transformNodesColor");
     _defaultTransformGroupColor->setSimplified(true);
     _defaultTransformGroupColor->setHintToolTip( tr("The color used for newly created Transform nodes.") );
     _nodegraphColorsTab->addKnob(_defaultTransformGroupColor);
 
-    _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Time group"), 3);
+    _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Time group"), 3);
     _defaultTimeGroupColor->setName("timeNodesColor");
     _defaultTimeGroupColor->setSimplified(true);
     _defaultTimeGroupColor->setHintToolTip( tr("The color used for newly created Time nodes.") );
     _nodegraphColorsTab->addKnob(_defaultTimeGroupColor);
 
-    _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Draw group"), 3);
+    _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Draw group"), 3);
     _defaultDrawGroupColor->setName("drawNodesColor");
     _defaultDrawGroupColor->setSimplified(true);
     _defaultDrawGroupColor->setHintToolTip( tr("The color used for newly created Draw nodes.") );
     _nodegraphColorsTab->addKnob(_defaultDrawGroupColor);
 
-    _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Keyer group"), 3);
+    _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Keyer group"), 3);
     _defaultKeyerGroupColor->setName("keyerNodesColor");
     _defaultKeyerGroupColor->setSimplified(true);
     _defaultKeyerGroupColor->setHintToolTip( tr("The color used for newly created Keyer nodes.") );
     _nodegraphColorsTab->addKnob(_defaultKeyerGroupColor);
 
-    _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Channel group"), 3);
+    _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Channel group"), 3);
     _defaultChannelGroupColor->setName("channelNodesColor");
     _defaultChannelGroupColor->setSimplified(true);
     _defaultChannelGroupColor->setHintToolTip( tr("The color used for newly created Channel nodes.") );
     _nodegraphColorsTab->addKnob(_defaultChannelGroupColor);
 
-    _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Merge group"), 3);
+    _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Merge group"), 3);
     _defaultMergeGroupColor->setName("defaultMergeColor");
     _defaultMergeGroupColor->setSimplified(true);
     _defaultMergeGroupColor->setHintToolTip( tr("The color used for newly created Merge nodes.") );
     _nodegraphColorsTab->addKnob(_defaultMergeGroupColor);
 
-    _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Views group"), 3);
+    _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Views group"), 3);
     _defaultViewsGroupColor->setName("defaultViewsColor");
     _defaultViewsGroupColor->setSimplified(true);
     _defaultViewsGroupColor->setHintToolTip( tr("The color used for newly created Views nodes.") );
     _nodegraphColorsTab->addKnob(_defaultViewsGroupColor);
 
-    _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Deep group"), 3);
+    _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Deep group"), 3);
     _defaultDeepGroupColor->setName("defaultDeepColor");
     _defaultDeepGroupColor->setSimplified(true);
     _defaultDeepGroupColor->setHintToolTip( tr("The color used for newly created Deep nodes.") );
@@ -1013,60 +1013,60 @@ Settings::initializeKnobsNodeGraphColors()
 void
 Settings::initializeKnobsScriptEditorColors()
 {
-    _scriptEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Script Editor") );
+    _scriptEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Script Editor") );
     _scriptEditorColorsTab->setParentKnob(_appearanceTab);
 
-    _scriptEditorFontChoice = AppManager::createKnob<KnobChoice>( this, tr("Font") );
+    _scriptEditorFontChoice = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Font") );
     _scriptEditorFontChoice->setHintToolTip( tr("List of all fonts available on your system") );
     _scriptEditorFontChoice->setName("scriptEditorFont");
     _scriptEditorColorsTab->addKnob(_scriptEditorFontChoice);
 
-    _scriptEditorFontSize = AppManager::createKnob<KnobInt>( this, tr("Font Size") );
+    _scriptEditorFontSize = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Font Size") );
     _scriptEditorFontSize->setHintToolTip( tr("The font size") );
     _scriptEditorFontSize->setName("scriptEditorFontSize");
     _scriptEditorColorsTab->addKnob(_scriptEditorFontSize);
 
-    _curLineColor = AppManager::createKnob<KnobColor>(this, tr("Current Line Color"), 3);
+    _curLineColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Current Line Color"), 3);
     _curLineColor->setName("currentLineColor");
     _curLineColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_curLineColor);
 
-    _keywordColor = AppManager::createKnob<KnobColor>(this, tr("Keyword Color"), 3);
+    _keywordColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Keyword Color"), 3);
     _keywordColor->setName("keywordColor");
     _keywordColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_keywordColor);
 
-    _operatorColor = AppManager::createKnob<KnobColor>(this, tr("Operator Color"), 3);
+    _operatorColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Operator Color"), 3);
     _operatorColor->setName("operatorColor");
     _operatorColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_operatorColor);
 
-    _braceColor = AppManager::createKnob<KnobColor>(this, tr("Brace Color"), 3);
+    _braceColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Brace Color"), 3);
     _braceColor->setName("braceColor");
     _braceColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_braceColor);
 
-    _defClassColor = AppManager::createKnob<KnobColor>(this, tr("Class Def Color"), 3);
+    _defClassColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Class Def Color"), 3);
     _defClassColor->setName("classDefColor");
     _defClassColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_defClassColor);
 
-    _stringsColor = AppManager::createKnob<KnobColor>(this, tr("Strings Color"), 3);
+    _stringsColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Strings Color"), 3);
     _stringsColor->setName("stringsColor");
     _stringsColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_stringsColor);
 
-    _commentsColor = AppManager::createKnob<KnobColor>(this, tr("Comments Color"), 3);
+    _commentsColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Comments Color"), 3);
     _commentsColor->setName("commentsColor");
     _commentsColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_commentsColor);
 
-    _selfColor = AppManager::createKnob<KnobColor>(this, tr("Self Color"), 3);
+    _selfColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Self Color"), 3);
     _selfColor->setName("selfColor");
     _selfColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_selfColor);
 
-    _numbersColor = AppManager::createKnob<KnobColor>(this, tr("Numbers Color"), 3);
+    _numbersColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Numbers Color"), 3);
     _numbersColor->setName("numbersColor");
     _numbersColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_numbersColor);
@@ -1075,9 +1075,9 @@ Settings::initializeKnobsScriptEditorColors()
 void
 Settings::initializeKnobsViewers()
 {
-    _viewersTab = AppManager::createKnob<KnobPage>( this, tr("Viewer") );
+    _viewersTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Viewer") );
 
-    _texturesMode = AppManager::createKnob<KnobChoice>( this, tr("Viewer textures bit depth") );
+    _texturesMode = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Viewer textures bit depth") );
     _texturesMode->setName("texturesBitDepth");
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
@@ -1094,7 +1094,7 @@ Settings::initializeKnobsViewers()
                                       " Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
 
-    _powerOf2Tiling = AppManager::createKnob<KnobInt>( this, tr("Viewer tile size is 2 to the power of...") );
+    _powerOf2Tiling = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Viewer tile size is 2 to the power of...") );
     _powerOf2Tiling->setName("viewerTiling");
     _powerOf2Tiling->setHintToolTip( tr("The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). "
                                         "A high value means that the viewer renders large tiles, so that "
@@ -1107,30 +1107,30 @@ Settings::initializeKnobsViewers()
 
     _viewersTab->addKnob(_powerOf2Tiling);
 
-    _checkerboardTileSize = AppManager::createKnob<KnobInt>( this, tr("Checkerboard tile size (pixels)") );
+    _checkerboardTileSize = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Checkerboard tile size (pixels)") );
     _checkerboardTileSize->setName("checkerboardTileSize");
     _checkerboardTileSize->setMinimum(1);
     _checkerboardTileSize->setHintToolTip( tr("The size (in screen pixels) of one tile of the checkerboard.") );
     _viewersTab->addKnob(_checkerboardTileSize);
 
-    _checkerboardColor1 = AppManager::createKnob<KnobColor>(this, tr("Checkerboard color 1"), 4);
+    _checkerboardColor1 = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Checkerboard color 1"), 4);
     _checkerboardColor1->setName("checkerboardColor1");
     _checkerboardColor1->setHintToolTip( tr("The first color used by the checkerboard.") );
     _viewersTab->addKnob(_checkerboardColor1);
 
-    _checkerboardColor2 = AppManager::createKnob<KnobColor>(this, tr("Checkerboard color 2"), 4);
+    _checkerboardColor2 = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Checkerboard color 2"), 4);
     _checkerboardColor2->setName("checkerboardColor2");
     _checkerboardColor2->setHintToolTip( tr("The second color used by the checkerboard.") );
     _viewersTab->addKnob(_checkerboardColor2);
 
-    _autoWipe = AppManager::createKnob<KnobBool>( this, tr("Automatically enable wipe") );
+    _autoWipe = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Automatically enable wipe") );
     _autoWipe->setName("autoWipeForViewer");
     _autoWipe->setHintToolTip( tr("When checked, the wipe tool of the viewer will be automatically enabled "
                                   "when the mouse is hovering the viewer and changing an input of a viewer." ) );
     _viewersTab->addKnob(_autoWipe);
 
 
-    _autoProxyWhenScrubbingTimeline = AppManager::createKnob<KnobBool>( this, tr("Automatically enable proxy when scrubbing the timeline") );
+    _autoProxyWhenScrubbingTimeline = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Automatically enable proxy when scrubbing the timeline") );
     _autoProxyWhenScrubbingTimeline->setName("autoProxyScrubbing");
     _autoProxyWhenScrubbingTimeline->setHintToolTip( tr("When checked, the proxy mode will be at least at the level "
                                                         "indicated by the auto-proxy parameter.") );
@@ -1138,7 +1138,7 @@ Settings::initializeKnobsViewers()
     _viewersTab->addKnob(_autoProxyWhenScrubbingTimeline);
 
 
-    _autoProxyLevel = AppManager::createKnob<KnobChoice>( this, tr("Auto-proxy level") );
+    _autoProxyLevel = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Auto-proxy level") );
     _autoProxyLevel->setName("autoProxyLevel");
     std::vector<std::string> autoProxyChoices;
     autoProxyChoices.push_back("2");
@@ -1149,14 +1149,14 @@ Settings::initializeKnobsViewers()
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
 
-    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( this, tr("Max. opened node viewer interface") );
+    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Max. opened node viewer interface") );
     _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
     _maximumNodeViewerUIOpened->setMinimum(1);
     _maximumNodeViewerUIOpened->disableSlider();
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
 
-    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
+    _viewerKeys = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use number keys for the viewer") );
     _viewerKeys->setName("viewerNumberKeys");
     _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
                                     "is used for switching input (<key> connects input to A side, "
@@ -1171,34 +1171,34 @@ void
 Settings::initializeKnobsNodeGraph()
 {
     /////////// Nodegraph tab
-    _nodegraphTab = AppManager::createKnob<KnobPage>( this, tr("Nodegraph") );
+    _nodegraphTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Nodegraph") );
 
-    _autoScroll = AppManager::createKnob<KnobBool>( this, tr("Auto Scroll") );
+    _autoScroll = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Auto Scroll") );
     _autoScroll->setName("autoScroll");
     _autoScroll->setHintToolTip( tr("When checked the node graph will auto scroll if you move a node outside the current graph view.") );
     _nodegraphTab->addKnob(_autoScroll);
 
-    _autoTurbo = AppManager::createKnob<KnobBool>( this, tr("Auto-turbo") );
+    _autoTurbo = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Auto-turbo") );
     _autoTurbo->setName("autoTurbo");
     _autoTurbo->setHintToolTip( tr("When checked the Turbo-mode will be enabled automatically when playback is started and disabled "
                                    "when finished.") );
     _nodegraphTab->addKnob(_autoTurbo);
 
-    _snapNodesToConnections = AppManager::createKnob<KnobBool>( this, tr("Snap to node") );
+    _snapNodesToConnections = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Snap to node") );
     _snapNodesToConnections->setName("enableSnapToNode");
     _snapNodesToConnections->setHintToolTip( tr("When moving nodes on the node graph, snap to positions where they are lined up "
                                                 "with the inputs and output nodes.") );
     _nodegraphTab->addKnob(_snapNodesToConnections);
 
 
-    _useNodeGraphHints = AppManager::createKnob<KnobBool>( this, tr("Use connection hints") );
+    _useNodeGraphHints = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use connection hints") );
     _useNodeGraphHints->setName("useHints");
     _useNodeGraphHints->setHintToolTip( tr("When checked, moving a node which is not connected to anything to arrows "
                                            "nearby displays a hint for possible connections. Releasing the mouse when "
                                            "hints are shown connects the node.") );
     _nodegraphTab->addKnob(_useNodeGraphHints);
 
-    _maxUndoRedoNodeGraph = AppManager::createKnob<KnobInt>( this, tr("Maximum undo/redo for the node graph") );
+    _maxUndoRedoNodeGraph = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum undo/redo for the node graph") );
     _maxUndoRedoNodeGraph->setName("maxUndoRedo");
     _maxUndoRedoNodeGraph->disableSlider();
     _maxUndoRedoNodeGraph->setMinimum(0);
@@ -1209,21 +1209,21 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
 
 
-    _disconnectedArrowLength = AppManager::createKnob<KnobInt>( this, tr("Disconnected arrow length") );
+    _disconnectedArrowLength = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Disconnected arrow length") );
     _disconnectedArrowLength->setName("disconnectedArrowLength");
     _disconnectedArrowLength->setHintToolTip( tr("The size of a disconnected node input arrow in pixels.") );
     _disconnectedArrowLength->disableSlider();
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
 
-    _hideOptionalInputsAutomatically = AppManager::createKnob<KnobBool>( this, tr("Auto hide masks inputs") );
+    _hideOptionalInputsAutomatically = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Auto hide masks inputs") );
     _hideOptionalInputsAutomatically->setName("autoHideInputs");
     _hideOptionalInputsAutomatically->setHintToolTip( tr("When checked, any diconnected mask input of a node in the nodegraph "
                                                          "will be visible only when the mouse is hovering the node or when it is "
                                                          "selected.") );
     _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
 
-    _useInputAForMergeAutoConnect = AppManager::createKnob<KnobBool>( this, tr("Merge node connect to A input") );
+    _useInputAForMergeAutoConnect = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Merge node connect to A input") );
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, the input A will be preferred "
                                                       "for auto-connection and when disabling the node instead of the input B. "
@@ -1235,9 +1235,9 @@ void
 Settings::initializeKnobsCaching()
 {
     /////////// Caching tab
-    _cachingTab = AppManager::createKnob<KnobPage>( this, tr("Caching") );
+    _cachingTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Caching") );
 
-    _aggressiveCaching = AppManager::createKnob<KnobBool>( this, tr("Aggressive caching") );
+    _aggressiveCaching = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Aggressive caching") );
     _aggressiveCaching->setName("aggressiveCaching");
     _aggressiveCaching->setHintToolTip( tr("When checked, %1 will cache the output of all images "
                                            "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
@@ -1247,7 +1247,7 @@ Settings::initializeKnobsCaching()
                                            "output has its settings panel opened.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _cachingTab->addKnob(_aggressiveCaching);
 
-    _maxRAMPercent = AppManager::createKnob<KnobInt>( this, tr("Maximum amount of RAM memory used for caching (% of total RAM)") );
+    _maxRAMPercent = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum amount of RAM memory used for caching (% of total RAM)") );
     _maxRAMPercent->setName("maxRAMPercent");
     _maxRAMPercent->disableSlider();
     _maxRAMPercent->setMinimum(0);
@@ -1264,14 +1264,14 @@ Settings::initializeKnobsCaching()
     _maxRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxRAMPercent);
 
-    _maxRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
+    _maxRAMLabel = AppManager::createKnob<KnobString>( shared_from_this(), std::string() );
     _maxRAMLabel->setName("maxRamLabel");
     _maxRAMLabel->setIsPersistant(false);
     _maxRAMLabel->setAsLabel();
     _cachingTab->addKnob(_maxRAMLabel);
 
 
-    _unreachableRAMPercent = AppManager::createKnob<KnobInt>( this, tr("System RAM to keep free (% of total RAM)") );
+    _unreachableRAMPercent = AppManager::createKnob<KnobInt>( shared_from_this(), tr("System RAM to keep free (% of total RAM)") );
     _unreachableRAMPercent->setName("unreachableRAMPercent");
     _unreachableRAMPercent->disableSlider();
     _unreachableRAMPercent->setMinimum(0);
@@ -1287,13 +1287,13 @@ Settings::initializeKnobsCaching()
                                            );
     _unreachableRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_unreachableRAMPercent);
-    _unreachableRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
+    _unreachableRAMLabel = AppManager::createKnob<KnobString>( shared_from_this(), std::string() );
     _unreachableRAMLabel->setName("unreachableRAMLabel");
     _unreachableRAMLabel->setIsPersistant(false);
     _unreachableRAMLabel->setAsLabel();
     _cachingTab->addKnob(_unreachableRAMLabel);
 
-    _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>( this, tr("Maximum playback disk cache size (GiB)") );
+    _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum playback disk cache size (GiB)") );
     _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
     _maxViewerDiskCacheGB->disableSlider();
     _maxViewerDiskCacheGB->setMinimum(0);
@@ -1301,7 +1301,7 @@ Settings::initializeKnobsCaching()
     _maxViewerDiskCacheGB->setHintToolTip( tr("The maximum size that may be used by the playback cache on disk (in GiB)") );
     _cachingTab->addKnob(_maxViewerDiskCacheGB);
 
-    _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>( this, tr("Maximum DiskCache node disk usage (GiB)") );
+    _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum DiskCache node disk usage (GiB)") );
     _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
     _maxDiskCacheNodeGB->disableSlider();
     _maxDiskCacheNodeGB->setMinimum(0);
@@ -1310,7 +1310,7 @@ Settings::initializeKnobsCaching()
     _cachingTab->addKnob(_maxDiskCacheNodeGB);
 
 
-    _diskCachePath = AppManager::createKnob<KnobPath>( this, tr("Disk cache path (empty = default)") );
+    _diskCachePath = AppManager::createKnob<KnobPath>( shared_from_this(), tr("Disk cache path (empty = default)") );
     _diskCachePath->setName("diskCachePath");
     _diskCachePath->setMultiPath(false);
 
@@ -1323,7 +1323,7 @@ Settings::initializeKnobsCaching()
     _diskCachePath->setHintToolTip( diskCacheTt + defaultLocation );
     _cachingTab->addKnob(_diskCachePath);
 
-    _wipeDiskCache = AppManager::createKnob<KnobButton>( this, tr("Wipe Disk Cache") );
+    _wipeDiskCache = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Wipe Disk Cache") );
     _wipeDiskCache->setHintToolTip( tr("Cleans-up all caches, deleting all folders that may contain cached data. "
                                        "This is provided in case %1 lost track of cached images "
                                        "for some reason.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -1333,10 +1333,10 @@ Settings::initializeKnobsCaching()
 void
 Settings::initializeKnobsPlugins()
 {
-    _pluginsTab = AppManager::createKnob<KnobPage>( this, tr("Plug-ins") );
+    _pluginsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Plug-ins") );
     _pluginsTab->setName("plugins");
 
-    _extraPluginPaths = AppManager::createKnob<KnobPath>( this, tr("OpenFX plugins search path") );
+    _extraPluginPaths = AppManager::createKnob<KnobPath>( shared_from_this(), tr("OpenFX plugins search path") );
     _extraPluginPaths->setName("extraPluginsSearchPaths");
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -1363,7 +1363,7 @@ Settings::initializeKnobsPlugins()
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
 
-    _templatesPluginPaths = AppManager::createKnob<KnobPath>( this, tr("PyPlugs search path") );
+    _templatesPluginPaths = AppManager::createKnob<KnobPath>( shared_from_this(), tr("PyPlugs search path") );
     _templatesPluginPaths->setName("groupPluginsSearchPath");
     _templatesPluginPaths->setHintToolTip( tr("Search path where %1 should scan for Python group scripts (PyPlugs). "
                                               "The search paths for groups can also be specified using the "
@@ -1371,7 +1371,7 @@ Settings::initializeKnobsPlugins()
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
 
-    _loadBundledPlugins = AppManager::createKnob<KnobBool>( this, tr("Use bundled plugins") );
+    _loadBundledPlugins = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use bundled plugins") );
     _loadBundledPlugins->setName("useBundledPlugins");
     _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plugins bundled "
                                             "with the binary distribution.\n"
@@ -1379,7 +1379,7 @@ Settings::initializeKnobsPlugins()
                                             "found in the help for the \"Extra plugins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _pluginsTab->addKnob(_loadBundledPlugins);
 
-    _preferBundledPlugins = AppManager::createKnob<KnobBool>( this, tr("Prefer bundled plugins over system-wide plugins") );
+    _preferBundledPlugins = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Prefer bundled plugins over system-wide plugins") );
     _preferBundledPlugins->setName("preferBundledPlugins");
     _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the %1 binary distribution will take precedence over system-wide plugins "
                                               "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -1389,10 +1389,10 @@ Settings::initializeKnobsPlugins()
 void
 Settings::initializeKnobsPython()
 {
-    _pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
+    _pythonPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Python") );
 
 
-    _onProjectCreated = AppManager::createKnob<KnobString>( this, tr("After project created") );
+    _onProjectCreated = AppManager::createKnob<KnobString>( shared_from_this(), tr("After project created") );
     _onProjectCreated->setName("afterProjectCreated");
     _onProjectCreated->setHintToolTip( tr("Callback called once a new project is created (this is never called "
                                           "when \"After project loaded\" is called.)\n"
@@ -1401,35 +1401,35 @@ Settings::initializeKnobsPython()
     _pythonPage->addKnob(_onProjectCreated);
 
 
-    _defaultOnProjectLoaded = AppManager::createKnob<KnobString>( this, tr("Default after project loaded") );
+    _defaultOnProjectLoaded = AppManager::createKnob<KnobString>( shared_from_this(), tr("Default after project loaded") );
     _defaultOnProjectLoaded->setName("defOnProjectLoaded");
     _defaultOnProjectLoaded->setHintToolTip( tr("The default afterProjectLoad callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnProjectLoaded);
 
-    _defaultOnProjectSave = AppManager::createKnob<KnobString>( this, tr("Default before project save") );
+    _defaultOnProjectSave = AppManager::createKnob<KnobString>( shared_from_this(), tr("Default before project save") );
     _defaultOnProjectSave->setName("defOnProjectSave");
     _defaultOnProjectSave->setHintToolTip( tr("The default beforeProjectSave callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnProjectSave);
 
 
-    _defaultOnProjectClose = AppManager::createKnob<KnobString>( this, tr("Default before project close") );
+    _defaultOnProjectClose = AppManager::createKnob<KnobString>( shared_from_this(), tr("Default before project close") );
     _defaultOnProjectClose->setName("defOnProjectClose");
     _defaultOnProjectClose->setHintToolTip( tr("The default beforeProjectClose callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnProjectClose);
 
 
-    _defaultOnNodeCreated = AppManager::createKnob<KnobString>( this, tr("Default after node created") );
+    _defaultOnNodeCreated = AppManager::createKnob<KnobString>( shared_from_this(), tr("Default after node created") );
     _defaultOnNodeCreated->setName("defOnNodeCreated");
     _defaultOnNodeCreated->setHintToolTip( tr("The default afterNodeCreated callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnNodeCreated);
 
 
-    _defaultOnNodeDelete = AppManager::createKnob<KnobString>( this, tr("Default before node removal") );
+    _defaultOnNodeDelete = AppManager::createKnob<KnobString>( shared_from_this(), tr("Default before node removal") );
     _defaultOnNodeDelete->setName("defOnNodeDelete");
     _defaultOnNodeDelete->setHintToolTip( tr("The default beforeNodeRemoval callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnNodeDelete);
 
-    _loadPyPlugsFromPythonScript = AppManager::createKnob<KnobBool>( this, tr("Load PyPlugs in projects from .py if possible") );
+    _loadPyPlugsFromPythonScript = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Load PyPlugs in projects from .py if possible") );
     _loadPyPlugsFromPythonScript->setName("loadFromPyFile");
     _loadPyPlugsFromPythonScript->setHintToolTip( tr("When checked, if a project contains a PyPlug, it will try to first load the PyPlug "
                                                      "from the .py file. If the version of the PyPlug has changed Natron will ask you "
@@ -1440,7 +1440,7 @@ Settings::initializeKnobsPython()
     _loadPyPlugsFromPythonScript->setDefaultValue(true);
     _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
-    _echoVariableDeclarationToPython = AppManager::createKnob<KnobBool>( this, tr("Print auto-declared variables in the Script Editor") );
+    _echoVariableDeclarationToPython = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Print auto-declared variables in the Script Editor") );
     _echoVariableDeclarationToPython->setName("printAutoDeclaredVars");
     _echoVariableDeclarationToPython->setHintToolTip( tr("When checked, %1 will print in the Script Editor all variables that are "
                                                          "automatically declared, such as the app variable or node attributes.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -1489,8 +1489,7 @@ Settings::setDefaultValues()
     _numberOfParallelRenders->setDefaultValue(0, 0);
 #endif
     _nOpenGLContexts->setDefaultValue(2);
-#pragma message WARN("enable OpenGL by default after 2.1 release")
-    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLEnabled);
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);
@@ -1742,20 +1741,20 @@ Settings::setDefaultValues()
 } // setDefaultValues
 
 void
-Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
+Settings::warnChangedKnobs(const KnobsVec& knobs)
 {
     bool didFontWarn = false;
     bool didOCIOWarn = false;
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( ( ( knobs[i] == _fontSize.get() ) ||
-               ( knobs[i] == _systemFontChoice.get() ) )
+        if ( ( ( knobs[i] == _fontSize ) ||
+               ( knobs[i] == _systemFontChoice ) )
              && !didFontWarn ) {
             didOCIOWarn = true;
             Dialogs::warningDialog( tr("Font change").toStdString(),
                                     tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-        } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
-                      ( knobs[i] == _customOcioConfigFile.get() ) )
+        } else if ( ( ( knobs[i] == _ocioConfigKnob ) ||
+                      ( knobs[i] == _customOcioConfigFile ) )
                     && !didOCIOWarn ) {
             didOCIOWarn = true;
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
@@ -1765,15 +1764,15 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                                        tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
                 if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false);
-                    saveSetting( _warnOcioConfigKnobChanged.get() );
+                    saveSetting( _warnOcioConfigKnobChanged );
                 }
             }
-        } else if ( knobs[i] == _texturesMode.get() ) {
+        } else if ( knobs[i] == _texturesMode ) {
             AppInstanceVec apps = appPTR->getAppInstances();
             for (AppInstanceVec::iterator it = apps.begin(); it != apps.end(); ++it) {
-                std::list<ViewerInstance*> allViewers;
+                std::list<ViewerInstancePtr> allViewers;
                 (*it)->getProject()->getViewers(&allViewers);
-                for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+                for (std::list<ViewerInstancePtr>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
                     (*it)->renderCurrentFrame(true);
                 }
             }
@@ -1785,10 +1784,10 @@ void
 Settings::saveAllSettings()
 {
     const KnobsVec &knobs = getKnobs();
-    std::vector<KnobI*> k( knobs.size() );
+    KnobsVec k( knobs.size() );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        k[i] = knobs[i].get();
+        k[i] = knobs[i];
     }
     saveSettings(k, false, true);
 }
@@ -1884,23 +1883,23 @@ Settings::savePluginsSettings()
 }
 
 void
-Settings::saveSettings(const std::vector<KnobI*>& knobs,
+Settings::saveSettings(const KnobsVec& knobs,
                        bool doWarnings,
                        bool pluginSettings)
 {
     if (pluginSettings) {
         savePluginsSettings();
     }
-    std::vector<KnobI*> changedKnobs;
+    KnobsVec changedKnobs;
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
+        KnobStringBasePtr isString = toKnobStringBase(knobs[i]);
+        KnobIntBasePtr isInt = toKnobIntBase(knobs[i]);
+        KnobChoicePtr isChoice = toKnobChoice(knobs[i]);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knobs[i]);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1968,16 +1967,16 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
 } // saveSettings
 
 void
-Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
+Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
 {
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
+        KnobStringBasePtr isString = toKnobStringBase(knobs[i]);
+        KnobIntBasePtr isInt = toKnobIntBase(knobs[i]);
+        KnobChoicePtr isChoice = toKnobChoice(knobs[i]);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(knobs[i]);
+        KnobBoolBasePtr isBool = toKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
 
@@ -2019,17 +2018,6 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
         }
     }
 } // Settings::restoreKnobsFromSettings
-
-void
-Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
-{
-    std::vector<KnobI*> k( knobs.size() );
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        k[i] = knobs[i].get();
-    }
-    restoreKnobsFromSettings(k);
-}
 
 void
 Settings::restoreSettings()
@@ -2084,14 +2072,14 @@ Settings::restoreSettings()
 
         if (!_settingsExisted) {
             _natronSettingsExist->setValue(true);
-            saveSetting( _natronSettingsExist.get() );
+            saveSetting( _natronSettingsExist );
         }
 
         int appearanceVersion = _defaultAppearanceVersion->getValue();
         if ( _settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting( _defaultAppearanceVersion.get() );
+            saveSetting( _defaultAppearanceVersion );
         }
 
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
@@ -2198,7 +2186,7 @@ crash_application()
 }
 
 bool
-Settings::onKnobValueChanged(KnobI* k,
+Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
                              ViewSpec /*view*/,
@@ -2207,24 +2195,24 @@ Settings::onKnobValueChanged(KnobI* k,
     Q_EMIT settingChanged(k);
     bool ret = true;
 
-    if ( k == _maxViewerDiskCacheGB.get() ) {
+    if ( k == _maxViewerDiskCacheGB ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
         }
-    } else if ( k == _maxDiskCacheNodeGB.get() ) {
+    } else if ( k == _maxDiskCacheNodeGB ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheNodeSize() );
         }
-    } else if ( k == _maxRAMPercent.get() ) {
+    } else if ( k == _maxRAMPercent ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
         }
         setCachingLabels();
-    } else if ( k == _diskCachePath.get() ) {
+    } else if ( k == _diskCachePath ) {
         appPTR->setDiskCacheLocation( QString::fromUtf8( _diskCachePath->getValue().c_str() ) );
-    } else if ( k == _wipeDiskCache.get() ) {
+    } else if ( k == _wipeDiskCache ) {
         appPTR->wipeAndCreateDiskCacheStructure();
-    } else if ( k == _numberOfThreads.get() ) {
+    } else if ( k == _numberOfThreads ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
         if (nbThreads == -1) {
@@ -2235,19 +2223,19 @@ Settings::onKnobValueChanged(KnobI* k,
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
-    } else if ( k == _nThreadsPerEffect.get() ) {
+    } else if ( k == _nThreadsPerEffect ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-    } else if ( k == _ocioConfigKnob.get() ) {
+    } else if ( k == _ocioConfigKnob ) {
         if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
         }
         tryLoadOpenColorIOConfig();
-    } else if ( k == _useThreadPool.get() ) {
+    } else if ( k == _useThreadPool ) {
         bool useTP = _useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
-    } else if ( k == _customOcioConfigFile.get() ) {
+    } else if ( k == _customOcioConfigFile ) {
         if ( _customOcioConfigFile->isEnabled(0) ) {
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
@@ -2260,62 +2248,62 @@ Settings::onKnobValueChanged(KnobI* k,
                 }
             }
         }
-    } else if ( k == _maxUndoRedoNodeGraph.get() ) {
+    } else if ( k == _maxUndoRedoNodeGraph ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
-    } else if ( k == _maxPanelsOpened.get() ) {
+    } else if ( k == _maxPanelsOpened ) {
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
-    } else if ( k == _queueRenders.get() ) {
+    } else if ( k == _queueRenders ) {
         appPTR->onQueueRendersChanged( _queueRenders->getValue() );
-    } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
+    } else if ( ( k == _checkerboardTileSize ) || ( k == _checkerboardColor1 ) || ( k == _checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _powerOf2Tiling.get() ) {
+    } else if ( k == _powerOf2Tiling ) {
         appPTR->onViewerTileCacheSizeChanged();
-    } else if ( k == _texturesMode.get() &&  !_restoringSettings) {
+    } else if ( k == _texturesMode &&  !_restoringSettings) {
          appPTR->onViewerTileCacheSizeChanged();
-    } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _hideOptionalInputsAutomatically ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
-    } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
+    } else if ( k == _autoProxyWhenScrubbingTimeline ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
     } else if ( !_restoringSettings &&
-                ( ( k == _sunkenColor.get() ) ||
-                  ( k == _baseColor.get() ) ||
-                  ( k == _raisedColor.get() ) ||
-                  ( k == _selectionColor.get() ) ||
-                  ( k == _textColor.get() ) ||
-                  ( k == _altTextColor.get() ) ||
-                  ( k == _timelinePlayheadColor.get() ) ||
-                  ( k == _timelineBoundsColor.get() ) ||
-                  ( k == _timelineBGColor.get() ) ||
-                  ( k == _interpolatedColor.get() ) ||
-                  ( k == _keyframeColor.get() ) ||
-                  ( k == _trackerKeyframeColor.get() ) ||
-                  ( k == _cachedFrameColor.get() ) ||
-                  ( k == _diskCachedFrameColor.get() ) ||
-                  ( k == _curveEditorBGColor.get() ) ||
-                  ( k == _gridColor.get() ) ||
-                  ( k == _curveEditorScaleColor.get() ) ||
-                  ( k == _dopeSheetEditorBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorRootSectionBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorKnobSectionBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorScaleColor.get() ) ||
-                  ( k == _dopeSheetEditorGridColor.get() ) ||
-                  ( k == _keywordColor.get() ) ||
-                  ( k == _operatorColor.get() ) ||
-                  ( k == _curLineColor.get() ) ||
-                  ( k == _braceColor.get() ) ||
-                  ( k == _defClassColor.get() ) ||
-                  ( k == _stringsColor.get() ) ||
-                  ( k == _commentsColor.get() ) ||
-                  ( k == _selfColor.get() ) ||
-                  ( k == _numbersColor.get() ) ) ) {
+                ( ( k == _sunkenColor ) ||
+                  ( k == _baseColor ) ||
+                  ( k == _raisedColor ) ||
+                  ( k == _selectionColor ) ||
+                  ( k == _textColor ) ||
+                  ( k == _altTextColor ) ||
+                  ( k == _timelinePlayheadColor ) ||
+                  ( k == _timelineBoundsColor ) ||
+                  ( k == _timelineBGColor ) ||
+                  ( k == _interpolatedColor ) ||
+                  ( k == _keyframeColor ) ||
+                  ( k == _trackerKeyframeColor ) ||
+                  ( k == _cachedFrameColor ) ||
+                  ( k == _diskCachedFrameColor ) ||
+                  ( k == _curveEditorBGColor ) ||
+                  ( k == _gridColor ) ||
+                  ( k == _curveEditorScaleColor ) ||
+                  ( k == _dopeSheetEditorBackgroundColor ) ||
+                  ( k == _dopeSheetEditorRootSectionBackgroundColor ) ||
+                  ( k == _dopeSheetEditorKnobSectionBackgroundColor ) ||
+                  ( k == _dopeSheetEditorScaleColor ) ||
+                  ( k == _dopeSheetEditorGridColor ) ||
+                  ( k == _keywordColor ) ||
+                  ( k == _operatorColor ) ||
+                  ( k == _curLineColor ) ||
+                  ( k == _braceColor ) ||
+                  ( k == _defClassColor ) ||
+                  ( k == _stringsColor ) ||
+                  ( k == _commentsColor ) ||
+                  ( k == _selfColor ) ||
+                  ( k == _numbersColor ) ) ) {
         appPTR->reloadStylesheets();
-    } else if ( k == _qssFile.get() ) {
+    } else if ( k == _qssFile ) {
         appPTR->reloadStylesheets();
-    } else if ( k == _hostName.get() ) {
+    } else if ( k == _hostName ) {
         std::string hostName = _hostName->getActiveEntryText_mt_safe();
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
-    } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
                                                             tr("You are about to make %1 crash to test the reporting system.\n"
                                                                "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
@@ -2323,17 +2311,17 @@ Settings::onKnobValueChanged(KnobI* k,
         if (reply == eStandardButtonYes) {
             crash_application();
         }
-    } else if ( ( k == _scriptEditorFontChoice.get() ) || ( k == _scriptEditorFontSize.get() ) ) {
+    } else if ( ( k == _scriptEditorFontChoice ) || ( k == _scriptEditorFontSize ) ) {
         appPTR->reloadScriptEditorFonts();
-    } else if ( k == _pluginUseImageCopyForSource.get() ) {
+    } else if ( k == _pluginUseImageCopyForSource ) {
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } else if ( k == _enableOpenGL.get() ) {
+    } else if ( k == _enableOpenGL ) {
         appPTR->refreshOpenGLRenderingFlagOnAllInstances();
     } else {
         ret = false;
     }
     if (ret) {
-        if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
+        if ( ( ( k == _hostName ) || ( k == _customHostName ) ) && !_restoringSettings ) {
             Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
@@ -2534,8 +2522,8 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
-        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-        KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobSeparatorPtr isSep = toKnobSeparator(*it);
         if (isPage) {
             if (isPage->getParentKnob()) {
                 ms << "### " << knobLabel << "\n\n";
@@ -2688,7 +2676,7 @@ void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
     _checkForUpdates->setValue(enabled);
-    saveSetting( _checkForUpdates.get() );
+    saveSetting( _checkForUpdates );
 }
 
 bool
@@ -2707,7 +2695,7 @@ void
 Settings::setMaxPanelsOpened(int maxPanels)
 {
     _maxPanelsOpened->setValue(maxPanels);
-    saveSetting( _maxPanelsOpened.get() );
+    saveSetting( _maxPanelsOpened );
 }
 
 void
@@ -3009,7 +2997,7 @@ void
 Settings::doOCIOStartupCheckIfNeeded()
 {
     bool docheck = _ocioStartupCheck->getValue();
-    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr mainInstance = appPTR->getTopLevelInstance();
 
     if (!mainInstance) {
         qDebug() << "WARNING: doOCIOStartupCheckIfNeeded() called without a AppInstance";
@@ -3036,7 +3024,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                 &stopAsking);
         if (stopAsking != !docheck) {
             _ocioStartupCheck->setValue(!stopAsking);
-            saveSetting( _ocioStartupCheck.get() );
+            saveSetting( _ocioStartupCheck );
         }
 
         if (reply == eStandardButtonYes) {
@@ -3049,7 +3037,7 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
-                saveSetting( _ocioConfigKnob.get() );
+                saveSetting( _ocioConfigKnob );
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
@@ -3161,7 +3149,7 @@ void
 Settings::setAutoDeclaredVariablePrintEnabled(bool enabled)
 {
     _echoVariableDeclarationToPython->setValue(enabled);
-    saveSetting( _echoVariableDeclarationToPython.get() );
+    saveSetting( _echoVariableDeclarationToPython );
 }
 
 bool
@@ -3561,10 +3549,10 @@ Settings::isDefaultAppearanceOutdated() const
 void
 Settings::restoreDefaultAppearance()
 {
-    std::vector< KnobPtr > children = _appearanceTab->getChildren();
+    std::vector< KnobIPtr > children = _appearanceTab->getChildren();
 
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobColor* isColorKnob = dynamic_cast<KnobColor*>( children[i].get() );
+        KnobColorPtr isColorKnob = toKnobColor(children[i]);
         if ( isColorKnob && isColorKnob->isSimplified() ) {
             isColorKnob->blockValueChanges();
             for (int j = 0; j < isColorKnob->getDimension(); ++j) {
@@ -3587,7 +3575,7 @@ void
 Settings::setRenderQueuingEnabled(bool enabled)
 {
     _queueRenders->setValue(enabled);
-    saveSetting( _queueRenders.get() );
+    saveSetting( _queueRenders );
 }
 
 bool

@@ -43,7 +43,7 @@
 NATRON_NAMESPACE_ENTER;
 
 
-TrackerNode::TrackerNode(boost::shared_ptr<Natron::Node> node)
+TrackerNode::TrackerNode(const NodePtr& node)
     : NodeGroup(node)
     , _imp( new TrackerNodePrivate(this) )
 {
@@ -127,9 +127,9 @@ TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
 void
 TrackerNode::initializeKnobs()
 {
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
-    boost::shared_ptr<KnobPage> trackingPage = context->getTrackingPageKnob();
-    boost::shared_ptr<KnobButton> addMarker = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamAddTrackLabel) );
+    TrackerContextPtr context = getNode()->getTrackerContext();
+    KnobPagePtr trackingPage = context->getTrackingPageKnob();
+    KnobButtonPtr addMarker = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamAddTrackLabel) );
 
     addMarker->setName(kTrackerUIParamAddTrack);
     addMarker->setHintToolTip( tr(kTrackerUIParamAddTrackHint) );
@@ -142,7 +142,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(addMarker);
     _imp->ui->addTrackButton = addMarker;
 
-    boost::shared_ptr<KnobButton> trackBw = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackBWLabel) );
+    KnobButtonPtr trackBw = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackBWLabel) );
     trackBw->setName(kTrackerUIParamTrackBW);
     trackBw->setHintToolTip( tr(kTrackerUIParamTrackBWHint) );
     trackBw->setEvaluateOnChange(false);
@@ -155,7 +155,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackBw);
     _imp->ui->trackBwButton = trackBw;
 
-    boost::shared_ptr<KnobButton> trackPrev = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackPreviousLabel) );
+    KnobButtonPtr trackPrev = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackPreviousLabel) );
     trackPrev->setName(kTrackerUIParamTrackPrevious);
     trackPrev->setHintToolTip( tr(kTrackerUIParamTrackPreviousHint) );
     trackPrev->setEvaluateOnChange(false);
@@ -165,7 +165,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackPrev);
     _imp->ui->trackPrevButton = trackPrev;
 
-    boost::shared_ptr<KnobButton> stopTracking = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamStopTrackingLabel) );
+    KnobButtonPtr stopTracking = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamStopTrackingLabel) );
     stopTracking->setName(kTrackerUIParamStopTracking);
     stopTracking->setHintToolTip( tr(kTrackerUIParamStopTrackingHint) );
     stopTracking->setEvaluateOnChange(false);
@@ -175,7 +175,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(stopTracking);
     _imp->ui->stopTrackingButton = stopTracking;
 
-    boost::shared_ptr<KnobButton> trackNext = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackNextLabel) );
+    KnobButtonPtr trackNext = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackNextLabel) );
     trackNext->setName(kTrackerUIParamTrackNext);
     trackNext->setHintToolTip( tr(kTrackerUIParamTrackNextHint) );
     trackNext->setEvaluateOnChange(false);
@@ -185,7 +185,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackNext);
     _imp->ui->trackNextButton = trackNext;
 
-    boost::shared_ptr<KnobButton> trackFw = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackFWLabel) );
+    KnobButtonPtr trackFw = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackFWLabel) );
     trackFw->setName(kTrackerUIParamTrackFW);
     trackFw->setHintToolTip( tr(kTrackerUIParamTrackFWHint) );
     trackFw->setEvaluateOnChange(false);
@@ -198,7 +198,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackFw);
     _imp->ui->trackFwButton = trackFw;
 
-    boost::shared_ptr<KnobButton> trackRange = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackRangeLabel) );
+    KnobButtonPtr trackRange = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeLabel) );
     trackRange->setName(kTrackerUIParamTrackRange);
     trackRange->setHintToolTip( tr(kTrackerUIParamTrackRangeHint) );
     trackRange->setEvaluateOnChange(false);
@@ -208,7 +208,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackRange);
     _imp->ui->trackRangeButton = trackRange;
 
-    boost::shared_ptr<KnobButton> trackAllKeys = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackAllKeyframesLabel) );
+    KnobButtonPtr trackAllKeys = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackAllKeyframesLabel) );
     trackAllKeys->setName(kTrackerUIParamTrackAllKeyframes);
     trackAllKeys->setHintToolTip( tr(kTrackerUIParamTrackAllKeyframesHint) );
     trackAllKeys->setEvaluateOnChange(false);
@@ -219,7 +219,7 @@ TrackerNode::initializeKnobs()
     _imp->ui->trackAllKeyframesButton = trackAllKeys;
 
 
-    boost::shared_ptr<KnobButton> trackCurKey = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackCurrentKeyframeLabel) );
+    KnobButtonPtr trackCurKey = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackCurrentKeyframeLabel) );
     trackCurKey->setName(kTrackerUIParamTrackCurrentKeyframe);
     trackCurKey->setHintToolTip( tr(kTrackerUIParamTrackCurrentKeyframeHint) );
     trackCurKey->setEvaluateOnChange(false);
@@ -229,7 +229,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackCurKey);
     _imp->ui->trackCurrentKeyframeButton = trackCurKey;
 
-    boost::shared_ptr<KnobButton> clearAllAnimation = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamClearAllAnimationLabel) );
+    KnobButtonPtr clearAllAnimation = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAllAnimationLabel) );
     clearAllAnimation->setName(kTrackerUIParamClearAllAnimation);
     clearAllAnimation->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
     clearAllAnimation->setEvaluateOnChange(false);
@@ -239,7 +239,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(clearAllAnimation);
     _imp->ui->clearAllAnimationButton = clearAllAnimation;
 
-    boost::shared_ptr<KnobButton> clearBackwardAnim = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamClearAnimationBwLabel) );
+    KnobButtonPtr clearBackwardAnim = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAnimationBwLabel) );
     clearBackwardAnim->setName(kTrackerUIParamClearAnimationBw);
     clearBackwardAnim->setHintToolTip( tr(kTrackerUIParamClearAnimationBwHint) );
     clearBackwardAnim->setEvaluateOnChange(false);
@@ -249,7 +249,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(clearBackwardAnim);
     _imp->ui->clearBwAnimationButton = clearBackwardAnim;
 
-    boost::shared_ptr<KnobButton> clearForwardAnim = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamClearAnimationFwLabel) );
+    KnobButtonPtr clearForwardAnim = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAnimationFwLabel) );
     clearForwardAnim->setName(kTrackerUIParamClearAnimationFw);
     clearForwardAnim->setHintToolTip( tr(kTrackerUIParamClearAnimationFwHint) );
     clearForwardAnim->setEvaluateOnChange(false);
@@ -259,7 +259,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(clearForwardAnim);
     _imp->ui->clearFwAnimationButton = clearForwardAnim;
 
-    boost::shared_ptr<KnobButton> updateViewer = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRefreshViewerLabel) );
+    KnobButtonPtr updateViewer = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRefreshViewerLabel) );
     updateViewer->setName(kTrackerUIParamRefreshViewer);
     updateViewer->setHintToolTip( tr(kTrackerUIParamRefreshViewerHint) );
     updateViewer->setEvaluateOnChange(false);
@@ -272,7 +272,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(updateViewer);
     _imp->ui->updateViewerButton = updateViewer;
 
-    boost::shared_ptr<KnobButton> centerViewer = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamCenterViewerLabel) );
+    KnobButtonPtr centerViewer = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamCenterViewerLabel) );
     centerViewer->setName(kTrackerUIParamCenterViewer);
     centerViewer->setHintToolTip( tr(kTrackerUIParamCenterViewerHint) );
     centerViewer->setEvaluateOnChange(false);
@@ -284,7 +284,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(centerViewer);
     _imp->ui->centerViewerButton = centerViewer;
 
-    boost::shared_ptr<KnobButton> createKeyOnMove = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamCreateKeyOnMoveLabel) );
+    KnobButtonPtr createKeyOnMove = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamCreateKeyOnMoveLabel) );
     createKeyOnMove->setName(kTrackerUIParamCreateKeyOnMove);
     createKeyOnMove->setHintToolTip( tr(kTrackerUIParamCreateKeyOnMoveHint) );
     createKeyOnMove->setEvaluateOnChange(false);
@@ -297,7 +297,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(createKeyOnMove);
     _imp->ui->createKeyOnMoveButton = createKeyOnMove;
 
-    boost::shared_ptr<KnobButton> showError = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamShowErrorLabel) );
+    KnobButtonPtr showError = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamShowErrorLabel) );
     showError->setName(kTrackerUIParamShowError);
     showError->setHintToolTip( tr(kTrackerUIParamShowErrorHint) );
     showError->setEvaluateOnChange(false);
@@ -312,7 +312,7 @@ TrackerNode::initializeKnobs()
     _imp->ui->showCorrelationButton = showError;
 
 
-    boost::shared_ptr<KnobButton> addKeyframe = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamSetPatternKeyFrameLabel) );
+    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamSetPatternKeyFrameLabel) );
     addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
     addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
     addKeyframe->setEvaluateOnChange(false);
@@ -322,7 +322,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(addKeyframe);
     _imp->ui->setKeyFrameButton = addKeyframe;
 
-    boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
+    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
     removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
     removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
     removeKeyframe->setEvaluateOnChange(false);
@@ -332,7 +332,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(removeKeyframe);
     _imp->ui->removeKeyFrameButton = removeKeyframe;
 
-    boost::shared_ptr<KnobButton> resetOffset = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamResetOffsetLabel) );
+    KnobButtonPtr resetOffset = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamResetOffsetLabel) );
     resetOffset->setName(kTrackerUIParamResetOffset);
     resetOffset->setHintToolTip( tr(kTrackerUIParamResetOffsetHint) );
     resetOffset->setEvaluateOnChange(false);
@@ -343,7 +343,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(resetOffset);
     _imp->ui->resetOffsetButton = resetOffset;
 
-    boost::shared_ptr<KnobButton> resetTrack = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamResetTrackLabel) );
+    KnobButtonPtr resetTrack = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamResetTrackLabel) );
     resetTrack->setName(kTrackerUIParamResetTrack);
     resetTrack->setHintToolTip( tr(kTrackerUIParamResetTrackHint) );
     resetTrack->setEvaluateOnChange(false);
@@ -354,7 +354,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(resetTrack);
     _imp->ui->resetTrackButton = resetTrack;
 
-    boost::shared_ptr<KnobInt> magWindow = AppManager::createKnob<KnobInt>( this, tr(kTrackerUIParamMagWindowSizeLabel) );
+    KnobIntPtr magWindow = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamMagWindowSizeLabel) );
     magWindow->setInViewerContextLabel(tr(kTrackerUIParamMagWindowSizeLabel));
     magWindow->setName(kTrackerUIParamMagWindowSize);
     magWindow->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
@@ -421,13 +421,13 @@ TrackerNode::initializeKnobs()
     QObject::connect( context.get(), SIGNAL(trackingStarted(int)), _imp->ui.get(), SLOT(onTrackingStarted(int)) );
 
     // Right click menu
-    boost::shared_ptr<KnobChoice> rightClickMenu = AppManager::createKnob<KnobChoice>( this, std::string(kTrackerUIParamRightClickMenu) );
+    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( shared_from_this(), std::string(kTrackerUIParamRightClickMenu) );
     rightClickMenu->setSecretByDefault(true);
     rightClickMenu->setEvaluateOnChange(false);
     trackingPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionSelectAllTracks);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -437,7 +437,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->selectAllTracksMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionRemoveTracks);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -447,7 +447,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->removeTracksMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeBottom);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -457,7 +457,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnBottomMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeLeft);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -467,7 +467,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnLeftMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeRight);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -477,7 +477,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnRightMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeTop);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -489,7 +489,7 @@ TrackerNode::initializeKnobs()
 
 
     // Track range dialog
-    boost::shared_ptr<KnobGroup> trackRangeDialog = AppManager::createKnob<KnobGroup>( this, tr(kTrackerUIParamTrackRangeDialogLabel) );
+    KnobGroupPtr trackRangeDialog = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogLabel) );
     trackRangeDialog->setName(kTrackerUIParamTrackRangeDialog);
     trackRangeDialog->setSecretByDefault(true);
     trackRangeDialog->setEvaluateOnChange(false);
@@ -499,7 +499,7 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackRangeDialog);
     _imp->ui->trackRangeDialogGroup = trackRangeDialog;
 
-    boost::shared_ptr<KnobInt> trackRangeDialogFirstFrame = AppManager::createKnob<KnobInt>( this, tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel) );
+    KnobIntPtr trackRangeDialogFirstFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel) );
     trackRangeDialogFirstFrame->setName(kTrackerUIParamTrackRangeDialogFirstFrame);
     trackRangeDialogFirstFrame->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
     trackRangeDialogFirstFrame->setSecretByDefault(true);
@@ -510,7 +510,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
     _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
 
-    boost::shared_ptr<KnobInt> trackRangeDialogLastFrame = AppManager::createKnob<KnobInt>( this, tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
+    KnobIntPtr trackRangeDialogLastFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
     trackRangeDialogLastFrame->setName(kTrackerUIParamTrackRangeDialogLastFrame);
     trackRangeDialogLastFrame->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
     trackRangeDialogLastFrame->setSecretByDefault(true);
@@ -521,7 +521,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->addKnob(trackRangeDialogLastFrame);
     _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
 
-    boost::shared_ptr<KnobInt> trackRangeDialogFrameStep = AppManager::createKnob<KnobInt>( this, tr(kTrackerUIParamTrackRangeDialogStepLabel) );
+    KnobIntPtr trackRangeDialogFrameStep = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogStepLabel) );
     trackRangeDialogFrameStep->setName(kTrackerUIParamTrackRangeDialogStep);
     trackRangeDialogFrameStep->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
     trackRangeDialogFrameStep->setSecretByDefault(true);
@@ -532,7 +532,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->addKnob(trackRangeDialogFrameStep);
     _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
 
-    boost::shared_ptr<KnobButton> trackRangeDialogOkButton = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
+    KnobButtonPtr trackRangeDialogOkButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
     trackRangeDialogOkButton->setName(kTrackerUIParamTrackRangeDialogOkButton);
     trackRangeDialogOkButton->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
     trackRangeDialogOkButton->setSecretByDefault(true);
@@ -543,7 +543,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->addKnob(trackRangeDialogOkButton);
     _imp->ui->trackRangeDialogOkButton = trackRangeDialogOkButton;
 
-    boost::shared_ptr<KnobButton> trackRangeDialogCancelButton = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
+    KnobButtonPtr trackRangeDialogCancelButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
     trackRangeDialogCancelButton->setName(kTrackerUIParamTrackRangeDialogCancelButton);
     trackRangeDialogCancelButton->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
     trackRangeDialogCancelButton->setSecretByDefault(true);
@@ -553,13 +553,13 @@ TrackerNode::initializeKnobs()
 } // TrackerNode::initializeKnobs
 
 bool
-TrackerNode::knobChanged(KnobI* k,
+TrackerNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
                          ViewSpec view,
                          double time,
                          bool originatedFromMainThread)
 {
-    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
     if (!ctx) {
         return false;
@@ -568,11 +568,11 @@ TrackerNode::knobChanged(KnobI* k,
     ctx->onKnobsLoaded();
     
     bool ret = true;
-    if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
+    if ( k == _imp->ui->trackRangeDialogOkButton.lock() ) {
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();
         int last = _imp->ui->trackRangeDialogLastFrame.lock()->getValue();
         int step = _imp->ui->trackRangeDialogStep.lock()->getValue();
-        boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+        TrackerContextPtr ctx = getNode()->getTrackerContext();
         if ( ctx->isCurrentlyTracking() ) {
             ctx->abortTracking();
         }
@@ -593,68 +593,68 @@ TrackerNode::knobChanged(KnobI* k,
         OverlaySupport* overlay = getCurrentViewportForOverlays();
         ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
-    } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock().get() ) {
+    } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
-    } else if ( k == _imp->ui->selectAllTracksMenuAction.lock().get() ) {
+    } else if ( k == _imp->ui->selectAllTracksMenuAction.lock() ) {
         getNode()->getTrackerContext()->selectAll(TrackerContext::eTrackSelectionInternal);
-    } else if ( k == _imp->ui->removeTracksMenuAction.lock().get() ) {
+    } else if ( k == _imp->ui->removeTracksMenuAction.lock() ) {
         std::list<TrackMarkerPtr > markers;
-        boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+        TrackerContextPtr context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&markers);
         if ( !markers.empty() ) {
             pushUndoCommand( new RemoveTracksCommand( markers, context ) );
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnTopMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnTopMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(0, 1) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnRightMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnRightMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(1, 0) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnLeftMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnLeftMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(-1, 0) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->nudgeTracksOnBottomMenuAction.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->nudgeTracksOnBottomMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(0, -1) ) {
             return false;
         }
-    } else if ( ( k == _imp->ui->stopTrackingButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->stopTrackingButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onStopButtonClicked();
-    } else if ( ( k == _imp->ui->trackBwButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackBwButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackBwClicked();
-    } else if ( ( k == _imp->ui->trackPrevButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackPrevButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackPrevClicked();
-    } else if ( ( k == _imp->ui->trackFwButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackFwButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackFwClicked();
-    } else if ( ( k == _imp->ui->trackNextButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackNextButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackNextClicked();
-    } else if ( ( k == _imp->ui->trackRangeButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackRangeButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackRangeClicked();
-    } else if ( ( k == _imp->ui->trackAllKeyframesButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackAllKeyframesButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackAllKeyframesClicked();
-    } else if ( ( k == _imp->ui->trackCurrentKeyframeButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->trackCurrentKeyframeButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onTrackCurrentKeyframeClicked();
-    } else if ( ( k == _imp->ui->clearAllAnimationButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->clearAllAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearAllAnimationClicked();
-    } else if ( ( k == _imp->ui->clearBwAnimationButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->clearBwAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearBwAnimationClicked();
-    } else if ( ( k == _imp->ui->clearFwAnimationButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->clearFwAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearFwAnimationClicked();
-    } else if ( ( k == _imp->ui->updateViewerButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->updateViewerButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onUpdateViewerClicked( _imp->ui->updateViewerButton.lock()->getValue() );
-    } else if ( ( k == _imp->ui->centerViewerButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->centerViewerButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onCenterViewerButtonClicked( _imp->ui->centerViewerButton.lock()->getValue() );
-    } else if ( ( k == _imp->ui->setKeyFrameButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->setKeyFrameButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onSetKeyframeButtonClicked();
-    } else if ( ( k == _imp->ui->removeKeyFrameButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->removeKeyFrameButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onRemoveKeyframeButtonClicked();
-    } else if ( ( k == _imp->ui->resetOffsetButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->resetOffsetButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onResetOffsetButtonClicked();
-    } else if ( ( k == _imp->ui->resetTrackButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _imp->ui->resetTrackButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onResetTrackButtonClicked();
-    } else if ( k == _imp->ui->addTrackButton.lock().get() ) {
+    } else if ( k == _imp->ui->addTrackButton.lock() ) {
         _imp->ui->clickToAddTrackEnabled = _imp->ui->addTrackButton.lock()->getValue();
     } else {
         ret = false;
@@ -669,7 +669,7 @@ TrackerNode::knobChanged(KnobI* k,
 void
 TrackerNode::onKnobsLoaded()
 {
-    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
     if (!ctx) {
         return;
@@ -690,7 +690,7 @@ TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
 void
 TrackerNode::onInputChanged(int inputNb)
 {
-    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
     ctx->inputChanged(inputNb);
 
@@ -738,7 +738,7 @@ TrackerNode::drawOverlay(double time,
 
         std::vector<TrackMarkerPtr > allMarkers;
         std::list<TrackMarkerPtr > selectedMarkers;
-        boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+        TrackerContextPtr context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&selectedMarkers);
         context->getAllMarkers(&allMarkers);
 
@@ -774,15 +774,15 @@ TrackerNode::drawOverlay(double time,
             bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
             std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
             bool isSelected = foundSelected != selectedMarkers.end();
-            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-            boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-            boost::shared_ptr<KnobDouble> errorKnob = (*it)->getErrorKnob();
-            boost::shared_ptr<KnobDouble> ptnTopLeft = (*it)->getPatternTopLeftKnob();
-            boost::shared_ptr<KnobDouble> ptnTopRight = (*it)->getPatternTopRightKnob();
-            boost::shared_ptr<KnobDouble> ptnBtmRight = (*it)->getPatternBtmRightKnob();
-            boost::shared_ptr<KnobDouble> ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
-            boost::shared_ptr<KnobDouble> searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
-            boost::shared_ptr<KnobDouble> searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
+            KnobDoublePtr centerKnob = (*it)->getCenterKnob();
+            KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
+            KnobDoublePtr errorKnob = (*it)->getErrorKnob();
+            KnobDoublePtr ptnTopLeft = (*it)->getPatternTopLeftKnob();
+            KnobDoublePtr ptnTopRight = (*it)->getPatternTopRightKnob();
+            KnobDoublePtr ptnBtmRight = (*it)->getPatternBtmRightKnob();
+            KnobDoublePtr ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
+            KnobDoublePtr searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
+            KnobDoublePtr searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
 
             // When the tracking page is secret, still show markers, but as if deselected
             if (!isSelected || trackingPageSecret) {
@@ -904,9 +904,9 @@ TrackerNode::drawOverlay(double time,
                     name += tr("(disabled)").toStdString();
                 }
                 CenterPointsMap centerPoints;
-                boost::shared_ptr<Curve> xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
-                boost::shared_ptr<Curve> yCurve = centerKnob->getCurve(ViewSpec::current(), 1);
-                boost::shared_ptr<Curve> errorCurve = errorKnob->getCurve(ViewSpec::current(), 0);
+                CurvePtr xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
+                CurvePtr yCurve = centerKnob->getCurve(ViewSpec::current(), 1);
+                CurvePtr errorCurve = errorKnob->getCurve(ViewSpec::current(), 0);
 
                 {
                     KeyFrameSet xKeyframes = xCurve->getKeyFrames_mt_safe();
@@ -1298,7 +1298,7 @@ TrackerNode::onOverlayPenDown(double time,
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     /*if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
         return true;
        }*/
@@ -1312,14 +1312,14 @@ TrackerNode::onOverlayPenDown(double time,
         }
 
         bool isSelected = context->isMarkerSelected( (*it) );
-        boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-        boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-        boost::shared_ptr<KnobDouble> ptnTopLeft = (*it)->getPatternTopLeftKnob();
-        boost::shared_ptr<KnobDouble> ptnTopRight = (*it)->getPatternTopRightKnob();
-        boost::shared_ptr<KnobDouble> ptnBtmRight = (*it)->getPatternBtmRightKnob();
-        boost::shared_ptr<KnobDouble> ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
-        boost::shared_ptr<KnobDouble> searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
-        boost::shared_ptr<KnobDouble> searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
+        KnobDoublePtr centerKnob = (*it)->getCenterKnob();
+        KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
+        KnobDoublePtr ptnTopLeft = (*it)->getPatternTopLeftKnob();
+        KnobDoublePtr ptnTopRight = (*it)->getPatternTopRightKnob();
+        KnobDoublePtr ptnBtmRight = (*it)->getPatternBtmRightKnob();
+        KnobDoublePtr ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
+        KnobDoublePtr searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
+        KnobDoublePtr searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
         QPointF centerPoint;
         centerPoint.rx() = centerKnob->getValueAtTime(time, 0);
         centerPoint.ry() = centerKnob->getValueAtTime(time, 1);
@@ -1475,7 +1475,7 @@ TrackerNode::onOverlayPenDown(double time,
 
     if (_imp->ui->clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
         TrackMarkerPtr marker = context->createMarker();
-        boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
+        KnobDoublePtr centerKnob = marker->getCenterKnob();
         centerKnob->setValuesAtTime(time, pos.x(), pos.y(), view, eValueChangedReasonNatronInternalEdited);
         if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
             marker->setUserKeyframe(time);
@@ -1503,7 +1503,7 @@ TrackerNode::onOverlayPenDown(double time,
     if (!didSomething) {
         int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
         if (keyTime != INT_MAX) {
-            ViewerInstance* viewer = overlay->getInternalViewerNode();
+            ViewerInstancePtr viewer = overlay->getInternalViewerNode();
             if (viewer) {
                 viewer->getTimeline()->seekFrame(keyTime, true, viewer, eTimelineChangeReasonOtherSeek);
             }
@@ -1540,7 +1540,7 @@ TrackerNode::onOverlayPenMotion(double time,
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     Point delta;
     delta.x = pos.x() - _imp->ui->lastMousePos.x();
     delta.y = pos.y() - _imp->ui->lastMousePos.y();
@@ -1562,14 +1562,14 @@ TrackerNode::onOverlayPenMotion(double time,
         }
 
         bool isSelected = context->isMarkerSelected( (*it) );
-        boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-        boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
-        boost::shared_ptr<KnobDouble> ptnTopLeft = (*it)->getPatternTopLeftKnob();
-        boost::shared_ptr<KnobDouble> ptnTopRight = (*it)->getPatternTopRightKnob();
-        boost::shared_ptr<KnobDouble> ptnBtmRight = (*it)->getPatternBtmRightKnob();
-        boost::shared_ptr<KnobDouble> ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
-        boost::shared_ptr<KnobDouble> searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
-        boost::shared_ptr<KnobDouble> searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
+        KnobDoublePtr centerKnob = (*it)->getCenterKnob();
+        KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
+        KnobDoublePtr ptnTopLeft = (*it)->getPatternTopLeftKnob();
+        KnobDoublePtr ptnTopRight = (*it)->getPatternTopRightKnob();
+        KnobDoublePtr ptnBtmRight = (*it)->getPatternBtmRightKnob();
+        KnobDoublePtr ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
+        KnobDoublePtr searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
+        KnobDoublePtr searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
         QPointF center;
         center.rx() = centerKnob->getValueAtTime(time, 0);
         center.ry() = centerKnob->getValueAtTime(time, 1);
@@ -1730,8 +1730,8 @@ TrackerNode::onOverlayPenMotion(double time,
         didSomething = true;
     }
 
-    boost::shared_ptr<KnobDouble> centerKnob, offsetKnob, searchWndTopRight, searchWndBtmLeft;
-    boost::shared_ptr<KnobDouble> patternCorners[4];
+    KnobDoublePtr centerKnob, offsetKnob, searchWndTopRight, searchWndBtmLeft;
+    KnobDoublePtr patternCorners[4];
     if (_imp->ui->interactMarker) {
         centerKnob = _imp->ui->interactMarker->getCenterKnob();
         offsetKnob = _imp->ui->interactMarker->getOffsetKnob();
@@ -2170,7 +2170,7 @@ TrackerNode::onOverlayPenMotion(double time,
         case eMouseStateDraggingSelectedMarkerResizeAnchor: {
             QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
             double dx = viewportPos.x() - lastPosWidget.x();
-            boost::shared_ptr<KnobInt> knob = _imp->ui->magWindowPxSizeKnob.lock();
+            KnobIntPtr knob = _imp->ui->magWindowPxSizeKnob.lock();
             int value = knob->getValue();
             value += dx;
             value = std::max(value, 10);
@@ -2183,10 +2183,10 @@ TrackerNode::onOverlayPenMotion(double time,
             assert(marker);
             RectD markerMagRect;
             _imp->ui->computeSelectedMarkerCanonicalRect(&markerMagRect);
-            boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
-            boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
-            boost::shared_ptr<KnobDouble> searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
-            boost::shared_ptr<KnobDouble> searchTopRight = marker->getSearchWindowTopRightKnob();
+            KnobDoublePtr centerKnob = marker->getCenterKnob();
+            KnobDoublePtr offsetKnob = marker->getOffsetKnob();
+            KnobDoublePtr searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
+            KnobDoublePtr searchTopRight = marker->getSearchWindowTopRightKnob();
             if (!centerKnob || !offsetKnob || !searchBtmLeft || !searchTopRight) {
                 didSomething = false;
                 break;
@@ -2431,13 +2431,13 @@ TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
 
     std::vector<TrackMarkerPtr > allMarkers;
     std::list<TrackMarkerPtr > selectedMarkers;
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     context->getAllMarkers(&allMarkers);
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
         if ( !allMarkers[i]->isEnabled( allMarkers[i]->getCurrentTime() ) ) {
             continue;
         }
-        boost::shared_ptr<KnobDouble> center = allMarkers[i]->getCenterKnob();
+        KnobDoublePtr center = allMarkers[i]->getCenterKnob();
         double x, y;
         x = center->getValue(0);
         y = center->getValue(1);

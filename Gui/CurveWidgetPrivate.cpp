@@ -65,7 +65,7 @@ NATRON_NAMESPACE_ENTER;
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        CurveSelection* selectionModel,
-                                       boost::shared_ptr<TimeLine> timeline,
+                                       const TimeLinePtr& timeline,
                                        CurveWidget* widget)
     : _lastMousePos()
     , zoomCtx()
@@ -359,7 +359,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
 
     double cursorR, cursorG, cursorB;
     double boundsR, boundsG, boundsB;
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
     settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
@@ -417,7 +417,7 @@ CurveWidgetPrivate::drawCurves()
     assert( QGLContext::currentContext() == _widget->context() );
 
     //now draw each curve
-    std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
+    std::vector<CurveGuiPtr > visibleCurves;
     _widget->getVisibleCurves(&visibleCurves);
     int count = (int)visibleCurves.size();
 
@@ -446,7 +446,7 @@ CurveWidgetPrivate::drawScale()
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
-    boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
+    SettingsPtr sett = appPTR->getCurrentSettings();
     sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
 
 
@@ -637,7 +637,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
             double yCurve;
 
             try {
-                boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+                CurvePtr internalCurve = (*it)->getInternalCurve();
                 yCurve = (*it)->evaluate( internalCurve && !internalCurve->isAnimated(), openGL_pos.x() );
             } catch (...) {
                 yCurve = (*it)->evaluate( false, openGL_pos.x() );
@@ -662,7 +662,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
 
 bool
 CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
-                                     boost::shared_ptr<CurveGui>* curve,
+                                     CurveGuiPtr* curve,
                                      KeyFrame* key,
                                      bool* hasPrevKey,
                                      KeyFrame* prevKey,
@@ -733,8 +733,8 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     QFontMetrics fm( _widget->font() );
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        if (!isBezier) {
+        BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+        if (!isBezierGui) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it2)->key.getTime(), (*it2)->key.getValue() );
                 topLeftWidget.ry() += yOffset;
@@ -760,8 +760,8 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        if (!isBezier) {
+        BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+        if (!isBezierGui) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 QPointF leftTanPt = zoomCtx.toWidgetCoordinates( (*it2)->leftTan.first, (*it2)->leftTan.second );
                 QPointF rightTanPt = zoomCtx.toWidgetCoordinates( (*it2)->rightTan.first, (*it2)->rightTan.second );
@@ -794,8 +794,8 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
     QFontMetrics fm( _widget->font() );
     int yOffset = 4;
     for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        if (!isBezier) {
+        BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+        if (!isBezierGui) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                 QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( (*it2)->leftTan.first, (*it2)->leftTan.second );
@@ -1001,7 +1001,7 @@ CurveWidgetPrivate::isNearbyTimelineBtmPoly(const QPoint & pt) const
  * @brief Selects the curve given in parameter and deselects any other curve in the widget.
  **/
 void
-CurveWidgetPrivate::selectCurve(const boost::shared_ptr<CurveGui>& curve)
+CurveWidgetPrivate::selectCurve(const CurveGuiPtr& curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1154,7 +1154,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     double maxRight = INT_MAX;
     double epsilon = clampToIntegers ? 1 : 1e-4;
     bool canMoveY = true;
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
 
     for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         if ( canMoveY && !it->first->isYComponentMovable() ) {
@@ -1166,14 +1166,14 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }
             }
         }
 
-        boost::shared_ptr<Curve> curve = it->first->getInternalCurve();
+        CurvePtr curve = it->first->getInternalCurve();
         std::vector<MoveKeysCommand::KeyToMove>& vect = keysToMove[it->first];
         if (curve) {
             for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1309,7 +1309,7 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }

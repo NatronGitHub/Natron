@@ -209,7 +209,7 @@ OfxOverlayInteract::redraw()
 
     assert(effect);
     if ( effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay() ) {
-        AppInstPtr app =  effect->getOfxEffectInstance()->getApp();
+        AppInstancePtr app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
         if ( effect->getOfxEffectInstance()->isDoingInteractAction() ) {
             app->queueRedrawForAllViewers();
@@ -221,13 +221,13 @@ OfxOverlayInteract::redraw()
     return kOfxStatOK;
 }
 
-OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
+OfxParamOverlayInteract::OfxParamOverlayInteract(const KnobIPtr& knob,
                                                  OFX::Host::Interact::Descriptor &desc,
                                                  void *effectInstance)
     : OFX::Host::Interact::Instance(desc, effectInstance)
     , NatronOverlayInteractSupport()
 {
-    setCallingViewport(knob);
+    setCallingViewport( knob.get() );
 }
 
 bool
@@ -239,7 +239,7 @@ OfxParamOverlayInteract::isColorPickerRequired() const
 NatronOverlayInteractSupport::NatronOverlayInteractSupport()
     : _hasColorPicker(false)
     , _lastColorPicker()
-    , _viewport(NULL)
+    , _viewport()
 {
 }
 

@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 void
-NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
+NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& nearbyNode)
 {
     if (!nearbyNode) {
         return;
@@ -77,7 +77,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
         if ( nearbyNode->getSettingPanel() ) {
             getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
         } else {
-            ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewer();
+            ViewerInstancePtr isViewer = nearbyNode->getNode()->isEffectViewerInstance();
             if (isViewer) {
                 ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
                 assert(viewer);
@@ -120,7 +120,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
     }
 
     if ( casIsShift ) {
-        NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
+        NodeGroupPtr isGrp = nearbyNode->getNode()->isEffectNodeGroup();
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -151,7 +151,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
 void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    NodeGui* nearbyNode;
+    NodeGuiPtr nearbyNode;
     Edge* nearbyEdge;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
@@ -225,8 +225,8 @@ NodeGraph::onNodeCreationDialogFinished()
 void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool groupEdited = true;
 
     if (isGroup) {
@@ -318,7 +318,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             if ( !outputs.empty() ) {
                 NodePtr firstOutput = outputs.front().lock();
                 if (firstOutput) {
-                    boost::shared_ptr<NodeGuiI> output_i = firstOutput->getNodeGui();
+                    NodeGuiIPtr output_i = firstOutput->getNodeGui();
                     NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
                     if (output) {
                         if ( output->getIsSelected() && modCASIsShift(e) ) {
@@ -393,7 +393,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
         if (_imp->_selection.size() == 1) {
-            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front().get());
+            showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front());
         } else {
             accept = false;
         }

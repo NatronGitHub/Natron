@@ -76,7 +76,7 @@
 #define kCreateNodeArgsPropParamValue "CreateNodeArgsPropParamValue"
 
 /**
- * @brief optional x1 boost::shared_ptr<NodeSerialization> A pointer to a node serialization object.
+ * @brief optional x1 NodeSerializationPtr A pointer to a node serialization object.
  * Default value - NULL
  * If non null, Natron will load the node state from this object.
  **/
@@ -145,22 +145,15 @@
  **/
 #define kCreateNodeArgsPropSilent "CreateNodeArgsPropSilent"
 
-/**
- * @brief optional x1 bool property
- * Default value - false
- * If true, Natron will not attempt to convert the plug-in ID to another known plug-in ID. For example if trying to create an instance of PLUGINID_OFX_ROTO, then Natron will stick to it.
- * If not set Natron will try to convert the plug-in ID to a known value, such as PLUGINID_NATRON_ROTO
- **/
-#define kCreateNodeArgsPropTrustPluginID "CreateNodeArgsPropTrustPluginID"
 
 /**
- * @brief optional x1 boost::shared_ptr<NodeCollection> A pointer to the group in which the node will be created. If not set, Natron
+ * @brief optional x1 NodeCollectionPtr A pointer to the group in which the node will be created. If not set, Natron
  * will create the node in the top-level node-graph of the project.
  **/
 #define kCreateNodeArgsPropGroupContainer "CreateNodeArgsPropGroupContainer"
 
 /**
- * @brief optional x1 boost::shared_ptr<Node> A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
+ * @brief optional x1 NodePtr A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
  * which are meta-bundles to the internal decoders/encoders.
  * Defalt value - null
  **/
@@ -291,7 +284,7 @@ class CreateNodeArgs
         createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-        createProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
+        createProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, NodeSerializationPtr());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
         createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
@@ -300,8 +293,7 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);
         createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
-        createProperty<bool>(kCreateNodeArgsPropTrustPluginID, false);
-        createProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, boost::shared_ptr<NodeCollection>());
+        createProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
         createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
         createProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());
 
@@ -316,7 +308,7 @@ public:
      * @brief The constructor, taking values for all non-optional properties and the group
      **/
     CreateNodeArgs(const std::string& pluginID,
-                   const boost::shared_ptr<NodeCollection>& group = boost::shared_ptr<NodeCollection>());
+                   const NodeCollectionPtr& group = NodeCollectionPtr());
 
     ~CreateNodeArgs();
 

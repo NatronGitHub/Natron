@@ -24,17 +24,43 @@
 
 #include "RotoShapeRenderNode.h"
 
+
+#include "Engine/AppInstance.h"
+#include "Engine/Bezier.h"
+#include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/OSGLContext.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoShapeRenderCairo.h"
+#include "Engine/RotoShapeRenderGL.h"
+#include "Engine/ParallelRenderArgs.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
 struct RotoShapeRenderNodePrivate
 {
+
+
     RotoShapeRenderNodePrivate()
     {
         
     }
+
+    double renderSingleStroke(const RotoStrokeItem* item,
+                              double time,
+                              const RectD& pointsBbox,
+                              const std::list<std::pair<Point, double> >& points,
+                              unsigned int mipmapLevel,
+                              double par,
+                              const ImageComponents& components,
+                              ImageBitDepthEnum depth,
+                              double distToNext,
+                              ImagePtr *image);
+
+
 };
 
 RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
@@ -100,6 +126,18 @@ RotoShapeRenderNode::isIdentity(double time,
     *inputView = view;
     RectD maskRod;
     NodePtr node = getNode();
+
+
+    RotoDrawableItemPtr rotoItem = node->getAttachedRotoItem();
+    assert(rotoItem);
+    Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
+    if (!rotoItem || !rotoItem->isActivated(time) || !isBezier->isCurveFinished() || isBezier->getControlPointsCount() <= 1) {
+        *inputTime = time;
+        *inputNb = 0;
+
+        return true;
+    }
+
     node->getPaintStrokeRoD(time, &maskRod);
     
     RectI maskPixelRod;
@@ -114,17 +152,204 @@ RotoShapeRenderNode::isIdentity(double time,
     return false;
 }
 
+
+
 StatusEnum
 RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
-    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
         return eStatusFailed;
     }
-    
-    OSGLContextPtr maskContext = gpuGlContext ? gpuGlContext : cpuGlContext;
-    inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, rotoSrcRod, maskContext, renderInfo, returnStorage);
+
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(rotoItem.get());
+    Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
+
+    // Check that the item is really activated... it should have been caught in isIdentity otherwise.
+    assert(rotoItem->isActivated(args.time) && isBezier->isCurveFinished() && ( isBezier->getControlPointsCount() > 1 ));
+
+    ParallelRenderArgsPtr frameArgs = getParallelRenderArgsTLS();
+    OSGLContextPtr glContext;
+    AbortableRenderInfoPtr abortInfo;
+    if (frameArgs) {
+        if (args.useOpenGL) {
+            glContext = frameArgs->openGLContext.lock();
+        } else {
+            glContext = frameArgs->cpuOpenGLContext.lock();
+        }
+        abortInfo = frameArgs->abortInfo.lock();
+    }
+    assert(abortInfo && glContext);
+    if (!glContext || !abortInfo) {
+        setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
+        return eStatusFailed;
+    }
+
+    const unsigned int mipmapLevel = Image::getLevelFromScale(args.mappedScale.x);
+
+    // This is the image plane where we render, we are not multiplane so we only render out one plane
+    assert(args.outputPlanes.size() == 1);
+    const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
+
+    // Check that the supplied output image has the correct storage
+    assert((outputPlane.second->getStorageMode() == eStorageModeGLTex && args.useOpenGL) || (outputPlane.second->getStorageMode() != eStorageModeGLTex && !args.useOpenGL));
+
+    // Get per-shape motion blur parameters
+
+    double startTime = args.time, mbFrameStep = 1., endTime = args.time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    if (isBezier) {
+        int mbType_i = rotoItem->getContext()->getMotionBlurTypeKnob()->getValue();
+        bool applyPerShapeMotionBlur = mbType_i == 0;
+        if (applyPerShapeMotionBlur) {
+            isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+        }
+    }
+#endif
+
+
+    bool isDuringPainting = isDuringPaintStrokeCreationThreadLocal();
+    double distNextIn = 0.;
+
+    // For strokes and open-bezier evaluate them to get the points and their pressure
+    // We also compute the bounding box of the item taking into account the motion blur
+    std::list<std::list<std::pair<Point, double> > > strokes;
+    if (isStroke) {
+
+        if (isDuringPainting) {
+            RectD lastStrokeMovementBbox;
+            std::list<std::pair<Point, double> > lastStrokePoints;
+            ImagePtr strokeImage;
+            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn, &strokeImage);
+
+            int pot = 1 << mipmapLevel;
+            if (mipmapLevel == 0) {
+                strokes.push_back(lastStrokePoints);
+            } else {
+                std::list<std::pair<Point, double> > toScalePoints;
+                for (std::list<std::pair<Point, double> >::const_iterator it = lastStrokePoints.begin(); it != lastStrokePoints.end(); ++it) {
+                    std::pair<Point, double> p = *it;
+                    p.first.x /= pot;
+                    p.first.y /= pot;
+                    toScalePoints.push_back(p);
+                }
+                strokes.push_back(toScalePoints);
+            }
+        } else {
+            isStroke->evaluateStroke(mipmapLevel, args.time, &strokes, 0);
+
+        }
+
+
+    } else if (isBezier) {
+
+        if ( isBezier->isOpenBezier() ) {
+            std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, args.time, mipmapLevel, &decastelJauPolygon, 0);
+            std::list<std::pair<Point, double> > points;
+            for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+                    Point p = {it2->x, it2->y};
+                    points.push_back( std::make_pair(p, 1.) );
+                }
+            }
+            if ( !points.empty() ) {
+                strokes.push_back(points);
+            }
+        }
+    }
+
+    // We do not support tiles so the renderWindow passed to render should be the RoD in pixels of the shape
+
+    //  Attach the OpenGL context
+    boost::scoped_ptr<Image::WriteAccess> wacc;
+    boost::scoped_ptr<OSGLContextAttacher> contextLocker;
+    if (glContext->isGPUContext()) {
+        assert(args.useOpenGL);
+        contextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                    , args.time
+#endif
+                                                    ));
+    } else {
+
+#ifndef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+        assert(!args.useOpenGL);
+        wacc.reset(new Image::WriteAccess(outputPlane.second.get()));
+        unsigned char* data = wacc->pixelAt(args.roi.x1, args.roi.y1);
+        assert(data);
+        contextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                    , args.time
+#endif
+                                                    , args.roi.width()
+                                                    , args.roi.height()
+                                                    , data));
+#endif
+
+    }
+    contextLocker->attach();
+
+    // Now we are good to start rendering
+#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+    if (!args.useOpenGL) {
+        double distToNextOut = RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, strokes, outputPlane.second);
+        if (isDuringPainting) {
+            getApp()->updateStrokeImage(outputPlane.second, distToNextOut, true);
+        }
+    } else {
+#endif
+        double shapeColor[3];
+        rotoItem->getColor(args.time, shapeColor);
+        double opacity = rotoItem->getOpacity(args.time);
+
+        if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+#pragma message WARN("TODO: strokes with OpenGL")
+        } else {
+            RotoShapeRenderGL::renderBezier_gl(glContext, isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, args.roi, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID());
+        }
+
+#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+    }
+#endif
+
+    return eStatusOK;
+
 } // RotoShapeRenderNode::render
+
+
+
+double
+RotoShapeRenderNodePrivate::renderSingleStroke(const RotoStrokeItem* item,
+                                               double time,
+                                               const RectD& pointsBbox,
+                                               const std::list<std::pair<Point, double> >& points,
+                                               unsigned int mipmapLevel,
+                                               double par,
+                                               const ImageComponents& components,
+                                               ImageBitDepthEnum depth,
+                                               double distToNext,
+                                               ImagePtr *image)
+{
+
+} // RotoShapeRenderCairo::renderSingleStroke
+
+
+
+
+void
+RotoShapeRenderNode::purgeCaches()
+{
+    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
+    assert(rotoItem);
+    if (!rotoItem) {
+        return;
+    }
+#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+    RotoShapeRenderCairo::purgeCaches_cairo(rotoItem);
+#endif
+}
+
 
 NATRON_NAMESPACE_EXIT;

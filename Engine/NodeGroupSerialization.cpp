@@ -51,24 +51,24 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
-            boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+            NodeSerializationPtr state( new NodeSerialization(*it) );
             _serializedNodes.push_back(state);
         }
     }
 }
 
 bool
-NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
-                                                      const boost::shared_ptr<NodeCollection>& group,
+NodeCollectionSerialization::restoreFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
+                                                      const NodeCollectionPtr& group,
                                                       bool createNodes,
                                                       std::map<std::string, bool>* moduleUpdatesProcessed)
 {
     bool mustShowErrorsLog = false;
-    NodeGroup* isNodeGroup = dynamic_cast<NodeGroup*>( group.get() );
+    NodeGroupPtr isGrp = toNodeGroup(group);
     QString groupName;
 
-    if (isNodeGroup) {
-        groupName = QString::fromUtf8( isNodeGroup->getNode()->getLabel().c_str() );
+    if (isGrp) {
+        groupName = QString::fromUtf8( isGrp->getNode()->getLabel().c_str() );
     } else {
         groupName = tr("top-level");
     }
@@ -77,10 +77,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
-    std::map<NodePtr, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
-    std::list< boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
-    std::map<NodePtr, boost::shared_ptr<NodeSerialization> > createdNodes;
-    for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    std::map<NodePtr, std::list<NodeSerializationPtr >::const_iterator > parentsToReconnect;
+    std::list< NodeSerializationPtr > multiInstancesToRecurse;
+    std::map<NodePtr, NodeSerializationPtr > createdNodes;
+    for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         std::string pluginID = (*it)->getPluginID();
 
         if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER) || (pluginID == "Viewer") ) ) {
@@ -93,7 +93,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
         if ( !(*it)->getMultiInstanceParentName().empty() ) {
             bool foundParent = false;
-            for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it2 = serializedNodes.begin();
+            for (std::list< NodeSerializationPtr >::const_iterator it2 = serializedNodes.begin();
                  it2 != serializedNodes.end(); ++it2) {
                 if ( (*it2)->getNodeScriptName() == (*it)->getMultiInstanceParentName() ) {
                     foundParent = true;
@@ -220,7 +220,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             CreateNodeArgs args(pluginID, group);
             args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
             args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
-            args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, *it);
+            args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, *it);
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
             if (!(*it)->getMultiInstanceParentName().empty()) {
                 args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
@@ -263,12 +263,12 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
         createdNodes[n] = *it;
 
-        const std::list<boost::shared_ptr<NodeSerialization> >& children = (*it)->getNodesCollection();
+        const std::list<NodeSerializationPtr >& children = (*it)->getNodesCollection();
         if ( !children.empty() && !usingPythonModule) {
-            NodeGroup* isGrp = n->isEffectGroup();
+            NodeGroupPtr isGrp = n->isEffectNodeGroup();
             if (isGrp) {
-                EffectInstPtr sharedEffect = isGrp->shared_from_this();
-                boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
+                EffectInstancePtr sharedEffect = isGrp->shared_from_this();
+                NodeGroupPtr sharedGrp = toNodeGroup(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
@@ -276,9 +276,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 multiInstancesToRecurse.push_back(*it);
             }
         }
-    } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-    for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
+    for (std::list< NodeSerializationPtr >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
         NodeCollectionSerialization::restoreFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
     }
 
@@ -287,8 +287,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
 
     /// Connect the nodes together
-    for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        if ( appPTR->isBackground() && ( it->first->isEffectViewer() ) ) {
+    for (std::map<NodePtr, NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        if ( appPTR->isBackground() && ( it->first->isEffectViewerInstance() ) ) {
             //ignore viewers on background mode
             continue;
         }
@@ -313,7 +313,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                  .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
                 mustShowErrorsLog = true;
             } else {
-                it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );
+                it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance(), true );
             }
         }
 
@@ -356,18 +356,18 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
             }
         }
-    } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     ///Now that the graph is setup, restore expressions
     NodesList nodes = group->getNodes();
-    if (isNodeGroup) {
-        nodes.push_back( isNodeGroup->getNode() );
+    if (isGrp) {
+        nodes.push_back( isGrp->getNode() );
     }
 
     {
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-            if ( appPTR->isBackground() && ( it->first->isEffectViewer() ) ) {
+        for (std::map<NodePtr, NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+            if ( appPTR->isBackground() && ( it->first->isEffectViewerInstance() ) ) {
                 //ignore viewers on background mode
                 continue;
             }
@@ -376,7 +376,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
 
     ///Also reconnect parents of multiinstance nodes that were created on the fly
-    for (std::map<NodePtr, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
+    for (std::map<NodePtr, std::list<NodeSerializationPtr >::const_iterator >::const_iterator
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
         const std::vector<std::string> & oldInputs = (*it->second)->getOldInputs();
         if ( !oldInputs.empty() ) {

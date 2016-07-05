@@ -81,13 +81,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -98,9 +91,9 @@ NATRON_NAMESPACE_ENTER;
 ////////////////////////////////////Stroke//////////////////////////////////
 
 RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
-                               const boost::shared_ptr<RotoContext>& context,
+                               const RotoContextPtr& context,
                                const std::string & name,
-                               const boost::shared_ptr<RotoLayer>& parent)
+                               const RotoLayerPtr& parent)
 
     : RotoDrawableItem(context, name, parent, true)
     , _imp( new RotoStrokeItemPrivate(type) )
@@ -328,7 +321,7 @@ RotoStrokeItem::appendPoint(bool newStroke,
     assert( QThread::currentThread() == qApp->thread() );
 
 
-    boost::shared_ptr<RotoStrokeItem> thisShared = boost::dynamic_pointer_cast<RotoStrokeItem>( shared_from_this() );
+    RotoStrokeItemPtr thisShared = toRotoStrokeItem( shared_from_this() );
     assert(thisShared);
     {
         QMutexLocker k(&itemMutex);
@@ -477,9 +470,9 @@ RotoStrokeItem::appendPoint(bool newStroke,
 } // RotoStrokeItem::appendPoint
 
 void
-RotoStrokeItem::addStroke(const boost::shared_ptr<Curve>& xCurve,
-                          const boost::shared_ptr<Curve>& yCurve,
-                          const boost::shared_ptr<Curve>& pCurve)
+RotoStrokeItem::addStroke(const CurvePtr& xCurve,
+                          const CurvePtr& yCurve,
+                          const CurvePtr& pCurve)
 {
     RotoStrokeItemPrivate::StrokeCurves s;
 
@@ -495,9 +488,9 @@ RotoStrokeItem::addStroke(const boost::shared_ptr<Curve>& xCurve,
 }
 
 bool
-RotoStrokeItem::removeLastStroke(boost::shared_ptr<Curve>* xCurve,
-                                 boost::shared_ptr<Curve>* yCurve,
-                                 boost::shared_ptr<Curve>* pCurve)
+RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
+                                 CurvePtr* yCurve,
+                                 CurvePtr* pCurve)
 {
     bool empty;
     {
@@ -521,16 +514,15 @@ RotoStrokeItem::removeLastStroke(boost::shared_ptr<Curve>* xCurve,
 std::vector<cairo_pattern_t*>
 RotoStrokeItem::getPatternCache() const
 {
-    assert( !_imp->strokeDotPatternsMutex.tryLock() );
-
+    _imp->strokeDotPatternsMutex.lock();
     return _imp->strokeDotPatterns;
 }
 
 void
 RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
 {
-    assert( !_imp->strokeDotPatternsMutex.tryLock() );
     _imp->strokeDotPatterns = cache;
+    _imp->strokeDotPatternsMutex.unlock();
 }
 
 RectD
@@ -684,10 +676,10 @@ RotoStrokeItem::clone(const RotoItem* other)
 }
 
 void
-RotoStrokeItem::save(RotoItemSerialization* obj) const
+RotoStrokeItem::save(const RotoItemSerializationPtr& obj) const
 {
     RotoDrawableItem::save(obj);
-    RotoStrokeItemSerialization* s = dynamic_cast<RotoStrokeItemSerialization*>(obj);
+    RotoStrokeItemSerializationPtr s = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(obj);
 
     assert(s);
     if (!s) {
@@ -698,9 +690,9 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
         s->_brushType = (int)_imp->type;
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it != _imp->strokes.end(); ++it) {
-            boost::shared_ptr<Curve> xCurve(new Curve);
-            boost::shared_ptr<Curve> yCurve(new Curve);
-            boost::shared_ptr<Curve> pressureCurve(new Curve);
+            CurvePtr xCurve(new Curve);
+            CurvePtr yCurve(new Curve);
+            CurvePtr pressureCurve(new Curve);
             xCurve->clone( *(it->xCurve) );
             yCurve->clone( *(it->yCurve) );
             pressureCurve->clone( *(it->pressureCurve) );
@@ -726,9 +718,9 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->type = (RotoStrokeType)s->_brushType;
 
         assert( s->_xCurves.size() == s->_yCurves.size() && s->_xCurves.size() == s->_pressureCurves.size() );
-        std::list<boost::shared_ptr<Curve> >::const_iterator itY = s->_yCurves.begin();
-        std::list<boost::shared_ptr<Curve> >::const_iterator itP = s->_pressureCurves.begin();
-        for (std::list<boost::shared_ptr<Curve> >::const_iterator it = s->_xCurves.begin();
+        std::list<CurvePtr >::const_iterator itY = s->_yCurves.begin();
+        std::list<CurvePtr >::const_iterator itP = s->_pressureCurves.begin();
+        for (std::list<CurvePtr >::const_iterator it = s->_xCurves.begin();
              it != s->_xCurves.end(); ++it, ++itY, ++itP) {
             RotoStrokeItemPrivate::StrokeCurves s;
             s.xCurve.reset(new Curve);
@@ -869,11 +861,11 @@ RotoStrokeItem::getBoundingBox(double time) const
     return computeBoundingBox(time);
 }
 
-std::list<boost::shared_ptr<Curve> >
+std::list<CurvePtr >
 RotoStrokeItem::getXControlPoints() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    std::list<boost::shared_ptr<Curve> > ret;
+    std::list<CurvePtr > ret;
     QMutexLocker k(&itemMutex);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
@@ -882,11 +874,11 @@ RotoStrokeItem::getXControlPoints() const
     return ret;
 }
 
-std::list<boost::shared_ptr<Curve> >
+std::list<CurvePtr >
 RotoStrokeItem::getYControlPoints() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    std::list<boost::shared_ptr<Curve> > ret;
+    std::list<CurvePtr > ret;
     QMutexLocker k(&itemMutex);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);

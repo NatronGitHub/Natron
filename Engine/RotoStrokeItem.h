@@ -47,6 +47,13 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/EngineFwd.h"
 
+
+// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
+// 512 should be OK, see:
+// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
+#define ROTO_PRESSURE_LEVELS 512
+
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -64,9 +71,9 @@ class RotoStrokeItem
 public:
 
     RotoStrokeItem(RotoStrokeType type,
-                   const boost::shared_ptr<RotoContext>& context,
+                   const RotoContextPtr& context,
                    const std::string & name,
-                   const boost::shared_ptr<RotoLayer>& parent);
+                   const RotoLayerPtr& parent);
 
     virtual ~RotoStrokeItem();
 
@@ -81,28 +88,19 @@ public:
      **/
     bool appendPoint(bool newStroke, const RotoPoint& p);
 
-    void addStroke(const boost::shared_ptr<Curve>& xCurve,
-                   const boost::shared_ptr<Curve>& yCurve,
-                   const boost::shared_ptr<Curve>& pCurve);
+    void addStroke(const CurvePtr& xCurve,
+                   const CurvePtr& yCurve,
+                   const CurvePtr& pCurve);
 
     /**
      * @brief Returns true if the stroke should be removed
      **/
-    bool removeLastStroke(boost::shared_ptr<Curve>* xCurve,
-                          boost::shared_ptr<Curve>* yCurve,
-                          boost::shared_ptr<Curve>* pCurve);
+    bool removeLastStroke(CurvePtr* xCurve,
+                          CurvePtr* yCurve,
+                          CurvePtr* pCurve);
 
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
-
-    double renderSingleStroke(const RectD& rod,
-                              const std::list<std::pair<Point, double> >& points,
-                              unsigned int mipmapLevel,
-                              double par,
-                              const ImageComponents& components,
-                              ImageBitDepthEnum depth,
-                              double distToNext,
-                              boost::shared_ptr<Image> *wholeStrokeImage);
 
 
     bool getMostRecentStrokeChangesSinceAge(double time,
@@ -126,7 +124,7 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE FINAL;
+    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE FINAL;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
@@ -142,8 +140,8 @@ public:
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0) const;
 
-    std::list<boost::shared_ptr<Curve> > getXControlPoints() const;
-    std::list<boost::shared_ptr<Curve> > getYControlPoints() const;
+    std::list<CurvePtr > getXControlPoints() const;
+    std::list<CurvePtr > getYControlPoints() const;
 
 private:
 
@@ -153,6 +151,12 @@ private:
 
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
+
+inline RotoStrokeItemPtr
+toRotoStrokeItem(const RotoItemPtr& item)
+{
+    return boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+}
 
 NATRON_NAMESPACE_EXIT;
 

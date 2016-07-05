@@ -202,12 +202,12 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
     AnimatedCheckBox::focusOutEvent(e);
 }
 
-KnobGuiBool::KnobGuiBool(KnobPtr knob,
+KnobGuiBool::KnobGuiBool(KnobIPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checkBox(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobBool>(knob);
+    _knob = toKnobBool(knob);
 }
 
 void
@@ -324,7 +324,7 @@ KnobGuiBool::_show()
 void
 KnobGuiBool::setEnabled()
 {
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
 
     _checkBox->setReadOnly(!b);
@@ -343,7 +343,7 @@ KnobGuiBool::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiBool::getKnob() const
 {
     return _knob.lock();

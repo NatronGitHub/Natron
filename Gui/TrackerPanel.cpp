@@ -154,7 +154,7 @@ TrackerTableItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     int dim = -1;
     AnimationLevelEnum level = eAnimationLevelNone;
-    boost::shared_ptr<KnobI> knob = _panel->getKnobAt(index.row(), index.column(), &dim);
+    KnobIPtr knob = _panel->getKnobAt(index.row(), index.column(), &dim);
     assert(knob);
     if ( knob && (dim != -1) ) {
         level = knob->getAnimationLevel(dim);
@@ -206,7 +206,7 @@ TrackerTableItemDelegate::paint(QPainter * painter,
 struct ItemData
 {
     TableItem* item;
-    boost::weak_ptr<KnobI> knob;
+    KnobIWPtr knob;
     int dimension;
 };
 
@@ -235,7 +235,7 @@ struct TrackerPanelPrivate
     Q_DECLARE_TR_FUNCTIONS(TrackerPanel)
 
 public:
-    TrackerPanel* _publicInterface;
+    TrackerPanel* _publicInterface; // can not be a smart ptr
     boost::weak_ptr<NodeGui> node;
     boost::weak_ptr<TrackerContext> context;
     TrackItems items;
@@ -321,7 +321,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     , _imp( new TrackerPanelPrivate(this, n) )
 {
     QObject::connect( parent, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
     QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
                       SLOT(onTimeChanged(SequenceTime,int)) );
     QObject::connect( context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onContextSelectionChanged(int)) );
@@ -530,9 +530,9 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 }
 
 static QString
-tooltipFromKnob(const KnobPtr& knob)
+tooltipFromKnob(const KnobIPtr& knob)
 {
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+    KnobChoicePtr isChoice = toKnobChoice(knob);
     QString tt = QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( knob->getName().c_str() ) );
     QString realTt;
 
@@ -633,7 +633,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
     ///Motion-model
     {
         ItemData d;
-        boost::shared_ptr<KnobChoice> motionModel = marker.getMotionModelKnob();
+        KnobChoicePtr motionModel = marker.getMotionModelKnob();
         ComboBox* cb = new ComboBox;
         cb->setFocusPolicy(Qt::NoFocus);
         std::vector<std::string> choices, helps;
@@ -657,7 +657,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
     }
 
     //Center X
-    boost::shared_ptr<KnobDouble> center = marker.getCenterKnob();
+    KnobDoublePtr center = marker.getCenterKnob();
     {
         ItemData d;
         TableItem* newItem = new TableItem;
@@ -686,7 +686,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         data.items.push_back(d);
     }
     ///Offset X
-    boost::shared_ptr<KnobDouble> offset = marker.getOffsetKnob();
+    KnobDoublePtr offset = marker.getOffsetKnob();
     {
         ItemData d;
         TableItem* newItem = new TableItem;
@@ -716,7 +716,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
     }
 
     ///Correlation
-    boost::shared_ptr<KnobDouble> error = marker.getErrorKnob();
+    KnobDoublePtr error = marker.getErrorKnob();
     {
         ItemData d;
         TableItem* newItem = new TableItem;
@@ -847,7 +847,7 @@ TrackerPanel::removeMarker(const TrackMarkerPtr & marker)
     }
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 TrackerPanel::getContext() const
 {
     return _imp->context.lock();
@@ -886,13 +886,13 @@ TrackerPanel::getItemAt(const TrackMarkerPtr & marker,
     return 0;
 }
 
-boost::shared_ptr<KnobI>
+KnobIPtr
 TrackerPanel::getKnobAt(int row,
                         int column,
                         int* dimension) const
 {
     if ( (row < 0) || ( row >= (int)_imp->items.size() ) || (column < 0) || (column >= NUM_COLS) ) {
-        return boost::shared_ptr<KnobI>();
+        return KnobIPtr();
     }
     *dimension = _imp->items[row].items[column].dimension;
 
@@ -903,7 +903,7 @@ void
 TrackerPanel::getSelectedRows(std::set<int>* rows) const
 {
     const QItemSelection selection = _imp->view->selectionModel()->selection();
-    std::list<boost::shared_ptr<Node> > instances;
+    std::list<NodePtr > instances;
     QModelIndexList indexes = selection.indexes();
 
     for (int i = 0; i < indexes.size(); ++i) {
@@ -943,7 +943,7 @@ TrackerPanel::onRemoveButtonClicked()
 void
 TrackerPanel::onSelectAllButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     context->selectAll(TrackerContext::eTrackSelectionInternal);
@@ -952,7 +952,7 @@ TrackerPanel::onSelectAllButtonClicked()
 void
 TrackerPanel::onResetButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     std::list<TrackMarkerPtr > markers;
@@ -971,7 +971,7 @@ TrackerPanel::onResetButtonClicked()
 TrackMarkerPtr
 TrackerPanel::makeTrackInternal()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     TrackMarkerPtr ret = context->createMarker();
@@ -984,7 +984,7 @@ TrackerPanel::makeTrackInternal()
 void
 TrackerPanel::onAverageButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     std::list<TrackMarkerPtr > markers;
@@ -996,20 +996,20 @@ TrackerPanel::onAverageButtonClicked()
     }
 
     TrackMarkerPtr marker = makeTrackInternal();
-    boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
+    KnobDoublePtr centerKnob = marker->getCenterKnob();
 
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
-    boost::shared_ptr<KnobDouble> topLeftKnob = marker->getPatternTopLeftKnob();
-    boost::shared_ptr<KnobDouble> topRightKnob = marker->getPatternTopRightKnob();
-    boost::shared_ptr<KnobDouble> btmRightKnob = marker->getPatternBtmRightKnob();
-    boost::shared_ptr<KnobDouble> btmLeftKnob = marker->getPatternBtmLeftKnob();
+    KnobDoublePtr topLeftKnob = marker->getPatternTopLeftKnob();
+    KnobDoublePtr topRightKnob = marker->getPatternTopRightKnob();
+    KnobDoublePtr btmRightKnob = marker->getPatternBtmRightKnob();
+    KnobDoublePtr btmLeftKnob = marker->getPatternBtmLeftKnob();
 #endif
 
     RangeD keyframesRange;
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        boost::shared_ptr<KnobDouble> markCenter = (*it)->getCenterKnob();
+        KnobDoublePtr markCenter = (*it)->getCenterKnob();
         double mini, maxi;
         bool hasKey = markCenter->getFirstKeyFrameTime(ViewSpec(0), 0, &mini);
         if (!hasKey) {
@@ -1039,13 +1039,13 @@ TrackerPanel::onAverageButtonClicked()
 
 
         for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            boost::shared_ptr<KnobDouble> markCenter = (*it)->getCenterKnob();
+            KnobDoublePtr markCenter = (*it)->getCenterKnob();
 
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
-            boost::shared_ptr<KnobDouble> markTopLeft = (*it)->getPatternTopLeftKnob();
-            boost::shared_ptr<KnobDouble> markTopRight = (*it)->getPatternTopRightKnob();
-            boost::shared_ptr<KnobDouble> markBtmRight = (*it)->getPatternBtmRightKnob();
-            boost::shared_ptr<KnobDouble> markBtmLeft = (*it)->getPatternBtmLeftKnob();
+            KnobDoublePtr markTopLeft = (*it)->getPatternTopLeftKnob();
+            KnobDoublePtr markTopRight = (*it)->getPatternTopRightKnob();
+            KnobDoublePtr markBtmRight = (*it)->getPatternBtmRightKnob();
+            KnobDoublePtr markBtmLeft = (*it)->getPatternBtmLeftKnob();
 #endif
 
             avgCenter.x += markCenter->getValueAtTime(t, 0);
@@ -1331,14 +1331,14 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
             _imp->node.lock()->getNode()->getApp()->addUserMultipleKeyframeIndicatorsAdded(userKeysToAdd, true);
         }
 
-        boost::shared_ptr<TrackerContext> context = getContext();
+        TrackerContextPtr context = getContext();
         assert(context);
         context->beginEditSelection(TrackerContext::eTrackSelectionSettingsPanel);
         context->clearSelection(TrackerContext::eTrackSelectionSettingsPanel);
         context->addTracksToSelection(markers, TrackerContext::eTrackSelectionSettingsPanel);
         context->endEditSelection(TrackerContext::eTrackSelectionSettingsPanel);
 
-        boost::shared_ptr<TimeLine> timeline = _imp->node.lock()->getNode()->getApp()->getTimeLine();
+        TimeLinePtr timeline = _imp->node.lock()->getNode()->getApp()->getTimeLine();
         _imp->updateTrackKeysInfoBar( timeline->currentFrame() );
     }
 
@@ -1388,7 +1388,7 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                 case COL_OFFSET_X:
                 case COL_OFFSET_Y:
                 case COL_ERROR: {
-                    boost::shared_ptr<KnobDouble> knob = boost::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
+                    KnobDoublePtr knob = boost::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
                     assert(knob);
                     int dim = _imp->items[it].items[i].dimension;
                     double value = item->data(Qt::DisplayRole).toDouble();
@@ -1423,7 +1423,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
         if (widgetContainer == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            boost::shared_ptr<TrackerContext> context = getContext();
+            TrackerContextPtr context = getContext();
             // Set the selection to only this marker otherwise all markers will get the enabled value
             context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
             context->clearSelection(TrackerContext::eTrackSelectionInternal);
@@ -1447,7 +1447,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
         QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            boost::shared_ptr<TrackerContext> context = getContext();
+            TrackerContextPtr context = getContext();
             // Set the selection to only this marker otherwise all markers will get the enabled value
             context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
             context->clearSelection(TrackerContext::eTrackSelectionInternal);
@@ -1492,7 +1492,7 @@ TrackerPanel::onTrackKeyframeRemoved(const TrackMarkerPtr& marker,
     if ( it2 != found->second.userKeys.end() ) {
         found->second.userKeys.erase(it2);
         if (found->second.visible) {
-            AppInstPtr app = _imp->node.lock()->getNode()->getApp();
+            AppInstancePtr app = _imp->node.lock()->getNode()->getApp();
             _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
             app->removeUserKeyFrameIndicator(key);
         }
@@ -1516,7 +1516,7 @@ TrackerPanel::onTrackAllKeyframesRemoved(const TrackMarkerPtr& marker)
 
 
     if (it->second.visible) {
-        AppInstPtr app = _imp->node.lock()->getNode()->getApp();
+        AppInstancePtr app = _imp->node.lock()->getNode()->getApp();
         _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
         app->removeUserMultipleKeyframeIndicator(toRemove, true);
     }
@@ -1535,7 +1535,7 @@ TrackerPanel::onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker,
     } else {
         std::pair<std::set<double>::iterator, bool> ret = found->second.centerKeys.insert(key);
         if (ret.second && found->second.visible) {
-            AppInstPtr app = _imp->node.lock()->getNode()->getApp();
+            AppInstancePtr app = _imp->node.lock()->getNode()->getApp();
             _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
             app->addKeyframeIndicator(key);
         }
@@ -1659,7 +1659,7 @@ TrackerPanelPrivate::setVisibleItemUserKeyframes(const std::list<int>& keyframes
 void
 TrackerPanel::onSettingsPanelClosed(bool closed)
 {
-    boost::shared_ptr<TimeLine> timeline = getNode()->getNode()->getApp()->getTimeLine();
+    TimeLinePtr timeline = getNode()->getNode()->getApp()->getTimeLine();
 
     if (closed) {
         ///remove all keyframes from the structure kept
@@ -1736,7 +1736,7 @@ TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,
     }
 
     ++_imp->itemDataChangedRecursion;
-    boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
+    KnobDoublePtr centerKnob = marker->getCenterKnob();
     for (int i = 0; i < centerKnob->getDimension(); ++i) {
         if ( (dimension == -1) || (i == dimension) ) {
             int col = i == 0 ? COL_CENTER_X : COL_CENTER_Y;
@@ -1760,7 +1760,7 @@ TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,
         return;
     }
     ++_imp->itemDataChangedRecursion;
-    boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
+    KnobDoublePtr offsetKnob = marker->getOffsetKnob();
     for (int i = 0; i < offsetKnob->getDimension(); ++i) {
         if ( (dimension == -1) || (i == dimension) ) {
             int col = i == 0 ? COL_OFFSET_X : COL_OFFSET_Y;

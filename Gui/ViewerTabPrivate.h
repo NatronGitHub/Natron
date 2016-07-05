@@ -61,7 +61,7 @@ struct ViewerTabPrivate
 
     typedef std::map<int, InputName> InputNamesMap;
 
-    ViewerTab* publicInterface;
+    ViewerTab* publicInterface; // can not be a smart ptr
 
     /*OpenGL viewer*/
     ViewerGL* viewer;
@@ -177,7 +177,9 @@ struct ViewerTabPrivate
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
     ViewerCompositingOperatorEnum compOperatorPrevious;
-    ViewerInstance* viewerNode; // < pointer to the internal node
+
+    // Weak_ptr because the viewer node  itself controls the lifetime of this widget
+    ViewerInstanceWPtr viewerNode; // < pointer to the internal node
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
     bool infobarVisible;
     bool playerVisible;
@@ -197,20 +199,20 @@ struct ViewerTabPrivate
     bool hasCaughtPenMotionWhileDragging;
 
     ViewerTabPrivate(ViewerTab* publicInterface,
-                     ViewerInstance* node);
+                     const ViewerInstancePtr& node);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
     bool getOverlayTransform(double time,
                              ViewIdx view,
                              const NodePtr& target,
-                             EffectInstance* currentNode,
+                             const EffectInstancePtr& currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
                           ViewIdx view,
                           const NodePtr& target,
-                          EffectInstance* currentNode,
+                          const EffectInstancePtr& currentNode,
                           double *newTime) const;
 
 #endif

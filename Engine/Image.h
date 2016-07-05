@@ -173,7 +173,7 @@ class Image
 public:
 
     Image(const ImageKey & key,
-          const boost::shared_ptr<ImageParams> &  params,
+          const ImageParamsPtr &  params,
           const CacheAPI* cache);
 
 
@@ -194,7 +194,7 @@ public:
 
     //Same as above but parameters are in the ImageParams object
     Image(const ImageKey & key,
-          const boost::shared_ptr<ImageParams>& params);
+          const ImageParamsPtr& params);
 
 
     virtual ~Image();
@@ -214,7 +214,7 @@ public:
                             ViewIdx view,
                             bool draftMode,
                             bool fullScaleWithDownscaleInputs);
-    static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
+    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const double par,
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
@@ -224,7 +224,7 @@ public:
                                                      ImageFieldingOrderEnum fielding,
                                                      StorageModeEnum storage = eStorageModeRAM,
                                                      U32 textureTarget = GL_TEXTURE_2D);
-    static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
+    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const RectI& bounds,
                                                      const double par,
                                                      unsigned int mipMapLevel,
@@ -236,19 +236,19 @@ public:
                                                      StorageModeEnum storage = eStorageModeRAM,
                                                      U32 textureTarget = GL_TEXTURE_2D);
 
-    // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
+    // ImageParamsPtr getParams() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
      * a new buffer. This is not thread-safe and should be called only while under an ImageLocker
      **/
-    bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparent = false, bool setBitmapTo1 = false);
+    bool ensureBounds(const OSGLContextPtr& glContext, const RectI& newBounds, bool fillWithBlackAndTransparent = false, bool setBitmapTo1 = false);
 
     /**
      * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
      * write lock from this image.
      **/
-    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output);
+    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output, const OSGLContextPtr& glContext);
 
     template <typename GL>
     static void setupGLViewport(const RectI& bounds, const RectI& roi)
@@ -302,13 +302,14 @@ public:
 
 private:
 
-    static void resizeInternal(const Image* srcImg,
+    static void resizeInternal(const OSGLContexPtr& glContext,
+                               const Image* srcImg,
                                const RectI& srcBounds,
                                const RectI& merge,
                                bool fillWithBlackAndTransparent,
                                bool setBitmapTo1,
                                bool createInCache,
-                               boost::shared_ptr<Image>* outputImage);
+                               ImagePtr* outputImage);
 
 public:
 
@@ -898,7 +899,7 @@ public:
                                   ImagePremultiplicationEnum outputPremult,
                                   ImagePremultiplicationEnum originalImagePremult,
                                   std::bitset<4> processChannels,
-                                  const boost::shared_ptr<Image>& originalImage,
+                                  const ImagePtr& originalImage,
                                   bool ignorePremult,
                                   const OSGLContextPtr& glContext = OSGLContextPtr() );
 
@@ -977,19 +978,19 @@ private:
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
                                            const RectI& roi,
-                                           const boost::shared_ptr<Image>& originalImage);
+                                           const ImagePtr& originalImage);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
                                            std::bitset<4> processChannels,
                                            const RectI& roi,
-                                           const boost::shared_ptr<Image>& originalImage);
+                                           const ImagePtr& originalImage);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
     void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
                                             const bool premult,
                                             const RectI& roi,
-                                            const boost::shared_ptr<Image>& originalImage,
+                                            const ImagePtr& originalImage,
                                             const bool originalPremult,
                                             const bool ignorePremult);
 
@@ -997,7 +998,7 @@ private:
     void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
                                             const bool premult,
                                             const RectI& roi,
-                                            const boost::shared_ptr<Image>& originalImage,
+                                            const ImagePtr& originalImage,
                                             const bool originalPremult,
                                             const bool ignorePremult);
 
@@ -1006,7 +1007,7 @@ private:
     void copyUnProcessedChannelsForComponents(bool premult,
                                               const RectI& roi,
                                               const std::bitset<4> processChannels,
-                                              const boost::shared_ptr<Image>& originalImage,
+                                              const ImagePtr& originalImage,
                                               const bool originalPremult,
                                               const bool ignorePremult);
 
@@ -1014,7 +1015,7 @@ private:
     void copyUnProcessedChannelsForDepth(bool premult,
                                          const RectI& roi,
                                          std::bitset<4> processChannels,
-                                         const boost::shared_ptr<Image>& originalImage,
+                                         const ImagePtr& originalImage,
                                          bool originalPremult,
                                          bool ignorePremult);
 

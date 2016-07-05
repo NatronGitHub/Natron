@@ -134,7 +134,7 @@ struct RenderQueueItem
     AppInstance::RenderWork work;
     QString sequenceName;
     QString savePath;
-    boost::shared_ptr<ProcessHandler> process;
+    ProcessHandlerPtr process;
 };
 
 struct AppInstancePrivate
@@ -142,8 +142,8 @@ struct AppInstancePrivate
     Q_DECLARE_TR_FUNCTIONS(AppInstance)
 
 public:
-    AppInstance* _publicInterface;
-    boost::shared_ptr<Project> _currentProject; //< ptr to the project
+    AppInstance* _publicInterface; // can not be a smart ptr
+    ProjectPtr _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     mutable QMutex creatingGroupMutex;
@@ -154,14 +154,14 @@ public:
     bool _creatingInternalNode;
 
     //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
-    std::list<NodePtr> _creatingNodeQueue;
+    NodesList _creatingNodeQueue;
 
     //When a node tree is created
     int _creatingTree;
     mutable QMutex renderQueueMutex;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     mutable QMutex invalidExprKnobsMutex;
-    std::list<KnobWPtr> invalidExprKnobs;
+    std::list<KnobIWPtr> invalidExprKnobs;
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
@@ -196,7 +196,7 @@ public:
                                int* lastFrame,
                                int* frameStep);
 
-    void getSequenceNameFromWriter(const OutputEffectInstance* writer, QString* sequenceName);
+    void getSequenceNameFromWriter(const OutputEffectInstancePtr& writer, QString* sequenceName);
 
     void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
 };
@@ -226,7 +226,7 @@ AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
     _imp->projectBeingLoaded = info;
 }
 
-const std::list<NodePtr>&
+const NodesList&
 AppInstance::getNodesBeingCreated() const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -491,9 +491,9 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             }
 
             if ( !it->filename.isEmpty() ) {
-                KnobPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
+                KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
                 if (fileKnob) {
-                    KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
+                    KnobOutputFilePtr outFile = toKnobOutputFile(fileKnob);
                     if (outFile) {
                         outFile->setValue( it->filename.toStdString() );
                     }
@@ -514,7 +514,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             if (!output) {
                 throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
-            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>( output->getEffectInstance().get() );
+            GroupOutputPtr isGrpOutput = toGroupOutput( output->getEffectInstance() );
             if (!isGrpOutput) {
                 throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
@@ -525,7 +525,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
         }
 
         assert(writerNode);
-        OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( writerNode->getEffectInstance().get() );
+        OutputEffectInstancePtr effect = writerNode->isEffectOutput();
 
         if ( cl.hasFrameRange() ) {
             const std::list<std::pair<int, std::pair<int, int> > >& frameRanges = cl.getFrameRanges();
@@ -663,9 +663,9 @@ AppInstance::loadInternal(const CLArgs& cl,
                 std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             }
-            KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+            KnobIPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
             if (fileKnob) {
-                KnobFile* outFile = dynamic_cast<KnobFile*>( fileKnob.get() );
+                KnobFilePtr outFile = toKnobFile(fileKnob);
                 if (outFile) {
                     outFile->setValue( it->filename.toStdString() );
                 }
@@ -847,7 +847,7 @@ public:
 
     virtual ~AddCreateNode_RAII()
     {
-        std::list<NodePtr>::iterator found = std::find(_imp->_creatingNodeQueue.begin(), _imp->_creatingNodeQueue.end(), _node);
+        NodesList::iterator found = std::find(_imp->_creatingNodeQueue.begin(), _imp->_creatingNodeQueue.end(), _node);
 
         if ( found != _imp->_creatingNodeQueue.end() ) {
             _imp->_creatingNodeQueue.erase(found);
@@ -864,8 +864,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     bool istoolsetScript = plugin->getToolsetScript();
     NodePtr node;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    boost::shared_ptr<NodeCollection> group = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    NodeCollectionPtr group = args.getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
@@ -1092,8 +1092,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     NodePtr node;
     Plugin* plugin = 0;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    bool trustPluginID = args.getProperty<bool>(kCreateNodeArgsPropTrustPluginID);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
     int versionMinor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 1);
@@ -1194,7 +1193,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    boost::shared_ptr<NodeCollection> argsGroup = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
+    NodeCollectionPtr argsGroup = args.getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
     if (!argsGroup) {
         argsGroup = getProject();
     }
@@ -1202,9 +1201,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
     if (!useInspector) {
-        node.reset( new Node(shared_from_this(), argsGroup, plugin) );
+        node = Node::create(shared_from_this(), argsGroup, plugin);
     } else {
-        node.reset( new InspectorNode(shared_from_this(), argsGroup, plugin) );
+        node = InspectorNode::create(shared_from_this(), argsGroup, plugin);
     }
 
 
@@ -1214,7 +1213,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     {
         ///Furnace plug-ins don't handle using the thread pool
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
@@ -1296,11 +1295,11 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 qDebug() << message.c_str();
                 errorDialog(title, message, false);
             }
-            return boost::shared_ptr<Node>();
+            return NodePtr();
         }
     }
 
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
@@ -1395,7 +1394,7 @@ AppInstance::exportDocs(const QString path)
                         QStringList plugList;
                         plugList << plugin->getGrouping().at(0) << pluginID << plugin->getPluginLabel();
                         plugins << plugList;
-                        CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
+                        CreateNodeArgs args( pluginID.toStdString(), NodeCollectionPtr() );
                         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
                         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
                         args.setProperty(kCreateNodeArgsPropSilent, true);
@@ -1484,7 +1483,7 @@ AppInstance::exportDocs(const QString path)
         }
 
         // Generate MD for settings
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         QString prefsMD = settings->makeHTMLDocumentation(false);
         QFile prefsFile( path + QString::fromUtf8("/_prefs.md") );
         if ( prefsFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
@@ -1501,13 +1500,13 @@ AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
     return _imp->_currentProject->getNodeByFullySpecifiedName(name);
 }
 
-boost::shared_ptr<Project>
+ProjectPtr
 AppInstance::getProject() const
 {
     return _imp->_currentProject;
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 AppInstance::getTimeLine() const
 {
     return _imp->_currentProject->getTimeLine();
@@ -1611,12 +1610,12 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                     exc.append( tr(" is not an output node! It cannot render anything.").toStdString() );
                     throw std::invalid_argument(exc);
                 }
-                ViewerInstance* isViewer = node->isEffectViewer();
+                ViewerInstancePtr isViewer = node->isEffectViewerInstance();
                 if (isViewer) {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
 
-                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
+                OutputEffectInstancePtr effect = node->isEffectOutput();
                 assert(effect);
 
                 for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
@@ -1632,10 +1631,10 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
         }
     } else {
         //start rendering for all writers found in the project
-        std::list<OutputEffectInstance*> writers;
+        std::list<OutputEffectInstancePtr> writers;
         getProject()->getWriters(&writers);
 
-        for (std::list<OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
+        for (std::list<OutputEffectInstancePtr>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
             assert(*it2);
             if (*it2) {
                 for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it3 = frameRanges.begin(); it3 != frameRanges.end(); ++it3) {
@@ -1734,19 +1733,19 @@ AppInstance::startWritersRendering(bool doBlockingRender,
 } // AppInstance::startWritersRendering
 
 void
-AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer,
+AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstancePtr& writer,
                                               QString* sequenceName)
 {
     ///get the output file knob to get the name of the sequence
-    const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
+    DiskCacheNodePtr isDiskCache = boost::dynamic_pointer_cast<DiskCacheNode>(writer);
 
     if (isDiskCache) {
         *sequenceName = tr("Caching");
     } else {
         *sequenceName = QString();
-        KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
+        KnobIPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileKnob.get() );
+            KnobStringBasePtr isString = toKnobStringBase(fileKnob);
             assert(isString);
             if (isString) {
                 *sequenceName = QString::fromUtf8( isString->getValue().c_str() );
@@ -1824,15 +1823,15 @@ AppInstance::onQueuedRenderFinished(int /*retCode*/)
     if (!engine) {
         return;
     }
-    boost::shared_ptr<OutputEffectInstance> effect = engine->getOutput();
+    OutputEffectInstancePtr effect = engine->getOutput();
     if (!effect) {
         return;
     }
-    startNextQueuedRender( effect.get() );
+    startNextQueuedRender(effect);
 }
 
 void
-AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
+AppInstance::removeRenderFromQueue(const OutputEffectInstancePtr& writer)
 {
     QMutexLocker k(&_imp->renderQueueMutex);
 
@@ -1845,12 +1844,12 @@ AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
 }
 
 void
-AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
+AppInstance::startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter)
 {
     RenderQueueItem nextWork;
 
     // Do not make the process die under the mutex otherwise we may deadlock
-    boost::shared_ptr<ProcessHandler> processDying;
+    ProcessHandlerPtr processDying;
     {
         QMutexLocker k(&_imp->renderQueueMutex);
         for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
@@ -1876,7 +1875,7 @@ void
 AppInstance::onBackgroundRenderProcessFinished()
 {
     ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
-    OutputEffectInstance* effect = 0;
+    OutputEffectInstancePtr effect;
 
     if (proc) {
         effect = proc->getWriter();
@@ -2088,11 +2087,11 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const boost::shared_ptr<NodeSerialization>& serialization, bool /*autoConnect*/)
+                                     const NodeSerializationPtr& serialization, bool /*autoConnect*/)
 {
     assert(node);
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
-        NodeGroup* isGrp = node->isEffectGroup();
+        NodeGroupPtr isGrp = node->isEffectNodeGroup();
         assert(isGrp);
         if (!isGrp) {
             return;
@@ -2106,7 +2105,7 @@ AppInstance::saveTemp(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
 
     return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0);
 }
@@ -2114,7 +2113,7 @@ AppInstance::saveTemp(const std::string& filename)
 bool
 AppInstance::save(const std::string& filename)
 {
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -2135,19 +2134,19 @@ AppInstance::saveAs(const std::string& filename)
     return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
 }
 
-AppInstPtr
+AppInstancePtr
 AppInstance::loadProject(const std::string& filename)
 {
     QFileInfo file( QString::fromUtf8( filename.c_str() ) );
 
     if ( !file.exists() ) {
-        return AppInstPtr();
+        return AppInstancePtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QChar::fromLatin1('/');
 
     //We are in background mode, there can only be 1 instance active, wipe the current project
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
     project->resetProject();
 
     bool ok  = project->loadProject( path, fileUnPathed);
@@ -2157,7 +2156,7 @@ AppInstance::loadProject(const std::string& filename)
 
     project->resetProject();
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 ///Close the current project but keep the window
@@ -2180,21 +2179,21 @@ AppInstance::closeProject()
 }
 
 ///Opens a new project
-AppInstPtr
+AppInstancePtr
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstPtr app = appPTR->newAppInstance(cl, false);
+    AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
     return app;
 }
 
 void
-AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
+AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
-    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
         if ( it->lock().get() ) {
             return;
         }
@@ -2203,12 +2202,12 @@ AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
 }
 
 void
-AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
+AppInstance::removeInvalidExpressionKnob(const KnobIConstPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
-    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if (it->lock().get() == knob) {
+    for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock() == knob) {
             _imp->invalidExprKnobs.erase(it);
             break;
         }
@@ -2218,19 +2217,19 @@ AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
 void
 AppInstance::recheckInvalidExpressions()
 {
-    std::list<KnobPtr> knobs;
+    std::list<KnobIPtr> knobs;
     {
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
-        for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-            KnobPtr k = it->lock();
+        for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+            KnobIPtr k = it->lock();
             if (k) {
                 knobs.push_back(k);
             }
         }
     }
-    std::list<KnobWPtr> newInvalidKnobs;
+    std::list<KnobIWPtr> newInvalidKnobs;
 
-    for (std::list<KnobPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ( !(*it)->checkInvalidExpressions() ) {
             newInvalidKnobs.push_back(*it);
         }

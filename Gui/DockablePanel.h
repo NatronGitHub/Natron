@@ -75,7 +75,7 @@ public:
     };
 
     explicit DockablePanel(Gui* gui,
-                           KnobHolder* holder,
+                           const KnobHolderPtr& holder,
                            QVBoxLayout* container,
                            HeaderModeEnum headerMode,
                            bool useScrollAreasForTabs,
@@ -121,12 +121,12 @@ public:
 
     void resetHostOverlayColor();
 
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
+    virtual MultiInstancePanelPtr getMultiInstancePanel() const
     {
-        return boost::shared_ptr<MultiInstancePanel>();
+        return MultiInstancePanelPtr();
     }
 
-    KnobHolder* getHolder() const;
+    KnobHolderPtr getHolder() const;
     TrackerPanel* getTrackerPanel() const;
 
     void onGuiClosing();

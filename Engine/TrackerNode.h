@@ -40,14 +40,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    TrackerNode(const NodePtr& node);
+
 public:
-
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new TrackerNode(n);
+        return EffectInstancePtr( new TrackerNode(node) );
     }
-
-    TrackerNode(boost::shared_ptr<Node> node);
 
     virtual ~TrackerNode();
 
@@ -153,7 +154,7 @@ private:
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI* k,
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
@@ -165,6 +166,12 @@ private:
 
     boost::scoped_ptr<TrackerNodePrivate> _imp;
 };
+
+inline TrackerNodePtr
+toTrackerNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<TrackerNode>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

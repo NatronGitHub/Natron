@@ -41,14 +41,15 @@ struct RotoSmearPrivate;
 class RotoSmear
     : public EffectInstance
 {
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    RotoSmear(const NodePtr& node);
+
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new RotoSmear(n);
+        return EffectInstancePtr( new RotoSmear(node) );
     }
-
-    RotoSmear(NodePtr node);
 
     virtual ~RotoSmear();
 
@@ -139,6 +140,12 @@ private:
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     boost::scoped_ptr<RotoSmearPrivate> _imp;
 };
+
+inline RotoSmearPtr
+toRotoSmear(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<RotoSmear>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

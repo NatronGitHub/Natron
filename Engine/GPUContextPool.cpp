@@ -108,7 +108,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
     // Context-sharing disabled as it is not needed
     OSGLContextPtr shareContext;// _imp->glShareContext.lock();
     OSGLContextPtr newContext;
-    boost::shared_ptr<Settings> settings =  appPTR->getCurrentSettings();
+    SettingsPtr settings =  appPTR->getCurrentSettings();
     GLRendererID rendererID;
     if (settings) {
         rendererID = settings->getActiveOpenGLRendererID();

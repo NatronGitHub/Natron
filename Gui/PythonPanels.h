@@ -56,11 +56,21 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from KnobHolder
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     DialogParamHolder(const QString& uniqueID,
-                      const AppInstPtr& app,
+                      const AppInstancePtr& app,
                       UserParamHolder* widget);
+
+public:
+    static DialogParamHolderPtr create(const QString& uniqueID,
+                                       const AppInstancePtr& app,
+                                       UserParamHolder* widget)
+    {
+        return DialogParamHolderPtr( new DialogParamHolder(uniqueID, app, widget) );
+    }
 
     virtual ~DialogParamHolder();
 
@@ -72,7 +82,7 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL {}
 
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
@@ -102,7 +112,7 @@ public:
 
     void addWidget(QWidget* widget);
 
-    DialogParamHolder* getKnobsHolder() const;
+    DialogParamHolderPtr getKnobsHolder() const;
 
 private:
 

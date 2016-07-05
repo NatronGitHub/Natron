@@ -52,7 +52,7 @@ struct HostOverlayKnobDescription
 
 struct HostOverlayKnobsPrivate
 {
-    std::map<int, KnobPtr> knobs;
+    std::map<int, KnobIPtr> knobs;
     std::vector<HostOverlayKnobDescription> knobsDescription;
     bool describeCall;
 
@@ -73,11 +73,11 @@ HostOverlayKnobs::~HostOverlayKnobs()
 {
 }
 
-KnobPtr
+KnobIPtr
 HostOverlayKnobs::getFirstKnob() const
 {
     if ( _imp->knobs.empty() ) {
-        return KnobPtr();
+        return KnobIPtr();
     }
 
     return _imp->knobs.begin()->second;
@@ -89,10 +89,10 @@ HostOverlayKnobs::getFirstKnob() const
  * otherwise it is expected to match the name filled in the descriveOverlayKnobs function
  **/
 void
-HostOverlayKnobs::addKnob(const KnobPtr& knob,
+HostOverlayKnobs::addKnob(const KnobIPtr& knob,
                           int enumID)
 {
-    std::map<int, KnobPtr>::const_iterator found = _imp->knobs.find(enumID);
+    std::map<int, KnobIPtr>::const_iterator found = _imp->knobs.find(enumID);
 
     assert( found == _imp->knobs.end() );
     if ( found != _imp->knobs.end() ) {
@@ -101,13 +101,13 @@ HostOverlayKnobs::addKnob(const KnobPtr& knob,
     _imp->knobs.insert( std::make_pair(enumID, knob) );
 }
 
-KnobPtr
+KnobIPtr
 HostOverlayKnobs::getKnob(int enumID) const
 {
-    std::map<int, KnobPtr>::const_iterator found = _imp->knobs.find(enumID);
+    std::map<int, KnobIPtr>::const_iterator found = _imp->knobs.find(enumID);
 
     if ( found == _imp->knobs.end() ) {
-        return KnobPtr();
+        return KnobIPtr();
     }
 
     return found->second;
@@ -130,7 +130,7 @@ HostOverlayKnobs::checkHostOverlayValid()
         _imp->describeCall = true;
     }
     for (std::size_t i = 0; i < _imp->knobsDescription.size(); ++i) {
-        KnobPtr knob = getKnob(_imp->knobsDescription[i].enumID);
+        KnobIPtr knob = getKnob(_imp->knobsDescription[i].enumID);
 
         // Mandatory knob is not present
         if (!knob) {

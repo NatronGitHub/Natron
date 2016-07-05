@@ -203,7 +203,7 @@ Curve::Curve()
 {
 }
 
-Curve::Curve(KnobI *owner,
+Curve::Curve(const KnobIPtr& owner,
              int dimensionInOwner)
     : _imp(new CurvePrivate)
 {
@@ -213,76 +213,46 @@ Curve::Curve(KnobI *owner,
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
     bool found = false;
     // use RTTI to guess curve type
-    if (!found) {
-        KnobDouble* k = dynamic_cast<KnobDouble*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeDouble;
-            found = true;
-        }
+    if ( !found && toKnobDouble(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeDouble;
+        found = true;
     }
-    if (!found) {
-        KnobColor* k = dynamic_cast<KnobColor*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeDouble;
-            found = true;
-        }
+    if ( !found && toKnobColor(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeDouble;
+        found = true;
     }
-    if (!found) {
-        KnobInt* k = dynamic_cast<KnobInt*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeInt;
-            found = true;
-        }
+    if ( !found && toKnobInt(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeInt;
+        found = true;
     }
-    if (!found) {
-        KnobChoice* k = dynamic_cast<KnobChoice*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
-            found = true;
-        }
+    if ( !found && toKnobChoice(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
+        found = true;
     }
-    if (!found) {
-        KnobString* k = dynamic_cast<KnobString*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && toKnobString(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobFile* k = dynamic_cast<KnobFile*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && toKnobFile(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobOutputFile* k = dynamic_cast<KnobOutputFile*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && toKnobOutputFile(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobPath* k = dynamic_cast<KnobPath*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && toKnobPath(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobBool* k = dynamic_cast<KnobBool*>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeBool;
-            found = true;
-        }
+    if ( !found && toKnobBool(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeBool;
+        found = true;
     }
-
-    if (!found) {
-        KnobParametric* parametric = dynamic_cast<KnobParametric*>(owner);
-        if (parametric) {
-            _imp->isParametric = true;
-            found = true;
-        }
+    
+    if ( !found && toKnobParametric(owner) ) {
+        _imp->isParametric = true;
+        found = true;
     }
     assert(found);
 }
@@ -1042,9 +1012,10 @@ Curve::YRange Curve::getCurveYRange() const
     if ( !mustClamp() ) {
         return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
     }
-    if (_imp->owner) {
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
+    KnobIPtr owner = _imp->owner.lock();
+    if (owner) {
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(owner);
+        KnobIntBasePtr isInt = toKnobIntBase(owner);
         if (isDouble) {
             double min = isDouble->getMinimum(_imp->dimensionInOwner);
             if (min <= -DBL_MAX) {
@@ -1597,15 +1568,17 @@ bool
 Curve::mustClamp() const
 {
     // PRIVATE - should not lock
-    return _imp->owner && hasYRange();
+    KnobIPtr owner = _imp->owner.lock();
+    return owner && hasYRange();
 }
 
 void
 Curve::onCurveChanged()
 {
     // PRIVATE - should not lock
-    if (_imp->owner) {
-        _imp->owner->clearExpressionsResults(_imp->dimensionInOwner);
+    KnobIPtr owner = _imp->owner.lock();
+    if (owner) {
+        owner->clearExpressionsResults(_imp->dimensionInOwner);
     }
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();

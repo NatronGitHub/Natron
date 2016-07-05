@@ -66,9 +66,9 @@ class RotoLayer
 {
 public:
 
-    RotoLayer(const boost::shared_ptr<RotoContext>& context,
+    RotoLayer(const RotoContextPtr& context,
               const std::string & name,
-              const boost::shared_ptr<RotoLayer>& parent);
+              const RotoLayerPtr& parent);
 
     explicit RotoLayer(const RotoLayer & other);
 
@@ -81,7 +81,7 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
@@ -93,28 +93,34 @@ public:
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer
     ///this is up to the caller responsability
-    void addItem(const boost::shared_ptr<RotoItem>& item, bool declareToPython = true);
+    void addItem(const RotoItemPtr& item, bool declareToPython = true);
 
     ///Inserts the item into the layer before the indicated index.
     ///The same restrictions as addItem are applied.
-    void insertItem(const boost::shared_ptr<RotoItem>& item, int index);
+    void insertItem(const RotoItemPtr& item, int index);
 
     ///only callable on the main-thread
-    void removeItem(const boost::shared_ptr<RotoItem>& item);
+    void removeItem(const RotoItemPtr& item);
 
     ///Returns the index of the given item in the layer, or -1 if not found
-    int getChildIndex(const boost::shared_ptr<RotoItem>& item) const;
+    int getChildIndex(const RotoItemPtr& item) const;
 
     ///only callable on the main-thread
-    const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
+    const std::list< RotoItemPtr >& getItems() const;
 
     ///MT-safe
-    std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
+    std::list< RotoItemPtr > getItems_mt_safe() const;
 
 private:
 
     boost::scoped_ptr<RotoLayerPrivate> _imp;
 };
+
+inline RotoLayerPtr
+toRotoLayer(const RotoItemPtr& item)
+{
+    return boost::dynamic_pointer_cast<RotoLayer>(item);
+}
 
 NATRON_NAMESPACE_EXIT;
 

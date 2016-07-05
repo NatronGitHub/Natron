@@ -44,9 +44,17 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from NodeGui
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     BackdropGui(QGraphicsItem* parent = 0);
+
+public:
+    static NodeGuiPtr create(QGraphicsItem *parent = 0) WARN_UNUSED_RETURN
+    {
+        return NodeGuiPtr( new BackdropGui(parent) );
+    }
 
     virtual ~BackdropGui();
 
@@ -84,6 +92,11 @@ private:
     boost::scoped_ptr<BackdropGuiPrivate> _imp;
 };
 
+inline BackdropGuiPtr
+toBackdropGui(const NodeGuiIPtr& nodeGui)
+{
+    return boost::dynamic_pointer_cast<BackdropGui>(nodeGui);
+}
 NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_BackdropGui_h

@@ -40,16 +40,17 @@ NATRON_NAMESPACE_ENTER;
 class GroupOutput
     : public NoOpBase
 {
-public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new GroupOutput(n);
-    }
-
-    GroupOutput(NodePtr n)
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    GroupOutput(const NodePtr& n)
         : NoOpBase(n)
     {
+    }
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new GroupOutput(node) );
     }
 
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -78,6 +79,12 @@ public:
         return true;
     }
 };
+
+inline GroupOutputPtr
+toGroupOutput(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<GroupOutput>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

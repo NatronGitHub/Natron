@@ -56,7 +56,7 @@ public:
 
     virtual ~DefaultInteractI();
 
-    virtual bool isInteractForKnob(const KnobI* knob) const = 0;
+    virtual bool isInteractForKnob(const KnobIConstPtr& knob) const = 0;
     virtual void draw(double time,
                       const RenderScale& renderScale,
                       ViewIdx view,
@@ -213,9 +213,9 @@ public:
                    const RenderScale& renderScale,
                    ViewIdx view);
 
-    bool hasHostOverlayForParam(const KnobI* param);
+    bool hasHostOverlayForParam(const KnobIConstPtr& param);
 
-    void removePositionHostOverlay(KnobI* knob);
+    void removePositionHostOverlay(const KnobIPtr& knob);
 
     bool isEmpty() const;
 

@@ -130,7 +130,7 @@ GCC_DIAG_ON(unused-parameter)
 
 
 NATRON_NAMESPACE_ENTER;
-GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
+GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
                        Gui* gui)
     : _gui(gui)
     , _isInDraftModeMutex()
@@ -587,7 +587,7 @@ bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
                                     const QString& projectName)
 {
-    boost::shared_ptr<Project> project = _appInstance.lock()->getProject();
+    ProjectPtr project = _appInstance.lock()->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;

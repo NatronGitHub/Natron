@@ -40,7 +40,7 @@ CLANG_DIAG_ON(deprecated-register)
 NATRON_NAMESPACE_ENTER;
 
 
-BlockingBackgroundRender::BlockingBackgroundRender(OutputEffectInstance* writer)
+BlockingBackgroundRender::BlockingBackgroundRender(const OutputEffectInstancePtr& writer)
     : _running(false)
     , _writer(writer)
 {

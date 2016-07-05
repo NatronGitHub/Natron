@@ -6,6 +6,8 @@
 Natron documentation
 ====================
 
+.. note:: This documentation is work-in-progress, if you want to contribute read :ref:`writeDocumentation`.
+
 Contents:
 
 .. toctree::

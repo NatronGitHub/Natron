@@ -60,7 +60,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
 
     _hasOverlayColor = n->getOverlayColor(&_overlayR, &_overlayG, &_overlayB);
 
-    NodeGroup* isGrp = node->isEffectGroup();
+    NodeGroupPtr isGrp = node->isEffectNodeGroup();
     if (isGrp) {
         NodesList nodes;
         isGrp->getActiveNodes(&nodes);
@@ -72,7 +72,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
             if (!(*it)->isPartOfProject()) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            NodeGuiIPtr gui_i = (*it)->getNodeGui();
             if (!gui_i) {
                 continue;
             }

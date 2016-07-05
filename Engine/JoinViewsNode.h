@@ -39,14 +39,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    JoinViewsNode(const NodePtr& node);
+
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new JoinViewsNode(n);
+        return EffectInstancePtr( new JoinViewsNode(node) );
     }
-
-    JoinViewsNode(NodePtr node);
 
     virtual ~JoinViewsNode();
 
@@ -134,6 +135,12 @@ private:
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<JoinViewsNodePrivate> _imp;
 };
+
+inline JoinViewsNodePtr
+toJoinViewsNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<JoinViewsNode>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 #endif // Engine_JoinViewsNode_h

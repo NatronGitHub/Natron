@@ -42,13 +42,13 @@ struct OneViewNodePrivate
     }
 };
 
-OneViewNode::OneViewNode(NodePtr n)
+OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (n) {
-        boost::shared_ptr<Project> project = n->getApp()->getProject();
+        ProjectPtr project = n->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
     }
 }
@@ -107,11 +107,11 @@ OneViewNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 OneViewNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
 
     page->setName("controls");
 
-    boost::shared_ptr<KnobChoice> viewKnob = AppManager::createKnob<KnobChoice>( this, tr("View") );
+    KnobChoicePtr viewKnob = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("View") );
     viewKnob->setName("view");
     viewKnob->setHintToolTip( tr("View to take from the input") );
     page->addKnob(viewKnob);
@@ -133,7 +133,7 @@ OneViewNode::isIdentity(double time,
                         ViewIdx* inputView,
                         int* inputNb)
 {
-    boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
+    KnobChoicePtr viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
 
     *inputView = ViewIdx(view_i);
@@ -149,7 +149,7 @@ OneViewNode::getFramesNeeded(double time,
 {
     FramesNeededMap ret;
     FrameRangesMap& rangeMap = ret[0];
-    boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
+    KnobChoicePtr viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
     std::vector<RangeD>& ranges = rangeMap[ViewIdx(view_i)];
 
@@ -163,7 +163,7 @@ void
 OneViewNode::onProjectViewsChanged()
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
-    boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
+    KnobChoicePtr viewKnob = _imp->viewKnob.lock();
     std::string currentView = viewKnob->getActiveEntryText_mt_safe();
 
     viewKnob->populateChoices(views);

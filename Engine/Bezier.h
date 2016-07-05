@@ -81,13 +81,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    Bezier(const boost::shared_ptr<RotoContext>& context,
+    Bezier(const RotoContextPtr& context,
            const std::string & name,
-           const boost::shared_ptr<RotoLayer>& parent,
+           const RotoLayerPtr& parent,
            bool isOpenBezier);
 
     Bezier(const Bezier & other,
-           const boost::shared_ptr<RotoLayer>& parent);
+           const RotoLayerPtr& parent);
 
     virtual ~Bezier();
 
@@ -144,7 +144,7 @@ public:
      * This function is used to build-up the curve as opposed to addControlPointAfterIndex which is there to
      * edit an already fully shaped spline.
      **/
-    boost::shared_ptr<BezierCP> addControlPoint(double x, double y, double time);
+    BezierCPPtr addControlPoint(double x, double y, double time);
 
     /**
      * @brief Adds a new control point to the curve after the control point at the given index.
@@ -154,7 +154,7 @@ public:
      * If index is -1 then the point will be added as the first point of the curve.
      * If index is invalid an invalid argument exception will be thrown.
      **/
-    boost::shared_ptr<BezierCP> addControlPointAfterIndex(int index, double t);
+    BezierCPPtr addControlPointAfterIndex(int index, double t);
 
     /**
      * @brief Returns the number of control points of the bezier
@@ -250,7 +250,7 @@ public:
     /**
      * @brief Transforms the given point at the given time by the given matrix.
      **/
-    void transformPoint(const boost::shared_ptr<BezierCP> & point, double time, Transform::Matrix3x3* matrix);
+    void transformPoint(const BezierCPPtr & point, double time, Transform::Matrix3x3* matrix);
 
     /**
      * @brief Provided for convenience. It set the left bezier point of the control point at the given index to
@@ -359,7 +359,7 @@ public:
     int getKeyframesCount() const;
 
     static void deCastelJau(bool useGuiCurves,
-                            const std::list<boost::shared_ptr<BezierCP> >& cps, double time, unsigned int mipMapLevel,
+                            const std::list<BezierCPPtr >& cps, double time, unsigned int mipMapLevel,
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
@@ -473,7 +473,7 @@ public:
      **/
     virtual RectD getBoundingBox(double time) const OVERRIDE;
     static void bezierSegmentListBboxUpdate(bool useGuiCurves,
-                                            const std::list<boost::shared_ptr<BezierCP> > & points,
+                                            const std::list<BezierCPPtr > & points,
                                             bool finished,
                                             bool isOpenBezier,
                                             double time,
@@ -485,22 +485,22 @@ public:
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
      **/
-    const std::list< boost::shared_ptr<BezierCP> > & getControlPoints() const;
+    const std::list< BezierCPPtr > & getControlPoints() const;
 
 protected:
 
-    std::list< boost::shared_ptr<BezierCP> > & getControlPoints_internal();
+    std::list< BezierCPPtr > & getControlPoints_internal();
 
 public:
 
 
-    std::list< boost::shared_ptr<BezierCP> > getControlPoints_mt_safe() const;
+    std::list< BezierCPPtr > getControlPoints_mt_safe() const;
 
     /**
      * @brief Returns a const ref to the feather points of the bezier curve. This can only ever be called on the main thread.
      **/
-    const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
-    std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
+    const std::list< BezierCPPtr > & getFeatherPoints() const;
+    std::list< BezierCPPtr > getFeatherPoints_mt_safe() const;
     enum ControlPointSelectionPrefEnum
     {
         eControlPointSelectionPrefFeatherFirst = 0,
@@ -513,32 +513,32 @@ public:
      * The first member is the actual point nearby, and the second the counter part (i.e: either the feather point
      * if the first is a control point, or the other way around).
      **/
-    std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> >isNearbyControlPoint(double x, double y, double acceptance, ControlPointSelectionPrefEnum pref, int* index) const;
+    std::pair<BezierCPPtr, BezierCPPtr >isNearbyControlPoint(double x, double y, double acceptance, ControlPointSelectionPrefEnum pref, int* index) const;
 
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
      * If no such control point could be found, -1 is returned.
      **/
-    int getControlPointIndex(const boost::shared_ptr<BezierCP> & cp) const;
+    int getControlPointIndex(const BezierCPPtr & cp) const;
     int getControlPointIndex(const BezierCP* cp) const;
 
     /**
      * @brief Given the feather point in parameter, return its index in the curve's feather points list.
      * If no such feather point could be found, -1 is returned.
      **/
-    int getFeatherPointIndex(const boost::shared_ptr<BezierCP> & fp) const;
+    int getFeatherPointIndex(const BezierCPPtr & fp) const;
 
     /**
      * @brief Returns the control point at the given index if any, NULL otherwise.
      **/
-    boost::shared_ptr<BezierCP> getControlPointAtIndex(int index) const;
+    BezierCPPtr getControlPointAtIndex(int index) const;
 
     /**
      * @brief Returns the feather point at the given index if any, NULL otherwise.
      **/
-    boost::shared_ptr<BezierCP> getFeatherPointAtIndex(int index) const;
-    boost::shared_ptr<BezierCP> getFeatherPointForControlPoint(const boost::shared_ptr<BezierCP> & cp) const;
-    boost::shared_ptr<BezierCP> getControlPointForFeatherPoint(const boost::shared_ptr<BezierCP> & fp) const;
+    BezierCPPtr getFeatherPointAtIndex(int index) const;
+    BezierCPPtr getFeatherPointForControlPoint(const BezierCPPtr & cp) const;
+    BezierCPPtr getControlPointForFeatherPoint(const BezierCPPtr & fp) const;
 
     /**
      * @brief Returns all the control points/feather points within the rectangle
@@ -549,7 +549,7 @@ public:
      * mode == 1: Add only the cp within the rect and their respective feather points counter parts
      * mode == 2: Add only the fp within the rect and their repsective control points counter parts
      **/
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >controlPointsWithinRect(double l, double r, double b, double t, double acceptance, int mode) const;
+    std::list< std::pair<BezierCPPtr, BezierCPPtr > >controlPointsWithinRect(double l, double r, double b, double t, double acceptance, int mode) const;
     static void leftDerivativeAtPoint(bool useGuiCurves, double time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
     static void rightDerivativeAtPoint(bool useGuiCurves, double time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
 
@@ -572,9 +572,9 @@ public:
                                          double time,         //< time
                                          bool clockWise,         //< is the bezier  clockwise oriented or not
                                          const Transform::Matrix3x3& transform,
-                                         std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp,         //< iterator pointing to the feather before curFp
-                                         std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp,         //< iterator pointing to fp
-                                         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp);         //< iterator pointing after curFp
+                                         std::list<BezierCPPtr >::const_iterator prevFp,         //< iterator pointing to the feather before curFp
+                                         std::list<BezierCPPtr >::const_iterator curFp,         //< iterator pointing to fp
+                                         std::list<BezierCPPtr >::const_iterator nextFp);         //< iterator pointing after curFp
     enum FillRuleEnum
     {
         eFillRuleOddEven,
@@ -618,7 +618,7 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
@@ -666,6 +666,13 @@ private:
 
     boost::scoped_ptr<BezierPrivate> _imp;
 };
+
+inline BezierPtr
+toBezier(const RotoItemPtr& item)
+{
+    return boost::dynamic_pointer_cast<Bezier>(item);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

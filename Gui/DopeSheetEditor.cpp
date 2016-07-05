@@ -77,7 +77,7 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)
  * Creates a DopeSheetEditor.
  */
 DopeSheetEditor::DopeSheetEditor(Gui *gui,
-                                 boost::shared_ptr<TimeLine> timeline,
+                                 const TimeLinePtr& timeline,
                                  QWidget *parent)
     : QWidget(parent),
     PanelWidget(this, gui),
@@ -107,24 +107,24 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui,
     _imp->mainLayout->addWidget(_imp->splitter);
 
     // Main model -> HierarchyView connections
-    connect( _imp->model, SIGNAL(nodeAdded(DSNode*)),
-             _imp->hierarchyView, SLOT(onNodeAdded(DSNode*)) );
+    connect( _imp->model, SIGNAL(nodeAdded(DSNodePtr)),
+             _imp->hierarchyView, SLOT(onNodeAdded(DSNodePtr)) );
 
-    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-             _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNode*)) );
+    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNodePtr)),
+             _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNodePtr)) );
 
-    connect( _imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
-             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob*)) );
+    connect( _imp->model, SIGNAL(keyframeSetOrRemoved(DSKnobPtr)),
+             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnobPtr)) );
 
     connect( _imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
              _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)) );
 
     // Main model -> DopeSheetView connections
-    connect( _imp->model, SIGNAL(nodeAdded(DSNode*)),
-             _imp->dopeSheetView, SLOT(onNodeAdded(DSNode*)) );
+    connect( _imp->model, SIGNAL(nodeAdded(DSNodePtr)),
+             _imp->dopeSheetView, SLOT(onNodeAdded(DSNodePtr)) );
 
-    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-             _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNode*)) );
+    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNodePtr)),
+             _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNodePtr)) );
 
     connect( _imp->model, SIGNAL(modelChanged()),
              _imp->dopeSheetView, SLOT(redraw()) );
@@ -147,13 +147,13 @@ DopeSheetEditor::~DopeSheetEditor()
 {}
 
 void
-DopeSheetEditor::addNode(NodeGuiPtr nodeGui)
+DopeSheetEditor::addNode(const NodeGuiPtr& nodeGui)
 {
     _imp->model->addNode(nodeGui);
 }
 
 void
-DopeSheetEditor::removeNode(NodeGui *node)
+DopeSheetEditor::removeNode(const NodeGuiPtr& node)
 {
     _imp->model->removeNode(node);
 }

@@ -46,7 +46,7 @@
 NATRON_NAMESPACE_ENTER;
 
 CurveGui::CurveGui(CurveWidget *curveWidget,
-                   boost::shared_ptr<Curve> curve,
+                   CurvePtr curve,
                    const QString & name,
                    const QColor & color,
                    int thickness)
@@ -216,7 +216,7 @@ CurveGui::getCurveYRange() const
     return getInternalCurve()->getCurveYRange();
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 CurveGui::getInternalCurve() const
 {
     return _internalCurve;
@@ -280,12 +280,12 @@ CurveGui::drawCurve(int curveIndex,
     double x2;
     const double widgetWidth = _curveWidget->width();
     KeyFrameSet keyframes;
-    BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(this);
+    BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>(this);
     KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(this);
     bool hasDrawnExpr = false;
     if (isKnobCurve) {
         std::string expr;
-        KnobPtr knob = isKnobCurve->getInternalKnob();
+        KnobIPtr knob = isKnobCurve->getInternalKnob();
         assert(knob);
         expr = knob->getExpression( isKnobCurve->getDimension() );
         if ( !expr.empty() ) {
@@ -300,9 +300,9 @@ CurveGui::drawCurve(int curveIndex,
         }
     }
 
-    if (isBezier) {
+    if (isBezierGui) {
         std::set<double> keys;
-        isBezier->getBezier()->getKeyframeTimes(&keys);
+        isBezierGui->getBezier()->getKeyframeTimes(&keys);
         int i = 0;
         for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
             keyframes.insert( KeyFrame(*it, i) );
@@ -358,7 +358,7 @@ CurveGui::drawCurve(int curveIndex,
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
-        if (!isBezier && _selected) {
+        if (!isBezierGui && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
             if ( (curveYRange.min != INT_MIN && curveYRange.min != !std::numeric_limits<double>::infinity()) && (curveYRange.max != INT_MAX && curveYRange.max != std::numeric_limits<double>::infinity()) ) {
@@ -464,7 +464,7 @@ CurveGui::drawCurve(int curveIndex,
             GL_GPU::glVertex2f(x, y);
             GL_GPU::glEnd();
 
-            if ( !isBezier && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            if ( !isBezierGui && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 QFontMetrics m( _curveWidget->getFont() );
 
 
@@ -518,7 +518,8 @@ CurveGui::drawCurve(int curveIndex,
                 GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
                 GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
                 GL_GPU::glEnd();
-            } // if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            } // if ( !isBezierGui && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+
         } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
     } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
@@ -572,7 +573,7 @@ CurveGui::getKeyFrames() const
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
-                           boost::shared_ptr<Curve>  curve,
+                           CurvePtr  curve,
                            const KnobGuiPtr& knob,
                            int dimension,
                            const QString & name,
@@ -598,9 +599,9 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
-                           boost::shared_ptr<Curve>  curve,
-                           const KnobPtr& knob,
-                           const boost::shared_ptr<RotoContext>& roto,
+                           CurvePtr  curve,
+                           const KnobIPtr& knob,
+                           const RotoContextPtr& roto,
                            int dimension,
                            const QString & name,
                            const QColor & color,
@@ -639,12 +640,12 @@ double
 KnobCurveGui::evaluate(bool useExpr,
                        double x) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (useExpr) {
         return knob->getValueAtWithExpression(x, ViewIdx(0), _dimension);
     } else {
-        KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
+        KnobParametricPtr isParametric = toKnobParametric(knob);
         if (isParametric) {
             return isParametric->getParametricCurve(_dimension)->getValueAt(x);
         } else {
@@ -655,11 +656,11 @@ KnobCurveGui::evaluate(bool useExpr,
     }
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 KnobCurveGui::getInternalCurve() const
 {
-    KnobPtr knob = getInternalKnob();
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
+    KnobIPtr knob = getInternalKnob();
+    KnobParametricPtr isParametric = toKnobParametric(knob);
 
     if (!knob || !isParametric) {
         return CurveGui::getInternalCurve();
@@ -668,7 +669,7 @@ KnobCurveGui::getInternalCurve() const
     return isParametric->getParametricCurve(_dimension);
 }
 
-KnobPtr
+KnobIPtr
 KnobCurveGui::getInternalKnob() const
 {
     KnobGuiPtr knob = getKnobGui();
@@ -690,12 +691,12 @@ KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,
 }
 
 BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
-                                   const boost::shared_ptr<Bezier>& bezier,
-                                   const boost::shared_ptr<RotoContext>& roto,
+                                   const BezierPtr& bezier,
+                                   const RotoContextPtr& roto,
                                    const QString & name,
                                    const QColor & color,
                                    int thickness)
-    : CurveGui(curveWidget, boost::shared_ptr<Curve>(), name, color, thickness)
+    : CurveGui(curveWidget, CurvePtr(), name, color, thickness)
     , _bezier(bezier)
     , _rotoContext(roto)
 {
@@ -705,7 +706,7 @@ BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
     }
 }
 
-boost::shared_ptr<Bezier>
+BezierPtr
 BezierCPCurveGui::getBezier() const
 {
     return _bezier;

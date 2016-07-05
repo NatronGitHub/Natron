@@ -51,7 +51,7 @@ class ExportGroupTemplateDialog
 
 public:
 
-    ExportGroupTemplateDialog(NodeCollection* group,
+    ExportGroupTemplateDialog(const NodeCollectionPtr& group,
                               Gui* gui,
                               QWidget* parent);
 

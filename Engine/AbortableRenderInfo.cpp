@@ -259,7 +259,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
     }
 
     // Hold a sharedptr to this because it might get destroyed before the dialog returns
-    boost::shared_ptr<AbortableRenderInfo> thisShared = shared_from_this();
+    AbortableRenderInfoPtr thisShared = shared_from_this();
 
     if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();

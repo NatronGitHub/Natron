@@ -71,9 +71,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
+    RotoDrawableItem(const RotoContextPtr& context,
                      const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent,
+                     const RotoLayerPtr& parent,
                      bool isStroke);
 
     virtual ~RotoDrawableItem();
@@ -93,7 +93,7 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
@@ -143,39 +143,40 @@ public:
     void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
-    boost::shared_ptr<KnobBool> getActivatedKnob() const;
-    boost::shared_ptr<KnobDouble> getFeatherKnob() const;
-    boost::shared_ptr<KnobDouble> getFeatherFallOffKnob() const;
-    boost::shared_ptr<KnobDouble> getOpacityKnob() const;
-    boost::shared_ptr<KnobBool> getInvertedKnob() const;
-    boost::shared_ptr<KnobChoice> getOperatorKnob() const;
-    boost::shared_ptr<KnobColor> getColorKnob() const;
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobInt> getLifeTimeFrameKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushSizeKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushHardnessKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushSpacingKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushEffectKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushVisiblePortionKnob() const;
-    boost::shared_ptr<KnobBool> getPressureOpacityKnob() const;
-    boost::shared_ptr<KnobBool> getPressureSizeKnob() const;
-    boost::shared_ptr<KnobBool> getPressureHardnessKnob() const;
-    boost::shared_ptr<KnobBool> getBuildupKnob() const;
-    boost::shared_ptr<KnobInt> getTimeOffsetKnob() const;
-    boost::shared_ptr<KnobChoice> getTimeOffsetModeKnob() const;
-    boost::shared_ptr<KnobChoice> getBrushSourceTypeKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushCloneTranslateKnob() const;
-    boost::shared_ptr<KnobDouble> getMotionBlurAmountKnob() const;
-    boost::shared_ptr<KnobDouble> getShutterOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getShutterKnob() const;
-    boost::shared_ptr<KnobChoice> getShutterTypeKnob() const;
-    boost::shared_ptr<KnobChoice> getFallOffRampTypeKnob() const;
+
+    KnobBoolPtr getActivatedKnob() const;
+    KnobDoublePtr getFeatherKnob() const;
+    KnobDoublePtr getFeatherFallOffKnob() const;
+    KnobDoublePtr getOpacityKnob() const;
+    KnobBoolPtr getInvertedKnob() const;
+    KnobChoicePtr getOperatorKnob() const;
+    KnobColorPtr getColorKnob() const;
+    KnobDoublePtr getCenterKnob() const;
+    KnobIntPtr getLifeTimeFrameKnob() const;
+    KnobDoublePtr getBrushSizeKnob() const;
+    KnobDoublePtr getBrushHardnessKnob() const;
+    KnobDoublePtr getBrushSpacingKnob() const;
+    KnobDoublePtr getBrushEffectKnob() const;
+    KnobDoublePtr getBrushVisiblePortionKnob() const;
+    KnobBoolPtr getPressureOpacityKnob() const;
+    KnobBoolPtr getPressureSizeKnob() const;
+    KnobBoolPtr getPressureHardnessKnob() const;
+    KnobBoolPtr getBuildupKnob() const;
+    KnobIntPtr getTimeOffsetKnob() const;
+    KnobChoicePtr getTimeOffsetModeKnob() const;
+    KnobChoicePtr getBrushSourceTypeKnob() const;
+    KnobDoublePtr getBrushCloneTranslateKnob() const;
+    KnobDoublePtr getMotionBlurAmountKnob() const;
+    KnobDoublePtr getShutterOffsetKnob() const;
+    KnobDoublePtr getShutterKnob() const;
+    KnobChoicePtr getShutterTypeKnob() const;
+    KnobChoicePtr getFallOffRampTypeKnob() const;
 
     void setKeyframeOnAllTransformParameters(double time);
 
-    const std::list<KnobPtr >& getKnobs() const;
+    const std::list<KnobIPtr >& getKnobs() const;
 
-    KnobPtr getKnobByName(const std::string& name) const;
+    KnobIPtr getKnobByName(const std::string& name) const;
 
     virtual RectD getBoundingBox(double time) const = 0;
 
@@ -202,42 +203,7 @@ public:
 
     void resetTransformCenter();
 
-    boost::shared_ptr<Image> renderMask(const ImageComponents& components,
-                                        const double time,
-                                        const ViewIdx view,
-                                        const ImageBitDepthEnum depth,
-                                        const unsigned int mipmapLevel,
-                                        const RectD& rotoNodeSrcRod,
-                                        const OSGLContextPtr& glContext,
-                                        const AbortableRenderInfoPtr& abortInfo,
-                                        StorageModeEnum requestedStorage);
-
-private:
-
-    boost::shared_ptr<Image> renderMaskInternal_cairo(const RectI & roi,
-                                                const ImageComponents& components,
-                                                const double startTime,
-                                                const double endTime,
-                                                const double timeStep,
-                                                const double time,
-                                                const bool inverted,
-                                                const ImageBitDepthEnum depth,
-                                                const unsigned int mipmapLevel,
-                                                const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                const boost::shared_ptr<Image> &image);
-
-    void renderMaskInternal_gl(const OSGLContextPtr& glContext,
-                                                   const double startTime,
-                                                   const double endTime,
-                                                   const double timeStep,
-                                                   const double time,
-                                                   const bool inverted,
-                                                   const unsigned int mipmapLevel,
-                                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                   const RectI& bounds,
-                                                   int target,
-                                                   int texID);
-
+    
 
 Q_SIGNALS:
 
@@ -256,16 +222,16 @@ public Q_SLOTS:
 
 protected:
 
-    void rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason);
+    void rotoKnobChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 
     virtual void onTransformSet(double /*time*/) {}
 
-    void addKnob(const KnobPtr& knob);
+    void addKnob(const KnobIPtr& knob);
 
 private:
 
 
-    RotoDrawableItem* findPreviousInHierarchy();
+    RotoDrawableItemPtr findPreviousInHierarchy();
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 

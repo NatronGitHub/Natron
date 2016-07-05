@@ -120,7 +120,6 @@ NATRON_NAMESPACE_ENTER;
 class EffectInstance
     : public NamedKnobHolder
       , public LockManagerI<Image>
-      , public boost::enable_shared_from_this<EffectInstance>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -129,8 +128,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
     typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
     typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
-    typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;
+    typedef std::map<int, std::list< ImagePtr > > InputImagesMap;
     typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
+    typedef boost::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
 
     struct RenderRoIArgs
     {
@@ -148,7 +148,7 @@ public:
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
         EffectInstance::InputImagesMap inputImagesList;
-        const EffectInstance* caller;
+        EffectInstancePtr caller;
         ImageBitDepthEnum bitdepth; //< the requested bit depth
         bool byPassCache;
         bool calledFromGetImage;
@@ -171,7 +171,7 @@ public:
             , preComputedRoD()
             , components()
             , inputImagesList()
-            , caller(0)
+            , caller()
             , bitdepth(eImageBitDepthFloat)
             , byPassCache(false)
             , calledFromGetImage(false)
@@ -191,7 +191,7 @@ public:
                        const std::list<ImageComponents> & components_,
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
-                       const EffectInstance* caller,
+                       EffectInstancePtr caller,
                        StorageModeEnum returnStorage,
                        double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
@@ -221,7 +221,7 @@ public:
         eSupportsYes = 1
     };
 
-public:
+protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint, RotoSmear
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
@@ -231,11 +231,23 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(NodePtr node);
+    explicit EffectInstance(const NodePtr& node);
 
     EffectInstance(const EffectInstance& other);
 
 public:
+    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    //{
+    //    return EffectInstancePtr( new EffectInstance(node) );
+    //}
+
+    EffectInstancePtr shared_from_this() {
+        return boost::dynamic_pointer_cast<EffectInstance>(KnobHolder::shared_from_this());
+    }
+
+    EffectInstanceConstPtr shared_from_this() const {
+        return boost::dynamic_pointer_cast<const EffectInstance>(KnobHolder::shared_from_this());
+    }
 
     // dtor
     virtual ~EffectInstance();
@@ -306,7 +318,7 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * MT-Safe
      **/
-    EffectInstPtr getInput(int n) const WARN_UNUSED_RETURN;
+    EffectInstancePtr getInput(int n) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node holding the effect
@@ -557,7 +569,7 @@ public:
      * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
     RenderRoIRetCode renderRoI(const RenderRoIArgs & args,
-                               std::map<ImageComponents, boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
+                               std::map<ImageComponents, ImagePtr >* outputPlanes) WARN_UNUSED_RETURN;
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
@@ -571,9 +583,9 @@ public:
                                              ImageBitDepthEnum bitdepth,
                                              const ImageComponents & components,
                                              const EffectInstance::InputImagesMap & inputImages,
-                                             const boost::shared_ptr<RenderStats> & stats,
-                                             const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
-                                             boost::shared_ptr<Image>* image);
+                                             const RenderStatsPtr & stats,
+                                             const OSGLContextAttacherPtr& glContextAttacher,
+                                             ImagePtr* image);
 
     /**
      * @brief Converts the given OpenGL texture to a RAM-stored image. The resulting image will be cached.
@@ -596,7 +608,7 @@ public:
      * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
      * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
      **/
-    boost::shared_ptr<Image> allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
+    ImagePtr allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
 
 
     class NotifyRenderingStarted_RAII
@@ -639,7 +651,7 @@ public:
                                   const AbortableRenderInfoPtr& abortInfo,
                                   const NodePtr & treeRoot,
                                   int visitsCount,
-                                  const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
+                                  const NodeFrameRequestPtr & nodeRequest,
                                   const OSGLContextPtr& glContext,
                                   const OSGLContextPtr& cpuGlContext,
                                   int textureIndex,
@@ -651,20 +663,20 @@ public:
                                   PluginOpenGLRenderSupport currentOpenGLSupport,
                                   bool doNanHandling,
                                   bool draftMode,
-                                  const boost::shared_ptr<RenderStats> & stats);
+                                  const RenderStatsPtr & stats);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
-    void setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameRequest> & nodeRequest);
+    void setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest);
 
-    void setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args);
+    void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
 
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
     void invalidateParallelRenderArgsTLS();
 
-    boost::shared_ptr<ParallelRenderArgs> getParallelRenderArgsTLS() const;
+    ParallelRenderArgsPtr getParallelRenderArgsTLS() const;
 
     //Implem in ParallelRenderArgs.cpp
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,
@@ -694,7 +706,7 @@ public:
                                                                const NodePtr & node,
                                                                const FramesNeededMap & framesNeeded,
                                                                const RoIMap & inputRois,
-                                                               const boost::shared_ptr<InputMatrixMap> & reroutesMap,
+                                                               const InputMatrixMapPtr & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
                                                                StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
                                                                unsigned int originalMipMapLevel,         // roi functor specific
@@ -711,7 +723,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual bool onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -719,19 +731,19 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    EffectInstPtr getNearestNonDisabled() const;
+    EffectInstancePtr getNearestNonDisabled() const;
 
     /**
      * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
      * @param inputNb[out] The inputNb of the node that is non disabled.
      **/
-    EffectInstPtr getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstancePtr getNearestNonDisabledPrevious(int* inputNb);
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    EffectInstPtr getNearestNonIdentity(double time);
+    EffectInstancePtr getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -828,9 +840,9 @@ public:
     ///////////////////////End Metadatas related////////////////////////
 
 
-    virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
-    virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
-    virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void lock(const ImagePtr & entry) OVERRIDE FINAL;
+    virtual bool tryLock(const ImagePtr & entry) OVERRIDE FINAL;
+    virtual void unlock(const ImagePtr & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
@@ -857,7 +869,7 @@ public:
 
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
-    void addThreadLocalInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
+    void addThreadLocalInputImageTempPointer(int inputNb, const ImagePtr & img);
 
     bool getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const;
 
@@ -932,7 +944,7 @@ public:
         RenderScale originalScale;
         RenderScale mappedScale;
         RectI roi;
-        std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > > outputPlanes;
+        std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
         ViewIdx view;
         bool isSequentialRender;
@@ -961,7 +973,7 @@ protected:
     virtual StatusEnum getTransform(double /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
-                                    EffectInstPtr* /*inputToTransform*/,
+                                    EffectInstancePtr* /*inputToTransform*/,
                                     Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
@@ -974,7 +986,7 @@ public:
     StatusEnum getTransform_public(double time,
                                    const RenderScale & renderScale,
                                    ViewIdx view,
-                                   EffectInstPtr* inputToTransform,
+                                   EffectInstancePtr* inputToTransform,
                                    Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
@@ -1035,7 +1047,7 @@ public:
      * region of interest of this effect on the input effect we want to render or the optionalBounds if set, but
      * converted to pixel coordinates
      */
-    boost::shared_ptr<Image> getImage(int inputNb,
+    ImagePtr getImage(int inputNb,
                                       const double time,
                                       const RenderScale & scale,
                                       const ViewIdx view,
@@ -1143,6 +1155,7 @@ public:
     }
 
     void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
+
     OverlaySupport* getCurrentViewportForOverlays() const;
 
 protected:
@@ -1350,22 +1363,22 @@ public:
     struct PlaneToRender
     {
         //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
-        boost::shared_ptr<Image> fullscaleImage;
+        ImagePtr fullscaleImage;
 
         //Points to the image to be rendered
-        boost::shared_ptr<Image> downscaleImage;
+        ImagePtr downscaleImage;
 
         //Points to the image that the plug-in can render (either fullScale or downscale)
-        boost::shared_ptr<Image> renderMappedImage;
+        ImagePtr renderMappedImage;
 
         //Points to a temporary image that the plug-in will render
-        boost::shared_ptr<Image> tmpImage;
+        ImagePtr tmpImage;
 
         /*
            In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
            if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
          */
-        boost::shared_ptr<Image> cacheSwapImage;
+        ImagePtr cacheSwapImage;
         void* originalCachedImage;
 
         /**
@@ -1387,7 +1400,7 @@ public:
 
     struct RectToRender
     {
-        EffectInstPtr identityInput;
+        EffectInstancePtr identityInput;
         RectI rect;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
@@ -1418,6 +1431,7 @@ public:
         }
     };
 
+    typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
 
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
@@ -1431,7 +1445,7 @@ public:
                                       ImageComponents* planeBeingRendered,
                                       RectI* renderWindow) const;
 
-    bool getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const;
+    bool getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const;
 
     /**
      * @brief Called when the associated node's hash has changed.
@@ -1480,7 +1494,7 @@ protected:
         EffectInstance* effect;
 
 public:
-
+        // no need to use a smart ptr for the EffectInstance, since this is a protected class
         CanSetSetValueFlag_RAII(EffectInstance* effect,
                                 bool canSetValue)
             : effect(effect)
@@ -1509,7 +1523,7 @@ public:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual bool knobChanged(KnobI* /*k*/,
+    virtual bool knobChanged(const KnobIPtr& /*k*/,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,
@@ -1570,7 +1584,7 @@ public:
     bool setCurrentCursor(const QString& customCursorFilePath);
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
@@ -1640,16 +1654,16 @@ public:
     /**
      * @brief Flag that the overlays should be redrawn when this knob changes.
      **/
-    void addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob);
+    void addOverlaySlaveParam(const KnobIPtr& knob);
 
-    bool isOverlaySlaveParam(const KnobI* knob) const;
+    bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
 
 
     /**
      * @brief Returns the components available on each input for this effect at the given time.
      **/
     void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstance*>* markedNodes);
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstancePtr>* markedNodes);
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1688,7 +1702,7 @@ public:
         return false;
     }
 
-    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& /*serialization*/) {}
+    virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& /*serialization*/) {}
 
     virtual void onKnobsLoaded() {}
 
@@ -1698,7 +1712,7 @@ public:
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
                                  const CreateNodeArgs& /*args*/) {}
 
-    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
+    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
@@ -1734,7 +1748,7 @@ protected:
      * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
      * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
      **/
-    virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
+    virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 
 
     /**
@@ -1746,10 +1760,10 @@ protected:
 
 private:
 
-    EffectInstPtr getOrCreateRenderInstance();
+    EffectInstancePtr getOrCreateRenderInstance();
 
 
-    void releaseRenderInstance(const EffectInstPtr& instance);
+    void releaseRenderInstance(const EffectInstancePtr& instance);
 
     /**
      * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
@@ -1784,7 +1798,7 @@ private:
                                          double time,
                                          ViewIdx view,
                                          ComponentsAvailableMap* comps,
-                                         std::list<EffectInstance*>* markedNodes);
+                                         std::list<EffectInstancePtr>* markedNodes);
 
 public:
 
@@ -1810,12 +1824,12 @@ public:
                                   InputMatrixMap* inputTransforms);
 
 
-    static void transformInputRois(const EffectInstance* self,
-                                   const boost::shared_ptr<InputMatrixMap>& inputTransforms,
+    static void transformInputRois(const EffectInstancePtr& self,
+                                   const InputMatrixMapPtr& inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
-                                   std::map<int, EffectInstPtr>* reroutesMap);
+                                   const ReRoutesMapPtr& reroutesMap);
     struct RenderArgs
     {
         RectD rod; //!< the effect's RoD in CANONICAL coordinates
@@ -1826,15 +1840,15 @@ public:
         bool validArgs; //< are the args valid ?
         bool isIdentity;
         double identityTime;
-        EffectInstPtr identityInput;
+        EffectInstancePtr identityInput;
         EffectInstance::InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> outputPlanes;
 
         //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
         ImageComponents outputPlaneBeingRendered;
-        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        ComponentsNeededMapPtr  compsNeeded;
         double firstFrame, lastFrame;
-        boost::shared_ptr<InputMatrixMap> transformRedirections;
+        InputMatrixMapPtr transformRedirections;
         bool isDoingOpenGLRender;
 
         RenderArgs();
@@ -1885,7 +1899,7 @@ public:
         ///Recursive because it may be set recursively in such situation:
         ///knobChanged : set ParallelRenderArgs TLS for analysis
         ///timelineGoTo calls getRenderviewerArgs on the MT which overrides this TLS
-        std::list<boost::shared_ptr<ParallelRenderArgs> > frameArgs;
+        std::list<ParallelRenderArgsPtr > frameArgs;
         EffectInstance::RenderArgs currentRenderArgs;
 
         EffectTLSData()
@@ -2108,15 +2122,15 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    static RenderRoIStatusEnum renderRoIInternal(EffectInstance* self,
+    static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
                                                  double time,
-                                                 const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                                 const ParallelRenderArgsPtr & frameArgs,
                                                  RenderSafetyEnum safety,
                                                  unsigned int mipMapLevel,
                                                  ViewIdx view,
                                                  const RectD & rod, //!< rod in canonical coordinates
                                                  const double par,
-                                                 const boost::shared_ptr<ImagePlanesToRender> & planes,
+                                                 const ImagePlanesToRenderPtr & planes,
                                                  bool isSequentialRender,
                                                  bool isRenderMadeInResponseToUserInteraction,
                                                  U64 nodeHash,
@@ -2124,7 +2138,7 @@ private:
                                                  bool byPassCache,
                                                  ImageBitDepthEnum outputClipPrefDepth,
                                                  const ImageComponents& outputClipPrefsComps,
-                                                 const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                 const ComponentsNeededMapPtr & compsNeeded,
                                                  std::bitset<4> processChannels);
 
 
@@ -2136,7 +2150,7 @@ private:
                                              ViewIdx view,
                                              const RectD & rod,
                                              const RectD & canonicalRenderWindow,
-                                             const boost::shared_ptr<InputMatrixMap> & transformMatrix,
+                                             const InputMatrixMapPtr & transformMatrix,
                                              unsigned int mipMapLevel,
                                              const RenderScale & renderMappedScale,
                                              bool useScaleOneInputImages,
@@ -2146,8 +2160,8 @@ private:
                                              EffectInstance::InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
-    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstPtr& app,
-                                                                 const boost::shared_ptr<Image>& inputImage,
+    static ImagePtr convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
+                                                                 const ImagePtr& inputImage,
                                                                  const RectI& roi,
                                                                  const ImageComponents& targetComponents,
                                                                  ImageBitDepthEnum targetDepth,
@@ -2169,7 +2183,7 @@ private:
                                          bool* isIdentity_p,
                                          double* identityTime,
                                          ViewIdx *inputView,
-                                         EffectInstPtr* identityInput_p,
+                                         EffectInstancePtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -2188,14 +2202,15 @@ private:
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
+                            const OSGLContextPtr& glContext,
                             StorageModeEnum storage,
                             bool createInCache,
-                            boost::shared_ptr<Image>* fullScaleImage,
-                            boost::shared_ptr<Image>* downscaleImage);
+                            ImagePtr* fullScaleImage,
+                            ImagePtr* downscaleImage);
 
 
-    virtual void onSignificantEvaluateAboutToBeCalled(KnobI* knob) OVERRIDE FINAL;
-    virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob) OVERRIDE FINAL;
+    virtual void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master) OVERRIDE FINAL;
     enum RenderingFunctorRetEnum
     {
         eRenderingFunctorRetFailed, //< must stop rendering
@@ -2209,16 +2224,16 @@ private:
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(const EffectInstance* inputEffect) const;
+    int getInputNumber(const EffectInstancePtr& inputEffect) const;
 };
 
 class ClipPreferencesRunning_RAII
 {
-    EffectInstance* _effect;
+    EffectInstancePtr _effect;
 
 public:
 
-    ClipPreferencesRunning_RAII(EffectInstance* effect)
+    ClipPreferencesRunning_RAII(const EffectInstancePtr& effect)
         : _effect(effect)
     {
         _effect->setClipPreferencesRunning(true);
@@ -2235,7 +2250,14 @@ public:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef EffectInstance* (*EffectBuilder)(NodePtr);
+typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
+
+inline EffectInstancePtr
+toEffectInstance(const KnobHolderPtr& effect)
+{
+    return boost::dynamic_pointer_cast<EffectInstance>(effect);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

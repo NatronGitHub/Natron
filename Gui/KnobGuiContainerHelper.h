@@ -45,14 +45,14 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > KnobsGuiMapping;
+typedef std::list<std::pair<KnobIWPtr, KnobGuiPtr> > KnobsGuiMapping;
 
 struct KnobPageGui
 {
     QWidget* tab;
     int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
-    boost::weak_ptr<KnobPage> pageKnob;
+    KnobPageWPtr pageKnob;
     QGridLayout* gridLayout;
 
     KnobPageGui()
@@ -66,7 +66,7 @@ struct KnobPageGui
 };
 
 typedef boost::shared_ptr<KnobPageGui> KnobPageGuiPtr;
-typedef std::map<boost::weak_ptr<KnobPage>, KnobPageGuiPtr> PagesMap;
+typedef std::map<KnobPageWPtr, KnobPageGuiPtr> PagesMap;
 
 /**
  * @brief Helper class to handle signal/slots so we do not make KnobGuiContainerHelper inherit QObject.
@@ -128,7 +128,7 @@ public:
      * The option QUndoStack stack can be given in parameter so that we do not make our own undo/redo stack but
      * use this one instead.
      **/
-    KnobGuiContainerHelper(KnobHolder* holder, const boost::shared_ptr<QUndoStack>& stack);
+    KnobGuiContainerHelper(const KnobHolderPtr& holder, const boost::shared_ptr<QUndoStack>& stack);
 
     virtual ~KnobGuiContainerHelper();
 
@@ -146,7 +146,7 @@ public:
     /**
      * @brief Return a list of all the internal pages which were created by the user
      **/
-    void getUserPages(std::list<KnobPage*>& userPages) const;
+    void getUserPages(std::list<KnobPagePtr>& userPages) const;
 
     /**
      * @brief Same as calling setPageActiveIndex(getUserPageKnob())
@@ -156,17 +156,17 @@ public:
     /**
      * @brief Make the given page current
      **/
-    void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
+    void setPageActiveIndex(const KnobPagePtr& page);
 
     /**
      * @brief Returns the use page knob or create it if it was not
      **/
-    boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() const;
+    KnobPagePtr getOrCreateUserPageKnob() const;
 
     /**
      * @brief Returns the use page knob but do not create it
      **/
-    boost::shared_ptr<KnobPage> getUserPageKnob() const;
+    KnobPagePtr getUserPageKnob() const;
 
     /**
      * @brief Same as getPages().size()
@@ -214,7 +214,7 @@ public:
     /**
      * @brief Removes a knob from the GUI, this should not be called directly, instead one should call KnobHolder::deleteKnob
      **/
-    virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
+    virtual void deleteKnobGui(const KnobIPtr& knob) OVERRIDE FINAL;
 
     /**
      * @brief Scan for changes among user created knobs and re-create them
@@ -247,7 +247,7 @@ public:
     /**
      * @brief Returns a pointe to the KnobGui representing the given internal knob.
      **/
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the horizontal spacing that should be used by default between knobs on a same layout line.
@@ -327,7 +327,7 @@ protected:
     /**
      * @brief Returns the given page or creates it
      **/
-    KnobPageGuiPtr getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
+    KnobPageGuiPtr getOrCreatePage(const KnobPagePtr& page);
 
     /**
      * @brief Returns the page that should be used by default for knobs without a page.
@@ -342,7 +342,7 @@ private:
 
     void clearUndoRedoStack();
 
-    KnobGuiPtr findKnobGuiOrCreate(const KnobPtr & knob,
+    KnobGuiPtr findKnobGuiOrCreate(const KnobIPtr & knob,
                                    bool makeNewLine,
                                    int lastKnobLineSpacing,
                                    QWidget* lastRowWidget,

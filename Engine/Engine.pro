@@ -167,6 +167,7 @@ SOURCES += \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
+    RotoBezierTriangulation.cpp \
     RotoContext.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
@@ -174,6 +175,8 @@ SOURCES += \
     RotoPaint.cpp \
     RotoPaintInteract.cpp \
     RotoShapeRenderNode.cpp \
+    RotoShapeRenderCairo.cpp \
+    RotoShapeRenderGL.cpp \
     RotoSmear.cpp \
     RotoStrokeItem.cpp \
     RotoUndoCommand.cpp \
@@ -383,6 +386,7 @@ HEADERS += \
     RectI.h \
     RectISerialization.h \
     RenderStats.h \
+    RotoBezierTriangulation.h \
     RotoContext.h \
     RotoContextPrivate.h \
     RotoContextSerialization.h \
@@ -396,6 +400,8 @@ HEADERS += \
     RotoPaintInteract.h \
     RotoPoint.h \
     RotoShapeRenderNode.h \
+    RotoShapeRenderCairo.h \
+    RotoShapeRenderGL.h \
     RotoSmear.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \

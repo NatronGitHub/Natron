@@ -51,7 +51,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-
 /**
  * @brief This class encapsulates a cross-platform OpenGL context used for offscreen rendering.
  **/
@@ -264,6 +263,11 @@ public:
     , _buffer(buffer)
     {
         assert(c);
+    }
+
+    OSGLContextPtr getContext() const
+    {
+        return _c;
     }
 
     void attach()

@@ -59,7 +59,7 @@ class NodeCollection
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
 public:
-    NodeCollection(const AppInstPtr& app);
+    NodeCollection(const AppInstancePtr& app);
 
     virtual ~NodeCollection();
 
@@ -68,7 +68,7 @@ public:
     void discardNodeGraphPointer();
 
     NodeGraphI* getNodeGraph() const;
-    AppInstPtr getApplication() const;
+    AppInstancePtr getApplication() const;
 
     /**
      * @brief Returns a copy of the nodes within the collection. MT-safe.
@@ -111,7 +111,7 @@ public:
      * @param errorIfExists If a node with the same script-name exists, error
      * This function throws a runtime exception with the error message in case of error.
      **/
-    void checkNodeName(const Node* node, const std::string& baseName, bool appendDigit, bool errorIfExists, std::string* nodeName);
+    void checkNodeName(const NodeConstPtr& node, const std::string& baseName, bool appendDigit, bool errorIfExists, std::string* nodeName);
 
     /**
      * @brief Returns true if there is one or more nodes in the collection.
@@ -152,12 +152,12 @@ public:
     /**
      * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeNameExists(const std::string & n, const Node* caller) const;
+    bool checkIfNodeNameExists(const std::string & n, const NodeConstPtr& caller) const;
 
     /**
      * @brief Returns true if a node has the give label n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeLabelExists(const std::string & n, const Node* caller) const;
+    bool checkIfNodeLabelExists(const std::string & n, const NodeConstPtr& caller) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
@@ -217,12 +217,12 @@ public:
     /**
      * @brief Get all viewers in the group and sub groups
      **/
-    void getViewers(std::list<ViewerInstance*>* viewers) const;
+    void getViewers(std::list<ViewerInstancePtr>* viewers) const;
 
     /**
      * @brief Get all Writers in the group and sub groups
      **/
-    void getWriters(std::list<OutputEffectInstance*>* writers) const;
+    void getWriters(std::list<OutputEffectInstancePtr>* writers) const;
 
     /**
      * @brief Checks if a node in the project already has this cacheID
@@ -238,7 +238,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
 
 
-    void getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const;
+    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >& argsMap) const;
 
 
     void forceComputeInputDependentDataOnAllTrees();
@@ -278,27 +278,38 @@ public:
                              QString& output);
 
 private:
+    void quitAnyProcessingInternal();
+    void recomputeFrameRangeForAllReadersInternal(int* firstFrame,
+                                                  int* lastFrame,
+                                                  bool setFrameRange);
+    void exportGroupInternal(int indentLevel,
+                             const NodePtr& upperLevelGroupNode,
+                             const QString& upperLevelGroupName,
+                             QTextStream& ts);
 
+private:
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
 };
 
 
 struct NodeGroupPrivate;
 class NodeGroup
-    : public OutputEffectInstance, public NodeCollection
+    : public OutputEffectInstance
+    , public NodeCollection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new NodeGroup(n);
-    }
-
+protected: // derives from EffectInstance, parent of TrackerNode and WriteNode
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     NodeGroup(const NodePtr &node);
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new NodeGroup(node) );
+    }
 
     virtual ~NodeGroup();
 
@@ -362,7 +373,7 @@ public:
 
     NodePtr getRealInputForInput(bool useGuiConnexions, const NodePtr& input) const;
 
-    void getInputs(std::vector<NodePtr >* inputs, bool useGuiConnexions) const;
+    void getInputs(std::vector<NodePtr>* inputs, bool useGuiConnexions) const;
 
     void getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const;
 
@@ -389,12 +400,24 @@ Q_SIGNALS:
 private:
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual bool knobChanged(KnobI * k, ValueChangedReasonEnum reason,
+    virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                              ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE;
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
+
+inline NodeGroupPtr
+toNodeGroup(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<NodeGroup>(effect);
+}
+
+inline NodeGroupPtr
+toNodeGroup(const NodeCollectionPtr& group)
+{
+    return boost::dynamic_pointer_cast<NodeGroup>(group);
+}
 
 NATRON_NAMESPACE_EXIT;
 

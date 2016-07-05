@@ -43,7 +43,7 @@ public:
 
     CurveSelection() {}
 
-    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) = 0;
+    virtual void getSelectedCurves(std::vector<CurveGuiPtr >* selection) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

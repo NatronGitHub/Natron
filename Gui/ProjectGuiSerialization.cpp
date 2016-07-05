@@ -68,22 +68,22 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     _serializedNodes.clear();
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
+        NodeGuiIPtr nodegui_i = (*it)->getNodeGui();
         if (!nodegui_i) {
             continue;
         }
         NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
 
         if ( nodegui->isVisible() ) {
-            boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
-            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>( isInCollection.get() );
+            NodeCollectionPtr isInCollection = (*it)->getGroup();
+            NodeGroupPtr isCollectionAGroup = toNodeGroup( isInCollection );
             if (!isCollectionAGroup) {
                 ///Nodes within a group will be serialized recursively in the node group serialization
                 NodeGuiSerialization state;
                 nodegui->serialize(&state);
                 _serializedNodes.push_back(state);
             }
-            ViewerInstance* viewer = (*it)->isEffectViewer();
+            ViewerInstancePtr viewer = (*it)->isEffectViewerInstance();
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);
@@ -137,13 +137,13 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
     std::list<DockablePanel*> panels = projectGui->getGui()->getVisiblePanels_mt_safe();
     for (std::list<DockablePanel*>::iterator it = panels.begin(); it != panels.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            KnobHolder* holder = (*it)->getHolder();
+            KnobHolderPtr holder = (*it)->getHolder();
             assert(holder);
 
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-            Project* isProject = dynamic_cast<Project*>(holder);
+            EffectInstancePtr isEffect = toEffectInstance(holder);
+            ProjectPtr isProj = toProject(holder);
 
-            if (isProject) {
+            if (isProj) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
             } else if (isEffect) {
                 _openedPanelsOrdered.push_back( isEffect->getNode()->getFullyQualifiedName() );
@@ -255,7 +255,7 @@ ApplicationWindowSerialization::initialize(bool mainWindow,
                 child_asPane->initialize(isTabWidget);
             } else if (isPanel) {
                 ///A named knob holder is a knob holder which has a unique name.
-                NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
+                NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>(isPanel);
                 if (isNamedHolder) {
                     child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
                 } else {
@@ -291,14 +291,14 @@ PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
     pythonFunction = func;
     std::list<NATRON_PYTHON_NAMESPACE::Param*> parameters = tab->getParams();
     for (std::list<NATRON_PYTHON_NAMESPACE::Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
-        KnobPtr knob = (*it)->getInternalKnob();
-        KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
-        KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
-        KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
-        //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+        KnobIPtr knob = (*it)->getInternalKnob();
+        KnobGroupPtr isGroup = toKnobGroup(knob);
+        KnobPagePtr isPage = toKnobPage(knob);
+        KnobButtonPtr isButton = toKnobButton(knob);
+        //KnobChoicePtr isChoice = toKnobChoice(knob);
 
         if (!isGroup && !isPage && !isButton) {
-            boost::shared_ptr<KnobSerialization> k( new KnobSerialization(knob) );
+            KnobSerializationPtr k( new KnobSerialization(knob) );
             knobs.push_back(k);
         }
         delete *it;

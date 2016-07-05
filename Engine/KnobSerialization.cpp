@@ -53,7 +53,7 @@ ValueSerialization::ValueSerialization()
 }
 
 ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
-                                       const KnobPtr & knob,
+                                       const KnobIPtr & knob,
                                        int dimension)
     : _serialization(serialization)
     , _knob(knob)
@@ -66,7 +66,7 @@ ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
 
 void
 ValueSerialization::initForLoad(KnobSerializationBase* serialization,
-                 const KnobPtr & knob,
+                 const KnobIPtr & knob,
                  int dimension)
 {
     _serialization = serialization;
@@ -74,7 +74,7 @@ ValueSerialization::initForLoad(KnobSerializationBase* serialization,
     _dimension = dimension;
 }
 
-ValueSerialization::ValueSerialization(const KnobPtr & knob,
+ValueSerialization::ValueSerialization(const KnobIPtr & knob,
                                        int dimension,
                                        bool exprHasRetVar,
                                        const std::string& expr)
@@ -89,7 +89,7 @@ ValueSerialization::ValueSerialization(const KnobPtr & knob,
 }
 
 void
-ValueSerialization::initForSave(const KnobPtr & knob,
+ValueSerialization::initForSave(const KnobIPtr & knob,
                  int dimension,
                  bool exprHasRetVar,
                  const std::string& expr)
@@ -99,14 +99,14 @@ ValueSerialization::initForSave(const KnobPtr & knob,
     _expression = expr;
     _exprHasRetVar = exprHasRetVar;
 
-    std::pair< int, KnobPtr > m = knob->getMaster(dimension);
+    std::pair< int, KnobIPtr > m = knob->getMaster(dimension);
 
     if ( m.second && !knob->isMastersPersistenceIgnored() ) {
         _master.masterDimension = m.first;
-        NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>( m.second->getHolder() );
+        NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( m.second->getHolder() );
         assert(holder);
 
-        TrackMarker* isMarker = dynamic_cast<TrackMarker*>(holder);
+        TrackMarkerPtr isMarker = toTrackMarker(holder);
         if (isMarker) {
             _master.masterTrackName = isMarker->getScriptName_mt_safe();
             _master.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
@@ -128,38 +128,38 @@ ValueSerialization::setChoiceExtraLabel(const std::string& label)
     _serialization->setChoiceExtraString(label);
 }
 
-KnobPtr
+KnobIPtr
 KnobSerialization::createKnob(const std::string & typeName,
                               int dimension)
 {
-    KnobPtr ret;
+    KnobIPtr ret;
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        ret.reset( new KnobInt(NULL, std::string(), dimension, false) );
+        ret = KnobInt::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        ret.reset( new KnobBool(NULL, std::string(), dimension, false) );
+        ret = KnobBool::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        ret.reset( new KnobDouble(NULL, std::string(), dimension, false) );
+        ret = KnobDouble::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        ret.reset( new KnobChoice(NULL, std::string(), dimension, false) );
+        ret = KnobChoice::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        ret.reset( new KnobString(NULL, std::string(), dimension, false) );
+        ret = KnobString::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        ret.reset( new KnobParametric(NULL, std::string(), dimension, false) );
+        ret = KnobParametric::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        ret.reset( new KnobColor(NULL, std::string(), dimension, false) );
+        ret = KnobColor::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        ret.reset( new KnobPath(NULL, std::string(), dimension, false) );
+        ret = KnobPath::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobLayers::typeNameStatic() ) {
-        ret.reset( new KnobLayers(NULL, std::string(), dimension, false) );
+        ret = KnobLayers::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        ret.reset( new KnobFile(NULL, std::string(), dimension, false) );
+        ret = KnobFile::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        ret.reset( new KnobOutputFile(NULL, std::string(), dimension, false) );
+        ret = KnobOutputFile::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobButton::typeNameStatic() ) {
-        ret.reset( new KnobButton(NULL, std::string(), dimension, false) );
+        ret = KnobButton::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobSeparator::typeNameStatic() ) {
-        ret.reset( new KnobSeparator(NULL, std::string(), dimension, false) );
+        ret = KnobSeparator::create(KnobHolderPtr(), std::string(), dimension, false);
     }
 
     if (ret) {
@@ -169,8 +169,8 @@ KnobSerialization::createKnob(const std::string & typeName,
     return ret;
 }
 
-static KnobPtr
-findMaster(const KnobPtr & knob,
+static KnobIPtr
+findMaster(const KnobIPtr & knob,
            const NodesList & allNodes,
            const std::string& masterKnobName,
            const std::string& masterNodeName,
@@ -200,11 +200,11 @@ findMaster(const KnobPtr & knob,
     if (!masterNode) {
         qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
 
-        return KnobPtr();
+        return KnobIPtr();
     }
 
     if ( !masterTrackName.empty() ) {
-        boost::shared_ptr<TrackerContext> context = masterNode->getTrackerContext();
+        TrackerContextPtr context = masterNode->getTrackerContext();
         if (context) {
             TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
             if (marker) {
@@ -213,7 +213,7 @@ findMaster(const KnobPtr & knob,
         }
     } else {
         ///now that we have the master node, find the corresponding knob
-        const std::vector< KnobPtr > & otherKnobs = masterNode->getKnobs();
+        const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
         for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
             if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
                 return otherKnobs[j];
@@ -224,11 +224,11 @@ findMaster(const KnobPtr & knob,
 
     qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
 
-    return KnobPtr();
+    return KnobIPtr();
 }
 
 void
-KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
+KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
                                     const NodesList & allNodes,
                                     const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
@@ -242,7 +242,7 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
-            KnobPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
+            KnobIPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
             if (alias) {
                 knob->setKnobAsAliasOfThis(alias, true);
             }
@@ -250,7 +250,7 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
     } else {
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
-                KnobPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, it->masterTrackName, oldNewScriptNamesMapping);
+                KnobIPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, it->masterTrackName, oldNewScriptNamesMapping);
                 if (master) {
                     knob->slaveTo(i, master, it->masterDimension);
                 }
@@ -261,7 +261,7 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
 }
 
 void
-KnobSerialization::restoreExpressions(const KnobPtr & knob,
+KnobSerialization::restoreExpressions(const KnobIPtr & knob,
                                       const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
     int dims = std::min( knob->getDimension(), _knob->getDimension() );

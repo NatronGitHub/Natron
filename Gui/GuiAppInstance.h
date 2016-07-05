@@ -74,15 +74,22 @@ public:
 
 struct GuiAppInstancePrivate;
 class GuiAppInstance
-    : public AppInstance
+    : public AppInstance // derives from boost::enable_shared_from_this<>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     GuiAppInstance(int appID);
+
+public:
+    static AppInstancePtr create(int appID) WARN_UNUSED_RETURN
+    {
+        return AppInstancePtr( new GuiAppInstance(appID) );
+    }
 
     virtual ~GuiAppInstance();
 
@@ -140,10 +147,10 @@ public:
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
-                                     OutputEffectInstance* writer,
-                                     const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
-    virtual void notifyRenderRestarted( OutputEffectInstance* writer,
-                                        const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
+                                     const OutputEffectInstancePtr& writer,
+                                     const ProcessHandlerPtr & process) OVERRIDE FINAL;
+    virtual void notifyRenderRestarted( const OutputEffectInstancePtr& writer,
+                                        const ProcessHandlerPtr & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
     void setViewersCurrentView(ViewIdx view);
@@ -169,7 +176,7 @@ public:
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;
-    virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
+    virtual ViewerInstancePtr getLastViewerUsingTimeline() const OVERRIDE FINAL;
 
     void discardLastViewerUsingTimeline();
 
@@ -187,8 +194,8 @@ public:
 
     void clearOverlayRedrawRequests();
 
-    void setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension);
-    void getKnobDnDData(QDrag** drag,  KnobPtr* knob, int* dimension) const;
+    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
+    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
 
     bool checkAllReadersModificationDate(bool errorAndWarn);
 
@@ -206,7 +213,7 @@ public Q_SLOTS:
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual AppInstPtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AppInstancePtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Close the current project but keep the window
     virtual bool resetProject()  OVERRIDE FINAL;
@@ -215,7 +222,7 @@ public Q_SLOTS:
     virtual bool closeProject()  OVERRIDE FINAL;
 
     ///Opens a new window
-    virtual AppInstPtr newProject()  OVERRIDE FINAL;
+    virtual AppInstancePtr newProject()  OVERRIDE FINAL;
 
     void handleFileOpenEvent(const std::string& filename);
 
@@ -238,17 +245,17 @@ public:
                                            int strokeIndex) OVERRIDE FINAL;
     virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
     virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                     double *distNextIn, boost::shared_ptr<Image>* strokeImage) const OVERRIDE FINAL;
+                                     double *distNextIn, ImagePtr* strokeImage) const OVERRIDE FINAL;
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const OVERRIDE FINAL;
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
+    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke, int* strokeIndex) const OVERRIDE FINAL;
+    virtual void updateStrokeImage(const ImagePtr& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     virtual void setUserIsPainting(const NodePtr& rotopaintNode,
-                                   const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                   const RotoStrokeItemPtr& stroke,
                                    bool isPainting) OVERRIDE FINAL;
     virtual void getActiveRotoDrawingStroke(NodePtr* node,
-                                            boost::shared_ptr<RotoStrokeItem>* stroke,
+                                            RotoStrokeItemPtr* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
     ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
@@ -257,10 +264,10 @@ public:
     virtual void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
     virtual void removeKeyFrameIndicator(SequenceTime time) OVERRIDE FINAL;
     virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
-    virtual void addNodesKeyframesToTimeline(const std::list<Node*> & nodes) OVERRIDE FINAL;
-    virtual void addNodeKeyframesToTimeline(Node* node) OVERRIDE FINAL;
-    virtual void removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes) OVERRIDE FINAL;
-    virtual void removeNodeKeyframesFromTimeline(Node* node) OVERRIDE FINAL;
+    virtual void addNodesKeyframesToTimeline(const std::list<NodePtr> & nodes) OVERRIDE FINAL;
+    virtual void addNodeKeyframesToTimeline(const NodePtr& node) OVERRIDE FINAL;
+    virtual void removeNodesKeyframesFromTimeline(const std::list<NodePtr> & nodes) OVERRIDE FINAL;
+    virtual void removeNodeKeyframesFromTimeline(const NodePtr& node) OVERRIDE FINAL;
     virtual void getKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
     virtual void removeAllUserKeyframesIndicators() OVERRIDE FINAL;
     virtual void addUserKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;
@@ -272,12 +279,18 @@ public:
 
 private:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
+
+inline GuiAppInstancePtr
+toGuiAppInstance(const AppInstancePtr& instance)
+{
+    return boost::dynamic_pointer_cast<GuiAppInstance>(instance);
+}
 
 NATRON_NAMESPACE_EXIT;
 

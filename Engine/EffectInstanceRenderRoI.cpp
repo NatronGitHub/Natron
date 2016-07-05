@@ -90,7 +90,7 @@ NATRON_NAMESPACE_ENTER;
  * For non-identity rectangles, compute the bounding box of them and render it
  */
 static void
-optimizeRectsToRender(EffectInstance* self,
+optimizeRectsToRender(const EffectInstancePtr& self,
                       const RectI & inputsRoDIntersection,
                       const std::list<RectI> & rectsToRender,
                       const double time,
@@ -126,14 +126,14 @@ optimizeRectsToRender(EffectInstance* self,
 
                 // Walk along the identity branch until we find the non identity input, or NULL in we case we will
                 // just render black and transparent
-                EffectInstPtr identityInput = self->getInput(identityInputNb);
+                EffectInstancePtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &inputIdentityView,  &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
-                        EffectInstPtr subIdentityInput = identityInput->getInput(identityInputNb);
+                        EffectInstancePtr subIdentityInput = identityInput->getInput(identityInputNb);
                         if (subIdentityInput == identityInput) {
                             break;
                         }
@@ -164,7 +164,7 @@ optimizeRectsToRender(EffectInstance* self,
 } // optimizeRectsToRender
 
 ImagePtr
-EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
+EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImageComponents& targetComponents,
@@ -245,7 +245,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     assert(tls);
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr abortInfo;
-    boost::shared_ptr<ParallelRenderArgs>  frameArgs;
+    ParallelRenderArgsPtr  frameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
@@ -356,7 +356,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     ///Determine needed planes
-    boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
+    ComponentsNeededMapPtr neededComps(new ComponentsNeededMap);
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
 
@@ -554,7 +554,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
-            EffectInstPtr inputEffectIdentity = getInput(inputNbIdentity);
+            EffectInstancePtr inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
                     frameArgs->stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
@@ -609,7 +609,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     if (fetchUserSelectedComponentsUpstream) {
                         // We fetched potentially different components, so convert them to the format requested
                         std::map<ImageComponents, ImagePtr> convertedPlanes;
-                        AppInstPtr app = getApp();
+                        AppInstancePtr app = getApp();
                         bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                         std::list<ImageComponents>::const_iterator compIt = args.components.begin();
 
@@ -731,7 +731,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
-    boost::shared_ptr<OSGLContextAttacher> glContextLocker;
+    OSGLContextAttacherPtr glContextLocker;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
@@ -814,7 +814,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         createInCache = false;
     } else {
         // in Analysis, the node upstream of te analysis node should always cache
-        createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
+        createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
     }
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
@@ -850,7 +850,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      */
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImageComponents outputClipPrefComps = getComponents(-1);
-    boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
+    ImagePlanesToRenderPtr planesToRender(new ImagePlanesToRender);
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
     boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1129,7 +1129,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         bool hasDifferentRods = false;
         int maxInput = getMaxInputCount();
         bool hasMask = false;
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
             bool isMask = isInputMask(i);
             RectD inputRod;
@@ -1137,12 +1137,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
                 hasMask = true;
             } else {
-                EffectInstPtr input = getInput(i);
+                EffectInstancePtr input = getInput(i);
                 if (!input) {
                     continue;
                 }
                 bool isProjectFormat;
-                boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = input->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = (inputFrameArgs) ? inputFrameArgs->nodeHash : input->getHash();
                 StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
@@ -1179,7 +1179,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     if (tryIdentityOptim) {
-        optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
+        optimizeRectsToRender(shared_from_this(), inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
     } else {
         for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
             RectToRender r;
@@ -1239,7 +1239,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
-                EffectInstPtr input = getInput(it2->first);
+                EffectInstancePtr input = getInput(it2->first);
                 if (input) {
                     ImagePremultiplicationEnum inputPremult = input->getPremult();
                     if ( !it2->second.empty() ) {
@@ -1324,7 +1324,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
             if ( tryIdentityOptim && !rectsLeftToRender.empty() ) {
-                optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
+                optimizeRectsToRender(shared_from_this(), inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
             } else {
                 for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
                     if ( it->isNull() ) {
@@ -1425,6 +1425,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    par,
                                    args.mipMapLevel,
                                    renderFullScaleThenDownscale,
+                                   glContext,
                                    storage,
                                    createInCache,
                                    &it->second.fullscaleImage,
@@ -1456,7 +1457,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                      * separate image and then we swap the images in the cache directly, without taking the image write lock.
                      */
 
-                    hasResized = it->second.fullscaleImage->copyAndResizeIfNeeded(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds, fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes, &it->second.cacheSwapImage);
+                    hasResized = it->second.fullscaleImage->copyAndResizeIfNeeded(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds, fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes, &it->second.cacheSwapImage, glContext);
                     if (hasResized) {
                         ///Work on the swapImg and then swap in the cache
                         ImagePtr swapImg = it->second.cacheSwapImage;
@@ -1544,7 +1545,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             boost::scoped_ptr<QMutexLocker> locker;
             RenderSafetyEnum safety = frameArgs->currentThreadSafety;
 
-            EffectInstPtr renderInstance;
+            EffectInstancePtr renderInstance;
             /**
              * Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
              * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
@@ -1606,7 +1607,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
             if (attachGLOK) {
-                renderRetCode = renderRoIInternal(renderInstance.get(),
+                renderRetCode = renderRoIInternal(renderInstance,
                                                   args.time,
                                                   frameArgs,
                                                   safety,
@@ -1752,9 +1753,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         //If we have worked on a local swaped image, swap it in the cache
         if (it->second.cacheSwapImage) {
             const CacheAPI* cache = it->second.cacheSwapImage->getCacheAPI();
-            const Cache<Image>* imgCache = dynamic_cast<const Cache<Image>*>(cache);
+            const ImageCache* imgCache = dynamic_cast<const ImageCache*>(cache);
             if (imgCache) {
-                Cache<Image>* ccImgCache = const_cast<Cache<Image>*>(imgCache);
+                ImageCache* ccImgCache = const_cast<ImageCache*>(imgCache);
                 assert(ccImgCache);
                 ccImgCache->swapOrInsert(it->second.cacheSwapImage, it->second.fullscaleImage);
             }
@@ -1862,15 +1863,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 } // renderRoI
 
 EffectInstance::RenderRoIStatusEnum
-EffectInstance::renderRoIInternal(EffectInstance* self,
+EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
                                   double time,
-                                  const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                  const ParallelRenderArgsPtr & frameArgs,
                                   RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   ViewIdx view,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
-                                  const boost::shared_ptr<ImagePlanesToRender> & planesToRender,
+                                  const ImagePlanesToRenderPtr & planesToRender,
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
                                   U64 nodeHash,
@@ -1878,7 +1879,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
                                   bool byPassCache,
                                   ImageBitDepthEnum outputClipPrefDepth,
                                   const ImageComponents& outputClipPrefsComps,
-                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                  const ComponentsNeededMapPtr & compsNeeded,
                                   const std::bitset<4> processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -1944,9 +1945,9 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     }
 
 
-    boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >);
+        tlsCopy.reset(new std::map<NodePtr, ParallelRenderArgsPtr >);
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

@@ -53,19 +53,19 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Global/QtCompat.h"
 
 NATRON_NAMESPACE_ENTER;
-static NodeGui*
+static NodeGuiPtr
 isNodeGuiChild(QGraphicsItem* item)
 {
     NodeGui* n = dynamic_cast<NodeGui*>(item);
 
     if (n) {
-        return n;
+        return n->shared_from_this();
     }
     QGraphicsItem* parent = item->parentItem();
     if (parent) {
         return isNodeGuiChild(parent);
     } else {
-        return 0;
+        return NodeGuiPtr();
     }
 }
 
@@ -87,11 +87,11 @@ isEdgeChild(QGraphicsItem* item)
 
 void
 NodeGraph::getNodesWithinViewportRect(const QRect& rect,
-                                      std::set<NodeGui*>* nodes) const
+                                      std::set<NodeGuiPtr>* nodes) const
 {
     QList<QGraphicsItem*> selectedItems = items(rect, Qt::IntersectsItemShape);
     for (QList<QGraphicsItem*>::Iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        NodeGui* n = isNodeGuiChild(*it);
+        NodeGuiPtr n = isNodeGuiChild(*it);
         if (n) {
             nodes->insert(n);
         }
@@ -100,12 +100,12 @@ NodeGraph::getNodesWithinViewportRect(const QRect& rect,
 
 NodeGraph::NearbyItemEnum
 NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
-                              NodeGui** node,
+                              NodeGuiPtr* node,
                               Edge** edge)
 {
     assert(node && edge);
-    *node = 0;
-    *edge = 0;
+    *node = NodeGuiPtr();
+    *edge = NULL;
     double tolerance = TO_DPIX(10.);
     QRect toleranceRect(mousePosViewport.x() - tolerance / 2.,
                         mousePosViewport.y() - tolerance / 2.,
@@ -113,22 +113,22 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
                         tolerance);
     QList<QGraphicsItem*> selectedItems = items(toleranceRect, Qt::IntersectsItemShape);
     std::set<Edge*> edges;
-    std::set<NodeGui*> nodes;
+    std::set<NodeGuiPtr> nodes;
     for (QList<QGraphicsItem*>::Iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
         Edge* isEdge = isEdgeChild(*it);
         if (isEdge) {
             edges.insert(isEdge);
         }
-        NodeGui* n = isNodeGuiChild(*it);
+        NodeGuiPtr n = isNodeGuiChild(*it);
         if (n) {
             nodes.insert(n);
         }
     }
 
-    for (std::set<NodeGui*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::set<NodeGuiPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isVisible() && (*it)->isActive() ) {
             QPointF localPoint = (*it)->mapFromScene( mapToScene(mousePosViewport) );
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
+            BackdropGuiPtr isBd = toBackdropGui(*it);
             if (isBd) {
                 if ( isBd->isNearbyNameFrame(localPoint) ) {
                     *node = *it;
@@ -193,8 +193,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     }
 
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -230,7 +230,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    NodeGui* nearbyNode;
+    NodeGuiPtr nearbyNode;
     Edge* nearbyEdge;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
     if (nearbyItemCode == eNearbyItemBackdropResizeHandle) {
@@ -248,7 +248,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>( selectedNode.get() );
+            BackdropGuiPtr isBd = toBackdropGui( selectedNode );
             if (!isBd) {
                 _imp->_magnifiedNode = selectedNode;
             }
@@ -269,7 +269,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
             for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+                BackdropGuiPtr isBd = toBackdropGui(*it);
                 if (isBd) {
                     NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(*it, nodesWithin) );
@@ -303,7 +303,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
-        boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+        NodeGuiIPtr dotNodeGui_i = dotNode->getNodeGui();
         NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
 
@@ -312,9 +312,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
 
         assert( getGui() );
-        GuiAppInstPtr guiApp = getGui()->getApp();
+        GuiAppInstancePtr guiApp = getGui()->getApp();
         assert(guiApp);
-        boost::shared_ptr<Project> project = guiApp->getProject();
+        ProjectPtr project = guiApp->getProject();
         assert(project);
         bool ok = project->disconnectNodes(inputNode, outputNode);
         if (!ok) {

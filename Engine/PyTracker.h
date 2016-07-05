@@ -44,11 +44,11 @@ class Track
 {
 public:
 
-    Track(const boost::shared_ptr<TrackMarker>& marker);
+    Track(const TrackMarkerPtr& marker);
 
     ~Track();
 
-    boost::shared_ptr<TrackMarker> getInternalMarker() const
+    TrackMarkerPtr getInternalMarker() const
     {
         return _marker;
     }
@@ -62,14 +62,14 @@ public:
 
 private:
 
-    boost::shared_ptr<TrackMarker> _marker;
+    TrackMarkerPtr _marker;
 };
 
 class Tracker
 {
 public:
 
-    Tracker(const boost::shared_ptr<TrackerContext>& ctx);
+    Tracker(const TrackerContextPtr& ctx);
 
     ~Tracker();
 
@@ -88,7 +88,7 @@ public:
 
 private:
 
-    boost::shared_ptr<TrackerContext> _ctx;
+    TrackerContextPtr _ctx;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

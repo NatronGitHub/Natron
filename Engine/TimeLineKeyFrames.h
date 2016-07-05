@@ -79,23 +79,23 @@ public:
      * @brief Show keyframe markers for the given nodes on the timeline. The signal to refresh the gui
      * will be emitted only once.
      **/
-    virtual void addNodesKeyframesToTimeline(const std::list<Node*> & /*nodes*/) {}
+    virtual void addNodesKeyframesToTimeline(const std::list<NodePtr> & /*nodes*/) {}
 
     /**
      * @brief Provided for convenience for a single node
      **/
-    virtual void addNodeKeyframesToTimeline(Node* /*node*/) {}
+    virtual void addNodeKeyframesToTimeline(const NodePtr& /*node*/) {}
 
     /**
      * @brief Hide keyframe markers for the given nodes on the timeline. The signal to refresh the gui
      * will be emitted only once.
      **/
-    virtual void removeNodesKeyframesFromTimeline(const std::list<Node*> & /*nodes*/) {}
+    virtual void removeNodesKeyframesFromTimeline(const std::list<NodePtr> & /*nodes*/) {}
 
     /**
      * @brief Provided for convenience for a single node
      **/
-    virtual void removeNodeKeyframesFromTimeline(Node* /*node*/) {}
+    virtual void removeNodeKeyframesFromTimeline(const NodePtr& /*node*/) {}
 
     /**
      * @brief Get all keyframes, there may be duplicates.

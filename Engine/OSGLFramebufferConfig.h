@@ -40,8 +40,10 @@ NATRON_NAMESPACE_ENTER;
  *  It is used to pass framebuffer parameters from shared code to the platform
  *  API and also to enumerate and select available framebuffer configs.
  */
-struct FramebufferConfig
+class FramebufferConfig
 {
+
+public:
 
     static const int ATTR_DONT_CARE = -1;
     int redBits;
@@ -85,8 +87,11 @@ struct FramebufferConfig
 
 
 
-struct GLRendererID
+class GLRendererID
 {
+
+public:
+
     int renderID;
 
     // wgl NV extension use handles and not integers
@@ -101,14 +106,27 @@ struct GLRendererID
     explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
 };
 
-struct OpenGLRendererInfo
+class OpenGLRendererInfo
 {
+public:
+
     std::size_t maxMemBytes;
     std::string rendererName;
     std::string vendorName;
     std::string glVersionString;
     int maxTextureSize;
     GLRendererID rendererID;
+
+    OpenGLRendererInfo()
+    : maxMemBytes(0)
+    , rendererName()
+    , vendorName()
+    , glVersionString()
+    , maxTextureSize(0)
+    , rendererID(0)
+    {
+
+    }
 };
 
 NATRON_NAMESPACE_EXIT;

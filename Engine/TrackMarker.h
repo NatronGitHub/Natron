@@ -101,21 +101,24 @@ NATRON_NAMESPACE_ENTER;
 struct TrackMarkerPrivate;
 class TrackMarker
     : public NamedKnobHolder
-    , public boost::enable_shared_from_this<TrackMarker>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-protected:
+protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarker(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarker(const TrackerContextPtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context)
+    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<TrackMarker>( new TrackMarker(context) );
+        return TrackMarkerPtr( new TrackMarker(context) );
+    }
+
+    TrackMarkerPtr shared_from_this() {
+        return boost::dynamic_pointer_cast<TrackMarker>(KnobHolder::shared_from_this());
     }
 
     virtual ~TrackMarker();
@@ -126,27 +129,27 @@ public:
 
     void save(TrackSerialization* serialization) const;
 
-    boost::shared_ptr<TrackerContext> getContext() const;
+    TrackerContextPtr getContext() const;
 
     bool setScriptName(const std::string& name);
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setLabel(const std::string& label);
     std::string getLabel() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
+    KnobDoublePtr getSearchWindowBottomLeftKnob() const;
+    KnobDoublePtr getSearchWindowTopRightKnob() const;
+    KnobDoublePtr getPatternTopLeftKnob() const;
+    KnobDoublePtr getPatternTopRightKnob() const;
+    KnobDoublePtr getPatternBtmRightKnob() const;
+    KnobDoublePtr getPatternBtmLeftKnob() const;
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    boost::shared_ptr<KnobDouble> getWeightKnob() const;
+    KnobDoublePtr getWeightKnob() const;
 #endif
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getErrorKnob() const;
-    boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
-    boost::shared_ptr<KnobBool> getEnabledKnob() const;
+    KnobDoublePtr getCenterKnob() const;
+    KnobDoublePtr getOffsetKnob() const;
+    KnobDoublePtr getErrorKnob() const;
+    KnobChoicePtr getMotionModelKnob() const;
+    KnobBoolPtr getEnabledKnob() const;
 
     int getReferenceFrame(int time, int frameStep) const;
 
@@ -191,11 +194,11 @@ public:
 
     void removeAllUserKeyframes();
 
-    std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;
+    std::pair<ImagePtr, RectI> getMarkerImage(int time, const RectI& roi) const;
 
     RectI getMarkerImageRoI(int time) const;
 
-    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
+    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
@@ -242,6 +245,11 @@ private:
     boost::scoped_ptr<TrackMarkerPrivate> _imp;
 };
 
+inline TrackMarkerPtr
+toTrackMarker(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<TrackMarker>(holder);
+}
 
 class TrackMarkerPM
     : public TrackMarker
@@ -264,12 +272,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarkerPM(const TrackerContextPtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context)
+    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<TrackMarker>( new TrackMarkerPM(context) );
+        return TrackMarkerPtr( new TrackMarkerPM(context) );
     }
 
     virtual ~TrackMarkerPM();
@@ -284,6 +292,13 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 };
+
+inline TrackMarkerPMPtr
+toTrackMarkerPM(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<TrackMarkerPM>(holder);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

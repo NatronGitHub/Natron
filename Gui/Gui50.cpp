@@ -923,13 +923,13 @@ Gui::printAutoDeclaredVariable(const std::string & str)
 }
 
 void
-Gui::exportGroupAsPythonScript(NodeCollection* collection)
+Gui::exportGroupAsPythonScript(const NodeCollectionPtr& collection)
 {
     assert(collection);
     NodesList nodes = collection->getNodes();
     bool hasOutput = false;
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && dynamic_cast<GroupOutput*>( (*it)->getEffectInstance().get() ) ) {
+        if ( (*it)->isActivated() && toGroupOutput( (*it)->getEffectInstance() ) ) {
             hasOutput = true;
             break;
         }
@@ -947,7 +947,7 @@ Gui::exportGroupAsPythonScript(NodeCollection* collection)
 void
 Gui::exportProjectAsGroup()
 {
-    exportGroupAsPythonScript( getApp()->getProject().get() );
+    exportGroupAsPythonScript( getApp()->getProject() );
 }
 
 void
@@ -1246,7 +1246,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
-            AppInstPtr appInstance = openProject( content.begin()->second.absoluteFileName() );
+            AppInstancePtr appInstance = openProject( content.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
