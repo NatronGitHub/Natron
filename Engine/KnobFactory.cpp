@@ -68,8 +68,7 @@ knobFactoryEntry()
     //KnobHelperPtr knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void (*)()> functions;
 
-    KnobBuilder func = K::create;
-    functions.insert( std::make_pair("BuildKnob", ( void (*)() ) & func) );
+    functions.insert( std::make_pair("create", ( void (*)() ) (KnobBuilder)K::create) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(K::typeNameStatic(), knobPlugin);
@@ -106,7 +105,7 @@ KnobHelperPtr KnobFactory::createKnob(const std::string &id,
     if ( it == _loadedKnobs.end() ) {
         return KnobHelperPtr();
     } else {
-        std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
+        std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("create");
         if (!builderFunc.first) {
             return KnobHelperPtr();
         }

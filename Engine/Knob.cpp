@@ -4656,7 +4656,7 @@ KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
     QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
                       SLOT(onDoEvaluateOnMainThread(bool,bool)) );
     QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobIPtr,int,double,ViewSpec,bool)), this,
-                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
+                      SLOT(onDoValueChangeOnMainThread(KnobIPtr,int,double,ViewSpec,bool)) );
 }
 
 KnobHolder::KnobHolder(const KnobHolder& other)
@@ -6112,13 +6112,19 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(const KnobHolderPtr& holder
                                                      int dimension,
                                                      bool declaredByPlugin)
     : KnobStringBase(holder, description, dimension, declaredByPlugin)
-    , _animation( new StringAnimationManager( shared_from_this() ) )
+    , _animation()
 {
 }
 
 AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
 {
-    delete _animation;
+}
+
+void
+AnimatingKnobStringHelper::populate()
+{
+    KnobStringBase::populate();
+    _animation.reset(new StringAnimationManager( shared_from_this() ) );
 }
 
 void

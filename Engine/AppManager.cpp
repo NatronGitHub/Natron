@@ -1317,8 +1317,7 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
     EffectInstancePtr node( PLUGIN::create( NodePtr() ) );
     std::map<std::string, void (*)()> functions;
 
-    EffectBuilder func = PLUGIN::create;
-    functions.insert( std::make_pair("BuildEffect", ( void (*)() ) & func) );
+    functions.insert( std::make_pair("create", ( void (*)() ) (EffectBuilder)PLUGIN::create) );
     LibraryBinary *binary = new LibraryBinary(functions);
     assert(binary);
 

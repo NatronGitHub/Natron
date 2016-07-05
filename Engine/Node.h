@@ -1547,6 +1547,14 @@ private: // derives from Node
                   Plugin* plugin);
 
 public:
+
+    static NodePtr create(const AppInstancePtr& app,
+                          const NodeCollectionPtr& group,
+                          Plugin* plugin)
+    {
+        return NodePtr( new InspectorNode(app, group, plugin) );
+    }
+
     virtual ~InspectorNode();
 
 

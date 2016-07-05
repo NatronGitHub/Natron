@@ -1991,7 +1991,7 @@ public:
 
     ///Populates for each dimension: the default value and the value member. The implementation MUST call
     /// the KnobHelper version.
-    virtual void populate() OVERRIDE FINAL;
+    virtual void populate() OVERRIDE;
 
     /// You must implement it
     virtual const std::string & typeName() const OVERRIDE;
@@ -2267,11 +2267,11 @@ protected:
     virtual void cloneExtraData(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE;
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
-
+    virtual void populate() OVERRIDE;
 private:
 
 
-    StringAnimationManager* _animation;
+    boost::scoped_ptr<StringAnimationManager> _animation;
 };
 
 

@@ -1146,6 +1146,9 @@ private: // derives from KnobI
                    int dimension,
                    bool declaredByPlugin );
 
+
+    virtual void populate() OVERRIDE FINAL;
+
 public:
     static KnobHelperPtr create(const KnobHolderPtr& holder,
                                 const std::string &label,

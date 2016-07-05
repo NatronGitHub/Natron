@@ -1586,7 +1586,14 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder,
     , _defaultCurves(dimension)
     , _curvesColor(dimension)
 {
-    for (int i = 0; i < dimension; ++i) {
+
+}
+
+void
+KnobParametric::populate()
+{
+    KnobDoubleBase::populate();
+    for (int i = 0; i < getDimension(); ++i) {
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;

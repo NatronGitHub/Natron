@@ -785,7 +785,7 @@ Node::load(const CreateNodeArgs& args)
     LibraryBinary* binary = _imp->plugin->getLibraryBinary();
     std::pair<bool, EffectBuilder> func(false, NULL);
     if (binary) {
-        func = binary->findFunction<EffectBuilder>("BuildEffect");
+        func = binary->findFunction<EffectBuilder>("create");
     }
 
 

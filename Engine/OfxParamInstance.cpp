@@ -4233,10 +4233,14 @@ void
 OfxParametricInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setLabel( getParamLabel(this) );
-    for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
+    KnobParametricPtr k = _knob.lock();
+    if (!k) {
+        return;
+    }
+    k->setLabel( getParamLabel(this) );
+    for (int i = 0; i < k->getDimension(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
-        _knob.lock()->setDimensionName(i, curveName);
+        k->setDimensionName(i, curveName);
     }
 }
 
@@ -4249,7 +4253,11 @@ OfxParametricInstance::setDisplayRange()
 
     assert(range_max > range_min);
 
-    _knob.lock()->setParametricRange(range_min, range_max);
+    KnobParametricPtr k = _knob.lock();
+    if (!k) {
+        return;
+    }
+    k->setParametricRange(range_min, range_max);
 }
 
 OfxStatus

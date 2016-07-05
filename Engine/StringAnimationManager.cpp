@@ -64,7 +64,8 @@ struct StringAnimationManagerPrivate
     void* ofxParamHandle;
     mutable QMutex keyframesMutex;
     Keyframes keyframes;
-#pragma message WARN("KnobIPtr or KnobIWPtr?")
+
+    // Weak ptr because it is encapsulated into the AnimatingKnobStringHelper class (inheriting KnobI)
     KnobIConstWPtr knob;
 
     StringAnimationManagerPrivate(const KnobIConstPtr& knob)
