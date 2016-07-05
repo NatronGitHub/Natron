@@ -1077,7 +1077,6 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                                         const NodeSerializationPtr& serialization, bool autoConnect)
 {
     NodeGuiIPtr node_gui_i = node->getNodeGui();
-    assert(node_gui_i);
     if (autoConnect && !serialization && node_gui_i) {
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
