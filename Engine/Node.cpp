@@ -631,7 +631,7 @@ Node::createRotoContextConditionnally()
     assert(!_imp->rotoContext);
     assert(_imp->effect);
     ///Initialize the roto context if any
-    if ( isRotoNode() || isRotoPaintingNode() ) {
+    if ( isRotoPaintingNode() ) {
         _imp->effect->beginChanges();
         _imp->rotoContext = RotoContext::create( shared_from_this() );
         _imp->effect->endChanges(true);
@@ -938,7 +938,7 @@ Node::load(const CreateNodeArgs& args)
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     const QString& pluginID = _imp->plugin->getPluginID();
-    if ( isRotoPaintingNode() ) ) {
+    if ( isRotoPaintingNode() ) {
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
 
@@ -2782,9 +2782,6 @@ Node::getPreferredInputInternal(bool connected) const
     std::list<int> optionalEmptyMasks;
 
     for (int i = 0; i < nInputs; ++i) {
-        if ( _imp->effect->isInputRotoBrush(i) ) {
-            continue;
-        }
         if ( (connected && inputs[i]) || (!connected && !inputs[i]) ) {
             if ( !_imp->effect->isInputOptional(i) ) {
                 if (firstNonOptionalEmptyInput == -1) {
@@ -2809,9 +2806,7 @@ Node::getPreferredInputInternal(bool connected) const
         if ( !optionalEmptyInputs.empty() ) {
             //We return the first optional empty input
             std::list<int>::iterator first = optionalEmptyInputs.begin();
-            while ( first != optionalEmptyInputs.end() && _imp->effect->isInputRotoBrush(*first) ) {
-                ++first;
-            }
+
             if ( first == optionalEmptyInputs.end() ) {
                 return -1;
             } else {
@@ -3977,8 +3972,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         hasMaskChannelSelector[i].first = false;
         hasMaskChannelSelector[i].second = isMask;
 
-        if ( (isMask || supportsOnlyAlpha) &&
-             !_imp->effect->isInputRotoBrush(i) ) {
+        if ( isMask || supportsOnlyAlpha ) {
             hasMaskChannelSelector[i].first = true;
         }
     }
@@ -5344,11 +5338,6 @@ Node::canConnectInput(const NodePtr& input,
         return eCanConnectInput_graphCycles;
     }
 
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
-
-        return eCanConnectInput_indexOutOfRange;
-    }
 
     if ( !_imp->effect->supportsMultiResolution() ) {
         CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
@@ -5392,11 +5381,6 @@ Node::connectInput(const NodePtr & input,
 
     ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
-        return false;
-    }
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
-
         return false;
     }
 
@@ -5493,11 +5477,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
     }
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
 
-        return false;
-    }
 
     ///For effects that do not support multi-resolution, make sure the input effect is correct
     ///otherwise the rendering might crash

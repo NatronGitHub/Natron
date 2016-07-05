@@ -173,11 +173,6 @@ NodeGraph::checkForHints(bool shiftdown,
                             continue;
                         }
 
-                        if ( (*it)->getNode()->getEffectInstance()->isInputRotoBrush( edge->getInputNumber() ) ) {
-                            edge = 0;
-                            continue;
-                        }
-
                         //Check that the edge can connect to the selected node
                         {
                             Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput( selectedNodeInternalNode, edge->getInputNumber() );

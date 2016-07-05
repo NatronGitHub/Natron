@@ -1433,8 +1433,7 @@ ExtractNodeUndoRedoCommand::redo()
             NodeGuiPtr selectedInputNode = selectedInput.node.lock();
             NodePtr inputToConnectTo;
             for (U32 i = 0; i < inputs.size(); ++i) {
-                if ( inputs[i].lock() && !selectedInputNode->getNode()->getEffectInstance()->isInputOptional(i) &&
-                     !selectedInputNode->getNode()->getEffectInstance()->isInputRotoBrush(i) ) {
+                if ( inputs[i].lock() && !selectedInputNode->getNode()->getEffectInstance()->isInputOptional(i) ) {
                     inputToConnectTo = inputs[i].lock();
                     break;
                 }

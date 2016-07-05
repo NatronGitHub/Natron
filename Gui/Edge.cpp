@@ -81,7 +81,6 @@ struct EdgePrivate
     bool paintBendPoint;
     bool bendPointHiddenAutomatically;
     bool enoughSpaceToShowLabel;
-    bool isRotoMask;
     bool isMask;
     QPointF middlePoint; //updated only when dest && source are valid
 
@@ -106,7 +105,6 @@ struct EdgePrivate
         , paintBendPoint(false)
         , bendPointHiddenAutomatically(false)
         , enoughSpaceToShowLabel(true)
-        , isRotoMask(false)
         , isMask(false)
         , middlePoint()
     {
@@ -261,11 +259,6 @@ Edge::isBendPointVisible() const
     return _imp->paintBendPoint;
 }
 
-bool
-Edge::isRotoEdge() const
-{
-    return _imp->isRotoMask;
-}
 
 bool
 Edge::isMask() const
@@ -319,7 +312,7 @@ Edge::computeVisibility(bool hovered) const
 
     ///Determine whether the edge should be visible or not
     bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
-    if ( (_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge ) {
+    if ( hideInputsKnobValue && !_imp->isOutputEdge ) {
         return false;
     } else {
         if (_imp->isOutputEdge) {
@@ -355,7 +348,6 @@ Edge::refreshState(bool hovered)
 
     if (effect) {
         ///Refresh properties
-        _imp->isRotoMask = effect->isInputRotoBrush(_imp->inputNb);
         _imp->isMask = effect->isInputMask(_imp->inputNb);
         _imp->optional = _imp->isMask || effect->isInputOptional(_imp->inputNb);
         if (_imp->isMask) {

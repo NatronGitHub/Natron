@@ -60,7 +60,6 @@
 #define PLUGINID_OFX_READOIIO     "fr.inria.openfx.ReadOIIO"
 #define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
 #define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
-#define CLIP_OFX_ROTO             "Roto" // The Roto input clip from the Roto plugin
 #define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
 #define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
@@ -428,18 +427,6 @@ public:
         return false;
     };
 
-    /**
-     * @brief Is the input a roto brush ?
-     **/
-    virtual bool isInputRotoBrush(int /*inputNb*/) const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual int getRotoBrushInputIndex() const WARN_UNUSED_RETURN
-    {
-        return -1;
-    }
 
     virtual bool getMakeSettingsPanel() const { return true; }
 

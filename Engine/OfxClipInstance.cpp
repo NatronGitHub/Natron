@@ -366,7 +366,7 @@ OfxClipInstance::getFrameRate() const
      */
     EffectInstPtr effect = getEffectHolder();
 
-    if ( isOutput() || (getName() == CLIP_OFX_ROTO) ) {
+    if ( isOutput() ) {
         return effect->getFrameRate();
     }
 
@@ -437,32 +437,30 @@ OfxClipInstance::getConnected() const
     EffectInstPtr effect = getEffectHolder();
 
     assert(effect);
-    if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
-        return true;
+
+    if (_isOutput) {
+        return effect->hasOutputConnected();
     } else {
-        if (_isOutput) {
-            return effect->hasOutputConnected();
-        } else {
-            int inputNb = getInputNb();
-            EffectInstPtr input;
+        int inputNb = getInputNb();
+        EffectInstPtr input;
 
-            if ( !effect->getNode()->isMaskEnabled(inputNb) ) {
-                return false;
-            }
-            ImageComponents comps;
-            NodePtr maskInput;
-            effect->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
-            if (maskInput) {
-                input = maskInput->getEffectInstance();
-            }
-
-            if (!input) {
-                input = effect->getInput(inputNb);
-            }
-
-            return input != NULL;
+        if ( !effect->getNode()->isMaskEnabled(inputNb) ) {
+            return false;
         }
+        ImageComponents comps;
+        NodePtr maskInput;
+        effect->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
+        if (maskInput) {
+            input = maskInput->getEffectInstance();
+        }
+
+        if (!input) {
+            input = effect->getInput(inputNb);
+        }
+
+        return input != NULL;
     }
+
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -541,7 +539,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
 
     bool inputIsMask = _imp->mask;
     RectD rod;
-    if ( attachedStroke && ( inputIsMask || (getName() == CLIP_OFX_ROTO) ) ) {
+    if ( attachedStroke && inputIsMask ) {
         effect->getNode()->getPaintStrokeRoD(time, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
@@ -549,7 +547,8 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         ret->y2 = rod.y2;
 
         return;
-    } else if (effect) {
+    }
+    /*else if (effect) {
         boost::shared_ptr<RotoContext> rotoCtx = effect->getNode()->getRotoContext();
         if ( rotoCtx && (getName() == CLIP_OFX_ROTO) ) {
             rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
@@ -560,7 +559,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
 
             return;
         }
-    }
+    }*/
 
     if (associatedNode) {
         bool isProjectFormat;
@@ -1630,9 +1629,6 @@ OfxClipInstance::getAssociatedNode() const
     EffectInstPtr effect = getEffectHolder();
 
     assert(effect);
-    if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
-        return effect;
-    }
     if (_isOutput) {
         return effect;
     } else {

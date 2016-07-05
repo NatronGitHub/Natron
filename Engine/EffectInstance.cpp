@@ -741,9 +741,8 @@ EffectInstance::getImage(int inputNb,
         roto = attachedStroke->getContext();
     }
     bool useRotoInput = false;
-    bool inputIsRotoBrush = roto && isInputRotoBrush(inputNb);
     if (roto) {
-        useRotoInput = isMask || inputIsRotoBrush;
+        useRotoInput = isMask;
     }
 
     ///This is the actual layer that we are fetching in input
@@ -1350,14 +1349,12 @@ EffectInstance::getFramesNeeded(double time,
     FrameRangesMap defViewRange;
     defViewRange.insert( std::make_pair(view, ranges) );
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        if ( isInputRotoBrush(i) ) {
+
+        EffectInstPtr input = getInput(i);
+        if (input) {
             ret.insert( std::make_pair(i, defViewRange) );
-        } else {
-            EffectInstPtr input = getInput(i);
-            if (input) {
-                ret.insert( std::make_pair(i, defViewRange) );
-            }
         }
+
     }
 
     return ret;
@@ -4470,9 +4467,6 @@ EffectInstance::getComponentsNeededAndProduced(double time,
         if (!node) {
             continue;
         }
-        if ( isInputRotoBrush(i) ) {
-            continue;
-        }
 
         ImageComponents comp = getComponents(i);
         std::vector<ImageComponents> compVect;
@@ -4567,12 +4561,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     int maxInput = getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
         EffectInstPtr input = getInput(i);
-        bool isRotoInput = isInputRotoBrush(i);
-        if (isRotoInput) {
-            ///Copy for the roto input the output needed comps
-            assert( comps->find(-1) != comps->end() );
-            comps->insert( std::make_pair(i, (*comps)[-1]) ); // note: map::at() does not exist in C++98
-        } else if (input) {
+        if (input) {
             std::vector<ImageComponents> compVec;
             std::bitset<4> inputProcChannels;
             ImageComponents layer;

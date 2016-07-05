@@ -267,11 +267,6 @@ public:
     bool isOpenFXNode() const;
 
     /**
-     * @brief Returns true if the node is either a roto  node
-     **/
-    bool isRotoNode() const;
-
-    /**
      * @brief Returns true if this node is a tracker
      **/
     bool isTrackerNodePlugin() const;

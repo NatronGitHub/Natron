@@ -165,8 +165,6 @@ public:
     virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getRotoBrushInputIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance

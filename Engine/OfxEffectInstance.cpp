@@ -204,7 +204,6 @@ struct OfxEffectInstancePrivate
         ClipsInfo()
             : optional(false)
             , mask(false)
-            , rotoBrush(false)
             , clip(NULL)
             , label()
             , hint()
@@ -214,7 +213,6 @@ struct OfxEffectInstancePrivate
 
         bool optional;
         bool mask;
-        bool rotoBrush;
         OfxClipInstance* clip;
         std::string label;
         std::string hint;
@@ -406,7 +404,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             OfxEffectInstancePrivate::ClipsInfo info;
             info.optional = clips[i]->isOptional() || info.rotoBrush;
             info.mask = clips[i]->isMask();
-            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.clip = NULL;
             // label, hint, visible are set below
             _imp->clipsInfos[i] = info;
@@ -1182,27 +1179,6 @@ OfxEffectInstance::isInputMask(int inputNb) const
     return _imp->clipsInfos[inputNb].mask;
 }
 
-bool
-OfxEffectInstance::isInputRotoBrush(int inputNb) const
-{
-    assert(_imp->context != eContextNone);
-    assert( inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size() );
-
-    return _imp->clipsInfos[inputNb].rotoBrush;
-}
-
-int
-OfxEffectInstance::getRotoBrushInputIndex() const
-{
-    assert(_imp->context != eContextNone);
-    for (std::size_t i = 0; i < _imp->clipsInfos.size(); ++i) {
-        if (_imp->clipsInfos[i].rotoBrush) {
-            return (int)i;
-        }
-    }
-
-    return -1;
-}
 
 void
 OfxEffectInstance::onInputChanged(int inputNo)
