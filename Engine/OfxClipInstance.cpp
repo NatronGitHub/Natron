@@ -437,6 +437,17 @@ OfxClipInstance::getConnected() const
     EffectInstancePtr effect = getEffectHolder();
 
     assert(effect);
+<<<<<<< HEAD
+=======
+    if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
+        return true;
+    } else {
+        if (_isOutput) {
+            return effect->hasOutputConnected();
+        } else {
+            int inputNb = getInputNb();
+            EffectInstancePtr input;
+>>>>>>> master
 
 
     if (_isOutput) {
@@ -548,8 +559,12 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         ret->y2 = rod.y2;
 
         return;
+<<<<<<< HEAD
     }
     /*else if (effect) {
+=======
+    } else if (effect) {
+>>>>>>> master
         RotoContextPtr rotoCtx = effect->getNode()->getRotoContext();
         if ( rotoCtx && (getName() == CLIP_OFX_ROTO) ) {
             rotoCtx->getMaskRegionOfDefinition(time, view, &rod);

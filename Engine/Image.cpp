@@ -1075,8 +1075,12 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
+<<<<<<< HEAD
                              ImagePtr* output,
                              const OSGLContextPtr& glContext)
+=======
+                             ImagePtr* output)
+>>>>>>> master
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {

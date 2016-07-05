@@ -5405,6 +5405,14 @@ Node::connectInput(const NodePtr & input,
 
     ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input ) ) {
+<<<<<<< HEAD
+=======
+        return false;
+    }
+    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
+        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
+
+>>>>>>> master
         return false;
     }
 

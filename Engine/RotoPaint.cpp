@@ -1675,9 +1675,14 @@ RotoPaint::drawOverlay(double time,
 
 
         double cpWidth = kControlPointMidSize * 2;
+<<<<<<< HEAD
         GL_GPU::glPointSize(cpWidth);
         for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
 
+=======
+        glPointSize(cpWidth);
+        for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+>>>>>>> master
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
             }
@@ -2005,9 +2010,14 @@ RotoPaint::drawOverlay(double time,
                     } // for(it2)
                 } // if ( ( selected != _imp->ui->selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)
+<<<<<<< HEAD
             glCheckError(GL_GPU);
         } // for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
 
+=======
+            glCheckError();
+        } // for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+>>>>>>> master
 
         if ( _imp->isPaintByDefault &&
              ( ( _imp->ui->selectedRole == eRotoRoleMergeBrush) ||

@@ -2114,6 +2114,2432 @@ RotoContext::evaluateNeatStrokeRender()
     }
 }
 
+<<<<<<< HEAD
+=======
+CairoImageWrapper::~CairoImageWrapper()
+{
+    if (ctx) {
+        cairo_destroy(ctx);
+    }
+    ////Free the buffer used by Cairo
+    if (cairoImg) {
+        cairo_surface_destroy(cairoImg);
+    }
+}
+
+static void
+adjustToPointToScale(unsigned int mipmapLevel,
+                     double &x,
+                     double &y)
+{
+    if (mipmapLevel != 0) {
+        int pot = (1 << mipmapLevel);
+        x /= pot;
+        y /= pot;
+    }
+}
+
+template <typename PIX, int maxValue, int dstNComps, int srcNComps, bool useOpacity, bool inverted>
+static void
+convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
+                                                  Image* image,
+                                                  const RectI & pixelRod,
+                                                  double shapeColor[3],
+                                                  double opacity)
+{
+    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
+    unsigned char* srcPix = cdata;
+    int stride = cairo_image_surface_get_stride(cairoImg);
+    Image::WriteAccess acc = image->getWriteRights();
+    double r = useOpacity ? shapeColor[0] * opacity : shapeColor[0];
+    double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
+    double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
+    int width = pixelRod.width();
+    int srcNElements = width * srcNComps;
+
+    for ( int y = 0; y < pixelRod.height(); ++y,
+          srcPix += (stride - srcNElements) ) {
+        PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        assert(dstPix);
+
+        for (int x = 0; x < width; ++x,
+             dstPix += dstNComps,
+             srcPix += srcNComps) {
+            float cairoPixel = !inverted ? ( (float)*srcPix / 255.f ) * maxValue : 1. - ( (float)*srcPix / 255.f ) * maxValue;
+            switch (dstNComps) {
+            case 4:
+                dstPix[0] = PIX(cairoPixel * r);
+                dstPix[1] = PIX(cairoPixel * g);
+                dstPix[2] = PIX(cairoPixel * b);
+                dstPix[3] = useOpacity ? PIX(cairoPixel * opacity) : PIX(cairoPixel);
+                break;
+            case 1:
+                dstPix[0] = useOpacity ? PIX(cairoPixel * opacity) : PIX(cairoPixel);
+                break;
+            case 3:
+                dstPix[0] = PIX(cairoPixel * r);
+                dstPix[1] = PIX(cairoPixel * g);
+                dstPix[2] = PIX(cairoPixel * b);
+                break;
+            case 2:
+                dstPix[0] = PIX(cairoPixel * r);
+                dstPix[1] = PIX(cairoPixel * g);
+                break;
+
+            default:
+                break;
+            }
+#         ifdef DEBUG
+            for (int c = 0; c < dstNComps; ++c) {
+                assert(dstPix[c] == dstPix[c]); // check for NaN
+            }
+#         endif
+        }
+    }
+} // convertCairoImageToNatronImageForInverted_noColor
+
+template <typename PIX, int maxValue, int dstNComps, int srcNComps, bool useOpacity>
+static void
+convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg,
+                                                       Image* image,
+                                                       const RectI & pixelRod,
+                                                       double shapeColor[3],
+                                                       bool inverted,
+                                                       double opacity)
+{
+    if (inverted) {
+        convertCairoImageToNatronImageForInverted_noColor<PIX, maxValue, dstNComps, srcNComps, useOpacity, true>(cairoImg, image, pixelRod, shapeColor, opacity);
+    } else {
+        convertCairoImageToNatronImageForInverted_noColor<PIX, maxValue, dstNComps, srcNComps, useOpacity, false>(cairoImg, image, pixelRod, shapeColor, opacity);
+    }
+}
+
+template <typename PIX, int maxValue, int dstNComps, int srcNComps>
+static void
+convertCairoImageToNatronImageForOpacity(cairo_surface_t* cairoImg,
+                                         Image* image,
+                                         const RectI & pixelRod,
+                                         double shapeColor[3],
+                                         double opacity,
+                                         bool inverted,
+                                         bool useOpacity)
+{
+    if (useOpacity) {
+        convertCairoImageToNatronImageForDstComponents_noColor<PIX, maxValue, dstNComps, srcNComps, true>(cairoImg, image, pixelRod, shapeColor, inverted, opacity);
+    } else {
+        convertCairoImageToNatronImageForDstComponents_noColor<PIX, maxValue, dstNComps, srcNComps, false>(cairoImg, image, pixelRod, shapeColor, inverted, opacity);
+    }
+}
+
+template <typename PIX, int maxValue, int dstNComps>
+static void
+convertCairoImageToNatronImageForSrcComponents_noColor(cairo_surface_t* cairoImg,
+                                                       int srcNComps,
+                                                       Image* image,
+                                                       const RectI & pixelRod,
+                                                       double shapeColor[3],
+                                                       double opacity,
+                                                       bool inverted,
+                                                       bool useOpacity)
+{
+    if (srcNComps == 1) {
+        convertCairoImageToNatronImageForOpacity<PIX, maxValue, dstNComps, 1>(cairoImg, image, pixelRod, shapeColor, opacity, inverted, useOpacity);
+    } else if (srcNComps == 4) {
+        convertCairoImageToNatronImageForOpacity<PIX, maxValue, dstNComps, 4>(cairoImg, image, pixelRod, shapeColor, opacity, inverted, useOpacity);
+    } else {
+        assert(false);
+    }
+}
+
+template <typename PIX, int maxValue>
+static void
+convertCairoImageToNatronImage_noColor(cairo_surface_t* cairoImg,
+                                       int srcNComps,
+                                       Image* image,
+                                       const RectI & pixelRod,
+                                       double shapeColor[3],
+                                       double opacity,
+                                       bool inverted,
+                                       bool useOpacity)
+{
+    int comps = (int)image->getComponentsCount();
+
+    switch (comps) {
+    case 1:
+        convertCairoImageToNatronImageForSrcComponents_noColor<PIX, maxValue, 1>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity);
+        break;
+    case 2:
+        convertCairoImageToNatronImageForSrcComponents_noColor<PIX, maxValue, 2>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity);
+        break;
+    case 3:
+        convertCairoImageToNatronImageForSrcComponents_noColor<PIX, maxValue, 3>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity);
+        break;
+    case 4:
+        convertCairoImageToNatronImageForSrcComponents_noColor<PIX, maxValue, 4>(cairoImg, srcNComps, image, pixelRod, shapeColor, opacity, inverted, useOpacity);
+        break;
+    default:
+        break;
+    }
+}
+
+#if 0
+template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+static void
+convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
+                                               Image* image,
+                                               const RectI & pixelRod)
+{
+    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
+    unsigned char* srcPix = cdata;
+    int stride = cairo_image_surface_get_stride(cairoImg);
+    int pixelSize = stride / pixelRod.width();
+    Image::WriteAccess acc = image->getWriteRights();
+
+    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
+        PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        assert(dstPix);
+
+        for (int x = 0; x < pixelRod.width(); ++x) {
+            switch (dstNComps) {
+            case 4:
+                assert(srcNComps == dstNComps);
+                // cairo's format is ARGB (that is BGRA when interpreted as bytes)
+                dstPix[x * dstNComps + 3] = PIX( (float)srcPix[x * pixelSize + 3] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] / 255.f ) * maxValue;
+                break;
+            case 1:
+                assert(srcNComps == dstNComps);
+                dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;
+                break;
+            case 3:
+                assert(srcNComps == dstNComps);
+                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] / 255.f ) * maxValue;
+                break;
+            case 2:
+                assert(srcNComps == 3);
+                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                break;
+            default:
+                break;
+            }
+#         ifdef DEBUG
+            for (int c = 0; c < dstNComps; ++c) {
+                assert(dstPix[x * dstNComps + c] == dstPix[x * dstNComps + c]); // check for NaN
+            }
+#         endif
+        }
+    }
+}
+
+template <typename PIX, int maxValue, int srcNComps>
+static void
+convertCairoImageToNatronImageForSrcComponents(cairo_surface_t* cairoImg,
+                                               Image* image,
+                                               const RectI & pixelRod)
+{
+    int comps = (int)image->getComponentsCount();
+
+    switch (comps) {
+    case 1:
+        convertCairoImageToNatronImageForDstComponents<PIX, maxValue, srcNComps, 1>(cairoImg, image, pixelRod);
+        break;
+    case 2:
+        convertCairoImageToNatronImageForDstComponents<PIX, maxValue, srcNComps, 2>(cairoImg, image, pixelRod);
+        break;
+    case 3:
+        convertCairoImageToNatronImageForDstComponents<PIX, maxValue, srcNComps, 3>(cairoImg, image, pixelRod);
+        break;
+    case 4:
+        convertCairoImageToNatronImageForDstComponents<PIX, maxValue, srcNComps, 4>(cairoImg, image, pixelRod);
+        break;
+    default:
+        break;
+    }
+}
+
+template <typename PIX, int maxValue>
+static void
+convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
+                               Image* image,
+                               const RectI & pixelRod,
+                               int srcNComps)
+{
+    switch (srcNComps) {
+    case 1:
+        convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 1>(cairoImg, image, pixelRod);
+        break;
+    case 2:
+        convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 2>(cairoImg, image, pixelRod);
+        break;
+    case 3:
+        convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 3>(cairoImg, image, pixelRod);
+        break;
+    case 4:
+        convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 4>(cairoImg, image, pixelRod);
+        break;
+    default:
+        break;
+    }
+}
+
+#endif // if 0
+
+
+template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+static void
+convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
+                                            std::size_t stride,
+                                            Image* image,
+                                            const RectI& roi,
+                                            const RectI& dstBounds,
+                                            double shapeColor[3])
+{
+    unsigned char* dstPix = cairoImg;
+
+    dstPix += ( (roi.y1 - dstBounds.y1) * stride + (roi.x1 - dstBounds.x1) );
+
+    Image::ReadAccess acc = image->getReadRights();
+
+    for (int y = 0; y < roi.height(); ++y, dstPix += stride) {
+        const PIX* srcPix = (const PIX*)acc.pixelAt(roi.x1, roi.y1 + y);
+        assert(srcPix);
+
+        for (int x = 0; x < roi.width(); ++x) {
+#         ifdef DEBUG
+            for (int c = 0; c < srcNComps; ++c) {
+                assert(srcPix[x * srcNComps + c] == srcPix[x * srcNComps + c]); // check for NaN
+            }
+#         endif
+            if (dstNComps == 1) {
+                dstPix[x] = (float)srcPix[x * srcNComps] / maxValue * 255.f;
+            } else if (dstNComps == 4) {
+                if (srcNComps == 4) {
+                    //We are in the !buildUp case, do exactly the opposite that is done in convertNatronImageToCairoImageForComponents
+                    dstPix[x * dstNComps + 0] = shapeColor[2] == 0 ? 0 : (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
+                    dstPix[x * dstNComps + 1] = shapeColor[1] == 0 ? 0 : (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
+                    dstPix[x * dstNComps + 2] = shapeColor[0] == 0 ? 0 : (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
+                    dstPix[x * dstNComps + 3] = 255; //(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                } else {
+                    assert(srcNComps == 1);
+                    float pix = (float)srcPix[x];
+                    dstPix[x * dstNComps + 0] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 1] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 2] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 3] = pix / maxValue * 255.f;
+                }
+            }
+            // no need to check for NaN, dstPix is unsigned char
+        }
+    }
+}
+
+template <typename PIX, int maxValue, int srcComps>
+static void
+convertNatronImageToCairoImageForSrcComponents(unsigned char* cairoImg,
+                                               int dstNComps,
+                                               std::size_t stride,
+                                               Image* image,
+                                               const RectI& roi,
+                                               const RectI& dstBounds,
+                                               double shapeColor[3])
+{
+    if (dstNComps == 1) {
+        convertNatronImageToCairoImageForComponents<PIX, maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds, shapeColor);
+    } else if (dstNComps == 4) {
+        convertNatronImageToCairoImageForComponents<PIX, maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds, shapeColor);
+    } else {
+        assert(false);
+    }
+}
+
+template <typename PIX, int maxValue>
+static void
+convertNatronImageToCairoImage(unsigned char* cairoImg,
+                               int dstNComps,
+                               std::size_t stride,
+                               Image* image,
+                               const RectI& roi,
+                               const RectI& dstBounds,
+                               double shapeColor[3])
+{
+    int numComps = (int)image->getComponentsCount();
+
+    switch (numComps) {
+    case 1:
+        convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+        break;
+    case 2:
+        convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 2>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+        break;
+    case 3:
+        convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 3>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+        break;
+    case 4:
+        convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 4>(cairoImg, dstNComps, stride, image, roi, dstBounds, shapeColor);
+        break;
+    default:
+        break;
+    }
+}
+
+double
+RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
+                                   const std::list<std::pair<Point, double> >& points,
+                                   unsigned int mipmapLevel,
+                                   double par,
+                                   const ImageComponents& components,
+                                   ImageBitDepthEnum depth,
+                                   double distToNext,
+                                   ImagePtr *image)
+{
+    double time = getContext()->getTimelineCurrentTime();
+    double shapeColor[3];
+
+    getColor(time, shapeColor);
+
+    ImagePtr source = *image;
+    RectI pixelPointsBbox;
+    pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
+
+
+    NodePtr node = getContext()->getNode();
+    ImageFieldingOrderEnum fielding = node->getEffectInstance()->getFieldingOrder();
+    ImagePremultiplicationEnum premult = node->getEffectInstance()->getPremult();
+    bool copyFromImage = false;
+    bool mipMapLevelChanged = false;
+    if (!source) {
+        source.reset( new Image(components,
+                                pointsBbox,
+                                pixelPointsBbox,
+                                mipmapLevel,
+                                par,
+                                depth,
+                                premult,
+                                fielding,
+                                false) );
+        *image = source;
+    } else {
+        if ( (*image)->getMipMapLevel() > mipmapLevel ) {
+            mipMapLevelChanged = true;
+
+            RectD otherRoD = (*image)->getRoD();
+            RectI oldBounds;
+            otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par, &oldBounds );
+            RectD mergeRoD = pointsBbox;
+            mergeRoD.merge(otherRoD);
+            RectI mergeBounds;
+            mergeRoD.toPixelEnclosing(mipmapLevel, par, &mergeBounds);
+
+
+            //upscale the original image
+            source.reset( new Image(components,
+                                    mergeRoD,
+                                    mergeBounds,
+                                    mipmapLevel,
+                                    par,
+                                    depth,
+                                    premult,
+                                    fielding,
+                                    false) );
+            source->fillZero(pixelPointsBbox);
+            (*image)->upscaleMipMap( oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get() );
+            *image = source;
+        } else if ( (*image)->getMipMapLevel() < mipmapLevel ) {
+            mipMapLevelChanged = true;
+
+            RectD otherRoD = (*image)->getRoD();
+            RectI oldBounds;
+            otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par, &oldBounds );
+            RectD mergeRoD = pointsBbox;
+            mergeRoD.merge(otherRoD);
+            RectI mergeBounds;
+            mergeRoD.toPixelEnclosing(mipmapLevel, par, &mergeBounds);
+
+            //downscale the original image
+            source.reset( new Image(components,
+                                    mergeRoD,
+                                    mergeBounds,
+                                    mipmapLevel,
+                                    par,
+                                    depth,
+                                    premult,
+                                    fielding,
+                                    false) );
+            source->fillZero(pixelPointsBbox);
+            (*image)->downscaleMipMap( pointsBbox, oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), false, source.get() );
+            *image = source;
+        } else {
+            RectD otherRoD = (*image)->getRoD();
+            RectI oldBounds = (*image)->getBounds();
+            RectD mergeRoD = pointsBbox;
+            mergeRoD.merge(otherRoD);
+            source->setRoD(mergeRoD);
+            source->ensureBounds(pixelPointsBbox, true);
+        }
+        copyFromImage = true;
+    }
+
+    bool doBuildUp = getBuildupKnob()->getValueAtTime(time);
+    cairo_format_t cairoImgFormat;
+    int srcNComps;
+    //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
+    if ( !doBuildUp || (components.getNumComponents() > 1) ) {
+        cairoImgFormat = CAIRO_FORMAT_ARGB32;
+        srcNComps = 4;
+    } else {
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
+    }
+
+
+    ////Allocate the cairo temporary buffer
+    CairoImageWrapper imgWrapper;
+    double opacity = getOpacity(time);
+    std::vector<unsigned char> buf;
+    if (copyFromImage) {
+        std::size_t stride = cairo_format_stride_for_width( cairoImgFormat, pixelPointsBbox.width() );
+        std::size_t memSize = stride * pixelPointsBbox.height();
+        buf.resize(memSize);
+        std::memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
+        convertNatronImageToCairoImage<float, 1>(&buf.front(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
+        imgWrapper.cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
+                                                                  stride);
+    } else {
+        imgWrapper.cairoImg = cairo_image_surface_create( cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height() );
+        cairo_surface_set_device_offset(imgWrapper.cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
+    }
+    if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
+        return 0;
+    }
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
+    imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
+    //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
+    cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
+
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(imgWrapper.ctx, CAIRO_ANTIALIAS_NONE);
+
+    std::list<std::list<std::pair<Point, double> > > strokes;
+    std::list<std::pair<Point, double> > toScalePoints;
+    int pot = 1 << mipmapLevel;
+    if (mipmapLevel == 0) {
+        toScalePoints = points;
+    } else {
+        for (std::list<std::pair<Point, double> >::const_iterator it = points.begin(); it != points.end(); ++it) {
+            std::pair<Point, double> p = *it;
+            p.first.x /= pot;
+            p.first.y /= pot;
+            toScalePoints.push_back(p);
+        }
+    }
+    strokes.push_back(toScalePoints);
+
+    QMutexLocker k(&_imp->strokeDotPatternsMutex);
+    std::vector<cairo_pattern_t*> dotPatterns = getPatternCache();
+    if (mipMapLevelChanged) {
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            if (dotPatterns[i]) {
+                cairo_pattern_destroy(dotPatterns[i]);
+                dotPatterns[i] = 0;
+            }
+        }
+        dotPatterns.clear();
+    }
+    if ( dotPatterns.empty() ) {
+        dotPatterns.resize(ROTO_PRESSURE_LEVELS);
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            dotPatterns[i] = (cairo_pattern_t*)0;
+        }
+    }
+
+    distToNext = RotoContextPrivate::renderStroke(imgWrapper.ctx, dotPatterns, strokes, distToNext, this, doBuildUp, opacity, time, mipmapLevel);
+
+    updatePatternCache(dotPatterns);
+
+    assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
+
+    ///A call to cairo_surface_flush() is required before accessing the pixel data
+    ///to ensure that all pending drawing operations are finished.
+    cairo_surface_flush(imgWrapper.cairoImg);
+
+    //Never use invert while drawing
+    const bool inverted = false;
+    convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., inverted, false);
+
+    return distToNext;
+} // RotoStrokeItem::renderSingleStroke
+
+ImagePtr
+RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
+                                       const double time,
+                                       const ViewIdx view,
+                                       const ImageBitDepthEnum depth,
+                                       const unsigned int mipmapLevel,
+                                       const RectD& rotoNodeSrcRod)
+{
+    NodePtr node = getContext()->getNode();
+    ImagePtr image; // = stroke->getStrokeTimePreview();
+
+    ///compute an enhanced hash different from the one of the merge node of the item in order to differentiate within the cache
+    ///the output image of the node and the mask image.
+    U64 rotoHash;
+    {
+        Hash64 hash;
+        U64 mergeNodeHash = getMergeNode()->getEffectInstance()->getRenderHash();
+        hash.append(mergeNodeHash);
+        hash.computeHash();
+        rotoHash = hash.value();
+        assert(mergeNodeHash != rotoHash);
+    }
+    boost::scoped_ptr<ImageKey> key( new ImageKey(this,
+                                                  rotoHash,
+                                                  /*frameVaryingOrAnimated=*/ true,
+                                                  time,
+                                                  view,
+                                                  /*pixelAspect=*/ 1.,
+                                                  /*draftMode=*/ false,
+                                                  /*fullScaleWithDownscaleInputs=*/ false) );
+
+    {
+        QReadLocker k(&_imp->cacheAccessMutex);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), RenderStatsPtr(), OSGLContextAttacherPtr(), &image);
+    }
+
+    if (image) {
+        return image;
+    }
+
+
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
+    double startTime = time, mbFrameStep = 1., endTime = time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    if (isBezier) {
+        int mbType_i = getContext()->getMotionBlurTypeKnob()->getValue();
+        bool applyPerShapeMotionBlur = mbType_i == 0;
+        if (applyPerShapeMotionBlur) {
+            isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+        }
+    }
+#endif
+
+#ifdef NATRON_ROTO_INVERTIBLE
+    const bool inverted = isStroke->getInverted(time);
+#else
+    const bool inverted = false;
+#endif
+
+    RectD rotoBbox;
+    std::list<std::list<std::pair<Point, double> > > strokes;
+
+    if (isStroke) {
+        isStroke->evaluateStroke(mipmapLevel, time, &strokes, &rotoBbox);
+    } else if (isBezier) {
+        bool bboxSet = false;
+        for (double t = startTime; t <= endTime; t += mbFrameStep) {
+            RectD subBbox = isBezier->getBoundingBox(t);
+            if (!bboxSet) {
+                rotoBbox = subBbox;
+                bboxSet = true;
+            } else {
+                rotoBbox.merge(subBbox);
+            }
+        }
+        if ( isBezier->isOpenBezier() ) {
+            std::list<std::list< ParametricPoint> > decastelJauPolygon;
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, time, mipmapLevel, &decastelJauPolygon, 0);
+            std::list<std::pair<Point, double> > points;
+            for (std::list<std::list< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                for (std::list< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+                    Point p = {it2->x, it2->y};
+                    points.push_back( std::make_pair(p, 1.) );
+                }
+            }
+            if ( !points.empty() ) {
+                strokes.push_back(points);
+            }
+        }
+    }
+
+
+    if (inverted) {
+        // When inverted we at least need to have the RoD of the source of the Roto inverted
+        rotoBbox.merge(rotoNodeSrcRod);
+    }
+
+    RectI pixelRod;
+    rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
+
+
+    ImageParamsPtr params = Image::makeParams( rotoBbox,
+                                                               pixelRod,
+                                                               1., // par
+                                                               mipmapLevel,
+                                                               false,
+                                                               components,
+                                                               depth,
+                                                               node->getEffectInstance()->getPremult(),
+                                                               node->getEffectInstance()->getFieldingOrder() );
+    /*
+       At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been
+       finished rendering. You might wonder why we do this differently here than in EffectInstance::renderRoI, this is because we do not use
+       the trimap and notification system here in the rotocontext, which would be to much just for this small object, rather we just lock
+       it once, which is fine.
+     */
+    QWriteLocker k(&_imp->cacheAccessMutex);
+    appPTR->getImageOrCreate(*key, params, &image);
+    if (!image) {
+        std::stringstream ss;
+        ss << "Failed to allocate an image of ";
+        std::size_t size = params->getStorageInfo().bounds.area() * params->getStorageInfo().numComponents * params->getStorageInfo().dataTypeSize;
+        ss << printAsRAM( size ).toStdString();
+        Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
+
+        return image;
+    }
+
+    ///Does nothing if image is already alloc
+    image->allocateMemory();
+
+
+    image = renderMaskInternal(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+
+    return image;
+} // RotoDrawableItem::renderMaskFromStroke
+
+ImagePtr
+RotoDrawableItem::renderMaskInternal(const RectI & roi,
+                                     const ImageComponents& components,
+                                     const double startTime,
+                                     const double endTime,
+                                     const double timeStep,
+                                     const double time,
+                                     const bool inverted,
+                                     const ImageBitDepthEnum depth,
+                                     const unsigned int mipmapLevel,
+                                     const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                     const ImagePtr &image)
+{
+    Q_UNUSED(startTime);
+    Q_UNUSED(endTime);
+    Q_UNUSED(timeStep);
+    NodePtr node = getContext()->getNode();
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
+    cairo_format_t cairoImgFormat;
+    int srcNComps;
+    bool doBuildUp = true;
+
+    if (isStroke) {
+        //Motion-blur is not supported for strokes
+        assert(startTime == endTime);
+
+        doBuildUp = getBuildupKnob()->getValueAtTime(time);
+        //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
+        if ( !doBuildUp || (components.getNumComponents() > 1) ) {
+            cairoImgFormat = CAIRO_FORMAT_ARGB32;
+            srcNComps = 4;
+        } else {
+            cairoImgFormat = CAIRO_FORMAT_A8;
+            srcNComps = 1;
+        }
+    } else {
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
+    }
+
+
+    double shapeColor[3];
+    getColor(time, shapeColor);
+
+    double opacity = getOpacity(time);
+
+    ////Allocate the cairo temporary buffer
+    CairoImageWrapper imgWrapper;
+
+    imgWrapper.cairoImg = cairo_image_surface_create( cairoImgFormat, roi.width(), roi.height() );
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -roi.x1, -roi.y1);
+    if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
+        return image;
+    }
+    imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
+    //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
+    cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
+
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(imgWrapper.ctx, CAIRO_ANTIALIAS_NONE);
+
+
+    assert(isStroke || isBezier);
+    if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+        std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            dotPatterns[i] = (cairo_pattern_t*)0;
+        }
+        RotoContextPrivate::renderStroke(imgWrapper.ctx, dotPatterns, strokes, 0, this, doBuildUp, opacity, time, mipmapLevel);
+
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            if (dotPatterns[i]) {
+                cairo_pattern_destroy(dotPatterns[i]);
+                dotPatterns[i] = 0;
+            }
+        }
+    } else {
+        RotoContextPrivate::renderBezier(imgWrapper.ctx, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel);
+    }
+
+    bool useOpacityToConvert = (isBezier != 0);
+
+
+    switch (depth) {
+    case eImageBitDepthFloat:
+        convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, inverted, useOpacityToConvert);
+        break;
+    case eImageBitDepthByte:
+        convertCairoImageToNatronImage_noColor<unsigned char, 255>(imgWrapper.cairoImg, srcNComps,  image.get(), roi, shapeColor, opacity, inverted,  useOpacityToConvert);
+        break;
+    case eImageBitDepthShort:
+        convertCairoImageToNatronImage_noColor<unsigned short, 65535>(imgWrapper.cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, inverted, useOpacityToConvert);
+        break;
+    case eImageBitDepthHalf:
+    case eImageBitDepthNone:
+        assert(false);
+        break;
+    }
+
+
+    assert(cairo_surface_status(imgWrapper.cairoImg) == CAIRO_STATUS_SUCCESS);
+
+    ///A call to cairo_surface_flush() is required before accessing the pixel data
+    ///to ensure that all pending drawing operations are finished.
+    cairo_surface_flush(imgWrapper.cairoImg);
+
+    return image;
+} // RotoDrawableItem::renderMaskInternal
+
+static inline
+double
+hardnessGaussLookup(double f)
+{
+    //2 hyperbolas + 1 parabola to approximate a gauss function
+    if (f < -0.5) {
+        f = -1. - f;
+
+        return (2. * f * f);
+    }
+
+    if (f < 0.5) {
+        return (1. - 2. * f * f);
+    }
+    f = 1. - f;
+
+    return (2. * f * f);
+}
+
+void
+RotoContextPrivate::renderDot(cairo_t* cr,
+                              std::vector<cairo_pattern_t*>* dotPatterns,
+                              const Point &center,
+                              double internalDotRadius,
+                              double externalDotRadius,
+                              double pressure,
+                              bool doBuildUp,
+                              const std::vector<std::pair<double, double> >& opacityStops,
+                              double opacity)
+{
+    if ( !opacityStops.empty() ) {
+        cairo_pattern_t* pattern;
+        // sometimes, Qt gives a pressure level > 1... so we clamp it
+        int pressureInt = int(std::max( 0., std::min(pressure, 1.) ) * (ROTO_PRESSURE_LEVELS - 1) + 0.5);
+        assert(pressureInt >= 0 && pressureInt < ROTO_PRESSURE_LEVELS);
+        if (dotPatterns && (*dotPatterns)[pressureInt]) {
+            pattern = (*dotPatterns)[pressureInt];
+        } else {
+            pattern = cairo_pattern_create_radial(0, 0, internalDotRadius, 0, 0, externalDotRadius);
+            for (std::size_t i = 0; i < opacityStops.size(); ++i) {
+                if (doBuildUp) {
+                    cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, 1., 1., 1., opacityStops[i].second);
+                } else {
+                    cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, opacityStops[i].second, opacityStops[i].second, opacityStops[i].second, 1);
+                }
+            }
+            //dotPatterns[pressureInt] = pattern;
+        }
+        cairo_translate(cr, center.x, center.y);
+        cairo_set_source(cr, pattern);
+        cairo_translate(cr, -center.x, -center.y);
+    } else {
+        if (doBuildUp) {
+            cairo_set_source_rgba(cr, 1., 1., 1., opacity);
+        } else {
+            cairo_set_source_rgba(cr, opacity, opacity, opacity, 1.);
+        }
+    }
+#ifdef DEBUG
+    //Make sure the dot we are about to render falls inside the clip region, otherwise the bounds of the image are mis-calculated.
+    cairo_surface_t* target = cairo_get_target(cr);
+    int w = cairo_image_surface_get_width(target);
+    int h = cairo_image_surface_get_height(target);
+    double x1, y1;
+    cairo_surface_get_device_offset(target, &x1, &y1);
+    assert(std::floor(center.x - externalDotRadius) >= -x1 && std::floor(center.x + externalDotRadius) < -x1 + w &&
+           std::floor(center.y - externalDotRadius) >= -y1 && std::floor(center.y + externalDotRadius) < -y1 + h);
+#endif
+    cairo_arc(cr, center.x, center.y, externalDotRadius, 0, M_PI * 2);
+    cairo_fill(cr);
+}
+
+static void
+getRenderDotParams(double alpha,
+                   double brushSizePixel,
+                   double brushHardness,
+                   double brushSpacing,
+                   double pressure,
+                   bool pressureAffectsOpacity,
+                   bool pressureAffectsSize,
+                   bool pressureAffectsHardness,
+                   double* internalDotRadius,
+                   double* externalDotRadius,
+                   double * spacing,
+                   std::vector<std::pair<double, double> >* opacityStops)
+{
+    if (pressureAffectsSize) {
+        brushSizePixel *= pressure;
+    }
+    if (pressureAffectsHardness) {
+        brushHardness *= pressure;
+    }
+    if (pressureAffectsOpacity) {
+        alpha *= pressure;
+    }
+
+    *internalDotRadius = std::max(brushSizePixel * brushHardness, 1.) / 2.;
+    *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
+    *spacing = *externalDotRadius * 2. * brushSpacing;
+
+
+    opacityStops->clear();
+
+    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
+    const int maxStops = 8;
+    double incr = 1. / maxStops;
+
+    if (brushHardness != 1.) {
+        for (double d = 0; d <= 1.; d += incr) {
+            double o = hardnessGaussLookup( std::pow(d, exp) );
+            opacityStops->push_back( std::make_pair(d, o * alpha) );
+        }
+    }
+}
+
+double
+RotoContextPrivate::renderStroke(cairo_t* cr,
+                                 std::vector<cairo_pattern_t*>& dotPatterns,
+                                 const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                 double distToNext,
+                                 const RotoDrawableItem* stroke,
+                                 bool doBuildup,
+                                 double alpha,
+                                 double time,
+                                 unsigned int mipmapLevel)
+{
+    if ( strokes.empty() ) {
+        return distToNext;
+    }
+
+    if ( !stroke->isActivated(time) ) {
+        return distToNext;
+    }
+
+    assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
+
+    KnobDoublePtr brushSizeKnob = stroke->getBrushSizeKnob();
+    double brushSize = brushSizeKnob->getValueAtTime(time);
+    KnobDoublePtr brushSpacingKnob = stroke->getBrushSpacingKnob();
+    double brushSpacing = brushSpacingKnob->getValueAtTime(time);
+    if (brushSpacing == 0.) {
+        return distToNext;
+    }
+
+
+    brushSpacing = std::max(brushSpacing, 0.05);
+
+    KnobDoublePtr brushHardnessKnob = stroke->getBrushHardnessKnob();
+    double brushHardness = brushHardnessKnob->getValueAtTime(time);
+    KnobDoublePtr visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
+    double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
+    double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
+    if ( (writeOnEnd - writeOnStart) <= 0. ) {
+        return distToNext;
+    }
+
+    KnobBoolPtr pressureOpacityKnob = stroke->getPressureOpacityKnob();
+    KnobBoolPtr pressureSizeKnob = stroke->getPressureSizeKnob();
+    KnobBoolPtr pressureHardnessKnob = stroke->getPressureHardnessKnob();
+    bool pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
+    bool pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
+    bool pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
+    double brushSizePixel = brushSize;
+    if (mipmapLevel != 0) {
+        brushSizePixel = std::max( 1., brushSizePixel / (1 << mipmapLevel) );
+    }
+    cairo_set_operator(cr, doBuildup ? CAIRO_OPERATOR_OVER : CAIRO_OPERATOR_LIGHTEN);
+
+
+    for (std::list<std::list<std::pair<Point, double> > >::const_iterator strokeIt = strokes.begin(); strokeIt != strokes.end(); ++strokeIt) {
+        int firstPoint = (int)std::floor( (strokeIt->size() * writeOnStart) );
+        int endPoint = (int)std::ceil( (strokeIt->size() * writeOnEnd) );
+        assert( firstPoint >= 0 && firstPoint < (int)strokeIt->size() && endPoint > firstPoint && endPoint <= (int)strokeIt->size() );
+
+
+        ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
+        std::list<std::pair<Point, double> > visiblePortion;
+        std::list<std::pair<Point, double> >::const_iterator startingIt = strokeIt->begin();
+        std::list<std::pair<Point, double> >::const_iterator endingIt = strokeIt->begin();
+        std::advance(startingIt, firstPoint);
+        std::advance(endingIt, endPoint);
+        for (std::list<std::pair<Point, double> >::const_iterator it = startingIt; it != endingIt; ++it) {
+            visiblePortion.push_back(*it);
+        }
+        if ( visiblePortion.empty() ) {
+            return distToNext;
+        }
+
+        std::list<std::pair<Point, double> >::iterator it = visiblePortion.begin();
+
+        if (visiblePortion.size() == 1) {
+            double internalDotRadius, externalDotRadius, spacing;
+            std::vector<std::pair<double, double> > opacityStops;
+            getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+            renderDot(cr, &dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
+            continue;
+        }
+
+        std::list<std::pair<Point, double> >::iterator next = it;
+        ++next;
+
+        while ( next != visiblePortion.end() ) {
+            //Render for each point a dot. Spacing is a percentage of brushSize:
+            //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
+            //Spacing at 0 we do not render the stroke
+
+            double dist = std::sqrt( (next->first.x - it->first.x) * (next->first.x - it->first.x) +  (next->first.y - it->first.y) * (next->first.y - it->first.y) );
+
+            // while the next point can be drawn on this segment, draw a point and advance
+            while (distToNext <= dist) {
+                double a = dist == 0. ? 0. : distToNext / dist;
+                Point center = {
+                    it->first.x * (1 - a) + next->first.x * a,
+                    it->first.y * (1 - a) + next->first.y * a
+                };
+                double pressure = it->second * (1 - a) + next->second * a;
+
+                // draw the dot
+                double internalDotRadius, externalDotRadius, spacing;
+                std::vector<std::pair<double, double> > opacityStops;
+                getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+                renderDot(cr, &dotPatterns, center, internalDotRadius, externalDotRadius, pressure, doBuildup, opacityStops, alpha);
+
+                distToNext += spacing;
+            }
+
+            // go to the next segment
+            distToNext -= dist;
+            ++next;
+            ++it;
+        }
+    }
+
+
+    return distToNext;
+} // RotoContextPrivate::renderStroke
+
+bool
+RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel,
+                                              double brushHardness,
+                                              double alpha,
+                                              CairoImageWrapper& wrapper)
+{
+    wrapper.cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, brushSizePixel + 1, brushSizePixel + 1);
+    cairo_surface_set_device_offset(wrapper.cairoImg, 0, 0);
+    if (cairo_surface_status(wrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
+        return false;
+    }
+    wrapper.ctx = cairo_create(wrapper.cairoImg);
+    //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
+    cairo_set_fill_rule(wrapper.ctx, CAIRO_FILL_RULE_WINDING);
+
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(wrapper.ctx, CAIRO_ANTIALIAS_NONE);
+
+    cairo_set_operator(wrapper.ctx, CAIRO_OPERATOR_OVER);
+
+    double internalDotRadius, externalDotRadius, spacing;
+    std::vector<std::pair<double, double> > opacityStops;
+    Point p;
+    p.x = brushSizePixel / 2.;
+    p.y = brushSizePixel / 2.;
+
+    const double pressure = 1.;
+    const double brushspacing = 0.;
+
+    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+    RotoContextPrivate::renderDot(wrapper.ctx, 0, p, internalDotRadius, externalDotRadius, pressure, true, opacityStops, alpha);
+
+    return true;
+}
+
+void
+RotoContextPrivate::renderBezier(cairo_t* cr,
+                                 const Bezier* bezier,
+                                 double opacity,
+                                 double time,
+                                 double startTime, double endTime, double mbFrameStep,
+                                 unsigned int mipmapLevel)
+{
+    ///render the bezier only if finished (closed) and activated
+    if ( !bezier->isCurveFinished() || !bezier->isActivated(time) || ( bezier->getControlPointsCount() <= 1 ) ) {
+        return;
+    }
+
+
+
+    for (double t = startTime; t <= endTime; t+=mbFrameStep) {
+
+        double fallOff = bezier->getFeatherFallOff(t);
+        double featherDist = bezier->getFeatherDistance(t);
+        double shapeColor[3];
+        bezier->getColor(t, shapeColor);
+
+
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+
+        cairo_new_path(cr);
+
+        ////Define the feather edge pattern
+        cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+        if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+            cairo_pattern_destroy(mesh);
+
+            return;
+        }
+
+        ///Adjust the feather distance so it takes the mipmap level into account
+        if (mipmapLevel != 0) {
+            featherDist /= (1 << mipmapLevel);
+        }
+
+        Transform::Matrix3x3 transform;
+        bezier->getTransformAtTime(t, &transform);
+
+
+#ifdef ROTO_RENDER_TRIANGLES_ONLY
+        std::list<RotoFeatherVertex> featherMesh;
+        std::list<RotoTriangleFans> internalFans;
+        std::list<RotoTriangles> internalTriangles;
+        std::list<RotoTriangleStrips> internalStrips;
+        computeTriangles(bezier, t, mipmapLevel, featherDist, &featherMesh, &internalFans, &internalTriangles, &internalStrips);
+        renderFeather_cairo(featherMesh, shapeColor, fallOff, mesh);
+        renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
+        Q_UNUSED(opacity);
+#else
+        renderFeather(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+
+
+        // strangely, the above-mentioned cairo bug doesn't affect this function
+        BezierCPs cps = bezier->getControlPoints_mt_safe();
+        renderInternalShape(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
+        
+#endif
+        
+        
+        RotoContextPrivate::applyAndDestroyMask(cr, mesh);
+    }
+} // RotoContextPrivate::renderBezier
+
+void
+RotoContextPrivate::renderFeather(const Bezier* bezier,
+                                  double time,
+                                  unsigned int mipmapLevel,
+                                  double shapeColor[3],
+                                  double /*opacity*/,
+                                  double featherDist,
+                                  double fallOff,
+                                  cairo_pattern_t* mesh)
+{
+    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///to the Natron image.
+
+    double fallOffInverse = 1. / fallOff;
+    /*
+     * We descretize the feather control points to obtain a polygon so that the feather distance will be of the same thickness around all the shape.
+     * If we were to extend only the end points, the resulting bezier interpolation would create a feather with different thickness around the shape,
+     * yielding an unwanted behaviour for the end user.
+     */
+    ///here is the polygon of the feather bezier
+    ///This is used only if the feather distance is different of 0 and the feather points equal
+    ///the control points in order to still be able to apply the feather distance.
+    std::list<ParametricPoint> featherPolygon;
+    std::list<ParametricPoint> bezierPolygon;
+    RectD featherPolyBBox;
+
+    featherPolyBBox.setupInfinity();
+
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                    50,
+#else
+                                                    1,
+#endif
+                                                    true, &featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                       50,
+#else
+                                       1,
+#endif
+                                       &bezierPolygon, NULL);
+
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
+
+    assert( !featherPolygon.empty() && !bezierPolygon.empty() );
+
+
+    std::list<Point> featherContour;
+
+    // prepare iterators
+    std::list<ParametricPoint>::iterator next = featherPolygon.begin();
+    ++next;  // can only be valid since we assert the list is not empty
+    if ( next == featherPolygon.end() ) {
+        next = featherPolygon.begin();
+    }
+    std::list<ParametricPoint>::iterator prev = featherPolygon.end();
+    --prev; // can only be valid since we assert the list is not empty
+    std::list<ParametricPoint>::iterator bezIT = bezierPolygon.begin();
+    std::list<ParametricPoint>::iterator prevBez = bezierPolygon.end();
+    --prevBez; // can only be valid since we assert the list is not empty
+
+    // prepare p1
+    double absFeatherDist = std::abs(featherDist);
+    Point p1;
+    p1.x = featherPolygon.begin()->x;
+    p1.y = featherPolygon.begin()->y;
+    double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
+    assert(norm != 0);
+    double dx = (norm != 0) ? -( (next->y - prev->y) / norm ) : 0;
+    double dy = (norm != 0) ? ( (next->x - prev->x) / norm ) : 1;
+
+    if (!clockWise) {
+        p1.x -= dx * absFeatherDist;
+        p1.y -= dy * absFeatherDist;
+    } else {
+        p1.x += dx * absFeatherDist;
+        p1.y += dy * absFeatherDist;
+    }
+
+    Point origin = p1;
+    featherContour.push_back(p1);
+
+
+    // increment for first iteration
+    std::list<ParametricPoint>::iterator cur = featherPolygon.begin();
+    // ++cur, ++prev, ++next, ++bezIT, ++prevBez
+    // all should be valid, actually
+    assert( cur != featherPolygon.end() &&
+            prev != featherPolygon.end() &&
+            next != featherPolygon.end() &&
+            bezIT != bezierPolygon.end() &&
+            prevBez != bezierPolygon.end() );
+    if ( cur != featherPolygon.end() ) {
+        ++cur;
+    }
+    if ( prev != featherPolygon.end() ) {
+        ++prev;
+    }
+    if ( next != featherPolygon.end() ) {
+        ++next;
+    }
+    if ( bezIT != bezierPolygon.end() ) {
+        ++bezIT;
+    }
+    if ( prevBez != bezierPolygon.end() ) {
+        ++prevBez;
+    }
+
+    for (;; ++cur) { // for each point in polygon
+        if ( next == featherPolygon.end() ) {
+            next = featherPolygon.begin();
+        }
+        if ( prev == featherPolygon.end() ) {
+            prev = featherPolygon.begin();
+        }
+        if ( bezIT == bezierPolygon.end() ) {
+            bezIT = bezierPolygon.begin();
+        }
+        if ( prevBez == bezierPolygon.end() ) {
+            prevBez = bezierPolygon.begin();
+        }
+        bool mustStop = false;
+        if ( cur == featherPolygon.end() ) {
+            mustStop = true;
+            cur = featherPolygon.begin();
+        }
+
+        ///skip it
+        if ( (cur->x == prev->x) && (cur->y == prev->y) ) {
+            continue;
+        }
+
+        Point p0, p0p1, p1p0, p2, p2p3, p3p2, p3;
+        p0.x = prevBez->x;
+        p0.y = prevBez->y;
+        p3.x = bezIT->x;
+        p3.y = bezIT->y;
+
+        if (!mustStop) {
+            norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
+            assert(norm != 0);
+            dx = -( (next->y - prev->y) / norm );
+            dy = ( (next->x - prev->x) / norm );
+            p2.x = cur->x;
+            p2.y = cur->y;
+
+            if (!clockWise) {
+                p2.x -= dx * absFeatherDist;
+                p2.y -= dy * absFeatherDist;
+            } else {
+                p2.x += dx * absFeatherDist;
+                p2.y += dy * absFeatherDist;
+            }
+        } else {
+            p2.x = origin.x;
+            p2.y = origin.y;
+        }
+        featherContour.push_back(p2);
+
+        ///linear interpolation
+        p0p1.x = (p0.x * fallOff * 2. + fallOffInverse * p1.x) / (fallOff * 2. + fallOffInverse);
+        p0p1.y = (p0.y * fallOff * 2. + fallOffInverse * p1.y) / (fallOff * 2. + fallOffInverse);
+        p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+        p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
+
+
+        p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+        p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+        p3p2.x = (p3.x * fallOff * 2. + fallOffInverse * p2.x) / (fallOff * 2. + fallOffInverse);
+        p3p2.y = (p3.y * fallOff * 2. + fallOffInverse * p2.y) / (fallOff * 2. + fallOffInverse);
+
+
+        ///move to the initial point
+        cairo_mesh_pattern_begin_patch(mesh);
+        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+        cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+        cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+        cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+        cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+        ///Set the 4 corners color
+        ///inner is full color
+
+        // IMPORTANT NOTE:
+        // The two sqrt below are due to a probable cairo bug.
+        // To check wether the bug is present is a given cairo version,
+        // make any shape with a very large feather and set
+        // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+        // and approximately equal to 0.5.
+        // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+        // older Cairo versions.
+        cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
+        ///outter is faded
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
+        ///inner is full color
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
+        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+        cairo_mesh_pattern_end_patch(mesh);
+
+        if (mustStop) {
+            break;
+        }
+
+        p1 = p2;
+
+        // increment for next iteration
+        // ++prev, ++next, ++bezIT, ++prevBez
+        if ( prev != featherPolygon.end() ) {
+            ++prev;
+        }
+        if ( next != featherPolygon.end() ) {
+            ++next;
+        }
+        if ( bezIT != bezierPolygon.end() ) {
+            ++bezIT;
+        }
+        if ( prevBez != bezierPolygon.end() ) {
+            ++prevBez;
+        }
+    }  // for each point in polygon
+} // RotoContextPrivate::renderFeather
+
+void
+RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3], double fallOff, cairo_pattern_t * mesh)
+{
+    // Roto feather is rendered as triangles
+    assert(vertices.size() >= 3 && vertices.size() % 3 == 0);
+
+    double fallOffInverse = 1. / fallOff;
+    
+    std::list<RotoFeatherVertex>::const_iterator next = vertices.begin();
+    ++next;
+    std::list<RotoFeatherVertex>::const_iterator nextNext = next;
+    ++nextNext;
+    int index = 0;
+    for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); index += 3) {
+
+
+        cairo_mesh_pattern_begin_patch(mesh);
+
+        // Only 3 of the 4 vertices are valid
+        const RotoFeatherVertex* innerVertices[2] = {0, 0};
+        const RotoFeatherVertex* outterVertices[2] = {0, 0};
+
+        {
+            int innerIndex = 0;
+            int outterIndex = 0;
+            if (it->isInner) {
+                innerVertices[innerIndex] = &(*it);
+                ++innerIndex;
+            } else {
+                outterVertices[outterIndex] = &(*it);
+                ++outterIndex;
+            }
+            if (next->isInner) {
+                assert(innerIndex <= 1);
+                innerVertices[innerIndex] = &(*next);
+                ++innerIndex;
+            } else {
+                assert(outterIndex <= 1);
+                outterVertices[outterIndex] = &(*next);
+                ++outterIndex;
+            }
+            if (nextNext->isInner) {
+                assert(innerIndex <= 1);
+                innerVertices[innerIndex] = &(*nextNext);
+                ++innerIndex;
+            } else {
+                assert(outterIndex <= 1);
+                outterVertices[outterIndex] = &(*nextNext);
+                ++outterIndex;
+            }
+            assert((outterIndex == 1 && innerIndex == 2) || (innerIndex == 1 && outterIndex == 2));
+        }
+        // make a degenerated coons patch out of the triangle so that we can assign a color to each vertex to emulate simple gouraud shaded triangles
+        Point p0, p0p1, p1, p1p0, p2, p2p3, p3p2, p3;
+        p0.x = innerVertices[0]->x;
+        p0.y = innerVertices[0]->y;
+        p1.x = outterVertices[0]->x;
+        p1.y = outterVertices[0]->y;
+        if (outterVertices[1]) {
+            p2.x = outterVertices[1]->x;
+            p2.y = outterVertices[1]->y;
+        } else {
+            // Repeat p1 if only 1 outter vertex
+            p2 = p1;
+        }
+        if (innerVertices[1]) {
+            p3.x = innerVertices[1]->x;
+            p3.y = innerVertices[1]->y;
+        } else {
+            // Repeat p0 if only 1 inner vertex
+            p3 = p0;
+        }
+
+
+        ///linear interpolation
+        p0p1.x = (p0.x * fallOff * 2. + fallOffInverse * p1.x) / (fallOff * 2. + fallOffInverse);
+        p0p1.y = (p0.y * fallOff * 2. + fallOffInverse * p1.y) / (fallOff * 2. + fallOffInverse);
+        p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+        p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
+
+
+        p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+        p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+        p3p2.x = (p3.x * fallOff * 2. + fallOffInverse * p2.x) / (fallOff * 2. + fallOffInverse);
+        p3p2.y = (p3.y * fallOff * 2. + fallOffInverse * p2.y) / (fallOff * 2. + fallOffInverse);
+
+
+        // move to the initial point
+        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+        cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+        cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+        cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+        cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+
+        // Set the 4 corners color
+        // inner is full color
+
+        // IMPORTANT NOTE:
+        // The two sqrt below are due to a probable cairo bug.
+        // To check wether the bug is present is a given cairo version,
+        // make any shape with a very large feather and set
+        // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+        // and approximately equal to 0.5.
+        // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+        // older Cairo versions.
+        cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
+        // outter is faded
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
+        // inner is full color
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
+        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+        cairo_mesh_pattern_end_patch(mesh);
+
+
+        assert(nextNext != vertices.end());
+        ++nextNext;
+
+        // check if we reached the end
+        if (nextNext == vertices.end()) {
+            break;
+        }
+        // advance a second time
+        ++nextNext;
+        if (nextNext == vertices.end()) {
+            break;
+        }
+        // advance a 3rd time
+        ++nextNext;
+        if (nextNext == vertices.end()) {
+            break;
+        }
+
+        assert(next != vertices.end());
+        ++next;
+        assert(next != vertices.end());
+        ++next;
+        assert(next != vertices.end());
+        ++next;
+        assert(next != vertices.end());
+
+        assert(it != vertices.end());
+        ++it;
+        assert(it != vertices.end());
+        ++it;
+        assert(it != vertices.end());
+        ++it;
+        assert(it != vertices.end());
+    } // for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); ) 
+} // RotoContextPrivate::renderFeather_cairo
+
+
+struct tessPolygonData
+{
+    std::list<RotoTriangleFans>* internalFans;
+    std::list<RotoTriangles>* internalTriangles;
+    std::list<RotoTriangleStrips>* internalStrips;
+
+    boost::scoped_ptr<RotoTriangleFans> fanBeingEdited;
+    boost::scoped_ptr<RotoTriangles> trianglesBeingEdited;
+    boost::scoped_ptr<RotoTriangleStrips> stripsBeingEdited;
+
+    std::list<boost::shared_ptr<Point> > allocatedIntersections;
+    unsigned int error;
+};
+
+static void tess_begin_primitive_callback(unsigned int which, void *polygonData)
+{
+
+    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    assert(myData);
+
+    switch (which) {
+        case LIBTESS_GL_TRIANGLE_STRIP:
+            assert(!myData->stripsBeingEdited);
+            myData->stripsBeingEdited.reset(new RotoTriangleStrips);
+            break;
+        case LIBTESS_GL_TRIANGLE_FAN:
+            assert(!myData->fanBeingEdited);
+            myData->fanBeingEdited.reset(new RotoTriangleFans);
+            break;
+        case LIBTESS_GL_TRIANGLES:
+            assert(!myData->trianglesBeingEdited);
+            myData->trianglesBeingEdited.reset(new RotoTriangles);
+            break;
+        default:
+            assert(false);
+            break;
+    }
+}
+
+static void tess_end_primitive_callback(void *polygonData)
+{
+    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    assert(myData);
+
+    assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
+
+    if (myData->stripsBeingEdited) {
+        myData->internalStrips->push_back(*myData->stripsBeingEdited);
+        myData->stripsBeingEdited.reset();
+    } else if (myData->fanBeingEdited) {
+        myData->internalFans->push_back(*myData->fanBeingEdited);
+        myData->fanBeingEdited.reset();
+    } else if (myData->trianglesBeingEdited) {
+        myData->internalTriangles->push_back(*myData->trianglesBeingEdited);
+        myData->trianglesBeingEdited.reset();
+    }
+
+}
+
+static void tess_vertex_callback(void* data /*per-vertex client data*/, void *polygonData)
+{
+    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    assert(myData);
+
+    assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
+           (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
+
+    Point* p = (Point*)data;
+    assert(p);
+
+    if (myData->stripsBeingEdited) {
+        myData->stripsBeingEdited->vertices.push_back(*p);
+    } else if (myData->fanBeingEdited) {
+        myData->fanBeingEdited->vertices.push_back(*p);
+    } else if (myData->trianglesBeingEdited) {
+        myData->trianglesBeingEdited->vertices.push_back(*p);
+    }
+
+}
+
+static void tess_error_callback(unsigned int error, void *polygonData)
+{
+    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    assert(myData);
+    myData->error = error;
+}
+
+static void tess_intersection_combine_callback(double coords[3], void */*data*/[4] /*4 original vertices*/, double /*w*/[4] /*weights*/, void **dataOut, void *polygonData)
+{
+    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    assert(myData);
+
+    boost::shared_ptr<Point> ret(new Point);
+    ret->x = coords[0];
+    ret->y = coords[1];
+    /*new->r = w[0]*d[0]->r + w[1]*d[1]->r + w[2]*d[2]->r + w[3]*d[3]->r;
+    new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
+    new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
+    new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
+    *dataOut = ret.get();
+    myData->allocatedIntersections.push_back(ret);
+}
+
+void
+RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double featherDist,
+                                     std::list<RotoFeatherVertex>* featherMesh,
+                                     std::list<RotoTriangleFans>* internalFans,
+                                     std::list<RotoTriangles>* internalTriangles,
+                                     std::list<RotoTriangleStrips>* internalStrips)
+{
+    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///to the Natron image.
+
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
+
+    const double absFeatherDist = std::abs(featherDist);
+
+    std::list<std::list<ParametricPoint> > featherPolygon;
+    std::list<std::list<ParametricPoint> > bezierPolygon;
+
+    RectD featherPolyBBox;
+    featherPolyBBox.setupInfinity();
+
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+    int error = -1;
+#else
+    double error = 1;
+#endif
+
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,error, true, &featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, error,&bezierPolygon, NULL);
+
+
+    // First compute the mesh composed of triangles of the feather
+    assert( !featherPolygon.empty() && !bezierPolygon.empty() && featherPolygon.size() == bezierPolygon.size());
+
+    std::list<std::list<ParametricPoint> >::const_iterator fIt = featherPolygon.begin();
+    for (std::list<std::list<ParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {
+
+        // Iterate over each bezier segment.
+        // There are the same number of bezier segments for the feather and the internal bezier. Each discretized segment is a contour (list of vertices)
+
+        std::list<ParametricPoint>::const_iterator bSegmentIt = it->begin();
+        std::list<ParametricPoint>::const_iterator fSegmentIt = fIt->begin();
+
+        assert(!it->empty() && !fIt->empty());
+
+
+        // prepare iterators to compute derivatives for feather distance
+        std::list<ParametricPoint>::const_iterator fnext = fSegmentIt;
+        ++fnext;  // can only be valid since we assert the list is not empty
+        if ( fnext == fIt->end() ) {
+            fnext = fIt->begin();
+        }
+        std::list<ParametricPoint>::const_iterator fprev = fIt->end();
+        --fprev; // can only be valid since we assert the list is not empty
+
+
+        // initialize the state with a segment between the first inner vertex and first outter vertex
+        RotoFeatherVertex lastInnerVert,lastOutterVert;
+        {
+            lastInnerVert.x = bSegmentIt->x;
+            lastInnerVert.y = bSegmentIt->y;
+            lastInnerVert.isInner = true;
+            featherMesh->push_back(lastInnerVert);
+            ++bSegmentIt;
+        }
+        {
+            lastOutterVert.x = fSegmentIt->x;
+            lastOutterVert.y = fSegmentIt->y;
+
+            if (absFeatherDist) {
+                double diffx = fnext->x - fprev->x;
+                double diffy = fnext->y - fprev->y;
+                double norm = std::sqrt( diffx * diffx + diffy * diffy );
+                double dx = (norm != 0) ? -( diffy / norm ) : 0;
+                double dy = (norm != 0) ? ( diffx / norm ) : 1;
+
+                if (!clockWise) {
+                    lastOutterVert.x -= dx * absFeatherDist;
+                    lastOutterVert.y -= dy * absFeatherDist;
+                } else {
+                    lastOutterVert.x += dx * absFeatherDist;
+                    lastOutterVert.y += dy * absFeatherDist;
+                }
+            }
+
+            lastOutterVert.isInner = false;
+            featherMesh->push_back(lastOutterVert);
+            ++fSegmentIt;
+        }
+
+        if ( fprev != fIt->end() ) {
+            ++fprev;
+        }
+        if ( fnext != fIt->end() ) {
+            ++fnext;
+        }
+
+
+
+        for (;;) {
+
+            if ( fnext == fIt->end() ) {
+                fnext = fIt->begin();
+            }
+            if ( fprev == fIt->end() ) {
+                fprev = fIt->begin();
+            }
+
+            double inner_t = (double)INT_MAX;
+            double outter_t = (double)INT_MAX;
+            bool gotOne = false;
+            if (bSegmentIt != it->end()) {
+                inner_t = bSegmentIt->t;
+                gotOne = true;
+            }
+            if (fSegmentIt != fIt->end()) {
+                outter_t = fSegmentIt->t;
+                gotOne = true;
+            }
+
+            if (!gotOne) {
+                break;
+            }
+
+            // Pick the point with the minimum t
+            if (inner_t <= outter_t) {
+                lastInnerVert.x = bSegmentIt->x;
+                lastInnerVert.y = bSegmentIt->y;
+                lastInnerVert.isInner = true;
+                featherMesh->push_back(lastInnerVert);
+                ++bSegmentIt;
+
+            } else {
+                lastOutterVert.x = fSegmentIt->x;
+                lastOutterVert.y = fSegmentIt->y;
+
+                if (absFeatherDist) {
+                    double diffx = fnext->x - fprev->x;
+                    double diffy = fnext->y - fprev->y;
+                    double norm = std::sqrt( diffx * diffx + diffy * diffy );
+                    double dx = (norm != 0) ? -( diffy / norm ) : 0;
+                    double dy = (norm != 0) ? ( diffx / norm ) : 1;
+
+                    if (!clockWise) {
+                        lastOutterVert.x -= dx * absFeatherDist;
+                        lastOutterVert.y -= dy * absFeatherDist;
+                    } else {
+                        lastOutterVert.x += dx * absFeatherDist;
+                        lastOutterVert.y += dy * absFeatherDist;
+                    }
+                }
+                lastOutterVert.isInner = false;
+                featherMesh->push_back(lastOutterVert);
+                ++fSegmentIt;
+
+
+                if ( fprev != fIt->end() ) {
+                    ++fprev;
+                }
+                if ( fnext != fIt->end() ) {
+                    ++fnext;
+                }
+            }
+
+            // Initialize the first segment of the next triangle if we did not reach the end
+            if (fSegmentIt == fIt->end() && bSegmentIt == it->end()) {
+                break;
+            }
+            featherMesh->push_back(lastOutterVert);
+            featherMesh->push_back(lastInnerVert);
+
+
+        } // for(;;)
+
+
+    } // for all points in polygon
+
+    // Now tesselate the internal bezier using glu
+    tessPolygonData tessData;
+    tessData.internalStrips = internalStrips;
+    tessData.internalFans = internalFans;
+    tessData.internalTriangles = internalTriangles;
+    tessData.error = 0;
+    libtess_GLUtesselator* tesselator = libtess_gluNewTess();
+
+    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_BEGIN_DATA, (void (*)())tess_begin_primitive_callback);
+    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_VERTEX_DATA, (void (*)())tess_vertex_callback);
+    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_END_DATA, (void (*)())tess_end_primitive_callback);
+    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_ERROR_DATA, (void (*)())tess_error_callback);
+    libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_COMBINE_DATA, (void (*)())tess_intersection_combine_callback);
+
+    // From README: if you know that all polygons lie in the x-y plane, call
+    // gluTessNormal(tess, 0.0, 0.0, 1.0) before rendering any polygons.
+    libtess_gluTessNormal(tesselator, 0, 0, 1);
+    libtess_gluTessBeginPolygon(tesselator, (void*)&tessData);
+    libtess_gluTessBeginContour(tesselator);
+
+    for (std::list<std::list<ParametricPoint> >::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it) {
+        for (std::list<ParametricPoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+            double coords[3] = {it2->x, it2->y, 1.};
+            libtess_gluTessVertex(tesselator, coords, (void*)&(*it2) /*per-vertex client data*/);
+        }
+    }
+
+
+    libtess_gluTessEndContour(tesselator);
+    libtess_gluTessEndPolygon(tesselator);
+    libtess_gluDeleteTess(tesselator);
+
+    // check for errors
+    assert(tessData.error == 0);
+
+} // RotoContextPrivate::computeFeatherTriangles
+
+void
+RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& triangles,
+                                              const std::list<RotoTriangleFans>& fans,
+                                              const std::list<RotoTriangleStrips>& strips,
+                                              double shapeColor[3], cairo_pattern_t * mesh)
+{
+    for (std::list<RotoTriangles>::const_iterator it = triangles.begin(); it!=triangles.end(); ++it ) {
+
+        assert(it->vertices.size() >= 3 && it->vertices.size() % 3 == 0);
+
+        int c = 0;
+        const Point* coonsPatchStart = 0;
+        for (std::list<Point>::const_iterator it2 = it->vertices.begin(); it2!=it->vertices.end(); ++it2) {
+            if (c == 0) {
+                cairo_mesh_pattern_begin_patch(mesh);
+                cairo_mesh_pattern_move_to(mesh, it2->x, it2->y);
+                coonsPatchStart = &(*it2);
+            } else {
+                cairo_mesh_pattern_line_to(mesh, it2->x, it2->y);
+            }
+            if (c == 2) {
+                assert(coonsPatchStart);
+                // close coons patch by transforming the triangle into a degenerated coons patch
+                cairo_mesh_pattern_line_to(mesh, coonsPatchStart->x, coonsPatchStart->y);
+                // IMPORTANT NOTE:
+                // The two sqrt below are due to a probable cairo bug.
+                // To check wether the bug is present is a given cairo version,
+                // make any shape with a very large feather and set
+                // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+                // and approximately equal to 0.5.
+                // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+                // older Cairo versions.
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+                assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+                cairo_mesh_pattern_end_patch(mesh);
+                c = 0;
+            } else {
+                ++c;
+            }
+        }
+    }
+    for (std::list<RotoTriangleFans>::const_iterator it = fans.begin(); it!=fans.end(); ++it ) {
+
+        assert(it->vertices.size() >= 3);
+        std::list<Point>::const_iterator cur = it->vertices.begin();
+        const Point* fanStart = &(*(cur));
+        ++cur;
+        std::list<Point>::const_iterator next = cur;
+        ++next;
+        for (;next != it->vertices.end();) {
+            cairo_mesh_pattern_begin_patch(mesh);
+            cairo_mesh_pattern_move_to(mesh, fanStart->x, fanStart->y);
+            cairo_mesh_pattern_line_to(mesh, cur->x, cur->y);
+            cairo_mesh_pattern_line_to(mesh, next->x, next->y);
+            cairo_mesh_pattern_line_to(mesh, fanStart->x, fanStart->y);
+            // IMPORTANT NOTE:
+            // The two sqrt below are due to a probable cairo bug.
+            // To check wether the bug is present is a given cairo version,
+            // make any shape with a very large feather and set
+            // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+            // and approximately equal to 0.5.
+            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+            // older Cairo versions.
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+            cairo_mesh_pattern_end_patch(mesh);
+
+            ++next;
+            ++cur;
+        }
+    }
+    for (std::list<RotoTriangleStrips>::const_iterator it = strips.begin(); it!=strips.end(); ++it ) {
+
+        assert(it->vertices.size() >= 3);
+
+        std::list<Point>::const_iterator cur = it->vertices.begin();
+        const Point* prevPrev = &(*(cur));
+        ++cur;
+        const Point* prev = &(*(cur));
+        ++cur;
+        for (; cur != it->vertices.end(); ++cur) {
+            cairo_mesh_pattern_begin_patch(mesh);
+            cairo_mesh_pattern_move_to(mesh, prevPrev->x, prevPrev->y);
+            cairo_mesh_pattern_line_to(mesh, prev->x, prev->y);
+            cairo_mesh_pattern_line_to(mesh, cur->x, cur->y);
+            cairo_mesh_pattern_line_to(mesh, prevPrev->x, prevPrev->y);
+
+            // IMPORTANT NOTE:
+            // The two sqrt below are due to a probable cairo bug.
+            // To check wether the bug is present is a given cairo version,
+            // make any shape with a very large feather and set
+            // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+            // and approximately equal to 0.5.
+            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+            // older Cairo versions.
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], 1);
+            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+            cairo_mesh_pattern_end_patch(mesh);
+            
+            prevPrev = prev;
+            prev = &(*(cur));
+        }
+    }
+}
+
+
+void
+RotoContextPrivate::renderInternalShape(double time,
+                                        unsigned int mipmapLevel,
+                                        double /*shapeColor*/[3],
+                                        double /*opacity*/,
+                                        const Transform::Matrix3x3& transform,
+                                        cairo_t* cr,
+#ifdef ROTO_USE_MESH_PATTERN_ONLY
+                                        cairo_pattern_t* mesh,
+#else
+                                        cairo_pattern_t* /*mesh*/,
+#endif
+                                        const BezierCPs & cps)
+{
+    assert( !cps.empty() );
+#ifdef ROTO_USE_MESH_PATTERN_ONLY
+    std::list<BezierCPs> coonPatches;
+    bezulate(time, cps, &coonPatches);
+
+    for (std::list<BezierCPs>::iterator it = coonPatches.begin(); it != coonPatches.end(); ++it) {
+        std::list<BezierCPs> fixedPatch;
+        CoonsRegularization::regularize(*it, time, &fixedPatch);
+        for (std::list<BezierCPs>::iterator it2 = fixedPatch.begin(); it2 != fixedPatch.end(); ++it2) {
+            std::size_t size = it2->size();
+            assert(size <= 4 && size >= 2);
+
+            BezierCPs::iterator patchIT = it2->begin();
+            BezierCPPtr p0ptr, p1ptr, p2ptr, p3ptr;
+            p0ptr = *patchIT;
+            ++patchIT;
+            if (size == 2) {
+                p1ptr = p0ptr;
+                p2ptr = *patchIT;
+                p3ptr = p2ptr;
+            } else if (size == 3) {
+                p1ptr = *patchIT;
+                p2ptr = *patchIT;
+                ++patchIT;
+                p3ptr = *patchIT;
+            } else if (size == 4) {
+                p1ptr = *patchIT;
+                ++patchIT;
+                p2ptr = *patchIT;
+                ++patchIT;
+                p3ptr = *patchIT;
+            }
+            assert(p0ptr && p1ptr && p2ptr && p3ptr);
+
+            Point p0, p0p1, p1p0, p1, p1p2, p2p1, p2p3, p3p2, p2, p3, p3p0, p0p3;
+
+            p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
+            p0ptr->getPositionAtTime(time, &p0.x, &p0.y);
+            p0ptr->getRightBezierPointAtTime(time, &p0p1.x, &p0p1.y);
+
+            p1ptr->getLeftBezierPointAtTime(time, &p1p0.x, &p1p0.y);
+            p1ptr->getPositionAtTime(time, &p1.x, &p1.y);
+            p1ptr->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
+
+            p2ptr->getLeftBezierPointAtTime(time, &p2p1.x, &p2p1.y);
+            p2ptr->getPositionAtTime(time, &p2.x, &p2.y);
+            p2ptr->getRightBezierPointAtTime(time, &p2p3.x, &p2p3.y);
+
+            p3ptr->getLeftBezierPointAtTime(time, &p3p2.x, &p3p2.y);
+            p3ptr->getPositionAtTime(time, &p3.x, &p3.y);
+            p3ptr->getRightBezierPointAtTime(time, &p3p0.x, &p3p0.y);
+
+
+            adjustToPointToScale(mipmapLevel, p0.x, p0.y);
+            adjustToPointToScale(mipmapLevel, p0p1.x, p0p1.y);
+            adjustToPointToScale(mipmapLevel, p1p0.x, p1p0.y);
+            adjustToPointToScale(mipmapLevel, p1.x, p1.y);
+            adjustToPointToScale(mipmapLevel, p1p2.x, p1p2.y);
+            adjustToPointToScale(mipmapLevel, p2p1.x, p2p1.y);
+            adjustToPointToScale(mipmapLevel, p2.x, p2.y);
+            adjustToPointToScale(mipmapLevel, p2p3.x, p2p3.y);
+            adjustToPointToScale(mipmapLevel, p3p2.x, p3p2.y);
+            adjustToPointToScale(mipmapLevel, p3.x, p3.y);
+            adjustToPointToScale(mipmapLevel, p3p0.x, p3p0.y);
+            adjustToPointToScale(mipmapLevel, p0p3.x, p0p3.y);
+
+            // Add a Coons patch such as:
+
+            //         C1  Side 1   C2
+            //        +---------------+
+            //        |               |
+            //        |  P1       P2  |
+            //        |               |
+            // Side 0 |               | Side 2
+            //        |               |
+            //        |               |
+            //        |  P0       P3  |
+            //        |               |
+            //        +---------------+
+            //        C0     Side 3   C3
+
+            // In the above drawing, C0 is p0, P0 is p0p1, P1 is p1p0, C1 is p1 and so on...
+
+            ///move to C0
+            cairo_mesh_pattern_begin_patch(mesh);
+            cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+            if (size == 4) {
+                cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+                cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+                cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+            } else if (size == 3) {
+                cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+                cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+                cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+            } else {
+                assert(size == 2);
+                cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
+                cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+                cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
+                cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+            }
+            ///Set the 4 corners color
+
+            // IMPORTANT NOTE:
+            // The two sqrt below are due to a probable cairo bug.
+            // To check wether the bug is present is a given cairo version,
+            // make any shape with a very large feather and set
+            // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+            // and approximately equal to 0.5.
+            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+            // older Cairo versions.
+            cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                      std::sqrt(opacity) );
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                     opacity);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                     opacity);
+            cairo_mesh_pattern_set_corner_color_rgba( mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                      std::sqrt(opacity) );
+            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+            cairo_mesh_pattern_end_patch(mesh);
+        }
+    }
+#else // ifdef ROTO_USE_MESH_PATTERN_ONLY
+
+    cairo_set_source_rgba(cr, 1, 1, 1, 1);
+
+    BezierCPs::const_iterator point = cps.begin();
+    assert( point != cps.end() );
+    if ( point == cps.end() ) {
+        return;
+    }
+    BezierCPs::const_iterator nextPoint = point;
+    if ( nextPoint != cps.end() ) {
+        ++nextPoint;
+    }
+
+
+    Transform::Point3D initCp;
+    (*point)->getPositionAtTime(false, time, ViewIdx(0), &initCp.x, &initCp.y);
+    initCp.z = 1.;
+    initCp = Transform::matApply(transform, initCp);
+
+    adjustToPointToScale(mipmapLevel, initCp.x, initCp.y);
+
+    cairo_move_to(cr, initCp.x, initCp.y);
+
+    while ( point != cps.end() ) {
+        if ( nextPoint == cps.end() ) {
+            nextPoint = cps.begin();
+        }
+
+        Transform::Point3D right, nextLeft, next;
+        (*point)->getRightBezierPointAtTime(false, time, ViewIdx(0), &right.x, &right.y);
+        right.z = 1;
+        (*nextPoint)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &nextLeft.x, &nextLeft.y);
+        nextLeft.z = 1;
+        (*nextPoint)->getPositionAtTime(false, time, ViewIdx(0), &next.x, &next.y);
+        next.z = 1;
+
+        right = Transform::matApply(transform, right);
+        nextLeft = Transform::matApply(transform, nextLeft);
+        next = Transform::matApply(transform, next);
+
+        adjustToPointToScale(mipmapLevel, right.x, right.y);
+        adjustToPointToScale(mipmapLevel, next.x, next.y);
+        adjustToPointToScale(mipmapLevel, nextLeft.x, nextLeft.y);
+        cairo_curve_to(cr, right.x, right.y, nextLeft.x, nextLeft.y, next.x, next.y);
+
+        // increment for next iteration
+        ++point;
+        if ( nextPoint != cps.end() ) {
+            ++nextPoint;
+        }
+    } // while()
+//    if (cairo_get_antialias(cr) != CAIRO_ANTIALIAS_NONE ) {
+//        cairo_fill_preserve(cr);
+//        // These line properties make for a nicer looking polygon mesh
+//        cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+//        cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+//        // Comment out the following call to cairo_set_line width
+//        // since the hard-coded width value of 1.0 is not appropriate
+//        // for fills of small areas. Instead, use the line width that
+//        // has already been set by the user via the above call of
+//        // poly_line which in turn calls set_current_context which in
+//        // turn calls cairo_set_line_width for the user-specified
+//        // width.
+//        cairo_set_line_width(cr, 1.0);
+//        cairo_stroke(cr);
+//    } else {
+    cairo_fill(cr);
+//    }
+#endif // ifdef ROTO_USE_MESH_PATTERN_ONLY
+} // RotoContextPrivate::renderInternalShape
+
+struct qpointf_compare_less
+{
+    bool operator() (const QPointF& lhs,
+                     const QPointF& rhs) const
+    {
+        if (std::abs( lhs.x() - rhs.x() ) < 1e-6) {
+            if (std::abs( lhs.y() - rhs.y() ) < 1e-6) {
+                return false;
+            } else if ( lhs.y() < rhs.y() ) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if ( lhs.x() < rhs.x() ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+};
+
+static bool
+pointInPolygon(const Point & p,
+               const std::list<Point> & polygon,
+               const RectD & featherPolyBBox,
+               Bezier::FillRuleEnum rule)
+{
+    ///first check if the point lies inside the bounding box
+    if ( (p.x < featherPolyBBox.x1) || (p.x >= featherPolyBBox.x2) || (p.y < featherPolyBBox.y1) || (p.y >= featherPolyBBox.y2)
+         || polygon.empty() ) {
+        return false;
+    }
+
+    int winding_number = 0;
+    std::list<Point>::const_iterator last_pt = polygon.begin();
+    std::list<Point>::const_iterator last_start = last_pt;
+    std::list<Point>::const_iterator cur = last_pt;
+    ++cur;
+    for (; cur != polygon.end(); ++cur, ++last_pt) {
+        Bezier::point_line_intersection(*last_pt, *cur, p, &winding_number);
+    }
+
+    // implicitly close last subpath
+    if (last_pt != last_start) {
+        Bezier::point_line_intersection(*last_pt, *last_start, p, &winding_number);
+    }
+
+    return rule == Bezier::eFillRuleWinding
+           ? (winding_number != 0)
+           : ( (winding_number % 2) != 0 );
+}
+
+//From http://www.math.ualberta.ca/~bowman/publications/cad10.pdf
+void
+RotoContextPrivate::bezulate(double time,
+                             const BezierCPs& cps,
+                             std::list<BezierCPs>* patches)
+{
+    BezierCPs simpleClosedCurve = cps;
+
+    while (simpleClosedCurve.size() > 4) {
+        bool found = false;
+        for (int n = 3; n >= 2; --n) {
+            assert( (int)simpleClosedCurve.size() > n );
+
+            //next points at point i + n
+            BezierCPs::iterator next = simpleClosedCurve.begin();
+            std::advance(next, n);
+            std::list<Point> polygon;
+            RectD bbox;
+            bbox.setupInfinity();
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
+                Point p;
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p.x, &p.y);
+                polygon.push_back(p);
+                if (p.x < bbox.x1) {
+                    bbox.x1 = p.x;
+                }
+                if (p.x > bbox.x2) {
+                    bbox.x2 = p.x;
+                }
+                if (p.y < bbox.y1) {
+                    bbox.y1 = p.y;
+                }
+                if (p.y > bbox.y2) {
+                    bbox.y2 = p.y;
+                }
+            }
+
+
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
+                bool nextIsPassedEnd = false;
+                if ( next == simpleClosedCurve.end() ) {
+                    next = simpleClosedCurve.begin();
+                    nextIsPassedEnd = true;
+                }
+
+                //mid-point of the line segment between points i and i + n
+                Point nextPoint, curPoint;
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &curPoint.x, &curPoint.y);
+                (*next)->getPositionAtTime(false, time, ViewIdx(0), &nextPoint.x, &nextPoint.y);
+
+                /*
+                 * Compute the number of intersections between the current line segment [it,next] and all other line segments
+                 * If the number of intersections is different of 2, ignore this segment.
+                 */
+                QLineF line( QPointF(curPoint.x, curPoint.y), QPointF(nextPoint.x, nextPoint.y) );
+                std::set<QPointF, qpointf_compare_less> intersections;
+                std::list<Point>::const_iterator last_pt = polygon.begin();
+                std::list<Point>::const_iterator cur = last_pt;
+                ++cur;
+                QPointF intersectionPoint;
+                for (; cur != polygon.end(); ++cur, ++last_pt) {
+                    QLineF polygonSegment( QPointF(last_pt->x, last_pt->y), QPointF(cur->x, cur->y) );
+                    if (line.intersect(polygonSegment, &intersectionPoint) == QLineF::BoundedIntersection) {
+                        intersections.insert(intersectionPoint);
+                    }
+                    if (intersections.size() > 2) {
+                        break;
+                    }
+                }
+
+                if (intersections.size() != 2) {
+                    continue;
+                }
+
+                /*
+                 * Check if the midpoint of the line segment [it,next] lies inside the simple closed curve (polygon), otherwise
+                 * ignore it.
+                 */
+                Point midPoint;
+                midPoint.x = (nextPoint.x + curPoint.x) / 2.;
+                midPoint.y = (nextPoint.y + curPoint.y) / 2.;
+                bool isInside = pointInPolygon(midPoint, polygon, bbox, Bezier::eFillRuleWinding);
+
+                if (isInside) {
+                    //Make the sub closed curve composed of the path from points i to i + n
+                    BezierCPs subCurve;
+                    subCurve.push_back(*it);
+                    BezierCPs::iterator pointIt = it;
+                    for (int i = 0; i < n - 1; ++i) {
+                        ++pointIt;
+                        if ( pointIt == simpleClosedCurve.end() ) {
+                            pointIt = simpleClosedCurve.begin();
+                        }
+                        subCurve.push_back(*pointIt);
+                    }
+                    subCurve.push_back(*next);
+
+                    // Ensure that all interior angles are less than 180 degrees.
+
+
+                    patches->push_back(subCurve);
+
+                    //Remove i + 1 to i + n
+                    BezierCPs::iterator eraseStart = it;
+                    ++eraseStart;
+                    bool eraseStartIsPassedEnd = false;
+                    if ( eraseStart == simpleClosedCurve.end() ) {
+                        eraseStart = simpleClosedCurve.begin();
+                        eraseStartIsPassedEnd = true;
+                    }
+                    //"it" is  invalidated after the next instructions but we leave the loop anyway
+                    assert( !simpleClosedCurve.empty() );
+                    if ( (!nextIsPassedEnd && !eraseStartIsPassedEnd) || (nextIsPassedEnd && eraseStartIsPassedEnd) ) {
+                        simpleClosedCurve.erase(eraseStart, next);
+                    } else {
+                        simpleClosedCurve.erase( eraseStart, simpleClosedCurve.end() );
+                        if ( !simpleClosedCurve.empty() ) {
+                            simpleClosedCurve.erase(simpleClosedCurve.begin(), next);
+                        }
+                    }
+                    found = true;
+                    break;
+                }
+
+                // increment for next iteration
+                if ( next != simpleClosedCurve.end() ) {
+                    ++next;
+                }
+            } // for(it)
+            if (found) {
+                break;
+            }
+        } // for(n)
+
+        if (!found) {
+            BezierCPs subdivisedCurve;
+            //Subdivise the curve at the midpoint of each segment
+            BezierCPs::iterator next = simpleClosedCurve.begin();
+            if ( next != simpleClosedCurve.end() ) {
+                ++next;
+            }
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
+                if ( next == simpleClosedCurve.end() ) {
+                    next = simpleClosedCurve.begin();
+                }
+                Point p0, p1, p2, p3, p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3, dest;
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p0.x, &p0.y);
+                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &p1.x, &p1.y);
+                (*next)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &p2.x, &p2.y);
+                (*next)->getPositionAtTime(false, time, ViewIdx(0), &p3.x, &p3.y);
+                Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+                BezierCPPtr controlPoint(new BezierCP);
+                controlPoint->setStaticPosition(false, dest.x, dest.y);
+                controlPoint->setLeftBezierStaticPosition(false, p0p1_p1p2.x, p0p1_p1p2.y);
+                controlPoint->setRightBezierStaticPosition(false, p1p2_p2p3.x, p1p2_p2p3.y);
+                subdivisedCurve.push_back(*it);
+                subdivisedCurve.push_back(controlPoint);
+
+                // increment for next iteration
+                if ( next != simpleClosedCurve.end() ) {
+                    ++next;
+                }
+            } // for()
+            simpleClosedCurve = subdivisedCurve;
+        }
+    }
+    if ( !simpleClosedCurve.empty() ) {
+        assert(simpleClosedCurve.size() >= 2);
+        patches->push_back(simpleClosedCurve);
+    }
+} // RotoContextPrivate::bezulate
+
+void
+RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,
+                                        cairo_pattern_t* mesh)
+{
+    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+    cairo_set_source(cr, mesh);
+
+    ///paint with the feather with the pattern as a mask
+    cairo_mask(cr, mesh);
+
+    cairo_pattern_destroy(mesh);
+}
+>>>>>>> master
 
 void
 RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,

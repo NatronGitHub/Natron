@@ -447,7 +447,10 @@ private:
     KnobPagePtr _gpuPage;
     KnobStringPtr _openglRendererString;
     KnobChoicePtr _availableOpenGLRenderers;
+<<<<<<< HEAD
     KnobChoicePtr _osmesaRenderers;
+=======
+>>>>>>> master
     KnobIntPtr _nOpenGLContexts;
     KnobChoicePtr _enableOpenGL;
 

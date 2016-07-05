@@ -726,7 +726,10 @@ public:
     KnobDoublePtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     KnobDoublePtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                   //alpha value is half the original value when at half distance from the feather distance
+<<<<<<< HEAD
     KnobChoicePtr fallOffRampType;
+=======
+>>>>>>> master
     KnobChoicePtr lifeTime;
     KnobBoolPtr activated; //< should the curve be visible/rendered ? (animable)
     KnobIntPtr lifeTimeFrame;
@@ -771,6 +774,12 @@ public:
     KnobDoublePtr customOffset;
 #endif
     std::list<KnobIPtr > knobs; //< list for easy access to all knobs
+<<<<<<< HEAD
+=======
+
+    //Used to prevent 2 threads from writing the same image in the rotocontext
+    mutable QReadWriteLock cacheAccessMutex;
+>>>>>>> master
 
     RotoDrawableItemPrivate(bool isPaintingNode)
         : effectNode()
@@ -1546,6 +1555,7 @@ public:
         fallOffRampTypeKnob->setDefaultAllDimensionsEnabled(false);
         fallOffRampTypeKnob->setIsPersistant(false);
         {
+<<<<<<< HEAD
             std::vector<std::string> entries,helps;
             entries.push_back(kRotoFeatherFallOffTypeLinear);
             helps.push_back(kRotoFeatherFallOffTypeLinearHint);
@@ -1566,6 +1576,8 @@ public:
 
 
         {
+=======
+>>>>>>> master
             KnobChoicePtr sourceType = AppManager::createKnob<KnobChoice>(effect, tr(kRotoBrushSourceColorLabel), 1, true);
             sourceType->setName(kRotoBrushSourceColor);
             sourceType->setHintToolTip( tr(kRotoBrushSourceColorHint) );

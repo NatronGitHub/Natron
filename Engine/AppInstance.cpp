@@ -1093,6 +1093,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     Plugin* plugin = 0;
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+<<<<<<< HEAD
+=======
+    bool trustPluginID = args.getProperty<bool>(kCreateNodeArgsPropTrustPluginID);
+>>>>>>> master
     QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
     int versionMinor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 1);

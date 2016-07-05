@@ -143,7 +143,10 @@ public:
     void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
     KnobBoolPtr getActivatedKnob() const;
     KnobDoublePtr getFeatherKnob() const;
     KnobDoublePtr getFeatherFallOffKnob() const;
@@ -170,7 +173,10 @@ public:
     KnobDoublePtr getShutterOffsetKnob() const;
     KnobDoublePtr getShutterKnob() const;
     KnobChoicePtr getShutterTypeKnob() const;
+<<<<<<< HEAD
     KnobChoicePtr getFallOffRampTypeKnob() const;
+=======
+>>>>>>> master
 
     void setKeyframeOnAllTransformParameters(double time);
 
@@ -203,7 +209,30 @@ public:
 
     void resetTransformCenter();
 
+<<<<<<< HEAD
     
+=======
+    ImagePtr renderMaskFromStroke(const ImageComponents& components,
+                                                  const double time,
+                                                  const ViewIdx view,
+                                                  const ImageBitDepthEnum depth,
+                                                  const unsigned int mipmapLevel,
+                                                  const RectD& rotoNodeSrcRod);
+
+private:
+
+    ImagePtr renderMaskInternal(const RectI & roi,
+                                                const ImageComponents& components,
+                                                const double startTime,
+                                                const double endTime,
+                                                const double timeStep,
+                                                const double time,
+                                                const bool inverted,
+                                                const ImageBitDepthEnum depth,
+                                                const unsigned int mipmapLevel,
+                                                const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                                const ImagePtr &image);
+>>>>>>> master
 
 Q_SIGNALS:
 
