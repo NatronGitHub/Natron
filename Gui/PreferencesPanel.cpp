@@ -265,7 +265,6 @@ public:
     Button* prefsHelp;
     Button* cancelB;
     Button* okB;
-#pragma message WARN("KnobIPtr or KnobIWPtr?")
     std::vector<KnobIPtr> changedKnobs;
     bool pluginSettingsChanged;
     bool closeIsOK;

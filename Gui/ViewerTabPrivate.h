@@ -177,7 +177,8 @@ struct ViewerTabPrivate
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
     ViewerCompositingOperatorEnum compOperatorPrevious;
-#pragma message WARN("viewerNode: ViewerInstanceWPtr or ViewerInstancePtr???")
+
+    // Weak_ptr because the viewer node  itself controls the lifetime of this widget
     ViewerInstanceWPtr viewerNode; // < pointer to the internal node
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
     bool infobarVisible;

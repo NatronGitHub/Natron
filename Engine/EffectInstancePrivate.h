@@ -218,7 +218,6 @@ public:
     EffectInstancePtr mainInstance; // pointer to the main-instance if this instance is a clone
     bool isDoingInstanceSafeRender; // true if this intance is rendering
     mutable QMutex renderClonesMutex;
-#pragma message WARN("std::list<EffectInstancePtr> or std::list<EffectInstanceWPtr>?")
     std::list<EffectInstancePtr> renderClonesPool;
 
     void runChangedParamCallback(const KnobIPtr& k, bool userEdited, const std::string & callback);

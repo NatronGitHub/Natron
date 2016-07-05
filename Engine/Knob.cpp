@@ -232,9 +232,6 @@ struct KnobHelperPrivate
 {
     KnobHelper* publicInterface; // can not be a smart ptr
 
-#ifdef DEBUG
-#pragma message WARN("This should be a weak_ptr")
-#endif
     KnobHolderWPtr holder;
     mutable QMutex labelMutex;
     std::string label; //< the text label that will be displayed  on the GUI
@@ -4442,7 +4439,9 @@ KnobI::areTypesCompatibleForSlave(const KnobIPtr& lhs,
     KnobColorPtr lhsIsColor = toKnobColor(lhs);
     KnobDoublePtr rhsIsDouble = toKnobDouble(rhs);
     KnobColorPtr rhsIsColor = toKnobColor(rhs);
-#pragma message WARN("BUG? is a double param really compatible with an int param?")
+
+    //Knobs containing doubles are compatibles with knobs containing integers because the user might want to link values
+    //stored in a double parameter to a int parameter and vice versa
     if ( (lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt) ) {
         return true;
     }

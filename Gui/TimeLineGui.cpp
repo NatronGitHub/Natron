@@ -119,7 +119,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 struct TimelineGuiPrivate
 {
     TimeLineGui *parent;
-#pragma message WARN("ViewerInstanceWPtr or ViewerInstancePtr?")
+
+    // Weakptr because the lifetime of this widget is controlled by the node itself
     ViewerInstanceWPtr viewer;
     ViewerTab* viewerTab;
     TimeLinePtr timeline; ///< ptr to the internal timeline
