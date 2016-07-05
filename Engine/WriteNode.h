@@ -77,6 +77,12 @@ private: // derives from EffectInstance
     WriteNode(const NodePtr& n);
 
 public:
+
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new WriteNode(node) );
+    }
+
     virtual ~WriteNode();
 
     NodePtr getEmbeddedWriter() const;
