@@ -128,33 +128,10 @@ There are instructions for building Natron and the basic plugins from source is 
 
 This documentation may be slightly outdated, so do not hesitate to submit updated build instructions, especially for the various GNU/Linux distributions.
 
-### Automatic build scripts ###
-
-There are automatic build scripts for [GNU/Linux](tools/linux), [OS X](tools/MacOSX), and [Windows](tools/Windows), which are used to build the binary distributions and the snapshots.
-
-These scripts are run on virtual machines running a specific version of each operating system, and setting these up is more complicated than for the basic builds described above.
-
-There is some documentation, which is probably outdated, for [GNU/Linux](tools/linux/README.md), [OS X](tools/MacOSX/README.md), and [Windows](tools/WindowsREADME.md).
-
-
 Planned features
 ----------------
 
-### Features planned for 2.1 (ETA: End of May 2016)
-
-- Integration of Blender's production proven point tracker in Natron to replace the existing TrackerPM node.
-
-- Planar tracking of Rotoshapes
-
-- Single Read/Write node instead of many Readers (ReadOIIO, ReadFFMPEG etc...)/Writers  (WriteOIIO, WriteFFMPEG...)
-
-- Node-graph enhancement and optimization
-
-- RotoPaint: add ability to use custom masks from inputs instead of a paint brush. Also improve the tree view with more per-shape attributes.
-
-- Roto: add support for DopeSheet
-
-### Features for 2.2 (ETA: End of july 2016)
+### Features planned for 2.2 (ETA: End of july 2016)
 
 - Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
 
@@ -179,7 +156,7 @@ tracker](https://github.com/MrKepzie/Natron/issues).
 
 The main development branch is called
 ["master"](https://github.com/MrKepzie/Natron/tree/master).
-The stable version is on branch RB-2.0.
+The stable version is on branch RB-2.1.
 
 Additionally each stable release supported has a branch on its own.
 For example the stable release of the v1.0. and all its bug fixes should go into that
