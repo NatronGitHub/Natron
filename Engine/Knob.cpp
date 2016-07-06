@@ -2277,10 +2277,17 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
+            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
                 std::string scriptName = (*it)->getScriptName_mt_safe();
                 std::string fullName = (*it)->getFullyQualifiedName();
-                ss << tabStr << node->getScriptName_mt_safe() << "." << scriptName << " = " << appID << "." << fullName << "\n";
+
+                std::string nodeFullName = appID + "." + fullName;
+                bool isAttrDefined;
+                PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(nodeFullName, appPTR->getMainModule(), &isAttrDefined);
+                Q_UNUSED(obj);
+                if (isAttrDefined) {
+                    ss << tabStr << node->getScriptName_mt_safe() << "." << scriptName << " = " << nodeFullName << "\n";
+                }
             }
         }
     }
