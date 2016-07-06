@@ -2191,6 +2191,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSpec>("ViewSpec");
     qRegisterMetaType<NodePtr >("NodePtr");
+    qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
