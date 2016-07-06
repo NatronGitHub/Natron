@@ -1,3 +1,5 @@
+.. _net.sf.cimg.CImgErode:
+
 ErodeCImg
 =========
 

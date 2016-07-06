@@ -1,3 +1,5 @@
+.. _net.sf.openfx.RGBToYCbCr601:
+
 RGBToYCbCr601
 =============
 
