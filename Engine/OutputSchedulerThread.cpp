@@ -1089,7 +1089,7 @@ OutputSchedulerThread::startRender()
                                                 false,
                                                 ViewIdx(0),
                                                 false /*useOpenGL*/,
-                                                EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
+                                                EffectOpenGLContextDataPtr() ) == eStatusFailed) {
             l.unlock();
 
 
@@ -1180,7 +1180,7 @@ OutputSchedulerThread::stopRender()
                                                          false,
                                                          ViewIdx(0),
                                                          false /*use OpenGL render*/,
-                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
+                                                         EffectOpenGLContextDataPtr() ) );
     }
 
 

@@ -57,6 +57,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
@@ -4027,7 +4028,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool draftMode,
                                            ViewIdx view,
                                            bool isOpenGLRender,
-                                           const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
+                                           const EffectOpenGLContextDataPtr& glContextData)
 {
     NON_RECURSIVE_ACTION();
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
@@ -4050,7 +4051,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool draftMode,
                                          ViewIdx view,
                                          bool isOpenGLRender,
-                                         const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
+                                         const EffectOpenGLContextDataPtr& glContextData)
 {
     NON_RECURSIVE_ACTION();
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
@@ -4117,7 +4118,7 @@ EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
  **/
 StatusEnum
 EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
-                                           EffectInstance::OpenGLContextEffectDataPtr* data)
+                                           EffectOpenGLContextDataPtr* data)
 {
     NON_RECURSIVE_ACTION();
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
@@ -4128,7 +4129,7 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
         _imp->attachedContextsMutex.lock();
     }
 
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
         *data = found->second;
@@ -4137,7 +4138,7 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
     }
 
 
-    StatusEnum ret = attachOpenGLContext(data);
+    StatusEnum ret = attachOpenGLContext(glContext, data);
 
     if ( (ret == eStatusOK) || (ret == eStatusReplyDefault) ) {
         if (!concurrentGLRender) {
@@ -4157,7 +4158,7 @@ EffectInstance::dettachAllOpenGLContexts()
 {
     QMutexLocker locker(&_imp->attachedContextsMutex);
 
-    for (std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
+    for (std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
         OSGLContextPtr context = it->first.lock();
         if (!context) {
             continue;
@@ -4165,7 +4166,7 @@ EffectInstance::dettachAllOpenGLContexts()
         context->setContextCurrentNoRender();
         if (it->second.use_count() == 1) {
             // If no render is using it, dettach the context
-            dettachOpenGLContext(it->second);
+            dettachOpenGLContext(context, it->second);
         }
     }
     if ( !_imp->attachedContexts.empty() ) {
@@ -4178,7 +4179,7 @@ EffectInstance::dettachAllOpenGLContexts()
  * @brief This function calls the impementation specific dettachOpenGLContext()
  **/
 StatusEnum
-EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectInstance::OpenGLContextEffectDataPtr& data)
+EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
 {
     NON_RECURSIVE_ACTION();
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
@@ -4189,12 +4190,12 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, con
 
 
     bool mustUnlock = data->getHasTakenLock();
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         _imp->attachedContexts.erase(found);
     }
 
-    StatusEnum ret = dettachOpenGLContext(data);
+    StatusEnum ret = dettachOpenGLContext(glContext, data);
     if (mustUnlock) {
         _imp->attachedContextsMutex.unlock();
     }

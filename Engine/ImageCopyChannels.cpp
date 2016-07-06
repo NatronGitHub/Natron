@@ -596,7 +596,7 @@ copyUnProcessedChannelsGL(const RectI& roi,
                           int originalTexID)
 {
     assert(originalImage->getStorageMode() == eStorageModeGLTex);
-    boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateCopyUnprocessedChannelsShader<GL>(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
+    GLShaderBasePtr shader = glContext->getOrCreateCopyUnprocessedChannelsShader(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
     assert(shader);
     GLuint fboID = glContext->getOrCreateFBOId();
 

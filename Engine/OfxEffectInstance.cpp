@@ -59,6 +59,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
@@ -66,6 +67,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
@@ -1864,14 +1866,14 @@ OfxEffectInstance::isIdentity(double time,
 } // isIdentity
 
 class OfxGLContextEffectData
-    : public EffectInstance::OpenGLContextEffectData
+    : public EffectOpenGLContextData
 {
     void* _dataHandle;
 
 public:
 
-    OfxGLContextEffectData()
-        : EffectInstance::OpenGLContextEffectData()
+    OfxGLContextEffectData(bool isGPUContext)
+        : EffectOpenGLContextData(isGPUContext)
         , _dataHandle(0)
     {
     }
@@ -1900,7 +1902,7 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool draftMode,
                                        ViewIdx view,
                                        bool isOpenGLRender,
-                                       const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
+                                       const EffectOpenGLContextDataPtr& glContextData)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1946,7 +1948,7 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool draftMode,
                                      ViewIdx view,
                                      bool isOpenGLRender,
-                                     const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
+                                     const EffectOpenGLContextDataPtr& glContextData)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -3075,9 +3077,9 @@ OfxEffectInstance::supportsConcurrentOpenGLRenders() const
 }
 
 StatusEnum
-OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* data)
+OfxEffectInstance::attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
-    boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData() );
+    boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData(glContext->isGPUContext()) );
 
     *data = ofxData;
     void* ofxGLData = 0;
@@ -3104,7 +3106,7 @@ OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPt
 }
 
 StatusEnum
-OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffectDataPtr& data)
+OfxEffectInstance::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
     OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
     void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;

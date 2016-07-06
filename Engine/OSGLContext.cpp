@@ -43,12 +43,72 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AbortableRenderInfo.h"
-#include "Engine/DefaultShaders.h"
 #include "Engine/GPUContextPool.h"
 
 #include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
+
+
+static  const char* fillConstant_FragmentShader =
+"uniform vec4 fillColor;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = fillColor;\n"
+"}";
+
+static  const char* applyMaskMix_FragmentShader =
+"uniform sampler2D originalImageTex;\n"
+"uniform sampler2D outputImageTex;\n"
+"uniform sampler2D maskImageTex;\n"
+"uniform float mixValue;\n"
+"\n"
+"void main() {\n"
+"   vec4 srcColor = texture2D(originalImageTex,gl_TexCoord[0].st);\n"
+"   vec4 dstColor = texture2D(outputImageTex,gl_TexCoord[0].st);\n"
+"   float alpha;\n"
+"#ifdef MASK_ENABLED \n"
+"       vec4 maskColor = texture2D(maskImageTex,gl_TexCoord[0].st);\n"
+"#ifdef MASK_INVERT \n"
+"       maskColor.a = -maskColor.a;\n"
+"#endif"
+"       alpha = mixValue * maskColor.a;\n"
+"#else\n"
+"       alpha = mixValue;\n"
+"#endif\n"
+"   gl_FragColor = dstColor * alpha + (1.0 - alpha) * srcColor;\n"
+"}";
+
+static const char* copyUnprocessedChannels_FragmentShader =
+"uniform sampler2D originalImageTex;\n"
+"uniform sampler2D outputImageTex;\n"
+"\n"
+"void main() {\n"
+"   vec4 srcColor = texture2D(originalImageTex,gl_TexCoord[0].st);\n"
+"   vec4 dstColor = texture2D(outputImageTex,gl_TexCoord[0].st);\n"
+"#ifdef DO_R\n"
+"       gl_FragColor.r = srcColor.r;\n"
+"#else\n"
+"       gl_FragColor.r = dstColor.r;\n"
+"#endif\n"
+"#ifdef DO_G\n"
+"       gl_FragColor.g = srcColor.g;\n"
+"#else\n"
+"       gl_FragColor.g = dstColor.g;\n"
+"#endif\n"
+"#ifdef DO_B\n"
+"       gl_FragColor.b = srcColor.b;\n"
+"#else\n"
+"       gl_FragColor.b = dstColor.b;\n"
+"#endif\n"
+"#ifdef DO_A\n"
+"       gl_FragColor.a = srcColor.a;\n"
+"#else\n"
+"       gl_FragColor.a = dstColor.a;\n"
+"#endif\n"
+"}";
+
+
 
 
 const FramebufferConfig&
@@ -203,19 +263,6 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired,
     return alternatives[closest];
 } // chooseFBConfig
 
-template <typename GL>
-class ShadersContainer
-{
-public:
-
-    boost::shared_ptr<GLShader<GL> > fillImageShader;
-
-    boost::shared_ptr<GLShader<GL> > applyMaskMixShader[4];
-    boost::shared_ptr<GLShader<GL> > copyUnprocessedChannelsShader[16];
-
-    boost::shared_ptr<GLShader<GL> > rampShader[5];
-
-};
 
 struct OSGLContextPrivate
 {
@@ -253,17 +300,9 @@ struct OSGLContextPrivate
     // The main FBO onto which we do all renders
     unsigned int fboID;
 
-    // A vbo used to upload vertices (for now only used in Roto)
-    unsigned int vboVerticesID;
-
-    // a vbo used to upload vertices colors (for now only used in Roto)
-    unsigned int vboColorsID;
-
-    // an ibo used to call glDrawElements (for now only used in Roto)
-    unsigned int iboID;
-
-    boost::scoped_ptr<ShadersContainer<GL_GPU> > gpuShaders;
-    boost::scoped_ptr<ShadersContainer<GL_CPU> > cpuShaders;
+    boost::shared_ptr<GLShaderBase> fillImageShader;
+    std::vector<boost::shared_ptr<GLShaderBase> > applyMaskMixShader;
+    std::vector<boost::shared_ptr<GLShaderBase> > copyUnprocessedChannelsShader;
 
     OSGLContextPrivate(bool useGPUContext)
         : useGPUContext(useGPUContext)
@@ -281,40 +320,15 @@ struct OSGLContextPrivate
 #endif
         , pboID(0)
         , fboID(0)
-        , vboVerticesID(0)
-        , vboColorsID(0)
-        , iboID(0)
-        , gpuShaders()
-        , cpuShaders()
+        , fillImageShader()
+        , applyMaskMixShader(4)
+        , copyUnprocessedChannelsShader(16)
     {
-        if (useGPUContext) {
-            gpuShaders.reset(new ShadersContainer<GL_GPU>);
-        } else {
-            cpuShaders.reset(new ShadersContainer<GL_CPU>);
-        }
 
     }
 
-    template <typename GL> ShadersContainer<GL>& getShadersContainer() const;
-
 
 };
-
-
-template <>
-ShadersContainer<GL_GPU>&
-OSGLContextPrivate::getShadersContainer() const
-{
-    return *gpuShaders;
-
-}
-
-template <>
-ShadersContainer<GL_CPU>&
-OSGLContextPrivate::getShadersContainer() const
-{
-    return *cpuShaders;
-}
 
 OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
@@ -376,29 +390,6 @@ OSGLContext::~OSGLContext()
         }
     }
 
-    if (_imp->vboVerticesID) {
-        if (_imp->useGPUContext) {
-            GL_GPU::glDeleteBuffers(1, &_imp->vboVerticesID);
-        } else {
-            GL_CPU::glDeleteBuffers(1, &_imp->vboVerticesID);
-        }
-    }
-
-    if (_imp->vboColorsID) {
-        if (_imp->useGPUContext) {
-            GL_GPU::glDeleteBuffers(1, &_imp->vboColorsID);
-        } else {
-            GL_CPU::glDeleteBuffers(1, &_imp->vboColorsID);
-        }
-    }
-
-    if (_imp->iboID) {
-        if (_imp->useGPUContext) {
-            GL_GPU::glDeleteBuffers(1, &_imp->iboID);
-        } else {
-            GL_CPU::glDeleteBuffers(1, &_imp->iboID);
-        }
-    }
 }
 
 void
@@ -458,44 +449,6 @@ OSGLContext::getOrCreateFBOId()
     return _imp->fboID;
 }
 
-unsigned int
-OSGLContext::getOrCreateVBOVerticesId()
-{
-    if (!_imp->vboVerticesID) {
-        if (_imp->useGPUContext) {
-            GL_GPU::glGenBuffers(1, &_imp->vboVerticesID);
-        } else {
-            GL_CPU::glGenBuffers(1, &_imp->vboVerticesID);
-        }
-    }
-    return _imp->vboVerticesID;
-}
-
-unsigned int
-OSGLContext::getOrCreateVBOColorsId()
-{
-    if (!_imp->vboColorsID) {
-        if (_imp->useGPUContext) {
-            GL_GPU::glGenBuffers(1, &_imp->vboColorsID);
-        } else {
-            GL_CPU::glGenBuffers(1, &_imp->vboColorsID);
-        }
-    }
-    return _imp->vboColorsID;
-}
-
-unsigned int
-OSGLContext::getOrCreateIBOId()
-{
-    if (!_imp->iboID) {
-        if (_imp->useGPUContext) {
-            GL_GPU::glGenBuffers(1, &_imp->iboID);
-        } else {
-            GL_CPU::glGenBuffers(1, &_imp->iboID);
-        }
-    }
-    return _imp->iboID;
-}
 
 void
 OSGLContext::setContextCurrentNoRender(int width, int height, void* buffer)
@@ -644,56 +597,58 @@ OSGLContext::stringInExtensionString(const char* string,
     return true;
 }
 
+
+
+void
+OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
+{
+#ifdef __NATRON_WIN32__
+    OSGLContext_win::getGPUInfos(renderers);
+#elif defined(__NATRON_OSX__)
+    OSGLContext_mac::getGPUInfos(renderers);
+#elif defined(__NATRON_LINUX__)
+    OSGLContext_x11::getGPUInfos(renderers);
+#endif
+}
+
+
 template <typename GL>
-boost::shared_ptr<GLShader<GL> >
-OSGLContext::getOrCreateFillShader()
+static boost::shared_ptr<GLShader<GL> >
+getOrCreateFillShaderInternal()
 {
 
-    ShadersContainer<GL>& shaders = _imp->getShadersContainer<GL>();
-
-    if (shaders.fillImageShader) {
-        return shaders.fillImageShader;
-    }
-    shaders.fillImageShader.reset( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
 #ifdef DEBUG
     std::string error;
-    bool ok = shaders.fillImageShader->addShader(GLShader<GL>::eShaderTypeFragment, fillConstant_FragmentShader, &error);
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fillConstant_FragmentShader, &error);
     if (!ok) {
         qDebug() << error.c_str();
     }
 #else
-    bool ok = shaders.fillImageShader->addShader(GLShader<GL>::eShaderTypeFragment, fillConstant_FragmentShader, 0);
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fillConstant_FragmentShader, 0);
 #endif
 
     assert(ok);
 #ifdef DEBUG
-    ok = shaders.fillImageShader->link(&error);
+    ok = shader->link(&error);
     if (!ok) {
         qDebug() << error.c_str();
     }
 #else
-    ok = shaders.fillImageShader->link();
+    ok = shader->link();
 #endif
     assert(ok);
     Q_UNUSED(ok);
 
-    return shaders.fillImageShader;
+    return shader;
 }
 
-template boost::shared_ptr<GLShader<GL_GPU> > OSGLContext::getOrCreateFillShader<GL_GPU>();
-template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateFillShader<GL_CPU>();
 
 template <typename GL>
-boost::shared_ptr<GLShader<GL> >
-OSGLContext::getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert)
+static boost::shared_ptr<GLShader<GL> >
+getOrCreateMaskMixShaderInternal(bool maskEnabled, bool maskInvert)
 {
-    int shader_i = int(maskEnabled) << 1 | int(maskInvert);
-
-    ShadersContainer<GL>& shaders = _imp->getShadersContainer<GL>();
-    if (shaders.applyMaskMixShader[shader_i]) {
-        return shaders.applyMaskMixShader[shader_i];
-    }
-    shaders.applyMaskMixShader[shader_i].reset( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );( new GLShader<GL>() );
 
     std::string fragmentSource;
     if (maskEnabled) {
@@ -707,99 +662,35 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert)
 
 #ifdef DEBUG
     std::string error;
-    bool ok = shaders.applyMaskMixShader[shader_i]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
     if (!ok) {
         qDebug() << error.c_str();
     }
 #else
-    bool ok = shaders.applyMaskMixShader[shader_i]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
 #endif
     assert(ok);
 #ifdef DEBUG
-    ok = shaders.applyMaskMixShader[shader_i]->link(&error);
+    ok = shader->link(&error);
     if (!ok) {
         qDebug() << error.c_str();
     }
 #else
-    ok = shaders.applyMaskMixShader[shader_i]->link();
+    ok = shader->link();
 #endif
     assert(ok);
     Q_UNUSED(ok);
 
-    return shaders.applyMaskMixShader[shader_i];
+    return shader;
 }
-
-template boost::shared_ptr<GLShader<GL_GPU> > OSGLContext::getOrCreateMaskMixShader<GL_GPU>(bool,bool);
-template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateMaskMixShader<GL_CPU>(bool,bool);
-
-template <typename GL>
-boost::shared_ptr<GLShader<GL> >
-OSGLContext::getOrCreateRampShader(RampTypeEnum type)
-{
-    int shader_i = (int)type;
-
-    ShadersContainer<GL>& shaders = _imp->getShadersContainer<GL>();
-    if (shaders.rampShader[shader_i]) {
-        return shaders.rampShader[shader_i];
-    }
-    shaders.rampShader[shader_i].reset( new GLShader<GL>() );
-
-    std::string fragmentSource;
-
-    switch (type) {
-        case eRampTypeLinear:
-            break;
-        case eRampTypePLinear:
-            fragmentSource += "#define RAMP_P_LINEAR\n";
-            break;
-        case eRampTypeEaseIn:
-            fragmentSource += "#define RAMP_EASE_IN\n";
-            break;
-        case eRampTypeEaseOut:
-            fragmentSource += "#define RAMP_EASE_OUT\n";
-            break;
-        case eRampTypeSmooth:
-            fragmentSource += "#define RAMP_SMOOTH\n";
-            break;
-    }
-
-
-    fragmentSource += std::string(rotoRamp_FragmentShader);
-
-#ifdef DEBUG
-    std::string error;
-    bool ok = shaders.rampShader[shader_i]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
-    if (!ok) {
-        qDebug() << error.c_str();
-    }
-#else
-    bool ok = shaders.rampShader[shader_i]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
-#endif
-    assert(ok);
-#ifdef DEBUG
-    ok = shaders.rampShader[shader_i]->link(&error);
-    if (!ok) {
-        qDebug() << error.c_str();
-    }
-#else
-    ok = shaders.rampShader[shader_i]->link();
-#endif
-    assert(ok);
-    Q_UNUSED(ok);
-
-    return shaders.rampShader[shader_i];
-}
-
-template boost::shared_ptr<GLShader<GL_GPU> > OSGLContext::getOrCreateRampShader<GL_GPU>(RampTypeEnum);
-template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateRampShader<GL_CPU>(RampTypeEnum);
 
 
 template <typename GL>
-boost::shared_ptr<GLShader<GL> >
-OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
-                                                      bool doG,
-                                                      bool doB,
-                                                      bool doA)
+static boost::shared_ptr<GLShader<GL> >
+getOrCreateCopyUnprocessedChannelsShaderInternal(bool doR,
+                                                 bool doG,
+                                                 bool doB,
+                                                 bool doA)
 {
     int index = 0x0;
 
@@ -816,11 +707,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
         index |= 0x08;
     }
 
-    ShadersContainer<GL>& shaders = _imp->getShadersContainer<GL>();
-    if (shaders.copyUnprocessedChannelsShader[index]) {
-        return shaders.copyUnprocessedChannelsShader[index];
-    }
-    shaders.copyUnprocessedChannelsShader[index].reset( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );( new GLShader<GL>() );( new GLShader<GL>() );
 
     std::string fragmentSource;
     if (!doR) {
@@ -840,42 +727,90 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
 
 #ifdef DEBUG
     std::string error;
-    bool ok = shaders.copyUnprocessedChannelsShader[index]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
     if (!ok) {
         qDebug() << error.c_str();
     }
 #else
-    bool ok = shaders.copyUnprocessedChannelsShader[index]->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
 #endif
     assert(ok);
 #ifdef DEBUG
-    ok = shaders.copyUnprocessedChannelsShader[index]->link(&error);
+    ok = shader->link(&error);
     if (!ok) {
         qDebug() << error.c_str();
     }
 #else
-    ok = shaders.copyUnprocessedChannelsShader[index]->link();
+    ok = shader->link();
 #endif
     assert(ok);
     Q_UNUSED(ok);
 
-    return shaders.copyUnprocessedChannelsShader[index];
+    return shader;
 } // OSGLContext::getOrCreateCopyUnprocessedChannelsShader
 
-template boost::shared_ptr<GLShader<GL_GPU> > OSGLContext::getOrCreateCopyUnprocessedChannelsShader<GL_GPU>(bool,bool,bool,bool);
-template boost::shared_ptr<GLShader<GL_CPU> > OSGLContext::getOrCreateCopyUnprocessedChannelsShader<GL_CPU>(bool,bool,bool,bool);
-
-
-void
-OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
+GLShaderBasePtr
+OSGLContext::getOrCreateFillShader()
 {
-#ifdef __NATRON_WIN32__
-    OSGLContext_win::getGPUInfos(renderers);
-#elif defined(__NATRON_OSX__)
-    OSGLContext_mac::getGPUInfos(renderers);
-#elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::getGPUInfos(renderers);
-#endif
+    if (_imp->fillImageShader) {
+        return _imp->fillImageShader;
+    }
+    if (_imp->useGPUContext) {
+        _imp->fillImageShader = getOrCreateFillShaderInternal<GL_GPU>();
+    } else {
+        _imp->fillImageShader = getOrCreateFillShaderInternal<GL_CPU>();
+    }
+    return _imp->fillImageShader;
+}
+
+GLShaderBasePtr
+OSGLContext::getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert)
+{
+    int shader_i = int(maskEnabled) << 1 | int(maskInvert);
+    if (_imp->applyMaskMixShader[shader_i]) {
+        return _imp->applyMaskMixShader[shader_i];
+    }
+    if (_imp->useGPUContext) {
+        _imp->applyMaskMixShader[shader_i] = getOrCreateMaskMixShaderInternal<GL_GPU>(maskEnabled, maskInvert);
+    } else {
+        _imp->applyMaskMixShader[shader_i] = getOrCreateMaskMixShaderInternal<GL_CPU>(maskEnabled, maskInvert);
+    }
+
+    return _imp->applyMaskMixShader[shader_i];
+}
+
+GLShaderBasePtr
+OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
+                                                                  bool doG,
+                                                                  bool doB,
+                                                                  bool doA)
+{
+    int index = 0x0;
+
+    if (doR) {
+        index |= 0x01;
+    }
+    if (doG) {
+        index |= 0x02;
+    }
+    if (doB) {
+        index |= 0x04;
+    }
+    if (doA) {
+        index |= 0x08;
+    }
+
+    if (_imp->copyUnprocessedChannelsShader[index]) {
+        return _imp->copyUnprocessedChannelsShader[index];
+    }
+    if (_imp->useGPUContext) {
+        _imp->copyUnprocessedChannelsShader[index] = getOrCreateCopyUnprocessedChannelsShaderInternal<GL_GPU>(doR, doG, doB, doA);
+    } else {
+        _imp->copyUnprocessedChannelsShader[index] = getOrCreateCopyUnprocessedChannelsShaderInternal<GL_CPU>(doR, doG, doB, doA);
+    }
+    
+    return _imp->copyUnprocessedChannelsShader[index];
+    
 }
 
 NATRON_NAMESPACE_EXIT;

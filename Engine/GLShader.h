@@ -70,7 +70,7 @@ public:
     virtual bool setUniform(const char* name, int value) = 0;
     virtual bool setUniform(const char* name, float value) = 0;
     virtual bool setUniform(const char* name, const OfxRGBAColourF& values) = 0;
-
+    virtual bool getAttribLocation(const char* name, GLint* loc) const = 0;
 };
 
 template <typename GL>
@@ -233,6 +233,12 @@ public:
         }
         
         return false;
+    }
+
+    virtual bool getAttribLocation(const char* name, GLint* loc) const OVERRIDE FINAL
+    {
+        *loc = GL::glGetAttribLocation(_shaderID, (const GLchar*)name);
+        return *loc != -1;
     }
 
 private:

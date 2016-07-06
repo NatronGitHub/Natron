@@ -35,7 +35,9 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
+#include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoShapeRenderNode.h"
 #include "Engine/KnobTypes.h"
 
 
@@ -423,72 +425,6 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
 
 
 
-
-static inline
-double
-hardnessGaussLookup(double f)
-{
-    //2 hyperbolas + 1 parabola to approximate a gauss function
-    if (f < -0.5) {
-        f = -1. - f;
-
-        return (2. * f * f);
-    }
-
-    if (f < 0.5) {
-        return (1. - 2. * f * f);
-    }
-    f = 1. - f;
-
-    return (2. * f * f);
-}
-
-
-static void
-getRenderDotParams(double alpha,
-                   double brushSizePixel,
-                   double brushHardness,
-                   double brushSpacing,
-                   double pressure,
-                   bool pressureAffectsOpacity,
-                   bool pressureAffectsSize,
-                   bool pressureAffectsHardness,
-                   double* internalDotRadius,
-                   double* externalDotRadius,
-                   double * spacing,
-                   std::vector<std::pair<double, double> >* opacityStops)
-{
-    if (pressureAffectsSize) {
-        brushSizePixel *= pressure;
-    }
-    if (pressureAffectsHardness) {
-        brushHardness *= pressure;
-    }
-    if (pressureAffectsOpacity) {
-        alpha *= pressure;
-    }
-
-    *internalDotRadius = std::max(brushSizePixel * brushHardness, 1.) / 2.;
-    *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
-    *spacing = *externalDotRadius * 2. * brushSpacing;
-
-
-    opacityStops->clear();
-
-    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
-    const int maxStops = 8;
-    double incr = 1. / maxStops;
-
-    if (brushHardness != 1.) {
-        for (double d = 0; d <= 1.; d += incr) {
-            double o = hardnessGaussLookup( std::pow(d, exp) );
-            opacityStops->push_back( std::make_pair(d, o * alpha) );
-        }
-    }
-}
-
-
-
 struct qpointf_compare_less
 {
     bool operator() (const QPointF& lhs,
@@ -748,7 +684,7 @@ RotoShapeRenderCairo::allocateAndRenderSingleDotStroke_cairo(int brushSizePixel,
     const double pressure = 1.;
     const double brushspacing = 0.;
 
-    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+    RotoShapeRenderNodePrivate::getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
     renderDot_cairo(wrapper.ctx, 0, p, internalDotRadius, externalDotRadius, pressure, true, opacityStops, alpha);
     
     return true;
@@ -821,6 +757,132 @@ RotoShapeRenderCairo::applyAndDestroyMask(cairo_t* cr,
     cairo_pattern_destroy(mesh);
 }
 
+
+
+static inline
+double
+hardnessGaussLookup(double f)
+{
+    //2 hyperbolas + 1 parabola to approximate a gauss function
+    if (f < -0.5) {
+        f = -1. - f;
+
+        return (2. * f * f);
+    }
+
+    if (f < 0.5) {
+        return (1. - 2. * f * f);
+    }
+    f = 1. - f;
+
+    return (2. * f * f);
+}
+
+
+static void
+getRenderDotParams(double alpha,
+                   double brushSizePixel,
+                   double brushHardness,
+                   double brushSpacing,
+                   double pressure,
+                   bool pressureAffectsOpacity,
+                   bool pressureAffectsSize,
+                   bool pressureAffectsHardness,
+                   double* internalDotRadius,
+                   double* externalDotRadius,
+                   double * spacing,
+                   std::vector<std::pair<double, double> >* opacityStops)
+{
+    if (pressureAffectsSize) {
+        brushSizePixel *= pressure;
+    }
+    if (pressureAffectsHardness) {
+        brushHardness *= pressure;
+    }
+    if (pressureAffectsOpacity) {
+        alpha *= pressure;
+    }
+
+    *internalDotRadius = std::max(brushSizePixel * brushHardness, 1.) / 2.;
+    *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
+    *spacing = *externalDotRadius * 2. * brushSpacing;
+
+
+    opacityStops->clear();
+
+    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
+    const int maxStops = 8;
+    double incr = 1. / maxStops;
+
+    if (brushHardness != 1.) {
+        for (double d = 0; d <= 1.; d += incr) {
+            double o = hardnessGaussLookup( std::pow(d, exp) );
+            opacityStops->push_back( std::make_pair(d, o * alpha) );
+        }
+    }
+}
+
+
+struct RenderStrokeCairoData
+{
+    cairo_t* cr;
+    std::vector<cairo_pattern_t*>* dotPatterns;
+    double brushSizePixel;
+    double brushSpacing;
+    double brushHardness;
+    bool pressureAffectsOpacity;
+    bool pressureAffectsHardness;
+    bool pressureAffectsSize;
+    bool buildUp;
+    double shapeColor[3];
+    double opacity;
+};
+
+static void
+renderStrokeBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                        double brushSizePixel,
+                        double brushSpacing,
+                        double brushHardness,
+                        bool pressureAffectsOpacity,
+                        bool pressureAffectsHardness,
+                        bool pressureAffectsSize,
+                        bool buildUp,
+                        double shapeColor[3],
+                        double opacity)
+{
+    RenderStrokeCairoData* myData = (RenderStrokeCairoData*)userData;
+    myData->brushSizePixel = brushSizePixel;
+    myData->brushSpacing = brushSpacing;
+    myData->brushHardness = brushHardness;
+    myData->pressureAffectsOpacity = pressureAffectsOpacity;
+    myData->pressureAffectsHardness = pressureAffectsHardness;
+    myData->pressureAffectsSize = pressureAffectsSize;
+    myData->buildUp = buildUp;
+    memcpy(myData->shapeColor, shapeColor, sizeof(double) * 3);
+    myData->opacity = opacity;
+    cairo_set_operator(myData->cr, buildUp ? CAIRO_OPERATOR_OVER : CAIRO_OPERATOR_LIGHTEN);
+
+}
+
+static void
+renderStrokeEnd_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData*/)
+{
+
+}
+
+static void
+renderStrokeRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                            const Point &center,
+                            double pressure,
+                            double* spacing)
+{
+    RenderStrokeCairoData* myData = (RenderStrokeCairoData*)userData;
+    double internalDotRadius, externalDotRadius;
+    std::vector<std::pair<double,double> > opacityStops;
+    getRenderDotParams(myData->opacity, myData->brushSizePixel, myData->brushHardness, myData->brushSpacing, pressure, myData->pressureAffectsOpacity, myData->pressureAffectsSize, myData->pressureAffectsHardness, &internalDotRadius, &externalDotRadius, spacing, &opacityStops);
+    RotoShapeRenderCairo::renderDot_cairo(myData->cr, myData->dotPatterns, center, internalDotRadius, externalDotRadius, pressure, myData->buildUp, opacityStops, myData->opacity);
+}
+
 double
 RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                        std::vector<cairo_pattern_t*>& dotPatterns,
@@ -832,116 +894,22 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                        double time,
                                        unsigned int mipmapLevel)
 {
-    if ( strokes.empty() ) {
-        return distToNext;
-    }
+    RenderStrokeCairoData data;
+    data.cr = cr;
+    data.dotPatterns = &dotPatterns;
 
-    if ( !stroke->isActivated(time) ) {
-        return distToNext;
-    }
-
-    assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
-
-    KnobDoublePtr brushSizeKnob = stroke->getBrushSizeKnob();
-    double brushSize = brushSizeKnob->getValueAtTime(time);
-    KnobDoublePtr brushSpacingKnob = stroke->getBrushSpacingKnob();
-    double brushSpacing = brushSpacingKnob->getValueAtTime(time);
-    if (brushSpacing == 0.) {
-        return distToNext;
-    }
-
-
-    brushSpacing = std::max(brushSpacing, 0.05);
-
-    KnobDoublePtr brushHardnessKnob = stroke->getBrushHardnessKnob();
-    double brushHardness = brushHardnessKnob->getValueAtTime(time);
-    KnobDoublePtr visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
-    double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
-    double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
-    if ( (writeOnEnd - writeOnStart) <= 0. ) {
-        return distToNext;
-    }
-
-    KnobBoolPtr pressureOpacityKnob = stroke->getPressureOpacityKnob();
-    KnobBoolPtr pressureSizeKnob = stroke->getPressureSizeKnob();
-    KnobBoolPtr pressureHardnessKnob = stroke->getPressureHardnessKnob();
-    bool pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
-    bool pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
-    bool pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
-    double brushSizePixel = brushSize;
-    if (mipmapLevel != 0) {
-        brushSizePixel = std::max( 1., brushSizePixel / (1 << mipmapLevel) );
-    }
-    cairo_set_operator(cr, doBuildup ? CAIRO_OPERATOR_OVER : CAIRO_OPERATOR_LIGHTEN);
-
-
-    for (std::list<std::list<std::pair<Point, double> > >::const_iterator strokeIt = strokes.begin(); strokeIt != strokes.end(); ++strokeIt) {
-        int firstPoint = (int)std::floor( (strokeIt->size() * writeOnStart) );
-        int endPoint = (int)std::ceil( (strokeIt->size() * writeOnEnd) );
-        assert( firstPoint >= 0 && firstPoint < (int)strokeIt->size() && endPoint > firstPoint && endPoint <= (int)strokeIt->size() );
-
-
-        ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
-        std::list<std::pair<Point, double> > visiblePortion;
-        std::list<std::pair<Point, double> >::const_iterator startingIt = strokeIt->begin();
-        std::list<std::pair<Point, double> >::const_iterator endingIt = strokeIt->begin();
-        std::advance(startingIt, firstPoint);
-        std::advance(endingIt, endPoint);
-        for (std::list<std::pair<Point, double> >::const_iterator it = startingIt; it != endingIt; ++it) {
-            visiblePortion.push_back(*it);
-        }
-        if ( visiblePortion.empty() ) {
-            return distToNext;
-        }
-
-        std::list<std::pair<Point, double> >::iterator it = visiblePortion.begin();
-
-        if (visiblePortion.size() == 1) {
-            double internalDotRadius, externalDotRadius, spacing;
-            std::vector<std::pair<double, double> > opacityStops;
-            getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-            renderDot_cairo(cr, &dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
-            continue;
-        }
-
-        std::list<std::pair<Point, double> >::iterator next = it;
-        ++next;
-
-        while ( next != visiblePortion.end() ) {
-            //Render for each point a dot. Spacing is a percentage of brushSize:
-            //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
-            //Spacing at 0 we do not render the stroke
-
-            double dist = std::sqrt( (next->first.x - it->first.x) * (next->first.x - it->first.x) +  (next->first.y - it->first.y) * (next->first.y - it->first.y) );
-
-            // while the next point can be drawn on this segment, draw a point and advance
-            while (distToNext <= dist) {
-                double a = dist == 0. ? 0. : distToNext / dist;
-                Point center = {
-                    it->first.x * (1 - a) + next->first.x * a,
-                    it->first.y * (1 - a) + next->first.y * a
-                };
-                double pressure = it->second * (1 - a) + next->second * a;
-
-                // draw the dot
-                double internalDotRadius, externalDotRadius, spacing;
-                std::vector<std::pair<double, double> > opacityStops;
-                getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-                renderDot_cairo(cr, &dotPatterns, center, internalDotRadius, externalDotRadius, pressure, doBuildup, opacityStops, alpha);
-                
-                distToNext += spacing;
-            }
-            
-            // go to the next segment
-            distToNext -= dist;
-            ++next;
-            ++it;
-        }
-    }
-    
-    
-    return distToNext;
-} // RotoShapeRenderCairo::renderStroke_cairo
+    return RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+                                                            renderStrokeBegin_cairo,
+                                                            renderStrokeRenderDot_cairo,
+                                                            renderStrokeEnd_cairo,
+                                                            strokes,
+                                                            distToNext,
+                                                            stroke,
+                                                            doBuildup,
+                                                            alpha,
+                                                            time,
+                                                            mipmapLevel);
+}
 
 
 void

@@ -140,7 +140,7 @@ private:
                                            bool draftMode,
                                            ViewIdx view,
                                            bool isOpenGLRender,
-                                           const EffectInstance::OpenGLContextEffectDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                           const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
                                          double last,
                                          double step,
@@ -151,7 +151,7 @@ private:
                                          bool draftMode,
                                          ViewIdx view,
                                          bool isOpenGLRender,
-                                         const EffectInstance::OpenGLContextEffectDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getRegionsOfInterest(double time,
                                       const RenderScale & scale,

@@ -45,15 +45,15 @@ struct GPUContextPoolPrivate
     // protected by contextPoolMutex
     std::set<OSGLContextPtr> glContextPool;
 
-    boost::weak_ptr<OSGLContext> lastUsedGLContext;
+    OSGLContextWPtr lastUsedGLContext;
 
     // The OpenGL context to use for sharing
-    boost::weak_ptr<OSGLContext> glShareContext;
+    OSGLContextWPtr glShareContext;
 
 
     std::set<OSGLContextPtr> cpuGLContextPool;
-    boost::weak_ptr<OSGLContext> lastUsedCPUGLContext;
-    boost::weak_ptr<OSGLContext> cpuGLShareContext;
+    OSGLContextWPtr lastUsedCPUGLContext;
+    OSGLContextWPtr cpuGLShareContext;
 
     int currentOpenGLRendererMaxTexSize;
     int currentCPUOpenGLRendererMaxTexSize;

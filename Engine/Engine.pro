@@ -82,12 +82,12 @@ SOURCES += \
     CreateNodeArgs.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
-    DefaultShaders.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
+    EffectOpenGLContextData.cpp \
     ExistenceCheckThread.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
@@ -175,6 +175,7 @@ SOURCES += \
     RotoPaint.cpp \
     RotoPaintInteract.cpp \
     RotoShapeRenderNode.cpp \
+    RotoShapeRenderNodePrivate.cpp \
     RotoShapeRenderCairo.cpp \
     RotoShapeRenderGL.cpp \
     RotoSmear.cpp \
@@ -277,12 +278,12 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
-    DefaultShaders.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
     EffectInstancePrivate.h \
+    EffectOpenGLContextData.h \
     ExistenceCheckThread.h \
     EngineFwd.h \
     FeatherPoint.h \
@@ -400,6 +401,7 @@ HEADERS += \
     RotoPaintInteract.h \
     RotoPoint.h \
     RotoShapeRenderNode.h \
+    RotoShapeRenderNodePrivate.h \
     RotoShapeRenderCairo.h \
     RotoShapeRenderGL.h \
     RotoSmear.h \

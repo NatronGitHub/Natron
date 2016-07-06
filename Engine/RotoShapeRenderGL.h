@@ -26,9 +26,74 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <list>
 #include "Engine/EngineFwd.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/EffectOpenGLContextData.h"
 
 NATRON_NAMESPACE_ENTER;
+
+
+enum RampTypeEnum
+{
+    // from http://www.comp-fu.com/2012/01/nukes-smooth-ramp-functions/
+    // linear
+    //y = x
+    // plinear: perceptually linear in rec709
+    //y = pow(x, 3)
+    // smooth: traditional smoothstep
+    //y = x*x*(3 - 2*x)
+    // smooth0: Catmull-Rom spline, smooth start, linear end
+    //y = x*x*(2 - x)
+    // smooth1: Catmull-Rom spline, linear start, smooth end
+    //y = x*(1 + x*(1 - x))
+
+    eRampTypeLinear,
+
+    // plinear: perceptually linear in rec709
+    eRampTypePLinear,
+
+    // smooth0: Catmull-Rom spline, smooth start, linear end
+    eRampTypeEaseIn,
+
+    // smooth1: Catmull-Rom spline, linear start, smooth end
+    eRampTypeEaseOut,
+
+    // smooth: traditional smoothstep
+    eRampTypeSmooth,
+
+};
+
+class RotoShapeRenderNodeOpenGLData : public EffectOpenGLContextData
+{
+    unsigned int _iboID, _vboVerticesID, _vboColorsID;
+    unsigned int _vboHardnessID;
+
+    std::vector<GLShaderBasePtr> _featherRampShader;
+    GLShaderBasePtr _strokeDotShader;
+
+
+public:
+
+    void cleanup();
+
+    RotoShapeRenderNodeOpenGLData(bool isGPUContext);
+
+    unsigned int getOrCreateIBOID() ;
+
+    unsigned int getOrCreateVBOVerticesID() ;
+
+    unsigned int getOrCreateVBOColorsID() ;
+
+    unsigned int getOrCreateVBOHardnessID() ;
+
+    GLShaderBasePtr getOrCreateFeatherRampShader(RampTypeEnum type);
+
+    GLShaderBasePtr getOrCreateStrokeDotShader();
+
+    virtual ~RotoShapeRenderNodeOpenGLData();
+    
+};
 
 class RotoShapeRenderGL
 {
@@ -39,7 +104,34 @@ public:
     }
 
 
-    static void renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel, const RectI& bounds, int target, int texID);
+
+    static double renderStroke_gl(const OSGLContextPtr& glContext,
+                                  const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                  int target,
+                                  int texID,
+                                  const RectI& bounds,
+                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                  double distToNext,
+                                  const RotoDrawableItem* stroke,
+                                  bool doBuildup,
+                                  double opacity,
+                                  double time,
+                                  unsigned int mipmapLevel);
+
+
+
+    static void renderBezier_gl(const OSGLContextPtr& glContext,
+                                const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                const Bezier* bezier,
+                                double opacity,
+                                double time,
+                                double startTime,
+                                double endTime,
+                                double mbFrameStep,
+                                unsigned int mipmapLevel,
+                                const RectI& bounds,
+                                int target,
+                                int texID);
 
 };
 

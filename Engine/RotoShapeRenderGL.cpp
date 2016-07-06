@@ -30,10 +30,304 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoBezierTriangulation.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoShapeRenderNode.h"
+#include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoContext.h"
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
 
 NATRON_NAMESPACE_ENTER;
 
+
+static const char* rotoRamp_FragmentShader =
+"uniform vec4 fillColor;\n"
+"uniform float fallOff;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = fillColor;\n"
+"   float t = gl_Color.a;\n"
+"#ifdef RAMP_P_LINEAR\n"
+"   t = t * t * t;\n"
+"#endif\n"
+"#ifdef RAMP_EASE_IN\n"
+"   t = t * t * (2.0 - t);\n"
+"#endif\n"
+"#ifdef RAMP_EASE_OUT\n"
+"   t = t * (1.0 + t * (1.0 - t));\n"
+"#endif\n"
+"#ifdef RAMP_SMOOTH\n"
+"   t = t * t * (3.0 - 2.0 * t); \n"
+"#endif\n"
+"   gl_FragColor.a = pow(t,fallOff);\n"
+"   gl_FragColor.rgb *= gl_FragColor.a;\n"
+"}";
+
+
+static const char* rotoDrawDot_VertexShader =
+"attribute float inHardness;\n"
+"flat varying outHardness;\n"
+"void main() {\n"
+"   outHardness = inHardness;\n"
+"   gl_Position = ftransform();\n"
+"}"
+;
+
+static const char* rotoDrawDot_FragmentShader =
+"flat varying outHardness;\n"
+"uniform vec4 fillColor;\n"
+"void main() {\n"
+"	gl_FragColor = fillColor;\n"
+"   float t = gl_Color.a;\n"
+"   gl_FragColor.a = pow(t, 1.0 / outHardness);\n"
+"   gl_FragColor.rgb *= gl_FragColor.a;\n"
+"}"
+;
+
+RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
+: EffectOpenGLContextData(isGPUContext)
+, _vboVerticesID(0)
+, _vboColorsID(0)
+, _vboHardnessID(0)
+, _featherRampShader(5)
+, _strokeDotShader()
+{
+
+}
+
+void
+RotoShapeRenderNodeOpenGLData::cleanup()
+{
+    _featherRampShader.clear();
+    _strokeDotShader.reset();
+    bool isGPU = isGPUContext();
+    if (_vboVerticesID) {
+        if (isGPU) {
+            GL_GPU::glDeleteBuffers(1, &_vboVerticesID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_vboVerticesID);
+        }
+    }
+
+    if (_vboColorsID) {
+        if (isGPU) {
+            GL_GPU::glDeleteBuffers(1, &_vboColorsID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_vboColorsID);
+        }
+    }
+
+    if (_vboHardnessID) {
+        if (isGPU) {
+            GL_GPU::glDeleteBuffers(1, &_vboHardnessID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_vboHardnessID);
+        }
+    }
+
+    if (_iboID) {
+        if (isGPU) {
+            GL_GPU::glDeleteBuffers(1, &_iboID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_iboID);
+        }
+    }
+}
+
+
+RotoShapeRenderNodeOpenGLData::~RotoShapeRenderNodeOpenGLData()
+{
+
+}
+
+
+unsigned int
+RotoShapeRenderNodeOpenGLData::getOrCreateIBOID()
+{
+
+    if (!_iboID) {
+        if (isGPUContext()) {
+            GL_GPU::glGenBuffers(1, &_iboID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_iboID);
+        }
+    }
+    return _iboID;
+
+}
+
+unsigned int
+RotoShapeRenderNodeOpenGLData::getOrCreateVBOVerticesID()
+{
+    if (!_vboVerticesID) {
+        if (isGPUContext()) {
+            GL_GPU::glGenBuffers(1, &_vboVerticesID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_vboVerticesID);
+        }
+    }
+    return _vboVerticesID;
+
+}
+
+unsigned int
+RotoShapeRenderNodeOpenGLData::getOrCreateVBOColorsID()
+{
+    if (!_vboColorsID) {
+        if (isGPUContext()) {
+            GL_GPU::glGenBuffers(1, &_vboColorsID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_vboColorsID);
+        }
+    }
+    return _vboColorsID;
+}
+
+unsigned int
+RotoShapeRenderNodeOpenGLData::getOrCreateVBOHardnessID()
+{
+    if (!_vboHardnessID) {
+        if (isGPUContext()) {
+            GL_GPU::glGenBuffers(1, &_vboHardnessID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_vboHardnessID);
+        }
+    }
+    return _vboHardnessID;
+
+}
+
+template <typename GL>
+static GLShaderBasePtr
+getOrCreateFeatherRampShaderInternal(RampTypeEnum type)
+{
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+
+    std::string fragmentSource;
+
+    switch (type) {
+        case eRampTypeLinear:
+            break;
+        case eRampTypePLinear:
+            fragmentSource += "#define RAMP_P_LINEAR\n";
+            break;
+        case eRampTypeEaseIn:
+            fragmentSource += "#define RAMP_EASE_IN\n";
+            break;
+        case eRampTypeEaseOut:
+            fragmentSource += "#define RAMP_EASE_OUT\n";
+            break;
+        case eRampTypeSmooth:
+            fragmentSource += "#define RAMP_SMOOTH\n";
+            break;
+    }
+
+
+    fragmentSource += std::string(rotoRamp_FragmentShader);
+
+#ifdef DEBUG
+    std::string error;
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+    assert(ok);
+#ifdef DEBUG
+    ok = shader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+    
+    return shader;
+}
+
+GLShaderBasePtr
+RotoShapeRenderNodeOpenGLData::getOrCreateFeatherRampShader(RampTypeEnum type)
+{
+    int type_i = (int)type;
+    if (_featherRampShader[type_i]) {
+        return _featherRampShader[type_i];
+    }
+    if (isGPUContext()) {
+        _featherRampShader[type_i] = getOrCreateFeatherRampShaderInternal<GL_GPU>(type);
+    } else {
+        _featherRampShader[type_i] = getOrCreateFeatherRampShaderInternal<GL_CPU>(type);
+    }
+
+    return _featherRampShader[type_i];
+}
+
+template <typename GL>
+static GLShaderBasePtr
+getOrCreateStrokeDotShaderInternal()
+{
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+
+    std::string vertexSource;
+    vertexSource += std::string(rotoDrawDot_VertexShader);
+
+#ifdef DEBUG
+    std::string error;
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeVertex, vertexSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeVertex, vertexSource.c_str(), 0);
+#endif
+    assert(ok);
+
+
+    std::string fragmentSource;
+    fragmentSource += std::string(rotoDrawDot_FragmentShader);
+
+#ifdef DEBUG
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+    assert(ok);
+#ifdef DEBUG
+    ok = shader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+
+    return shader;
+}
+
+
+GLShaderBasePtr
+RotoShapeRenderNodeOpenGLData::getOrCreateStrokeDotShader()
+{
+    if (_strokeDotShader) {
+        return _strokeDotShader;
+    }
+    if (isGPUContext()) {
+        _strokeDotShader = getOrCreateStrokeDotShaderInternal<GL_GPU>();
+    } else {
+        _strokeDotShader = getOrCreateStrokeDotShaderInternal<GL_CPU>();
+    }
+
+    return _strokeDotShader;
+}
 
 
 template <typename GL>
@@ -59,19 +353,24 @@ void renderBezier_gl_bindFrameBuffer(const OSGLContextPtr& glContext, int target
 }
 
 template <typename GL>
-void renderBezier_gl_internal_begin(const RectI& bounds)
+void renderBezier_gl_internal_begin(const RectI& bounds, bool doClear, bool doBuildUp)
 {
 
 
     Image::setupGLViewport<GL>(bounds, bounds);
 
-
-    GL::glClearColor(0, 0, 0, 0);
-    GL::glClear(GL_COLOR_BUFFER_BIT);
+    if (doClear) {
+        GL::glClearColor(0, 0, 0, 0);
+        GL::glClear(GL_COLOR_BUFFER_BIT);
+    }
     glCheckError(GL);
 
     GL::glEnable(GL_BLEND);
-    GL::glBlendEquation(GL_MAX);
+    if (!doBuildUp) {
+        GL::glBlendEquation(GL_MAX);
+    } else {
+        GL::glBlendEquation(GL_FUNC_ADD);
+    }
     GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
@@ -135,12 +434,23 @@ void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsign
 
 
 void
-RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double /*time*/, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel, const RectI& bounds, int target, int texID)
+RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
+                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                   const Bezier* bezier,
+                                   double opacity,
+                                   double /*time*/,
+                                   double startTime,
+                                   double endTime,
+                                   double mbFrameStep,
+                                   unsigned int mipmapLevel,
+                                   const RectI& bounds,
+                                   int target,
+                                   int texID)
 {
 
-    int vboVerticesID = glContext->getOrCreateVBOVerticesId();
-    int vboColorsID = glContext->getOrCreateVBOColorsId();
-    int iboID = glContext->getOrCreateIBOId();
+    int vboVerticesID = glData->getOrCreateVBOVerticesID();
+    int vboColorsID = glData->getOrCreateVBOColorsID();
+    int iboID = glData->getOrCreateIBOID();
 
     RamBuffer<float> verticesArray;
     RamBuffer<float> colorsArray;
@@ -150,22 +460,13 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier
 
     double shapeOpacity = opacity * mbOpacity;
 
-    OSGLContext::RampTypeEnum type;
+    RampTypeEnum type;
     {
         boost::shared_ptr<KnobChoice> typeKnob = bezier->getFallOffRampTypeKnob();
-        type = (OSGLContext::RampTypeEnum)typeKnob->getValue();
+        type = (RampTypeEnum)typeKnob->getValue();
     }
-    boost::shared_ptr<GLShaderBase> rampShader;
-    boost::shared_ptr<GLShaderBase> fillShader;
-    if (glContext->isGPUContext()) {
-        rampShader = glContext->getOrCreateRampShader<GL_GPU>(type);
-        fillShader = glContext->getOrCreateFillShader<GL_GPU>();
-    } else {
-        rampShader = glContext->getOrCreateRampShader<GL_CPU>(type);
-        fillShader = glContext->getOrCreateFillShader<GL_CPU>();
-    }
-
-
+    GLShaderBasePtr rampShader = glData->getOrCreateFeatherRampShader(type);
+    GLShaderBasePtr fillShader = glContext->getOrCreateFillShader();
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
         double fallOff = bezier->getFeatherFallOff(t);
@@ -184,9 +485,9 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier
 
         if (glContext->isGPUContext()) {
             renderBezier_gl_bindFrameBuffer<GL_GPU>(glContext, target, texID);
-            renderBezier_gl_internal_begin<GL_GPU>(bounds);
+            renderBezier_gl_internal_begin<GL_GPU>(bounds, true, false);
         } else {
-            renderBezier_gl_internal_begin<GL_CPU>(bounds);
+            renderBezier_gl_internal_begin<GL_CPU>(bounds, true, false);
         }
 
 
@@ -338,5 +639,309 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier
     } // for (double t = startTime; t <= endTime; t+=mbFrameStep) {
 } // RotoShapeRenderGL::renderBezier_gl
 
+
+
+struct RenderStrokeGLData
+{
+    OSGLContextPtr glContext;
+    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
+
+    int target;
+    int texID;
+    RectI bounds;
+
+    double brushSizePixel;
+    double brushSpacing;
+    double brushHardness;
+    bool pressureAffectsOpacity;
+    bool pressureAffectsHardness;
+    bool pressureAffectsSize;
+    bool buildUp;
+    double shapeColor[3];
+    double opacity;
+
+    int nbPointsPerSegment;
+    
+    std::vector<float> primitivesColors;
+    std::vector<float> primitivesVertices;
+    std::vector<float> primitivesHardness;
+    std::vector<std::vector<unsigned int> > indicesBuf;
+};
+
+
+/**
+ * @brief Makes up a single dot that will be send to the GPU
+ **/
+static void
+getDotTriangleFan(const Point& center,
+                  double radius,
+                  const int nbOutsideVertices,
+                  double shapeColor[3],
+                  double opacity,
+                  double hardness,
+                  std::vector<float>* vdata,
+                  std::vector<float>* cdata,
+                  std::vector<float>* hdata)
+{
+    int cSize = cdata->size();
+    cdata->resize(cSize + (nbOutsideVertices + 1) * 4);
+    int vSize = vdata->size();
+    vdata->resize(vSize + (nbOutsideVertices + 1) * 2);
+    int hSize = hdata->size();
+    hdata->resize(hSize + (nbOutsideVertices + 1) * 1);
+
+    float* cPtr = &(*cdata)[cSize];
+    float* vPtr = &(*vdata)[vSize];
+    float* hPtr = &(*hdata)[hSize];
+    vPtr[0] = center.x;
+    vPtr[1] = center.y;
+    cPtr[0] = shapeColor[0];
+    cPtr[1] = shapeColor[1];
+    cPtr[2] = shapeColor[2];
+    cPtr[3] = opacity;
+    *hPtr = hardness;
+    vPtr += 2;
+    cPtr += 4;
+    ++hPtr;
+
+    double m = 2. * M_PI / (double)nbOutsideVertices;
+    for (int i = 0; i < nbOutsideVertices; ++i) {
+        double theta = i * m;
+        vPtr[0] = radius * std::cos(theta);
+        vPtr[1] = radius * std::sin(theta);
+        vPtr += 2;
+
+        cPtr[0] = shapeColor[0];
+        cPtr[1] = shapeColor[1];
+        cPtr[2] = shapeColor[2];
+        cPtr[3] = 0.;
+        cPtr += 4;
+
+        *hPtr = hardness;
+        ++hdata;
+    }
+}
+
+static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius, double shapeColor[3], double opacity, double hardness)
+{
+
+    // Create the indices buffer for this triangle fan
+    data.indicesBuf.resize(data.indicesBuf.size() + 1);
+    std::vector<unsigned int>& vec = data.indicesBuf.back();
+    int vSize = data.primitivesVertices.size() / 2;
+    vec.resize(data.nbPointsPerSegment + 1);
+    for (std::size_t i = 0; i < vec.size(); ++i, ++vSize) {
+        vec[i] = vSize;
+    }
+    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness);
+
+
+}
+
+static void
+renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                     double brushSizePixel,
+                     double brushSpacing,
+                     double brushHardness,
+                     bool pressureAffectsOpacity,
+                     bool pressureAffectsHardness,
+                     bool pressureAffectsSize,
+                     bool buildUp,
+                     double shapeColor[3],
+                     double opacity)
+{
+    RenderStrokeGLData* myData = (RenderStrokeGLData*)userData;
+
+    myData->brushSizePixel = brushSizePixel;
+    myData->brushSpacing = brushSpacing;
+    myData->brushHardness = brushHardness;
+    myData->pressureAffectsOpacity = pressureAffectsOpacity;
+    myData->pressureAffectsHardness = pressureAffectsHardness;
+    myData->pressureAffectsSize = pressureAffectsSize;
+    myData->buildUp = buildUp;
+    memcpy(myData->shapeColor, shapeColor, sizeof(double) * 3);
+    myData->opacity = opacity;
+
+
+    {
+        /*
+         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+         */
+        double radius = myData->brushSizePixel / 2.;
+        Point p0 = {radius, 0.};
+        Point p3 = {0., radius};
+        Point p1 = {1. / .3 * p3.x + 2. / 3 * p0.x, 1. / .3 * p3.y + 2. / 3 * p0.y};
+        Point p2 = {1. / .3 * p0.x + 2. / 3 * p3.x, 1. / .3 * p0.y + 2. / 3 * p3.y};
+        double dx1, dy1, dx2, dy2, dx3, dy3;
+        dx1 = p1.x - p0.x;
+        dy1 = p1.y - p0.y;
+        dx2 = p2.x - p1.x;
+        dy2 = p2.y - p1.y;
+        dx3 = p3.x - p2.x;
+        dy3 = p3.y - p2.y;
+        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+        std::sqrt(dx2 * dx2 + dy2 * dy2) +
+        std::sqrt(dx3 * dx3 + dy3 * dy3);
+        myData->nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+    }
+    
+    if (myData->glContext->isGPUContext()) {
+        renderBezier_gl_bindFrameBuffer<GL_GPU>(myData->glContext, myData->target, myData->texID);
+        renderBezier_gl_internal_begin<GL_GPU>(myData->bounds, false, buildUp);
+    } else {
+        renderBezier_gl_internal_begin<GL_CPU>(myData->bounds, false, buildUp);
+    }
+
+}
+
+
+template <typename GL>
+void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vboColorsID, int vboHardnessID, const GLShaderBase& shader, unsigned int primitiveType, const void* verticesData, const void* colorsData, const void* hardnessData, const int* perDrawCount, const void** perDrawIdsPtr, int drawCount)
+{
+    GLint hardnessLoc;
+    {
+        bool ok = shader.getAttribLocation("hardness", &hardnessLoc);
+        assert(ok);
+    }
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+
+    GL::glEnableClientState(GL_VERTEX_ARRAY);
+    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+
+
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
+    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), hardnessData, GL_DYNAMIC_DRAW);
+    GL::glEnableVertexAttribArray(hardnessLoc);
+    GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, 0 ,0, 0);
+
+
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
+    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+    GL::glEnableClientState(GL_COLOR_ARRAY);
+    GL::glColorPointer(4, GL_FLOAT, 0, 0);
+
+
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+
+    GL::glEnableClientState(GL_VERTEX_ARRAY);
+    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+
+
+    GL::glMultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
+
+    GL::glDisableClientState(GL_COLOR_ARRAY);
+    GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GL::glDisableClientState(GL_VERTEX_ARRAY);
+
+    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glCheckError(GL);
+    
+}
+
+
+static void
+renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
+{
+    RenderStrokeGLData* myData = (RenderStrokeGLData*)userData;
+
+    int nbVertices = myData->primitivesVertices.size() * (myData->nbPointsPerSegment + 1);
+    int vboColorsID = myData->glData->getOrCreateVBOColorsID();
+    int vboVerticesID = myData->glData->getOrCreateVBOVerticesID();
+    int vboHardnessID = myData->glData->getOrCreateVBOHardnessID();
+    GLShaderBasePtr strokeShader = myData->glData->getOrCreateStrokeDotShader();
+
+    std::vector<unsigned int*> indicesVec(myData->indicesBuf.size());
+    std::vector<int> perDrawCount(myData->indicesBuf.size());
+    for (std::size_t i = 0; i < myData->indicesBuf.size(); ++i) {
+        indicesVec[i] = &myData->indicesBuf[i][0];
+        perDrawCount[i] = myData->indicesBuf[i].size();
+    }
+
+    strokeShader->bind();
+    OfxRGBAColourF fillColor = {myData->shapeColor[0], myData->shapeColor[1], myData->shapeColor[2], myData->opacity};
+    strokeShader->setUniform("fillColor", fillColor);
+
+
+    if (myData->glContext->isGPUContext()) {
+
+        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(&myData->primitivesVertices[0]), (const void*)(&myData->primitivesColors[0]), (const void*)(&myData->primitivesHardness[0]), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        strokeShader->unbind();
+
+        GL_GPU::glBindTexture(myData->target, 0);
+        GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL_GPU::glDisable(GL_BLEND);
+        glCheckError(GL_GPU);
+    } else {
+        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(&myData->primitivesVertices[0]), (const void*)(&myData->primitivesColors[0]), (const void*)(&myData->primitivesHardness[0]), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        strokeShader->unbind();
+
+        GL_CPU::glDisable(GL_BLEND);
+        glCheckError(GL_CPU);
+    }
+}
+
+static void
+renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                         const Point &center,
+                         double pressure,
+                         double *spacing)
+{
+    RenderStrokeGLData* myData = (RenderStrokeGLData*)userData;
+
+    double brushSizePixel = myData->brushSizePixel;
+    if (myData->pressureAffectsSize) {
+        brushSizePixel *= pressure;
+    }
+    double brushHardness = myData->brushHardness;
+    if (myData->pressureAffectsHardness) {
+        brushHardness *= pressure;
+    }
+    double opacity = myData->opacity;
+    if (myData->pressureAffectsOpacity) {
+        opacity *= pressure;
+    }
+    double brushSpacing = myData->brushSpacing;
+
+    double radius = std::max(brushSizePixel, 1.) / 2.;
+    *spacing = radius * 2. * brushSpacing;
+
+
+    renderDot_gl(*myData, center, radius, myData->shapeColor, opacity, brushHardness);
+}
+
+double
+RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
+                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                   int target,
+                                   int texID,
+                                   const RectI& bounds,
+                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                   double distToNext,
+                                   const RotoDrawableItem* stroke,
+                                   bool doBuildup,
+                                   double opacity,
+                                   double time,
+                                   unsigned int mipmapLevel)
+{
+    RenderStrokeGLData data;
+    data.glContext = glContext;
+    data.glData = glData;
+    data.target = target;
+    data.texID = texID;
+    data.bounds = bounds;
+    return RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+                                                            renderStrokeBegin_gl,
+                                                            renderStrokeRenderDot_gl,
+                                                            renderStrokeEnd_gl,
+                                                            strokes,
+                                                            distToNext,
+                                                            stroke,
+                                                            doBuildup,
+                                                            opacity,
+                                                            time,
+                                                            mipmapLevel);
+}
 
 NATRON_NAMESPACE_EXIT;

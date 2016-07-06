@@ -91,60 +91,21 @@ public:
 
     unsigned int getOrCreateFBOId();
 
-    unsigned int getOrCreateVBOVerticesId();
-
-    unsigned int getOrCreateVBOColorsId();
-
-    unsigned int getOrCreateIBOId();
 
     // Helper functions used by platform dependent implementations
     static bool stringInExtensionString(const char* string, const char* extensions);
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);
 
 
-    /**
-     * @brief Returns one of the built-in shaders, used in the Image class.
-     * Note: this context must be made current before calling this function
-     **/
-    template <typename GL>
-    boost::shared_ptr<GLShader<GL> > getOrCreateFillShader();
-    template <typename GL>
-    boost::shared_ptr<GLShader<GL> > getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert);
-    template <typename GL>
-    boost::shared_ptr<GLShader<GL> > getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
 
-    enum RampTypeEnum
-    {
-        // from http://www.comp-fu.com/2012/01/nukes-smooth-ramp-functions/
-        // linear
-        //y = x
-        // plinear: perceptually linear in rec709
-        //y = pow(x, 3)
-        // smooth: traditional smoothstep
-        //y = x*x*(3 - 2*x)
-        // smooth0: Catmull-Rom spline, smooth start, linear end
-        //y = x*x*(2 - x)
-        // smooth1: Catmull-Rom spline, linear start, smooth end
-        //y = x*(1 + x*(1 - x))
+    GLShaderBasePtr getOrCreateFillShader();
 
-        eRampTypeLinear,
+    GLShaderBasePtr getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert);
 
-        // plinear: perceptually linear in rec709
-        eRampTypePLinear,
-
-        // smooth0: Catmull-Rom spline, smooth start, linear end
-        eRampTypeEaseIn,
-
-        // smooth1: Catmull-Rom spline, linear start, smooth end
-        eRampTypeEaseOut,
-
-        // smooth: traditional smoothstep
-        eRampTypeSmooth,
-
-    };
-
-    template <typename GL>
-    boost::shared_ptr<GLShader<GL> > getOrCreateRampShader(RampTypeEnum type);
+    GLShaderBasePtr getOrCreateCopyUnprocessedChannelsShader(bool doR,
+                                                             bool doG,
+                                                             bool doB,
+                                                             bool doA);
 
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!

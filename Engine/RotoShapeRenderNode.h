@@ -38,7 +38,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct RotoShapeRenderNodePrivate;
+class RotoShapeRenderNodePrivate;
 class RotoShapeRenderNode : public EffectInstance
 {
     RotoShapeRenderNode(NodePtr n);
@@ -139,12 +139,19 @@ public:
     {
         return true;
     }
-    
+
 private:
+
+
 
     virtual void purgeCaches() OVERRIDE FINAL;
 
+    virtual StatusEnum attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
+
+    virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+
     virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & roi,
@@ -152,7 +159,9 @@ private:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+
     boost::scoped_ptr<RotoShapeRenderNodePrivate> _imp;
 
 };

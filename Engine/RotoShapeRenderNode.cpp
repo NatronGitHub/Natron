@@ -33,6 +33,7 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoShapeRenderGL.h"
 #include "Engine/ParallelRenderArgs.h"
@@ -40,28 +41,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct RotoShapeRenderNodePrivate
-{
-
-
-    RotoShapeRenderNodePrivate()
-    {
-        
-    }
-
-    double renderSingleStroke(const RotoStrokeItem* item,
-                              double time,
-                              const RectD& pointsBbox,
-                              const std::list<std::pair<Point, double> >& points,
-                              unsigned int mipmapLevel,
-                              double par,
-                              const ImageComponents& components,
-                              ImageBitDepthEnum depth,
-                              double distToNext,
-                              ImagePtr *image);
-
-
-};
 
 RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 : EffectInstance(n)
@@ -131,7 +110,7 @@ RotoShapeRenderNode::isIdentity(double time,
     RotoDrawableItemPtr rotoItem = node->getAttachedRotoItem();
     assert(rotoItem);
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
-    if (!rotoItem || !rotoItem->isActivated(time) || !isBezier->isCurveFinished() || isBezier->getControlPointsCount() <= 1) {
+    if (!rotoItem || !rotoItem->isActivated(time) || (isBezier && (!isBezier->isCurveFinished() || isBezier->getControlPointsCount() <= 1))) {
         *inputTime = time;
         *inputNb = 0;
 
@@ -241,6 +220,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
         }
 
+        if (strokes.empty()) {
+            return eStatusOK;
+        }
 
     } else if (isBezier) {
 
@@ -257,6 +239,11 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if ( !points.empty() ) {
                 strokes.push_back(points);
             }
+
+            if (strokes.empty()) {
+                return eStatusOK;
+            }
+
         }
     }
 
@@ -289,7 +276,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #endif
 
     }
-    contextLocker->attach();
+    if (contextLocker) {
+        contextLocker->attach();
+    }
 
     // Now we are good to start rendering
 #ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
@@ -300,14 +289,19 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         }
     } else {
 #endif
+
+        boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(args.glContextData);
+        assert(glData);
+
         double shapeColor[3];
         rotoItem->getColor(args.time, shapeColor);
         double opacity = rotoItem->getOpacity(args.time);
 
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
-#pragma message WARN("TODO: strokes with OpenGL")
+            bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
+            RotoShapeRenderGL::renderStroke_gl(glContext, glData, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID(), args.roi, strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
         } else {
-            RotoShapeRenderGL::renderBezier_gl(glContext, isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, args.roi, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID());
+            RotoShapeRenderGL::renderBezier_gl(glContext, glData, isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, args.roi, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID());
         }
 
 #ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
@@ -317,24 +311,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     return eStatusOK;
 
 } // RotoShapeRenderNode::render
-
-
-
-double
-RotoShapeRenderNodePrivate::renderSingleStroke(const RotoStrokeItem* item,
-                                               double time,
-                                               const RectD& pointsBbox,
-                                               const std::list<std::pair<Point, double> >& points,
-                                               unsigned int mipmapLevel,
-                                               double par,
-                                               const ImageComponents& components,
-                                               ImageBitDepthEnum depth,
-                                               double distToNext,
-                                               ImagePtr *image)
-{
-
-} // RotoShapeRenderCairo::renderSingleStroke
-
 
 
 
@@ -351,5 +327,23 @@ RotoShapeRenderNode::purgeCaches()
 #endif
 }
 
+
+
+StatusEnum
+RotoShapeRenderNode::attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+{
+    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
+    *data = ret;
+    return eStatusOK;
+}
+
+StatusEnum
+RotoShapeRenderNode::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
+{
+    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> ret = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(data);
+    assert(ret);
+    ret->cleanup();
+    return eStatusOK;
+}
 
 NATRON_NAMESPACE_EXIT;
