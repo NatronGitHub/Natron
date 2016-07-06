@@ -1,7 +1,7 @@
 #!/bin/sh
 set -x
 
-PANDOC="~/.cabal/bin/pandoc"
+PANDOC="$HOME/.cabal/bin/pandoc"
 NATRON_BIN=${1:-}
 TMP_FOLDER=${2:-}
 DOC_FOLDER=${3:-}
@@ -30,32 +30,23 @@ touch dummy.ntp
 cd "$TMP_FOLDER" || exit 1
 
 for i in *.md;do $PANDOC $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
-for i in plugins/*.md;do $PANDOC $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
+for x in plugins/*.md;do
+  $PANDOC $x --columns=9000 -o `echo $x|sed 's/.md/.rst/'`
+  PLUG=`echo $x|sed 's/.md//;s#plugins/##'`
+  sed -i "1i.. _${PLUG}:\n" plugins/${PLUG}.rst
+done
 
 for y in *.rst; do
-  if [ ! -f "$DOC_FOLDER/source/${y}" ]; then
     cp "$TMP_FOLDER"/$y "$DOC_FOLDER/source/" || exit 1
-  else
-    DIFF=`diff ${DOC_FOLDER}/source/${y} ${TMP_FOLDER}/${y}`
-    if [ ! -z "$DIFF" ]; then
-      cp "$TMP_FOLDER"/$y "$DOC_FOLDER/source/" || exit 1
-    fi
-  fi
 done
 for z in plugins/*.rst; do
   # Replace custom link, example: [linux](|html::/guide/linux.html#linux||rst::linux<Linux>|)
   # removes html::* and convert rst::* to a proper RST link, example: :ref:`linux<Linux>`
   sed -i 's/<|html::.*||/|/g;s/|rst::\(.*\)|>.*__/:ref:\`\1\`/g' ${z}
 
-  if [ ! -f "$DOC_FOLDER/source/${z}" ]; then
-    cp "$TMP_FOLDER"/$z "$DOC_FOLDER/source/plugins/" || exit 1
-  else
-    DIFF=`diff ${DOC_FOLDER}/source/${z} ${TMP_FOLDER}/${z}`
-    if [ ! -z "$DIFF" ]; then
-      cp "$TMP_FOLDER"/$z "$DOC_FOLDER/source/plugins/" || exit 1
-    fi
-  fi
+  cp "$TMP_FOLDER"/$z "$DOC_FOLDER/source/plugins/" || exit 1
 done
+
 for x in plugins/*.png; do 
 cp "$TMP_FOLDER"/$x "$DOC_FOLDER/source/plugins/" || exit 1
 done

@@ -1,3 +1,5 @@
+.. _net.fxarena.openfx.Oilpaint:
+
 OilpaintOFX
 ===========
 

@@ -1,3 +1,5 @@
+.. _net.sf.openfx.GodRays:
+
 GodRaysOFX
 ==========
 
