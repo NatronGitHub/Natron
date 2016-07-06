@@ -177,10 +177,7 @@ private:
     boost::scoped_ptr<BezierCPPrivate> _imp;
 };
 
-<<<<<<< HEAD
-=======
-typedef std::list< BezierCPPtr > BezierCPs;
->>>>>>> master
+
 
 NATRON_NAMESPACE_EXIT;
 

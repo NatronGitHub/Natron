@@ -102,18 +102,6 @@ public:
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
 
-<<<<<<< HEAD
-=======
-    double renderSingleStroke(const RectD& rod,
-                              const std::list<std::pair<Point, double> >& points,
-                              unsigned int mipmapLevel,
-                              double par,
-                              const ImageComponents& components,
-                              ImageBitDepthEnum depth,
-                              double distToNext,
-                              ImagePtr *wholeStrokeImage);
-
->>>>>>> master
 
     bool getMostRecentStrokeChangesSinceAge(double time,
                                             int lastAge,

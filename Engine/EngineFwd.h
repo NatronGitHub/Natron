@@ -129,18 +129,11 @@ class FileSystemItem;
 class FileSystemModel;
 class Format;
 class FrameEntry;
-<<<<<<< HEAD
-class FramebufferConfig;
-class GLRendererID;
-class FrameKey;
-class FrameParams;
-=======
 class FrameKey;
 class FrameParams;
 class FramebufferConfig;
 class GLRendererID;
-class GLShader;
->>>>>>> master
+class GLShaderBase;
 class GPUContextPool;
 class GenericAccess;
 class GenericSchedulerThread;
@@ -389,10 +382,7 @@ typedef std::list<ImagePtr> ImageList;
 typedef std::list<NodePtr> NodesList;
 typedef std::list<NodeWPtr> NodesWList;
 typedef std::vector<KnobIPtr> KnobsVec;
-<<<<<<< HEAD
 typedef std::list< BezierCPPtr > BezierCPs;
-=======
->>>>>>> master
 
 NATRON_PYTHON_NAMESPACE_ENTER;
 class App;

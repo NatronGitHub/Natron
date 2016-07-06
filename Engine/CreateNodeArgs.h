@@ -293,10 +293,6 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);
         createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
-<<<<<<< HEAD
-=======
-        createProperty<bool>(kCreateNodeArgsPropTrustPluginID, false);
->>>>>>> master
         createProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
         createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
         createProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());

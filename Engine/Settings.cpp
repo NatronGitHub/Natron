@@ -513,14 +513,12 @@ Settings::initializeKnobsGPU()
     _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
 
-<<<<<<< HEAD
     _osmesaRenderers = AppManager::createKnob<KnobChoice>(shared_from_this(), tr("CPU OpenGL renderer"));
     _osmesaRenderers->setName("cpuOpenGLRenderer");
     _osmesaRenderers->setHintToolTip(tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. You may select which driver OSMesa uses to perform it's CPU rendering. llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
     _gpuPage->addKnob(_osmesaRenderers);
 
-=======
->>>>>>> master
+
     _nOpenGLContexts = AppManager::createKnob<KnobInt>( shared_from_this(), tr("No. of OpenGL Contexts") );
     _nOpenGLContexts->setName("maxOpenGLContexts");
     _nOpenGLContexts->setMinimum(1);

@@ -248,11 +248,8 @@ public:
      * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
      * write lock from this image.
      **/
-<<<<<<< HEAD
     bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output, const OSGLContextPtr& glContext);
-=======
-    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output);
->>>>>>> master
+
 
     template <typename GL>
     static void setupGLViewport(const RectI& bounds, const RectI& roi)
@@ -306,7 +303,7 @@ public:
 
 private:
 
-    static void resizeInternal(const OSGLContexPtr& glContext,
+    static void resizeInternal(const OSGLContextPtr& glContext,
                                const Image* srcImg,
                                const RectI& srcBounds,
                                const RectI& merge,

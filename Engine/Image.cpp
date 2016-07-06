@@ -916,7 +916,7 @@ Image::setRoD(const RectD& rod)
 }
 
 void
-Image::resizeInternal(const OSGLContexPtr& glContext,
+Image::resizeInternal(const OSGLContextPtr& glContext,
                       const Image* srcImg,
                       const RectI& srcBounds,
                       const RectI& merge,
@@ -1075,12 +1075,8 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
-<<<<<<< HEAD
                              ImagePtr* output,
                              const OSGLContextPtr& glContext)
-=======
-                             ImagePtr* output)
->>>>>>> master
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {

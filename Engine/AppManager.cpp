@@ -2116,10 +2116,7 @@ AppManager::getImage(const ImageKey & key,
 bool
 AppManager::getImageOrCreate(const ImageKey & key,
                              const ImageParamsPtr& params,
-<<<<<<< HEAD
                              ImageLocker* locker,
-=======
->>>>>>> master
                              ImagePtr* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key, params, locker, returnValue);

@@ -497,10 +497,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                                        double par,
-                                                        const ImageComponents& components,
-                                                        ImageBitDepthEnum depth) const;
+
 
     void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;

@@ -514,20 +514,12 @@ CurveGui::drawCurve(int curveIndex,
                     _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
                                               coordStr, QColor(240, 240, 240), _curveWidget->getFont() );
                 }
-<<<<<<< HEAD
                 GL_GPU::glBegin(GL_POINTS);
                 GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
                 GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
                 GL_GPU::glEnd();
             } // if ( !isBezierGui && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
 
-=======
-                glBegin(GL_POINTS);
-                glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
-                glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
-                glEnd();
-            } // if ( !isBezierGui && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
->>>>>>> master
         } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
     } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 

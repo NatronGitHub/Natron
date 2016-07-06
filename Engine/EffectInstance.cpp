@@ -972,29 +972,14 @@ EffectInstance::getImage(int inputNb,
     ImagePtr inputImg;
 
     ///For the roto brush, we do things separatly and render the mask with the RotoContext.
-    if (useRotoInput) {
+    /*if (useRotoInput) {
         ///Usage of roto outside of the rotopaint node is no longer handled
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
             } else {
-<<<<<<< HEAD
-=======
-                RectD rotoSrcRod;
-                if (inputIsRotoBrush) {
-                    //If the roto is inverted, we need to fill the full RoD of the input
-                    bool inverted = attachedStroke->getInverted(time);
-                    if (inverted) {
-                        EffectInstancePtr rotoInput = getInput(0);
-                        if (rotoInput) {
-                            bool isProjectFormat;
-                            StatusEnum st = rotoInput->getRegionOfDefinition_public(rotoInput->getRenderHash(), time, scale, view, &rotoSrcRod, &isProjectFormat);
-                            (void)st;
-                        }
-                    }
-                }
->>>>>>> master
+
 
                 OSGLContextPtr maskContext = gpuGlContext ? gpuGlContext : cpuGlContext;
                 inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, maskContext, renderInfo, returnStorage);
@@ -1033,7 +1018,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         return inputImg;
-    }
+    }*/
 
 
     /// The node is connected.
@@ -1356,14 +1341,6 @@ EffectInstance::getFramesNeeded(double time,
         EffectInstancePtr input = getInput(i);
         if (input) {
             ret.insert( std::make_pair(i, defViewRange) );
-<<<<<<< HEAD
-=======
-        } else {
-            EffectInstancePtr input = getInput(i);
-            if (input) {
-                ret.insert( std::make_pair(i, defViewRange) );
-            }
->>>>>>> master
         }
 
     }
@@ -1448,10 +1425,7 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
 static void
 getOrCreateFromCacheInternal(const ImageKey & key,
                              const ImageParamsPtr & params,
-<<<<<<< HEAD
                              const OSGLContextPtr& glContext,
-=======
->>>>>>> master
                              bool useCache,
                              ImagePtr* image)
 {
@@ -1737,7 +1711,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
 
                 ImageParamsPtr imageParams = Image::makeParams(rod,
-<<<<<<< HEAD
                                                                downscaledBounds,
                                                                oldParams->getPixelAspectRatio(),
                                                                mipMapLevel,
@@ -1747,28 +1720,14 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                                oldParams->getPremultiplication(),
                                                                oldParams->getFieldingOrder(),
                                                                eStorageModeRAM);
-=======
-                                                                               downscaledBounds,
-                                                                               oldParams->getPixelAspectRatio(),
-                                                                               mipMapLevel,
-                                                                               oldParams->isRodProjectFormat(),
-                                                                               oldParams->getComponents(),
-                                                                               oldParams->getBitDepth(),
-                                                                               oldParams->getPremultiplication(),
-                                                                               oldParams->getFieldingOrder(),
-                                                                               eStorageModeRAM);
->>>>>>> master
+
 
 
                 imageParams->setMipMapLevel(mipMapLevel);
 
 
                 ImagePtr img;
-<<<<<<< HEAD
                 getOrCreateFromCacheInternal(key, imageParams, glContextAttacher->getContext(), imageToConvert->usesBitMap(), &img);
-=======
-                getOrCreateFromCacheInternal(key, imageParams, imageToConvert->usesBitMap(), &img);
->>>>>>> master
                 if (!img) {
                     return;
                 }
@@ -4599,16 +4558,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     int maxInput = getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
         EffectInstancePtr input = getInput(i);
-<<<<<<< HEAD
         if (input) {
-=======
-        bool isRotoInput = isInputRotoBrush(i);
-        if (isRotoInput) {
-            ///Copy for the roto input the output needed comps
-            assert( comps->find(-1) != comps->end() );
-            comps->insert( std::make_pair(i, (*comps)[-1]) ); // note: map::at() does not exist in C++98
-        } else if (input) {
->>>>>>> master
             std::vector<ImageComponents> compVec;
             std::bitset<4> inputProcChannels;
             ImageComponents layer;

@@ -937,7 +937,6 @@ Node::load(const CreateNodeArgs& args)
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
-    const QString& pluginID = _imp->plugin->getPluginID();
     if ( isRotoPaintingNode() ) {
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
@@ -1271,35 +1270,6 @@ Node::getLastPaintStrokePoints(double time,
     }
 }
 
-ImagePtr
-Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                 double par,
-                                 const ImageComponents& components,
-                                 ImageBitDepthEnum depth) const
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    std::list<RectI> restToRender;
-    RotoDrawableItemPtr item = _imp->paintStroke.lock();
-    RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
-
-    assert(stroke);
-    if (!stroke) {
-        throw std::logic_error("");
-    }
-
-    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
-
-    RectD lastStrokeBbox;
-    std::list<std::pair<Point, double> > lastStrokePoints;
-    double distNextIn = 0.;
-    ImagePtr strokeImage;
-    getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
-    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
-
-    getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
-
-    return strokeImage;
-}
 
 void
 Node::refreshAcceptedBitDepths()
@@ -5405,14 +5375,6 @@ Node::connectInput(const NodePtr & input,
 
     ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input ) ) {
-<<<<<<< HEAD
-=======
-        return false;
-    }
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
-
->>>>>>> master
         return false;
     }
 

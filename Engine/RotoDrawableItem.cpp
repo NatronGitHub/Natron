@@ -1302,7 +1302,6 @@ RotoDrawableItem::getLifeTimeFrameKnob() const
     return _imp->lifeTimeFrame;
 }
 
-<<<<<<< HEAD
 KnobChoicePtr
 RotoDrawableItem::getFallOffRampTypeKnob() const
 {
@@ -1310,8 +1309,6 @@ RotoDrawableItem::getFallOffRampTypeKnob() const
 }
 
 
-=======
->>>>>>> master
 KnobDoublePtr
 RotoDrawableItem::getMotionBlurAmountKnob() const
 {

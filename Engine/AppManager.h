@@ -194,19 +194,13 @@ public:
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
     bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
-<<<<<<< HEAD
                           ImageLocker* locker,
                           ImagePtr* returnValue) const;
 
 
     bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
 
-=======
-                          ImagePtr* returnValue) const;
 
-    bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
-
->>>>>>> master
     bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
                                     ImagePtr* returnValue) const;
 

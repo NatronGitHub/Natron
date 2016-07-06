@@ -1468,7 +1468,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         }
                     }
                 } else {
-                    hasResized = it->second.fullscaleImage->ensureBounds(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
+                    hasResized = it->second.fullscaleImage->ensureBounds(glContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                          fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
                 }
 
