@@ -806,7 +806,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
-
+    const bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -891,7 +891,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
 
                 for (int n = 0; n < nLookups; ++n) {
-                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
+                    getImageFromCacheAndConvertIfNeeded(createInCache, isDuringPaintStroke, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
                                                         renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                         &rod, roi,
                                                         args.bitdepth, *it,
@@ -995,7 +995,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Determine rectangles left to render /////////////////////////////////////////////////////
 
     std::list<RectI> rectsLeftToRender;
-    bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
     bool fillGrownBoundsWithZeroes = false;
 
     //While painting, clear only the needed portion of the bitmap
@@ -1293,7 +1292,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (!components) {
                 continue;
             }
-            getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, *key, renderMappedMipMapLevel,
+            getImageFromCacheAndConvertIfNeeded(createInCache, isDuringPaintStroke, storage, args.returnStorage, *key, renderMappedMipMapLevel,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod, roi,
                                                 args.bitdepth, it->first,
@@ -1431,6 +1430,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    createInCache,
                                    &it->second.fullscaleImage,
                                    &it->second.downscaleImage);
+
+                // For plug-ins that paint over themselves, the first time clear the image out
+                if (isPaintingOverItselfEnabled()) {
+                    it->second.downscaleImage->fillBoundsZero(glContext);
+                }
             } else {
                 /*
                  * There might be a situation  where the RoD of the cached image

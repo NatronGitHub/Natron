@@ -87,6 +87,8 @@ struct RotoPaintData
     //The image used to render the currently drawn stroke mask
     ImagePtr strokeImage;
 
+    NodePtr maskNode;
+
     RotoPaintData()
         : rotoPaintNode()
         , stroke()
@@ -99,6 +101,7 @@ struct RotoPaintData
         , distToNextIn(0)
         , distToNextOut(0)
         , strokeImage()
+        , maskNode()
     {
     }
 };
@@ -1138,6 +1141,7 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
         bool newStroke = stroke != _imp->rotoData.stroke;
         if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode) || newStroke ) ) {
             _imp->rotoData.strokeImage.reset();
+            _imp->rotoData.maskNode.reset();
         }
 
         _imp->rotoData.isPainting = isPainting;
@@ -1161,13 +1165,22 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
 void
 GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
                                            RotoStrokeItemPtr* stroke,
+                                           NodePtr* maskNode,
                                            bool *isPainting) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
     assert(node && stroke && isPainting);
     *node = _imp->rotoData.rotoPaintNode;
     *stroke = _imp->rotoData.stroke;
+    *maskNode = _imp->rotoData.maskNode;
     *isPainting = _imp->rotoData.isPainting;
+}
+
+bool
+GuiAppInstance::isDuringPainting() const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    return _imp->rotoData.isPainting;
 }
 
 bool
@@ -1311,13 +1324,15 @@ GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
 }
 
 void
-GuiAppInstance::updateStrokeImage(const ImagePtr& image,
+GuiAppInstance::updateStrokeImage(const NodePtr& maskNode,
+                                  const ImagePtr& image,
                                   double distNextOut,
                                   bool setDistNextOut)
 {
     QMutexLocker k(&_imp->rotoDataMutex);
 
     _imp->rotoData.strokeImage = image;
+    _imp->rotoData.maskNode = maskNode;
     if (setDistNextOut) {
         _imp->rotoData.distToNextOut = distNextOut;
     }

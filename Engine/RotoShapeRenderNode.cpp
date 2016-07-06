@@ -146,7 +146,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
 
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
-    assert(rotoItem->isActivated(args.time) && isBezier->isCurveFinished() && ( isBezier->getControlPointsCount() > 1 ));
+    assert(rotoItem->isActivated(args.time) && (!isBezier || (isBezier->isCurveFinished() && ( isBezier->getControlPointsCount() > 1 ))));
 
     ParallelRenderArgsPtr frameArgs = getParallelRenderArgsTLS();
     OSGLContextPtr glContext;
@@ -201,6 +201,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             std::list<std::pair<Point, double> > lastStrokePoints;
             ImagePtr strokeImage;
             getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn, &strokeImage);
+
+            // When drawing we must always write to the same buffer
+            assert(!strokeImage || strokeImage == outputPlane.second);
 
             int pot = 1 << mipmapLevel;
             if (mipmapLevel == 0) {
@@ -285,7 +288,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     if (!args.useOpenGL) {
         double distToNextOut = RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, strokes, outputPlane.second);
         if (isDuringPainting) {
-            getApp()->updateStrokeImage(outputPlane.second, distToNextOut, true);
+            getApp()->updateStrokeImage(getNode(), outputPlane.second, distToNextOut, true);
         }
     } else {
 #endif
@@ -299,7 +302,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
             bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
-            RotoShapeRenderGL::renderStroke_gl(glContext, glData, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID(), args.roi, strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
+            double distToNextOut = RotoShapeRenderGL::renderStroke_gl(glContext, glData, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID(), args.roi, strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
+            if (isDuringPainting) {
+                getApp()->updateStrokeImage(getNode(), outputPlane.second, distToNextOut, true);
+            }
         } else {
             RotoShapeRenderGL::renderBezier_gl(glContext, glData, isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, args.roi, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID());
         }

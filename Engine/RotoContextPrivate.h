@@ -718,7 +718,7 @@ public:
      * Each effect is followed by a merge (except for the ones that use a merge) with the user given operator
      * onto the previous tree upstream of the effectNode.
      */
-    NodePtr effectNode;
+    NodePtr effectNode, maskNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
     double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
@@ -774,6 +774,7 @@ public:
 
     RotoDrawableItemPrivate(bool isPaintingNode)
         : effectNode()
+        , maskNode()
         , mergeNode()
         , timeOffsetNode()
         , frameHoldNode()

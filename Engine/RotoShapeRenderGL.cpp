@@ -67,7 +67,7 @@ static const char* rotoRamp_FragmentShader =
 
 static const char* rotoDrawDot_VertexShader =
 "attribute float inHardness;\n"
-"flat varying outHardness;\n"
+"varying float outHardness;\n"
 "void main() {\n"
 "   outHardness = inHardness;\n"
 "   gl_Position = ftransform();\n"
@@ -75,7 +75,7 @@ static const char* rotoDrawDot_VertexShader =
 ;
 
 static const char* rotoDrawDot_FragmentShader =
-"flat varying outHardness;\n"
+"varying float outHardness;\n"
 "uniform vec4 fillColor;\n"
 "void main() {\n"
 "	gl_FragColor = fillColor;\n"
@@ -800,7 +800,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
 {
     GLint hardnessLoc;
     {
-        bool ok = shader.getAttribLocation("hardness", &hardnessLoc);
+        bool ok = shader.getAttribLocation("inHardness", &hardnessLoc);
         assert(ok);
     }
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);

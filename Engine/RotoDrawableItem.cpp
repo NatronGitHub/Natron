@@ -136,6 +136,10 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
         _imp->effectNode->setWhileCreatingPaintStroke(true);
         _imp->effectNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->setWhileCreatingPaintStroke(true);
+        _imp->maskNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+    }
     if (_imp->mergeNode) {
         _imp->mergeNode->setWhileCreatingPaintStroke(true);
         _imp->mergeNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
@@ -181,6 +185,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
         type = eRotoStrokeTypeSolid;
     }
 
+    QString maskPluginID = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
+
     switch (type) {
     case eRotoStrokeTypeBlur:
         pluginId = QString::fromUtf8(PLUGINID_OFX_BLURCIMG);
@@ -189,7 +195,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
         break;
     case eRotoStrokeTypeSolid:
-        pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
+        pluginId = maskPluginID;
         break;
     case eRotoStrokeTypeClone:
     case eRotoStrokeTypeReveal:
@@ -265,15 +271,19 @@ RotoDrawableItem::createNodes(bool connectNodes)
     assert(_imp->mergeNode);
 
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
-        int maxInp = _imp->mergeNode->getMaxInputCount();
-        for (int i = 0; i < maxInp; ++i) {
-            if ( _imp->mergeNode->getEffectInstance()->isInputMask(i) ) {
-                //Connect this rotopaint node as a mask
-                bool ok = _imp->mergeNode->connectInput(node, i);
-                assert(ok);
-                Q_UNUSED(ok);
-                break;
+        // Create the mask plug-in
+
+        {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("Mask") );
+            CreateNodeArgs args( maskPluginID.toStdString(), NodeCollectionPtr() );
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+            _imp->maskNode = app->createNode(args);
+            if (!_imp->maskNode) {
+                throw std::runtime_error("Rotopaint requires the plug-in " + maskPluginID.toStdString() + " in order to work");
             }
+            assert(_imp->maskNode);
         }
     }
 
@@ -319,6 +329,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (_imp->effectNode) {
         _imp->effectNode->attachRotoItem(thisShared);
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->attachRotoItem(thisShared);
+    }
+
     if (_imp->mergeNode) {
         _imp->mergeNode->attachRotoItem(thisShared);
     }
@@ -331,7 +345,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
 
     if (connectNodes) {
-        refreshNodesConnections();
+        refreshNodesConnections(false);
     }
 } // RotoDrawableItem::createNodes
 
@@ -352,6 +366,10 @@ RotoDrawableItem::disconnectNodes()
     if (_imp->effectNode) {
         _imp->effectNode->disconnectInput(0);
     }
+    if (_imp->maskNode) {
+        _imp->mergeNode->disconnectInput(_imp->maskNode);
+        _imp->maskNode->disconnectInput(0);
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->disconnectInput(0);
     }
@@ -366,6 +384,10 @@ RotoDrawableItem::deactivateNodes()
     if (_imp->effectNode) {
         _imp->effectNode->deactivate(std::list< NodePtr >(), true, false, false, false);
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->deactivate(std::list< NodePtr >(), true, false, false, false);
+    }
+
     if (_imp->mergeNode) {
         _imp->mergeNode->deactivate(std::list< NodePtr >(), true, false, false, false);
     }
@@ -384,6 +406,9 @@ RotoDrawableItem::activateNodes()
         _imp->effectNode->activate(std::list< NodePtr >(), false, false);
     }
     _imp->mergeNode->activate(std::list< NodePtr >(), false, false);
+    if (_imp->maskNode) {
+        _imp->maskNode->activate(std::list< NodePtr >(), false, false);
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->activate(std::list< NodePtr >(), false, false);
     }
@@ -537,7 +562,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
     }
 #endif
     else if (knob == _imp->sourceColor) {
-        refreshNodesConnections();
+        refreshNodesConnections(false);
     } else if (knob == _imp->effectStrength) {
         double strength = _imp->effectStrength->getValue();
         switch (type) {
@@ -572,7 +597,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
             offset->setValue(value);
         }
     } else if ( (knob == _imp->timeOffsetMode) && _imp->timeOffsetNode ) {
-        refreshNodesConnections();
+        refreshNodesConnections(false);
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
@@ -652,6 +677,9 @@ RotoDrawableItem::incrementNodesAge()
     if (_imp->effectNode) {
         _imp->effectNode->incrementKnobsAge();
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->incrementKnobsAge();
+    }
     if (_imp->mergeNode) {
         _imp->mergeNode->incrementKnobsAge();
     }
@@ -688,7 +716,7 @@ RotoDrawableItem::getFrameHoldNode() const
 }
 
 void
-RotoDrawableItem::refreshNodesConnections()
+RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
 {
     RotoDrawableItemPtr previous = findPreviousInHierarchy();
     NodePtr rotoPaintInput =  getContext()->getNode()->getInput(0);
@@ -725,23 +753,38 @@ RotoDrawableItem::refreshNodesConnections()
                 effectInput = _imp->frameHoldNode;
             }
             if (_imp->effectNode->getInput(0) != effectInput) {
-                _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInputBase(effectInput, 0);
+                _imp->effectNode->replaceInput(effectInput, 0);
             }
-        }
-        /*
-         * This case handles: Stroke, Blur, Sharpen, Smear, Clone
-         */
-        if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
-            _imp->mergeNode->disconnectInput(1);
-            _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
         }
 
-        if (_imp->mergeNode->getInput(0) != upstreamNode) {
-            _imp->mergeNode->disconnectInput(0);
-            if (upstreamNode) {
-                _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+        if (!isTreeConcatenated) {
+            /*
+             * This case handles: Stroke, Blur, Sharpen, Smear, Clone
+             */
+            if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
+                _imp->mergeNode->replaceInput(_imp->effectNode, 1); // A
             }
+
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+                }
+            }
+
+
+
+            if (_imp->maskNode) {
+                if ( _imp->mergeNode->getInput(2) != _imp->maskNode) {
+                    //Connect the merge node mask to the mask node
+                    _imp->mergeNode->replaceInput(_imp->maskNode, 2);
+                }
+            }
+
+        } else {
+            _imp->mergeNode->disconnectInput(0);
+            _imp->mergeNode->disconnectInput(1);
+            _imp->mergeNode->disconnectInput(2);
         }
 
 
@@ -761,8 +804,7 @@ RotoDrawableItem::refreshNodesConnections()
 
         if (revealInput) {
             if (effectInput->getInput(0) != revealInput) {
-                effectInput->disconnectInput(0);
-                effectInput->connectInputBase(revealInput, 0);
+                effectInput->replaceInput(revealInput, 0);
             }
         } else {
             if ( effectInput->getInput(0) ) {
@@ -840,6 +882,9 @@ RotoDrawableItem::resetNodesThreadSafety()
         _imp->effectNode->revertToPluginThreadSafety();
     }
     _imp->mergeNode->revertToPluginThreadSafety();
+    if (_imp->maskNode) {
+        _imp->maskNode->revertToPluginThreadSafety();
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->revertToPluginThreadSafety();
     }

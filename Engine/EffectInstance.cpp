@@ -708,7 +708,7 @@ EffectInstance::getImage(int inputNb,
     ///The input we want the image from
     EffectInstancePtr inputEffect;
 
-    //Check for transform redirections
+    // Check for transform redirections
     InputMatrixMapPtr transformRedirections;
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
     if (tls && tls->currentRenderArgs.validArgs) {
@@ -728,53 +728,35 @@ EffectInstance::getImage(int inputNb,
         inputEffect = getInput(inputNb);
     }
 
-    ///Is this input a mask or not
+    // Is this input a mask or not
     bool isMask = isInputMask(inputNb);
 
-    ///If the input is a mask, this is the channel index in the layer of the mask channel
+    // If the input is a mask, this is the channel index in the layer of the mask channel
     int channelForMask = -1;
 
-    ///Is this node a roto node or not. If so, find out if this input is the roto-brush
-    RotoContextPtr roto;
-    RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
-
-    if (attachedStroke) {
-        roto = attachedStroke->getContext();
-    }
-    bool useRotoInput = false;
-    if (roto) {
-        useRotoInput = isMask;
-    }
-
-    ///This is the actual layer that we are fetching in input
+    // This is the actual layer that we are fetching in input
     ImageComponents maskComps;
     if ( !isMaskEnabled(inputNb) ) {
         return ImagePtr();
     }
 
-    ///If this is a mask, fetch the image from the effect indicated by the mask channel
+    // If this is a mask, fetch the image from the effect indicated by the mask channel
     NodePtr maskInput;
     if (isMask) {
-        if (!useRotoInput) {
-            channelForMask = getMaskChannel(inputNb, &maskComps, &maskInput);
-        } else {
-            channelForMask = 3; // default to alpha channel
-            maskInput = roto->getNode(); // set it to the RotoPaint node
-            maskComps = ImageComponents::getAlphaComponents();
-        }
+        channelForMask = getMaskChannel(inputNb, &maskComps, &maskInput);
     }
     if ( maskInput && (channelForMask != -1) ) {
         inputEffect = maskInput->getEffectInstance();
     }
 
-    //Invalid mask
+    // Invalid mask
     if ( isMask && ( (channelForMask == -1) || (maskComps.getNumComponents() == 0) ) ) {
         return ImagePtr();
     }
 
 
-    if ( ( !roto || (roto && !useRotoInput) ) && !inputEffect ) {
-        //Disconnected input
+    if (!inputEffect) {
+        // Disconnected input
         return ImagePtr();
     }
 
@@ -884,18 +866,7 @@ EffectInstance::getImage(int inputNb,
     } else if (!roiWasInRequestPass) {
         //We did not have a request pass, use if possible the result of getRegionsOfInterest found in the TLS
         //If not, fallback on input RoD
-        EffectInstancePtr inputToFind;
-        if (useRotoInput) {
-            if ( getNode()->getRotoContext() ) {
-                inputToFind = shared_from_this();
-            } else {
-                assert(attachedStroke);
-                inputToFind = attachedStroke->getContext()->getNode()->getEffectInstance();
-            }
-        } else {
-            inputToFind = inputEffect;
-        }
-        RoIMap::iterator found = inputsRoI.find(inputToFind);
+        RoIMap::iterator found = inputsRoI.find(inputEffect);
         if ( found != inputsRoI.end() ) {
             ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
             roi = found->second;
@@ -903,25 +874,21 @@ EffectInstance::getImage(int inputNb,
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
             if (inputEffect && !isAnalysisPass) {
                 qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
-                    inputEffect->getScriptName_mt_safe().c_str();
+                inputEffect->getScriptName_mt_safe().c_str();
             }
 
 
             //We are either in analysis or in an unknown thread
             //do not set identity flags, request for RoI the full RoD of the input
-            if (useRotoInput) {
-                assert( !thisRod.isNull() );
-                roi = thisRod;
-            } else {
-                if (inputEffect) {
-                    StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
-                    if (stat != eStatusFailed) {
-                        inputRoDSet = true;
-                    }
+            if (inputEffect) {
+                StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                if (stat != eStatusFailed) {
+                    inputRoDSet = true;
                 }
-
-                roi = inputRoD;
             }
+
+            roi = inputRoD;
+
         }
     }
 
@@ -972,58 +939,6 @@ EffectInstance::getImage(int inputNb,
 
     ImagePtr inputImg;
 
-    ///For the roto brush, we do things separatly and render the mask with the RotoContext.
-    /*if (useRotoInput) {
-        ///Usage of roto outside of the rotopaint node is no longer handled
-        assert(attachedStroke);
-        if (attachedStroke) {
-            if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
-            } else {
-
-
-                OSGLContextPtr maskContext = gpuGlContext ? gpuGlContext : cpuGlContext;
-                inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, maskContext, renderInfo, returnStorage);
-
-                if ( roto->isDoingNeatRender() ) {
-                    getApp()->updateStrokeImage(inputImg, 0, false);
-                }
-            }
-        }
-        if (roiPixel) {
-            *roiPixel = pixelRoI;
-        }
-
-        if ( inputImg && !pixelRoI.intersects( inputImg->getBounds() ) ) {
-            //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
-#ifdef DEBUG
-            RectI inputBounds = inputImg->getBounds();
-            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image: Pixel RoI x1=" << pixelRoI.x1 << "y1=" << pixelRoI.y1 << "x2=" << pixelRoI.x2 << "y2=" << pixelRoI.y2 <<
-                "Bounds x1=" << inputBounds.x1 << "y1=" << inputBounds.y1 << "x2=" << inputBounds.x2 << "y2=" << inputBounds.y2;
-#endif
-
-            return ImagePtr();
-        }
-
-        if ( inputImg && inputImagesThreadLocal.empty() ) {
-            ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
-            tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
-        }
-
-        if ( returnStorage == eStorageModeGLTex && (inputImg->getStorageMode() != eStorageModeGLTex) ) {
-            inputImg = convertRAMImageToOpenGLTexture<GL_GPU>(inputImg);
-        }
-
-        if (mapToClipPrefs) {
-            inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), eImagePremultiplicationPremultiplied, channelForMask);
-        }
-
-        return inputImg;
-    }*/
-
-
-    /// The node is connected.
-    assert(inputEffect);
 
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(isMask ? maskComps : components);
@@ -1579,6 +1494,7 @@ template ImagePtr EffectInstance::convertRAMImageToOpenGLTexture<GL_CPU>(const I
 
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
+                                                    bool isDuringPaintStroke,
                                                     StorageModeEnum storage,
                                                     StorageModeEnum returnStorage,
                                                     const ImageKey & key,
@@ -1608,6 +1524,27 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                     cachedImages.push_back(*it2);
                     isCached = true;
                 }
+            }
+        }
+    }
+
+    if (isDuringPaintStroke) {
+
+        NodePtr rotoPaintNode;
+        RotoStrokeItemPtr curStroke;
+        NodePtr maskNode;
+        bool isDrawing;
+        getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &maskNode, &isDrawing);
+        assert(isDrawing);
+        if (maskNode == getNode()) {
+            RectD lastStrokeMovementBbox;
+            std::list<std::pair<Point, double> > lastStrokePoints;
+            ImagePtr strokeImage;
+            double distNextIn;
+            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn, &strokeImage);
+            if (strokeImage) {
+                cachedImages.push_back(strokeImage);
+                isCached = true;
             }
         }
     }
@@ -1660,22 +1597,37 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 *image = *it;
                 break;
             } else {
-                if ( (imgMMlevel >= mipMapLevel) || !convertible ||
-                     ( getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth) ) ) {
-                    ///Either smaller resolution or not enough components or bit-depth is not as deep, don't use the image
+                if ( !convertible || ( getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth) ) ) {
+                    // not enough components or bit-depth is not as deep, don't use the image
                     continue;
                 }
 
-                assert(imgMMlevel < mipMapLevel);
-
-                if (!imageToConvert) {
-                    imageToConvert = *it;
-                } else {
-                    ///We found an image which scale is closer to the requested mipmap level we want, use it instead
-                    if ( imgMMlevel > imageToConvert->getMipMapLevel() ) {
+                if (imgMMlevel > mipMapLevel) {
+                    if (!isPaintingOverItselfEnabled()) {
+                        // mipmap level is higher, use it only if plug-in is painting over itself and absolutely requires the data
+                        continue;
+                    }
+                    if (imageToConvert) {
+                        ///We found an image which scale is closer to the requested mipmap level we want, use it instead
+                        if ( imgMMlevel < imageToConvert->getMipMapLevel() ) {
+                            imageToConvert = *it;
+                        }
+                    } else {
                         imageToConvert = *it;
                     }
+                } else if (imgMMlevel < mipMapLevel) {
+                    if (imageToConvert) {
+                        // We found an image which scale is closer to the requested mipmap level we want, use it instead
+                        if ( imgMMlevel > imageToConvert->getMipMapLevel() ) {
+                            imageToConvert = *it;
+                        }
+                    } else {
+                        imageToConvert = *it;
+                    }
+                } else {
+                    imageToConvert = *it;
                 }
+
             }
         } //end for
 
@@ -1683,36 +1635,83 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             ///Ensure the image is allocated
             (imageToConvert)->allocateMemory();
 
+            ImageParamsPtr oldParams = imageToConvert->getParams();
 
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
-                ImageParamsPtr oldParams = imageToConvert->getParams();
 
-                assert(imageToConvert->getMipMapLevel() < mipMapLevel);
+                if (imageToConvert->getMipMapLevel() < mipMapLevel) {
 
-                //This is the bounds of the upscaled image
-                RectI imgToConvertBounds = imageToConvert->getBounds();
+                    //This is the bounds of the upscaled image
+                    RectI imgToConvertBounds = imageToConvert->getBounds();
 
+                    //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
+                    const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
+
+                    RectI downscaledBounds;
+                    rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+
+                    if (boundsParam) {
+                        downscaledBounds.merge(*boundsParam);
+                    }
+                    ImageParamsPtr imageParams = Image::makeParams(rod,
+                                                                   downscaledBounds,
+                                                                   oldParams->getPixelAspectRatio(),
+                                                                   mipMapLevel,
+                                                                   oldParams->isRodProjectFormat(),
+                                                                   oldParams->getComponents(),
+                                                                   oldParams->getBitDepth(),
+                                                                   oldParams->getPremultiplication(),
+                                                                   oldParams->getFieldingOrder(),
+                                                                   eStorageModeRAM);
+
+
+
+                    imageParams->setMipMapLevel(mipMapLevel);
+
+
+                    ImagePtr img;
+                    getOrCreateFromCacheInternal(key, imageParams, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(), imageToConvert->usesBitMap(), &img);
+                    if (!img) {
+                        return;
+                    }
+
+
+                    /*
+                     Since the RoDs of the 2 mipmaplevels are different, their bounds do not match exactly as po2
+                     To determine which portion we downscale, we downscale the initial image bounds to the mipmap level
+                     of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
+                     original mipmap level and ensure that it lies into the original image bounds
+                     */
+                    int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
+                    RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
+                    dstRoi.intersect(downscaledBounds, &dstRoi);
+                    dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
+                    dstRoi.intersect(imgToConvertBounds, &dstRoi);
+
+                    if (imgToConvertBounds.area() > 1) {
+                        imageToConvert->downscaleMipMap( rod,
+                                                        dstRoi,
+                                                        imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
+                                                        imageToConvert->usesBitMap(),
+                                                        img.get() );
+                    } else {
+                        img->pasteFrom(*imageToConvert, imgToConvertBounds);
+                    }
+                    
+                    imageToConvert = img;
+                }
+            } else {
+                // only plug-ins that paints over themselves should be able to retrieve an image that is at a lower scale
+                assert(isPaintingOverItselfEnabled());
+
+                //This is the bounds of the downscaled image
+                RectI upscaledImgBounds;
                 //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
                 const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
-
-
-                //RectD imgToConvertCanonical;
-                //imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
-                RectI downscaledBounds;
-                rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
-                //imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
-                //imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
-
-                if (boundsParam) {
-                    downscaledBounds.merge(*boundsParam);
-                }
-
-                //RectI pixelRoD;
-                //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
-                //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
+                rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &upscaledImgBounds);
 
                 ImageParamsPtr imageParams = Image::makeParams(rod,
-                                                               downscaledBounds,
+                                                               upscaledImgBounds,
                                                                oldParams->getPixelAspectRatio(),
                                                                mipMapLevel,
                                                                oldParams->isRodProjectFormat(),
@@ -1728,34 +1727,12 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
 
                 ImagePtr img;
-                getOrCreateFromCacheInternal(key, imageParams, glContextAttacher->getContext(), imageToConvert->usesBitMap(), &img);
+                getOrCreateFromCacheInternal(key, imageParams, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(), imageToConvert->usesBitMap(), &img);
                 if (!img) {
                     return;
                 }
 
-
-                /*
-                   Since the RoDs of the 2 mipmaplevels are different, their bounds do not match exactly as po2
-                   To determine which portion we downscale, we downscale the initial image bounds to the mipmap level
-                   of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
-                   original mipmap level and ensure that it lies into the original image bounds
-                 */
-                int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
-                RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
-                dstRoi.intersect(downscaledBounds, &dstRoi);
-                dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
-                dstRoi.intersect(imgToConvertBounds, &dstRoi);
-
-                if (imgToConvertBounds.area() > 1) {
-                    imageToConvert->downscaleMipMap( rod,
-                                                     dstRoi,
-                                                     imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
-                                                     imageToConvert->usesBitMap(),
-                                                     img.get() );
-                } else {
-                    img->pasteFrom(*imageToConvert, imgToConvertBounds);
-                }
-
+                imageToConvert->upscaleMipMap( imageToConvert->getBounds(), imageToConvert->getMipMapLevel(), 0, img.get() );
                 imageToConvert = img;
             }
 

@@ -1525,11 +1525,6 @@ Node::computeHashInternal()
         _imp->hash.append(_imp->knobsAge);
 
         ///append all inputs hash
-        RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
-        NodePtr attachedStrokeContextNode;
-        if (attachedStroke) {
-            attachedStrokeContextNode = attachedStroke->getContext()->getNode();
-        }
         {
             ViewerInstancePtr isViewer = isEffectViewerInstance();
 
@@ -1547,10 +1542,7 @@ Node::computeHashInternal()
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
-                        //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-                        if ( attachedStroke && (input == attachedStrokeContextNode) ) {
-                            continue;
-                        }
+
                         ///Add the index of the input to its hash.
                         ///Explanation: if we didn't add this, just switching inputs would produce a similar
                         ///hash.
@@ -1563,12 +1555,6 @@ Node::computeHashInternal()
         // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
         // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
         // node respecitively have their hash correctly set.
-
-        //        RotoContextPtr roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
-        //        if (roto) {
-        //            U64 rotoAge = roto->getAge();
-        //            _imp->hash.append(rotoAge);
-        //        }
 
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         Hash64_appendQString( &_imp->hash, QString::fromUtf8( getScriptName().c_str() ) );

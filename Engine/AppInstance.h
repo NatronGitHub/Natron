@@ -363,7 +363,10 @@ public:
 
     virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
                                             RotoStrokeItemPtr* /*stroke*/,
+                                            NodePtr* /*maskNode*/,
                                             bool* /*isPainting*/) const { }
+
+    virtual bool isDuringPainting() const { return false; }
 
     virtual bool isRenderStatsActionChecked() const { return false; }
 
@@ -400,7 +403,8 @@ public:
                                      double */*distNextIn*/,
                                      ImagePtr* /*strokeImage*/) const {}
 
-    virtual void updateStrokeImage(const ImagePtr& /*image*/,
+    virtual void updateStrokeImage(const NodePtr& /*maskNode*/,
+                                   const ImagePtr& /*image*/,
                                    double /*distNextOut*/,
                                    bool /*setDistNextOut*/) {}
 

@@ -84,7 +84,7 @@ public:
 
     void incrementNodesAge();
 
-    void refreshNodesConnections();
+    void refreshNodesConnections(bool isTreeConcatenated);
 
     virtual void clone(const RotoItem*  other) OVERRIDE;
 

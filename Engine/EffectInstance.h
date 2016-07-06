@@ -573,6 +573,7 @@ public:
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
+                                             bool isDuringPaintStroke,
                                              StorageModeEnum storage,
                                              StorageModeEnum returnStorage,
                                              const ImageKey & key,

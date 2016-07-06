@@ -75,11 +75,8 @@ void
 ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
-    NodePtr rotoPaintNode;
-    RotoStrokeItemPtr curStroke;
-    bool isDrawing;
 
-    getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
+    bool isDrawing = getGui()->getApp()->isDuringPainting();
 
     if ( !getGui() ||
          !getGui()->getApp() ||

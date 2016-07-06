@@ -825,8 +825,9 @@ RotoContext::getItemsRegionOfDefinition(const std::list<RotoItemPtr >& items,
     bool rodSet = false;
     NodePtr activeRotoPaintNode;
     RotoStrokeItemPtr activeStroke;
+    NodePtr maskNode;
     bool isDrawing;
-    getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke, &isDrawing);
+    getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke, &maskNode, &isDrawing);
     if (!isDrawing) {
         activeStroke.reset();
     }
@@ -2241,21 +2242,26 @@ RotoContext::refreshRotoPaintTree()
             (*it)->disconnectInput(i);
         }
     }
+    globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+
     if (canConcatenate) {
-        globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
-    }
-    if (globalMerge) {
         NodePtr rotopaintNodeInput = getNode()->getInput(0);
         //Connect the rotopaint node input to the B input of the Merge
         if (rotopaintNodeInput) {
             globalMerge->connectInput(rotopaintNodeInput, 0);
         }
+    } else {
+        // Diconnect all inputs of the globalMerge
+        int maxInputs = globalMerge->getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            globalMerge->disconnectInput(i);
+        }
     }
 
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        (*it)->refreshNodesConnections();
+        (*it)->refreshNodesConnections(canConcatenate);
 
-        if (globalMerge) {
+        if (canConcatenate) {
             {
                 KnobIPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
                 KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
