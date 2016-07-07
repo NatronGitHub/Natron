@@ -52,6 +52,8 @@ without importing anything.
 	Roto
 	StringParam
 	StringParamBase
+        Track
+        Tracker
 	UserParamHolder
  
 
