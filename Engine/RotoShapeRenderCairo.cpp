@@ -650,6 +650,72 @@ RotoShapeRenderCairo::bezulate(double time,
     }
 } // RotoShapeRenderCairo::bezulate
 
+
+
+static inline
+double
+hardnessGaussLookup(double f)
+{
+    //2 hyperbolas + 1 parabola to approximate a gauss function
+    if (f < -0.5) {
+        f = -1. - f;
+
+        return (2. * f * f);
+    }
+
+    if (f < 0.5) {
+        return (1. - 2. * f * f);
+    }
+    f = 1. - f;
+
+    return (2. * f * f);
+}
+
+
+static void
+getRenderDotParams(double alpha,
+                   double brushSizePixel,
+                   double brushHardness,
+                   double brushSpacing,
+                   double pressure,
+                   bool pressureAffectsOpacity,
+                   bool pressureAffectsSize,
+                   bool pressureAffectsHardness,
+                   double* internalDotRadius,
+                   double* externalDotRadius,
+                   double * spacing,
+                   std::vector<std::pair<double, double> >* opacityStops)
+{
+    if (pressureAffectsSize) {
+        brushSizePixel *= pressure;
+    }
+    if (pressureAffectsHardness) {
+        brushHardness *= pressure;
+    }
+    if (pressureAffectsOpacity) {
+        alpha *= pressure;
+    }
+
+    *internalDotRadius = std::max(brushSizePixel * brushHardness, 1.) / 2.;
+    *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
+    *spacing = *externalDotRadius * 2. * brushSpacing;
+
+
+    opacityStops->clear();
+
+    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
+    const int maxStops = 8;
+    double incr = 1. / maxStops;
+
+    if (brushHardness != 1.) {
+        for (double d = 0; d <= 1.; d += incr) {
+            double o = hardnessGaussLookup( std::pow(d, exp) );
+            opacityStops->push_back( std::make_pair(d, o * alpha) );
+        }
+    }
+}
+
+
 bool
 RotoShapeRenderCairo::allocateAndRenderSingleDotStroke_cairo(int brushSizePixel,
                                                        double brushHardness,
@@ -684,7 +750,7 @@ RotoShapeRenderCairo::allocateAndRenderSingleDotStroke_cairo(int brushSizePixel,
     const double pressure = 1.;
     const double brushspacing = 0.;
 
-    RotoShapeRenderNodePrivate::getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushspacing, pressure, false, false, false, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
     renderDot_cairo(wrapper.ctx, 0, p, internalDotRadius, externalDotRadius, pressure, true, opacityStops, alpha);
     
     return true;
@@ -759,68 +825,6 @@ RotoShapeRenderCairo::applyAndDestroyMask(cairo_t* cr,
 
 
 
-static inline
-double
-hardnessGaussLookup(double f)
-{
-    //2 hyperbolas + 1 parabola to approximate a gauss function
-    if (f < -0.5) {
-        f = -1. - f;
-
-        return (2. * f * f);
-    }
-
-    if (f < 0.5) {
-        return (1. - 2. * f * f);
-    }
-    f = 1. - f;
-
-    return (2. * f * f);
-}
-
-
-static void
-getRenderDotParams(double alpha,
-                   double brushSizePixel,
-                   double brushHardness,
-                   double brushSpacing,
-                   double pressure,
-                   bool pressureAffectsOpacity,
-                   bool pressureAffectsSize,
-                   bool pressureAffectsHardness,
-                   double* internalDotRadius,
-                   double* externalDotRadius,
-                   double * spacing,
-                   std::vector<std::pair<double, double> >* opacityStops)
-{
-    if (pressureAffectsSize) {
-        brushSizePixel *= pressure;
-    }
-    if (pressureAffectsHardness) {
-        brushHardness *= pressure;
-    }
-    if (pressureAffectsOpacity) {
-        alpha *= pressure;
-    }
-
-    *internalDotRadius = std::max(brushSizePixel * brushHardness, 1.) / 2.;
-    *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
-    *spacing = *externalDotRadius * 2. * brushSpacing;
-
-
-    opacityStops->clear();
-
-    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
-    const int maxStops = 8;
-    double incr = 1. / maxStops;
-
-    if (brushHardness != 1.) {
-        for (double d = 0; d <= 1.; d += incr) {
-            double o = hardnessGaussLookup( std::pow(d, exp) );
-            opacityStops->push_back( std::make_pair(d, o * alpha) );
-        }
-    }
-}
 
 
 struct RenderStrokeCairoData

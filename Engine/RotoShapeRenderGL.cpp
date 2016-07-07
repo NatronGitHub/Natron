@@ -822,7 +822,6 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
     }
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
     GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
-
     GL::glEnableClientState(GL_VERTEX_ARRAY);
     GL::glVertexPointer(2, GL_FLOAT, 0, 0);
 
@@ -837,12 +836,6 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
     GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     GL::glEnableClientState(GL_COLOR_ARRAY);
     GL::glColorPointer(4, GL_FLOAT, 0, 0);
-
-
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
-    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
-    GL::glEnableClientState(GL_VERTEX_ARRAY);
-    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
 
 
     GL::glMultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);

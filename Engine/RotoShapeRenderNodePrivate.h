@@ -41,20 +41,6 @@ public:
     RotoShapeRenderNodePrivate();
 
 
-    static void getRenderDotParams(double alpha,
-                                   double brushSizePixel,
-                                   double brushHardness,
-                                   double brushSpacing,
-                                   double pressure,
-                                   bool pressureAffectsOpacity,
-                                   bool pressureAffectsSize,
-                                   bool pressureAffectsHardness,
-                                   double* internalDotRadius,
-                                   double* externalDotRadius,
-                                   double * spacing,
-                                   std::vector<std::pair<double, double> >* opacityStops);
-
-
     typedef void* RenderStrokeDataPtr;
 
     typedef void (*PFNRenderStrokeBeginRender) (
