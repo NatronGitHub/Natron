@@ -37,7 +37,7 @@ There are several alpha output component that the :ref:`net.sf.openfx.HSVToolPlu
 
 .. figure:: _images/hsvtool_07.png
 
-By using a low resolution and/or compressed image you will see the artifacts in the alpha channel. This makes it harder to do a replacement or secondary color correction. Is is evident that the blue channel has the most artifacts/noise, you can use the “Denoise” node and blur one or two pixels in the blue channel to soften the pixel edges. This technique will not always work, remember to apply dynamic range applications when using the :ref:`net.sf.openfx.HSVToolPlugin`. You can only push the Saturation and Brightness so far. Also remember that :ref:`net.sf.openfx.HSVToolPlugin` need color input in order to apply any color filtering even though it can output greyscale and matte data.
+By using a low resolution and/or compressed image you will see the artifacts in the alpha channel. This makes it harder to do a replacement or secondary color correction. Is is evident that the blue channel has the most artifacts/noise, you can use the :ref:`net.sf.cimg.CImgDenoise` node and blur one or two pixels in the blue channel to soften the pixel edges. This technique will not always work, remember to apply dynamic range applications when using the :ref:`net.sf.openfx.HSVToolPlugin`. You can only push the Saturation and Brightness so far. Also remember that :ref:`net.sf.openfx.HSVToolPlugin` need color input in order to apply any color filtering even though it can output greyscale and matte data.
 
 HSVTool Keyer
 ~~~~~~~~~~~~~
