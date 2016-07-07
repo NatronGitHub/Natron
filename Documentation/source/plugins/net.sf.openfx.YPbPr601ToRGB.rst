@@ -1,3 +1,5 @@
+.. _net.sf.openfx.YPbPr601ToRGB:
+
 YPbPr601ToRGB
 =============
 

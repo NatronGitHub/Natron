@@ -1,3 +1,5 @@
+.. _net.sf.openfx.YUV601ToRGB:
+
 YUV601ToRGB
 ===========
 

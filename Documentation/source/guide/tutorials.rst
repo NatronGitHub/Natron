@@ -6,5 +6,6 @@ Tutorials
 
    writedoc.rst
    svgworkflow.rst
+   hsvtool.rst
    ffmpeg.rst
 

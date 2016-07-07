@@ -1,3 +1,5 @@
+.. _net.sf.openfx.YCbCr709ToRGB:
+
 YCbCr709ToRGB
 =============
 

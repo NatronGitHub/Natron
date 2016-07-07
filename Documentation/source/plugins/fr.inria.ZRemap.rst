@@ -1,3 +1,5 @@
+.. _fr.inria.ZRemap:
+
 ZRemap
 ======
 

@@ -1,3 +1,5 @@
+.. _net.fxarena.openfx.Texture:
+
 TextureOFX
 ==========
 
