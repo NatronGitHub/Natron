@@ -329,6 +329,7 @@ public:
         , duringPaintStrokeCreation(false)
         , lastStrokeMovementMutex()
         , strokeBitmapCleared(false)
+        , paintBuffer()
         , useAlpha0ToConvertFromRGBToRGBA(false)
         , isBeingDestroyedMutex()
         , isBeingDestroyed(false)
@@ -524,7 +525,6 @@ public:
     std::list<ImageComponents> createdComponents; // comps created by the user
     boost::weak_ptr<RotoDrawableItem> paintStroke;
 
-    // These are dynamic props
     mutable QMutex pluginsPropMutex;
     RenderSafetyEnum pluginSafety, currentThreadSafety;
     bool currentSupportTiles;
@@ -536,6 +536,10 @@ public:
     mutable QMutex lastStrokeMovementMutex;
     bool strokeBitmapCleared;
 
+    // During painting this is the buffer we use
+    ImagePtr paintBuffer;
+
+    // These are dynamic props
 
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
@@ -1157,6 +1161,20 @@ Node::setLastPaintStrokeDataNoRotopaint()
         _imp->duringPaintStrokeCreation = true;
     }
     _imp->effect->setDuringPaintStrokeCreationThreadLocal(true);
+}
+
+ImagePtr
+Node::getPaintBuffer() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->paintBuffer;
+}
+
+void
+Node::setPaintBuffer(const ImagePtr& image)
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    _imp->paintBuffer = image;
 }
 
 void
@@ -4542,6 +4560,16 @@ Node::isForceCachingEnabled() const
 }
 
 void
+Node::setForceCachingEnabled(bool value)
+{
+    KnobBoolPtr b = _imp->forceCaching.lock();
+    if (!b) {
+        return;
+    }
+    b->setValue(value);
+}
+
+void
 Node::onSetSupportRenderScaleMaybeSet(int support)
 {
     if ( (EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes ) {
@@ -6580,18 +6608,24 @@ Node::makePreviewImage(SequenceTime time,
         if (isAbortable) {
             isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
         }
-        ParallelRenderArgsSetter frameRenderArgs( time,
-                                                  ViewIdx(0), //< preview only renders view 0 (left)
-                                                  isRenderUserInteraction, //<isRenderUserInteraction
-                                                  isSequentialRender, //isSequential
-                                                  abortInfo, // abort info
-                                                  thisNode, // viewer requester
-                                                  0, //texture index
-                                                  getApp()->getTimeLine().get(), // timeline
-                                                  NodePtr(), //rotoPaint node
-                                                  false, // isAnalysis
-                                                  true, // isDraft
-                                                  RenderStatsPtr() );
+
+
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = ViewIdx(0);
+        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = thisNode;
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = true;
+        tlsArgs->stats = RenderStatsPtr();
+
+        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
         FrameRequestMap request;
         stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
         if (stat == eStatusFailed) {
@@ -7721,18 +7755,22 @@ Node::onInputChanged(int inputNb,
         if (isAbortable) {
             isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
         }
-        ParallelRenderArgsSetter frameRenderArgs( time,
-                                                  ViewIdx(0),
-                                                  isRenderUserInteraction,
-                                                  isSequentialRender,
-                                                  abortInfo,
-                                                  shared_from_this(),
-                                                  0, //texture index
-                                                  getApp()->getTimeLine().get(),
-                                                  NodePtr(),
-                                                  false,
-                                                  false,
-                                                  RenderStatsPtr() );
+
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = ViewIdx(0);
+        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = shared_from_this();
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = false;
+        tlsArgs->stats = RenderStatsPtr();
+        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
 
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.

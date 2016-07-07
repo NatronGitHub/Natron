@@ -58,7 +58,7 @@ public:
      *
      * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
      **/
-    OSGLContextPtr attachGLContextToRender(bool checkIfGLLoaded = true);
+    OSGLContextPtr attachGLContextToRender(bool retrieveLastContext = false, bool checkIfGLLoaded = true);
 
     /**
      * @brief Releases the given OpenGL context from a render which was previously retrieved from attachGLContextToRender()
@@ -84,7 +84,7 @@ public:
      *
      * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
      **/
-    OSGLContextPtr attachCPUGLContextToRender();
+    OSGLContextPtr attachCPUGLContextToRender(bool retrieveLastContext = false);
 
     /**
      * @brief Releases the given OpenGL context from a render which was previously retrieved from attachGLContextToRender()

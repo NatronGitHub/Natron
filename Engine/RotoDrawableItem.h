@@ -86,6 +86,8 @@ public:
 
     void refreshNodesConnections(bool isTreeConcatenated);
 
+    void clearPaintBuffers();
+
     virtual void clone(const RotoItem*  other) OVERRIDE;
 
     /**

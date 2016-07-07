@@ -238,59 +238,39 @@ EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeReques
 }
 
 void
-EffectInstance::setParallelRenderArgsTLS(double time,
-                                         ViewIdx view,
-                                         bool isRenderUserInteraction,
-                                         bool isSequential,
-                                         U64 nodeHash,
-                                         const AbortableRenderInfoPtr& abortInfo,
-                                         const NodePtr & treeRoot,
-                                         int visitsCount,
-                                         const NodeFrameRequestPtr & nodeRequest,
-                                         const OSGLContextPtr& glContext,
-                                         const OSGLContextPtr& cpuGlContext,
-                                         int textureIndex,
-                                         const TimeLine* timeline,
-                                         bool isAnalysis,
-                                         bool isDuringPaintStrokeCreation,
-                                         const NodesList & rotoPaintNodes,
-                                         RenderSafetyEnum currentThreadSafety,
-                                         PluginOpenGLRenderSupport currentOpenGLSupport,
-                                         bool doNanHandling,
-                                         bool draftMode,
-                                         const RenderStatsPtr & stats)
+EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
     ParallelRenderArgsPtr args(new ParallelRenderArgs);
 
-    args->time = time;
-    args->timeline = timeline;
-    args->view = view;
-    args->isRenderResponseToUserInteraction = isRenderUserInteraction;
-    args->isSequentialRender = isSequential;
-    args->request = nodeRequest;
-    if (nodeRequest) {
-        args->nodeHash = nodeRequest->nodeHash;
+    args->time = inArgs->time;
+    args->timeline = inArgs->timeline;
+    args->view = inArgs->view;
+    args->isRenderResponseToUserInteraction = inArgs->isRenderUserInteraction;
+    args->isSequentialRender = inArgs->isSequential;
+    args->request = inArgs->nodeRequest;
+    if (inArgs->nodeRequest) {
+        args->nodeHash = inArgs->nodeRequest->nodeHash;
     } else {
-        args->nodeHash = nodeHash;
+        args->nodeHash = inArgs->nodeHash;
     }
-    assert(abortInfo);
-    args->abortInfo = abortInfo;
-    args->treeRoot = treeRoot;
-    args->visitsCount = visitsCount;
-    args->textureIndex = textureIndex;
-    args->isAnalysis = isAnalysis;
-    args->isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
-    args->currentThreadSafety = currentThreadSafety;
-    args->currentOpenglSupport = currentOpenGLSupport;
-    args->rotoPaintNodes = rotoPaintNodes;
-    args->doNansHandling = isAnalysis ? false : doNanHandling;
-    args->draftMode = draftMode;
+    assert(inArgs->abortInfo);
+    args->abortInfo = inArgs->abortInfo;
+    args->treeRoot = inArgs->treeRoot;
+    args->visitsCount = inArgs->visitsCount;
+    args->textureIndex = inArgs->textureIndex;
+    args->isAnalysis = inArgs->isAnalysis;
+    args->isDuringPaintStrokeCreation = inArgs->isDuringPaintStrokeCreation;
+    args->currentThreadSafety = inArgs->currentThreadSafety;
+    args->currentOpenglSupport = inArgs->currentOpenGLSupport;
+    args->rotoPaintNodes = inArgs->rotoPaintNodes;
+    args->doNansHandling = inArgs->isAnalysis ? false : inArgs->doNanHandling;
+    args->draftMode = inArgs->draftMode;
     args->tilesSupported = getNode()->getCurrentSupportTiles();
-    args->stats = stats;
-    args->openGLContext = glContext;
-    args->cpuOpenGLContext = cpuGlContext;
+    args->stats = inArgs->stats;
+    args->openGLContext = inArgs->glContext;
+    args->cpuOpenGLContext = inArgs->cpuGlContext;
     argsList.push_back(args);
 }
 
@@ -1530,22 +1510,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
     if (isDuringPaintStroke) {
 
-        NodePtr rotoPaintNode;
-        RotoStrokeItemPtr curStroke;
-        NodePtr maskNode;
-        bool isDrawing;
-        getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &maskNode, &isDrawing);
-        assert(isDrawing);
-        if (maskNode == getNode()) {
-            RectD lastStrokeMovementBbox;
-            std::list<std::pair<Point, double> > lastStrokePoints;
-            ImagePtr strokeImage;
-            double distNextIn;
-            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn, &strokeImage);
-            if (strokeImage) {
-                cachedImages.push_back(strokeImage);
-                isCached = true;
-            }
+        ImagePtr strokeImage = getNode()->getPaintBuffer();
+        if (strokeImage) {
+            *image = strokeImage;
+            return;
         }
     }
 
@@ -4784,18 +4752,23 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             if (isAbortable) {
                 isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
-            setter.reset( new ParallelRenderArgsSetter( time,
-                                                        viewIdx, //view
-                                                        isRenderUserInteraction, // isRenderUserInteraction
-                                                        isSequentialRender, // isSequential
-                                                        abortInfo, // abortInfo
-                                                        node, // treeRoot
-                                                        0, //texture index
-                                                        getApp()->getTimeLine().get(),
-                                                        NodePtr(), // activeRotoPaintNode
-                                                        true, // isAnalysis
-                                                        false, // draftMode
-                                                        RenderStatsPtr() ) );
+
+
+            ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+            tlsArgs->time = time;
+            tlsArgs->view = viewIdx;
+            tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+            tlsArgs->isSequential = isSequentialRender;
+            tlsArgs->abortInfo = abortInfo;
+            tlsArgs->treeRoot = node;
+            tlsArgs->textureIndex = 0;
+            tlsArgs->timeline = getApp()->getTimeLine();
+            tlsArgs->activeRotoPaintNode = NodePtr();
+            tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+            tlsArgs->isAnalysis = true;
+            tlsArgs->draftMode = false;
+            tlsArgs->stats = RenderStatsPtr();
+            setter.reset( new ParallelRenderArgsSetter(tlsArgs) );
         }
         {
             RECURSIVE_ACTION();

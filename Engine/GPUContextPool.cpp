@@ -98,12 +98,19 @@ GPUContextPool::getCurrentOpenGLRendererMaxTextureSize() const
 }
 
 OSGLContextPtr
-GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
+GPUContextPool::attachGLContextToRender(bool retrieveLastContext, bool checkIfGLLoaded)
 {
     if (checkIfGLLoaded && (!appPTR->isOpenGLLoaded() || !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled())) {
         return OSGLContextPtr();
     }
     QMutexLocker k(&_imp->contextPoolMutex);
+
+    if (retrieveLastContext) {
+        OSGLContextPtr lastCtx = _imp->lastUsedGLContext.lock();
+        if (lastCtx) {
+            return lastCtx;
+        }
+    }
 
     // Context-sharing disabled as it is not needed
     OSGLContextPtr shareContext;// _imp->glShareContext.lock();
@@ -171,7 +178,7 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 }
 
 OSGLContextPtr
-GPUContextPool::attachCPUGLContextToRender()
+GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
 {
 
 #ifndef HAVE_OSMESA
@@ -179,6 +186,14 @@ GPUContextPool::attachCPUGLContextToRender()
 #endif
     
     QMutexLocker k(&_imp->contextPoolMutex);
+
+    if (retrieveLastContext) {
+        OSGLContextPtr lastCtx = _imp->lastUsedCPUGLContext.lock();
+        if (lastCtx) {
+            return lastCtx;
+        }
+    }
+
 
     // Context-sharing disabled as it is not needed
     OSGLContextPtr shareContext;// _imp->cpuGLShareContext.lock();

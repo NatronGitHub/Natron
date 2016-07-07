@@ -806,7 +806,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
-    const bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
+    const bool isDuringPaintStroke = frameArgs->isDuringPaintStrokeCreation;
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -1022,60 +1022,68 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
             for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
                  it2 != planesToRender->planes.end(); ++it2) {
-                it2->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
 
-                /*
-                 * This is useful to optimize the bitmap checking
-                 * when we are sure multiple threads are not using the image and we have a very small RoI to render.
-                 * For now it's only used for the rotopaint while painting.
-                 */
-                it2->second.fullscaleImage->setBitmapDirtyZone(lastStrokePixelRoD);
+                if (!it2->second.fullscaleImage->usesBitMap()) {
+                    rectsLeftToRender.push_back(lastStrokePixelRoD);
+                } else {
+                    it2->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
+
+                    /*
+                     * This is useful to optimize the bitmap checking
+                     * when we are sure multiple threads are not using the image and we have a very small RoI to render.
+                     * For now it's only used for the rotopaint while painting.
+                     */
+                    it2->second.fullscaleImage->setBitmapDirtyZone(lastStrokePixelRoD);
+
+                }
             }
         }
 
         ///We check what is left to render.
+        if (isPlaneCached->usesBitMap()) {
 #if NATRON_ENABLE_TRIMAP
-        if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
+            if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
 #ifndef DEBUG
-            isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
+                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
 #else
-            // in debug mode, check that the result of getRestToRender_trimap and getRestToRender is the same if the image
-            // is not currently rendered concurrently
-            EffectInstance::Implementation::IBRPtr ibr;
-            {
-                QMutexLocker k(&_imp->imagesBeingRenderedMutex);
-                EffectInstance::Implementation::IBRMap::const_iterator found = _imp->imagesBeingRendered.find(isPlaneCached);
-                if ( ( found != _imp->imagesBeingRendered.end() ) && found->second->refCount ) {
-                    ibr = found->second;
-                }
-
-                if (!ibr) {
-                    Image::ReadAccess racc( isPlaneCached.get() );
-                    isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
-                    std::list<RectI> tmpRects;
-                    isPlaneCached->getRestToRender(roi, tmpRects);
-
-                    //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
-                    //The other thread should have removed that image from the cache or marked the image as rendered.
-                    assert(!planesToRender->isBeingRenderedElsewhere);
-                    assert( rectsLeftToRender.size() == tmpRects.size() );
-
-                    std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
-                    for (std::list<RectI>::iterator it = tmpRects.begin(); it != tmpRects.end(); ++it, ++oIt) {
-                        assert(*it == *oIt);
+                // in debug mode, check that the result of getRestToRender_trimap and getRestToRender is the same if the image
+                // is not currently rendered concurrently
+                EffectInstance::Implementation::IBRPtr ibr;
+                {
+                    QMutexLocker k(&_imp->imagesBeingRenderedMutex);
+                    EffectInstance::Implementation::IBRMap::const_iterator found = _imp->imagesBeingRendered.find(isPlaneCached);
+                    if ( ( found != _imp->imagesBeingRendered.end() ) && found->second->refCount ) {
+                        ibr = found->second;
                     }
-                } else {
-                    isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
+
+                    if (!ibr) {
+                        Image::ReadAccess racc( isPlaneCached.get() );
+                        isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
+                        std::list<RectI> tmpRects;
+                        isPlaneCached->getRestToRender(roi, tmpRects);
+
+                        //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
+                        //The other thread should have removed that image from the cache or marked the image as rendered.
+                        assert(!planesToRender->isBeingRenderedElsewhere);
+                        assert( rectsLeftToRender.size() == tmpRects.size() );
+
+                        std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
+                        for (std::list<RectI>::iterator it = tmpRects.begin(); it != tmpRects.end(); ++it, ++oIt) {
+                            assert(*it == *oIt);
+                        }
+                    } else {
+                        isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
+                    }
                 }
+#endif
+            } else {
+                isPlaneCached->getRestToRender(roi, rectsLeftToRender);
             }
-#endif
-        } else {
-            isPlaneCached->getRestToRender(roi, rectsLeftToRender);
-        }
 #else
-        isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+            isPlaneCached->getRestToRender(roi, rectsLeftToRender);
 #endif
-        if ( isDuringPaintStroke && !rectsLeftToRender.empty() && !lastStrokePixelRoD.isNull() ) {
+        } // usesBitmap
+        if ( isDuringPaintStroke && !lastStrokePixelRoD.isNull() && !rectsLeftToRender.empty()) {
             rectsLeftToRender.clear();
             RectI intersection;
             if ( downscaledImageBounds.intersect(lastStrokePixelRoD, &intersection) ) {
@@ -1083,8 +1091,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
 
-        // If doing opengl renders, we don't allow retrieving partial images from the cache
-        if ( !rectsLeftToRender.empty() && (planesToRender->useOpenGL || cacheAlmostFull) ) {
+        if ( !rectsLeftToRender.empty() &&  cacheAlmostFull ) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
             ///we might recursively end-up in this same situation at each level of the render tree, ending with all images of each level
             ///being held in memory.
@@ -1108,10 +1115,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 
 
-        ///If the effect doesn't support tiles and it has something left to render, just render the bounds again
-        ///Note that it should NEVER happen because if it doesn't support tiles in the first place, it would
-        ///have rendered the rod already.
-        if (!frameArgs->tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
+        // If the effect doesn't support tiles and it has something left to render, just render the bounds again except if during a painting operation.
+        if (!frameArgs->tilesSupported && !isDuringPaintStroke && !rectsLeftToRender.empty() && isPlaneCached) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
@@ -1435,6 +1440,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (isPaintingOverItselfEnabled()) {
                     it->second.downscaleImage->fillBoundsZero(glContext);
                 }
+                if (isDuringPaintStroke) {
+                    getNode()->setPaintBuffer(it->second.downscaleImage);
+                }
             } else {
                 /*
                  * There might be a situation  where the RoD of the cached image
@@ -1454,7 +1462,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                  * it is big enough for us, or resize it to our needs.
                  */
                 bool hasResized;
-
+                if (it->second.fullscaleImage->getStorageMode() == eStorageModeGLTex) {
+                    assert(glContextLocker);
+                    glContextLocker->attach();
+                }
                 if (args.calledFromGetImage) {
                     /*
                      * When called from EffectInstance::getImage() we must prevent from taking any write lock because
@@ -1482,7 +1493,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                  * Note that the image has been resized and the bitmap explicitly set to 1 in the newly allocated portions (for rotopaint purpose).
                  * We must reset it back to 0 in the last stroke tick RoD.
                  */
-                if (hasResized && fillGrownBoundsWithZeroes) {
+                if (hasResized && fillGrownBoundsWithZeroes && it->second.fullscaleImage->usesBitMap()) {
                     it->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
                 }
 
@@ -1556,7 +1567,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
              * concurrent GL renders.
              **/
-            bool useRenderClone = safety == eRenderSafetyInstanceSafe || (safety != eRenderSafetyUnsafe && storage == eStorageModeGLTex && !supportsConcurrentOpenGLRenders());
+            bool useRenderClone = (safety == eRenderSafetyInstanceSafe && !isDuringPaintStroke) || (safety != eRenderSafetyUnsafe && storage == eStorageModeGLTex && !supportsConcurrentOpenGLRenders());
             if (useRenderClone) {
                 renderInstance = getOrCreateRenderInstance();
             } else {

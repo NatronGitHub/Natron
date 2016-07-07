@@ -29,6 +29,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
+#include "Engine/AppInstance.h"
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
@@ -682,27 +683,74 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
     }
 } // getAllUpstreamNodesRecursiveWithDependencies_internal
 
+static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs, bool doNansHandling, const NodePtr& node, int visitsCounter, const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext)
+{
+    EffectInstancePtr liveInstance = node->getEffectInstance();
+    assert(liveInstance);
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
-                                                   ViewIdx view,
-                                                   bool isRenderUserInteraction,
-                                                   bool isSequential,
-                                                   const AbortableRenderInfoPtr& abortInfo,
-                                                   const NodePtr& treeRoot,
-                                                   int textureIndex,
-                                                   const TimeLine* timeline,
-                                                   const NodePtr& activeRotoPaintNode,
-                                                   bool isAnalysis,
-                                                   bool draftMode,
-                                                   const RenderStatsPtr& stats)
+    NodesList rotoPaintNodes;
+    RotoContextPtr roto = node->getRotoContext();
+    if (roto) {
+        roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+    }
+
+    {
+        U64 nodeHash = node->getHashValue();
+        bool duringPaintStrokeCreation = inArgs->activeRotoPaintNode && ((inArgs->activeRotoDrawableItem && node->getAttachedRotoItem() == inArgs->activeRotoDrawableItem) || node->isDuringPaintStrokeCreation()) ;
+        RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
+        PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
+
+        EffectInstance::SetParallelRenderTLSArgsPtr tlsArgs(new EffectInstance::SetParallelRenderTLSArgs);
+        tlsArgs->time = inArgs->time;
+        tlsArgs->view = inArgs->view;
+        tlsArgs->isRenderUserInteraction = inArgs->isRenderUserInteraction;
+        tlsArgs->isSequential = inArgs->isSequential;
+        tlsArgs->nodeHash = nodeHash;
+        tlsArgs->abortInfo = inArgs->abortInfo;
+        tlsArgs->treeRoot = inArgs->treeRoot;
+        tlsArgs->visitsCount = visitsCounter;
+        tlsArgs->nodeRequest = NodeFrameRequestPtr();
+        tlsArgs->glContext = gpuContext;
+        tlsArgs->cpuGlContext = cpuContext;
+        tlsArgs->textureIndex = inArgs->textureIndex;
+        tlsArgs->timeline = inArgs->timeline;
+        tlsArgs->isAnalysis = inArgs->isAnalysis;
+        tlsArgs->isDuringPaintStrokeCreation = duringPaintStrokeCreation;
+        tlsArgs->rotoPaintNodes = rotoPaintNodes;
+        tlsArgs->currentThreadSafety = safety;
+        tlsArgs->currentOpenGLSupport = glSupport;
+        tlsArgs->doNanHandling = doNansHandling;
+        tlsArgs->draftMode = inArgs->draftMode;
+        tlsArgs->stats = inArgs->stats;
+        liveInstance->setParallelRenderArgsTLS(tlsArgs);
+
+    }
+
+    // If this is a rotopaint node, also set its internal nodes TLS
+    for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+
+        // For rotopaint nodes, since the tree internally is always the same for all renders (it does'nt depend where the viewer is connected) the visits count is the  number of output nodes
+        NodesWList outputs;
+        (*it2)->getOutputs_mt_safe(outputs);
+        int visitsCounter = (int)outputs.size();
+
+        setNodeTLSInternal(inArgs, doNansHandling, *it2 , visitsCounter, gpuContext, cpuContext);
+    }
+}
+
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
     :  argsMap()
 {
-    assert(treeRoot);
+    assert(inArgs->treeRoot);
 
+    bool isPainting = false;
+    if (inArgs->treeRoot) {
+        isPainting = inArgs->treeRoot->getApp()->isDuringPainting();
+    }
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext;
     try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(isPainting /*retrieveLastContext*/);
     } catch (const std::exception& /*e*/) {
 
     }
@@ -711,7 +759,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
 
     OSGLContextPtr cpuContext;
     try {
-        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender();
+        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(isPainting /*retrieveLastContext*/);
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }
@@ -721,7 +769,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
     FindDependenciesMap dependenciesMap;
-    getAllUpstreamNodesRecursiveWithDependencies_internal(treeRoot, dependenciesMap);
+    getAllUpstreamNodesRecursiveWithDependencies_internal(inArgs->treeRoot, dependenciesMap);
 
 
     for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
@@ -729,57 +777,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         const NodePtr& node = it->first;
         nodes.push_back(node);
 
-        EffectInstancePtr liveInstance = node->getEffectInstance();
-        assert(liveInstance);
-        bool duringPaintStrokeCreation = activeRotoPaintNode && node->isDuringPaintStrokeCreation();
-        RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
-        PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
-        NodesList rotoPaintNodes;
-        RotoContextPtr roto = node->getRotoContext();
-        if (roto) {
-            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-        }
-
-        {
-            U64 nodeHash = node->getHashValue();
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
-                                                   abortInfo, treeRoot, it->second.visitCounter, NodeFrameRequestPtr(), glContext, cpuContext, textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
-
-        }
-        for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            U64 nodeHash = (*it2)->getHashValue();
-
-            // For rotopaint nodes, since the tree internally is always the same for all renders (it does'nt depend where the viewer is connected) the visits count is the  number of output nodes
-            NodesWList outputs;
-            (*it2)->getOutputs_mt_safe(outputs);
-            int visitsCounter = (int)outputs.size();
-
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, visitsCounter, NodeFrameRequestPtr(), glContext, cpuContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
-        }
-
-        if ( node->isMultiInstance() ) {
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodesList children;
-            node->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                U64 nodeHash = (*it2)->getHashValue();
-
-                assert(*it2);
-                EffectInstancePtr childLiveInstance = (*it2)->getEffectInstance();
-                assert(childLiveInstance);
-                RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                PluginOpenGLRenderSupport childGlSupport = (*it2)->getCurrentOpenGLRenderSupport();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, 1, NodeFrameRequestPtr(), glContext, cpuContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, childGlSupport, doNanHandling, draftMode, stats);
-
-            }
-        }
-
-
-        /* NodeGroupPtr isGrp = node->isEffectNodeGroup();
-           if (isGrp) {
-             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode,stats);
-           }*/
+        setNodeTLSInternal(inArgs, doNanHandling, node, it->second.visitCounter, glContext, cpuContext);
     }
 }
 
@@ -825,18 +823,22 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args)
     : argsMap(args)
 {
+    bool isPainting = false;
+    if (args && !args->empty()) {
+        isPainting = args->begin()->first->getApp()->isDuringPainting();
+    }
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext;
 
     try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(isPainting /*retrieveLastContext*/);
         _openGLContext = glContext;
     } catch (...) {
     }
 
     OSGLContextPtr cpuContext;
     try {
-        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender();
+        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(isPainting /*retrieveLastContext*/);
         _cpuOpenGLContext = cpuContext;
     } catch (const std::exception& e) {
     }
@@ -895,7 +897,7 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 
 ParallelRenderArgs::ParallelRenderArgs()
     : time(0)
-    , timeline(0)
+    , timeline()
     , nodeHash(0)
     , request()
     , view(0)

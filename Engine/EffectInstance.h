@@ -640,31 +640,37 @@ public:
     };
 
 
+    struct SetParallelRenderTLSArgs
+    {
+        double time;
+        ViewIdx view;
+        bool isRenderUserInteraction;
+        bool isSequential;
+        U64 nodeHash;
+        AbortableRenderInfoPtr abortInfo;
+        NodePtr treeRoot;
+        int visitsCount;
+        NodeFrameRequestPtr nodeRequest;
+        OSGLContextPtr glContext;
+        OSGLContextPtr cpuGlContext;
+        int textureIndex;
+        TimeLinePtr timeline;
+        bool isAnalysis;
+        bool isDuringPaintStrokeCreation;
+        NodesList  rotoPaintNodes;
+        RenderSafetyEnum currentThreadSafety;
+        PluginOpenGLRenderSupport currentOpenGLSupport;
+        bool doNanHandling;
+        bool draftMode;
+        RenderStatsPtr stats;
+    };
+
+    typedef boost::shared_ptr<SetParallelRenderTLSArgs> SetParallelRenderTLSArgsPtr;
     /**
      * @brief Sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage. This is NOT local to a call to renderRoI
      **/
-    void setParallelRenderArgsTLS(double time,
-                                  ViewIdx view,
-                                  bool isRenderUserInteraction,
-                                  bool isSequential,
-                                  U64 nodeHash,
-                                  const AbortableRenderInfoPtr& abortInfo,
-                                  const NodePtr & treeRoot,
-                                  int visitsCount,
-                                  const NodeFrameRequestPtr & nodeRequest,
-                                  const OSGLContextPtr& glContext,
-                                  const OSGLContextPtr& cpuGlContext,
-                                  int textureIndex,
-                                  const TimeLine* timeline,
-                                  bool isAnalysis,
-                                  bool isDuringPaintStrokeCreation,
-                                  const NodesList & rotoPaintNodes,
-                                  RenderSafetyEnum currentThreadSafety,
-                                  PluginOpenGLRenderSupport currentOpenGLSupport,
-                                  bool doNanHandling,
-                                  bool draftMode,
-                                  const RenderStatsPtr & stats);
+    void setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 

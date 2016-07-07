@@ -71,6 +71,7 @@ static const char* rotoDrawDot_VertexShader =
 "void main() {\n"
 "   outHardness = inHardness;\n"
 "   gl_Position = ftransform();\n"
+"   gl_FrontColor = gl_Color;\n"
 "}"
 ;
 
@@ -80,7 +81,11 @@ static const char* rotoDrawDot_FragmentShader =
 "void main() {\n"
 "	gl_FragColor = fillColor;\n"
 "   float t = gl_Color.a;\n"
-"   gl_FragColor.a = pow(t, 1.0 / outHardness);\n"
+"   if (t == 0.0) {\n"
+"       gl_FragColor.a = 0.0;\n"
+"   } else {\n"
+"       gl_FragColor.a = t;//pow(t, outHardness);\n"
+"   }\n"
 "   gl_FragColor.rgb *= gl_FragColor.a;\n"
 "}"
 ;
@@ -662,10 +667,10 @@ struct RenderStrokeGLData
 
     int nbPointsPerSegment;
     
-    std::vector<float> primitivesColors;
-    std::vector<float> primitivesVertices;
-    std::vector<float> primitivesHardness;
-    std::vector<std::vector<unsigned int> > indicesBuf;
+    RamBuffer<float> primitivesColors;
+    RamBuffer<float> primitivesVertices;
+    RamBuffer<float> primitivesHardness;
+    std::vector<boost::shared_ptr<RamBuffer<unsigned int> > > indicesBuf;
 };
 
 
@@ -679,20 +684,20 @@ getDotTriangleFan(const Point& center,
                   double shapeColor[3],
                   double opacity,
                   double hardness,
-                  std::vector<float>* vdata,
-                  std::vector<float>* cdata,
-                  std::vector<float>* hdata)
+                  RamBuffer<float>* vdata,
+                  RamBuffer<float>* cdata,
+                  RamBuffer<float>* hdata)
 {
     int cSize = cdata->size();
-    cdata->resize(cSize + (nbOutsideVertices + 1) * 4);
+    cdata->resize(cSize + (nbOutsideVertices + 2) * 4);
     int vSize = vdata->size();
-    vdata->resize(vSize + (nbOutsideVertices + 1) * 2);
+    vdata->resize(vSize + (nbOutsideVertices + 2) * 2);
     int hSize = hdata->size();
-    hdata->resize(hSize + (nbOutsideVertices + 1) * 1);
+    hdata->resize(hSize + (nbOutsideVertices + 2) * 1);
 
-    float* cPtr = &(*cdata)[cSize];
-    float* vPtr = &(*vdata)[vSize];
-    float* hPtr = &(*hdata)[hSize];
+    float* cPtr = cdata->getData() + cSize;
+    float* vPtr = vdata->getData() + vSize;
+    float* hPtr = hdata->getData() + hSize;
     vPtr[0] = center.x;
     vPtr[1] = center.y;
     cPtr[0] = shapeColor[0];
@@ -707,8 +712,8 @@ getDotTriangleFan(const Point& center,
     double m = 2. * M_PI / (double)nbOutsideVertices;
     for (int i = 0; i < nbOutsideVertices; ++i) {
         double theta = i * m;
-        vPtr[0] = radius * std::cos(theta);
-        vPtr[1] = radius * std::sin(theta);
+        vPtr[0] = center.x + radius * std::cos(theta);
+        vPtr[1] = center.y + radius * std::sin(theta);
         vPtr += 2;
 
         cPtr[0] = shapeColor[0];
@@ -720,21 +725,33 @@ getDotTriangleFan(const Point& center,
         *hPtr = hardness;
         ++hdata;
     }
+
+    vPtr[0] = center.x + radius;
+    vPtr[1] = center.y;
+    cPtr[0] = shapeColor[0];
+    cPtr[1] = shapeColor[1];
+    cPtr[2] = shapeColor[2];
+    cPtr[3] = 0.;
+    *hPtr = hardness;
+
 }
 
 static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius, double shapeColor[3], double opacity, double hardness)
 {
 
     // Create the indices buffer for this triangle fan
-    data.indicesBuf.resize(data.indicesBuf.size() + 1);
-    std::vector<unsigned int>& vec = data.indicesBuf.back();
-    int vSize = data.primitivesVertices.size() / 2;
-    vec.resize(data.nbPointsPerSegment + 1);
-    for (std::size_t i = 0; i < vec.size(); ++i, ++vSize) {
-        vec[i] = vSize;
+    {
+        boost::shared_ptr<RamBuffer<unsigned int> > vec(new RamBuffer<unsigned int>);
+        data.indicesBuf.push_back(vec);
+        unsigned int vSize = data.primitivesVertices.size() / 2;
+        vec->resize(data.nbPointsPerSegment + 2);
+        unsigned int* idxData = vec->getData();
+        for (std::size_t i = 0; i < vec->size(); ++i, ++vSize) {
+            idxData[i] = vSize;
+        }
     }
     getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness);
-
+    
 
 }
 
@@ -765,7 +782,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
 
     {
         /*
-         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+         * Approximate the necessary number of line segments to draw the ellipse, using http://antigrain.com/research/adaptive_bezier/
          */
         double radius = myData->brushSizePixel / 2.;
         Point p0 = {radius, 0.};
@@ -782,7 +799,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
         double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
         std::sqrt(dx2 * dx2 + dy2 * dy2) +
         std::sqrt(dx3 * dx3 + dy3 * dy3);
-        myData->nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        myData->nbPointsPerSegment = (int)std::max(length * 0.1 /*0.25*/, 2.);
     }
     
     if (myData->glContext->isGPUContext()) {
@@ -813,7 +830,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
     GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), hardnessData, GL_DYNAMIC_DRAW);
     GL::glEnableVertexAttribArray(hardnessLoc);
-    GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, 0 ,0, 0);
+    GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0 /*stride*/, 0 /*data*/);
 
 
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
@@ -824,7 +841,6 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
 
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
     GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
-
     GL::glEnableClientState(GL_VERTEX_ARRAY);
     GL::glVertexPointer(2, GL_FLOAT, 0, 0);
 
@@ -834,7 +850,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
     GL::glDisableClientState(GL_COLOR_ARRAY);
     GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
     GL::glDisableClientState(GL_VERTEX_ARRAY);
-
+    GL::glDisableVertexAttribArray(hardnessLoc);
     GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError(GL);
     
@@ -846,7 +862,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
 {
     RenderStrokeGLData* myData = (RenderStrokeGLData*)userData;
 
-    int nbVertices = myData->primitivesVertices.size() * (myData->nbPointsPerSegment + 1);
+    int nbVertices = (myData->primitivesVertices.size() / 2);
     int vboColorsID = myData->glData->getOrCreateVBOColorsID();
     int vboVerticesID = myData->glData->getOrCreateVBOVerticesID();
     int vboHardnessID = myData->glData->getOrCreateVBOHardnessID();
@@ -855,8 +871,8 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
     std::vector<unsigned int*> indicesVec(myData->indicesBuf.size());
     std::vector<int> perDrawCount(myData->indicesBuf.size());
     for (std::size_t i = 0; i < myData->indicesBuf.size(); ++i) {
-        indicesVec[i] = &myData->indicesBuf[i][0];
-        perDrawCount[i] = myData->indicesBuf[i].size();
+        indicesVec[i] = myData->indicesBuf[i]->getData();
+        perDrawCount[i] = myData->indicesBuf[i]->size();
     }
 
     strokeShader->bind();
@@ -866,7 +882,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
 
     if (myData->glContext->isGPUContext()) {
 
-        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(&myData->primitivesVertices[0]), (const void*)(&myData->primitivesColors[0]), (const void*)(&myData->primitivesHardness[0]), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
         strokeShader->unbind();
 
         GL_GPU::glBindTexture(myData->target, 0);
@@ -874,7 +890,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
         GL_GPU::glDisable(GL_BLEND);
         glCheckError(GL_GPU);
     } else {
-        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(&myData->primitivesVertices[0]), (const void*)(&myData->primitivesColors[0]), (const void*)(&myData->primitivesHardness[0]), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
         strokeShader->unbind();
 
         GL_CPU::glDisable(GL_BLEND);
@@ -908,7 +924,7 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
     *spacing = radius * 2. * brushSpacing;
 
 
-    renderDot_gl(*myData, center, radius, myData->shapeColor, opacity, brushHardness);
+    renderDot_gl(*myData, center, radius, myData->shapeColor, opacity, 1. / brushHardness);
 }
 
 double

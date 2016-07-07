@@ -562,7 +562,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
     }
 #endif
     else if (knob == _imp->sourceColor) {
-        refreshNodesConnections(false);
+        refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
     } else if (knob == _imp->effectStrength) {
         double strength = _imp->effectStrength->getValue();
         switch (type) {
@@ -597,7 +597,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
             offset->setValue(value);
         }
     } else if ( (knob == _imp->timeOffsetMode) && _imp->timeOffsetNode ) {
-        refreshNodesConnections(false);
+        refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
@@ -713,6 +713,26 @@ NodePtr
 RotoDrawableItem::getFrameHoldNode() const
 {
     return _imp->frameHoldNode;
+}
+
+void
+RotoDrawableItem::clearPaintBuffers()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->maskNode) {
+        _imp->maskNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->setPaintBuffer(ImagePtr());
+    }
 }
 
 void

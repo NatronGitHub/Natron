@@ -691,7 +691,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             try {
                 _imp->initGLAPISpecific();
 
-                glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                glContext = _imp->renderingContextPool->attachGLContextToRender(false, false /*checkIfGLLoaded*/);
                 if (glContext) {
                     // Make the context current and check its version
                     glContext->setContextCurrentNoRender();

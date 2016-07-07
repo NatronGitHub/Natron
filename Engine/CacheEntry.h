@@ -524,6 +524,9 @@ public:
                 char* dst = (char*)_backingFile->data();
                 std::memcpy( dst, src, other._buffer->size() * sizeof(DataType) );
             }
+        } else if (_storageMode == eStorageModeGLTex) {
+            assert(other._storageMode == eStorageModeGLTex);
+            _glTexture.swap(other._glTexture);
         }
     }
 

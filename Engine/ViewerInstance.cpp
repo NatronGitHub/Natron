@@ -370,48 +370,21 @@ class ViewerParallelRenderArgsSetter
 {
     NodePtr rotoNode;
     NodePtr viewerNode;
-    NodePtr viewerInputNode;
 
 public:
 
-    ViewerParallelRenderArgsSetter(double time,
-                                   ViewIdx view,
-                                   bool isRenderUserInteraction,
-                                   bool isSequential,
-                                   const AbortableRenderInfoPtr& abortInfo,
-                                   const NodePtr& treeRoot,
-                                   int textureIndex,
-                                   const TimeLine* timeline,
-                                   bool isAnalysis,
-                                   const NodePtr& rotoPaintNode,
-                                   const NodePtr& viewerInput,
-                                   bool draftMode,
-                                   const RenderStatsPtr& stats)
-        : ParallelRenderArgsSetter(time, view, isRenderUserInteraction, isSequential, abortInfo, treeRoot, textureIndex, timeline, rotoPaintNode, isAnalysis, draftMode, stats)
-        , rotoNode(rotoPaintNode)
-        , viewerNode(treeRoot)
-        , viewerInputNode()
+    ViewerParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
+        : ParallelRenderArgsSetter(inArgs)
+        , rotoNode(inArgs->activeRotoPaintNode)
+        , viewerNode(inArgs->treeRoot)
     {
-        ///There can be a case where the viewer input tree does not belong to the project, for example
-        ///for the File Dialog preview.
-        if ( viewerInput && !viewerInput->getGroup() ) {
-            viewerInputNode = viewerInput;
-            bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-            U64 nodeHash = viewerInput->getHashValue();
 
-
-            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, 1, NodeFrameRequestPtr(), _openGLContext.lock(), _cpuOpenGLContext.lock(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), viewerInput->getCurrentOpenGLRenderSupport(), doNanHandling, draftMode, stats);
-
-        }
     }
 
     virtual ~ViewerParallelRenderArgsSetter()
     {
         if (rotoNode) {
             updateLastStrokeDataRecursively(viewerNode, rotoNode, RectD(), true);
-        }
-        if (viewerInputNode) {
-            viewerInputNode->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }
 };
@@ -461,22 +434,24 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
            if (status[i] == eStatusFailed) {
             continue;
            }*/
-        ViewerParallelRenderArgsSetter tls(time,
-                                           view,
-                                           true,
-                                           false,
-                                           abortInfo,
-                                           thisNode,
-                                           i,
-                                           getTimeline().get(),
-                                           false,
-                                           rotoPaintNode,
-                                           NodePtr(),
-                                           false,
-                                           stats);
-        NodesList rotoPaintNodes;
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = view;
+        tlsArgs->isRenderUserInteraction = true;
+        tlsArgs->isSequential = false;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = thisNode;
+        tlsArgs->textureIndex = i;
+        tlsArgs->timeline = getTimeline();
+        tlsArgs->activeRotoPaintNode = rotoPaintNode;
+        tlsArgs->activeRotoDrawableItem = activeStroke;
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = false;
+        tlsArgs->stats = stats;
+        ViewerParallelRenderArgsSetter tls(tlsArgs);
         if (rotoPaintNode) {
             if (activeStroke) {
+                NodesList rotoPaintNodes;
                 EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
                 assert(rotoLive);
                 bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
@@ -1287,19 +1262,21 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
 
     if (useTLS) {
-        frameArgs.reset( new ViewerParallelRenderArgsSetter(inArgs.params->time,
-                                                            inArgs.params->view,
-                                                            !isSequentialRender,
-                                                            isSequentialRender,
-                                                            inArgs.params->abortInfo,
-                                                            getNode(),
-                                                            inArgs.params->textureIndex,
-                                                            getTimeline().get(),
-                                                            false,
-                                                            rotoPaintNode,
-                                                            inArgs.activeInputToRender->getNode(),
-                                                            inArgs.draftModeEnabled,
-                                                            stats) );
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = inArgs.params->time;
+        tlsArgs->view = inArgs.params->view;
+        tlsArgs->isRenderUserInteraction = !isSequentialRender;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = inArgs.params->abortInfo;
+        tlsArgs->treeRoot = getNode();
+        tlsArgs->textureIndex = inArgs.params->textureIndex;
+        tlsArgs->timeline = getTimeline();
+        tlsArgs->activeRotoPaintNode = rotoPaintNode;
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = inArgs.draftModeEnabled;
+        tlsArgs->stats = stats;
+        frameArgs.reset( new ViewerParallelRenderArgsSetter(tlsArgs) );
     }
 
 

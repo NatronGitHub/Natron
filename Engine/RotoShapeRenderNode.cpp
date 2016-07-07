@@ -199,11 +199,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         if (isDuringPainting) {
             RectD lastStrokeMovementBbox;
             std::list<std::pair<Point, double> > lastStrokePoints;
-            ImagePtr strokeImage;
-            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn, &strokeImage);
+            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn);
 
             // When drawing we must always write to the same buffer
-            assert(!strokeImage || strokeImage == outputPlane.second);
+            assert(getNode()->getPaintBuffer() == outputPlane.second);
 
             int pot = 1 << mipmapLevel;
             if (mipmapLevel == 0) {
@@ -288,7 +287,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     if (!args.useOpenGL) {
         double distToNextOut = RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, strokes, outputPlane.second);
         if (isDuringPainting) {
-            getApp()->updateStrokeImage(getNode(), outputPlane.second, distToNextOut, true);
+            getApp()->updateStrokeData(distToNextOut);
         }
     } else {
 #endif
@@ -304,7 +303,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
             double distToNextOut = RotoShapeRenderGL::renderStroke_gl(glContext, glData, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID(), args.roi, strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
             if (isDuringPainting) {
-                getApp()->updateStrokeImage(getNode(), outputPlane.second, distToNextOut, true);
+                getApp()->updateStrokeData(distToNextOut);
             }
         } else {
             RotoShapeRenderGL::renderBezier_gl(glContext, glData, isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, args.roi, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID());

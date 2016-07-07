@@ -363,7 +363,6 @@ public:
 
     virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
                                             RotoStrokeItemPtr* /*stroke*/,
-                                            NodePtr* /*maskNode*/,
                                             bool* /*isPainting*/) const { }
 
     virtual bool isDuringPainting() const { return false; }
@@ -400,13 +399,9 @@ public:
 
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
                                      std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
-                                     double */*distNextIn*/,
-                                     ImagePtr* /*strokeImage*/) const {}
+                                     double */*distNextIn*/) const {}
 
-    virtual void updateStrokeImage(const NodePtr& /*maskNode*/,
-                                   const ImagePtr& /*image*/,
-                                   double /*distNextOut*/,
-                                   bool /*setDistNextOut*/) {}
+    virtual void updateStrokeData(double /*distNextOut*/) {}
 
     virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
 

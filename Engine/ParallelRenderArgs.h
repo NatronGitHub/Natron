@@ -85,7 +85,7 @@ public:
     double time;
 
     ///To check the current time on the timeline
-    const TimeLine* timeline;
+    TimeLinePtr timeline;
 
     ///The hash of the node at the time we started rendering
     U64 nodeHash;
@@ -258,6 +258,28 @@ protected:
 
 public:
 
+    struct CtorArgs
+    {
+        double time;
+        ViewIdx view;
+        bool isRenderUserInteraction;
+        bool isSequential;
+        AbortableRenderInfoPtr abortInfo;
+        NodePtr treeRoot;
+        int textureIndex;
+        TimeLinePtr timeline;
+
+        // When painting with a roto node, these are set
+        NodePtr activeRotoPaintNode;
+        RotoDrawableItemPtr activeRotoDrawableItem;
+
+        bool isAnalysis;
+        bool draftMode;
+        RenderStatsPtr stats;
+    };
+
+    typedef boost::shared_ptr<CtorArgs> CtorArgsPtr;
+
     /**
      * @brief Set the TLS for rendering a frame on the tree upstream of treeRoot (including it) and all nodes that
      * can be reached through expressions.
@@ -265,18 +287,7 @@ public:
      * even in nodes that do not belong in the tree. The reason why is because the nodes in the tree may have parameters
      * relying on other nodes that do not belong in the tree through expressions.
      **/
-    ParallelRenderArgsSetter(double time,
-                             ViewIdx view,
-                             bool isRenderUserInteraction,
-                             bool isSequential,
-                             const AbortableRenderInfoPtr& abortInfo,
-                             const NodePtr& treeRoot,
-                             int textureIndex,
-                             const TimeLine* timeline,
-                             const NodePtr& activeRotoPaintNode,
-                             bool isAnalysis,
-                             bool draftMode,
-                             const RenderStatsPtr& stats);
+    ParallelRenderArgsSetter(const CtorArgsPtr& inArgs);
 
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args);
 

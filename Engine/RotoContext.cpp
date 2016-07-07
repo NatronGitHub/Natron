@@ -825,9 +825,8 @@ RotoContext::getItemsRegionOfDefinition(const std::list<RotoItemPtr >& items,
     bool rodSet = false;
     NodePtr activeRotoPaintNode;
     RotoStrokeItemPtr activeStroke;
-    NodePtr maskNode;
     bool isDrawing;
-    getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke, &maskNode, &isDrawing);
+    getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke, &isDrawing);
     if (!isDrawing) {
         activeStroke.reset();
     }
@@ -2217,6 +2216,14 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
 
     return mergeNode;
 } // RotoContext::getOrCreateGlobalMergeNode
+
+bool
+RotoContext::canConcatenatedRotoPaintTree() const
+{
+    std::list<RotoDrawableItemPtr > items = getCurvesByRenderOrder();
+    int blendingOperator;
+    return isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
+}
 
 void
 RotoContext::refreshRotoPaintTree()

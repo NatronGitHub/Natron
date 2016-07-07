@@ -915,6 +915,159 @@ Image::setRoD(const RectD& rod)
     _params->setRoD(rod);
 }
 
+
+
+template <typename GL>
+static void
+pasteFromGL(const Image & src,
+            Image* dst,
+            const RectI & srcRoi,
+            bool /*copyBitmap*/,
+            const OSGLContextPtr& glContext,
+            const RectI& srcBounds,
+            const RectI& dstBounds,
+            StorageModeEnum thisStorage,
+            StorageModeEnum otherStorage,
+            int target, int texID)
+{
+
+    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to OpenGL texture
+
+        GLuint fboID = glContext->getOrCreateFBOId();
+
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glEnable(target);
+        GL::glBindTexture( target, texID );
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+        GL::glBindTexture( target, src.getGLTextureID() );
+
+        Image::applyTextureMapping<GL>(dstBounds, srcRoi);
+
+        GL::glBindTexture(target, 0);
+        glCheckError(GL);
+    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
+        // RAM image to OpenGL texture
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+        GLuint pboID = glContext->getOrCreatePBOId();
+        GL::glEnable(target);
+
+        // bind PBO to update texture source
+        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+
+        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
+
+        // Note that glMapBufferARB() causes sync issue.
+        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+        // until GPU to finish its job. To avoid waiting (idle), you can call
+        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+        // If you do that, the previous data in PBO will be discarded and
+        // glMapBufferARB() returns a new allocated pointer immediately
+        // even if GPU is still working with the previous data.
+        GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
+        // map the buffer object into client's memory
+        void* gpuData = GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+        assert(gpuData);
+        if (gpuData) {
+            // update data directly on the mapped buffer
+            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            tmpImg->pasteFrom(src, roi);
+
+            Image::ReadAccess racc(tmpImg ? tmpImg.get() : dst);
+            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
+            assert(srcdata);
+
+            memcpy(gpuData, srcdata, dataSize);
+
+            GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            assert(result == GL_TRUE);
+            Q_UNUSED(result);
+        }
+
+        // bind the texture
+        GL::glBindTexture( target, texID );
+        // copy pixels from PBO to texture object
+        // Use offset instead of pointer (last parameter is 0).
+        GL::glTexSubImage2D(target,
+                            0,              // level
+                            roi.x1, roi.y1,               // xoffset, yoffset
+                            roi.width(), roi.height(),
+                            src.getGLTextureFormat(),            // format
+                            src.getGLTextureType(),       // type
+                            0);
+
+        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        GL::glBindTexture(target, 0);
+        glCheckError(GL);
+    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to RAM image
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+
+        GLuint fboID = glContext->getOrCreateFBOId();
+
+        int srcTarget = src.getGLTextureTarget();
+
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glEnable(srcTarget);
+        GL::glBindTexture( srcTarget, src.getGLTextureID() );
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
+        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
+        GL::glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
+        glCheckFramebufferError(GL);
+        // Ensure all drawing commands are finished
+        GL::glFlush();
+        GL::glFinish();
+        glCheckError(GL);
+        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM) );
+
+        {
+            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
+            unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
+
+            GL::glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            GL::glBindTexture(srcTarget, 0);
+        }
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCheckError(GL);
+
+        // Ok now convert from RGBA to this image format if needed
+        if ( tmpImg->getComponentsCount() != dst->getComponentsCount() ) {
+            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, dst);
+        } else {
+            dst->pasteFrom(*tmpImg, roi, false);
+        }
+    } 
+    
+}
+
+
 void
 Image::resizeInternal(const OSGLContextPtr& glContext,
                       const Image* srcImg,
@@ -949,7 +1102,7 @@ Image::resizeInternal(const OSGLContextPtr& glContext,
     if (fillWithBlackAndTransparent) {
 
         if (srcImg->getStorageMode() == eStorageModeGLTex) {
-            (*outputImage)->fillBoundsZero();
+            (*outputImage)->fillBoundsZero(glContext);
         } else {
             /*
              Compute the rectangles (A,B,C,D) where to set the image to 0
@@ -1050,7 +1203,14 @@ Image::resizeInternal(const OSGLContextPtr& glContext,
     } // fillWithBlackAndTransparent
 
     if (srcImg->getStorageMode() == eStorageModeGLTex) {
-        (*outputImage)->pasteFrom(*srcImg, srcBounds, false, glContext);
+        assert(glContext);
+        if (glContext->isGPUContext()) {
+            pasteFromGL<GL_GPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget(), (*outputImage)->getGLTextureID());
+        } else {
+            pasteFromGL<GL_CPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget(), (*outputImage)->getGLTextureID());
+        }
+
+        //pasteFrom(*srcImg, srcBounds, false, glContext);
     } else {
         switch (depth) {
             case eImageBitDepthByte:
@@ -1124,159 +1284,6 @@ Image::ensureBounds(const OSGLContextPtr& glContext,
 }
 
 
-template <typename GL>
-static void
-pasteFromGL(const Image & src,
-            Image* dst,
-            const RectI & srcRoi,
-            bool /*copyBitmap*/,
-            const OSGLContextPtr& glContext,
-            const RectI& dstBounds,
-            StorageModeEnum thisStorage,
-            StorageModeEnum otherStorage,
-            int target, int texID)
-{
-
-    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
-        // OpenGL texture to OpenGL texture
-
-        RectI srcBounds = src.getBounds();
-        GLuint fboID = glContext->getOrCreateFBOId();
-
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glEnable(target);
-        GL::glBindTexture( target, texID );
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
-        glCheckFramebufferError(GL);
-        GL::glBindTexture( target, src.getGLTextureID() );
-
-        Image::applyTextureMapping<GL>(dstBounds, srcRoi);
-
-        GL::glBindTexture(target, 0);
-        glCheckError(GL);
-    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
-        // RAM image to OpenGL texture
-        RectI srcBounds = src.getBounds();
-
-        // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
-            return;
-        }
-        GLuint pboID = glContext->getOrCreatePBOId();
-        GL::glEnable(target);
-
-        // bind PBO to update texture source
-        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
-
-        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
-
-        // Note that glMapBufferARB() causes sync issue.
-        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
-        // until GPU to finish its job. To avoid waiting (idle), you can call
-        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
-        // If you do that, the previous data in PBO will be discarded and
-        // glMapBufferARB() returns a new allocated pointer immediately
-        // even if GPU is still working with the previous data.
-        GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
-
-        // map the buffer object into client's memory
-        void* gpuData = GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-        assert(gpuData);
-        if (gpuData) {
-            // update data directly on the mapped buffer
-            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
-            tmpImg->pasteFrom(src, roi);
-
-            Image::ReadAccess racc(tmpImg ? tmpImg.get() : dst);
-            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
-            assert(srcdata);
-
-            memcpy(gpuData, srcdata, dataSize);
-
-            GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-            assert(result == GL_TRUE);
-            Q_UNUSED(result);
-        }
-
-        // bind the texture
-        GL::glBindTexture( target, texID );
-        // copy pixels from PBO to texture object
-        // Use offset instead of pointer (last parameter is 0).
-        GL::glTexSubImage2D(target,
-                            0,              // level
-                            roi.x1, roi.y1,               // xoffset, yoffset
-                            roi.width(), roi.height(),
-                            src.getGLTextureFormat(),            // format
-                            src.getGLTextureType(),       // type
-                            0);
-
-        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-        GL::glBindTexture(target, 0);
-        glCheckError(GL);
-    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
-        // OpenGL texture to RAM image
-
-        RectI srcBounds = src.getBounds();
-
-        // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
-            return;
-        }
-
-        GLuint fboID = glContext->getOrCreateFBOId();
-
-        int srcTarget = src.getGLTextureTarget();
-
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glEnable(srcTarget);
-        GL::glBindTexture( srcTarget, src.getGLTextureID() );
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
-        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
-        GL::glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
-        glCheckFramebufferError(GL);
-        // Ensure all drawing commands are finished
-        GL::glFlush();
-        GL::glFinish();
-        glCheckError(GL);
-        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM) );
-
-        {
-            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
-            unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
-
-            GL::glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            GL::glBindTexture(srcTarget, 0);
-        }
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glCheckError(GL);
-
-        // Ok now convert from RGBA to this image format if needed
-        if ( tmpImg->getComponentsCount() != dst->getComponentsCount() ) {
-            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, dst);
-        } else {
-            dst->pasteFrom(*tmpImg, roi, false);
-        }
-    } 
-
-}
-
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::pasteFrom(const Image & src,
@@ -1287,9 +1294,9 @@ Image::pasteFrom(const Image & src,
     if (getStorageMode() == eStorageModeGLTex || src.getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
         if (glContext->isGPUContext()) {
-            pasteFromGL<GL_GPU>(src, this, srcRoi, copyBitmap, glContext, getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
+            pasteFromGL<GL_GPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
         } else {
-            pasteFromGL<GL_CPU>(src, this, srcRoi, copyBitmap, glContext, getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
+            pasteFromGL<GL_CPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
         }
     } else {
         assert(getStorageMode() != eStorageModeGLTex && src.getStorageMode() != eStorageModeGLTex);

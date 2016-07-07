@@ -344,6 +344,8 @@ public:
     void declareItemAsPythonField(const RotoItemPtr& item);
     void removeItemAsPythonField(const RotoItemPtr& item);
 
+    bool canConcatenatedRotoPaintTree() const;
+
     /**
      * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
      * To be called whenever changes position in the hierarchy or when one gets removed/inserted

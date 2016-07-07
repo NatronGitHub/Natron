@@ -2300,18 +2300,22 @@ private:
                     isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
                 }
 
-                ParallelRenderArgsSetter frameRenderArgs(time,
-                                                         viewsToRender[view],
-                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
-                                                         isSequentialRender,
-                                                         abortInfo, //abortInfo
-                                                         activeInputNode, // viewer requester
-                                                         0, //texture index
-                                                         output->getApp()->getTimeLine().get(),
-                                                         NodePtr(),
-                                                         false,
-                                                         false,
-                                                         stats);
+                ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+                tlsArgs->time = time;
+                tlsArgs->view = viewsToRender[view];
+                tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
+                tlsArgs->isSequential = isSequentialRender;
+                tlsArgs->abortInfo = abortInfo;
+                tlsArgs->treeRoot = activeInputNode;
+                tlsArgs->textureIndex = 0;
+                tlsArgs->timeline = output->getApp()->getTimeLine();
+                tlsArgs->activeRotoPaintNode = NodePtr();
+                tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+                tlsArgs->isAnalysis = false;
+                tlsArgs->draftMode = false;
+                tlsArgs->stats = RenderStatsPtr();
+
+                ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
                 {
                     FrameRequestMap request;
@@ -2417,18 +2421,21 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
 
         setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
 
-        ParallelRenderArgsSetter frameRenderArgs(it->time,
-                                                 it->view,
-                                                 isRenderDueToRenderInteraction,  // is this render due to user interaction ?
-                                                 isSequentialRender, // is this sequential ?
-                                                 abortInfo, //abortInfo
-                                                 effect->getNode(), //tree root
-                                                 0, //texture index
-                                                 effect->getApp()->getTimeLine().get(),
-                                                 NodePtr(),
-                                                 false,
-                                                 false,
-                                                 it->stats);
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = it->time;
+        tlsArgs->view = it->view;
+        tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = effect->getNode();
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = effect->getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = false;
+        tlsArgs->stats = it->stats;
+        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
         ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
         rod.toPixelEnclosing(0, par, &roi);
@@ -3822,9 +3829,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     bool isTracking = _imp->viewer->isDoingPartialUpdates();
     NodePtr rotoPaintNode;
     RotoStrokeItemPtr curStroke;
-    NodePtr maskNode;
     bool isDrawing;
-    _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &maskNode, &isDrawing);
+    _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
     bool rotoUse1Thread = false;
     bool isRotoNeatRender = false;

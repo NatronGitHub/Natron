@@ -67,7 +67,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintData
 {
-    NodePtr rotoPaintNode;
+    NodeWPtr rotoPaintNode;
     RotoStrokeItemPtr stroke;
     bool isPainting;
     bool turboAlreadyActiveBeforePainting;
@@ -84,11 +84,6 @@ struct RotoPaintData
     ///Used for the rendering algorithm to know where we stopped along the path
     double distToNextIn, distToNextOut;
 
-    //The image used to render the currently drawn stroke mask
-    ImagePtr strokeImage;
-
-    NodePtr maskNode;
-
     RotoPaintData()
         : rotoPaintNode()
         , stroke()
@@ -100,8 +95,6 @@ struct RotoPaintData
         , lastStrokePoints()
         , distToNextIn(0)
         , distToNextOut(0)
-        , strokeImage()
-        , maskNode()
     {
     }
 };
@@ -1139,9 +1132,10 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         bool newStroke = stroke != _imp->rotoData.stroke;
-        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode) || newStroke ) ) {
-            _imp->rotoData.strokeImage.reset();
-            _imp->rotoData.maskNode.reset();
+        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode.lock()) || newStroke ) ) {
+            if (_imp->rotoData.stroke) {
+                _imp->rotoData.stroke->clearPaintBuffers();
+            }
         }
 
         _imp->rotoData.isPainting = isPainting;
@@ -1165,14 +1159,12 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
 void
 GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
                                            RotoStrokeItemPtr* stroke,
-                                           NodePtr* maskNode,
                                            bool *isPainting) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
     assert(node && stroke && isPainting);
-    *node = _imp->rotoData.rotoPaintNode;
+    *node = _imp->rotoData.rotoPaintNode.lock();
     *stroke = _imp->rotoData.stroke;
-    *maskNode = _imp->rotoData.maskNode;
     *isPainting = _imp->rotoData.isPainting;
 }
 
@@ -1312,30 +1304,21 @@ GuiAppInstance::getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke,
 void
 GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
                                     std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                    double *distNextIn,
-                                    ImagePtr* strokeImage) const
+                                    double *distNextIn) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
 
     *lastStrokeMovementBbox = _imp->rotoData.lastStrokeMovementBbox;
     *lastStrokeMovementPoints = _imp->rotoData.lastStrokePoints;
     *distNextIn = _imp->rotoData.distToNextIn;
-    *strokeImage = _imp->rotoData.strokeImage;
 }
 
 void
-GuiAppInstance::updateStrokeImage(const NodePtr& maskNode,
-                                  const ImagePtr& image,
-                                  double distNextOut,
-                                  bool setDistNextOut)
+GuiAppInstance::updateStrokeData(double distNextOut)
 {
     QMutexLocker k(&_imp->rotoDataMutex);
+    _imp->rotoData.distToNextOut = distNextOut;
 
-    _imp->rotoData.strokeImage = image;
-    _imp->rotoData.maskNode = maskNode;
-    if (setDistNextOut) {
-        _imp->rotoData.distToNextOut = distNextOut;
-    }
 }
 
 RectD
