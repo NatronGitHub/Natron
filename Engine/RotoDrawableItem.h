@@ -195,6 +195,7 @@ public:
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
+    NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
 
     void resetNodesThreadSafety();

@@ -118,6 +118,18 @@ public:
         }
     }
 
+    void resizeAndPreserve(U64 size)
+    {
+        if (size == 0) {
+            return;
+        }
+        count = size;
+        data = (T*)realloc(data,size * sizeof(T));
+        if (!data) {
+            throw std::bad_alloc();
+        }
+    }
+
     void clear()
     {
         count = 0;

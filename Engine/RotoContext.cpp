@@ -161,8 +161,12 @@ RotoContext::getRotoPaintTreeNodes(NodesList* nodes) const
         NodePtr mergeNode = (*it)->getMergeNode();
         NodePtr timeOffsetNode = (*it)->getTimeOffsetNode();
         NodePtr frameHoldNode = (*it)->getFrameHoldNode();
+        NodePtr maskNode = (*it)->getMaskNode();
         if (effectNode) {
             nodes->push_back(effectNode);
+        }
+        if (maskNode) {
+            nodes->push_back(maskNode);
         }
         if (mergeNode) {
             nodes->push_back(mergeNode);

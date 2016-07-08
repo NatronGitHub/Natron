@@ -1355,26 +1355,24 @@ RotoPaint::onInputChanged(int inputNb)
 }
 
 StatusEnum
-RotoPaint::getRegionOfDefinition(U64 hash,
+RotoPaint::getRegionOfDefinition(U64 /*hash*/,
                                  double time,
                                  const RenderScale & scale,
                                  ViewIdx view,
                                  RectD* rod)
 {
-    StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
 
-    if (st != eStatusOK) {
-        rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
-    }
-    RectD maskRod;
-    getNode()->getRotoContext()->getMaskRegionOfDefinition(time, view, &maskRod);
-    if ( rod->isNull() ) {
-        *rod = maskRod;
+
+    RotoContextPtr roto = getNode()->getRotoContext();
+    NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
+    bool isprojFormat;
+    StatusEnum stat = eStatusOK;
+    if (bottomMerge) {
+        stat =  bottomMerge->getEffectInstance()->getRegionOfDefinition_public(bottomMerge->getEffectInstance()->getRenderHash(), time, scale, view, rod, &isprojFormat);
     } else {
-        rod->merge(maskRod);
+        rod->clear();
     }
-
-    return eStatusOK;
+    return stat;
 }
 
 FramesNeededMap

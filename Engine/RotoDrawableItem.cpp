@@ -709,6 +709,14 @@ RotoDrawableItem::getTimeOffsetNode() const
     return _imp->timeOffsetNode;
 }
 
+
+NodePtr
+RotoDrawableItem::getMaskNode() const
+{
+    return _imp->maskNode;
+}
+
+
 NodePtr
 RotoDrawableItem::getFrameHoldNode() const
 {

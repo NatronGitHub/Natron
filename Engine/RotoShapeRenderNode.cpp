@@ -75,20 +75,12 @@ StatusEnum
 RotoShapeRenderNode::getRegionOfDefinition(U64 /*hash*/, double time, const RenderScale & /*scale*/, ViewIdx /*view*/, RectD* rod)
 {
    
-    
-    RectD maskRod;
+
     NodePtr node = getNode();
     try {
-        node->getPaintStrokeRoD(time, &maskRod);
+        node->getPaintStrokeRoD(time, rod);
     } catch (...) {
     }
-    
-    if ( rod->isNull() ) {
-        *rod = maskRod;
-    } else {
-        rod->merge(maskRod);
-    }
-    
     return eStatusOK;
 
 }
@@ -301,12 +293,20 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
             bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
-            double distToNextOut = RotoShapeRenderGL::renderStroke_gl(glContext, glData, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID(), args.roi, strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
+            double distToNextOut = RotoShapeRenderGL::renderStroke_gl(glContext, glData,
+#ifndef NDEBUG
+                                                                      args.roi,
+#endif
+                                                                      outputPlane.second->getGLTextureTarget(), strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
             if (isDuringPainting) {
                 getApp()->updateStrokeData(distToNextOut);
             }
         } else {
-            RotoShapeRenderGL::renderBezier_gl(glContext, glData, isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, args.roi, outputPlane.second->getGLTextureTarget(), outputPlane.second->getGLTextureID());
+            RotoShapeRenderGL::renderBezier_gl(glContext, glData,
+#ifndef NDEBUG
+                                               args.roi,
+#endif
+                                               isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
         }
 
 #ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO

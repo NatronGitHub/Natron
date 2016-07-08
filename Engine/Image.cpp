@@ -938,13 +938,17 @@ pasteFromGL(const Image & src,
 
         GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         GL::glEnable(target);
+        GL::glActiveTexture(GL_TEXTURE0);
         GL::glBindTexture( target, texID );
         GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
         glCheckFramebufferError(GL);
+        GL::glActiveTexture(GL_TEXTURE1);
         GL::glBindTexture( target, src.getGLTextureID() );
 
         Image::applyTextureMapping<GL>(dstBounds, srcRoi);
 
+        GL::glBindTexture(target, 0);
+        GL::glActiveTexture(GL_TEXTURE0);
         GL::glBindTexture(target, 0);
         glCheckError(GL);
     } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
@@ -1405,8 +1409,7 @@ void fillGL(const RectI & roi,
     }
 
     assert(glContext);
-   // boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateFillShader<GL>();
-   // assert(shader);
+
     GLuint fboID = glContext->getOrCreateFBOId();
 
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -1423,11 +1426,6 @@ void fillGL(const RectI & roi,
     GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
 
-    /*shader->bind();
-    OfxRGBAColourF fillColor = {r, g, b, a};
-    shader->setUniform("fillColor", fillColor);
-    Image::applyTextureMapping<GL>(bounds, realRoI);
-    shader->unbind();*/
 
     GL::glClearColor(r, g, b, a);
     GL::glClear(GL_COLOR_BUFFER_BIT);

@@ -70,7 +70,7 @@ class RotoShapeRenderNodeOpenGLData : public EffectOpenGLContextData
     unsigned int _vboHardnessID;
 
     std::vector<GLShaderBasePtr> _featherRampShader;
-    GLShaderBasePtr _strokeDotShader;
+    std::vector<GLShaderBasePtr> _strokeDotShader;
 
 
 public:
@@ -89,7 +89,7 @@ public:
 
     GLShaderBasePtr getOrCreateFeatherRampShader(RampTypeEnum type);
 
-    GLShaderBasePtr getOrCreateStrokeDotShader();
+    GLShaderBasePtr getOrCreateStrokeDotShader(bool doPremult);
 
     virtual ~RotoShapeRenderNodeOpenGLData();
     
@@ -107,9 +107,10 @@ public:
 
     static double renderStroke_gl(const OSGLContextPtr& glContext,
                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+#ifndef NDEBUG
+                                  const RectI& roi,
+#endif
                                   int target,
-                                  int texID,
-                                  const RectI& bounds,
                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
                                   double distToNext,
                                   const RotoDrawableItem* stroke,
@@ -122,6 +123,9 @@ public:
 
     static void renderBezier_gl(const OSGLContextPtr& glContext,
                                 const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+#ifndef NDEBUG
+                                const RectI& roi,
+#endif
                                 const Bezier* bezier,
                                 double opacity,
                                 double time,
@@ -129,9 +133,7 @@ public:
                                 double endTime,
                                 double mbFrameStep,
                                 unsigned int mipmapLevel,
-                                const RectI& bounds,
-                                int target,
-                                int texID);
+                                int target);
 
 };
 

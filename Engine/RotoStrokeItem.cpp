@@ -753,8 +753,11 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
         KeyFrameSet yCurve = it->yCurve->getKeyFrames_mt_safe();
         KeyFrameSet pCurve = it->pressureCurve->getKeyFrames_mt_safe();
 
+        RectD curveBox;
+        bool curveBoxSet = false;
+
         if ( xCurve.empty() ) {
-            return RectD();
+            continue;
         }
 
         assert( xCurve.size() == yCurve.size() && xCurve.size() == pCurve.size() );
@@ -776,27 +779,20 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
             p.z = 1.;
             p = Transform::matApply(transform, p);
             double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-            RectD subBox;
-            subBox.x1 = p.x;
-            subBox.x2 = p.x;
-            subBox.y1 = p.y;
-            subBox.y2 = p.y;
-            subBox.x1 -= halfBrushSize * pressure;
-            subBox.x2 += halfBrushSize * pressure;
-            subBox.y1 -= halfBrushSize * pressure;
-            subBox.y2 += halfBrushSize * pressure;
-            if (!bboxSet) {
-                bboxSet = true;
-                bbox = subBox;
-            } else {
-                bbox.merge(subBox);
-            }
+            curveBox.x1 = p.x;
+            curveBox.x2 = p.x;
+            curveBox.y1 = p.y;
+            curveBox.y2 = p.y;
+            curveBox.x1 -= halfBrushSize * pressure;
+            curveBox.x2 += halfBrushSize * pressure;
+            curveBox.y1 -= halfBrushSize * pressure;
+            curveBox.y2 += halfBrushSize * pressure;
+            curveBoxSet = true;
         }
 
+
         for (; xNext != xCurve.end(); ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
-            RectD subBox;
-            subBox.setupInfinity();
-            bool subBoxSet = false;
+
 
             double dt = xNext->getTime() - xIt->getTime();
             double pressure = pressureAffectsSize ? std::max( pIt->getValue(), pNext->getValue() ) : 1.;
@@ -823,19 +819,31 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
             p2_.x = p2.x; p2_.y = p2.y;
             p3_.x = p3.x; p3_.y = p3.y;
 
-            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &subBox, &subBoxSet);
-            subBox.x1 -= halfBrushSize * pressure;
-            subBox.x2 += halfBrushSize * pressure;
-            subBox.y1 -= halfBrushSize * pressure;
-            subBox.y2 += halfBrushSize * pressure;
+            RectD pointBox;
+            bool pointBoxSet = false;
+            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &pointBox, &pointBoxSet);
+            pointBox.x1 -= halfBrushSize * pressure;
+            pointBox.x2 += halfBrushSize * pressure;
+            pointBox.y1 -= halfBrushSize * pressure;
+            pointBox.y2 += halfBrushSize * pressure;
 
-            if (!bboxSet) {
-                bboxSet = true;
-                bbox = subBox;
+            if (!curveBoxSet) {
+                curveBoxSet = true;
+                curveBox = pointBox;
             } else {
-                bbox.merge(subBox);
+                curveBox.merge(pointBox);
             }
+
         }
+
+        assert(curveBoxSet);
+        if (!bboxSet) {
+            bboxSet = true;
+            bbox = curveBox;
+        } else {
+            bbox.merge(curveBox);
+        }
+
     }
 
     return bbox;

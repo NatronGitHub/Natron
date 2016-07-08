@@ -81,12 +81,15 @@ static const char* rotoDrawDot_FragmentShader =
 "void main() {\n"
 "	gl_FragColor = fillColor;\n"
 "   float t = gl_Color.a;\n"
+"   t = t * t * (3.0 - 2.0 * t);// smoothstep\n"
 "   if (t == 0.0) {\n"
-"       gl_FragColor.a = 0.0;\n"
+"       gl_FragColor.a = fillColor.a;\n"
 "   } else {\n"
-"       gl_FragColor.a = t;//pow(t, outHardness);\n"
+"       gl_FragColor.a = pow(t, outHardness);\n"
 "   }\n"
+"#ifdef DO_PREMULT\n"
 "   gl_FragColor.rgb *= gl_FragColor.a;\n"
+"#endif\n"
 "}"
 ;
 
@@ -96,7 +99,7 @@ RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
 , _vboColorsID(0)
 , _vboHardnessID(0)
 , _featherRampShader(5)
-, _strokeDotShader()
+, _strokeDotShader(2)
 {
 
 }
@@ -105,7 +108,7 @@ void
 RotoShapeRenderNodeOpenGLData::cleanup()
 {
     _featherRampShader.clear();
-    _strokeDotShader.reset();
+    _strokeDotShader.clear();
     bool isGPU = isGPUContext();
     if (_vboVerticesID) {
         if (isGPU) {
@@ -273,7 +276,7 @@ RotoShapeRenderNodeOpenGLData::getOrCreateFeatherRampShader(RampTypeEnum type)
 
 template <typename GL>
 static GLShaderBasePtr
-getOrCreateStrokeDotShaderInternal()
+getOrCreateStrokeDotShaderInternal(bool doPremult)
 {
     boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
 
@@ -293,8 +296,10 @@ getOrCreateStrokeDotShaderInternal()
 
 
     std::string fragmentSource;
+    if (doPremult) {
+        fragmentSource += "#define DO_PREMULT\n";
+    }
     fragmentSource += std::string(rotoDrawDot_FragmentShader);
-
 #ifdef DEBUG
     ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
     if (!ok) {
@@ -320,31 +325,25 @@ getOrCreateStrokeDotShaderInternal()
 
 
 GLShaderBasePtr
-RotoShapeRenderNodeOpenGLData::getOrCreateStrokeDotShader()
+RotoShapeRenderNodeOpenGLData::getOrCreateStrokeDotShader(bool doPremult)
 {
-    if (_strokeDotShader) {
-        return _strokeDotShader;
+    int index = (int)doPremult;
+    if (_strokeDotShader[index]) {
+        return _strokeDotShader[index];
     }
     if (isGPUContext()) {
-        _strokeDotShader = getOrCreateStrokeDotShaderInternal<GL_GPU>();
+        _strokeDotShader[index] = getOrCreateStrokeDotShaderInternal<GL_GPU>(doPremult);
     } else {
-        _strokeDotShader = getOrCreateStrokeDotShaderInternal<GL_CPU>();
+        _strokeDotShader[index] = getOrCreateStrokeDotShaderInternal<GL_CPU>(doPremult);
     }
 
-    return _strokeDotShader;
+    return _strokeDotShader[index];
 }
 
 
 template <typename GL>
-void renderBezier_gl_bindFrameBuffer(const OSGLContextPtr& glContext, int target, int texID)
+void renderBezier_gl_setupOutputTexture(int target)
 {
-    GLuint fboID = glContext->getOrCreateFBOId();
-
-
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-    GL::glEnable(target);
-    GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindTexture( target, texID );
 
     GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -352,29 +351,19 @@ void renderBezier_gl_bindFrameBuffer(const OSGLContextPtr& glContext, int target
     GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
     GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
-    glCheckFramebufferError(GL);
-
 }
 
 template <typename GL>
-void renderBezier_gl_internal_begin(const RectI& bounds, bool doClear, bool doBuildUp)
+void renderBezier_gl_internal_begin(bool doBuildUp)
 {
 
 
-    Image::setupGLViewport<GL>(bounds, bounds);
-
-    if (doClear) {
-        GL::glClearColor(0, 0, 0, 0);
-        GL::glClear(GL_COLOR_BUFFER_BIT);
-    }
-    glCheckError(GL);
 
     GL::glEnable(GL_BLEND);
-    if (!doBuildUp) {
-        GL::glBlendEquation(GL_MAX);
-    } else {
+    if (doBuildUp) {
         GL::glBlendEquation(GL_FUNC_ADD);
+    } else {
+        GL::glBlendEquationSeparate(GL_MAX, GL_MAX);
     }
     GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -441,6 +430,9 @@ void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsign
 void
 RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+#ifndef NDEBUG
+                                   const RectI& roi,
+#endif
                                    const Bezier* bezier,
                                    double opacity,
                                    double /*time*/,
@@ -448,9 +440,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    double endTime,
                                    double mbFrameStep,
                                    unsigned int mipmapLevel,
-                                   const RectI& bounds,
-                                   int target,
-                                   int texID)
+                                   int target)
 {
 
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
@@ -489,10 +479,10 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
         RotoBezierTriangulation::computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
 
         if (glContext->isGPUContext()) {
-            renderBezier_gl_bindFrameBuffer<GL_GPU>(glContext, target, texID);
-            renderBezier_gl_internal_begin<GL_GPU>(bounds, true, false);
+            renderBezier_gl_setupOutputTexture<GL_GPU>(target);
+            renderBezier_gl_internal_begin<GL_GPU>(false);
         } else {
-            renderBezier_gl_internal_begin<GL_CPU>(bounds, true, false);
+            renderBezier_gl_internal_begin<GL_CPU>(false);
         }
 
 
@@ -526,6 +516,8 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                 v_data[0] = data.featherMesh[i].x;
                 v_data[1] = data.featherMesh[i].y;
                 i_data[0] = i;
+
+                assert(roi.contains(v_data[0], v_data[1]));
 
                 c_data[0] = shapeColor[0];
                 c_data[1] = shapeColor[1];
@@ -561,6 +553,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
         for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i, v_data += 2) {
             v_data[0] = data.bezierPolygonJoined[i].x;
             v_data[1] = data.bezierPolygonJoined[i].y;
+            assert(roi.contains(v_data[0], v_data[1]));
         }
 
         bool hasUploadedVertices = false;
@@ -632,8 +625,6 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
 
 
         if (glContext->isGPUContext()) {
-            GL_GPU::glBindTexture(target, 0);
-            GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, 0);
             GL_GPU::glDisable(GL_BLEND);
             glCheckError(GL_GPU);
         } else {
@@ -652,8 +643,6 @@ struct RenderStrokeGLData
     boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
 
     int target;
-    int texID;
-    RectI bounds;
 
     double brushSizePixel;
     double brushSpacing;
@@ -666,7 +655,10 @@ struct RenderStrokeGLData
     double opacity;
 
     int nbPointsPerSegment;
-    
+
+#ifndef NDEBUG
+    RectI roi;
+#endif
     RamBuffer<float> primitivesColors;
     RamBuffer<float> primitivesVertices;
     RamBuffer<float> primitivesHardness;
@@ -684,22 +676,26 @@ getDotTriangleFan(const Point& center,
                   double shapeColor[3],
                   double opacity,
                   double hardness,
+#ifndef NDEBUG
+                  const RectI& roi,
+#endif
                   RamBuffer<float>* vdata,
                   RamBuffer<float>* cdata,
                   RamBuffer<float>* hdata)
 {
     int cSize = cdata->size();
-    cdata->resize(cSize + (nbOutsideVertices + 2) * 4);
+    cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 4);
     int vSize = vdata->size();
-    vdata->resize(vSize + (nbOutsideVertices + 2) * 2);
+    vdata->resizeAndPreserve(vSize + (nbOutsideVertices + 2) * 2);
     int hSize = hdata->size();
-    hdata->resize(hSize + (nbOutsideVertices + 2) * 1);
+    hdata->resizeAndPreserve(hSize + (nbOutsideVertices + 2) * 1);
 
     float* cPtr = cdata->getData() + cSize;
     float* vPtr = vdata->getData() + vSize;
     float* hPtr = hdata->getData() + hSize;
     vPtr[0] = center.x;
     vPtr[1] = center.y;
+    assert(roi.contains(vPtr[0],vPtr[1]));
     cPtr[0] = shapeColor[0];
     cPtr[1] = shapeColor[1];
     cPtr[2] = shapeColor[2];
@@ -714,6 +710,7 @@ getDotTriangleFan(const Point& center,
         double theta = i * m;
         vPtr[0] = center.x + radius * std::cos(theta);
         vPtr[1] = center.y + radius * std::sin(theta);
+        assert(roi.contains(vPtr[0],vPtr[1]));
         vPtr += 2;
 
         cPtr[0] = shapeColor[0];
@@ -723,11 +720,12 @@ getDotTriangleFan(const Point& center,
         cPtr += 4;
 
         *hPtr = hardness;
-        ++hdata;
+        ++hPtr;
     }
 
     vPtr[0] = center.x + radius;
     vPtr[1] = center.y;
+    assert(roi.contains(vPtr[0],vPtr[1]));
     cPtr[0] = shapeColor[0];
     cPtr[1] = shapeColor[1];
     cPtr[2] = shapeColor[2];
@@ -750,7 +748,11 @@ static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double r
             idxData[i] = vSize;
         }
     }
-    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness);
+    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness,
+#ifndef NDEBUG
+                      data.roi,
+#endif
+                      &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness);
     
 
 }
@@ -782,7 +784,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
 
     {
         /*
-         * Approximate the necessary number of line segments to draw the ellipse, using http://antigrain.com/research/adaptive_bezier/
+         * Approximate the necessary number of line segments to draw a dot, using http://antigrain.com/research/adaptive_bezier/
          */
         double radius = myData->brushSizePixel / 2.;
         Point p0 = {radius, 0.};
@@ -803,10 +805,10 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
     }
     
     if (myData->glContext->isGPUContext()) {
-        renderBezier_gl_bindFrameBuffer<GL_GPU>(myData->glContext, myData->target, myData->texID);
-        renderBezier_gl_internal_begin<GL_GPU>(myData->bounds, false, buildUp);
+        renderBezier_gl_setupOutputTexture<GL_GPU>(myData->target);
+        renderBezier_gl_internal_begin<GL_GPU>(buildUp);
     } else {
-        renderBezier_gl_internal_begin<GL_CPU>(myData->bounds, false, buildUp);
+        renderBezier_gl_internal_begin<GL_CPU>(buildUp);
     }
 
 }
@@ -820,6 +822,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
         bool ok = shader.getAttribLocation("inHardness", &hardnessLoc);
         assert(ok);
     }
+#if 1
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
     GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
     GL::glEnableClientState(GL_VERTEX_ARRAY);
@@ -845,6 +848,32 @@ void renderStroke_gl_multiDrawElements(int nbVertices, int vboVerticesID, int vb
     GL::glDisableClientState(GL_VERTEX_ARRAY);
     GL::glDisableVertexAttribArray(hardnessLoc);
     GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+#else
+    // old gl pipeline for debug
+    const float* vptr = (const float*)verticesData;
+    const float* cptr = (const float*)colorsData;
+    const float* hptr = (const float*)hardnessData;
+    for (int c = 0; c < drawCount; ++c) {
+        GL::glBegin(primitiveType);
+        const unsigned int* iptr = (const unsigned int*)perDrawIdsPtr[c];
+        for (int i = 0; i < perDrawCount[c]; ++i, ++iptr) {
+            int vindex = *iptr;
+            double hardness = hptr[vindex];
+            double r = cptr[vindex * 4 + 0];
+            double g = cptr[vindex * 4 + 1];
+            double b = cptr[vindex * 4 + 2];
+            double a = cptr[vindex * 4 + 3];
+            double x = vptr[vindex * 2 + 0];
+            double y = vptr[vindex * 2 + 1];
+            GL::glVertexAttrib1f(hardnessLoc, hardness);
+            GL::glColor4f(r, g, b, a);
+            GL::glVertex2f(x, y);
+        }
+
+        GL::glEnd();
+
+    }
+#endif
     glCheckError(GL);
     
 }
@@ -859,12 +888,13 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
     int vboColorsID = myData->glData->getOrCreateVBOColorsID();
     int vboVerticesID = myData->glData->getOrCreateVBOVerticesID();
     int vboHardnessID = myData->glData->getOrCreateVBOHardnessID();
-    GLShaderBasePtr strokeShader = myData->glData->getOrCreateStrokeDotShader();
+    GLShaderBasePtr strokeShader = myData->glData->getOrCreateStrokeDotShader(!myData->buildUp);
 
-    std::vector<unsigned int*> indicesVec(myData->indicesBuf.size());
+    std::vector<const void*> indicesVec(myData->indicesBuf.size());
     std::vector<int> perDrawCount(myData->indicesBuf.size());
     for (std::size_t i = 0; i < myData->indicesBuf.size(); ++i) {
-        indicesVec[i] = myData->indicesBuf[i]->getData();
+        indicesVec[i] = (const void*)myData->indicesBuf[i]->getData();
+        assert((int)myData->indicesBuf[i]->size() == (myData->nbPointsPerSegment + 2));
         perDrawCount[i] = myData->indicesBuf[i]->size();
     }
 
@@ -878,8 +908,6 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
         renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, *strokeShader, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
         strokeShader->unbind();
 
-        GL_GPU::glBindTexture(myData->target, 0);
-        GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, 0);
         GL_GPU::glDisable(GL_BLEND);
         glCheckError(GL_GPU);
     } else {
@@ -923,9 +951,10 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
 double
 RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+#ifndef NDEBUG
+                                   const RectI& roi,
+#endif
                                    int target,
-                                   int texID,
-                                   const RectI& bounds,
                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
                                    double distToNext,
                                    const RotoDrawableItem* stroke,
@@ -938,8 +967,9 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
     data.glContext = glContext;
     data.glData = glData;
     data.target = target;
-    data.texID = texID;
-    data.bounds = bounds;
+#ifndef NDEBUG
+    data.roi = roi;
+#endif
     return RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                             renderStrokeBegin_gl,
                                                             renderStrokeRenderDot_gl,
