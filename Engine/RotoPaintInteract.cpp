@@ -733,7 +733,13 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
         builtBezier->setCurveFinished(true);
         clearSelection();
     }
-
+    selectedToolAction = actionButton;
+    {
+        boost::shared_ptr<KnobI> parentKnob = actionButton->getParentKnob();
+        boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+        assert(parentGroup);
+        selectedToolRole = parentGroup;
+    }
     selectedTool = tool;
     if ( (tool != eRotoToolEraserBrush) && isPaintRole ) {
         lastPaintToolAction = actionButton;
@@ -768,16 +774,22 @@ RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
         return;
     }
 
+    RotoToolEnum toolEnum;
+    getToolForAction(tool, &toolEnum);
+
+    RotoRoleEnum roleEnum;
+    getRoleForGroup(parentGroup, &roleEnum);
+
 
     KnobGroupPtr curGroup = selectedToolRole.lock();
-    KnobButtonPtr curTool = selectedToolAction.lock();
+    KnobButtonPtr curToolButton = selectedToolAction.lock();
     if ( curGroup && (curGroup != parentGroup) ) {
         curGroup->setValue(false);
     }
 
     // If we changed group, just keep this action on
-    if ( curTool && (curGroup == parentGroup) ) {
-        curTool->setValue(false);
+    if ( curToolButton && (curGroup == parentGroup) ) {
+        curToolButton->setValue(false);
     }
     selectedToolAction = tool;
     selectedToolRole = parentGroup;
