@@ -219,6 +219,10 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         _imp->refreshLabelTimer->stop();
     }
 
+    if ( _imp->panel->getGui() && _imp->panel->getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        _imp->panel->getGui()->onFreezeUIButtonClicked(false);
+    }
+
     if (calledFromRenderEngine) {
         _imp->panel->getGui()->ensureProgressPanelVisible();
         _imp->panel->onLastTaskAddedFinished(this);
@@ -347,9 +351,6 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
         return;
     }
 
-    if ( _imp->panel->getGui() && _imp->panel->getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-        _imp->panel->getGui()->onFreezeUIButtonClicked(false);
-    }
 
     //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
     ProgressTaskInfoPtr thisShared = shared_from_this();
