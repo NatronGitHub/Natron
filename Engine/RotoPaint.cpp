@@ -2370,7 +2370,7 @@ RotoPaint::onOverlayPenDown(double time,
                 if (!found) {
                     _imp->ui->handleBezierSelection(nearbyBezier);
                 }
-                if (pen == ePenTypeLMB) {
+                if (pen == ePenTypeLMB || pen == ePenTypeMMB) {
                     if (_imp->ui->ctrlDown && _imp->ui->altDown && !_imp->ui->shiftDown) {
                         pushUndoCommand( new AddPointUndoCommand(_imp->ui, nearbyBezier, nearbyBezierCPIndex, nearbyBezierT) );
                         _imp->ui->evaluateOnPenUp = true;
