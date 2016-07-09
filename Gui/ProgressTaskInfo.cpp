@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/Settings.h"
 #include "Engine/Timer.h"
 
 #include "Gui/NodeGui.h"
@@ -344,6 +345,10 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     OutputEffectInstance* output = r ? r->getOutput().get() : process->getWriter();
     if (!output) {
         return;
+    }
+
+    if ( _imp->panel->getGui() && _imp->panel->getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        _imp->panel->getGui()->onFreezeUIButtonClicked(false);
     }
 
     //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
