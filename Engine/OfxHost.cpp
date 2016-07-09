@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QtCore/QThreadPool>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
+#include <QtCore/QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
@@ -1032,16 +1033,25 @@ OfxHost::writeOFXCache()
 {
     /// and write a new cache, long version with everything in there
     QString ofxCachePath = getOFXCacheDirPath();
-
     QDir().mkpath(ofxCachePath);
     QString ofxCacheFilePath = getCacheFilePath();
+
+    QTemporaryFile tmpf;
+    tmpf.open();
+    QString tmpFileName = tmpf.fileName();
+    tmpf.remove();
+
     FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open( &ofile, ofxCacheFilePath.toStdString() );
+    FStreamsSupport::open( &ofile, tmpFileName.toStdString() );
     if (!ofile) {
         return;
     }
     assert( OFX::Host::PluginCache::getPluginCache() );
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(ofile);
+
+    ofile.close();
+    QFile::copy(tmpFileName, ofxCacheFilePath);
+    QFile::remove(tmpFileName);
 }
 
 void
