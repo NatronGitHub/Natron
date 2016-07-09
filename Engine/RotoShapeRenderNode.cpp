@@ -198,7 +198,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
             int pot = 1 << mipmapLevel;
             if (mipmapLevel == 0) {
-                strokes.push_back(lastStrokePoints);
+                if (!lastStrokePoints.empty()) {
+                    strokes.push_back(lastStrokePoints);
+                }
             } else {
                 std::list<std::pair<Point, double> > toScalePoints;
                 for (std::list<std::pair<Point, double> >::const_iterator it = lastStrokePoints.begin(); it != lastStrokePoints.end(); ++it) {
@@ -207,7 +209,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     p.first.y /= pot;
                     toScalePoints.push_back(p);
                 }
-                strokes.push_back(toScalePoints);
+                if (!toScalePoints.empty()) {
+                    strokes.push_back(toScalePoints);
+                }
             }
         } else {
             isStroke->evaluateStroke(mipmapLevel, args.time, &strokes, 0);

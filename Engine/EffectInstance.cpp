@@ -2257,7 +2257,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     RectI dstBounds;
     dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
     RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
-    if (!frameArgs->tilesSupported) {
+    if (!frameArgs->tilesSupported && !frameArgs->isDuringPaintStrokeCreation) {
         assert(dstRealBounds.x1 == dstBounds.x1);
         assert(dstRealBounds.x2 == dstBounds.x2);
         assert(dstRealBounds.y1 == dstBounds.y1);

@@ -130,9 +130,13 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 {
     //Increment the half brush size so that the stroke is enclosed in the RoD
     halfBrushSize += 1.;
+    halfBrushSize = std::max(0.5, halfBrushSize);
+
+    bool bboxSet = false;
     if (bbox) {
-        bbox->setupInfinity();
+        bbox->clear();
     }
+
     if ( xCurve.empty() ) {
         return;
     }
@@ -177,89 +181,115 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             bbox->y1 = p.y;
             bbox->y2 = p.y;
             double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-            double padding = std::max(0.5, halfBrushSize) * pressure;
+            double padding = halfBrushSize * pressure;
             bbox->x1 -= padding;
             bbox->x2 += padding;
             bbox->y1 -= padding;
             bbox->y2 += padding;
+            bboxSet = true;
         }
 
-        return;
     }
 
-    double pressure = 0;
+    double pressure = 0.;
     for (;
          xNext != xCurve.end() && yNext != yCurve.end() && pNext != pCurve.end();
          ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
         assert( xIt != xCurve.end() && yIt != yCurve.end() && pIt != pCurve.end() );
 
-        double x1 = xIt->getValue();
-        double y1 = yIt->getValue();
-        double z1 = 1.;
-        double press1 = pIt->getValue();
-        double x2 = xNext->getValue();
-        double y2 = yNext->getValue();
-        double z2 = 1;
-        double press2 = pNext->getValue();
-        double dt = ( xNext->getTime() - xIt->getTime() );
-        double x1pr = x1 + dt * xIt->getRightDerivative() / 3.;
-        double y1pr = y1 + dt * yIt->getRightDerivative() / 3.;
-        double z1pr = 1.;
-        double press1pr = press1 + dt * pIt->getRightDerivative() / 3.;
-        double x2pl = x2 - dt * xNext->getLeftDerivative() / 3.;
-        double y2pl = y2 - dt * yNext->getLeftDerivative() / 3.;
-        double z2pl = 1;
-        double press2pl = press2 - dt * pNext->getLeftDerivative() / 3.;
-        Transform::matApply(transform, &x1, &y1, &z1);
-        Transform::matApply(transform, &x1pr, &y1pr, &z1pr);
-        Transform::matApply(transform, &x2pl, &y2pl, &z2pl);
-        Transform::matApply(transform, &x2, &y2, &z2);
+        double dt = xNext->getTime() - xIt->getTime();
+        double pressp0 = pIt->getValue();
+        double pressp3 = pNext->getValue();
+        double pressp1 = pressp0 + dt * pIt->getRightDerivative() / 3.;
+        double pressp2 = pressp3 - dt * pNext->getLeftDerivative() / 3.;
+
+        pressure = std::max(pressure, pressureAffectsSize ? std::max(pressp0, pressp3) : 1.);
+
+        Transform::Point3D p0, p1, p2, p3;
+        p0.z = p1.z = p2.z = p3.z = 1;
+        p0.x = xIt->getValue();
+        p0.y = yIt->getValue();
+        p1.x = p0.x + dt * xIt->getRightDerivative() / 3.;
+        p1.y = p0.y + dt * yIt->getRightDerivative() / 3.;
+        p3.x = xNext->getValue();
+        p3.y = yNext->getValue();
+        p2.x = p3.x - dt * xNext->getLeftDerivative() / 3.;
+        p2.y = p3.y - dt * yNext->getLeftDerivative() / 3.;
+
+
+        p0 = Transform::matApply(transform, p0);
+        p1 = Transform::matApply(transform, p1);
+        p2 = Transform::matApply(transform, p2);
+        p3 = Transform::matApply(transform, p3);
+
+
 
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
          */
         double dx1, dy1, dx2, dy2, dx3, dy3;
-        dx1 = x1pr - x1;
-        dy1 = y1pr - y1;
-        dx2 = x2pl - x1pr;
-        dy2 = y2pl - y1pr;
-        dx3 = x2 - x2pl;
-        dy3 = y2 - y2pl;
+        dx1 = p1.x - p0.x;
+        dy1 = p1.y - p0.y;
+        dx2 = p2.x - p1.x;
+        dy2 = p2.y - p1.y;
+        dx3 = p3.x - p2.x;
+        dy3 = p3.y - p2.y;
         double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-                        std::sqrt(dx2 * dx2 + dy2 * dy2) +
-                        std::sqrt(dx3 * dx3 + dy3 * dy3);
+        std::sqrt(dx2 * dx2 + dy2 * dy2) +
+        std::sqrt(dx3 * dx3 + dy3 * dy3);
         double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
         double incr = 1. / (double)(nbPointsPerSegment - 1);
 
-        pressure = std::max(pressure, pressureAffectsSize ? std::max(press1, press2) : 1.);
-
+        RectD pointBox;
+        bool pointBboxSet = false;
 
         for (int i = 0; i < nbPointsPerSegment; ++i) {
             double t = incr * i;
             Point p;
-            p.x = Bezier::bezierEval(x1, x1pr, x2pl, x2, t);
-            p.y = Bezier::bezierEval(y1, y1pr, y2pl, y2, t);
+            p.x = Bezier::bezierEval(p0.x, p1.x, p2.x, p3.x, t);
+            p.y = Bezier::bezierEval(p0.y, p1.y, p2.y, p3.y, t);
 
             if (bbox) {
-                bbox->x1 = std::min(p.x, bbox->x1);
-                bbox->x2 = std::max(p.x, bbox->x2);
-                bbox->y1 = std::min(p.y, bbox->y1);
-                bbox->y2 = std::max(p.y, bbox->y2);
+                if (!pointBboxSet) {
+                    pointBox.x1 = p.x;
+                    pointBox.x2 = p.x;
+                    pointBox.y1 = p.y;
+                    pointBox.y2 = p.y;
+                    pointBboxSet = true;
+                } else {
+                    pointBox.x1 = std::min(p.x, pointBox.x1);
+                    pointBox.x2 = std::max(p.x, pointBox.x2);
+                    pointBox.y1 = std::min(p.y, pointBox.y1);
+                    pointBox.y2 = std::max(p.y, pointBox.y2);
+
+                }
             }
 
-            double pi = Bezier::bezierEval(press1, press1pr, press2pl, press2, t);
+            double pi = Bezier::bezierEval(pressp0, pressp1, pressp2, pressp3, t);
             p.x /= pot;
             p.y /= pot;
             points->push_back( std::make_pair(p, pi) );
         }
+
+        double padding = halfBrushSize * pressure;
+        pointBox.x1 -= padding;
+        pointBox.x2 += padding;
+        pointBox.y1 -= padding;
+        pointBox.y2 += padding;
+
+        
+        if (bbox) {
+            if (!bboxSet) {
+                bboxSet = true;
+                *bbox = pointBox;
+            } else {
+                bbox->merge(pointBox);
+            }
+        }
+
+
     } // for (; xNext != xCurve.end() ;++xNext, ++yNext, ++pNext) {
-    if (bbox) {
-        double padding = std::max(0.5, halfBrushSize) * pressure;
-        bbox->x1 -= padding;
-        bbox->x2 += padding;
-        bbox->y1 -= padding;
-        bbox->y2 += padding;
-    }
+
 } // evaluateStrokeInternal
 
 bool
@@ -747,6 +777,7 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     bool bboxSet = false;
     double halfBrushSize = getBrushSizeKnob()->getValueAtTime(time) / 2. + 1;
+    halfBrushSize = std::max(0.5, halfBrushSize);
 
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         KeyFrameSet xCurve = it->xCurve->getKeyFrames_mt_safe();
@@ -930,7 +961,9 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
                 bboxSet = true;
             }
         }
-        strokes->push_back(points);
+        if (!points.empty()) {
+            strokes->push_back(points);
+        }
     }
 }
 

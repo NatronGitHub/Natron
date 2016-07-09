@@ -1753,12 +1753,12 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                                                                   stride);
     } else {
         imgWrapper.cairoImg = cairo_image_surface_create( cairoImgFormat, roi.width(), roi.height() );
-        cairo_surface_set_device_offset(imgWrapper.cairoImg, -roi.x1, -roi.y1);
     }
 
     if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
         return 0.;
     }
+    cairo_surface_set_device_offset(imgWrapper.cairoImg, -roi.x1, -roi.y1);
     imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
     cairo_set_fill_rule(imgWrapper.ctx, CAIRO_FILL_RULE_WINDING);
