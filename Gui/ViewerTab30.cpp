@@ -643,9 +643,12 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
         std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
         if ( foundActive != _imp->currentNodeContext.end() ) {
             activeNodeForPlugin = foundActive->currentNode.lock();
-            activeItemToolBar = foundActive->currentContext->getToolBar();
-            activeItemContainer = foundActive->currentContext->getContainerWidget();
-            _imp->currentNodeContext.erase(foundActive);
+
+            if (activeNodeForPlugin == n) {
+                activeItemToolBar = foundActive->currentContext->getToolBar();
+                activeItemContainer = foundActive->currentContext->getContainerWidget();
+                _imp->currentNodeContext.erase(foundActive);
+            }
         }
     }
 
@@ -670,7 +673,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
         activeItemContainer->hide();
     }
 
-    if (setAnotherFromSamePlugin) {
+    if (setAnotherFromSamePlugin && activeNodeForPlugin == n) {
         ///If theres another roto node, set it as the current roto interface
         std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator newInterface = _imp->nodesContext.end();
         for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
