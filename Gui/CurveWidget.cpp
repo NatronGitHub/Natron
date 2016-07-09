@@ -37,6 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QToolButton>
 #include <QDesktopWidget>
 
+#include "Engine/Bezier.h"
 #include "Engine/PyParameter.h" // IntParam
 #include "Engine/Project.h"
 #include "Engine/Image.h"
@@ -2257,7 +2258,7 @@ CurveWidget::addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, dou
 
     _imp->_selectedKeyFrames.clear();
 
-    KeyFrameSet keySet = curve->getInternalCurve()->getKeyFrames_mt_safe();
+    KeyFrameSet keySet = curve->getKeyFrames();
     KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, xCurve);
     assert( foundKey != keySet.end() );
 
@@ -2274,6 +2275,7 @@ CurveWidget::addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, dou
     if (hasNext) {
         nextKey = *next;
     }
+
     KeyPtr selected( new SelectedKey(curve, *foundKey, hasPrev, prevKey, hasNext, nextKey) );
 
     _imp->refreshKeyTangents(selected);
