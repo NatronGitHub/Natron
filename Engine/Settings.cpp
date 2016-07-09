@@ -2284,7 +2284,9 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
     } else if ( k == _enableOpenGL.get() ) {
         appPTR->refreshOpenGLRenderingFlagOnAllInstances();
-        appPTR->clearPluginsLoadedCache();
+        if (!_restoringSettings) {
+            appPTR->clearPluginsLoadedCache();
+        }
     } else {
         ret = false;
     }
