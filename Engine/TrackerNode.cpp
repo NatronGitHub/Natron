@@ -1488,7 +1488,7 @@ TrackerNode::onOverlayPenDown(double time,
         didSomething = true;
     }
 
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         if (_imp->ui->shiftDown) {
             _imp->ui->eventState = eMouseStateScalingSelectedMarker;
         } else {
@@ -1709,7 +1709,7 @@ TrackerNode::onOverlayPenMotion(double time,
     if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
         setCurrentCursor(eCursorFDiag);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         setCurrentCursor(eCursorSizeAll);
         hoverProcess = true;
     } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
@@ -1719,7 +1719,7 @@ TrackerNode::onOverlayPenMotion(double time,
         setCurrentCursor(eCursorDefault);
     }
 
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         _imp->ui->hoverState = eDrawStateShowScalingHint;
         hoverProcess = true;
     }
