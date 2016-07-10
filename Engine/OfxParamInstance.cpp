@@ -3483,7 +3483,23 @@ OfxStringInstance::~OfxStringInstance()
 void
 OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
 {
-    getKnob()->getHolder()->getApp()->getProject()->canonicalizePath(str);
+    KnobPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    KnobHolder* holder = knob->getHolder();
+    if (!holder) {
+        return;
+    }
+    AppInstPtr app = holder->getApp();
+    if (!app) {
+        return;
+    }
+    boost::shared_ptr<Project> proj = app->getProject();
+    if (!proj) {
+        return;
+    }
+    proj->canonicalizePath(str);
 }
 
 void
