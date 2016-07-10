@@ -1092,7 +1092,7 @@ FileSystemModel::mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,
 boost::shared_ptr<FileSystemItem>
 FileSystemModel::mkPath(const QString& path)
 {
-    if ( path.isEmpty() ) {
+    if ( path.isEmpty() || !_imp->rootItem) {
         return _imp->rootItem;
     }
 
@@ -1115,7 +1115,9 @@ FileSystemModel::mkdir(const QModelIndex& parent,
         QDir dir( item->absoluteFilePath() );
         dir.mkpath(name);
         boost::shared_ptr<FileSystemItem> newDir = mkPath( generateChildAbsoluteName(item, name) );
-
+        if (!newDir) {
+            return QModelIndex();
+        }
         return createIndex(newDir->indexInParent(), 0, item);
     }
 
@@ -1157,7 +1159,7 @@ FileSystemModel::onSortIndicatorChanged(int logicalIndex,
 boost::shared_ptr<FileSystemItem>
 FileSystemModelPrivate::getItemFromPath(const QString &path) const
 {
-    if ( path.isEmpty() ) {
+    if ( path.isEmpty() || !rootItem ) {
         return rootItem;
     }
     QStringList splitPath = getSplitPath(path);

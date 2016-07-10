@@ -234,6 +234,9 @@ NodeRenderWatcher::handleBlockingTask(int taskID)
     BlockingTaskEnum task = (BlockingTaskEnum)taskID;
 
     for (NodesList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        if (!*it) {
+            continue;
+        }
         switch (task) {
         case eBlockingTaskAbortAnyProcessing:
             (*it)->abortAnyProcessing_blocking();
