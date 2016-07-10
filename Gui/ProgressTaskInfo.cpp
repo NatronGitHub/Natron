@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/Settings.h"
 #include "Engine/Timer.h"
 
 #include "Gui/NodeGui.h"
@@ -218,6 +219,10 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         _imp->refreshLabelTimer->stop();
     }
 
+    if ( _imp->panel->getGui() && _imp->panel->getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        _imp->panel->getGui()->onFreezeUIButtonClicked(false);
+    }
+
     if (calledFromRenderEngine) {
         _imp->panel->getGui()->ensureProgressPanelVisible();
         _imp->panel->onLastTaskAddedFinished(this);
@@ -291,7 +296,14 @@ ProgressTaskInfo::restartTask()
 
 
     NodePtr node = _imp->getNode();
-    if ( node->getEffectInstance()->isOutput() ) {
+    if (!node) {
+        return;
+    }
+    EffectInstancePtr effect = node->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+    if ( effect->isOutput() ) {
         int firstFrame;
         if ( (_imp->lastRenderedFrame == _imp->lastFrame) || (_imp->lastRenderedFrame == -1) ) {
             firstFrame = _imp->firstFrame;
@@ -345,6 +357,7 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     if (!output) {
         return;
     }
+
 
     //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
     ProgressTaskInfoPtr thisShared = shared_from_this();

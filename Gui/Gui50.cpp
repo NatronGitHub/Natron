@@ -733,14 +733,14 @@ Gui::isGUIFrozen() const
 }
 
 void
-Gui::refreshAllTimeEvaluationParams()
+Gui::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
 {
     int time = getApp()->getProject()->getCurrentTime();
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         (*it)->refreshNodesKnobsAtTime(true, time);
     }
-    getNodeGraph()->refreshNodesKnobsAtTime(true, time);
+    getNodeGraph()->refreshNodesKnobsAtTime(onlyTimeEvaluationKnobs, time);
 }
 
 void

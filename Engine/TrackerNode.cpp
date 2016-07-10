@@ -25,6 +25,8 @@
 #include <boost/algorithm/clamp.hpp>
 
 #include "TrackerNode.h"
+
+#include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -1230,7 +1232,7 @@ TrackerNode::drawOverlay(double time,
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-        if (_imp->ui->showMarkerTexture && selectedFound) {
+        if (_imp->ui->showMarkerTexture && selectedFound && !getApp()->isDraftRenderEnabled()) {
             _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
@@ -1488,7 +1490,7 @@ TrackerNode::onOverlayPenDown(double time,
         didSomething = true;
     }
 
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         if (_imp->ui->shiftDown) {
             _imp->ui->eventState = eMouseStateScalingSelectedMarker;
         } else {
@@ -1709,7 +1711,7 @@ TrackerNode::onOverlayPenMotion(double time,
     if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
         setCurrentCursor(eCursorFDiag);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         setCurrentCursor(eCursorSizeAll);
         hoverProcess = true;
     } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
@@ -1719,7 +1721,7 @@ TrackerNode::onOverlayPenMotion(double time,
         setCurrentCursor(eCursorDefault);
     }
 
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         _imp->ui->hoverState = eDrawStateShowScalingHint;
         hoverProcess = true;
     }
@@ -2233,8 +2235,8 @@ TrackerNode::onOverlayPenMotion(double time,
             double y = centerKnob->getValueAtTime(time, 1);
             double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
             double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
-            x -= dx;
-            y -= dy;
+            x += dx;
+            y += dy;
             centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
             for (int i = 0; i < 4; ++i) {
                 for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
@@ -2454,7 +2456,7 @@ void
 TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
                                                double /*time*/)
 {
-    if (_imp->ui->showMarkerTexture && !isPlayback) {
+    if (_imp->ui->showMarkerTexture && !isPlayback && !getApp()->isDraftRenderEnabled()) {
         _imp->ui->refreshSelectedMarkerTexture();
     }
 }

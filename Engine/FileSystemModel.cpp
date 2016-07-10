@@ -1092,7 +1092,7 @@ FileSystemModel::mkPathInternal(const FileSystemItemPtr& item,
 FileSystemItemPtr
 FileSystemModel::mkPath(const QString& path)
 {
-    if ( path.isEmpty() ) {
+    if ( path.isEmpty() || !_imp->rootItem) {
         return _imp->rootItem;
     }
 
@@ -1114,8 +1114,11 @@ FileSystemModel::mkdir(const QModelIndex& parent,
     if (item) {
         QDir dir( item->absoluteFilePath() );
         dir.mkpath(name);
-        FileSystemItemPtr newDir = mkPath( generateChildAbsoluteName(item, name) );
 
+        FileSystemItemPtr newDir = mkPath( generateChildAbsoluteName(item, name) );
+        if (!newDir) {
+            return QModelIndex();
+        }
         return createIndex(newDir->indexInParent(), 0, item);
     }
 
@@ -1157,7 +1160,7 @@ FileSystemModel::onSortIndicatorChanged(int logicalIndex,
 FileSystemItemPtr
 FileSystemModelPrivate::getItemFromPath(const QString &path) const
 {
-    if ( path.isEmpty() ) {
+    if ( path.isEmpty() || !rootItem ) {
         return rootItem;
     }
     QStringList splitPath = getSplitPath(path);

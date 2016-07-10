@@ -342,7 +342,7 @@ ViewerTab::onEngineStopped()
         getGui()->onFreezeUIButtonClicked(false);
     } else {
         if ( getGui() ) {
-            getGui()->refreshAllTimeEvaluationParams();
+            getGui()->refreshAllTimeEvaluationParams(true);
         }
     }
 }

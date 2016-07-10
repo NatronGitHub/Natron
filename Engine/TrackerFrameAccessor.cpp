@@ -322,7 +322,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         }
     }
 
-    EffectInstPtr effect;
+    EffectInstancePtr effect;
     if (_imp->trackerInput) {
         effect = _imp->trackerInput->getEffectInstance();
     }

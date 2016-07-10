@@ -475,6 +475,11 @@ ProgressPanel::startTask(const NodePtr& node,
         if ( node->getEffectInstance()->isOutput() ) {
             OutputEffectInstancePtr isOutput = toOutputEffectInstance( node->getEffectInstance() );
             if (isOutput) {
+
+                if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+                    getGui()->onFreezeUIButtonClicked(true);
+                }
+
                 RenderEnginePtr engine = isOutput->getRenderEngine();
                 assert(engine);
                 QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );

@@ -785,7 +785,9 @@ GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & a
 void
 GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
 {
-    _imp->_gui->saveProjectGui(archive);
+    if (_imp->_gui) {
+        _imp->_gui->saveProjectGui(archive);
+    }
 }
 
 void

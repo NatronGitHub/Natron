@@ -438,9 +438,14 @@ Gui::getAvailablePaneName(const QString & baseName) const
 void
 Gui::setDraftRenderEnabled(bool b)
 {
-    QMutexLocker k(&_imp->_isInDraftModeMutex);
+    {
+        QMutexLocker k(&_imp->_isInDraftModeMutex);
 
-    _imp->_isInDraftMode = b;
+        _imp->_isInDraftMode = b;
+    }
+    if (!b) {
+        refreshAllTimeEvaluationParams(false);
+    }
 }
 
 bool
