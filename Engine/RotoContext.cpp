@@ -4627,6 +4627,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
 
     CreateNodeArgs args( PLUGINID_OFX_MERGE,  NodeCollectionPtr() );
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
     
     NodePtr mergeNode = node->getApp()->createNode(args);

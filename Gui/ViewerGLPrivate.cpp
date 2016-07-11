@@ -248,12 +248,15 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
+
     bool clipToDisplayWindow;
     {
         QMutexLocker l(&this->clipToDisplayWindowMutex);
         clipToDisplayWindow = this->clipToDisplayWindow;
     }
-    RectD rectClippedToRoI(canonicalRoINotRounded);
+    RectD rectClippedToRoI(canonicalRoIRoundedToTileSize);
+    rectClippedToRoI.intersect(rod, &rectClippedToRoI);
+
 
     if (clipToDisplayWindow) {
         RectD canonicalProjectFormat;
@@ -261,6 +264,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         rod.intersect(canonicalProjectFormat, &rod);
         rectClippedToRoI.intersect(canonicalProjectFormat, &rectClippedToRoI);
     }
+
+    
 
 
     //if user RoI is enabled, clip the rod to that roi

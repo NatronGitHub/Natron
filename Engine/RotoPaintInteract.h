@@ -518,6 +518,7 @@ struct RotoPaintInteract
     //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged, featherBarBeingHovered;
     RotoStrokeItemPtr strokeBeingPaint;
+    int strokeBeingPaintedTimelineFrame;// the frame at which we painted the last brush stroke
     std::pair<double, double> cloneOffset;
     QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
     RotoToolEnum selectedTool;

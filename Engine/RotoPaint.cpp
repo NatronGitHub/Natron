@@ -1303,17 +1303,18 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
                                              double time)
 {
     EffectInstance::refreshExtraStateAfterTimeChanged(isPlayback, time);
-
-    if ( (_imp->ui->selectedTool == eRotoToolBlur) ||
-         ( _imp->ui->selectedTool == eRotoToolBurn) ||
-         ( _imp->ui->selectedTool == eRotoToolDodge) ||
-         ( _imp->ui->selectedTool == eRotoToolClone) ||
-         ( _imp->ui->selectedTool == eRotoToolEraserBrush) ||
-         ( _imp->ui->selectedTool == eRotoToolSolidBrush) ||
-         ( _imp->ui->selectedTool == eRotoToolReveal) ||
-         ( _imp->ui->selectedTool == eRotoToolSmear) ||
-         ( _imp->ui->selectedTool == eRotoToolSharpen) ) {
-        _imp->ui->onBreakMultiStrokeTriggered();
+    if (time != _imp->ui->strokeBeingPaintedTimelineFrame) {
+        if ( (_imp->ui->selectedTool == eRotoToolBlur) ||
+            ( _imp->ui->selectedTool == eRotoToolBurn) ||
+            ( _imp->ui->selectedTool == eRotoToolDodge) ||
+            ( _imp->ui->selectedTool == eRotoToolClone) ||
+            ( _imp->ui->selectedTool == eRotoToolEraserBrush) ||
+            ( _imp->ui->selectedTool == eRotoToolSolidBrush) ||
+            ( _imp->ui->selectedTool == eRotoToolReveal) ||
+            ( _imp->ui->selectedTool == eRotoToolSmear) ||
+            ( _imp->ui->selectedTool == eRotoToolSharpen) ) {
+            _imp->ui->onBreakMultiStrokeTriggered();
+        }
     }
     _imp->ui->computeSelectedCpsBBOX();
 }

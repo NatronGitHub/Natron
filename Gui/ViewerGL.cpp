@@ -1695,15 +1695,17 @@ ViewerGL::clearLastRenderedImage()
 }
 
 void
-ViewerGL::disconnectInputTexture(int textureIndex)
+ViewerGL::disconnectInputTexture(int textureIndex, bool clearRoD)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(textureIndex == 0 || textureIndex == 1);
     if (_imp->displayTextures[textureIndex].isVisible) {
         _imp->displayTextures[textureIndex].isVisible = false;
-        RectI r(0, 0, 0, 0);
-        _imp->infoViewer[textureIndex]->setDataWindow(r);
+        if (clearRoD) {
+            RectI r(0, 0, 0, 0);
+            _imp->infoViewer[textureIndex]->setDataWindow(r);
+        }
     }
 }
 
@@ -2704,9 +2706,7 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
-    if (!_imp->displayTextures[texIndex].isVisible) {
-        return true;
-    }
+
     unsigned int mipMapLevel = (unsigned int)std::max((int)getInternalNode()->getMipMapLevelFromZoomFactor(), (int)getInternalNode()->getViewerMipMapLevel());
     int closestPo2 = 1 << mipMapLevel;
     if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {

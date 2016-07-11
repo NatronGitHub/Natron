@@ -230,6 +230,27 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackCurKey);
     _imp->ui->trackCurrentKeyframeButton = trackCurKey;
 
+
+    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamSetPatternKeyFrameLabel) );
+    addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
+    addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
+    addKeyframe->setEvaluateOnChange(false);
+    addKeyframe->setSecretByDefault(true);
+    addKeyframe->setInViewerContextCanHaveShortcut(true);
+    addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
+    trackingPage->addKnob(addKeyframe);
+    _imp->ui->setKeyFrameButton = addKeyframe;
+
+    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
+    removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
+    removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
+    removeKeyframe->setEvaluateOnChange(false);
+    removeKeyframe->setSecretByDefault(true);
+    removeKeyframe->setInViewerContextCanHaveShortcut(true);
+    removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
+    trackingPage->addKnob(removeKeyframe);
+    _imp->ui->removeKeyFrameButton = removeKeyframe;
+
     KnobButtonPtr clearAllAnimation = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAllAnimationLabel) );
     clearAllAnimation->setName(kTrackerUIParamClearAllAnimation);
     clearAllAnimation->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
@@ -313,25 +334,6 @@ TrackerNode::initializeKnobs()
     _imp->ui->showCorrelationButton = showError;
 
 
-    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamSetPatternKeyFrameLabel) );
-    addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
-    addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
-    addKeyframe->setEvaluateOnChange(false);
-    addKeyframe->setSecretByDefault(true);
-    addKeyframe->setInViewerContextCanHaveShortcut(true);
-    addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
-    trackingPage->addKnob(addKeyframe);
-    _imp->ui->setKeyFrameButton = addKeyframe;
-
-    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
-    removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
-    removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
-    removeKeyframe->setEvaluateOnChange(false);
-    removeKeyframe->setSecretByDefault(true);
-    removeKeyframe->setInViewerContextCanHaveShortcut(true);
-    removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
-    trackingPage->addKnob(removeKeyframe);
-    _imp->ui->removeKeyFrameButton = removeKeyframe;
 
     KnobButtonPtr resetOffset = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamResetOffsetLabel) );
     resetOffset->setName(kTrackerUIParamResetOffset);
@@ -385,6 +387,10 @@ TrackerNode::initializeKnobs()
     trackAllKeys->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(trackCurKey);
     trackCurKey->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(addKeyframe);
+    addKeyframe->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(removeKeyframe);
+    removeKeyframe->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(clearAllAnimation);
     clearAllAnimation->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(clearBackwardAnim);
@@ -398,10 +404,6 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(createKeyOnMove);
     addKnobToViewerUI(showError);
     showError->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(addKeyframe);
-    addKeyframe->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(removeKeyframe);
-    removeKeyframe->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(resetOffset);
     resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
