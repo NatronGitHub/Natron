@@ -445,6 +445,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         tlsArgs->timeline = getTimeline();
         tlsArgs->activeRotoPaintNode = rotoPaintNode;
         tlsArgs->activeRotoDrawableItem = activeStroke;
+        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = false;
         tlsArgs->stats = stats;
@@ -509,7 +510,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 
 
         if (args[i]) {
-            status[i] = getRenderViewerArgsAndCheckCache( time, false, view, i, viewerHash, rotoPaintNode, abortInfo, stats,  args[i].get() );
+            status[i] = getRenderViewerArgsAndCheckCache( time, false, view, i, viewerHash, rotoPaintNode, false, abortInfo, stats,  args[i].get() );
         }
 
 
@@ -552,6 +553,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                                   viewerHash,
                                                   canAbort,
                                                   rotoPaintNode,
+                                                  false,
                                                   false, //useTLS
                                                   boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(),
                                                   stats,
@@ -590,6 +592,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                              U64 viewerHash,
                              bool canAbort,
                              const NodePtr& rotoPaintNode,
+                             bool isDoingRotoNeatRender,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
@@ -628,7 +631,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, useTLS, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, isDoingRotoNeatRender, useTLS, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
@@ -791,11 +794,12 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         U64 viewerHash,
                                                         bool canAbort,
                                                         const NodePtr& rotoPaintNode,
+                                                        const bool isDoingRotoNeatRender,
                                                         const RenderStatsPtr& stats,
                                                         ViewerArgs* outArgs)
 {
     AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
-    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, abortInfo, stats, outArgs);
+    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, isDoingRotoNeatRender, abortInfo, stats, outArgs);
 
     if ( (stat == eViewerRenderRetCodeFail) || (stat == eViewerRenderRetCodeBlack) ) {
         _imp->checkAndUpdateDisplayAge( textureIndex, abortInfo->getRenderAge() );
@@ -1104,12 +1108,13 @@ ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
                                      const U64 viewerHash,
                                      const NodePtr& rotoPaintNode,
+                                     const bool isDoingRotoNeatRender,
                                      const RenderStatsPtr& stats,
                                      ViewerArgs* outArgs)
 {
     // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
     // zillions of textures in the cache, each a few pixels different.
-    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !outArgs->isDoingPartialUpdates;
+    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingRotoNeatRender && !outArgs->isDoingPartialUpdates;
 
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
@@ -1194,6 +1199,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  int textureIndex,
                                                  U64 viewerHash,
                                                  const NodePtr& rotoPaintNode,
+                                                 const bool isDoingRotoNeatRender,
                                                  const AbortableRenderInfoPtr& abortInfo,
                                                  const RenderStatsPtr& stats,
                                                  ViewerArgs* outArgs)
@@ -1242,7 +1248,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     // Try to look-up the cache but do so only if we have a RoD valid in the cache because
 
     // we are on the main-thread here, it would be expensive to compute the RoD now.
-    return getRoDAndLookupCache(true, viewerHash, rotoPaintNode, stats, outArgs);
+    return getRoDAndLookupCache(true, viewerHash, rotoPaintNode, isDoingRotoNeatRender, stats, outArgs);
 }
 
 ViewerInstance::ViewerRenderRetCode
@@ -1252,6 +1258,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       U64 viewerHash,
                                       bool /*canAbort*/,
                                       const NodePtr& rotoPaintNode,
+                                      bool isDoingRotoNeatRender,
                                       bool useTLS,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                       const RenderStatsPtr& stats,
@@ -1273,6 +1280,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tlsArgs->timeline = getTimeline();
         tlsArgs->activeRotoPaintNode = rotoPaintNode;
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = inArgs.draftModeEnabled;
         tlsArgs->stats = stats;
@@ -1284,7 +1292,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         // Since we will most likely need to compute the RoD now, we MUST setup the thread local
         // storage otherwise functions like EffectInstance::aborted() would not work.
 
-        ViewerRenderRetCode retcode = getRoDAndLookupCache(false, viewerHash, rotoPaintNode, stats, &inArgs);
+        ViewerRenderRetCode retcode = getRoDAndLookupCache(false, viewerHash, rotoPaintNode, isDoingRotoNeatRender, stats, &inArgs);
         if (retcode != eViewerRenderRetCodeRender) {
             return retcode;
         }
@@ -1317,7 +1325,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
      * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false.
      */
 
-    const bool useTextureCache = !inArgs.forceRender && !inArgs.userRoIEnabled && !inArgs.autoContrast && rotoPaintNode.get() == 0 && !inArgs.isDoingPartialUpdates;
+    const bool useTextureCache = !inArgs.forceRender && !inArgs.userRoIEnabled && !inArgs.autoContrast && rotoPaintNode.get() == 0 && !isDoingRotoNeatRender && !inArgs.isDoingPartialUpdates;
     RectI roi = inArgs.params->roi;
 
     // We might already have some tiles cached, get their bounding box to see if it is less than the actual RoI
@@ -1602,7 +1610,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 unCachedTiles.push_back(tile);
             }
             // If we are actively painting, re-use the last texture instead of re-drawing everything
-            else if (rotoPaintNode) {
+            else if (rotoPaintNode || isDoingRotoNeatRender) {
                 /*
                    Check if we have a last valid texture and re-use the old texture only if the new texture is at least as big
                    as the old texture.
@@ -1611,7 +1619,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 assert(!_imp->lastRenderParams[updateParams->textureIndex] || _imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
 
 
-                bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
+                bool canUseOldTex = !isDoingRotoNeatRender && _imp->lastRenderParams[updateParams->textureIndex] &&
                                     updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
                                     tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
 

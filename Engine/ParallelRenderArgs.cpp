@@ -750,7 +750,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext;
     try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(isPainting /*retrieveLastContext*/);
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(isPainting || inArgs->isDoingRotoNeatRender/*retrieveLastContext*/);
     } catch (const std::exception& /*e*/) {
 
     }
@@ -759,7 +759,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
 
     OSGLContextPtr cpuContext;
     try {
-        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(isPainting /*retrieveLastContext*/);
+        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(isPainting || inArgs->isDoingRotoNeatRender/*retrieveLastContext*/);
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }

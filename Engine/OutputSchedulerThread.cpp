@@ -2311,6 +2311,7 @@ private:
                 tlsArgs->timeline = output->getApp()->getTimeLine();
                 tlsArgs->activeRotoPaintNode = NodePtr();
                 tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+                tlsArgs->isDoingRotoNeatRender = false;
                 tlsArgs->isAnalysis = false;
                 tlsArgs->draftMode = false;
                 tlsArgs->stats = RenderStatsPtr();
@@ -2432,6 +2433,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         tlsArgs->timeline = effect->getApp()->getTimeLine();
         tlsArgs->activeRotoPaintNode = NodePtr();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = false;
         tlsArgs->stats = it->stats;
@@ -2820,7 +2822,7 @@ private:
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), stats, args[i].get() );
+            status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), false, stats, args[i].get() );
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (clearTexture[i]) {
                 //Just clear the viewer, nothing to do
@@ -2858,7 +2860,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), true,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), false, true,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3551,7 +3553,7 @@ public:
         try {
             if (!_args->isRotoPaintRequest || _args->isRotoNeatRender) {
                 stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
-                                                   NodePtr(), true, _args->args, _args->request, _args->stats);
+                                                   NodePtr(), _args->isRotoNeatRender, true, _args->args, _args->request, _args->stats);
             } else {
                 stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->stats, &_args->args[0], &_args->args[1]);
             }
@@ -3853,7 +3855,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, stats, args[i].get() );
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, isRotoNeatRender, stats, args[i].get() );
 
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (clearTexture[i] || args[i]->params->isViewerPaused) {

@@ -1127,6 +1127,7 @@ TrackMarker::getMarkerImage(int time,
     tlsArgs->timeline = node->getApp()->getTimeLine();
     tlsArgs->activeRotoPaintNode = NodePtr();
     tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+    tlsArgs->isDoingRotoNeatRender = false;
     tlsArgs->isAnalysis = true;
     tlsArgs->draftMode = true;
     tlsArgs->stats = RenderStatsPtr();

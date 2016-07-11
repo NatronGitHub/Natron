@@ -1440,7 +1440,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (isPaintingOverItselfEnabled()) {
                     it->second.downscaleImage->fillBoundsZero(glContext);
                 }
-                if (isDuringPaintStroke) {
+
+                // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
+                // to prepare the potential next paint brush stroke made by the user
+                RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
+                if (rotoItem && (isDuringPaintStroke || rotoItem->getContext()->isDoingNeatRender())) {
                     getNode()->setPaintBuffer(it->second.downscaleImage);
                 }
             } else {

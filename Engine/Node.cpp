@@ -6621,6 +6621,7 @@ Node::makePreviewImage(SequenceTime time,
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoPaintNode = NodePtr();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = true;
         tlsArgs->stats = RenderStatsPtr();
@@ -7767,6 +7768,7 @@ Node::onInputChanged(int inputNb,
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoPaintNode = NodePtr();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = false;
         tlsArgs->stats = RenderStatsPtr();

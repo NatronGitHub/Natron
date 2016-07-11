@@ -128,6 +128,7 @@ public:
                                                                 U64 viewerHash,
                                                                 bool canAbort,
                                                                 const NodePtr& rotoPaintNode,
+                                                                const bool isDoingRotoNeatRender,
                                                                 const RenderStatsPtr& stats,
                                                                 ViewerArgs* outArgs);
 
@@ -141,6 +142,7 @@ private:
                                                          int textureIndex,
                                                          U64 viewerHash,
                                                          const NodePtr& rotoPaintNode,
+                                                         const bool isDoingRotoNeatRender,
                                                          const AbortableRenderInfoPtr& abortInfo,
                                                          const RenderStatsPtr& stats,
                                                          ViewerArgs* outArgs);
@@ -184,6 +186,7 @@ private:
     ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
                                              const U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
+                                             const bool isDoingRotoNeatRender,
                                              const RenderStatsPtr& stats,
                                              ViewerArgs* outArgs);
 
@@ -206,6 +209,7 @@ public:
                                      U64 viewerHash,
                                      bool canAbort,
                                      const NodePtr& rotoPaintNode,
+                                     bool isDoingRotoNeatRender,
                                      bool useTLS,
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
@@ -429,6 +433,7 @@ private:
                                               U64 viewerHash,
                                               bool canAbort,
                                               const NodePtr& rotoPaintNode,
+                                              bool isDoingRotoNeatRender,
                                               bool useTLS,
                                               const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                               const RenderStatsPtr& stats,

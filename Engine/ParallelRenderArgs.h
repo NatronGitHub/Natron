@@ -272,6 +272,7 @@ public:
         // When painting with a roto node, these are set
         NodePtr activeRotoPaintNode;
         RotoDrawableItemPtr activeRotoDrawableItem;
+        bool isDoingRotoNeatRender;
 
         bool isAnalysis;
         bool draftMode;

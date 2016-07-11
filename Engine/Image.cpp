@@ -928,9 +928,10 @@ pasteFromGL(const Image & src,
             const RectI& dstBounds,
             StorageModeEnum thisStorage,
             StorageModeEnum otherStorage,
-            int target, int texID)
+            int target)
 {
 
+    int texID = dst->getGLTextureID();
     if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to OpenGL texture
 
@@ -945,11 +946,20 @@ pasteFromGL(const Image & src,
         GL::glActiveTexture(GL_TEXTURE1);
         GL::glBindTexture( target, src.getGLTextureID() );
 
-        Image::applyTextureMapping<GL>(dstBounds, srcRoi);
+
+        GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
+        assert(shader);
+        shader->bind();
+        shader->setUniform("srcTex", 1);
+
+        Image::applyTextureMapping<GL>(srcBounds, srcRoi);
+
+        shader->unbind();
 
         GL::glBindTexture(target, 0);
         GL::glActiveTexture(GL_TEXTURE0);
         GL::glBindTexture(target, 0);
+        
         glCheckError(GL);
     } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
         // RAM image to OpenGL texture
@@ -1209,9 +1219,9 @@ Image::resizeInternal(const OSGLContextPtr& glContext,
     if (srcImg->getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
         if (glContext->isGPUContext()) {
-            pasteFromGL<GL_GPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget(), (*outputImage)->getGLTextureID());
+            pasteFromGL<GL_GPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget());
         } else {
-            pasteFromGL<GL_CPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget(), (*outputImage)->getGLTextureID());
+            pasteFromGL<GL_CPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget());
         }
 
         //pasteFrom(*srcImg, srcBounds, false, glContext);
@@ -1298,9 +1308,9 @@ Image::pasteFrom(const Image & src,
     if (getStorageMode() == eStorageModeGLTex || src.getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
         if (glContext->isGPUContext()) {
-            pasteFromGL<GL_GPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
+            pasteFromGL<GL_GPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget());
         } else {
-            pasteFromGL<GL_CPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
+            pasteFromGL<GL_CPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget());
         }
     } else {
         assert(getStorageMode() != eStorageModeGLTex && src.getStorageMode() != eStorageModeGLTex);
@@ -1426,7 +1436,7 @@ void fillGL(const RectI & roi,
     GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
 
-
+    Image::setupGLViewport<GL>(bounds, roi);
     GL::glClearColor(r, g, b, a);
     GL::glClear(GL_COLOR_BUFFER_BIT);
 

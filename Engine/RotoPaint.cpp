@@ -1355,7 +1355,7 @@ RotoPaint::onInputChanged(int inputNb)
 }
 
 StatusEnum
-RotoPaint::getRegionOfDefinition(U64 /*hash*/,
+RotoPaint::getRegionOfDefinition(U64 hash,
                                  double time,
                                  const RenderScale & scale,
                                  ViewIdx view,
@@ -1370,7 +1370,7 @@ RotoPaint::getRegionOfDefinition(U64 /*hash*/,
     if (bottomMerge) {
         stat =  bottomMerge->getEffectInstance()->getRegionOfDefinition_public(bottomMerge->getEffectInstance()->getRenderHash(), time, scale, view, rod, &isprojFormat);
     } else {
-        rod->clear();
+        stat = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     }
     return stat;
 }

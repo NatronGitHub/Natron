@@ -1511,7 +1511,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
     if (isDuringPaintStroke) {
 
         ImagePtr strokeImage = getNode()->getPaintBuffer();
-        if (strokeImage) {
+        if (strokeImage && strokeImage->getStorageMode() == storage) {
             *image = strokeImage;
             return;
         }
@@ -2644,9 +2644,12 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             GL_GPU::glEnable(textureTarget);
             GL_GPU::glActiveTexture(GL_TEXTURE0);
             GL_GPU::glBindTexture( textureTarget, mainImagePlane->getGLTextureID() );
+            assert(GL_GPU::glIsTexture(mainImagePlane->getGLTextureID()));
+            assert(GL_GPU::glGetError() == GL_NO_ERROR);
             glCheckError(GL_GPU);
             GL_GPU::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, mainImagePlane->getGLTextureID(), 0 /*LoD*/);
             glCheckError(GL_GPU);
+            assert(GL_GPU::glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
             glCheckFramebufferError(GL_GPU);
 
             // setup the output viewport
@@ -4765,6 +4768,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             tlsArgs->timeline = getApp()->getTimeLine();
             tlsArgs->activeRotoPaintNode = NodePtr();
             tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+            tlsArgs->isDoingRotoNeatRender = false;
             tlsArgs->isAnalysis = true;
             tlsArgs->draftMode = false;
             tlsArgs->stats = RenderStatsPtr();

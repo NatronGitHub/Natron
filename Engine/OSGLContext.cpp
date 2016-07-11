@@ -108,6 +108,11 @@ static const char* copyUnprocessedChannels_FragmentShader =
 "#endif\n"
 "}";
 
+static  const char* copyTex_FragmentShader =
+"uniform sampler2D srcTex;\n"
+"void main() {\n"
+"   gl_FragColor = texture2D(srcTex,gl_TexCoord[0].st);\n"
+"}";
 
 
 
@@ -301,6 +306,7 @@ struct OSGLContextPrivate
     unsigned int fboID;
 
     boost::shared_ptr<GLShaderBase> fillImageShader;
+    boost::shared_ptr<GLShaderBase> copyTexShader;
     std::vector<boost::shared_ptr<GLShaderBase> > applyMaskMixShader;
     std::vector<boost::shared_ptr<GLShaderBase> > copyUnprocessedChannelsShader;
 
@@ -643,6 +649,37 @@ getOrCreateFillShaderInternal()
     return shader;
 }
 
+template <typename GL>
+static boost::shared_ptr<GLShader<GL> >
+getOrCreateCopyTexShaderInternal()
+{
+
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+#ifdef DEBUG
+    std::string error;
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, copyTex_FragmentShader, &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, copyTex_FragmentShader, 0);
+#endif
+
+    assert(ok);
+#ifdef DEBUG
+    ok = shader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+
+    return shader;
+}
+
 
 template <typename GL>
 static boost::shared_ptr<GLShader<GL> >
@@ -748,6 +785,22 @@ getOrCreateCopyUnprocessedChannelsShaderInternal(bool doR,
 
     return shader;
 } // OSGLContext::getOrCreateCopyUnprocessedChannelsShader
+
+
+GLShaderBasePtr
+OSGLContext::getOrCreateCopyTexShader()
+{
+    if (_imp->copyTexShader) {
+        return _imp->copyTexShader;
+    }
+    if (_imp->useGPUContext) {
+        _imp->copyTexShader = getOrCreateCopyTexShaderInternal<GL_GPU>();
+    } else {
+        _imp->copyTexShader = getOrCreateCopyTexShaderInternal<GL_CPU>();
+    }
+    return _imp->copyTexShader;
+
+}
 
 GLShaderBasePtr
 OSGLContext::getOrCreateFillShader()
