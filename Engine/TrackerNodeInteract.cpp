@@ -504,7 +504,7 @@ TrackerNodeInteract::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& po
 }
 
 bool
-TrackerNodeInteract::isInsideSelectedMarkerTextureResizeAnchor(const QPointF& pos) const
+TrackerNodeInteract::isInsideSelectedMarkerTexture(const QPointF& pos) const
 {
     RectD textureRectCanonical;
 
@@ -1429,6 +1429,9 @@ bool
 TrackerNodeInteract::nudgeSelectedTracks(int x,
                                          int y)
 {
+    if (!isInsideSelectedMarkerTexture(lastMousePos)) {
+        return false;
+    }
     std::list< TrackMarkerPtr > markers;
 
     getContext()->getSelectedMarkers(&markers);

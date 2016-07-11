@@ -1313,6 +1313,7 @@ TrackMarkerPM::initializeKnobs()
     {
         CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, NodeCollectionPtr() );
         args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
 
         node = getContext()->getNode()->getApp()->createNode(args);

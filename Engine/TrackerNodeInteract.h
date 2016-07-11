@@ -456,7 +456,7 @@ public:
     void computeTextureCanonicalRect(const Texture& tex, int xOffset, int texWidthPx, RectD* rect) const;
     void computeSelectedMarkerCanonicalRect(RectD* rect) const;
     bool isNearbySelectedMarkerTextureResizeAnchor(const QPointF& pos) const;
-    bool isInsideSelectedMarkerTextureResizeAnchor(const QPointF& pos) const;
+    bool isInsideSelectedMarkerTexture(const QPointF& pos) const;
 
     ///Returns the keyframe time if the mouse is inside a keyframe texture
     int isInsideKeyFrameTexture(double currentTime, const QPointF& pos, const QPointF& viewportPos) const;

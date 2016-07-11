@@ -386,6 +386,9 @@ moveKeys(CurveGui* curve,
          double dt,
          double dv)
 {
+    if (!curve) {
+        return;
+    }
     KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(curve);
     BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(curve);
 
@@ -397,7 +400,11 @@ moveKeys(CurveGui* curve,
             isBezierCurve->getBezier()->moveKeyframe( oldTime, k.key->key.getTime() );
         }
     } else if (isKnobCurve) {
+
         KnobIPtr knob = isKnobCurve->getInternalKnob();
+        if (!knob) {
+            return;
+        }
         KnobParametricPtr isParametric = toKnobParametric(knob);
 
         if (!isParametric) {

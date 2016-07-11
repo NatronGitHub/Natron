@@ -2819,31 +2819,39 @@ private:
             ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
         };
         bool clearTexture[2] = { false, false };
+        BufferableObjectList toAppend;
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
             status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), false, stats, args[i].get() );
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
-            if (clearTexture[i]) {
+            if (status[i] == ViewerInstance::eViewerRenderRetCodeFail) {
                 //Just clear the viewer, nothing to do
                 args[i]->params.reset();
+                args[i].reset();
+            } else if (status[i] == ViewerInstance::eViewerRenderRetCodeBlack) {
+                if (args[i]->params) {
+                    args[i]->params->tiles.clear();
+                    toAppend.push_back(args[i]->params);
+                    args[i]->params.reset();
+                }
+                args[i].reset();
             }
         }
 
-        if (clearTexture[0] && clearTexture[1]) {
-            _imp->scheduler->notifyRenderFailure( std::string() );
-
+        if ( (status[0] == ViewerInstance::eViewerRenderRetCodeFail) && (status[1] == ViewerInstance::eViewerRenderRetCodeFail) ) {
+            viewer->disconnectViewer();
             return;
-        } else if (clearTexture[0] && !clearTexture[1]) {
-            viewer->disconnectTexture(0);
-        } else if (!clearTexture[0] && clearTexture[1]) {
-            viewer->disconnectTexture(1);
         }
 
-        BufferableObjectList toAppend;
-        if ( (status[0] == ViewerInstance::eViewerRenderRetCodeFail) && (status[1] == ViewerInstance::eViewerRenderRetCodeFail) ) {
-            return;
-        } else if ( ( (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw) && !args[0]->params->isViewerPaused ) &&
+        if (clearTexture[0]) {
+            viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
+        }
+        if (clearTexture[0]) {
+            viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
+        }
+
+        if ( ( (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw) && !args[0]->params->isViewerPaused ) &&
                     ( ( status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) && !args[1]->params->isViewerPaused ) ) {
             return;
         } else {
@@ -2872,10 +2880,8 @@ private:
         } else {
             for (int i = 0; i < 2; ++i) {
                 if (args[i] && args[i]->params) {
-                    if ( ( !args[i]->params->tiles.empty() ) || args[i]->params->isViewerPaused ) {
-                        toAppend.push_back(args[i]->params);
-                        args[i].reset();
-                    }
+                    toAppend.push_back(args[i]->params);
+                    args[i].reset();
                 }
             }
         }
@@ -3869,14 +3875,15 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
             }
         }
 
-        if (clearTexture[0] && clearTexture[1]) {
+        if (status[0] == ViewerInstance::eViewerRenderRetCodeFail && status[1] == ViewerInstance::eViewerRenderRetCodeFail) {
             _imp->viewer->disconnectViewer();
-
             return;
-        } else if (clearTexture[0] && !clearTexture[1]) {
-            _imp->viewer->disconnectTexture(0);
-        } else if (!clearTexture[0] && clearTexture[1]) {
-            _imp->viewer->disconnectTexture(1);
+        }
+        if (clearTexture[0]) {
+            _imp->viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
+        }
+        if (clearTexture[0]) {
+            _imp->viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
         }
 
         if ( (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw) && (status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) ) {

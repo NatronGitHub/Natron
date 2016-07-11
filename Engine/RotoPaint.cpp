@@ -1303,17 +1303,18 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
                                              double time)
 {
     EffectInstance::refreshExtraStateAfterTimeChanged(isPlayback, time);
-
-    if ( (_imp->ui->selectedTool == eRotoToolBlur) ||
-         ( _imp->ui->selectedTool == eRotoToolBurn) ||
-         ( _imp->ui->selectedTool == eRotoToolDodge) ||
-         ( _imp->ui->selectedTool == eRotoToolClone) ||
-         ( _imp->ui->selectedTool == eRotoToolEraserBrush) ||
-         ( _imp->ui->selectedTool == eRotoToolSolidBrush) ||
-         ( _imp->ui->selectedTool == eRotoToolReveal) ||
-         ( _imp->ui->selectedTool == eRotoToolSmear) ||
-         ( _imp->ui->selectedTool == eRotoToolSharpen) ) {
-        _imp->ui->onBreakMultiStrokeTriggered();
+    if (time != _imp->ui->strokeBeingPaintedTimelineFrame) {
+        if ( (_imp->ui->selectedTool == eRotoToolBlur) ||
+            ( _imp->ui->selectedTool == eRotoToolBurn) ||
+            ( _imp->ui->selectedTool == eRotoToolDodge) ||
+            ( _imp->ui->selectedTool == eRotoToolClone) ||
+            ( _imp->ui->selectedTool == eRotoToolEraserBrush) ||
+            ( _imp->ui->selectedTool == eRotoToolSolidBrush) ||
+            ( _imp->ui->selectedTool == eRotoToolReveal) ||
+            ( _imp->ui->selectedTool == eRotoToolSmear) ||
+            ( _imp->ui->selectedTool == eRotoToolSharpen) ) {
+            _imp->ui->onBreakMultiStrokeTriggered();
+        }
     }
     _imp->ui->computeSelectedCpsBBOX();
 }
@@ -2372,7 +2373,7 @@ RotoPaint::onOverlayPenDown(double time,
                 if (!found) {
                     _imp->ui->handleBezierSelection(nearbyBezier);
                 }
-                if (pen == ePenTypeLMB) {
+                if (pen == ePenTypeLMB || pen == ePenTypeMMB) {
                     if (_imp->ui->ctrlDown && _imp->ui->altDown && !_imp->ui->shiftDown) {
                         pushUndoCommand( new AddPointUndoCommand(_imp->ui, nearbyBezier, nearbyBezierCPIndex, nearbyBezierT) );
                         _imp->ui->evaluateOnPenUp = true;

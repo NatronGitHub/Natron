@@ -167,6 +167,7 @@ DocumentationManager::handler(QHttpRequest *req,
         
                             CreateNodeArgs args( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() );
                             args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {

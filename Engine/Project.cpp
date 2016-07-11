@@ -551,7 +551,10 @@ Project::saveProjectInternal(const QString & path,
             save(&projectSerializationObj);
             oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
             if (!bgProject) {
-                getApp()->saveProjectGui(oArchive);
+                AppInstancePtr app = getApp();
+                if (app) {
+                    app->saveProjectGui(oArchive);
+                }
             }
         } catch (...) {
             if (!autoSave && updateProjectProperties) {

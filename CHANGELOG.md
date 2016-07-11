@@ -1,5 +1,15 @@
 # History
 
+## Version 2.1.1
+
+- Fix a bug where enabling GPU rendering from the settings would not be taken into account correctly by the ShaderToy node
+- Fix a bug where panning the viewport during playback could show banding artifacts
+- Fix a bug where the Reformat node would not work properly when loading a project and then switching the Type parameter
+- Fix a crash when adding a control point to a roto shape with CTRL + ALT + LMB 
+- Fix a bug where the writing of the OpenFX plug-ins loading cache was not thread-safe. Multiple Natron processes on a same node of a render farm could corrupt the cache thus failing some renders because plug-ins could not load.
+- The Dilate/Erode nodes now have the Alpha checkbox checked by default and also have a parameter to expand the bounding box
+- The Auto-Turbo mode is now also enabled when writing out on disk
+
 ## Version 2.1.0
 
 - The point tracker was completely reworked. It now uses libmv (from Blender). It now allows tracking different motion types (translation, rotation, scaling, perspective) and can be used for anything that needs match-moving or stabilizing.

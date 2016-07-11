@@ -95,7 +95,6 @@
  * @brief optional x1 bool property
  * Default Value - false
  * When set the node will not be part of the project. The node can be used for internal used, e.g in a Python script.
- * kCreateNodeArgsPropNoNodeGUI is implicitly set to true when this property is set
  **/
 #define kCreateNodeArgsPropOutOfProject "CreateNodeArgsPropOutOfProject"
 

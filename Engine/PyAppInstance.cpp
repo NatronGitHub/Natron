@@ -109,7 +109,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
     args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
 
-
+    bool skipNoNodeGuiProp = false;
     for (std::map<QString, NodeCreationProperty*>::const_iterator it = props.begin(); it!=props.end(); ++it) {
         IntNodeCreationProperty* isInt = dynamic_cast<IntNodeCreationProperty*>(it->second);
         BoolNodeCreationProperty* isBool = dynamic_cast<BoolNodeCreationProperty*>(it->second);
@@ -120,15 +120,22 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
         if (it->first.startsWith(QString::fromUtf8(kCreateNodeArgsPropParamValue))) {
             fail = false;
         }
+        std::string prop = it->first.toStdString();
         try {
             if (isInt) {
-                args->setPropertyN<int>(it->first.toStdString(), isInt->getValues(), fail);
+                args->setPropertyN<int>(prop, isInt->getValues(), fail);
             } else if (isBool) {
-                args->setPropertyN<bool>(it->first.toStdString(), isBool->getValues(), fail);
+                if (prop == kCreateNodeArgsPropOutOfProject) {
+                    args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+                    skipNoNodeGuiProp = true;
+                } else if (skipNoNodeGuiProp && prop == kCreateNodeArgsPropNoNodeGUI) {
+                    continue;
+                }
+                args->setPropertyN<bool>(prop, isBool->getValues(), fail);
             } else if (isDouble) {
-                args->setPropertyN<double>(it->first.toStdString(), isDouble->getValues(), fail);
+                args->setPropertyN<double>(prop, isDouble->getValues(), fail);
             } else if (isString) {
-                args->setPropertyN<std::string>(it->first.toStdString(), isString->getValues(), fail);
+                args->setPropertyN<std::string>(prop, isString->getValues(), fail);
             }
         } catch (const std::exception& e) {
             std::stringstream ss;

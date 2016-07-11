@@ -1697,15 +1697,17 @@ ViewerGL::clearLastRenderedImage()
 }
 
 void
-ViewerGL::disconnectInputTexture(int textureIndex)
+ViewerGL::disconnectInputTexture(int textureIndex, bool clearRoD)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(textureIndex == 0 || textureIndex == 1);
     if (_imp->displayTextures[textureIndex].isVisible) {
         _imp->displayTextures[textureIndex].isVisible = false;
-        RectI r(0, 0, 0, 0);
-        _imp->infoViewer[textureIndex]->setDataWindow(r);
+        if (clearRoD) {
+            RectI r(0, 0, 0, 0);
+            _imp->infoViewer[textureIndex]->setDataWindow(r);
+        }
     }
 }
 
@@ -1754,11 +1756,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
-    if ( buttonDownIsLeft(e) ) {
+    if ( (e)->buttons() == Qt::LeftButton   && (!e->modifiers() &  Qt::MetaModifier) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
-    } else if ( buttonDownIsRight(e) ) {
+    } else if ( e->buttons() == Qt::RightButton  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
         _imp->pointerTypeOnPress = ePenTypeRMB;
-    } else if ( buttonDownIsMiddle(e) ) {
+    } else if ( e->buttons() == Qt::MiddleButton  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::AltModifier)) ) {
         _imp->pointerTypeOnPress = ePenTypeMMB;
     }
 
@@ -2706,9 +2708,7 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
-    if (!_imp->displayTextures[texIndex].isVisible) {
-        return true;
-    }
+
     unsigned int mipMapLevel = (unsigned int)std::max((int)getInternalNode()->getMipMapLevelFromZoomFactor(), (int)getInternalNode()->getViewerMipMapLevel());
     int closestPo2 = 1 << mipMapLevel;
     if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {

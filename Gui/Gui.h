@@ -669,7 +669,7 @@ public Q_SLOTS:
 
     void onFreezeUIButtonClicked(bool clicked);
 
-    void refreshAllTimeEvaluationParams();
+    void refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs);
 
     void onPropertiesScrolled();
 

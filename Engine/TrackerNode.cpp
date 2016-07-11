@@ -25,6 +25,8 @@
 #include <boost/algorithm/clamp.hpp>
 
 #include "TrackerNode.h"
+
+#include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -229,6 +231,27 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackCurKey);
     _imp->ui->trackCurrentKeyframeButton = trackCurKey;
 
+
+    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamSetPatternKeyFrameLabel) );
+    addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
+    addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
+    addKeyframe->setEvaluateOnChange(false);
+    addKeyframe->setSecretByDefault(true);
+    addKeyframe->setInViewerContextCanHaveShortcut(true);
+    addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
+    trackingPage->addKnob(addKeyframe);
+    _imp->ui->setKeyFrameButton = addKeyframe;
+
+    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
+    removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
+    removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
+    removeKeyframe->setEvaluateOnChange(false);
+    removeKeyframe->setSecretByDefault(true);
+    removeKeyframe->setInViewerContextCanHaveShortcut(true);
+    removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
+    trackingPage->addKnob(removeKeyframe);
+    _imp->ui->removeKeyFrameButton = removeKeyframe;
+
     KnobButtonPtr clearAllAnimation = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAllAnimationLabel) );
     clearAllAnimation->setName(kTrackerUIParamClearAllAnimation);
     clearAllAnimation->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
@@ -312,25 +335,6 @@ TrackerNode::initializeKnobs()
     _imp->ui->showCorrelationButton = showError;
 
 
-    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamSetPatternKeyFrameLabel) );
-    addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
-    addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
-    addKeyframe->setEvaluateOnChange(false);
-    addKeyframe->setSecretByDefault(true);
-    addKeyframe->setInViewerContextCanHaveShortcut(true);
-    addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
-    trackingPage->addKnob(addKeyframe);
-    _imp->ui->setKeyFrameButton = addKeyframe;
-
-    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
-    removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
-    removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
-    removeKeyframe->setEvaluateOnChange(false);
-    removeKeyframe->setSecretByDefault(true);
-    removeKeyframe->setInViewerContextCanHaveShortcut(true);
-    removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
-    trackingPage->addKnob(removeKeyframe);
-    _imp->ui->removeKeyFrameButton = removeKeyframe;
 
     KnobButtonPtr resetOffset = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamResetOffsetLabel) );
     resetOffset->setName(kTrackerUIParamResetOffset);
@@ -384,6 +388,10 @@ TrackerNode::initializeKnobs()
     trackAllKeys->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(trackCurKey);
     trackCurKey->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(addKeyframe);
+    addKeyframe->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(removeKeyframe);
+    removeKeyframe->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(clearAllAnimation);
     clearAllAnimation->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(clearBackwardAnim);
@@ -397,10 +405,6 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(createKeyOnMove);
     addKnobToViewerUI(showError);
     showError->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(addKeyframe);
-    addKeyframe->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(removeKeyframe);
-    removeKeyframe->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(resetOffset);
     resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
@@ -1232,7 +1236,7 @@ TrackerNode::drawOverlay(double time,
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-        if (_imp->ui->showMarkerTexture && selectedFound) {
+        if (_imp->ui->showMarkerTexture && selectedFound && !getApp()->isDraftRenderEnabled()) {
             _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
@@ -1490,7 +1494,7 @@ TrackerNode::onOverlayPenDown(double time,
         didSomething = true;
     }
 
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         if (_imp->ui->shiftDown) {
             _imp->ui->eventState = eMouseStateScalingSelectedMarker;
         } else {
@@ -1711,7 +1715,7 @@ TrackerNode::onOverlayPenMotion(double time,
     if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
         setCurrentCursor(eCursorFDiag);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         setCurrentCursor(eCursorSizeAll);
         hoverProcess = true;
     } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
@@ -1721,7 +1725,7 @@ TrackerNode::onOverlayPenMotion(double time,
         setCurrentCursor(eCursorDefault);
     }
 
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTextureResizeAnchor(pos) ) {
+    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         _imp->ui->hoverState = eDrawStateShowScalingHint;
         hoverProcess = true;
     }
@@ -2235,8 +2239,8 @@ TrackerNode::onOverlayPenMotion(double time,
             double y = centerKnob->getValueAtTime(time, 1);
             double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
             double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
-            x -= dx;
-            y -= dy;
+            x += dx;
+            y += dy;
             centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
             for (int i = 0; i < 4; ++i) {
                 for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
@@ -2456,7 +2460,7 @@ void
 TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
                                                double /*time*/)
 {
-    if (_imp->ui->showMarkerTexture && !isPlayback) {
+    if (_imp->ui->showMarkerTexture && !isPlayback && !getApp()->isDraftRenderEnabled()) {
         _imp->ui->refreshSelectedMarkerTexture();
     }
 }

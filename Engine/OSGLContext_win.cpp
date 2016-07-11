@@ -708,6 +708,9 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         UINT maxCount = wglInfo->GetGpuIDAMD(0, 0);
         std::vector<UINT> gpuIDs(maxCount);
         UINT gpuCount = wglInfo->GetGpuIDAMD(maxCount, &gpuIDs[0]);
+        if (gpuCount > maxCount) {
+            gpuIDs.resize(gpuCount);
+        }
         char tmpBuf[500];
         for (int i = 0; i < (int)gpuCount; ++i) {
             OpenGLRendererInfo info;
