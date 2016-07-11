@@ -228,7 +228,7 @@ public:
 
     void disconnectViewer();
 
-    void disconnectTexture(int index);
+    void disconnectTexture(int index, bool clearRod);
 
     int getLutType() const WARN_UNUSED_RETURN;
 
@@ -342,7 +342,7 @@ public Q_SLOTS:
     void redrawViewerNow();
 
 
-    void executeDisconnectTextureRequestOnMainThread(int index);
+    void executeDisconnectTextureRequestOnMainThread(int index, bool clearRoD);
 
 
 Q_SIGNALS:
@@ -357,7 +357,7 @@ Q_SIGNALS:
 
     void availableComponentsChanged();
 
-    void disconnectTextureRequest(int index);
+    void disconnectTextureRequest(int index,bool clearRoD);
 
     void viewerRenderingStarted();
     void viewerRenderingEnded();

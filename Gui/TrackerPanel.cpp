@@ -1526,6 +1526,9 @@ void
 TrackerPanel::onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker,
                                          int key)
 {
+    if (!marker) {
+        return;
+    }
     TrackKeysMap::iterator found = _imp->keys.find(marker);
 
     if ( found == _imp->keys.end() ) {
@@ -1535,7 +1538,18 @@ TrackerPanel::onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker,
     } else {
         std::pair<std::set<double>::iterator, bool> ret = found->second.centerKeys.insert(key);
         if (ret.second && found->second.visible) {
-            AppInstPtr app = _imp->node.lock()->getNode()->getApp();
+            NodeGuiPtr node = _imp->node.lock();
+            if (!node) {
+                return;
+            }
+            NodePtr internalNode = node->getNode();
+            if (!internalNode) {
+                return;
+            }
+            AppInstPtr app = internalNode->getApp();
+            if (!app) {
+                return;
+            }
             _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
             app->addKeyframeIndicator(key);
         }
@@ -1555,7 +1569,19 @@ TrackerPanel::onKeyframeRemovedOnTrackCenter(const TrackMarkerPtr& marker,
     if ( it2 != found->second.centerKeys.end() ) {
         found->second.centerKeys.erase(it2);
         if (found->second.visible) {
-            _imp->node.lock()->getNode()->getApp()->removeKeyFrameIndicator(key);
+            NodeGuiPtr node = _imp->node.lock();
+            if (!node) {
+                return;
+            }
+            NodePtr internalNode = node->getNode();
+            if (!internalNode) {
+                return;
+            }
+            AppInstPtr app = internalNode->getApp();
+            if (!app) {
+                return;
+            }
+            app->removeKeyFrameIndicator(key);
         }
     }
 }
@@ -1577,7 +1603,19 @@ TrackerPanel::onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker)
 
 
     if (it->second.visible) {
-        _imp->node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, true);
+        NodeGuiPtr node = _imp->node.lock();
+        if (!node) {
+            return;
+        }
+        NodePtr internalNode = node->getNode();
+        if (!internalNode) {
+            return;
+        }
+        AppInstPtr app = internalNode->getApp();
+        if (!app) {
+            return;
+        }
+        app->removeMultipleKeyframeIndicator(toRemove, true);
     }
 }
 
@@ -1602,7 +1640,19 @@ TrackerPanel::onMultipleKeysRemovedOnTrackCenter(const TrackMarkerPtr &marker,
 
 
     if (found->second.visible) {
-        _imp->node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, true);
+        NodeGuiPtr node = _imp->node.lock();
+        if (!node) {
+            return;
+        }
+        NodePtr internalNode = node->getNode();
+        if (!internalNode) {
+            return;
+        }
+        AppInstPtr app = internalNode->getApp();
+        if (!app) {
+            return;
+        }
+        app->removeMultipleKeyframeIndicator(toRemove, true);
     }
 }
 
@@ -1627,7 +1677,19 @@ TrackerPanel::onMultipleKeyframesSetOnTrackCenter(const TrackMarkerPtr& marker,
             }
         }
         if (!reallyInserted.empty() && found->second.visible) {
-            _imp->node.lock()->getNode()->getApp()->addMultipleKeyframeIndicatorsAdded(reallyInserted, true);
+            NodeGuiPtr node = _imp->node.lock();
+            if (!node) {
+                return;
+            }
+            NodePtr internalNode = node->getNode();
+            if (!internalNode) {
+                return;
+            }
+            AppInstPtr app = internalNode->getApp();
+            if (!app) {
+                return;
+            }
+            app->addMultipleKeyframeIndicatorsAdded(reallyInserted, true);
         }
     }
 }
@@ -1637,10 +1699,22 @@ TrackerPanelPrivate::setVisibleItemKeyframes(const std::list<int>& keyframes,
                                              bool visible,
                                              bool emitSignal)
 {
+    NodeGuiPtr n = node.lock();
+    if (!n) {
+        return;
+    }
+    NodePtr internalNode = n->getNode();
+    if (!internalNode) {
+        return;
+    }
+    AppInstPtr app = internalNode->getApp();
+    if (!app) {
+        return;
+    }
     if (!visible) {
-        node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(keyframes, emitSignal);
+        app->removeMultipleKeyframeIndicator(keyframes, emitSignal);
     } else {
-        node.lock()->getNode()->getApp()->addMultipleKeyframeIndicatorsAdded(keyframes, emitSignal);
+        app->addMultipleKeyframeIndicatorsAdded(keyframes, emitSignal);
     }
 }
 
@@ -1649,10 +1723,22 @@ TrackerPanelPrivate::setVisibleItemUserKeyframes(const std::list<int>& keyframes
                                                  bool visible,
                                                  bool emitSignal)
 {
+    NodeGuiPtr n = node.lock();
+    if (!n) {
+        return;
+    }
+    NodePtr internalNode = n->getNode();
+    if (!internalNode) {
+        return;
+    }
+    AppInstPtr app = internalNode->getApp();
+    if (!app) {
+        return;
+    }
     if (!visible) {
-        node.lock()->getNode()->getApp()->removeUserMultipleKeyframeIndicator(keyframes, emitSignal);
+        app->removeUserMultipleKeyframeIndicator(keyframes, emitSignal);
     } else {
-        node.lock()->getNode()->getApp()->addUserMultipleKeyframeIndicatorsAdded(keyframes, emitSignal);
+        app->addUserMultipleKeyframeIndicatorsAdded(keyframes, emitSignal);
     }
 }
 

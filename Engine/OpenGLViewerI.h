@@ -137,7 +137,7 @@ public:
     /**
      * @brief Called when the input of a viewer should render black.
      **/
-    virtual void disconnectInputTexture(int textureIndex) = 0;
+    virtual void disconnectInputTexture(int textureIndex, bool clearRoD) = 0;
 
     /**
      * @brief This function should update the color picker values (as a label or numbers) right away.

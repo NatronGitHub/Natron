@@ -195,7 +195,7 @@ public:
                                                const Point& viewportCenter,
                                                bool isPartialRect) OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
-    virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
+    virtual void disconnectInputTexture(int textureIndex, bool clearRoD) OVERRIDE FINAL;
 
 
     /**

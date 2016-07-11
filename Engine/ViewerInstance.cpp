@@ -176,7 +176,7 @@ ViewerInstance::ViewerInstance(NodePtr node)
 
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 
-    QObject::connect( this, SIGNAL(disconnectTextureRequest(int)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int)) );
+    QObject::connect( this, SIGNAL(disconnectTextureRequest(int,bool)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int,bool)) );
     QObject::connect( _imp.get(), SIGNAL(mustRedrawViewer()), this, SLOT(redrawViewer()) );
     QObject::connect( this, SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
 }
@@ -306,11 +306,11 @@ ViewerInstance::getFrameRange(double *first,
 }
 
 void
-ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
+ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (_imp->uiContext) {
-        _imp->uiContext->disconnectInputTexture(index);
+        _imp->uiContext->disconnectInputTexture(index, clearRoD);
     }
 }
 
@@ -555,7 +555,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 
 
         if ( (status[i] == eViewerRenderRetCodeFail) || (status[i] == eViewerRenderRetCodeBlack) ) {
-            disconnectTextureRequest(i);
+            disconnectTextureRequest(i, status[i] == eViewerRenderRetCodeFail);
         } else {
             assert(args[i] && args[i]->params);
             assert(args[i]->params->textureIndex == i);
@@ -684,10 +684,10 @@ ViewerInstance::renderViewer(ViewIdx view,
             }
 
             if (ret[i] == eViewerRenderRetCodeBlack) {
-                disconnectTexture(args[i]->params->textureIndex);
+                disconnectTexture(args[i]->params->textureIndex, false);
             }
 
-            if ( (ret[i] == eViewerRenderRetCodeFail) || (ret[i] == eViewerRenderRetCodeRedraw) || (ret[i] == eViewerRenderRetCodeBlack) ) {
+            if (ret[i] == eViewerRenderRetCodeFail) {
                 args[i].reset();
             }
         }
@@ -2860,13 +2860,14 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     // QMutexLocker locker(&updateViewerMutex);
     // if (updateViewerRunning) {
     uiContext->makeOpenGLcontextCurrent();
-
+    if (params->tiles.empty()) {
+        return;
+    }
     bool doUpdate = true;
     if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge( params->textureIndex, params->abortInfo->getRenderAge() ) ) {
         doUpdate = false;
     }
     if (doUpdate) {
-        assert( !params->tiles.empty() );
         /*RectI bounds;
            params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);*/
 
@@ -3162,10 +3163,10 @@ ViewerInstance::disconnectViewer()
 }
 
 void
-ViewerInstance::disconnectTexture(int index)
+ViewerInstance::disconnectTexture(int index,bool clearRod)
 {
     if (_imp->uiContext) {
-        Q_EMIT disconnectTextureRequest(index);
+        Q_EMIT disconnectTextureRequest(index, clearRod);
     }
 }
 
