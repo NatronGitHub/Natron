@@ -1289,8 +1289,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     // _imp->_creatingInternalNode will be set to false if we created a pyPlug with the flag args.createGui = false
     bool createGui = !_imp->_creatingInternalNode;
     bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
-    bool argsOutOfProject = args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
-    if (argsNoNodeGui || argsOutOfProject) {
+    if (argsNoNodeGui) {
         createGui = false;
     }
     if (createGui) {

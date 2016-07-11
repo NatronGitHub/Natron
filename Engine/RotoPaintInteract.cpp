@@ -68,6 +68,7 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
     , featherBarBeingDragged()
     , featherBarBeingHovered()
     , strokeBeingPaint()
+    , strokeBeingPaintedTimelineFrame(0)
     , cloneOffset()
     , click()
     , selectedTool(eRotoToolSelectAll)
@@ -1109,6 +1110,8 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     int sourceType_i = sourceTypeChoice.lock()->getValue();
     double effectValue = effectSpinBox.lock()->getValue();
 
+    int time = context->getTimelineCurrentTime();
+    strokeBeingPaintedTimelineFrame = time;
 
     colorKnob->setValues(color[0], color[1], color[2], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
     operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp), 0);
@@ -1122,7 +1125,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     effectKnob->setValue(effectValue);
     if (!prepareForLater) {
         boost::shared_ptr<KnobInt> lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
-        lifeTimeFrameKnob->setValue( context->getTimelineCurrentTime() );
+        lifeTimeFrameKnob->setValue( time );
     }
     if ( (strokeType == eRotoStrokeTypeClone) || (strokeType == eRotoStrokeTypeReveal) ) {
         timeOffsetKnob->setValue(timeOffset);

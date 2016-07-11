@@ -221,6 +221,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
         CreateNodeArgs args( pluginId.toStdString(), boost::shared_ptr<NodeCollection>() );
         args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<bool>(kCreateNodeArgsPropTrustPluginID, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -237,6 +238,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
                 CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, boost::shared_ptr<NodeCollection>() );
                 args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
                 _imp->timeOffsetNode = app->createNode(args);
@@ -250,6 +252,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
                 CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, boost::shared_ptr<NodeCollection>() );
                 args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
                 _imp->frameHoldNode = app->createNode(args);
                 if (!_imp->frameHoldNode) {
@@ -265,6 +268,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     CreateNodeArgs args( PLUGINID_OFX_MERGE, boost::shared_ptr<NodeCollection>() );
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
