@@ -936,28 +936,34 @@ pasteFromGL(const Image & src,
         // OpenGL texture to OpenGL texture
 
         GLuint fboID = glContext->getOrCreateFBOId();
-
         GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         GL::glEnable(target);
         GL::glActiveTexture(GL_TEXTURE0);
+
         GL::glBindTexture( target, texID );
+
+        // texture parameters are per texture unit
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
         GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
         glCheckFramebufferError(GL);
-        GL::glActiveTexture(GL_TEXTURE1);
         GL::glBindTexture( target, src.getGLTextureID() );
+
 
 
         GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
         assert(shader);
         shader->bind();
-        shader->setUniform("srcTex", 1);
+        shader->setUniform("srcTex", 0);
 
-        Image::applyTextureMapping<GL>(srcBounds, srcRoi);
+        Image::applyTextureMapping<GL>(srcRoi, srcRoi);
 
         shader->unbind();
-
-        GL::glBindTexture(target, 0);
-        GL::glActiveTexture(GL_TEXTURE0);
         GL::glBindTexture(target, 0);
         
         glCheckError(GL);

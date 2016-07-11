@@ -1511,7 +1511,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
     if (isDuringPaintStroke) {
 
         ImagePtr strokeImage = getNode()->getPaintBuffer();
-        if (strokeImage && strokeImage->getStorageMode() == storage) {
+        if (strokeImage && strokeImage->getStorageMode() == storage && strokeImage->getMipMapLevel() == mipMapLevel) {
             *image = strokeImage;
             return;
         }
