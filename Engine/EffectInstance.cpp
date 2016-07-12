@@ -1472,6 +1472,117 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 template ImagePtr EffectInstance::convertRAMImageToOpenGLTexture<GL_GPU>(const ImagePtr& image);
 template ImagePtr EffectInstance::convertRAMImageToOpenGLTexture<GL_CPU>(const ImagePtr& image);
 
+static ImagePtr ensureImageScale(unsigned int mipMapLevel,
+                                 const ImagePtr& image,
+                                 const ImageKey & key,
+                                 const RectI* boundsParam,
+                                 const RectD* rodParam,
+                                 const OSGLContextAttacherPtr& glContextAttacher)
+{
+    if (image->getMipMapLevel() == mipMapLevel) {
+        return image;
+    }
+
+    ImagePtr imageToConvert = image;
+
+    ImageParamsPtr oldParams = imageToConvert->getParams();
+
+    if (imageToConvert->getMipMapLevel() < mipMapLevel) {
+
+        //This is the bounds of the upscaled image
+        RectI imgToConvertBounds = imageToConvert->getBounds();
+
+        //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
+        const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
+
+        RectI downscaledBounds;
+        rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+
+        if (boundsParam) {
+            downscaledBounds.merge(*boundsParam);
+        }
+        ImageParamsPtr imageParams = Image::makeParams(rod,
+                                                       downscaledBounds,
+                                                       oldParams->getPixelAspectRatio(),
+                                                       mipMapLevel,
+                                                       oldParams->isRodProjectFormat(),
+                                                       oldParams->getComponents(),
+                                                       oldParams->getBitDepth(),
+                                                       oldParams->getPremultiplication(),
+                                                       oldParams->getFieldingOrder(),
+                                                       eStorageModeRAM);
+
+
+
+        imageParams->setMipMapLevel(mipMapLevel);
+
+
+        ImagePtr img;
+        getOrCreateFromCacheInternal(key, imageParams, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(), imageToConvert->usesBitMap(), &img);
+        if (!img) {
+            return img;
+        }
+
+
+        /*
+         Since the RoDs of the 2 mipmaplevels are different, their bounds do not match exactly as po2
+         To determine which portion we downscale, we downscale the initial image bounds to the mipmap level
+         of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
+         original mipmap level and ensure that it lies into the original image bounds
+         */
+        int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
+        RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
+        dstRoi.intersect(downscaledBounds, &dstRoi);
+        dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
+        dstRoi.intersect(imgToConvertBounds, &dstRoi);
+
+        if (imgToConvertBounds.area() > 1) {
+            imageToConvert->downscaleMipMap( rod,
+                                            dstRoi,
+                                            imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
+                                            imageToConvert->usesBitMap(),
+                                            img.get() );
+        } else {
+            img->pasteFrom(*imageToConvert, imgToConvertBounds);
+        }
+
+        imageToConvert = img;
+    } else {
+
+        //This is the bounds of the downscaled image
+        RectI upscaledImgBounds;
+        //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
+        const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
+        rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &upscaledImgBounds);
+
+        ImageParamsPtr imageParams = Image::makeParams(rod,
+                                                       upscaledImgBounds,
+                                                       oldParams->getPixelAspectRatio(),
+                                                       mipMapLevel,
+                                                       oldParams->isRodProjectFormat(),
+                                                       oldParams->getComponents(),
+                                                       oldParams->getBitDepth(),
+                                                       oldParams->getPremultiplication(),
+                                                       oldParams->getFieldingOrder(),
+                                                       eStorageModeRAM);
+
+
+
+        imageParams->setMipMapLevel(mipMapLevel);
+
+
+        ImagePtr img;
+        getOrCreateFromCacheInternal(key, imageParams, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(), imageToConvert->usesBitMap(), &img);
+        if (!img) {
+            return img;
+        }
+
+        imageToConvert->upscaleMipMap( imageToConvert->getBounds(), imageToConvert->getMipMapLevel(), 0, img.get() );
+        imageToConvert = img;
+    }
+    return imageToConvert;
+}
+
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     bool isDuringPaintStroke,
@@ -1508,10 +1619,23 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         }
     }
 
-    if (isDuringPaintStroke) {
+    if (!isCached && isDuringPaintStroke) {
 
         ImagePtr strokeImage = getNode()->getPaintBuffer();
-        if (strokeImage && strokeImage->getStorageMode() == storage && strokeImage->getMipMapLevel() == mipMapLevel) {
+        if (strokeImage && strokeImage->getStorageMode() == storage) {
+            if (strokeImage->getMipMapLevel() != mipMapLevel) {
+                // conver the image to RAM if needed and convert scale and convert back to GPU if needed
+                if (strokeImage->getStorageMode() == eStorageModeGLTex) {
+                    assert(glContextAttacher);
+                    glContextAttacher->attach();
+                    strokeImage = convertOpenGLTextureToCachedRAMImage(strokeImage, false);
+                }
+                strokeImage = ensureImageScale(mipMapLevel, strokeImage, key, boundsParam, rodParam, glContextAttacher);
+                if (storage == eStorageModeGLTex) {
+                    strokeImage = convertRAMImageToOpenGLTexture<GL_GPU>(strokeImage);
+                }
+            }
+            getNode()->setPaintBuffer(strokeImage);
             *image = strokeImage;
             return;
         }
@@ -1603,105 +1727,12 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             ///Ensure the image is allocated
             (imageToConvert)->allocateMemory();
 
-            ImageParamsPtr oldParams = imageToConvert->getParams();
 
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
-
-                if (imageToConvert->getMipMapLevel() < mipMapLevel) {
-
-                    //This is the bounds of the upscaled image
-                    RectI imgToConvertBounds = imageToConvert->getBounds();
-
-                    //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
-                    const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
-
-                    RectI downscaledBounds;
-                    rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
-
-                    if (boundsParam) {
-                        downscaledBounds.merge(*boundsParam);
-                    }
-                    ImageParamsPtr imageParams = Image::makeParams(rod,
-                                                                   downscaledBounds,
-                                                                   oldParams->getPixelAspectRatio(),
-                                                                   mipMapLevel,
-                                                                   oldParams->isRodProjectFormat(),
-                                                                   oldParams->getComponents(),
-                                                                   oldParams->getBitDepth(),
-                                                                   oldParams->getPremultiplication(),
-                                                                   oldParams->getFieldingOrder(),
-                                                                   eStorageModeRAM);
-
-
-
-                    imageParams->setMipMapLevel(mipMapLevel);
-
-
-                    ImagePtr img;
-                    getOrCreateFromCacheInternal(key, imageParams, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(), imageToConvert->usesBitMap(), &img);
-                    if (!img) {
-                        return;
-                    }
-
-
-                    /*
-                     Since the RoDs of the 2 mipmaplevels are different, their bounds do not match exactly as po2
-                     To determine which portion we downscale, we downscale the initial image bounds to the mipmap level
-                     of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
-                     original mipmap level and ensure that it lies into the original image bounds
-                     */
-                    int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
-                    RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
-                    dstRoi.intersect(downscaledBounds, &dstRoi);
-                    dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
-                    dstRoi.intersect(imgToConvertBounds, &dstRoi);
-
-                    if (imgToConvertBounds.area() > 1) {
-                        imageToConvert->downscaleMipMap( rod,
-                                                        dstRoi,
-                                                        imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
-                                                        imageToConvert->usesBitMap(),
-                                                        img.get() );
-                    } else {
-                        img->pasteFrom(*imageToConvert, imgToConvertBounds);
-                    }
-                    
-                    imageToConvert = img;
-                }
-            } else {
-                // only plug-ins that paints over themselves should be able to retrieve an image that is at a lower scale
-                assert(isPaintingOverItselfEnabled());
-
-                //This is the bounds of the downscaled image
-                RectI upscaledImgBounds;
-                //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
-                const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
-                rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &upscaledImgBounds);
-
-                ImageParamsPtr imageParams = Image::makeParams(rod,
-                                                               upscaledImgBounds,
-                                                               oldParams->getPixelAspectRatio(),
-                                                               mipMapLevel,
-                                                               oldParams->isRodProjectFormat(),
-                                                               oldParams->getComponents(),
-                                                               oldParams->getBitDepth(),
-                                                               oldParams->getPremultiplication(),
-                                                               oldParams->getFieldingOrder(),
-                                                               eStorageModeRAM);
-
-
-
-                imageParams->setMipMapLevel(mipMapLevel);
-
-
-                ImagePtr img;
-                getOrCreateFromCacheInternal(key, imageParams, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(), imageToConvert->usesBitMap(), &img);
-                if (!img) {
+                imageToConvert = ensureImageScale(mipMapLevel, imageToConvert, key, boundsParam, rodParam, glContextAttacher);
+                if (!imageToConvert) {
                     return;
                 }
-
-                imageToConvert->upscaleMipMap( imageToConvert->getBounds(), imageToConvert->getMipMapLevel(), 0, img.get() );
-                imageToConvert = img;
             }
 
             if (storage == eStorageModeGLTex) {

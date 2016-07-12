@@ -969,7 +969,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                     tile.rect.closestPo2 = 1 << mipmapLevel;
                     tile.rect.par = outArgs->params->pixelAspectRatio;
                     tile.bytesCount = tile.rect.area() * 4;
-                    assert(tile.bytesCount > 0);
                     if (outArgs->params->depth == eImageBitDepthFloat) {
                         tile.bytesCount *= sizeof(float);
                     }
@@ -982,7 +981,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
             tile.rect.closestPo2 = 1 << mipmapLevel;
             tile.rect.par = outArgs->params->pixelAspectRatio;
             tile.bytesCount = tile.rect.area() * 4;
-            assert(tile.bytesCount > 0);
             if (outArgs->params->depth == eImageBitDepthFloat) {
                 tile.bytesCount *= sizeof(float);
             }

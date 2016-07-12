@@ -1018,8 +1018,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     } else {
         if ( isDuringPaintStroke && !lastStrokePixelRoD.isNull() ) {
+
+            // We may end-up in a situation where we cached an image in RAM but the paint buffer (which is the GPU texture) does not have the appropriate mipmaplevel
+            // To deal with it, we convert the plane cached to the appropriate format
             if (storage != isPlaneCached->getStorageMode()) {
-                storage = isPlaneCached->getStorageMode();
+                assert(storage == eStorageModeGLTex && isPlaneCached->getStorageMode() != eStorageModeGLTex);
+                assert(glContextLocker);
+                assert(isPlaneCached->getMipMapLevel() == mipMapLevel);
+                glContextLocker->attach();
+                for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
+                     it2 != planesToRender->planes.end(); ++it2) {
+                    it2->second.fullscaleImage = convertRAMImageToOpenGLTexture<GL_GPU>(it2->second.fullscaleImage);
+                    getNode()->setPaintBuffer(it2->second.fullscaleImage);
+                    it2->second.downscaleImage = it2->second.downscaleImage;
+                }
             }
             fillGrownBoundsWithZeroes = true;
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed

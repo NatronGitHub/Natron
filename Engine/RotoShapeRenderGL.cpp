@@ -78,14 +78,26 @@ static const char* rotoDrawDot_VertexShader =
 static const char* rotoDrawDot_FragmentShader =
 "varying float outHardness;\n"
 "uniform vec4 fillColor;\n"
+"float gaussLookup(float t) {\n"
+"   if (t < -0.5) {\n"
+"       t = -1.0 - t;\n"
+"       return (2.0 * t * t);\n"
+"   }\n"
+"   if (t < 0.5) {\n"
+"       return (1.0 - 2.0 * t * t);\n"
+"   }\n"
+"   t = 1.0 - t;\n"
+"   return (2.0 * t * t);\n"
+"}\n"
 "void main() {\n"
 "	gl_FragColor = fillColor;\n"
 "   float t = gl_Color.a;\n"
-"   t = t * t * (3.0 - 2.0 * t);// smoothstep\n"
-"   if (t == 0.0) {\n"
-"       gl_FragColor.a = fillColor.a;\n"
+"   //t = t * t * (3.0 - 2.0 * t);// smoothstep\n"
+"   if (outHardness == 1.0) {\n"
+"       gl_FragColor.a = 1.0;\n"
 "   } else {\n"
-"       gl_FragColor.a = pow(t, outHardness);\n"
+"       float exp = 0.4 / (1.0 - outHardness);\n"
+"       gl_FragColor.a = clamp(gaussLookup(pow(1.0 - t, exp)) * fillColor.a, 0.0, 1.0);\n"
 "   }\n"
 "#ifdef DO_PREMULT\n"
 "   gl_FragColor.rgb *= gl_FragColor.a;\n"
@@ -945,7 +957,7 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
     *spacing = radius * 2. * brushSpacing;
 
 
-    renderDot_gl(*myData, center, radius, myData->shapeColor, opacity, 1. / brushHardness);
+    renderDot_gl(*myData, center, radius, myData->shapeColor, opacity,  brushHardness);
 }
 
 double
