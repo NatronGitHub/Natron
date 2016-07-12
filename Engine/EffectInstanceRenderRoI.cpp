@@ -1862,16 +1862,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 
 #ifdef DEBUG
-        RectI renderedImageBounds;
-        rod.toPixelEnclosing(args.mipMapLevel, par, &renderedImageBounds);
-        RectI expectedContainedRoI;
-        args.roi.intersect(renderedImageBounds, &expectedContainedRoI);
-        if ( !it->second.downscaleImage->getBounds().contains(expectedContainedRoI) ) {
-            qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
+        if (!isDuringPaintStroke) {
+            RectI renderedImageBounds;
+            rod.toPixelEnclosing(args.mipMapLevel, par, &renderedImageBounds);
+            RectI expectedContainedRoI;
+            if (args.roi.intersect(renderedImageBounds, &expectedContainedRoI)) {
+                if ( !it->second.downscaleImage->getBounds().contains(expectedContainedRoI) ) {
+                    qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
+                }
+            }
         }
 #endif
     }
-
+    
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////

@@ -1577,7 +1577,7 @@ static ImagePtr ensureImageScale(unsigned int mipMapLevel,
             return img;
         }
 
-        imageToConvert->upscaleMipMap( imageToConvert->getBounds(), imageToConvert->getMipMapLevel(), 0, img.get() );
+        imageToConvert->upscaleMipMap( imageToConvert->getBounds(), imageToConvert->getMipMapLevel(), mipMapLevel, img.get() );
         imageToConvert = img;
     }
     return imageToConvert;

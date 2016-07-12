@@ -91,13 +91,11 @@ static const char* rotoDrawDot_FragmentShader =
 "}\n"
 "void main() {\n"
 "	gl_FragColor = fillColor;\n"
-"   float t = gl_Color.a;\n"
-"   //t = t * t * (3.0 - 2.0 * t);// smoothstep\n"
 "   if (outHardness == 1.0) {\n"
 "       gl_FragColor.a = 1.0;\n"
 "   } else {\n"
 "       float exp = 0.4 / (1.0 - outHardness);\n"
-"       gl_FragColor.a = clamp(gaussLookup(pow(1.0 - t, exp)) * fillColor.a, 0.0, 1.0);\n"
+"       gl_FragColor.a = clamp(gaussLookup(pow(1.0 - gl_Color.a, exp)) * fillColor.a, 0.0, 1.0);\n"
 "   }\n"
 "#ifdef DO_PREMULT\n"
 "   gl_FragColor.rgb *= gl_FragColor.a;\n"
@@ -373,11 +371,11 @@ void renderBezier_gl_internal_begin(bool doBuildUp)
 
     GL::glEnable(GL_BLEND);
     if (doBuildUp) {
-        GL::glBlendEquation(GL_FUNC_ADD);
+        GL::glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
     } else {
         GL::glBlendEquationSeparate(GL_MAX, GL_MAX);
     }
-    GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL::glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
 }
