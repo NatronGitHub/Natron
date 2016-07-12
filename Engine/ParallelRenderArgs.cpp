@@ -40,7 +40,7 @@
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
-#include "Engine/RotoDrawableItem.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -748,22 +748,34 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
         isPainting = inArgs->treeRoot->getApp()->isDuringPainting();
     }
     // Ensure this thread gets an OpenGL context for the render of the frame
-    OSGLContextPtr glContext;
-    try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(isPainting || inArgs->isDoingRotoNeatRender/*retrieveLastContext*/);
-    } catch (const std::exception& /*e*/) {
+    OSGLContextPtr glContext, cpuContext;
+    if (inArgs->activeRotoDrawableItem && (isPainting || inArgs->isDoingRotoNeatRender)) {
+        // When painting, always use the same context since we paint over the same texture
+        assert(inArgs->activeRotoDrawableItem);
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(inArgs->activeRotoDrawableItem.get());
+        assert(isStroke);
+        if (isStroke) {
+            isStroke->getDrawingGLContext(&glContext, &cpuContext);
+            if (!glContext && !cpuContext) {
+                try {
+                    glContext = appPTR->getGPUContextPool()->attachGLContextToRender(true/*retrieveLastContext*/);
+                    cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(true/*retrieveLastContext*/);
+                    isStroke->setDrawingGLContext(glContext, cpuContext);
+                } catch (const std::exception& /*e*/) {
 
+                }
+            }
+        }
+    } else {
+        try {
+            glContext = appPTR->getGPUContextPool()->attachGLContextToRender(false/*retrieveLastContext*/);
+            cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(false/*retrieveLastContext*/);
+        } catch (const std::exception& /*e*/) {
+
+        }
     }
 
     _openGLContext = glContext;
-
-    OSGLContextPtr cpuContext;
-    try {
-        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(isPainting || inArgs->isDoingRotoNeatRender/*retrieveLastContext*/);
-    } catch (const std::exception& e) {
-        qDebug() << e.what();
-    }
-
     _cpuOpenGLContext = cpuContext;
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();

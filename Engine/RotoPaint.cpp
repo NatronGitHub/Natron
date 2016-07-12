@@ -3284,6 +3284,12 @@ RotoPaint::onBreakMultiStrokeTriggered()
 }
 
 void
+RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
+{
+    _imp->ui->onBreakMultiStrokeTriggered();
+}
+
+void
 RotoPaint::onSelectionChanged(int reason)
 {
     if ( (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract ) {

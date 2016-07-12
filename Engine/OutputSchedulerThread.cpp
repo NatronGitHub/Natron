@@ -2868,7 +2868,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), false, true,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), RotoStrokeItemPtr(), false, true,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3559,7 +3559,7 @@ public:
         try {
             if (!_args->isRotoPaintRequest || _args->isRotoNeatRender) {
                 stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
-                                                   NodePtr(), _args->isRotoNeatRender, true, _args->args, _args->request, _args->stats);
+                                                   _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->isRotoNeatRender, true, _args->args, _args->request, _args->stats);
             } else {
                 stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->stats, &_args->args[0], &_args->args[1]);
             }

@@ -961,7 +961,50 @@ pasteFromGL(const Image & src,
         shader->bind();
         shader->setUniform("srcTex", 0);
 
-        Image::applyTextureMapping<GL>(srcRoi, srcRoi);
+        RectI roi = srcRoi;
+        RectI bounds = dstBounds;
+        
+        GL::glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        GL::glMatrixMode(GL_PROJECTION);
+        GL::glLoadIdentity();
+        GL::glOrtho( roi.x1, roi.x2,
+                    roi.y1, roi.y2,
+                    -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+        GL::glMatrixMode(GL_MODELVIEW);
+        GL::glLoadIdentity();
+        glCheckError(GL);
+
+        {
+            // Compute the texture coordinates to match the srcRoi
+            Point srcTexCoords[4], vertexCoords[4];
+            vertexCoords[0].x = roi.x1;
+            vertexCoords[0].y = roi.y1;
+            srcTexCoords[0].x = 0.;
+            srcTexCoords[0].y = 0.;
+
+            vertexCoords[1].x = roi.x2;
+            vertexCoords[1].y = roi.y1;
+            srcTexCoords[1].x = 1.;
+            srcTexCoords[1].y = 0.;
+
+            vertexCoords[2].x = roi.x2;
+            vertexCoords[2].y = roi.y2;
+            srcTexCoords[2].x = 1.;
+            srcTexCoords[2].y = 1.;
+
+            vertexCoords[3].x = roi.x1;
+            vertexCoords[3].y = roi.y2;
+            srcTexCoords[3].x = 0.;
+            srcTexCoords[3].y = 1.;
+
+            GL::glBegin(GL_POLYGON);
+            for (int i = 0; i < 4; ++i) {
+                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+            }
+            GL::glEnd();
+            glCheckError(GL);
+        }
 
         shader->unbind();
         GL::glBindTexture(target, 0);

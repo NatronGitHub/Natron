@@ -593,7 +593,7 @@ public:
      * This function is SLOW as it makes use of glReadPixels.
      * The OpenGL context should have been made current prior to calling this function.
      **/
-    ImagePtr convertOpenGLTextureToCachedRAMImage(const ImagePtr& image);
+    ImagePtr convertOpenGLTextureToCachedRAMImage(const ImagePtr& image, bool enableCaching);
 
     /**
      * @brief Converts the given RAM-stored image to an OpenGL texture.

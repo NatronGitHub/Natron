@@ -102,6 +102,8 @@ public:
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
 
+    void setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext);
+    void getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const;
 
     bool getMostRecentStrokeChangesSinceAge(double time,
                                             int lastAge,

@@ -1273,6 +1273,8 @@ struct RotoStrokeItemPrivate
     mutable QMutex strokeDotPatternsMutex;
     std::vector<cairo_pattern_t*> strokeDotPatterns;
 
+    OSGLContextWPtr drawingGlCpuContext,drawingGlGpuContext;
+
     RotoStrokeItemPrivate(RotoStrokeType type)
         : type(type)
         , finished(false)
@@ -1283,6 +1285,8 @@ struct RotoStrokeItemPrivate
         , wholeStrokeBboxWhilePainting()
         , strokeDotPatternsMutex()
         , strokeDotPatterns()
+        , drawingGlCpuContext()
+        , drawingGlGpuContext()
     {
         bbox.x1 = std::numeric_limits<double>::infinity();
         bbox.x2 = -std::numeric_limits<double>::infinity();

@@ -282,6 +282,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
             fixedNamePrefix.append( QString::fromUtf8("Mask") );
             CreateNodeArgs args( maskPluginID.toStdString(), NodeCollectionPtr() );
             args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
             _imp->maskNode = app->createNode(args);
             if (!_imp->maskNode) {

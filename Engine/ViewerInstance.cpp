@@ -553,6 +553,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                                   viewerHash,
                                                   canAbort,
                                                   rotoPaintNode,
+                                                  activeStroke,
                                                   false,
                                                   false, //useTLS
                                                   boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(),
@@ -592,6 +593,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                              U64 viewerHash,
                              bool canAbort,
                              const NodePtr& rotoPaintNode,
+                             const RotoStrokeItemPtr& strokeItem,
                              bool isDoingRotoNeatRender,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
@@ -631,7 +633,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, isDoingRotoNeatRender, useTLS, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, strokeItem, isDoingRotoNeatRender, useTLS, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
@@ -1258,6 +1260,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       U64 viewerHash,
                                       bool /*canAbort*/,
                                       const NodePtr& rotoPaintNode,
+                                      const RotoStrokeItemPtr& strokeItem,
                                       bool isDoingRotoNeatRender,
                                       bool useTLS,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
@@ -1279,7 +1282,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tlsArgs->textureIndex = inArgs.params->textureIndex;
         tlsArgs->timeline = getTimeline();
         tlsArgs->activeRotoPaintNode = rotoPaintNode;
-        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->activeRotoDrawableItem = strokeItem;
         tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = inArgs.draftModeEnabled;

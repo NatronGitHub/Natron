@@ -555,6 +555,23 @@ RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
     _imp->strokeDotPatternsMutex.unlock();
 }
 
+void
+RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext)
+{
+    QMutexLocker k(&itemMutex);
+    _imp->drawingGlGpuContext = gpuContext;
+    _imp->drawingGlCpuContext = cpuContext;
+}
+
+
+void
+RotoStrokeItem::getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const
+{
+    QMutexLocker k(&itemMutex);
+    *gpuContext = _imp->drawingGlGpuContext.lock();
+    *cpuContext = _imp->drawingGlCpuContext.lock();
+}
+
 RectD
 RotoStrokeItem::getWholeStrokeRoDWhilePainting() const
 {
@@ -647,7 +664,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     std::advance(pIt, lastAge);
     *newAge = (int)xCurve.size() - 1;
 
-    if ( lastAge != (int)(xCurve.size() - 1) ) {
+    if ( lastAge < (int)xCurve.size() ) {
         for (; xIt != xCurve.end(); ++xIt, ++yIt, ++pIt) {
             realX.insert(*xIt);
             realY.insert(*yIt);

@@ -136,7 +136,7 @@ public:
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual void onKnobsLoaded() OVERRIDE FINAL;
-
+    virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
 public Q_SLOTS:
 
 

@@ -1365,7 +1365,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
 }
 
 ImagePtr
-EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
+EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image, bool enableCaching)
 {
     assert(image->getStorageMode() == eStorageModeGLTex);
 
@@ -1380,7 +1380,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
     }
 
     ImagePtr ramImage;
-    getOrCreateFromCacheInternal(image->getKey(), params, context, true /*useCache*/, &ramImage);
+    getOrCreateFromCacheInternal(image->getKey(), params, context, enableCaching, &ramImage);
     if (!ramImage) {
         return ramImage;
     }

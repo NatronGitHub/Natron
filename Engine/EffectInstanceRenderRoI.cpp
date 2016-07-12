@@ -1018,6 +1018,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     } else {
         if ( isDuringPaintStroke && !lastStrokePixelRoD.isNull() ) {
+            if (storage != isPlaneCached->getStorageMode()) {
+                storage = isPlaneCached->getStorageMode();
+            }
             fillGrownBoundsWithZeroes = true;
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
             for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
@@ -1839,7 +1842,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (glContextLocker) {
                     glContextLocker->attach();
                 }
-                it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);
+                // Don't cache the converted RAM image if we are drawing
+                it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage, !isDuringPaintStroke);
             }
 
             outputPlanes->insert( std::make_pair(*comp, it->second.downscaleImage) );
