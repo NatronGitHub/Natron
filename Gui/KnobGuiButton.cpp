@@ -194,13 +194,17 @@ KnobGuiButton::emitValueChanged(bool clicked)
 void
 KnobGuiButton::_hide()
 {
-    _button->hide();
+    if (_button) {
+        _button->hide();
+    }
 }
 
 void
 KnobGuiButton::_show()
 {
-    _button->show();
+    if (_button) {
+        _button->show();
+    }
 }
 
 void
