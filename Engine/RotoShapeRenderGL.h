@@ -71,7 +71,7 @@ class RotoShapeRenderNodeOpenGLData : public EffectOpenGLContextData
 
     std::vector<GLShaderBasePtr> _featherRampShader;
     std::vector<GLShaderBasePtr> _strokeDotShader;
-
+    GLShaderBasePtr _strokeDotSecondPassShader;
 
 public:
 
@@ -91,6 +91,8 @@ public:
 
     GLShaderBasePtr getOrCreateStrokeDotShader(bool doPremult);
 
+    GLShaderBasePtr getOrCreateStrokeSecondPassShader();
+
     virtual ~RotoShapeRenderNodeOpenGLData();
     
 };
@@ -107,9 +109,8 @@ public:
 
     static double renderStroke_gl(const OSGLContextPtr& glContext,
                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
-#ifndef NDEBUG
+                                  const RectI& bounds,
                                   const RectI& roi,
-#endif
                                   int target,
                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
                                   double distToNext,
@@ -123,9 +124,7 @@ public:
 
     static void renderBezier_gl(const OSGLContextPtr& glContext,
                                 const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
-#ifndef NDEBUG
                                 const RectI& roi,
-#endif
                                 const Bezier* bezier,
                                 double opacity,
                                 double time,

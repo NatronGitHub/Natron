@@ -1202,35 +1202,11 @@ Node::getPaintStrokeRoD(double time,
     if (duringPaintStroke) {
         *bbox = getPaintStrokeRoD_duringPainting();
     } else {
-        RotoDrawableItemPtr stroke = _imp->paintStroke.lock();
-        if (!stroke) {
+        RotoDrawableItemPtr item = _imp->paintStroke.lock();
+        if (!item) {
             throw std::logic_error("");
         }
-
-        Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
-        double startTime = time, mbFrameStep = 1., endTime = time;
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-        if (isBezier) {
-            int mbType_i = stroke->getContext()->getMotionBlurTypeKnob()->getValue();
-            bool applyPerShapeMotionBlur = mbType_i == 0;
-            if (applyPerShapeMotionBlur) {
-                isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
-            }
-        }
-#else
-        Q_UNUSED(isBezier);
-#endif
-        bool bboxSet = false;
-        for (double t = startTime; t <= endTime; t += mbFrameStep) {
-            RectD subBbox = stroke->getBoundingBox(t);
-            if (!bboxSet) {
-                *bbox = subBbox;
-                bboxSet = true;
-            } else {
-                bbox->merge(subBbox);
-            }
-        }
-
+        *bbox = item->getBoundingBox(time);
     }
 }
 

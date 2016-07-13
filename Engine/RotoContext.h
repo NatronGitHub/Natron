@@ -175,14 +175,6 @@ public:
 
 
     /**
-     * @brief Returns the region of definition of the shape unioned to the region of definition of the node
-     * or the project format.
-     **/
-    void getMaskRegionOfDefinition(double time,
-                                   ViewIdx view,
-                                   RectD* rod) const; //!< rod in canonical coordinates
-
-    /**
      * @brief Returns true if  all items have the same compositing operator and there are only strokes or bezier (because they
      * are not masked)
      **/

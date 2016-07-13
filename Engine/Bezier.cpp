@@ -2845,38 +2845,39 @@ Bezier::getBoundingBox(double time) const
     RectD bbox;
     bool bboxSet = false;
     for (double t = startTime; t <= endTime; t += mbFrameStep) {
-        RectD subBbox; // a very empty bbox
-        subBbox.setupInfinity();
+        RectD pointsBbox;
 
         Transform::Matrix3x3 transform;
         getTransformAtTime(t, &transform);
 
         QMutexLocker l(&itemMutex);
-        bezierSegmentListBboxUpdate(false, _imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
+        bezierSegmentListBboxUpdate(false, _imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &pointsBbox);
 
 
         if (useFeatherPoints() && !_imp->isOpenBezier) {
-            bezierSegmentListBboxUpdate(false, _imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
+            RectD featherPointsBbox;
+            bezierSegmentListBboxUpdate(false, _imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &featherPointsBbox);
+            pointsBbox.merge(featherPointsBbox);
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
             // enclosing the real bbox and close enough
             double featherDistance = getFeatherDistance(t);
-            subBbox.x1 -= featherDistance;
-            subBbox.x2 += featherDistance;
-            subBbox.y1 -= featherDistance;
-            subBbox.y2 += featherDistance;
+            pointsBbox.x1 -= featherDistance;
+            pointsBbox.x2 += featherDistance;
+            pointsBbox.y1 -= featherDistance;
+            pointsBbox.y2 += featherDistance;
         } else if (_imp->isOpenBezier) {
             double brushSize = getBrushSizeKnob()->getValueAtTime(t);
             double halfBrushSize = brushSize / 2. + 1;
-            subBbox.x1 -= halfBrushSize;
-            subBbox.x2 += halfBrushSize;
-            subBbox.y1 -= halfBrushSize;
-            subBbox.y2 += halfBrushSize;
+            pointsBbox.x1 -= halfBrushSize;
+            pointsBbox.x2 += halfBrushSize;
+            pointsBbox.y1 -= halfBrushSize;
+            pointsBbox.y2 += halfBrushSize;
         }
         if (!bboxSet) {
             bboxSet = true;
-            bbox = subBbox;
+            bbox = pointsBbox;
         } else {
-            bbox.merge(subBbox);
+            bbox.merge(pointsBbox);
         }
     }
 

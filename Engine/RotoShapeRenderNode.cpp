@@ -298,18 +298,15 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
             bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
             double distToNextOut = RotoShapeRenderGL::renderStroke_gl(glContext, glData,
-#ifndef NDEBUG
+                                                                      outputPlane.second->getBounds(),
                                                                       args.roi,
-#endif
                                                                       outputPlane.second->getGLTextureTarget(), strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
             if (isDuringPainting) {
                 getApp()->updateStrokeData(distToNextOut);
             }
         } else {
             RotoShapeRenderGL::renderBezier_gl(glContext, glData,
-#ifndef NDEBUG
                                                args.roi,
-#endif
                                                isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
         }
 

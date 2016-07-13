@@ -550,19 +550,6 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
 
         return;
     }
-    /*else if (effect) {
-        RotoContextPtr rotoCtx = effect->getNode()->getRotoContext();
-        if ( rotoCtx && (getName() == CLIP_OFX_ROTO) ) {
-            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
-            ret->x1 = rod.x1;
-            ret->x2 = rod.x2;
-            ret->y1 = rod.y1;
-            ret->y2 = rod.y2;
-
-            return;
-        }
-    }*/
-
     if (associatedNode) {
         bool isProjectFormat;
         U64 nodeHash = associatedNode->getRenderHash();

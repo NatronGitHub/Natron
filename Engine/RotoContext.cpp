@@ -882,27 +882,6 @@ RotoContext::getItemsRegionOfDefinition(const std::list<RotoItemPtr >& items,
     }
 } // RotoContext::getItemsRegionOfDefinition
 
-void
-RotoContext::getMaskRegionOfDefinition(double time,
-                                       ViewIdx view,
-                                       RectD* rod) // rod is in canonical coordinates
-const
-{
-    std::list<RotoItemPtr > allItems;
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-
-        for (std::list<RotoLayerPtr >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
-            RotoItems items = (*it)->getItems_mt_safe();
-            for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-                allItems.push_back(*it2);
-            }
-        }
-    }
-
-    getItemsRegionOfDefinition(allItems, time, view, rod);
-}
-
 bool
 RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
                                                    int* blendingMode)
