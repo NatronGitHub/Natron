@@ -712,7 +712,7 @@ KnobGui::show(int /*index*/)
 int
 KnobGui::getActualIndexInLayout() const
 {
-    QWidget* parent = _imp->field->parentWidget();
+    QWidget* parent = isLabelOnSameColumn() ? _imp->labelContainer->parentWidget() : _imp->field->parentWidget();
 
     if (!parent) {
         return -1;
@@ -722,9 +722,20 @@ KnobGui::getActualIndexInLayout() const
         return -1;
     }
     for (int i = 0; i < layout->rowCount(); ++i) {
-        QLayoutItem* item = layout->itemAtPosition(i, 1);
-        if ( item && (item->widget() == _imp->field) ) {
-            return i;
+        QLayoutItem* leftItem = layout->itemAtPosition(i, 0);
+        QLayoutItem* rightItem = layout->itemAtPosition(i, 1);
+        QWidget* widgets[2] = {0, 0};
+        if (leftItem) {
+            widgets[0] = leftItem->widget();
+        }
+        if (rightItem) {
+            widgets[1] = rightItem->widget();
+        }
+        for (int j = 0; j  < 2; ++j) {
+            if (widgets[j] == _imp->labelContainer ||
+                widgets[j] == _imp->field) {
+                return i;
+            }
         }
     }
 
