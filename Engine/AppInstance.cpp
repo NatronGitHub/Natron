@@ -393,67 +393,45 @@ AppInstance::newVersionCheckDownloaded()
     const QString currentDevStatus = QString::fromUtf8(NATRON_DEVELOPMENT_STATUS);
     int devStatCompare = compareDevStatus(extractedDevStatusStr, currentDevStatus);
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
+    bool hasUpdate = false;
+
     if ( (versionEncoded > NATRON_VERSION_ENCODED) ||
          ( ( versionEncoded == NATRON_VERSION_ENCODED) &&
            ( ( devStatCompare > 0) || ( ( devStatCompare == 0) && ( buildNumber > NATRON_BUILD_NUMBER) ) ) ) ) {
-        QString text;
-        const QString popen = QString::fromUtf8("<p>");
-        const QString pclose = QString::fromUtf8("</p>");
         if (devStatCompare == 0) {
-            if ( ( buildNumber > NATRON_BUILD_NUMBER) && ( versionEncoded == NATRON_VERSION_ENCODED) &&
-                 ( currentDevStatus == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) ) {
-                ///show build number in version
-                text =  popen
-                       + tr("Updates for %1 are now available for download.")
-                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
-                       + pclose
-                       + popen
-                       + tr("You are currently using %1 version %2 - %3 - build %4.")
-                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
-                       .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
-                       .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
-                       .arg(NATRON_BUILD_NUMBER)
-                       + pclose
-                       + popen
-                       + tr("The latest version of %1 is version %2 - %3 - build %4.")
-                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
-                       .arg(extractedSoftwareVersionStr)
-                       .arg(extractedDevStatusStr)
-                       .arg(extractedBuildNumberStr)
-                       + pclose
-                       + popen
-                       + tr("You can download it from %1.")
-                       .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                               "www.natron.fr</a>") )
-                       + pclose;
-            } else {
-                //Only notify build number increments for Release candidates
-                return;
+            if ( ( buildNumber > NATRON_BUILD_NUMBER) && ( versionEncoded == NATRON_VERSION_ENCODED) ) {
+                hasUpdate = true;
+            } else if (versionEncoded > NATRON_VERSION_ENCODED) {
+                hasUpdate = true;
             }
         } else {
-            text =  popen
-                   + tr("Updates for %1 are now available for download.")
-                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
-                   + pclose
-                   + popen
-                   + tr("You are currently using %1 version %2 - %3.")
-                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
-                   .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
-                   .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
-                   + pclose
-                   + popen
-                   + tr("The latest version of %1 is version %4 - %5.")
-                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
-                   .arg(extractedSoftwareVersionStr)
-                   .arg(extractedDevStatusStr)
-                   + pclose
-                   + popen
-                   + tr("You can download it from %1.")
-                   .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                           "www.natron.fr</a>") )
-                   + pclose;
+            hasUpdate = true;
         }
-
+    }
+    if (hasUpdate) {
+        const QString popen = QString::fromUtf8("<p>");
+        const QString pclose = QString::fromUtf8("</p>");
+        QString text =  popen
+               + tr("Updates for %1 are now available for download.")
+               .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+               + pclose
+               + popen
+               + tr("You are currently using %1 version %2 - %3.")
+               .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+               .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
+               .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
+               + pclose
+               + popen
+               + tr("The latest version of %1 is version %4 - %5.")
+               .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+               .arg(extractedSoftwareVersionStr)
+               .arg(extractedDevStatusStr)
+               + pclose
+               + popen
+               + tr("You can download it from %1.")
+               .arg( QString::fromUtf8("<a href=\"https://natron.fr/download\">"
+                                       "www.natron.fr</a>") )
+               + pclose;
         Dialogs::informationDialog( tr("New version").toStdString(), text.toStdString(), true );
     }
 } // AppInstance::newVersionCheckDownloaded
