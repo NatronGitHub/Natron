@@ -2545,21 +2545,7 @@ KnobHelper::setExpressionInvalid(int dimension,
     }
     if ( getHolder() && getHolder()->getApp() ) {
         if (wasValid && !valid) {
-            bool haveOtherExprInvalid = false;
-            {
-                QMutexLocker k(&_imp->expressionMutex);
-                for (int i = 0; i < ndims; ++i) {
-                    if (i != dimension) {
-                        if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
-                            haveOtherExprInvalid = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (!haveOtherExprInvalid) {
-                getHolder()->getApp()->addInvalidExpressionKnob( boost::const_pointer_cast<KnobI>( shared_from_this() ) );
-            }
+            getHolder()->getApp()->addInvalidExpressionKnob( boost::const_pointer_cast<KnobI>( shared_from_this() ) );
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_expressionChanged(dimension);
             }

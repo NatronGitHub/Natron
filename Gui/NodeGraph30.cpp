@@ -227,7 +227,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
         KnobI::ListenerDimsMap listeners;
         knobs[i]->getListeners(listeners);
         ///For all listeners make sure they belong to a node
-        bool foundEffect = false;
+        std::string foundLinkedErrorMessage;
         for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
             KnobPtr listener = it2->first.lock();
             if (!listener) {
@@ -242,19 +242,19 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
             }
 
             if ( isEffect && ( isEffect != node->getNode()->getEffectInstance().get() ) ) {
-                foundEffect = true;
+                std::string masterNodeName = node->getNode()->getFullyQualifiedName();
+                std::string master = masterNodeName + "." + knobs[i]->getName();
+                std::string slave = isEffect->getNode()->getFullyQualifiedName() + "." + listener->getName();
+                foundLinkedErrorMessage = tr("%1 is linked to %2 through a link or expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
                 break;
             }
+
+            
+            
+            
         }
-        if (foundEffect) {
-            StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
-                                                                                               "parameters from which other parameters "
-                                                                                               "of the project rely on through expressions "
-                                                                                               "or links. Deleting this node will "
-                                                                                               "remove these expressions  "
-                                                                                               "and undoing the action will not recover "
-                                                                                               "them. Do you wish to continue?")
-                                                                .toStdString(), false );
+        if (!foundLinkedErrorMessage.empty()) {
+            StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), foundLinkedErrorMessage, false );
             if (reply == eStandardButtonNo) {
                 return;
             }
@@ -297,7 +297,7 @@ NodeGraph::deleteSelection()
                 knobs[i]->getListeners(listeners);
 
                 ///For all listeners make sure they belong to a node
-                bool foundEffect = false;
+                std::string foundLinkedErrorMessage;
                 for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
                     KnobPtr listener = it2->first.lock();
                     if (!listener) {
@@ -317,19 +317,25 @@ NodeGraph::deleteSelection()
                     }
 
                     if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance().get() ) ) {
-                        foundEffect = true;
-                        break;
+                        bool isInSelection = false;
+                        for (NodesGuiList::iterator it3 = nodesToRemove.begin(); it3 != nodesToRemove.end(); ++it3) {
+                            if ((*it3)->getNode()->getEffectInstance().get() == isEffect) {
+                                isInSelection = true;
+                                break;
+                            }
+                        }
+                        if (!isInSelection) {
+                            std::string masterNodeName = (*it)->getNode()->getFullyQualifiedName();
+                            std::string master = masterNodeName + "." + knobs[i]->getName();
+                            std::string slave = isEffect->getNode()->getFullyQualifiedName() + "." + listener->getName();
+                            foundLinkedErrorMessage = tr("%1 is linked to %2 through a link or expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
+                            break;
+                        }
                     }
                 }
-                if (foundEffect) {
+                if (!foundLinkedErrorMessage.empty()) {
                     StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(),
-                                                                        tr("This node has one or several "
-                                                                           "parameters from which other parameters "
-                                                                           "of the project rely on through expressions "
-                                                                           "or links. Deleting this node will "
-                                                                           "may break these expressions."
-                                                                           "\nContinue anyway?")
-                                                                        .toStdString(), false );
+                                                                       foundLinkedErrorMessage, false);
                     if (reply == eStandardButtonNo) {
                         return;
                     }
