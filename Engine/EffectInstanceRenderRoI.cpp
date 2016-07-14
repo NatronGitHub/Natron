@@ -1200,8 +1200,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///Pre-render input images before allocating the image if we need to render
     {
-        const ImageComponents & outComp = outputComponents.front();
-        if ( outComp.isColorPlane() ) {
+        if ( !outputComponents.empty() && outputComponents.front().isColorPlane() ) {
             planesToRender->outputPremult = thisEffectOutputPremult;
         } else {
             planesToRender->outputPremult = eImagePremultiplicationOpaque;
