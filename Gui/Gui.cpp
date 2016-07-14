@@ -226,7 +226,7 @@ Gui::abortProject(bool quitApp,
         if (app) {
             app->resetPreviewProvider();
             if (!blocking) {
-                app->getProject()->closeProject(false);
+                app->getProject()->reset(false /*aboutToQuit*/, false /*blocking*/);
             } else {
                 app->getProject()->closeProject_blocking(false);
             }

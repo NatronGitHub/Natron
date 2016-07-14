@@ -1907,7 +1907,7 @@ AppInstance::aboutToQuit()
 {
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
-    _imp->_currentProject->closeProject(true);
+    _imp->_currentProject->reset(true /*aboutToQuit*/, /*blocking*/true);
 }
 
 void
@@ -2149,7 +2149,7 @@ AppInstance::loadProject(const std::string& filename)
 bool
 AppInstance::resetProject()
 {
-    getProject()->closeProject(false);
+    getProject()->reset(false /*aboutToQuit*/, true /*blocking*/);
 
     return true;
 }
@@ -2158,7 +2158,7 @@ AppInstance::resetProject()
 bool
 AppInstance::closeProject()
 {
-    getProject()->closeProject(true);
+    getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
     quit();
 
     return true;

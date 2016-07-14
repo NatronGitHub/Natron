@@ -885,7 +885,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
             }
             if (!wasKilled) {
                 try {
-                    mainInstance->getProject()->closeProject(true);
+                    mainInstance->getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
                 } catch (std::logic_error) {
                     // ignore
                 }

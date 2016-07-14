@@ -336,28 +336,23 @@ public:
 
     static void extractTreesFromNodes(const NodesList& nodes, std::list<Project::NodesTree>& trees);
 
-    void closeProject(bool aboutToQuit)
-    {
-        reset(aboutToQuit, false);
-    }
-
     void closeProject_blocking(bool aboutToQuit);
 
     bool addFormat(const std::string& formatSpec);
 
     void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
 
+
+    /**
+     * @brief Resets the project state clearing all nodes and the project name.
+     **/
+    void reset(bool aboutToQuit, bool blocking);
+
 public Q_SLOTS:
 
     void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
 
     void onAutoSaveTimerTriggered();
-
-    ///Closes the project, clearing all nodes and reseting the project name
-    void closeProject()
-    {
-        closeProject(false);
-    }
 
     void onAutoSaveFutureFinished();
 
@@ -392,10 +387,6 @@ private:
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
 
 
-    /**
-     * @brief Resets the project state clearing all nodes and the project name.
-     **/
-    void reset(bool aboutToQuit, bool blocking);
 
     void doResetEnd(bool aboutToQuit);
 
