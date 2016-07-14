@@ -1486,7 +1486,14 @@ DopeSheetViewPrivate::drawProjectBounds() const
     double bottom = zoomContext.toZoomCoordinates(0, q_ptr->height() - 1).y();
     double top = zoomContext.toZoomCoordinates(q_ptr->width() - 1, 0).y();
     double projectStart, projectEnd;
-    gui->getApp()->getFrameRange(&projectStart, &projectEnd);
+    if (!gui) {
+        return;
+    }
+    GuiAppInstPtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    app->getFrameRange(&projectStart, &projectEnd);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     double colorR, colorG, colorB;
