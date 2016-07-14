@@ -2305,7 +2305,18 @@ KnobTable::decodeFromKnobTableFormat(const std::string& value,
             assert( endNamePos != -1 && endNamePos < raw.size() );
 
             if ( (endNamePos == -1) || ( endNamePos >= raw.size() ) ) {
-                throw std::logic_error("KnobTable: mal-formed table");
+                KnobHolder* holder = dynamic_cast<KnobHolder*>(getHolder());
+                QString knobName;
+                if (holder) {
+                    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+                    if (effect) {
+                        knobName += QString::fromUtf8(effect->getNode()->getFullyQualifiedName().c_str());
+                        knobName += QString::fromUtf8(".");
+                    }
+                }
+                knobName += QString::fromUtf8(getName().c_str());
+                QString err = tr("%1 table is wrongly encoded, check your project file or report an issue to the developers").arg(knobName);
+                throw std::logic_error(err.toStdString());
             }
 
             std::string value;
@@ -2329,7 +2340,19 @@ KnobTable::decodeFromKnobTableFormat(const std::string& value,
         if ( (int)row.size() == colsCount ) {
             table->push_back(row);
         } else {
-            throw std::logic_error("KnobTable: mal-formed table");
+            KnobHolder* holder = dynamic_cast<KnobHolder*>(getHolder());
+            QString knobName;
+            if (holder) {
+                EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+                if (effect) {
+                    knobName += QString::fromUtf8(effect->getNode()->getFullyQualifiedName().c_str());
+                    knobName += QString::fromUtf8(".");
+                }
+            }
+            knobName += QString::fromUtf8(getName().c_str());
+            QString err = tr("%1 table is wrongly encoded, check your project file or report an issue to the developers").arg(knobName);
+            throw std::logic_error(err.toStdString());
+
         }
     }
 } // KnobTable::decodeFromKnobTableFormat
