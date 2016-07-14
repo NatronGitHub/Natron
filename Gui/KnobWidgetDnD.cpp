@@ -108,6 +108,9 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
 {
     _imp->userInputSinceFocusIn = true;
     KnobGuiPtr guiKnob = _imp->getKnob();
+    if (!guiKnob) {
+        return false;
+    }
     KnobPtr internalKnob = guiKnob->getKnob();
     if (!internalKnob) {
         return false;
