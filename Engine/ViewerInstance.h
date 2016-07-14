@@ -240,6 +240,9 @@ public:
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
+    void setFullFrameProcessingEnabled(bool fullFrame);
+    bool isFullFrameProcessingEnabled() const;
+
 
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

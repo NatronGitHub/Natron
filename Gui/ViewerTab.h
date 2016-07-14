@@ -133,6 +133,10 @@ public:
 
     void setClipToProject(bool b);
 
+    void setFullFrameProcessing(bool fullFrame);
+
+    bool isFullFrameProcessingEnabled() const;
+
     void setColorSpace(const std::string & colorSpaceName);
 
     void setGain(double d);
@@ -325,6 +329,7 @@ public Q_SLOTS:
     void centerViewer();
     void togglePlaybackMode();
     void onViewerChannelsChanged(int);
+    void onFullFrameButtonToggle(bool);
     void onClipToProjectButtonToggle(bool);
     void onTimeLineTimeChanged(SequenceTime time, int);
     void onCurrentTimeSpinBoxChanged(double);
