@@ -134,6 +134,18 @@ ViewerTab::setClipToProject(bool b)
 }
 
 void
+ViewerTab::setFullFrameProcessing(bool fullFrame)
+{
+    onFullFrameButtonToggle(fullFrame);
+}
+
+bool
+ViewerTab::isFullFrameProcessingEnabled() const
+{
+    return _imp->viewerNode->isFullFrameProcessingEnabled();
+}
+
+void
 ViewerTab::setColorSpace(const std::string & colorSpaceName)
 {
     int index = _imp->viewerColorSpace->itemIndex( QString::fromUtf8( colorSpaceName.c_str() ) );

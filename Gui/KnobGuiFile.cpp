@@ -308,10 +308,17 @@ KnobGuiFile::checkFileModificationAndWarn(SequenceTime time,
 void
 KnobGuiFile::onTextEdited()
 {
+    if (!_lineEdit) {
+        return;
+    }
     std::string str = _lineEdit->text().toStdString();
 
     ///don't do antyhing if the pattern is the same
-    std::string oldValue = _knob.lock()->getValue();
+    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    std::string oldValue = knob->getValue();
 
     if (str == oldValue) {
         return;

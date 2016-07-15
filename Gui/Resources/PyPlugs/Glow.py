@@ -305,10 +305,6 @@ def createInstance(app,group):
     # Set param properties
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(0, 0)
-    param.setValue(0, 1)
-    param.setValue(0, 2)
-    param.setValue(0, 3)
     lastNode.PostGradeMasterGain = param
     del param
 
@@ -344,10 +340,6 @@ def createInstance(app,group):
     # Set param properties
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(0, 0)
-    param.setValue(0, 1)
-    param.setValue(0, 2)
-    param.setValue(0, 3)
     lastNode.PostGradeMasterGamma = param
     del param
 
@@ -383,10 +375,6 @@ def createInstance(app,group):
     # Set param properties
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(0, 0)
-    param.setValue(0, 1)
-    param.setValue(0, 2)
-    param.setValue(0, 3)
     lastNode.PostGradeMasterSaturation = param
     del param
 
@@ -1031,26 +1019,26 @@ def createInstance(app,group):
 
     param = lastNode.getParam("MasterSaturation")
     if param is not None:
-        param.setValue(0, 0)
-        param.setValue(0, 1)
-        param.setValue(0, 2)
-        param.setValue(0, 3)
+        param.setValue(1, 0)
+        param.setValue(1, 1)
+        param.setValue(1, 2)
+        param.setValue(1, 3)
         del param
 
     param = lastNode.getParam("MasterGamma")
     if param is not None:
-        param.setValue(0, 0)
-        param.setValue(0, 1)
-        param.setValue(0, 2)
-        param.setValue(0, 3)
+        param.setValue(1, 0)
+        param.setValue(1, 1)
+        param.setValue(1, 2)
+        param.setValue(1, 3)
         del param
 
     param = lastNode.getParam("MasterGain")
     if param is not None:
-        param.setValue(0, 0)
-        param.setValue(0, 1)
-        param.setValue(0, 2)
-        param.setValue(0, 3)
+        param.setValue(1, 0)
+        param.setValue(1, 1)
+        param.setValue(1, 2)
+        param.setValue(1, 3)
         del param
 
     param = lastNode.getParam("toneRanges")
@@ -1276,11 +1264,6 @@ def createInstance(app,group):
     if param is not None:
         param.setValue(3, 0)
         param.setValue(3, 1)
-        del param
-
-    param = lastNode.getParam("bloomRatio")
-    if param is not None:
-        param.setValue(2, 0)
         del param
 
     param = lastNode.getParam("bloomCount")

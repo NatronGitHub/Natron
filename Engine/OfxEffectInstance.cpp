@@ -2884,13 +2884,13 @@ OfxEffectInstance::isPassThroughForNonRenderedPlanes() const
 bool
 OfxEffectInstance::isViewAware() const
 {
-    return effectInstance()->isViewAware();
+    return effectInstance() ? effectInstance()->isViewAware() : false;
 }
 
 EffectInstance::ViewInvarianceLevel
 OfxEffectInstance::isViewInvariant() const
 {
-    int inv = effectInstance()->getViewInvariance();
+    int inv = effectInstance() ? effectInstance()->getViewInvariance() : 0;
 
     if (inv == 0) {
         return eViewInvarianceAllViewsVariant;

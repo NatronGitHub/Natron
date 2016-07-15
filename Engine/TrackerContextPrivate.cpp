@@ -938,6 +938,7 @@ TrackerContextPrivate::beginLibMVOptionsForTrack(mv::TrackRegionOptions* options
     options->use_brute_initialization = bruteForcePreTrack.lock()->getValue();
     options->use_normalized_intensities = useNormalizedIntensities.lock()->getValue();
     options->sigma = preBlurSigma.lock()->getValue();
+    options->use_esm = false;
 }
 
 void

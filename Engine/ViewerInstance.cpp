@@ -3216,6 +3216,29 @@ ViewerInstance::getChannels(int texIndex) const
 }
 
 void
+ViewerInstance::setFullFrameProcessingEnabled(bool fullFrame)
+{
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        if (_imp->fullFrameProcessingEnabled == fullFrame) {
+            return;
+        }
+        _imp->fullFrameProcessingEnabled = fullFrame;
+    }
+    if ( !getApp()->getProject()->isLoadingProject() ) {
+        renderCurrentFrame(true);
+    }
+}
+
+bool
+ViewerInstance::isFullFrameProcessingEnabled() const
+{
+    QMutexLocker l(&_imp->viewerParamsMutex);
+
+    return _imp->fullFrameProcessingEnabled;
+}
+
+void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
                                       std::list<ImageComponents>* comps)
 {

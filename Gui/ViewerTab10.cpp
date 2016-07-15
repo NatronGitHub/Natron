@@ -202,6 +202,14 @@ ViewerTab::togglePlaybackMode()
 }
 
 void
+ViewerTab::onFullFrameButtonToggle(bool b)
+{
+    _imp->fullFrameProcessingButton->setDown(b);
+    _imp->viewerNode->setFullFrameProcessingEnabled(b);
+
+}
+
+void
 ViewerTab::onClipToProjectButtonToggle(bool b)
 {
     _imp->clipToProjectFormatButton->setDown(b);

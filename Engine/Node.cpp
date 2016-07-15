@@ -6214,8 +6214,9 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     Q_EMIT activated(triggerRender);
 
 
-    getApp()->recheckInvalidExpressions();
     declareAllPythonAttributes();
+    getApp()->recheckInvalidExpressions();
+
 
     ///If the node is a group, activate all nodes within the group first
     NodeGroupPtr isGrp = isEffectNodeGroup();
@@ -10307,9 +10308,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
         return;
     }
 
-    if (getIOContainer()) {
-        return;
-    }
+
     PythonGILLocker pgl;
     PyObject* mainModule = appPTR->getMainModule();
     assert(mainModule);
@@ -10374,10 +10373,6 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
     if ( getParentMultiInstance() ) {
-        return;
-    }
-
-    if (getIOContainer()) {
         return;
     }
 

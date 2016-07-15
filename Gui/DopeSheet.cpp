@@ -472,7 +472,7 @@ DSNodePtr DopeSheet::findDSNode(const KnobIPtr &knob) const
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             DSKnobPtr dsKnob = (*knobIt).second;
 
-            if (dsKnob->getKnobGui()->getKnob() == knob) {
+            if (dsKnob && dsKnob->getKnobGui() && dsKnob->getKnobGui()->getKnob() == knob) {
                 return dsNode;
             }
         }

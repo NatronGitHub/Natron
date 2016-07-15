@@ -1251,29 +1251,34 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
     // MT-SAFE
     RectD visibleArea;
     RectI ret;
-    {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
-        visibleArea.x1 =  topLeft.x();
-        visibleArea.y2 =  topLeft.y();
-        QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
-        visibleArea.x2 = bottomRight.x();
-        visibleArea.y1 = bottomRight.y();
-    }
-
-    if (mipMapLevel != 0) {
-        // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-        visibleArea.toPixelEnclosing(mipMapLevel, par, &ret);
+    if (getViewerTab()->isFullFrameProcessingEnabled()) {
+        ret = imageRoDPixel;
     } else {
-        ret.x1 = std::floor(visibleArea.x1 / par);
-        ret.x2 = std::ceil(visibleArea.x2 / par);
-        ret.y1 = std::floor(visibleArea.y1);
-        ret.y2 = std::ceil(visibleArea.y2);
-    }
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
+            visibleArea.x1 =  topLeft.x();
+            visibleArea.y2 =  topLeft.y();
+            QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
+            visibleArea.x2 = bottomRight.x();
+            visibleArea.y1 = bottomRight.y();
+        }
 
-    ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
-    if ( !ret.intersect(imageRoDPixel, &ret) ) {
-        ret.clear();
+        if (mipMapLevel != 0) {
+            // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
+            visibleArea.toPixelEnclosing(mipMapLevel, par, &ret);
+        } else {
+            ret.x1 = std::floor(visibleArea.x1 / par);
+            ret.x2 = std::ceil(visibleArea.x2 / par);
+            ret.y1 = std::floor(visibleArea.y1);
+            ret.y2 = std::ceil(visibleArea.y2);
+        }
+
+        ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
+        if ( !ret.intersect(imageRoDPixel, &ret) ) {
+            ret.clear();
+        }
+
     }
 
     ///to clip against the user roi however clip it against the mipmaplevel of the zoomFactor+proxy
