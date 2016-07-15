@@ -5248,7 +5248,7 @@ Node::isNodeUpstream(const NodeConstPtr& input,
     for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
         NodePtr in = _imp->inputs[i].lock();
         if (in) {
-            in->isNodeUpstream(shared_from_this(), ok);
+            in->isNodeUpstream(input, ok);
             if (*ok) {
                 return;
             }
