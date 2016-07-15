@@ -140,6 +140,7 @@ public:
         , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaChannelName("a")
         , viewerMipMapLevel(0)
+        , fullFrameProcessingEnabled(false)
         , activateInputChangedFromViewer(false)
         , gammaLookupMutex()
         , gammaLookup()
@@ -380,6 +381,7 @@ public:
     ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
+    bool fullFrameProcessingEnabled;
 
     ///Only accessed from MT
     bool activateInputChangedFromViewer;

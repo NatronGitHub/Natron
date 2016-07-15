@@ -312,6 +312,7 @@ InputScriptTextEdit::InputScriptTextEdit(Gui* gui,
     QObject::connect( this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()) );
 
     _highlighter = new PySyntaxHighlighter( document() );
+    setPlainText(QString::fromUtf8(""));
 }
 
 void

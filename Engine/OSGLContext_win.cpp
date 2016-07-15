@@ -656,8 +656,10 @@ void
 OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
-
     assert(wglInfo);
+    if (!wglInfo) {
+        return;
+    }
     if (wglInfo->NV_gpu_affinity) {
         // https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
         std::vector<HGPUNV> gpuHandles;

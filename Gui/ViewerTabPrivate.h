@@ -87,6 +87,7 @@ struct ViewerTabPrivate
     Button* syncViewerButton;
     Button* centerViewerButton;
     Button* clipToProjectFormatButton;
+    Button* fullFrameProcessingButton;
     Button* enableViewerRoI;
     Button* refreshButton;
     Button* pauseButton;

@@ -252,6 +252,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionClipEnabled "clipEnabled"
 #define kShortcutDescActionClipEnabled "Enable Clipping to Project Window"
 
+#define kShortcutIDActionFullFrameProc "fullFrameProc"
+#define kShortcutDescActionFullFrameProc "Full Frame Processing"
+
 #define kShortcutIDActionRefresh "refresh"
 #define kShortcutDescActionRefresh "Refresh Image"
 

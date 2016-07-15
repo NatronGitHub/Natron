@@ -855,6 +855,9 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     const OSGLContext_glx_data* glxInfo = appPTR->getGLXData();
 
     assert(glxInfo);
+    if (!glxInfo) {
+        return;
+    }
     if (!glxInfo->_imp->MESA_query_renderer) {
         boost::scoped_ptr<OSGLContext_x11> context;
         try {

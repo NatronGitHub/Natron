@@ -395,6 +395,7 @@ loadNodeGuiSerialization(Gui* gui,
             tab->setInfobarVisible(found->second.infobarVisible);
             tab->setTimelineVisible(found->second.timelineVisible);
             tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+            tab->setFullFrameProcessing(found->second.isFullFrameProcessEnabled);
             if ( !found->second.layerName.empty() ) {
                 tab->setCurrentLayers( QString::fromUtf8( found->second.layerName.c_str() ), QString::fromUtf8( found->second.alphaLayerName.c_str() ) );
             }

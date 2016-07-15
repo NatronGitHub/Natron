@@ -700,26 +700,38 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
         KnobIPtr aliasMaster = knob->getAliasMaster();
         std::string knobName;
-        if ( ( (dimension != -1) || (knob->getDimension() == 1) ) && dimensionIsSlaved ) {
-            std::pair<int, KnobIPtr > master = knob->getMaster(dimension);
-            assert(master.second);
 
-            KnobHolderPtr masterHolder = master.second->getHolder();
+        if ( aliasMaster || ((dimension != -1 || knob->getDimension() == 1) && dimensionIsSlaved) ) {
+
+            KnobIPtr masterKnob;
+            std::pair<int, KnobIPtr > master;
+            if (aliasMaster) {
+                masterKnob = aliasMaster;
+            } else {
+                master = knob->getMaster(dimension);
+                masterKnob = master.second;
+            }
+
+            KnobHolderPtr masterHolder = masterKnob->getHolder();
             if (masterHolder) {
                 TrackMarkerPtr isMarker = toTrackMarker(masterHolder);
+                EffectInstancePtr isEffect = toEffectInstance(masterHolder);
                 if (isMarker) {
                     knobName.append( isMarker->getContext()->getNode()->getScriptName() );
                     knobName += '.';
                     knobName += isMarker->getScriptName_mt_safe();
+                } else if (isEffect) {
+                    knobName += isEffect->getScriptName_mt_safe();
                 }
+
             }
 
 
             knobName.append(".");
-            knobName.append( master.second->getName() );
-            if ( !aliasMaster && (master.second->getDimension() > 1) ) {
+            knobName.append( masterKnob->getName() );
+            if ( !aliasMaster && (masterKnob->getDimension() > 1) ) {
                 knobName.append(".");
-                knobName.append( master.second->getDimensionName(master.first) );
+                knobName.append( masterKnob->getDimensionName(master.first) );
             }
         }
         QString actionText;

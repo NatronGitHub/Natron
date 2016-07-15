@@ -258,6 +258,15 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->clipToProjectFormatButton->setDown(false);
     _imp->firstRowLayout->addWidget(_imp->clipToProjectFormatButton);
 
+    _imp->fullFrameProcessingButton = new Button(_imp->firstSettingsRow);
+    _imp->fullFrameProcessingButton->setFocusPolicy(Qt::NoFocus);
+    _imp->fullFrameProcessingButton->setFixedSize(buttonSize);
+    _imp->fullFrameProcessingButton->setIconSize(buttonIconSize);
+    _imp->fullFrameProcessingButton->setCheckable(true);
+    _imp->fullFrameProcessingButton->setChecked(false);
+    _imp->fullFrameProcessingButton->setDown(false);
+    _imp->firstRowLayout->addWidget(_imp->fullFrameProcessingButton);
+
     _imp->enableViewerRoI = new Button(_imp->firstSettingsRow);
     _imp->enableViewerRoI->setFocusPolicy(Qt::NoFocus);
     _imp->enableViewerRoI->setFixedSize(buttonSize);
@@ -891,6 +900,11 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                               "region of definition is displayed.").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->clipToProjectFormatButton);
 
+    setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFullFrameProc, "<p>" +
+                           tr("When checked, the viewer will render the image in its entirety and not just the visible portion.").toStdString() + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->fullFrameProcessingButton);
+
+
     std::list<std::string> roiActions;
     roiActions.push_back(kShortcutIDActionROIEnabled);
     roiActions.push_back(kShortcutIDActionNewROI);
@@ -1020,6 +1034,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     manageSlotsForInfoWidget(0, true);
 
     QObject::connect( _imp->clipToProjectFormatButton, SIGNAL(clicked(bool)), this, SLOT(onClipToProjectButtonToggle(bool)) );
+    QObject::connect( _imp->fullFrameProcessingButton, SIGNAL(clicked(bool)), this, SLOT(onFullFrameButtonToggle(bool)) );
     QObject::connect( _imp->viewsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewsComboboxChanged(int)) );
     QObject::connect( _imp->enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)) );
     QObject::connect( _imp->autoContrast, SIGNAL(clicked(bool)), this, SLOT(onAutoContrastChanged(bool)) );

@@ -69,6 +69,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , syncViewerButton(NULL)
     , centerViewerButton(NULL)
     , clipToProjectFormatButton(NULL)
+    , fullFrameProcessingButton(NULL)
     , enableViewerRoI(NULL)
     , refreshButton(NULL)
     , pauseButton(NULL)
