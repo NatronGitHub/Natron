@@ -205,7 +205,7 @@ void
 ViewerTab::onFullFrameButtonToggle(bool b)
 {
     _imp->fullFrameProcessingButton->setDown(b);
-    _imp->viewerNode->setFullFrameProcessingEnabled(b);
+    _imp->viewerNode.lock()->setFullFrameProcessingEnabled(b);
 
 }
 

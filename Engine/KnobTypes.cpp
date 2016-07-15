@@ -2177,10 +2177,10 @@ KnobTable::decodeFromKnobTableFormat(const std::string& value,
             assert( endNamePos != -1 && endNamePos < raw.size() );
 
             if ( (endNamePos == -1) || ( endNamePos >= raw.size() ) ) {
-                KnobHolder* holder = dynamic_cast<KnobHolder*>(getHolder());
+                KnobHolderPtr holder = getHolder();
                 QString knobName;
                 if (holder) {
-                    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+                    EffectInstancePtr effect = toEffectInstance(holder);
                     if (effect) {
                         knobName += QString::fromUtf8(effect->getNode()->getFullyQualifiedName().c_str());
                         knobName += QString::fromUtf8(".");
@@ -2212,10 +2212,10 @@ KnobTable::decodeFromKnobTableFormat(const std::string& value,
         if ( (int)row.size() == colsCount ) {
             table->push_back(row);
         } else {
-            KnobHolder* holder = dynamic_cast<KnobHolder*>(getHolder());
+            KnobHolderPtr holder = getHolder();
             QString knobName;
             if (holder) {
-                EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+                EffectInstancePtr effect = toEffectInstance(holder);
                 if (effect) {
                     knobName += QString::fromUtf8(effect->getNode()->getFullyQualifiedName().c_str());
                     knobName += QString::fromUtf8(".");

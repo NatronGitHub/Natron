@@ -142,7 +142,7 @@ ViewerTab::setFullFrameProcessing(bool fullFrame)
 bool
 ViewerTab::isFullFrameProcessingEnabled() const
 {
-    return _imp->viewerNode->isFullFrameProcessingEnabled();
+    return _imp->viewerNode.lock()->isFullFrameProcessingEnabled();
 }
 
 void
