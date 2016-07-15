@@ -1490,7 +1490,7 @@ DopeSheetViewPrivate::drawProjectBounds() const
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }

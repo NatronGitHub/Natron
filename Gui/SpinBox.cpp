@@ -1092,7 +1092,7 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     if (!k) {
         return;
     }
-    KnobPtr knob = k->getKnob();
+    KnobIPtr knob = k->getKnob();
     if (!knob) {
         return;
     }
