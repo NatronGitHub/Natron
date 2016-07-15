@@ -314,7 +314,7 @@ ViewerTab::onEngineStarted(bool forward)
 void
 ViewerTab::onSetDownPlaybackButtonsTimeout()
 {
-    if ( !_imp->viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
+    if ( _imp->viewerNode && _imp->viewerNode->getRenderEngine() && !_imp->viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
         const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ( (*it)->_imp->play_Forward_Button ) {
