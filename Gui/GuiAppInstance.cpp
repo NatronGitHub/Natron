@@ -75,14 +75,17 @@ struct RotoPaintData
     ///The last mouse event tick bounding box, to render the least possible
     RectD lastStrokeMovementBbox;
 
-    ///The index of the points/stroke we have rendered
+    ///The index of the points/stroke we have drawn
     int lastStrokeIndex, multiStrokeIndex;
+
+    bool isStrokeFirstTick;
 
     ///The last points of the mouse event
     std::list<std::pair<Point, double> > lastStrokePoints;
 
     ///Used for the rendering algorithm to know where we stopped along the path
     double distToNextIn, distToNextOut;
+    Point lastCenter;
 
     RotoPaintData()
         : rotoPaintNode()
@@ -92,9 +95,11 @@ struct RotoPaintData
         , lastStrokeMovementBbox()
         , lastStrokeIndex(-1)
         , multiStrokeIndex(0)
+        , isStrokeFirstTick(true)
         , lastStrokePoints()
         , distToNextIn(0)
         , distToNextOut(0)
+        , lastCenter()
     {
     }
 };
@@ -1260,13 +1265,16 @@ GuiAppInstance::getOfxHostOSHandle() const
 }
 
 void
-GuiAppInstance::updateLastPaintStrokeData(int newAge,
+GuiAppInstance::updateLastPaintStrokeData(bool isFirstTick,
+                                          int newAge,
                                           const std::list<std::pair<Point, double> >& points,
                                           const RectD& lastPointsBbox,
                                           int strokeIndex)
 {
     {
         QMutexLocker k(&_imp->rotoDataMutex);
+
+        _imp->rotoData.isStrokeFirstTick = isFirstTick;
         _imp->rotoData.lastStrokePoints = points;
         _imp->rotoData.lastStrokeMovementBbox = lastPointsBbox;
         _imp->rotoData.lastStrokeIndex = newAge;
@@ -1306,21 +1314,27 @@ GuiAppInstance::getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke,
 void
 GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
                                     std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                    double *distNextIn) const
+                                    bool *isFirstTick,
+                                    int *strokeMultiIndex,
+                                    double *distNextIn,
+                                    Point* lastCenter) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
 
+    *isFirstTick = _imp->rotoData.isStrokeFirstTick;
+    *strokeMultiIndex = _imp->rotoData.multiStrokeIndex;
     *lastStrokeMovementBbox = _imp->rotoData.lastStrokeMovementBbox;
     *lastStrokeMovementPoints = _imp->rotoData.lastStrokePoints;
     *distNextIn = _imp->rotoData.distToNextIn;
+    *lastCenter = _imp->rotoData.lastCenter;
 }
 
 void
-GuiAppInstance::updateStrokeData(double distNextOut)
+GuiAppInstance::updateStrokeData(const Point& lastCenter, double distNextOut)
 {
     QMutexLocker k(&_imp->rotoDataMutex);
     _imp->rotoData.distToNextOut = distNextOut;
-
+    _imp->rotoData.lastCenter = lastCenter;
 }
 
 RectD

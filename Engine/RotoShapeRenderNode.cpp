@@ -29,6 +29,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
@@ -41,6 +42,11 @@
 
 NATRON_NAMESPACE_ENTER;
 
+enum RotoShapeRenderTypeEnum
+{
+    eRotoShapeRenderTypeSolid,
+    eRotoShapeRenderTypeSmear
+};
 
 RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 : EffectInstance(n)
@@ -71,15 +77,66 @@ RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) 
     depths->push_back(eImageBitDepthFloat);
 }
 
+void
+RotoShapeRenderNode::initializeKnobs()
+{
+    KnobPagePtr page = AppManager::createKnob<KnobPage>(shared_from_this(), tr("Controls"));
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamOutputComponentsLabel));
+        param->setName(kRotoShapeRenderNodeParamOutputComponents);
+        {
+            std::vector<std::string> options;
+            options.push_back(kRotoShapeRenderNodeParamOutputComponentsRGBA);
+            options.push_back(kRotoShapeRenderNodeParamOutputComponentsAlpha);
+            param->populateChoices(options);
+        }
+        page->addKnob(param);
+        _imp->outputComponents = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamTypeLabel));
+        param->setName(kRotoShapeRenderNodeParamType);
+        {
+            std::vector<std::string> options;
+            options.push_back(kRotoShapeRenderNodeParamTypeSolid);
+            options.push_back(kRotoShapeRenderNodeParamTypeSmear);
+            param->populateChoices(options);
+        }
+        page->addKnob(param);
+        _imp->renderType = param;
+    }
+}
+
 StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(U64 /*hash*/, double time, const RenderScale & /*scale*/, ViewIdx /*view*/, RectD* rod)
+RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
+{
+    int index = _imp->outputComponents.lock()->getValue();
+    ImageComponents comps = index == 0 ? ImageComponents::getRGBAComponents() : ImageComponents::getAlphaComponents();
+    metadata.setImageComponents(-1, comps);
+    metadata.setImageComponents(0, comps);
+    return eStatusOK;
+}
+
+StatusEnum
+RotoShapeRenderNode::getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
    
 
+    StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    if (st != eStatusOK) {
+        rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
+    }
+
     NodePtr node = getNode();
+    RectD maskRod;
     try {
-        node->getPaintStrokeRoD(time, rod);
+        node->getPaintStrokeRoD(time, &maskRod);
     } catch (...) {
+    }
+    if ( rod->isNull() ) {
+        *rod = maskRod;
+    } else {
+        rod->merge(maskRod);
     }
     return eStatusOK;
 
@@ -134,8 +191,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         return eStatusFailed;
     }
 
+    RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
+
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(rotoItem.get());
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
+
+    if (type == eRotoShapeRenderTypeSmear && !isStroke) {
+        return eStatusFailed;
+    }
 
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
     assert(rotoItem->isActivated(args.time) && (!isBezier || (isBezier->isCurveFinished() && ( isBezier->getControlPointsCount() > 1 ))));
@@ -166,32 +229,28 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // Check that the supplied output image has the correct storage
     assert((outputPlane.second->getStorageMode() == eStorageModeGLTex && args.useOpenGL) || (outputPlane.second->getStorageMode() != eStorageModeGLTex && !args.useOpenGL));
 
-    // Get per-shape motion blur parameters
-
-    double startTime = args.time, mbFrameStep = 1., endTime = args.time;
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-    if (isBezier) {
-        int mbType_i = rotoItem->getContext()->getMotionBlurTypeKnob()->getValue();
-        bool applyPerShapeMotionBlur = mbType_i == 0;
-        if (applyPerShapeMotionBlur) {
-            isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
-        }
-    }
-#endif
-
 
     bool isDuringPainting = isDuringPaintStrokeCreationThreadLocal();
     double distNextIn = 0.;
+    Point lastCenterIn = { INT_MIN, INT_MIN };
+    bool isStrokeFirstTick = true;
+    int strokeMultiIndex = 0;
 
     // For strokes and open-bezier evaluate them to get the points and their pressure
     // We also compute the bounding box of the item taking into account the motion blur
     std::list<std::list<std::pair<Point, double> > > strokes;
     if (isStroke) {
 
-        if (isDuringPainting) {
+        if (!isDuringPainting) {
+            isStroke->evaluateStroke(mipmapLevel, args.time, &strokes, 0);
+        } else {
             RectD lastStrokeMovementBbox;
             std::list<std::pair<Point, double> > lastStrokePoints;
-            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &distNextIn);
+            getApp()->getRenderStrokeData(&lastStrokeMovementBbox, &lastStrokePoints, &isStrokeFirstTick, &strokeMultiIndex, &distNextIn, &lastCenterIn);
+            if (isStrokeFirstTick) {
+                distNextIn = 0.;
+                lastCenterIn.x = lastCenterIn.y = INT_MIN;
+            }
 
             // When drawing we must always write to the same buffer
             assert(getNode()->getPaintBuffer() == outputPlane.second);
@@ -213,9 +272,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     strokes.push_back(toScalePoints);
                 }
             }
-        } else {
-            isStroke->evaluateStroke(mipmapLevel, args.time, &strokes, 0);
-
         }
 
         if (strokes.empty()) {
@@ -277,42 +333,92 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     if (contextLocker) {
         contextLocker->attach();
     }
-
     // Now we are good to start rendering
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
-    if (!args.useOpenGL) {
-        double distToNextOut = RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, strokes, outputPlane.second);
-        if (isDuringPainting) {
-            getApp()->updateStrokeData(distToNextOut);
-        }
-    } else {
-#endif
 
-        boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(args.glContextData);
+
+    double distToNextOut;
+    Point lastCenterOut;
+
+
+    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
+    if (args.glContextData) {
+        glData = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(args.glContextData);
         assert(glData);
+    }
 
-        double shapeColor[3];
-        rotoItem->getColor(args.time, shapeColor);
-        double opacity = rotoItem->getOpacity(args.time);
 
-        if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
-            bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
-            double distToNextOut = RotoShapeRenderGL::renderStroke_gl(glContext, glData,
-                                                                      outputPlane.second->getBounds(),
-                                                                      args.roi,
-                                                                      outputPlane.second->getGLTextureTarget(), strokes, distNextIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel);
-            if (isDuringPainting) {
-                getApp()->updateStrokeData(distToNextOut);
+    switch (type) {
+        case eRotoShapeRenderTypeSolid: {
+
+            // Get per-shape motion blur parameters
+
+            double startTime = args.time, mbFrameStep = 1., endTime = args.time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+            if (isBezier) {
+                int mbType_i = rotoItem->getContext()->getMotionBlurTypeKnob()->getValue();
+                bool applyPerShapeMotionBlur = mbType_i == 0;
+                if (applyPerShapeMotionBlur) {
+                    isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+                }
             }
-        } else {
-            RotoShapeRenderGL::renderBezier_gl(glContext, glData,
-                                               args.roi,
-                                               isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
-        }
+#endif
 
 #ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
-    }
+            if (!args.useOpenGL) {
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
+                if (isDuringPainting) {
+                    getApp()->updateStrokeData(lastCenterOut, distToNextOut);
+                }
+            } else {
 #endif
+
+                double shapeColor[3];
+                rotoItem->getColor(args.time, shapeColor);
+                double opacity = rotoItem->getOpacity(args.time);
+
+                if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+                    bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel, &distToNextOut, &lastCenterOut);
+                    if (isDuringPainting) {
+                        getApp()->updateStrokeData(lastCenterOut, distToNextOut);
+                    }
+                } else {
+                    RotoShapeRenderGL::renderBezier_gl(glContext, glData,
+                                                       args.roi,
+                                                       isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
+                }
+                
+#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+            }
+#endif
+        }   break;
+        case eRotoShapeRenderTypeSmear: {
+            RectI bgImgRoI;
+            ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, args.useOpenGL ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
+            assert(bgImg->getStorageMode() == outputPlane.second->getStorageMode());
+
+            // Ensure that initially everything in the background is the source image
+            if (isStrokeFirstTick && strokeMultiIndex == 0) {
+                outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);
+            }
+#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+            if (!args.useOpenGL) {
+                RotoShapeRenderCairo::renderSmear_cairo(args.time, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, strokes, &distToNextOut, &lastCenterOut);
+            } else {
+#endif
+                double opacity = rotoItem->getOpacity(args.time);
+                RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, opacity, args.time, mipmapLevel, &distToNextOut, &lastCenterOut);
+#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+            }
+#endif
+            if (isDuringPainting) {
+                getApp()->updateStrokeData(lastCenterOut, distToNextOut);
+            }
+
+        }   break;
+    } // type
+
+
 
     return eStatusOK;
 

@@ -239,16 +239,21 @@ public:
 
 
     ///Rotopaint related
-    virtual void updateLastPaintStrokeData(int newAge,
+    virtual void updateLastPaintStrokeData(bool isFirstTick,
+                                           int newAge,
                                            const std::list<std::pair<Point, double> >& points,
                                            const RectD& lastPointsBbox,
                                            int strokeIndex) OVERRIDE FINAL;
     virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
-    virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                     double *distNextIn) const OVERRIDE FINAL;
+    virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox,
+                                     std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
+                                     bool *isFirstTick,
+                                     int *strokeMultiIndex,
+                                     double *distNextIn,
+                                     Point* /*lastCenter*/) const OVERRIDE FINAL;
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
     virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke, int* strokeIndex) const OVERRIDE FINAL;
-    virtual void updateStrokeData(double distNextOut) OVERRIDE FINAL;
+    virtual void updateStrokeData(const Point& lastCenter, double distNextOut) OVERRIDE FINAL;
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     virtual void setUserIsPainting(const NodePtr& rotopaintNode,

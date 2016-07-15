@@ -36,6 +36,19 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+
+#define kRotoShapeRenderNodeParamOutputComponents "outputComponents"
+#define kRotoShapeRenderNodeParamOutputComponentsLabel "Output Components"
+
+#define kRotoShapeRenderNodeParamOutputComponentsAlpha "Alpha"
+#define kRotoShapeRenderNodeParamOutputComponentsRGBA "RGBA"
+
+#define kRotoShapeRenderNodeParamType "type"
+#define kRotoShapeRenderNodeParamTypeLabel "Type"
+
+#define kRotoShapeRenderNodeParamTypeSolid "Solid"
+#define kRotoShapeRenderNodeParamTypeSmear "Smear"
+
 NATRON_NAMESPACE_ENTER;
 
 class RotoShapeRenderNodePrivate;
@@ -97,7 +110,7 @@ public:
 
     virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return std::string();
+        return std::string("Source");
     }
 
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -142,7 +155,7 @@ public:
 
 private:
 
-
+    virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void purgeCaches() OVERRIDE FINAL;
 
@@ -151,6 +164,8 @@ private:
     virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
 
     virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+
+    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual bool isIdentity(double time,
                             const RenderScale & scale,

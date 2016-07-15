@@ -104,15 +104,18 @@ public:
     /**
      * @brief Low level: renders the given stroke item into the cairo image
      **/
-    static double renderStroke_cairo(cairo_t* cr,
-                                     std::vector<cairo_pattern_t*>& dotPatterns,
-                                     const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                     double distToNext,
-                                     const RotoDrawableItem* stroke,
-                                     bool doBuildup,
-                                     double opacity,
-                                     double time,
-                                     unsigned int mipmapLevel);
+    static void renderStroke_cairo(cairo_t* cr,
+                                   std::vector<cairo_pattern_t*>& dotPatterns,
+                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                   const double distToNextIn,
+                                   const Point& lastCenterPointIn,
+                                   const RotoDrawableItem* stroke,
+                                   bool doBuildup,
+                                   double opacity,
+                                   double time,
+                                   unsigned int mipmapLevel,
+                                   double* distToNextOut,
+                                   Point* lastCenterPoint);
 
     /**
      * @brief Low level: renders the given bezier with motion blur onto the given cairo image
@@ -144,7 +147,7 @@ public:
     /**
      * @brief High level: renders the given roto item into the supplied image.
      **/
-    static double renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
+    static void renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                          const RectI & roi,
                                          const ImageComponents& components,
                                          const double startTime,
@@ -154,13 +157,28 @@ public:
                                          const ImageBitDepthEnum depth,
                                          const unsigned int mipmapLevel,
                                          const bool isDuringPainting,
-                                        double distToNext,
+                                         const double distToNextIn,
+                                         const Point& lastCenterPointIn,
                                          const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                         const ImagePtr &image);
+                                         const ImagePtr &dstImage,
+                                         double* distToNextOut,
+                                         Point* lastCenterPointOut);
+
+
+    static void renderSmear_cairo(double time,
+                                  unsigned int mipMapLevel,
+                                  const RotoStrokeItem* rotoItem,
+                                  const RectI& roi,
+                                  const ImagePtr& dstImage,
+                                  const double distToNextIn,
+                                  const Point& lastCenterPointIn,
+                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                  double* distToNextOut,
+                                  Point* lastCenterPointOut);
 
 
     static void purgeCaches_cairo(const RotoDrawableItemPtr& rotoItem);
-
+    
 };
 
 

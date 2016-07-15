@@ -111,6 +111,7 @@ public:
                                             std::list<std::pair<Point, double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
+                                            bool *isStrokeFirstTick,
                                             int* newAge,
                                             int* strokeIndex);
 

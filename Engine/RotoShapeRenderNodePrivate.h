@@ -30,12 +30,15 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/OSGLContext.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 
 class RotoShapeRenderNodePrivate
 {
 public:
+
+    boost::weak_ptr<KnobChoice> outputComponents, renderType;
 
 
     RotoShapeRenderNodePrivate();
@@ -57,19 +60,22 @@ public:
 
     typedef void (*PFNRenderStrokeEndRender) (RenderStrokeDataPtr userData);
 
-    typedef void (*PFNRenderStrokeRenderDot) (RenderStrokeDataPtr userData, const Point &center, double pressure, double *spacing);
+    typedef void (*PFNRenderStrokeRenderDot) (RenderStrokeDataPtr userData, const Point &prevCenter, const Point &center, double pressure, double *spacing);
 
-    static double renderStroke_generic(RenderStrokeDataPtr userData,
-                                       PFNRenderStrokeBeginRender beginCallback,
-                                       PFNRenderStrokeRenderDot renderDotCallback,
-                                       PFNRenderStrokeEndRender endCallback,
-                                       const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                       double distToNext,
-                                       const RotoDrawableItem* stroke,
-                                       bool doBuildup,
-                                       double opacity,
-                                       double time,
-                                       unsigned int mipmapLevel);
+    static void renderStroke_generic(RenderStrokeDataPtr userData,
+                                     PFNRenderStrokeBeginRender beginCallback,
+                                     PFNRenderStrokeRenderDot renderDotCallback,
+                                     PFNRenderStrokeEndRender endCallback,
+                                     const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                     const double distToNextIn,
+                                     const Point& lastCenterPointIn,
+                                     const RotoDrawableItem* stroke,
+                                     bool doBuildup,
+                                     double opacity,
+                                     double time,
+                                     unsigned int mipmapLevel,
+                                     double* distToNextOut,
+                                     Point* lastCenterPoint);
 };
 
 NATRON_NAMESPACE_EXIT;

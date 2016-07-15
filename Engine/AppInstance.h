@@ -384,7 +384,8 @@ public:
     virtual AppInstancePtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
 
-    virtual void updateLastPaintStrokeData(int /*newAge*/,
+    virtual void updateLastPaintStrokeData(bool /*isFirstTick*/,
+                                           int /*newAge*/,
                                            const std::list<std::pair<Point, double> >& /*points*/,
                                            const RectD& /*lastPointsBbox*/,
                                            int /*strokeIndex*/) {}
@@ -399,9 +400,12 @@ public:
 
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
                                      std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
-                                     double */*distNextIn*/) const {}
+                                     bool */*isFirstTick*/,
+                                     int */*strokeMultiIndex*/,
+                                     double */*distNextIn*/,
+                                     Point* /*lastCenter*/) const {}
 
-    virtual void updateStrokeData(double /*distNextOut*/) {}
+    virtual void updateStrokeData(const Point& /*lastCenter*/, double /*distNextOut*/) {}
 
     virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
 

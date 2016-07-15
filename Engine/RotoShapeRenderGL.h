@@ -107,18 +107,35 @@ public:
 
 
 
-    static double renderStroke_gl(const OSGLContextPtr& glContext,
-                                  const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
-                                  const RectI& bounds,
-                                  const RectI& roi,
-                                  int target,
-                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                  double distToNext,
-                                  const RotoDrawableItem* stroke,
-                                  bool doBuildup,
-                                  double opacity,
-                                  double time,
-                                  unsigned int mipmapLevel);
+    static void renderStroke_gl(const OSGLContextPtr& glContext,
+                                const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                const RectI& roi,
+                                const ImagePtr& dstImage,
+                                const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                const double distToNextIn,
+                                const Point& lastCenterPointIn,
+                                const RotoDrawableItem* stroke,
+                                bool doBuildup,
+                                double opacity,
+                                double time,
+                                unsigned int mipmapLevel,
+                                double *distToNextOut,
+                                Point* lastCenterPointOut);
+
+    static void renderSmear_gl(const OSGLContextPtr& glContext,
+                               const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                               const RectI& roi,
+                               const ImagePtr& dstImage,
+                               const std::list<std::list<std::pair<Point, double> > >& strokes,
+                               const double distToNextIn,
+                               const Point& lastCenterPointIn,
+                               const RotoDrawableItem* stroke,
+                               double opacity,
+                               double time,
+                               unsigned int mipmapLevel,
+                               double *distToNextOut,
+                               Point* lastCenterPointOut);
+
 
 
 

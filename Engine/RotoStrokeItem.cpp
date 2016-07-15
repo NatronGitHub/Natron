@@ -587,6 +587,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
                                                    std::list<std::pair<Point, double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,
+                                                   bool *isStrokeFirstTick,
                                                    int* newAge,
                                                    int* strokeIndex)
 {
@@ -600,6 +601,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         QMutexLocker k(&itemMutex);
         *wholeStrokeBbox = _imp->wholeStrokeBboxWhilePainting;
     }
+    *isStrokeFirstTick = false;
 
     QMutexLocker k(&itemMutex);
     assert( !_imp->strokes.empty() );
@@ -637,6 +639,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     //We changed stroke index so far, reset the age
     if ( (*strokeIndex != lastMultiStrokeIndex) && (lastAge != -1) ) {
         lastAge = -1;
+        *isStrokeFirstTick = true;
         *wholeStrokeBbox = computeBoundingBoxInternal(time);
     }
 

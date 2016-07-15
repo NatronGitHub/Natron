@@ -38,19 +38,25 @@ RotoShapeRenderNodePrivate::RotoShapeRenderNodePrivate()
 
 
 
-double
+void
 RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
                                                  PFNRenderStrokeBeginRender beginCallback,
                                                  PFNRenderStrokeRenderDot renderDotCallback,
                                                  PFNRenderStrokeEndRender endCallback,
                                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                 double distToNext,
+                                                 const double distToNextIn,
+                                                 const Point& lastCenterPointIn,
                                                  const RotoDrawableItem* stroke,
                                                  bool doBuildup,
                                                  double opacity,
                                                  double time,
-                                                 unsigned int mipmapLevel)
+                                                 unsigned int mipmapLevel,
+                                                 double* distToNextOut,
+                                                 Point* lastCenterPoint)
 {
+    assert(distToNextOut && lastCenterPoint);
+    *distToNextOut = 0;
+
     double brushSize, brushSizePixel, brushSpacing, brushHardness, writeOnStart, writeOnEnd;
     bool pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize;
     {
@@ -59,7 +65,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         KnobDoublePtr brushSpacingKnob = stroke->getBrushSpacingKnob();
         brushSpacing = brushSpacingKnob->getValueAtTime(time);
         if (brushSpacing == 0.) {
-            return distToNext;
+            return;
         }
         brushSpacing = std::max(brushSpacing, 0.05);
 
@@ -71,7 +77,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
         writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
         if ( (writeOnEnd - writeOnStart) <= 0. ) {
-            return distToNext;
+            return;
         }
 
 
@@ -90,9 +96,11 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
     double shapeColor[3];
     stroke->getColor(time, shapeColor);
 
+    double distToNext = distToNextIn;
 
     beginCallback(userData, brushSizePixel, brushSpacing, brushHardness, pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize, doBuildup, shapeColor, opacity);
 
+    Point prevCenter = lastCenterPointIn;
     for (std::list<std::list<std::pair<Point, double> > >::const_iterator strokeIt = strokes.begin(); strokeIt != strokes.end(); ++strokeIt) {
         int firstPoint = (int)std::floor( (strokeIt->size() * writeOnStart) );
         int endPoint = (int)std::ceil( (strokeIt->size() * writeOnEnd) );
@@ -109,16 +117,19 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             visiblePortion.push_back(*it);
         }
         if ( visiblePortion.empty() ) {
-            return distToNext;
+            return;
         }
 
         std::list<std::pair<Point, double> >::iterator it = visiblePortion.begin();
 
         if (visiblePortion.size() == 1) {
             double spacing;
-            renderDotCallback(userData, it->first, it->second, &spacing);
+            *lastCenterPoint = it->first;
+            renderDotCallback(userData, prevCenter, *lastCenterPoint, it->second, &spacing);
             continue;
         }
+
+        prevCenter = it->first;
 
         std::list<std::pair<Point, double> >::iterator next = it;
         ++next;
@@ -127,21 +138,21 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             //Render for each point a dot. Spacing is a percentage of brushSize:
             //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
             //Spacing at 0 we do not render the stroke
-
-            double dist = std::sqrt( (next->first.x - it->first.x) * (next->first.x - it->first.x) +  (next->first.y - it->first.y) * (next->first.y - it->first.y) );
+            double dx = next->first.x - it->first.x;
+            double dy = next->first.y - it->first.y;
+            double dist = std::sqrt(dx * dx + dy * dy);
 
             // while the next point can be drawn on this segment, draw a point and advance
             while (distToNext <= dist) {
                 double a = dist == 0. ? 0. : distToNext / dist;
-                Point center = {
-                    it->first.x * (1 - a) + next->first.x * a,
-                    it->first.y * (1 - a) + next->first.y * a
-                };
+                lastCenterPoint->x = it->first.x * (1 - a) + next->first.x * a;
+                lastCenterPoint->y = it->first.y * (1 - a) + next->first.y * a;
                 double pressure = it->second * (1 - a) + next->second * a;
 
                 // draw the dot
                 double spacing;
-                renderDotCallback(userData, center, pressure, &spacing);
+                renderDotCallback(userData, prevCenter, *lastCenterPoint, pressure, &spacing);
+                prevCenter = *lastCenterPoint;
                 distToNext += spacing;
             }
 
@@ -153,9 +164,8 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
     }
 
     endCallback(userData);
-    
-    
-    return distToNext;
+
+    *distToNextOut = distToNextIn;
 
 }
 

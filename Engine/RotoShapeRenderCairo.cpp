@@ -700,17 +700,18 @@ getRenderDotParams(double alpha,
     *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
     *spacing = *externalDotRadius * 2. * brushSpacing;
 
+    if (opacityStops) {
+        opacityStops->clear();
 
-    opacityStops->clear();
+        double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
+        const int maxStops = 8;
+        double incr = 1. / maxStops;
 
-    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
-    const int maxStops = 8;
-    double incr = 1. / maxStops;
-
-    if (brushHardness != 1.) {
-        for (double d = 0; d <= 1.; d += incr) {
-            double o = hardnessGaussLookup( std::pow(d, exp) );
-            opacityStops->push_back( std::make_pair(d, o * alpha) );
+        if (brushHardness != 1.) {
+            for (double d = 0; d <= 1.; d += incr) {
+                double o = hardnessGaussLookup( std::pow(d, exp) );
+                opacityStops->push_back( std::make_pair(d, o * alpha) );
+            }
         }
     }
 }
@@ -876,6 +877,7 @@ renderStrokeEnd_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData
 
 static void
 renderStrokeRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                            const Point &/*prevCenter*/,
                             const Point &center,
                             double pressure,
                             double* spacing)
@@ -887,33 +889,204 @@ renderStrokeRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr user
     RotoShapeRenderCairo::renderDot_cairo(myData->cr, myData->dotPatterns, center, internalDotRadius, externalDotRadius, pressure, myData->buildUp, opacityStops, myData->opacity);
 }
 
-double
+void
 RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
-                                       std::vector<cairo_pattern_t*>& dotPatterns,
-                                       const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                       double distToNext,
-                                       const RotoDrawableItem* stroke,
-                                       bool doBuildup,
-                                       double alpha,
-                                       double time,
-                                       unsigned int mipmapLevel)
+                                         std::vector<cairo_pattern_t*>& dotPatterns,
+                                         const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                         const double distToNextIn,
+                                         const Point& lastCenterPointIn,
+                                         const RotoDrawableItem* stroke,
+                                         bool doBuildup,
+                                         double alpha,
+                                         double time,
+                                         unsigned int mipmapLevel,
+                                         double* distToNextOut,
+                                         Point* lastCenterPoint)
 {
     RenderStrokeCairoData data;
     data.cr = cr;
     data.dotPatterns = &dotPatterns;
 
-    return RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
-                                                            renderStrokeBegin_cairo,
-                                                            renderStrokeRenderDot_cairo,
-                                                            renderStrokeEnd_cairo,
-                                                            strokes,
-                                                            distToNext,
-                                                            stroke,
-                                                            doBuildup,
-                                                            alpha,
-                                                            time,
-                                                            mipmapLevel);
+    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+                                                     renderStrokeBegin_cairo,
+                                                     renderStrokeRenderDot_cairo,
+                                                     renderStrokeEnd_cairo,
+                                                     strokes,
+                                                     distToNextIn,
+                                                     lastCenterPointIn,
+                                                     stroke,
+                                                     doBuildup,
+                                                     alpha,
+                                                     time,
+                                                     mipmapLevel,
+                                                     distToNextOut,
+                                                     lastCenterPoint);
 }
+
+struct RenderSmearCairoData
+{
+    ImagePtr dstImage;
+    double brushSizePixel;
+    double brushSpacing;
+    double brushHardness;
+    bool pressureAffectsOpacity;
+    bool pressureAffectsHardness;
+    bool pressureAffectsSize;
+    double opacity;
+    RotoShapeRenderCairo::CairoImageWrapper imgWrapper;
+    int maskWidth;
+    int maskHeight;
+    int maskStride;
+    const unsigned char* maskData;
+
+
+};
+
+static void
+renderSmearBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                        double brushSizePixel,
+                        double brushSpacing,
+                        double brushHardness,
+                        bool pressureAffectsOpacity,
+                        bool pressureAffectsHardness,
+                        bool pressureAffectsSize,
+                        bool /*buildUp*/,
+                        double /*shapeColor*/[3],
+                        double opacity)
+{
+    RenderSmearCairoData* myData = (RenderSmearCairoData*)userData;
+    myData->brushSizePixel = brushSizePixel;
+    myData->brushSpacing = brushSpacing;
+    myData->brushHardness = brushHardness;
+    myData->pressureAffectsOpacity = pressureAffectsOpacity;
+    myData->pressureAffectsHardness = pressureAffectsHardness;
+    myData->pressureAffectsSize = pressureAffectsSize;
+    myData->opacity = opacity;
+
+
+    bool ok = RotoShapeRenderCairo::allocateAndRenderSingleDotStroke_cairo(brushSizePixel, brushHardness, opacity, myData->imgWrapper);
+    assert(ok);
+    myData->maskWidth = cairo_image_surface_get_width(myData->imgWrapper.cairoImg);
+    myData->maskHeight = cairo_image_surface_get_height(myData->imgWrapper.cairoImg);
+    myData->maskStride = cairo_image_surface_get_stride(myData->imgWrapper.cairoImg);
+    myData->maskData = cairo_image_surface_get_data(myData->imgWrapper.cairoImg);
+}
+
+
+static void
+renderSmearDot(const unsigned char* maskData,
+               const int maskStride,
+               const int maskWidth,
+               const int maskHeight,
+               const Point& prev,
+               const Point& next,
+               const double brushSizePixels,
+               int nComps,
+               const ImagePtr& outputImage)
+{
+    /// First copy the portion of the image around the previous dot into tmpBuf
+    RectD prevDotRoD(prev.x - brushSizePixels / 2., prev.y - brushSizePixels / 2., prev.x + brushSizePixels / 2., prev.y + brushSizePixels / 2.);
+    RectI prevDotBounds;
+
+    prevDotRoD.toPixelEnclosing(0, outputImage->getPixelAspectRatio(), &prevDotBounds);
+    ImagePtr tmpBuf( new Image(outputImage->getComponents(),
+                               prevDotRoD,
+                               prevDotBounds,
+                               0,
+                               outputImage->getPixelAspectRatio(),
+                               outputImage->getBitDepth(),
+                               outputImage->getPremultiplication(),
+                               outputImage->getFieldingOrder(),
+                               false) );
+    tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
+
+    Image::ReadAccess tmpAcc( tmpBuf.get() );
+    Image::WriteAccess wacc( outputImage.get() );
+    RectI nextDotBounds;
+    nextDotBounds.x1 = next.x - maskWidth / 2;
+    nextDotBounds.x2 = next.x + maskWidth / 2;
+    nextDotBounds.y1 = next.y - maskHeight / 2;
+    nextDotBounds.y2 = next.y + maskHeight / 2;
+
+    const unsigned char* mask_pixels = maskData;
+    int yPrev = prevDotBounds.y1;
+    for (int y = nextDotBounds.y1; y < nextDotBounds.y2;
+         ++y,
+         ++yPrev,
+         mask_pixels += maskStride) {
+        float* dstPixels = (float*)wacc.pixelAt(nextDotBounds.x1, y);
+        assert(dstPixels);
+        if (!dstPixels) {
+            continue;
+        }
+
+        int xPrev = prevDotBounds.x1;
+        for (int x = nextDotBounds.x1; x < nextDotBounds.x2;
+             ++x, ++xPrev,
+             dstPixels += nComps) {
+            const float* srcPixels = (const float*)tmpAcc.pixelAt(xPrev, yPrev);
+
+            if (srcPixels) {
+                float mask_scale = Image::convertPixelDepth<unsigned char, float>(mask_pixels[x - nextDotBounds.x1]);
+                float one_minus_mask_scale = 1. - mask_scale;
+
+                for (int k = 0; k < nComps; ++k) {
+                    dstPixels[k] = srcPixels[k] * mask_scale + dstPixels[k] * one_minus_mask_scale;
+                }
+            } else {
+            }
+        }
+    }
+} // renderSmearDot
+
+static void
+renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                            const Point &prevCenter,
+                            const Point &center,
+                            double pressure,
+                            double* spacing)
+{
+    RenderSmearCairoData* myData = (RenderSmearCairoData*)userData;
+
+    double internalRadius, externalRadius;
+    getRenderDotParams(myData->opacity, myData->brushSizePixel, myData->brushHardness, myData->brushSpacing, pressure, myData->pressureAffectsOpacity, myData->pressureAffectsSize, myData->pressureAffectsHardness, &internalRadius, &externalRadius, spacing, 0);
+    renderSmearDot(myData->maskData, myData->maskStride, myData->maskWidth, myData->maskHeight, prevCenter, center, myData->brushSizePixel, myData->dstImage->getComponentsCount(), myData->dstImage);
+}
+
+
+void
+RotoShapeRenderCairo::renderSmear_cairo(double time,
+                                        unsigned int mipMapLevel,
+                                        const RotoStrokeItem* rotoItem,
+                                        const RectI& roi,
+                                        const ImagePtr& dstImage,
+                                        const double distToNextIn,
+                                        const Point& lastCenterPointIn,
+                                        const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                        double* distToNextOut,
+                                        Point* lastCenterPointOut)
+{
+
+    RenderSmearCairoData data;
+    data.opacity = rotoItem->getOpacity(time);
+    data.dstImage = dstImage;
+
+    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+                                                     renderSmearBegin_cairo,
+                                                     renderSmearRenderDot_cairo,
+                                                     renderStrokeEnd_cairo,
+                                                     strokes,
+                                                     distToNextIn,
+                                                     lastCenterPointIn,
+                                                     rotoItem,
+                                                     false,
+                                                     data.opacity,
+                                                     time,
+                                                     mipMapLevel,
+                                                     distToNextOut,
+                                                     lastCenterPointOut);
+
+} // RotoShapeRenderCairo::renderSmear_cairo
 
 
 void
@@ -1691,7 +1864,7 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(double time,
 } // RotoShapeRenderCairo::renderInternalShape_old_cairo
 
 
-double
+void
 RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                                const RectI & roi,
                                                const ImageComponents& components,
@@ -1702,9 +1875,12 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                                                const ImageBitDepthEnum depth,
                                                const unsigned int mipmapLevel,
                                                const bool isDuringPainting,
-                                               double distToNext,
+                                               const double distToNextIn,
+                                               const Point& lastCenterPointIn,
                                                const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                               const ImagePtr &image)
+                                               const ImagePtr &dstImage,
+                                               double* distToNextOut,
+                                               Point* lastCenterPointOut)
 {
 
     //NodePtr node = rotoItem->getContext()->getNode();
@@ -1748,7 +1924,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         std::size_t memSize = stride * roi.height();
         buf.resize(memSize);
         std::memset(buf.getData(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.getData(), srcNComps, stride, image.get(), roi, roi, shapeColor);
+        convertNatronImageToCairoImage<float, 1>(buf.getData(), srcNComps, stride, dstImage.get(), roi, roi, shapeColor);
         imgWrapper.cairoImg = cairo_image_surface_create_for_data(buf.getData(), cairoImgFormat, roi.width(), roi.height(),
                                                                   stride);
     } else {
@@ -1756,7 +1932,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
     }
 
     if (cairo_surface_status(imgWrapper.cairoImg) != CAIRO_STATUS_SUCCESS) {
-        return 0.;
+        return;
     }
     cairo_surface_set_device_offset(imgWrapper.cairoImg, -roi.x1, -roi.y1);
     imgWrapper.ctx = cairo_create(imgWrapper.cairoImg);
@@ -1784,7 +1960,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 dotPatterns[i] = (cairo_pattern_t*)0;
             }
         }
-        distToNext = RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNext, isStroke, doBuildUp, opacity, time, mipmapLevel);
+        RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, time, mipmapLevel, distToNextOut, lastCenterPointOut);
 
         if (isDuringPainting) {
             isStroke->updatePatternCache(dotPatterns);
@@ -1815,13 +1991,13 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
     switch (depth) {
         case eImageBitDepthFloat:
-            convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, false, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<float, 1>(imgWrapper.cairoImg, srcNComps, dstImage.get(), roi, shapeColor, opacity, false, useOpacityToConvert);
             break;
         case eImageBitDepthByte:
-            convertCairoImageToNatronImage_noColor<unsigned char, 255>(imgWrapper.cairoImg, srcNComps,  image.get(), roi, shapeColor, opacity, false,  useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<unsigned char, 255>(imgWrapper.cairoImg, srcNComps,  dstImage.get(), roi, shapeColor, opacity, false,  useOpacityToConvert);
             break;
         case eImageBitDepthShort:
-            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(imgWrapper.cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, false, useOpacityToConvert);
+            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(imgWrapper.cairoImg, srcNComps, dstImage.get(), roi, shapeColor, opacity, false, useOpacityToConvert);
             break;
         case eImageBitDepthHalf:
         case eImageBitDepthNone:
@@ -1830,9 +2006,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
     }
 
 
-    return distToNext;
 } // RotoShapeRenderNodePrivate::renderMaskInternal_cairo
-
 
 void
 RotoShapeRenderCairo::purgeCaches_cairo(const RotoDrawableItemPtr& rotoItem)

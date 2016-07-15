@@ -719,7 +719,7 @@ struct RenderStrokeGLData
     OSGLContextPtr glContext;
     boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
 
-    int target;
+    ImagePtr dstImage;
 
     double brushSizePixel;
     double brushSpacing;
@@ -733,7 +733,7 @@ struct RenderStrokeGLData
 
     int nbPointsPerSegment;
 
-    RectI bounds,roi;
+    RectI roi;
 
     RamBuffer<float> primitivesColors;
     RamBuffer<float> primitivesVertices;
@@ -887,7 +887,6 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
     }
     
     if (myData->glContext->isGPUContext()) {
-        renderBezier_gl_setupOutputTexture<GL_GPU>(myData->target);
         renderBezier_gl_internal_begin<GL_GPU>(buildUp);
     } else {
         renderBezier_gl_internal_begin<GL_CPU>(buildUp);
@@ -901,12 +900,13 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
                                        int vboVerticesID,
                                        int vboColorsID,
                                        int vboHardnessID,
+                                       const OSGLContextPtr& glContext,
                                        const GLShaderBasePtr& strokeShader,
                                        const GLShaderBasePtr& strokeSecondPassShader,
                                        bool doBuildUp,
                                        const OfxRGBAColourF& fillColor,
-                                       const RectI& bounds,
                                        const RectI& roi,
+                                       const ImagePtr& dstImage,
                                        unsigned int primitiveType,
                                        const void* verticesData,
                                        const void* colorsData,
@@ -915,6 +915,48 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
                                        const void** perDrawIdsPtr,
                                        int drawCount)
 {
+
+    /*
+     In build-up mode the only way to properly render is in 2 pass:
+     A first shader computes what should be the appropriate output an alpha ramp using OpenGL blending and stores it in the RGB channels
+     A second shader multiplies this ramp with the actual fill color.
+     In non-build up mode we can do it all at once since we don't use the GL_FUNC_ADD equation so no actual alpha blending occurs, we control
+     the premultiplication.
+     */
+    ImagePtr tmpTexture;
+    if (doBuildUp) {
+        ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+        params->setBounds(roi);
+        tmpTexture.reset( new Image(dstImage->getKey(), params) );
+    }
+
+    int target = dstImage->getGLTextureTarget();
+
+    ImagePtr firstPassDstImage;
+    if (!doBuildUp) {
+        firstPassDstImage = dstImage;
+    } else {
+        firstPassDstImage = tmpTexture;
+    }
+    GLuint fboID = glContext->getOrCreateFBOId();
+
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, firstPassDstImage->getGLTextureID() );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLTextureID(), 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+    glCheckError(GL);
+
+    Image::setupGLViewport<GL>(firstPassDstImage->getBounds(), roi);
+
     strokeShader->bind();
     strokeShader->setUniform("fillColor", fillColor);
 
@@ -981,10 +1023,15 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     GL::glDisable(GL_BLEND);
 
     if (doBuildUp) {
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         strokeSecondPassShader->bind();
+#pragma message WARN("fix this")
+        strokeSecondPassShader->setUniform("tex", 0);
         strokeSecondPassShader->setUniform("fillColor", fillColor);
-        Image::applyTextureMapping<GL>(bounds, roi);
+        Image::applyTextureMapping<GL>(roi, roi);
         strokeSecondPassShader->unbind();
+         glCheckError(GL);
     }
 
 }
@@ -1016,20 +1063,18 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
 
     if (myData->glContext->isGPUContext()) {
 
-        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->bounds, myData->roi, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
 
 
-
-
-        glCheckError(GL_GPU);
     } else {
-        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->bounds, myData->roi, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
 
     }
 }
 
 static void
 renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                         const Point &/*prevCenter*/,
                          const Point &center,
                          double pressure,
                          double *spacing)
@@ -1057,37 +1102,159 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
     renderDot_gl(*myData, center, radius, myData->shapeColor, opacity,  brushHardness);
 }
 
-double
+void
 RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
-                                   const RectI& bounds,
                                    const RectI& roi,
-                                   int target,
+                                   const ImagePtr& dstImage,
                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                   double distToNext,
+                                   const double distToNextIn,
+                                   const Point& lastCenterPointIn,
                                    const RotoDrawableItem* stroke,
                                    bool doBuildup,
                                    double opacity,
                                    double time,
-                                   unsigned int mipmapLevel)
+                                   unsigned int mipmapLevel,
+                                   double *distToNextOut,
+                                   Point* lastCenterPointOut)
 {
     RenderStrokeGLData data;
     data.glContext = glContext;
     data.glData = glData;
-    data.target = target;
-    data.bounds = bounds;
+    data.dstImage = dstImage;
     data.roi = roi;
-    return RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                             renderStrokeBegin_gl,
                                                             renderStrokeRenderDot_gl,
                                                             renderStrokeEnd_gl,
                                                             strokes,
-                                                            distToNext,
+                                                            distToNextIn,
+                                                            lastCenterPointIn,
                                                             stroke,
                                                             doBuildup,
                                                             opacity,
                                                             time,
-                                                            mipmapLevel);
+                                                            mipmapLevel,
+                                                            distToNextOut,
+                                                            lastCenterPointOut);
 }
+
+
+struct RenderSmearGLData
+{
+    OSGLContextPtr glContext;
+    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
+
+    ImagePtr dstImage;
+
+    double brushSizePixel;
+    double brushSpacing;
+    double brushHardness;
+    bool pressureAffectsOpacity;
+    bool pressureAffectsHardness;
+    bool pressureAffectsSize;
+    double opacity;
+
+
+    RectI roi;
+
+};
+
+static void
+renderSmearBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                     double brushSizePixel,
+                     double brushSpacing,
+                     double brushHardness,
+                     bool pressureAffectsOpacity,
+                     bool pressureAffectsHardness,
+                     bool pressureAffectsSize,
+                     bool /*buildUp*/,
+                     double /*shapeColor*/[3],
+                     double opacity)
+{
+    RenderSmearGLData* myData = (RenderSmearGLData*)userData;
+
+    myData->brushSizePixel = brushSizePixel;
+    myData->brushSpacing = brushSpacing;
+    myData->brushHardness = brushHardness;
+    myData->pressureAffectsOpacity = pressureAffectsOpacity;
+    myData->pressureAffectsHardness = pressureAffectsHardness;
+    myData->pressureAffectsSize = pressureAffectsSize;
+    myData->opacity = opacity;
+    
+}
+
+static void
+renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                         const Point &/*prevCenter*/,
+                         const Point &center,
+                         double pressure,
+                         double *spacing)
+{
+    RenderSmearGLData* myData = (RenderSmearGLData*)userData;
+
+    double brushSizePixel = myData->brushSizePixel;
+    if (myData->pressureAffectsSize) {
+        brushSizePixel *= pressure;
+    }
+    double brushHardness = myData->brushHardness;
+    if (myData->pressureAffectsHardness) {
+        brushHardness *= pressure;
+    }
+    double opacity = myData->opacity;
+    if (myData->pressureAffectsOpacity) {
+        opacity *= pressure;
+    }
+    double brushSpacing = myData->brushSpacing;
+
+    double radius = std::max(brushSizePixel, 1.) / 2.;
+    *spacing = radius * 2. * brushSpacing;
+
+
+    //renderDot_gl(*myData, center, radius, myData->shapeColor, opacity,  brushHardness);
+}
+
+static void
+renderSmearEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
+{
+    RenderSmearGLData* myData = (RenderSmearGLData*)userData;
+
+}
+
+void
+RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
+                                  const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                  const RectI& roi,
+                                  const ImagePtr& dstImage,
+                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                  const double distToNextIn,
+                                  const Point& lastCenterPointIn,
+                                  const RotoDrawableItem* stroke,
+                                  double opacity,
+                                  double time,
+                                  unsigned int mipmapLevel,
+                                  double *distToNextOut,
+                                  Point* lastCenterPointOut)
+{
+    RenderSmearGLData data;
+    data.glContext = glContext;
+    data.glData = glData;
+    data.dstImage = dstImage;
+    data.roi = roi;
+    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+                                                     renderSmearBegin_gl,
+                                                     renderSmearRenderDot_gl,
+                                                     renderSmearEnd_gl,
+                                                     strokes,
+                                                     distToNextIn,
+                                                     lastCenterPointIn,
+                                                     stroke,
+                                                     false,
+                                                     opacity,
+                                                     time,
+                                                     mipmapLevel,
+                                                     distToNextOut,
+                                                     lastCenterPointOut);
+} // RotoShapeRenderGL::renderSmear_gl
 
 NATRON_NAMESPACE_EXIT;

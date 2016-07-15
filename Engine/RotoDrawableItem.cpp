@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoShapeRenderNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -195,6 +196,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
         break;
     case eRotoStrokeTypeSolid:
+    case eRotoStrokeTypeSmear:
         pluginId = maskPluginID;
         break;
     case eRotoStrokeTypeClone:
@@ -207,9 +209,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
         break;
     case eRotoStrokeTypeSharpen:
         //todo
-        break;
-    case eRotoStrokeTypeSmear:
-        pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSMEAR);
         break;
     }
 
@@ -228,6 +227,15 @@ RotoDrawableItem::createNodes(bool connectNodes)
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
         }
         assert(_imp->effectNode);
+
+        if (type == eRotoStrokeTypeSmear) {
+            // For smear setup the type parameter
+            KnobIPtr knob = _imp->effectNode->getKnobByName(kRotoShapeRenderNodeParamType);
+            assert(knob);
+            KnobChoicePtr typeChoice = toKnobChoice(knob);
+            assert(typeChoice);
+            typeChoice->setValue(1);
+        }
 
         if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
             {
@@ -290,6 +298,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 throw std::runtime_error("Rotopaint requires the plug-in " + maskPluginID.toStdString() + " in order to work");
             }
             assert(_imp->maskNode);
+            {
+                // For masks set the output components to alpha
+                KnobIPtr knob = _imp->maskNode->getKnobByName(kRotoShapeRenderNodeParamOutputComponents);
+                assert(knob);
+                KnobChoicePtr typeChoice = toKnobChoice(knob);
+                assert(typeChoice);
+                typeChoice->setValue(1);
+            }
         }
     }
 
