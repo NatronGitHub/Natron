@@ -2132,6 +2132,9 @@ OfxEffectInstance::supportsMultipleClipsBitDepth() const
 RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
+    if (!_imp->effect) {
+        return eRenderSafetyUnsafe;
+    }
     {
         QReadLocker readL(&_imp->renderSafetyLock);
         if (_imp->wasRenderSafetySet) {
@@ -2695,6 +2698,9 @@ bool
 OfxEffectInstance::supportsTiles() const
 {
     // first, check the descriptor, then the instance
+    if (!effectInstance()) {
+        return false;
+    }
     if ( !effectInstance()->getDescriptor().supportsTiles() || !effectInstance()->supportsTiles() ) {
         return false;
     }
@@ -2738,6 +2744,9 @@ bool
 OfxEffectInstance::supportsMultiResolution() const
 {
     // first, check the descriptor, then the instance
+    if (!effectInstance()) {
+        return false;
+    }
     return effectInstance()->getDescriptor().supportsMultiResolution() && effectInstance()->supportsMultiResolution();
 }
 
@@ -2940,6 +2949,9 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
 bool
 OfxEffectInstance::getCanTransform() const
 {   //use OFX_EXTENSIONS_NUKE
+    if (!effectInstance()) {
+        return false;
+    }
     return effectInstance()->canTransform();
 }
 
