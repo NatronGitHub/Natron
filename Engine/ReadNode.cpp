@@ -230,6 +230,8 @@ public:
     //MT only
     int creatingReadNode;
 
+    bool wasCreatedAsHiddenNode;
+
 
     ReadNodePrivate(ReadNode* publicInterface)
         : _publicInterface(publicInterface)
@@ -243,6 +245,7 @@ public:
         , fileInfosKnob()
         , readNodeKnobs()
         , creatingReadNode(0)
+        , wasCreatedAsHiddenNode(false)
     {
     }
 
@@ -521,7 +524,9 @@ ReadNodePrivate::createDefaultReadNode()
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
     args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
     args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-    //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
+
+    // This will avoid throwing errors when creating the reader
+    args.addParamDefaultValue<bool>("ParamExistingInstance", true);
 
 
     NodePtr node  = _publicInterface->getApp()->createNode(args);
@@ -661,7 +666,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, serialization);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
-        if (serialization) {
+        if (serialization || wasCreatedAsHiddenNode) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
         }
 
@@ -1060,6 +1065,9 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
     if (p) {
         return;
     }
+
+    _imp->wasCreatedAsHiddenNode = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+
     bool throwErrors = false;
     boost::shared_ptr<KnobString> pluginIdParam = _imp->pluginIDStringKnob.lock();
     std::string pattern;

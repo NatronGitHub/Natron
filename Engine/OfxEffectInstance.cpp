@@ -1310,7 +1310,9 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 
     {
         QWriteLocker l(&_imp->preferencesLock);
-        assert(_imp->effect);
+        if (!_imp->effect) {
+            return;
+        }
         const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = _imp->effect->getClips();
         for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
              ; it != clips.end(); ++it) {
@@ -1338,7 +1340,7 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    if (!_imp->created) {
+    if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
     }
     assert(_imp->context != eContextNone);
@@ -1363,7 +1365,6 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 
         ///It has been overriden and no data is actually set on the clip, everything will be set into the
         ///metadata object
-        assert(_imp->effect);
         stat = _imp->effect->getClipPreferences_safe(metadata);
     }
 

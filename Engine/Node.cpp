@@ -314,6 +314,7 @@ public:
         , guiPointer()
         , nativeOverlays()
         , nodeCreated(false)
+        , wasCreatedSilently(false)
         , createdComponentsMutex()
         , createdComponents()
         , paintStroke()
@@ -520,6 +521,7 @@ public:
     boost::weak_ptr<NodeGuiI> guiPointer;
     std::list<boost::shared_ptr<HostOverlayKnobs> > nativeOverlays;
     bool nodeCreated;
+    bool wasCreatedSilently;
     mutable QMutex createdComponentsMutex;
     std::list<ImageComponents> createdComponents; // comps created by the user
     boost::weak_ptr<RotoDrawableItem> paintStroke;
@@ -780,6 +782,8 @@ Node::load(const CreateNodeArgs& args)
         fetchParentMultiInstancePointer();
     }
 
+
+    _imp->wasCreatedSilently = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 
     NodePtr thisShared = shared_from_this();
     LibraryBinary* binary = _imp->plugin->getLibraryBinary();
@@ -6956,7 +6960,7 @@ Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
-    if ( _imp->effect->aborted() ) {
+    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
         return false;
     }
 
@@ -6973,6 +6977,21 @@ Node::message(MessageTypeEnum type,
             appPTR->showErrorLog();
         }
         return true;
+    }
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        ioContainer->message(type, content);
+        return true;
+    }
+#endif
+    // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
+    if ( !isPartOfProject() && getGroup() ) {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
+        if (isGroup) {
+            isGroup->message(type, content);
+        }
     }
 
     switch (type) {
@@ -7001,6 +7020,10 @@ void
 Node::setPersistentMessage(MessageTypeEnum type,
                            const std::string & content)
 {
+    if (!_imp->nodeCreated && _imp->wasCreatedSilently) {
+        return;
+    }
+
     if ( !appPTR->isBackground() ) {
         //if the message is just an information, display a popup instead.
 #ifdef NATRON_ENABLE_IO_META_NODES

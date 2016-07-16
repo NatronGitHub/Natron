@@ -1352,6 +1352,11 @@ Gui::popOpenFileDialog(bool sequenceDialog,
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
+        if (sequenceDialog) {
+            _imp->_lastLoadSequenceOpenedDir = dialog.currentDirectory().absolutePath();
+        } else {
+            _imp->_lastLoadProjectOpenedDir = dialog.currentDirectory().absolutePath();
+        }
         return dialog.selectedFiles();
     } else {
         return std::string();
@@ -1387,6 +1392,12 @@ Gui::popSaveFileDialog(bool sequenceDialog,
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeSave, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
+        if (sequenceDialog) {
+            _imp->_lastSaveSequenceOpenedDir = dialog.currentDirectory().absolutePath();
+        } else {
+            _imp->_lastSaveProjectOpenedDir = dialog.currentDirectory().absolutePath();
+        }
+
         return dialog.filesToSave();
     } else {
         return "";
