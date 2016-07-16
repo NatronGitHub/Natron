@@ -421,7 +421,9 @@ void
 ReadNodePrivate::destroyReadNode()
 {
     assert( QThread::currentThread() == qApp->thread() );
-
+    if (!embeddedPlugin) {
+        return;
+    }
     KnobsVec knobs = _publicInterface->getKnobs();
 
     genericKnobsSerialization.clear();
@@ -438,7 +440,7 @@ ReadNodePrivate::destroyReadNode()
                 continue;
             }
 
-            //If it is a knob of this ReadNode, ignore it
+            //If it is a knob of this ReadNode, do not destroy it
             bool isReadNodeKnob = false;
             for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
                 if (it2->lock() == *it) {
@@ -461,7 +463,7 @@ ReadNodePrivate::destroyReadNode()
             //Serialize generic knobs and keep them around until we create a new Reader plug-in
             bool mustSerializeKnob;
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-            if (isGeneric && mustSerializeKnob) {
+            if (!isGeneric || mustSerializeKnob) {
                 boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
                 serialized.push_back(s);
             }
@@ -514,6 +516,7 @@ ReadNodePrivate::createDefaultReadNode()
     CreateNodeArgs args(READ_NODE_DEFAULT_READER, boost::shared_ptr<NodeCollection>() );
 
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+    args.setProperty(kCreateNodeArgsPropSilent, true);
     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
     args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
