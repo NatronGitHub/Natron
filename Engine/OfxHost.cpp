@@ -1050,6 +1050,9 @@ OfxHost::writeOFXCache()
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(ofile);
 
     ofile.close();
+    if (QFile::exists(ofxCacheFilePath)) {
+        QFile::remove(ofxCacheFilePath);
+    }
     QFile::copy(tmpFileName, ofxCacheFilePath);
     QFile::remove(tmpFileName);
 }
