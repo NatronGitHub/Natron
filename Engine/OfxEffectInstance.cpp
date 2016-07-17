@@ -1310,7 +1310,9 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 
     {
         QWriteLocker l(&_imp->preferencesLock);
-        assert(_imp->effect);
+        if (!_imp->effect) {
+            return;
+        }
         const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = _imp->effect->getClips();
         for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
              ; it != clips.end(); ++it) {
@@ -1338,7 +1340,7 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    if (!_imp->created) {
+    if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
     }
     assert(_imp->context != eContextNone);
@@ -1363,7 +1365,6 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 
         ///It has been overriden and no data is actually set on the clip, everything will be set into the
         ///metadata object
-        assert(_imp->effect);
         stat = _imp->effect->getClipPreferences_safe(metadata);
     }
 
@@ -2132,6 +2133,9 @@ OfxEffectInstance::supportsMultipleClipsBitDepth() const
 RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
+    if (!_imp->effect) {
+        return eRenderSafetyUnsafe;
+    }
     {
         QReadLocker readL(&_imp->renderSafetyLock);
         if (_imp->wasRenderSafetySet) {
@@ -2695,6 +2699,9 @@ bool
 OfxEffectInstance::supportsTiles() const
 {
     // first, check the descriptor, then the instance
+    if (!effectInstance()) {
+        return false;
+    }
     if ( !effectInstance()->getDescriptor().supportsTiles() || !effectInstance()->supportsTiles() ) {
         return false;
     }
@@ -2738,6 +2745,9 @@ bool
 OfxEffectInstance::supportsMultiResolution() const
 {
     // first, check the descriptor, then the instance
+    if (!effectInstance()) {
+        return false;
+    }
     return effectInstance()->getDescriptor().supportsMultiResolution() && effectInstance()->supportsMultiResolution();
 }
 
@@ -2940,6 +2950,9 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
 bool
 OfxEffectInstance::getCanTransform() const
 {   //use OFX_EXTENSIONS_NUKE
+    if (!effectInstance()) {
+        return false;
+    }
     return effectInstance()->canTransform();
 }
 

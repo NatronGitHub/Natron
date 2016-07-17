@@ -392,7 +392,9 @@ void
 WriteNodePrivate::destroyWriteNode()
 {
     assert( QThread::currentThread() == qApp->thread() );
-
+    if (!embeddedPlugin.lock()) {
+        return;
+    }
     KnobsVec knobs = _publicInterface->getKnobs();
 
     genericKnobsSerialization.clear();
@@ -407,7 +409,7 @@ WriteNodePrivate::destroyWriteNode()
                 continue;
             }
 
-            //If it is a knob of this WriteNode, ignore it
+            //If it is a knob of this WriteNode, do not destroy it
             bool isWriteNodeKnob = false;
             for (std::list<KnobIWPtr >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
                 if (it2->lock() == *it) {
@@ -430,7 +432,7 @@ WriteNodePrivate::destroyWriteNode()
             //Serialize generic knobs and keep them around until we create a new Writer plug-in
             bool mustSerializeKnob;
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-            if (isGeneric && mustSerializeKnob) {
+            if (!isGeneric || mustSerializeKnob) {
                 KnobSerializationPtr s( new KnobSerialization(*it) );
                 serialized.push_back(s);
             }
@@ -466,7 +468,8 @@ WriteNodePrivate::destroyWriteNode()
             genericKnobsSerialization.push_back(s);
 
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
         assert(false);
     }
     
@@ -485,6 +488,7 @@ WriteNodePrivate::createDefaultWriteNode()
     CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isGrp );
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty(kCreateNodeArgsPropSilent, true);
     args.setProperty(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultWriteNodeWriter");
     args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);

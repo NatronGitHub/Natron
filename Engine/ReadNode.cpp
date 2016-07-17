@@ -230,6 +230,8 @@ public:
     //MT only
     int creatingReadNode;
 
+    bool wasCreatedAsHiddenNode;
+
 
     ReadNodePrivate(ReadNode* publicInterface)
         : _publicInterface(publicInterface)
@@ -243,6 +245,7 @@ public:
         , fileInfosKnob()
         , readNodeKnobs()
         , creatingReadNode(0)
+        , wasCreatedAsHiddenNode(false)
     {
     }
 
@@ -421,7 +424,9 @@ void
 ReadNodePrivate::destroyReadNode()
 {
     assert( QThread::currentThread() == qApp->thread() );
-
+    if (!embeddedPlugin) {
+        return;
+    }
     KnobsVec knobs = _publicInterface->getKnobs();
 
     genericKnobsSerialization.clear();
@@ -438,7 +443,7 @@ ReadNodePrivate::destroyReadNode()
                 continue;
             }
 
-            //If it is a knob of this ReadNode, ignore it
+            //If it is a knob of this ReadNode, do not destroy it
             bool isReadNodeKnob = false;
             for (std::list<KnobIWPtr >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
                 if (it2->lock() == *it) {
@@ -461,7 +466,8 @@ ReadNodePrivate::destroyReadNode()
             //Serialize generic knobs and keep them around until we create a new Reader plug-in
             bool mustSerializeKnob;
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-            if (isGeneric && mustSerializeKnob) {
+
+            if (!isGeneric || mustSerializeKnob) {
                 KnobSerializationPtr s( new KnobSerialization(*it) );
                 serialized.push_back(s);
             }
@@ -514,11 +520,14 @@ ReadNodePrivate::createDefaultReadNode()
     CreateNodeArgs args(READ_NODE_DEFAULT_READER, NodeCollectionPtr() );
 
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+    args.setProperty(kCreateNodeArgsPropSilent, true);
     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
     args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
     args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-    //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
+
+    // This will avoid throwing errors when creating the reader
+    args.addParamDefaultValue<bool>("ParamExistingInstance", true);
 
 
     NodePtr node  = _publicInterface->getApp()->createNode(args);
@@ -658,7 +667,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
-        if (serialization) {
+        if (serialization || wasCreatedAsHiddenNode) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
         }
 
@@ -1057,6 +1066,9 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
     if (p) {
         return;
     }
+
+    _imp->wasCreatedAsHiddenNode = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+
     bool throwErrors = false;
     KnobStringPtr pluginIdParam = _imp->pluginIDStringKnob.lock();
     std::string pattern;
