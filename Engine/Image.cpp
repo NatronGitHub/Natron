@@ -963,16 +963,7 @@ pasteFromGL(const Image & src,
 
         RectI roi = srcRoi;
         RectI bounds = dstBounds;
-        
-        GL::glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
-        GL::glMatrixMode(GL_PROJECTION);
-        GL::glLoadIdentity();
-        GL::glOrtho( roi.x1, roi.x2,
-                    roi.y1, roi.y2,
-                    -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
-        GL::glMatrixMode(GL_MODELVIEW);
-        GL::glLoadIdentity();
-        glCheckError(GL);
+        Image::applyTextureMapping<GL>(bounds, roi);
 
         {
             // Compute the texture coordinates to match the srcRoi

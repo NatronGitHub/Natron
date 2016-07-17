@@ -885,12 +885,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
         std::sqrt(dx3 * dx3 + dy3 * dy3);
         myData->nbPointsPerSegment = (int)std::max(length * 0.1 /*0.25*/, 2.);
     }
-    
-    if (myData->glContext->isGPUContext()) {
-        renderBezier_gl_internal_begin<GL_GPU>(buildUp);
-    } else {
-        renderBezier_gl_internal_begin<GL_CPU>(buildUp);
-    }
+
 
 }
 
@@ -923,14 +918,89 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
      In non-build up mode we can do it all at once since we don't use the GL_FUNC_ADD equation so no actual alpha blending occurs, we control
      the premultiplication.
      */
+    GLuint fboID = glContext->getOrCreateFBOId();
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+
+    int target = dstImage->getGLTextureTarget();
+
+
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, dstImage->getGLTextureID() );
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    RectI dstBounds = dstImage->getBounds();
+
     ImagePtr tmpTexture;
     if (doBuildUp) {
         ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
         params->setBounds(roi);
         tmpTexture.reset( new Image(dstImage->getKey(), params) );
+        // Copy the content of the existing dstImage
+
+        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        
+
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+        GL::glBindTexture( target, dstImage->getGLTextureID() );
+
+        GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
+        assert(shader);
+        shader->bind();
+        shader->setUniform("srcTex", 0);
+
+
+        Image::setupGLViewport<GL>(roi, roi);
+
+        // Clear the tmpTexture out before copying 
+        //GL::glClearColor(0., 0., 0., 0.);
+        //GL::glClear(GL_COLOR_BUFFER_BIT);
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = roi.x1;
+        vertexCoords[0].y = roi.y1;
+        srcTexCoords[0].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[0].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
+
+        vertexCoords[1].x = roi.x2;
+        vertexCoords[1].y = roi.y1;
+        srcTexCoords[1].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[1].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
+
+        vertexCoords[2].x = roi.x2;
+        vertexCoords[2].y = roi.y2;
+        srcTexCoords[2].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[2].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
+
+        vertexCoords[3].x = roi.x1;
+        vertexCoords[3].y = roi.y2;
+        srcTexCoords[3].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[3].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
+
+        GL::glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        GL::glEnd();
+
+
+        glCheckError(GL);
+
+        shader->unbind();
+        //GL::glBindTexture( target, 0);
     }
 
-    int target = dstImage->getGLTextureTarget();
 
     ImagePtr firstPassDstImage;
     if (!doBuildUp) {
@@ -938,18 +1008,11 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     } else {
         firstPassDstImage = tmpTexture;
     }
-    GLuint fboID = glContext->getOrCreateFBOId();
 
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-    GL::glEnable(target);
-    GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindTexture( target, firstPassDstImage->getGLTextureID() );
+    GL::glBindTexture( target, 0 );
 
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    renderBezier_gl_internal_begin<GL>(doBuildUp);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLTextureID(), 0 /*LoD*/);
     glCheckFramebufferError(GL);
@@ -1023,16 +1086,53 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     GL::glDisable(GL_BLEND);
 
     if (doBuildUp) {
+
+        //GL::glBindTexture( target, dstImage->getGLTextureID() );
         GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError(GL);
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         strokeSecondPassShader->bind();
-#pragma message WARN("fix this")
         strokeSecondPassShader->setUniform("tex", 0);
         strokeSecondPassShader->setUniform("fillColor", fillColor);
-        Image::applyTextureMapping<GL>(roi, roi);
+        Image::setupGLViewport<GL>(dstBounds, roi);
+
+        {
+            // Compute the texture coordinates to match the srcRoi
+            Point srcTexCoords[4], vertexCoords[4];
+            vertexCoords[0].x = roi.x1;
+            vertexCoords[0].y = roi.y1;
+            srcTexCoords[0].x = 0.;
+            srcTexCoords[0].y = 0.;
+
+            vertexCoords[1].x = roi.x2;
+            vertexCoords[1].y = roi.y1;
+            srcTexCoords[1].x = 1.;
+            srcTexCoords[1].y = 0.;
+
+            vertexCoords[2].x = roi.x2;
+            vertexCoords[2].y = roi.y2;
+            srcTexCoords[2].x = 1.;
+            srcTexCoords[2].y = 1.;
+
+            vertexCoords[3].x = roi.x1;
+            vertexCoords[3].y = roi.y2;
+            srcTexCoords[3].x = 0.;
+            srcTexCoords[3].y = 1.;
+
+            GL::glBegin(GL_POLYGON);
+            for (int i = 0; i < 4; ++i) {
+                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+            }
+            GL::glEnd();
+            glCheckError(GL);
+        }
+
+
         strokeSecondPassShader->unbind();
-         glCheckError(GL);
+        glCheckError(GL);
     }
+    GL::glBindTexture( target, 0);
 
 }
 
