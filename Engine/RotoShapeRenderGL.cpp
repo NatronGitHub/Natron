@@ -830,7 +830,7 @@ static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double r
      The function in the shader is the same as the one we use to fill the radial gradient used in Cairo. Since in Cairo we use stops that do not make linear curve,
      instead we slightly alter the hardness by a very sharp log curve so it mimics correctly the radial gradient used in CPU mode.
      */
-    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, std::pow(hardness, 0.2f),
+    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, std::pow(hardness, 0.7f),
 #ifndef NDEBUG
                       data.roi,
 #endif
@@ -923,6 +923,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
     int target = dstImage->getGLTextureTarget();
 
+
+    // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
+    GL::glDisable(GL_SCISSOR_TEST);
 
     GL::glEnable(target);
     GL::glActiveTexture(GL_TEXTURE0);
