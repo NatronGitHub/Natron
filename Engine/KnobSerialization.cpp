@@ -160,6 +160,10 @@ KnobSerialization::createKnob(const std::string & typeName,
         ret = KnobButton::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobSeparator::typeNameStatic() ) {
         ret = KnobSeparator::create(KnobHolderPtr(), std::string(), dimension, false);
+    } else if ( typeName == KnobGroup::typeNameStatic() ) {
+        ret = KnobGroup::create(KnobHolderPtr(), std::string(), dimension, false);
+    } else if ( typeName == KnobPage::typeNameStatic() ) {
+        ret = KnobPage::create(KnobHolderPtr(), std::string(), dimension, false);
     }
 
     if (ret) {
