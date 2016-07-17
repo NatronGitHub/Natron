@@ -317,7 +317,7 @@ void
 ViewerTab::onSetDownPlaybackButtonsTimeout()
 {
     ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if ( !viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
+    if ( viewerNode && viewerNode->getRenderEngine() && !viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
         const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ( (*it)->_imp->play_Forward_Button ) {

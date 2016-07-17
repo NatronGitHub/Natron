@@ -1018,6 +1018,7 @@ TrackerContext::knobChanged(const KnobIPtr& k,
         solveTransformParams();
     } else if ( k == _imp->setFromPointsToInputRod.lock() ) {
         setFromPointsToInputRod();
+        solveTransformParamsIfAutomatic();
     } else if ( k == _imp->autoGenerateTransform.lock() ) {
         solveTransformParams();
         _imp->refreshVisibilityFromTransformType();
