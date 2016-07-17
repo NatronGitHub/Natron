@@ -216,6 +216,12 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         case NATRON_PIXMAP_VIEWER_CENTER:
             path = NATRON_IMAGES_PATH "centerViewer.png";
             break;
+        case NATRON_PIXMAP_VIEWER_FULL_FRAME_OFF:
+            path = NATRON_IMAGES_PATH "fullFrameOff.png";
+            break;
+        case NATRON_PIXMAP_VIEWER_FULL_FRAME_ON:
+            path = NATRON_IMAGES_PATH "fullFrameOn.png";
+            break;
         case NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_ENABLED:
             path = NATRON_IMAGES_PATH "cliptoprojectEnabled.png";
             break;
