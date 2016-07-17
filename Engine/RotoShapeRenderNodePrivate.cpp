@@ -129,7 +129,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             continue;
         }
 
-        prevCenter = it->first;
+        //prevCenter = it->first;
 
         std::list<std::pair<Point, double> >::iterator next = it;
         ++next;

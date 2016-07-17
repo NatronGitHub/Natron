@@ -397,6 +397,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, args.useOpenGL ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
             assert(bgImg->getStorageMode() == outputPlane.second->getStorageMode());
 
+
             // Ensure that initially everything in the background is the source image
             if (isStrokeFirstTick && strokeMultiIndex == 0) {
                 outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);

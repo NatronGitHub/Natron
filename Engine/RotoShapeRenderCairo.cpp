@@ -1047,9 +1047,15 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
                             double* spacing)
 {
     RenderSmearCairoData* myData = (RenderSmearCairoData*)userData;
-
     double internalRadius, externalRadius;
     getRenderDotParams(myData->opacity, myData->brushSizePixel, myData->brushHardness, myData->brushSpacing, pressure, myData->pressureAffectsOpacity, myData->pressureAffectsSize, myData->pressureAffectsHardness, &internalRadius, &externalRadius, spacing, 0);
+    if (prevCenter.x == INT_MIN || prevCenter.y == INT_MIN) {
+        return;
+    }
+    if (prevCenter.x == center.x && prevCenter.y == center.y) {
+        return;
+    }
+
     renderSmearDot(myData->maskData, myData->maskStride, myData->maskWidth, myData->maskHeight, prevCenter, center, myData->brushSizePixel, myData->dstImage->getComponentsCount(), myData->dstImage);
 }
 
@@ -1058,7 +1064,7 @@ void
 RotoShapeRenderCairo::renderSmear_cairo(double time,
                                         unsigned int mipMapLevel,
                                         const RotoStrokeItem* rotoItem,
-                                        const RectI& roi,
+                                        const RectI& /*roi*/,
                                         const ImagePtr& dstImage,
                                         const double distToNextIn,
                                         const Point& lastCenterPointIn,

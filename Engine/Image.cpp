@@ -936,25 +936,29 @@ pasteFromGL(const Image & src,
         // OpenGL texture to OpenGL texture
 
         GLuint fboID = glContext->getOrCreateFBOId();
+        GL::glDisable(GL_SCISSOR_TEST);
         GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         GL::glEnable(target);
         GL::glActiveTexture(GL_TEXTURE0);
 
         GL::glBindTexture( target, texID );
 
-        // texture parameters are per texture unit
         GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 
         GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
         glCheckFramebufferError(GL);
         GL::glBindTexture( target, src.getGLTextureID() );
 
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
         assert(shader);

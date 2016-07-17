@@ -639,8 +639,12 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     //We changed stroke index so far, reset the age
     if ( (*strokeIndex != lastMultiStrokeIndex) && (lastAge != -1) ) {
         lastAge = -1;
-        *isStrokeFirstTick = true;
         *wholeStrokeBbox = computeBoundingBoxInternal(time);
+    }
+
+
+    if (lastAge == -1) {
+        *isStrokeFirstTick = true;
     }
 
     KeyFrameSet xCurve = stroke->xCurve->getKeyFrames_mt_safe();
@@ -657,6 +661,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     if (lastAge >= (int) xCurve.size()) {
         return false;
     }
+
 
     KeyFrameSet realX, realY, realP;
     KeyFrameSet::iterator xIt = xCurve.begin();

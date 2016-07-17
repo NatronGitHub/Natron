@@ -120,6 +120,48 @@ static const char* rotoDrawDotBuildUpSecondPass_FragmentShader =
 "}";
 
 
+static const char* rotoSmearDot_VertexShader =
+"attribute float inHardness;\n"
+"varying float outHardness;\n"
+"void main() {\n"
+"   outHardness = inHardness;\n"
+"   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"   gl_Position = ftransform();\n"
+"   gl_FrontColor = gl_Color;\n"
+"}"
+;
+
+static const char* rotoSmearDot_FragmentShader =
+"varying float outHardness;\n"
+"uniform sampler2D tex;\n"
+"uniform vec4 fillColor;\n"
+"float gaussLookup(float t) {\n"
+"   if (t < -0.5) {\n"
+"       t = -1.0 - t;\n"
+"       return (2.0 * t * t);\n"
+"   }\n"
+"   if (t < 0.5) {\n"
+"       return (1.0 - 2.0 * t * t);\n"
+"   }\n"
+"   t = 1.0 - t;\n"
+"   return (2.0 * t * t);\n"
+"}\n"
+"void main() {\n"
+"   gl_FragColor = texture2D(tex,gl_TexCoord[0].st);\n"
+"   float alpha;\n"
+"   if (outHardness == 1.0) {\n"
+"       alpha = 1.0;\n"
+"   } else {\n"
+"       float exp = 0.4 / (1.0 - outHardness);\n"
+"       alpha = clamp(gaussLookup(pow(1.0 - gl_Color.a, exp)), 0.0, 1.0);\n"
+"   }\n"
+"   alpha *= fillColor.a; \n"
+"   gl_FragColor.a = alpha;\n"
+"   //gl_FragColor.rgb *= alpha;\n"
+"}"
+;
+
+
 RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
 : EffectOpenGLContextData(isGPUContext)
 , _vboVerticesID(0)
@@ -230,6 +272,20 @@ RotoShapeRenderNodeOpenGLData::getOrCreateVBOHardnessID()
         }
     }
     return _vboHardnessID;
+
+}
+
+unsigned int
+RotoShapeRenderNodeOpenGLData::getOrCreateVBOTexID()
+{
+    if (!_vboTexID) {
+        if (isGPUContext()) {
+            GL_GPU::glGenBuffers(1, &_vboTexID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_vboTexID);
+        }
+    }
+    return _vboTexID;
 
 }
 
@@ -414,6 +470,69 @@ RotoShapeRenderNodeOpenGLData::getOrCreateStrokeSecondPassShader()
     }
 
     return _strokeDotSecondPassShader;
+}
+
+
+template <typename GL>
+static GLShaderBasePtr
+getOrCreateSmearShaderInternal()
+{
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+
+    std::string vertexSource;
+    vertexSource += std::string(rotoSmearDot_VertexShader);
+
+#ifdef DEBUG
+    std::string error;
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeVertex, vertexSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeVertex, vertexSource.c_str(), 0);
+#endif
+    assert(ok);
+
+
+    std::string fragmentSource;
+    fragmentSource += std::string(rotoSmearDot_FragmentShader);
+#ifdef DEBUG
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+    assert(ok);
+#ifdef DEBUG
+    ok = shader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+
+    return shader;
+}
+
+
+GLShaderBasePtr
+RotoShapeRenderNodeOpenGLData::getOrCreateSmearShader()
+{
+    if (_smearShader) {
+        return _smearShader;
+    }
+    if (isGPUContext()) {
+        _smearShader = getOrCreateSmearShaderInternal<GL_GPU>();
+    } else {
+        _smearShader = getOrCreateSmearShaderInternal<GL_CPU>();
+    }
+
+    return _smearShader;
 }
 
 
@@ -741,6 +860,11 @@ struct RenderStrokeGLData
     std::vector<boost::shared_ptr<RamBuffer<unsigned int> > > indicesBuf;
 };
 
+static void toTexCoords(const RectI& texBounds, const float xi, const float yi, float* xo, float* yo)
+{
+    *xo = (xi - texBounds.x1) / (double)texBounds.width();
+    *yo = (yi - texBounds.y1) / (double)texBounds.height();
+}
 
 /**
  * @brief Makes up a single dot that will be send to the GPU
@@ -752,26 +876,44 @@ getDotTriangleFan(const Point& center,
                   double shapeColor[3],
                   double opacity,
                   double hardness,
-#ifndef NDEBUG
-                  const RectI& roi,
-#endif
+                  const RectI& texBounds,
+                  bool appendToData,
                   RamBuffer<float>* vdata,
                   RamBuffer<float>* cdata,
-                  RamBuffer<float>* hdata)
+                  RamBuffer<float>* hdata,
+                  RamBuffer<float>* tdata)
 {
-    int cSize = cdata->size();
+    /*
+     To render a dot we make a triangle fan. Along each edge linking an outter vertex and the center of the dot the ramp is interpolated by OpenGL.
+     The function in the shader is the same as the one we use to fill the radial gradient used in Cairo. Since in Cairo we use stops that do not make linear curve,
+     instead we slightly alter the hardness by a very sharp log curve so it mimics correctly the radial gradient used in CPU mode.
+     */
+    hardness = std::pow(hardness, 0.7f);
+
+    int cSize = appendToData ? cdata->size() : 0;
     cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 4);
-    int vSize = vdata->size();
+    int vSize = appendToData ? vdata->size() : 0;
     vdata->resizeAndPreserve(vSize + (nbOutsideVertices + 2) * 2);
-    int hSize = hdata->size();
+    int hSize = appendToData ? hdata->size() : 0;
     hdata->resizeAndPreserve(hSize + (nbOutsideVertices + 2) * 1);
+
+    int tSize = 0;
+    if (tdata) {
+        tSize = appendToData ? tdata->size() : 0;
+        tdata->resizeAndPreserve(tSize + (nbOutsideVertices + 2) * 2);
+    }
 
     float* cPtr = cdata->getData() + cSize;
     float* vPtr = vdata->getData() + vSize;
     float* hPtr = hdata->getData() + hSize;
+    float* tPtr = tdata ? tdata->getData() + tSize : 0;
     vPtr[0] = center.x;
     vPtr[1] = center.y;
-    assert(roi.contains(vPtr[0],vPtr[1]));
+    assert(texBounds.contains(vPtr[0],vPtr[1]));
+    if (tPtr) {
+        toTexCoords(texBounds, center.x, center.y, &tPtr[0], &tPtr[1]);
+        tPtr += 2;
+    }
     cPtr[0] = shapeColor[0];
     cPtr[1] = shapeColor[1];
     cPtr[2] = shapeColor[2];
@@ -786,8 +928,14 @@ getDotTriangleFan(const Point& center,
         double theta = i * m;
         vPtr[0] = center.x + radius * std::cos(theta);
         vPtr[1] = center.y + radius * std::sin(theta);
-        assert(roi.contains(vPtr[0],vPtr[1]));
+        assert(texBounds.contains(vPtr[0],vPtr[1]));
+        if (tPtr) {
+            toTexCoords(texBounds, vPtr[0], vPtr[1], &tPtr[0], &tPtr[1]);
+            tPtr += 2;
+        }
         vPtr += 2;
+
+
 
         cPtr[0] = shapeColor[0];
         cPtr[1] = shapeColor[1];
@@ -801,7 +949,10 @@ getDotTriangleFan(const Point& center,
 
     vPtr[0] = center.x + radius;
     vPtr[1] = center.y;
-    assert(roi.contains(vPtr[0],vPtr[1]));
+    assert(texBounds.contains(vPtr[0],vPtr[1]));
+    if (tPtr) {
+        toTexCoords(texBounds, vPtr[0], vPtr[1], &tPtr[0], &tPtr[1]);
+    }
     cPtr[0] = shapeColor[0];
     cPtr[1] = shapeColor[1];
     cPtr[2] = shapeColor[2];
@@ -825,18 +976,32 @@ static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double r
         }
     }
 
-    /*
-     To render a dot we make a triangle fan. Along each edge linking an outter vertex and the center of the dot the ramp is interpolated by OpenGL.
-     The function in the shader is the same as the one we use to fill the radial gradient used in Cairo. Since in Cairo we use stops that do not make linear curve,
-     instead we slightly alter the hardness by a very sharp log curve so it mimics correctly the radial gradient used in CPU mode.
-     */
-    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, std::pow(hardness, 0.7f),
-#ifndef NDEBUG
-                      data.roi,
-#endif
-                      &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness);
+    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness, data.roi, true, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness, 0);
     
 
+}
+
+/*
+ * Approximate the necessary number of line segments to draw a dot, using http://antigrain.com/research/adaptive_bezier/
+ */
+static int getNbPointPerSegment(const double brushSizePixel)
+{
+    double radius = brushSizePixel / 2.;
+    Point p0 = {radius, 0.};
+    Point p3 = {0., radius};
+    Point p1 = {1. / .3 * p3.x + 2. / 3 * p0.x, 1. / .3 * p3.y + 2. / 3 * p0.y};
+    Point p2 = {1. / .3 * p0.x + 2. / 3 * p3.x, 1. / .3 * p0.y + 2. / 3 * p3.y};
+    double dx1, dy1, dx2, dy2, dx3, dy3;
+    dx1 = p1.x - p0.x;
+    dy1 = p1.y - p0.y;
+    dx2 = p2.x - p1.x;
+    dy2 = p2.y - p1.y;
+    dx3 = p3.x - p2.x;
+    dy3 = p3.y - p2.y;
+    double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+    std::sqrt(dx2 * dx2 + dy2 * dy2) +
+    std::sqrt(dx3 * dx3 + dy3 * dy3);
+    return (int)std::max(length * 0.1 /*0.25*/, 2.);
 }
 
 static void
@@ -862,31 +1027,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
     myData->buildUp = buildUp;
     memcpy(myData->shapeColor, shapeColor, sizeof(double) * 3);
     myData->opacity = opacity;
-
-
-    {
-        /*
-         * Approximate the necessary number of line segments to draw a dot, using http://antigrain.com/research/adaptive_bezier/
-         */
-        double radius = myData->brushSizePixel / 2.;
-        Point p0 = {radius, 0.};
-        Point p3 = {0., radius};
-        Point p1 = {1. / .3 * p3.x + 2. / 3 * p0.x, 1. / .3 * p3.y + 2. / 3 * p0.y};
-        Point p2 = {1. / .3 * p0.x + 2. / 3 * p3.x, 1. / .3 * p0.y + 2. / 3 * p3.y};
-        double dx1, dy1, dx2, dy2, dx3, dy3;
-        dx1 = p1.x - p0.x;
-        dy1 = p1.y - p0.y;
-        dx2 = p2.x - p1.x;
-        dy2 = p2.y - p1.y;
-        dx3 = p3.x - p2.x;
-        dy3 = p3.y - p2.y;
-        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-        std::sqrt(dx2 * dx2 + dy2 * dy2) +
-        std::sqrt(dx3 * dx3 + dy3 * dy3);
-        myData->nbPointsPerSegment = (int)std::max(length * 0.1 /*0.25*/, 2.);
-    }
-
-
+    myData->nbPointsPerSegment = getNbPointPerSegment(myData->brushSizePixel);
 }
 
 
@@ -1258,6 +1399,13 @@ struct RenderSmearGLData
     bool pressureAffectsSize;
     double opacity;
 
+    int nbPointsPerSegment;
+
+    RamBuffer<float> primitivesColors;
+    RamBuffer<float> primitivesVertices;
+    RamBuffer<float> primitivesHardness;
+    RamBuffer<float> primitivesTexCoords;
+    RamBuffer<unsigned int> indices;
 
     RectI roi;
 
@@ -1284,21 +1432,21 @@ renderSmearBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
     myData->pressureAffectsHardness = pressureAffectsHardness;
     myData->pressureAffectsSize = pressureAffectsSize;
     myData->opacity = opacity;
+    myData->nbPointsPerSegment = getNbPointPerSegment(myData->brushSizePixel);
     
 }
 
-static void
-renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
-                         const Point &/*prevCenter*/,
-                         const Point &center,
-                         double pressure,
-                         double *spacing)
+template <typename GL>
+static void renderSmearDotInternal(RenderSmearGLData* myData,
+                                   const Point &prevCenter,
+                                   const Point &center,
+                                   double pressure,
+                                   double* spacing)
 {
-    RenderSmearGLData* myData = (RenderSmearGLData*)userData;
 
-    double brushSizePixel = myData->brushSizePixel;
+    double brushSizePixels = myData->brushSizePixel;
     if (myData->pressureAffectsSize) {
-        brushSizePixel *= pressure;
+        brushSizePixels *= pressure;
     }
     double brushHardness = myData->brushHardness;
     if (myData->pressureAffectsHardness) {
@@ -1310,17 +1458,246 @@ renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData
     }
     double brushSpacing = myData->brushSpacing;
 
-    double radius = std::max(brushSizePixel, 1.) / 2.;
+    double radius = std::max(brushSizePixels, 1.) / 2.;
     *spacing = radius * 2. * brushSpacing;
+
+
+    // Check for initilazation cases
+    if (prevCenter.x == INT_MIN || prevCenter.y == INT_MIN) {
+        return;
+    }
+    if (prevCenter.x == center.x && prevCenter.y == center.y) {
+        return;
+    }
+
+
+
+    const OSGLContextPtr& glContext = myData->glContext;
+    const ImagePtr& dstImage = myData->dstImage;
+    RectI dstBounds = dstImage->getBounds();
+
+    GLuint fboID = glContext->getOrCreateFBOId();
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+
+    int target = dstImage->getGLTextureTarget();
+
+    // Disable scissors because we are going to use opengl outside of RoI
+    GL::glDisable(GL_SCISSOR_TEST);
+
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+
+    // This is the output texture
+    GL::glBindTexture( target, dstImage->getGLTextureID() );
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Specifies the src and dst rectangle
+    RectI prevDotBounds(prevCenter.x - brushSizePixels / 2., prevCenter.y - brushSizePixels / 2., prevCenter.x + brushSizePixels / 2. + 1, prevCenter.y + brushSizePixels / 2. + 1);
+    RectI nextDotBounds(center.x - brushSizePixels / 2., center.y - brushSizePixels / 2., center.x + brushSizePixels / 2. + 1, center.y + brushSizePixels / 2.+ 1);
+
+    int nbVertices = myData->nbPointsPerSegment + 2;
+    double shapeColor[3] = {1., 1., 1.};
+
+    // Get the dot vertices, colors, hardness and tex coords to premultiply the src rect
+    bool wasIndicesValid = false;
+    {
+
+        // Since the number of vertices does not change for every dot, fill the indices array only once
+        if (myData->indices.size() == 0) {
+            myData->indices.resize(nbVertices);
+            unsigned int* idxData = myData->indices.getData();
+            for (std::size_t i = 0; i < myData->indices.size(); ++i) {
+                idxData[i] = i;
+            }
+        } else {
+            wasIndicesValid = true;
+        }
+
+        Point dotCenter = {(prevDotBounds.x1 + prevDotBounds.x2) / 2., (prevDotBounds.y1 + prevDotBounds.y2) / 2.};
+        getDotTriangleFan(dotCenter , radius, myData->nbPointsPerSegment, shapeColor, opacity, brushHardness, dstBounds, false, &myData->primitivesVertices, &myData->primitivesColors, &myData->primitivesHardness, &myData->primitivesTexCoords);
+    }
+
+
+    // Copy the original rectangle to a tmp texture and premultiply by an alpha mask with a dot shape
+    ImagePtr tmpTexture;
+    {
+        ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+        params->setBounds(prevDotBounds);
+        tmpTexture.reset( new Image(dstImage->getKey(), params) );
+        // Copy the content of the existing dstImage
+
+        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+
+        Image::setupGLViewport<GL>(prevDotBounds, prevDotBounds);
+
+        // First clear to black the texture because the prevDotBounds might not be contained in the dstBounds
+        GL::glClearColor(0., 0., 0., 0.);
+        GL::glClear(GL_COLOR_BUFFER_BIT);
+
+        // Now draw onto the intersection with the dstBOunds with the smear shader
+        RectI roi;
+        prevDotBounds.intersect(dstBounds, &roi);
+        Image::setupGLViewport<GL>(prevDotBounds, roi);
+
+        GL::glBindTexture( target, dstImage->getGLTextureID() );
+
+        OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], opacity};
+
+        GLShaderBasePtr smearShader = myData->glData->getOrCreateSmearShader();
+        unsigned int iboID = myData->glData->getOrCreateIBOID();
+        unsigned int vboVerticesID = myData->glData->getOrCreateVBOVerticesID();
+        unsigned int vboColorsID = myData->glData->getOrCreateVBOColorsID();
+        unsigned int vboTexID = myData->glData->getOrCreateVBOTexID();
+        unsigned int vboHardnessID = myData->glData->getOrCreateVBOHardnessID();
+
+        smearShader->bind();
+        smearShader->setUniform("tex", 0);
+        smearShader->setUniform("fillColor", fillColor);
+        GLint hardnessLoc;
+        {
+            bool ok = smearShader->getAttribLocation("inHardness", &hardnessLoc);
+            assert(ok);
+        }
+        GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesVertices.getData(), GL_DYNAMIC_DRAW);
+        GL::glEnableClientState(GL_VERTEX_ARRAY);
+        GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+
+        GL::glBindBuffer(GL_ARRAY_BUFFER, vboTexID);
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesTexCoords.getData(), GL_DYNAMIC_DRAW);
+        GL::glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL::glTexCoordPointer(2, GL_FLOAT, 0, 0);
+
+        GL::glBindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), myData->primitivesHardness.getData(), GL_DYNAMIC_DRAW);
+        GL::glEnableVertexAttribArray(hardnessLoc);
+        GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0 /*stride*/, 0 /*data*/);
+
+
+        GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
+        GL::glEnableClientState(GL_COLOR_ARRAY);
+        GL::glColorPointer(4, GL_FLOAT, 0, 0);
+
+
+        GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
+        if (!wasIndicesValid) {
+            GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, nbVertices * sizeof(GLuint), myData->indices.getData(), GL_STATIC_DRAW);
+        }
+
+
+        GL::glDrawElements(GL_TRIANGLE_FAN, nbVertices, GL_UNSIGNED_INT, 0);
+
+        GL::glDisableClientState(GL_COLOR_ARRAY);
+        GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
+        GL::glDisableClientState(GL_VERTEX_ARRAY);
+        GL::glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL::glDisableVertexAttribArray(hardnessLoc);
+        GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glCheckError(GL);
+        
+        smearShader->unbind();
+    }
+
+    // Now copy to the destination rect with blending on
+    GL::glEnable(GL_BLEND);
+    GL::glBlendEquation(GL_FUNC_ADD);
+    GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+
+        GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
+
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+        Image::setupGLViewport<GL>(dstBounds, nextDotBounds);
+        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        copyShader->bind();
+        copyShader->setUniform("srcTex", 0);
+
+
+        {
+            // Compute the texture coordinates to match the srcRoi
+            Point srcTexCoords[4], vertexCoords[4];
+            vertexCoords[0].x = nextDotBounds.x1;
+            vertexCoords[0].y = nextDotBounds.y1;
+            srcTexCoords[0].x = 0.;
+            srcTexCoords[0].y = 0.;
+
+            vertexCoords[1].x = nextDotBounds.x2;
+            vertexCoords[1].y = nextDotBounds.y1;
+            srcTexCoords[1].x = 1.;
+            srcTexCoords[1].y = 0.;
+
+            vertexCoords[2].x = nextDotBounds.x2;
+            vertexCoords[2].y = nextDotBounds.y2;
+            srcTexCoords[2].x = 1.;
+            srcTexCoords[2].y = 1.;
+
+            vertexCoords[3].x = nextDotBounds.x1;
+            vertexCoords[3].y = nextDotBounds.y2;
+            srcTexCoords[3].x = 0.;
+            srcTexCoords[3].y = 1.;
+
+            GL::glBegin(GL_POLYGON);
+            for (int i = 0; i < 4; ++i) {
+                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+            }
+            GL::glEnd();
+            glCheckError(GL);
+        }
+
+
+        copyShader->unbind();
+        glCheckError(GL);
+    }
+    GL::glBindTexture( target, 0);
+    GL::glDisable(GL_BLEND);
+
+}
+
+static void
+renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
+                         const Point &prevCenter,
+                         const Point &center,
+                         double pressure,
+                         double *spacing)
+{
+    RenderSmearGLData* myData = (RenderSmearGLData*)userData;
+
+
+    /*
+     To smear we need to copy the portion of the texture around prevCenter to the portion around center. We cannot use the same
+     texture in input and output. The only solution to correctly smear is to first copy the original rectangle to a temporary texture  which
+     we premultiply with an alpha mask drawn by a dot and then copy the tmp texture to the final image at the center point with alpha blending
+     enabled.
+     */
+    if (myData->glContext->isGPUContext()) {
+        renderSmearDotInternal<GL_GPU>(myData, prevCenter, center, pressure, spacing);
+    } else {
+        renderSmearDotInternal<GL_CPU>(myData, prevCenter, center, pressure, spacing);
+    }
+    
 
 
     //renderDot_gl(*myData, center, radius, myData->shapeColor, opacity,  brushHardness);
 }
 
 static void
-renderSmearEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
+renderSmearEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData*/)
 {
-    RenderSmearGLData* myData = (RenderSmearGLData*)userData;
 
 }
 

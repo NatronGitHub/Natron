@@ -120,7 +120,7 @@ public:
 
     void resizeAndPreserve(U64 size)
     {
-        if (size == 0) {
+        if (size == 0 || size == count) {
             return;
         }
         count = size;
