@@ -800,7 +800,7 @@ Node::load(const CreateNodeArgs& args)
     bool hasUsedFileDialog = false;
 #endif
 
-    bool hasDefaultFilename;
+    bool hasDefaultFilename = false;
     {
         std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
