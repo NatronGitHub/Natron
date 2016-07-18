@@ -599,9 +599,9 @@ public:
      * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
      * The OpenGL context should have been made current prior to calling this function.
      **/
-    template <typename GL>
+    static ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image, const OSGLContextPtr& glContext);
     ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
-
+    static ImagePtr convertRAMImageRoIToOpenGLTexture(const ImagePtr& image, const RectI& roi, const OSGLContextPtr& glContext);
 
     /**
      * @brief This function is to be called by getImage() when the plug-ins renders more planes than the ones suggested
@@ -932,6 +932,7 @@ public:
         bool useOpenGL;
         EffectOpenGLContextDataPtr glContextData;
         std::bitset<4> processChannels;
+        OSGLContextPtr glContext;
     };
 
 protected:
@@ -1288,6 +1289,11 @@ public:
     virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
     {
         return ePluginOpenGLRenderSupportNone;
+    }
+
+    virtual bool canCPUImplementationSupportOSMesa() const
+    {
+        return false;
     }
 
     virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
@@ -2101,6 +2107,7 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
+                                                 const OSGLContextPtr& glContext,
                                                  double time,
                                                  const ParallelRenderArgsPtr & frameArgs,
                                                  RenderSafetyEnum safety,
@@ -2189,6 +2196,9 @@ private:
 
     virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob) OVERRIDE FINAL;
     virtual void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master) OVERRIDE FINAL;
+
+public:
+
     enum RenderingFunctorRetEnum
     {
         eRenderingFunctorRetFailed, //< must stop rendering
@@ -2198,6 +2208,7 @@ private:
         eRenderingFunctorRetOutOfGPUMemory
     };
 
+private:
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

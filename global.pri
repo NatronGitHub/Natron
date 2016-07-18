@@ -79,6 +79,15 @@ enable-breakpad {
     include(breakpadclient.pri)
 }
 
+
+enable-cairo {
+    # In Natron 2.2 onwards, roto render code has moved to an OpenGL based implementation and does not require cairo anymore. The cairo-based implementation is still maintained and works.
+    # If disable-cairo is specified, the CPU render code-path will use OSMesa to do the roto render using the OpenGL implementation.
+    # If not specified, the CPU reder code-path will use the cairo-based implementation.
+    # Note that we should avoid mixing the cairo based version and the OpenGL version as the rendering results may slightly differ.
+    DEFINES += ROTO_SHAPE_RENDER_ENABLE_CAIRO
+}
+
 CONFIG(noassertions) {
 #See http://doc.qt.io/qt-4.8/debug.html
    DEFINES *= NDEBUG QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT
@@ -309,6 +318,8 @@ win32-g++ {
     QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
 
+    PKGCONFIG += freetype2 fontconfig
+
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
     shiboken:  PKGCONFIG += shiboken-py2
@@ -330,12 +341,14 @@ unix {
      CONFIG += link_pkgconfig
      expat:     PKGCONFIG += expat
 
+     PKGCONFIG += freetype2 fontconfig
+
      # GLFW will require a link to X11 on linux and OpenGL framework on OS X
      linux-* {
           LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
          cairo {
-             PKGCONFIG += pixman-1 freetype2 fontconfig
+             PKGCONFIG += pixman-1
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
          LIBS += -ldl

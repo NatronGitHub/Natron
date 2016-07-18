@@ -27,9 +27,7 @@
 
 #include <list>
 
-#define ROTO_ENABLE_CPU_RENDER_USES_CAIRO
-
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
@@ -46,6 +44,8 @@ public:
     {
 
     }
+
+    static QString getCairoVersion();
 
     /**
      * @brief Small RAII class that properly destroys the cairo image upon destruction
@@ -176,6 +176,7 @@ public:
                                   double* distToNextOut,
                                   Point* lastCenterPointOut);
 
+    static void purgeCaches_cairo_internal(std::vector<cairo_pattern_t*>& cache);
 
     static void purgeCaches_cairo(const RotoDrawableItemPtr& rotoItem);
     
@@ -184,6 +185,6 @@ public:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif //ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#endif //ROTO_SHAPE_RENDER_ENABLE_CAIRO
 
 #endif // ROTOSHAPERENDERCAIRO_H

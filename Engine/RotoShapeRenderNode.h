@@ -153,6 +153,8 @@ public:
         return true;
     }
 
+    virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;

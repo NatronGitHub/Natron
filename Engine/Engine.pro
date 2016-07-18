@@ -20,7 +20,8 @@ TARGET = Engine
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc
-CONFIG += boost qt cairo python shiboken pyside 
+CONFIG += boost qt python shiboken pyside
+enable-cairo: CONFIG += cairo
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 

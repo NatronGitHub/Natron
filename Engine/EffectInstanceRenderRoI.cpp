@@ -244,7 +244,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     //Create the TLS data for this node if it did not exist yet
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
-    OSGLContextPtr glContext;
+    OSGLContextPtr glGpuContext, glCpuContext;
     AbortableRenderInfoPtr abortInfo;
     ParallelRenderArgsPtr  frameArgs;
     if ( tls->frameArgs.empty() ) {
@@ -265,11 +265,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     } else {
         //The hash must not have changed if we did a pre-pass.
         frameArgs = tls->frameArgs.back();
-        glContext = frameArgs->openGLContext.lock();
+        glGpuContext = frameArgs->openGLContext.lock();
+        glCpuContext = frameArgs->cpuOpenGLContext.lock();
         abortInfo = frameArgs->abortInfo.lock();
         if (!abortInfo) {
             // If we don't have info to identify the render, we cannot manage the OpenGL context properly, so don't try to render with OpenGL.
-            glContext.reset();
+            glGpuContext.reset();
+            glCpuContext.reset();
         }
         assert(!frameArgs->request || frameArgs->nodeHash == frameArgs->request->nodeHash);
     }
@@ -733,29 +735,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
     OSGLContextAttacherPtr glContextLocker;
+    OSGLContextPtr glRenderContext;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
-    } else if ( glContext && ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) ||
+    } else if (glGpuContext && ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) ||
                              ( ( openGLSupport == ePluginOpenGLRenderSupportYes) && args.allowGPURendering) ) ) {
         // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-
         if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !getNode()->getPlugin()->isOpenGLEnabled()) {
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             setPersistentMessage(eMessageTypeError, message.toStdString());
             return eRenderRoIRetCodeFailed;
         }
 
-        /*
-           We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
-           since we do not use the cache for textures)
-         */
-        // Make the OpenGL context current to this thread
-        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                       , frameArgs->time
-#endif
-                                                       ) );
+        glRenderContext = glGpuContext;
+
         storage = eStorageModeGLTex;
 
         // If the plug-in knows how to render on CPU, check if we actually should not render on CPU instead.
@@ -763,7 +757,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // User want to force caching of this node but we cannot cache OpenGL renders, so fallback on CPU.
             if ( getNode()->isForceCachingEnabled() ) {
                 storage = eStorageModeRAM;
-                glContextLocker.reset();
             }
 
             // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.
@@ -773,7 +766,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( (frameArgs->visitsCount > 1) ||
                      ( args.time != args.callerRenderTime) ) {
                     storage = eStorageModeRAM;
-                    glContextLocker.reset();
                 }
             }
 
@@ -784,7 +776,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                      ( roi.height() >= maxTextureSize) ) {
                     // Fallback on CPU rendering since the image is larger than the maximum allowed OpenGL texture size
                     storage = eStorageModeRAM;
-                    glContextLocker.reset();
                 }
             }
         }
@@ -806,12 +797,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
+    const bool supportsOSMesa = canCPUImplementationSupportOSMesa() && glCpuContext;
+
+    if (storage == eStorageModeGLTex) {
+        // Make the OpenGL context current to this thread
+        glContextLocker.reset( new OSGLContextAttacher(glRenderContext, abortInfo
+#ifdef DEBUG
+                                                       , frameArgs->time
+#endif
+                                                       ) );
+    } else {
+        if (supportsOSMesa) {
+            glRenderContext = glCpuContext;
+        }
+    }
+
     const bool isDuringPaintStroke = frameArgs->isDuringPaintStrokeCreation;
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
     // Do not use the cache for OpenGL rendering
-    if (storage == eStorageModeGLTex) {
+    if (storage == eStorageModeGLTex && glRenderContext->isGPUContext()) {
         createInCache = false;
     } else {
         // in Analysis, the node upstream of te analysis node should always cache
@@ -852,7 +858,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImageComponents outputClipPrefComps = getComponents(-1);
     ImagePlanesToRenderPtr planesToRender(new ImagePlanesToRender);
-    planesToRender->useOpenGL = storage == eStorageModeGLTex;
+    planesToRender->useOpenGL = storage == eStorageModeGLTex || supportsOSMesa;
     boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
@@ -1028,7 +1034,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 glContextLocker->attach();
                 for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
                      it2 != planesToRender->planes.end(); ++it2) {
-                    it2->second.fullscaleImage = convertRAMImageToOpenGLTexture<GL_GPU>(it2->second.fullscaleImage);
+                    it2->second.fullscaleImage = convertRAMImageToOpenGLTexture(it2->second.fullscaleImage, glRenderContext);
                     getNode()->setPaintBuffer(it2->second.fullscaleImage);
                     it2->second.downscaleImage = it2->second.downscaleImage;
                 }
@@ -1444,7 +1450,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    par,
                                    args.mipMapLevel,
                                    renderFullScaleThenDownscale,
-                                   glContext,
+                                   glRenderContext,
                                    storage,
                                    createInCache,
                                    &it->second.fullscaleImage,
@@ -1452,7 +1458,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 // For plug-ins that paint over themselves, the first time clear the image out
                 if (isPaintingOverItselfEnabled()) {
-                    it->second.downscaleImage->fillBoundsZero(glContext);
+                    it->second.downscaleImage->fillBoundsZero(glRenderContext);
                 }
 
                 // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
@@ -1491,7 +1497,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                      * separate image and then we swap the images in the cache directly, without taking the image write lock.
                      */
 
-                    hasResized = it->second.fullscaleImage->copyAndResizeIfNeeded(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds, fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes, &it->second.cacheSwapImage, glContext);
+                    hasResized = it->second.fullscaleImage->copyAndResizeIfNeeded(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds, fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes, &it->second.cacheSwapImage, glRenderContext);
                     if (hasResized) {
                         ///Work on the swapImg and then swap in the cache
                         ImagePtr swapImg = it->second.cacheSwapImage;
@@ -1502,7 +1508,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         }
                     }
                 } else {
-                    hasResized = it->second.fullscaleImage->ensureBounds(glContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
+                    hasResized = it->second.fullscaleImage->ensureBounds(glRenderContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                          fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
                 }
 
@@ -1629,9 +1635,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
             bool attachGLOK = true;
-            if (storage == eStorageModeGLTex) {
-                assert(glContext);
-                Natron::StatusEnum stat = renderInstance->attachOpenGLContext_public(glContext, &planesToRender->glContextData);
+            if (planesToRender->useOpenGL) {
+                assert(glRenderContext);
+                Natron::StatusEnum stat = renderInstance->attachOpenGLContext_public(glRenderContext, &planesToRender->glContextData);
                 if (stat == eStatusOutOfMemory) {
                     renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
                     attachGLOK = false;
@@ -1642,6 +1648,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             if (attachGLOK) {
                 renderRetCode = renderRoIInternal(renderInstance,
+                                                  glRenderContext,
                                                   args.time,
                                                   frameArgs,
                                                   safety,
@@ -1659,12 +1666,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                   outputClipPrefComps,
                                                   neededComps,
                                                   processChannels);
-                if (storage == eStorageModeGLTex) {
+                if (planesToRender->useOpenGL) {
                     // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
                     // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
                     // If we were the last render to use this context, clear the data now
                     if ( planesToRender->glContextData->getHasTakenLock() || !supportsConcurrentOpenGLRenders() || planesToRender->glContextData.use_count() == 1) {
-                        renderInstance->dettachOpenGLContext_public(glContext, planesToRender->glContextData);
+                        renderInstance->dettachOpenGLContext_public(glRenderContext, planesToRender->glContextData);
                     }
                 }
             }
@@ -1839,14 +1846,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-                    glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+                    glContextLocker.reset( new OSGLContextAttacher(glRenderContext, abortInfo
 #ifdef DEBUG
                                                                    , frameArgs->time
 #endif
                                                                    ) );
                 }
                 glContextLocker->attach();
-                it->second.downscaleImage = convertRAMImageToOpenGLTexture<GL_GPU>(it->second.downscaleImage);
+                it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage, glRenderContext);
             } else if ( args.returnStorage != eStorageModeGLTex && (imageStorage == eStorageModeGLTex) ) {
                 assert(args.returnStorage == eStorageModeRAM);
                 assert(glContextLocker);
@@ -1902,6 +1909,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
+                                  const OSGLContextPtr& glContext,
                                   double time,
                                   const ParallelRenderArgsPtr & frameArgs,
                                   RenderSafetyEnum safety,
@@ -2046,6 +2054,7 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
             tiledArgs->processChannels = processChannels;
             tiledArgs->planes = planesToRender;
             tiledArgs->compsNeeded = compsNeeded;
+            tiledArgs->glContext = glContext;
 
 
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
@@ -2091,7 +2100,7 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it, glContext, renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) || (functorRet == eRenderingFunctorRetOutOfGPUMemory) ) {
                     renderStatus = functorRet;

@@ -50,8 +50,6 @@
 #endif
 #endif
 
-
-#include <cairo/cairo.h>
 #include <boost/version.hpp>
 
 #include <QtCore/QDebug>
@@ -94,6 +92,7 @@
 #include "Engine/ReadNode.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoShapeRenderNode.h"
+#include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
@@ -3292,7 +3291,11 @@ AppManager::getQtVersion() const
 QString
 AppManager::getCairoVersion() const
 {
-    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+    return RotoShapeRenderCairo::getCairoVersion();
+#else
+    return QString();
+#endif
 }
 
 QString

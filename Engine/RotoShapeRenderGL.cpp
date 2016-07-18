@@ -537,7 +537,7 @@ RotoShapeRenderNodeOpenGLData::getOrCreateSmearShader()
 
 
 template <typename GL>
-void renderBezier_gl_setupOutputTexture(int target)
+void setupTexParams(int target)
 {
 
     GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -675,7 +675,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
         RotoBezierTriangulation::computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
 
         if (glContext->isGPUContext()) {
-            renderBezier_gl_setupOutputTexture<GL_GPU>(target);
+            setupTexParams<GL_GPU>(target);
             renderBezier_gl_internal_begin<GL_GPU>(false);
         } else {
             renderBezier_gl_internal_begin<GL_CPU>(false);
@@ -876,6 +876,7 @@ getDotTriangleFan(const Point& center,
                   double shapeColor[3],
                   double opacity,
                   double hardness,
+                  bool doBuildUp,
                   const RectI& texBounds,
                   bool appendToData,
                   RamBuffer<float>* vdata,
@@ -888,7 +889,11 @@ getDotTriangleFan(const Point& center,
      The function in the shader is the same as the one we use to fill the radial gradient used in Cairo. Since in Cairo we use stops that do not make linear curve,
      instead we slightly alter the hardness by a very sharp log curve so it mimics correctly the radial gradient used in CPU mode.
      */
-    hardness = std::pow(hardness, 0.7f);
+    if (doBuildUp) {
+        hardness = std::pow(hardness, 0.7f);
+    } else {
+        hardness = std::pow(hardness, 0.3f);
+    }
 
     int cSize = appendToData ? cdata->size() : 0;
     cdata->resizeAndPreserve(cSize + (nbOutsideVertices + 2) * 4);
@@ -976,7 +981,7 @@ static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double r
         }
     }
 
-    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness, data.roi, true, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness, 0);
+    getDotTriangleFan(center, radius, data.nbPointsPerSegment, shapeColor, opacity, hardness, data.buildUp, data.roi, true, &data.primitivesVertices, &data.primitivesColors, &data.primitivesHardness, 0);
     
 
 }
@@ -1060,9 +1065,8 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
      the premultiplication.
      */
     GLuint fboID = glContext->getOrCreateFBOId();
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
 
-    int target = dstImage->getGLTextureTarget();
+    int target = GL_TEXTURE_2D;
 
 
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
@@ -1070,79 +1074,91 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
     GL::glEnable(target);
     GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindTexture( target, dstImage->getGLTextureID() );
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    if (GL::isGPU()) {
+        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        setupTexParams<GL>(target);
+    }
     RectI dstBounds = dstImage->getBounds();
-
+    
     ImagePtr tmpTexture;
     if (doBuildUp) {
-        ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
-        params->setBounds(roi);
-        tmpTexture.reset( new Image(dstImage->getKey(), params) );
-        // Copy the content of the existing dstImage
 
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
-        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // In GPU mode, copy the original texture onto the tmpTexture
+        // In CPU mode, upload the tmpTexture directly from the dstImage
+        if (!GL::isGPU()) {
+            tmpTexture = EffectInstance::convertRAMImageRoIToOpenGLTexture(dstImage, roi, glContext);
 
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        
+            GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+            setupTexParams<GL>(target);
+            
 
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError(GL);
-        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        } else {
+            ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+            params->setBounds(roi);
+            {
+                CacheEntryStorageInfo& info = params->getStorageInfo();
+                info.textureTarget = target;
+                info.isGPUTexture = GL::isGPU();
+                info.mode = eStorageModeGLTex;
+            }
+            tmpTexture.reset( new Image(dstImage->getKey(), params) );
+            // Copy the content of the existing dstImage
 
-        GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
-        assert(shader);
-        shader->bind();
-        shader->setUniform("srcTex", 0);
+            GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+            setupTexParams<GL>(target);
+
+            GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+            GL::glBindTexture( target, dstImage->getGLTextureID() );
+
+            GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
+            assert(shader);
+            shader->bind();
+            shader->setUniform("srcTex", 0);
 
 
-        Image::setupGLViewport<GL>(roi, roi);
+            Image::setupGLViewport<GL>(roi, roi);
 
-        // Clear the tmpTexture out before copying 
-        //GL::glClearColor(0., 0., 0., 0.);
-        //GL::glClear(GL_COLOR_BUFFER_BIT);
+            // Clear the tmpTexture out before copying
+            //GL::glClearColor(0., 0., 0., 0.);
+            //GL::glClear(GL_COLOR_BUFFER_BIT);
 
-        // Compute the texture coordinates to match the srcRoi
-        Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = roi.x1;
-        vertexCoords[0].y = roi.y1;
-        srcTexCoords[0].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[0].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
+            // Compute the texture coordinates to match the srcRoi
+            Point srcTexCoords[4], vertexCoords[4];
+            vertexCoords[0].x = roi.x1;
+            vertexCoords[0].y = roi.y1;
+            srcTexCoords[0].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
+            srcTexCoords[0].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
 
-        vertexCoords[1].x = roi.x2;
-        vertexCoords[1].y = roi.y1;
-        srcTexCoords[1].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[1].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
+            vertexCoords[1].x = roi.x2;
+            vertexCoords[1].y = roi.y1;
+            srcTexCoords[1].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
+            srcTexCoords[1].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
 
-        vertexCoords[2].x = roi.x2;
-        vertexCoords[2].y = roi.y2;
-        srcTexCoords[2].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[2].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
+            vertexCoords[2].x = roi.x2;
+            vertexCoords[2].y = roi.y2;
+            srcTexCoords[2].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
+            srcTexCoords[2].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
 
-        vertexCoords[3].x = roi.x1;
-        vertexCoords[3].y = roi.y2;
-        srcTexCoords[3].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[3].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
-
-        GL::glBegin(GL_POLYGON);
-        for (int i = 0; i < 4; ++i) {
-            GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+            vertexCoords[3].x = roi.x1;
+            vertexCoords[3].y = roi.y2;
+            srcTexCoords[3].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
+            srcTexCoords[3].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
+            
+            GL::glBegin(GL_POLYGON);
+            for (int i = 0; i < 4; ++i) {
+                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+            }
+            GL::glEnd();
+            
+            
+            glCheckError(GL);
+            
+            shader->unbind();
         }
-        GL::glEnd();
-
-
-        glCheckError(GL);
-
-        shader->unbind();
-        //GL::glBindTexture( target, 0);
     }
 
 
@@ -1157,9 +1173,13 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
     renderBezier_gl_internal_begin<GL>(doBuildUp);
 
-
-    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLTextureID(), 0 /*LoD*/);
-    glCheckFramebufferError(GL);
+    if (!GL::isGPU() && firstPassDstImage == dstImage) {
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    } else {
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+    }
     glCheckError(GL);
 
     Image::setupGLViewport<GL>(firstPassDstImage->getBounds(), roi);
@@ -1232,8 +1252,15 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     if (doBuildUp) {
 
         //GL::glBindTexture( target, dstImage->getGLTextureID() );
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError(GL);
+        if (GL::isGPU()) {
+            GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+        } else {
+            // In CPU mode render to the default framebuffer that is already backed by the dstImage
+            GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         strokeSecondPassShader->bind();
         strokeSecondPassShader->setUniform("tex", 0);
@@ -1481,7 +1508,7 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     GLuint fboID = glContext->getOrCreateFBOId();
     GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
 
-    int target = dstImage->getGLTextureTarget();
+    int target = GL_TEXTURE_2D;
 
     // Disable scissors because we are going to use opengl outside of RoI
     GL::glDisable(GL_SCISSOR_TEST);
@@ -1490,17 +1517,15 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     GL::glActiveTexture(GL_TEXTURE0);
 
     // This is the output texture
-    GL::glBindTexture( target, dstImage->getGLTextureID() );
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    if (GL::isGPU()) {
+        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        setupTexParams<GL>(target);
+    }
 
     // Specifies the src and dst rectangle
     RectI prevDotBounds(prevPoint.x - brushSizePixels / 2., prevPoint.y - brushSizePixels / 2., prevPoint.x + brushSizePixels / 2. + 1, prevPoint.y + brushSizePixels / 2. + 1);
     RectI nextDotBounds(center.x - brushSizePixels / 2., center.y - brushSizePixels / 2., center.x + brushSizePixels / 2. + 1, center.y + brushSizePixels / 2.+ 1);
-
+    
     int nbVertices = myData->nbPointsPerSegment + 2;
     double shapeColor[3] = {1., 1., 1.};
 
@@ -1520,7 +1545,7 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
         }
 
         Point dotCenter = {(prevDotBounds.x1 + prevDotBounds.x2) / 2., (prevDotBounds.y1 + prevDotBounds.y2) / 2.};
-        getDotTriangleFan(dotCenter , radius, myData->nbPointsPerSegment, shapeColor, opacity, brushHardness, dstBounds, false, &myData->primitivesVertices, &myData->primitivesColors, &myData->primitivesHardness, &myData->primitivesTexCoords);
+        getDotTriangleFan(dotCenter , radius, myData->nbPointsPerSegment, shapeColor, opacity, brushHardness, true, dstBounds, false, &myData->primitivesVertices, &myData->primitivesColors, &myData->primitivesHardness, &myData->primitivesTexCoords);
     }
 
 
@@ -1529,15 +1554,17 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     {
         ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
         params->setBounds(prevDotBounds);
+        {
+            CacheEntryStorageInfo& info = params->getStorageInfo();
+            info.textureTarget = target;
+            info.isGPUTexture = GL::isGPU();
+            info.mode = eStorageModeGLTex;
+        }
         tmpTexture.reset( new Image(dstImage->getKey(), params) );
         // Copy the content of the existing dstImage
 
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
-        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        setupTexParams<GL>(target);
 
         GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError(GL);
@@ -1553,7 +1580,19 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
         prevDotBounds.intersect(dstBounds, &roi);
         Image::setupGLViewport<GL>(prevDotBounds, roi);
 
-        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        // In GPU mode, we copy directly from dstImage because it is a texture already.
+        // In CPU mode we must upload the portion we are interested in to OSmesa first
+        ImagePtr originalImage;
+        if (GL::isGPU()) {
+            originalImage = dstImage;
+        } else {
+            originalImage = EffectInstance::convertRAMImageRoIToOpenGLTexture(dstImage, roi, glContext);
+        }
+
+        GL::glBindTexture( target, originalImage->getGLTextureID() );
+
+        setupTexParams<GL>(target);
+
 
         OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], opacity};
 
@@ -1620,9 +1659,13 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     {
 
         GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
-
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError(GL);
+        if (GL::isGPU()) {
+            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+        } else {
+            // In CPU mode to draw on dstImage we draw on the default framebuffer
+            GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
         Image::setupGLViewport<GL>(dstBounds, nextDotBounds);
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         copyShader->bind();

@@ -20,7 +20,8 @@ TARGET = Gui
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
-CONFIG += boost opengl qt cairo python shiboken pyside 
+CONFIG += boost opengl qt python shiboken pyside
+enable-cairo: CONFIG += cairo
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 

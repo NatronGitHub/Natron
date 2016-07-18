@@ -26,7 +26,8 @@ win32 {
 	CONFIG += app
 }
 CONFIG += moc
-CONFIG += boost opengl qt cairo python shiboken pyside 
+CONFIG += boost opengl qt python shiboken pyside
+enable-cairo: CONFIG += cairo
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
 
 QT += gui core opengl network

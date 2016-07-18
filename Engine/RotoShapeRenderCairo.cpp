@@ -24,7 +24,7 @@
 
 #include "RotoShapeRenderCairo.h"
 
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
 
 #include <QLineF>
 
@@ -47,6 +47,12 @@
 
 
 NATRON_NAMESPACE_ENTER;
+
+QString
+RotoShapeRenderCairo::getCairoVersion()
+{
+    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
+}
 
 RotoShapeRenderCairo::CairoImageWrapper::~CairoImageWrapper()
 {
@@ -2021,21 +2027,27 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 } // RotoShapeRenderNodePrivate::renderMaskInternal_cairo
 
 void
+RotoShapeRenderCairo::purgeCaches_cairo_internal(std::vector<cairo_pattern_t*>& cache)
+{
+    for (std::size_t i = 0; i < cache.size(); ++i) {
+        if (cache[i]) {
+            cairo_pattern_destroy(cache[i]);
+            cache[i] = 0;
+        }
+    }
+    cache.clear();
+}
+
+void
 RotoShapeRenderCairo::purgeCaches_cairo(const RotoDrawableItemPtr& rotoItem)
 {
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(rotoItem.get());
     if (isStroke) {
         std::vector<cairo_pattern_t*> dotPatterns = isStroke->getPatternCache();
-        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
-            if (dotPatterns[i]) {
-                cairo_pattern_destroy(dotPatterns[i]);
-                dotPatterns[i] = 0;
-            }
-        }
-        dotPatterns.clear();
+        purgeCaches_cairo_internal(dotPatterns);
         isStroke->updatePatternCache(dotPatterns);
     }
 }
 NATRON_NAMESPACE_EXIT;
 
-#endif //ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#endif //ROTO_SHAPE_RENDER_ENABLE_CAIRO

@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
+#include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/RotoItemSerialization.h"
 #include "Engine/RotoPoint.h"
@@ -102,12 +103,9 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
 
 RotoStrokeItem::~RotoStrokeItem()
 {
-    for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-        if (_imp->strokeDotPatterns[i]) {
-            cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
-            _imp->strokeDotPatterns[i] = 0;
-        }
-    }
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+    RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
+#endif
     deactivateNodes();
 }
 
@@ -307,13 +305,9 @@ RotoStrokeItem::setStrokeFinished()
         QMutexLocker k(&itemMutex);
         _imp->finished = true;
 
-        for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-            if (_imp->strokeDotPatterns[i]) {
-                cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
-                _imp->strokeDotPatterns[i] = 0;
-            }
-        }
-        _imp->strokeDotPatterns.clear();
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+        RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
+#endif
     }
 
     resetTransformCenter();

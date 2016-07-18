@@ -237,6 +237,7 @@ class TLSHolderBase;
 class Texture;
 class TextureRect;
 class TimeLine;
+class TimeLapse;
 class TrackArgs;
 class TrackMarker;
 class TrackMarkerAndOptions;

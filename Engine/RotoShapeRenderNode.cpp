@@ -60,6 +60,16 @@ RotoShapeRenderNode::~RotoShapeRenderNode()
 
 }
 
+bool
+RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
+{
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+    return false;
+#else
+    return true;
+#endif
+}
+
 
 void
 RotoShapeRenderNode::addAcceptedComponents(int /*inputNb*/,
@@ -110,8 +120,13 @@ RotoShapeRenderNode::initializeKnobs()
 StatusEnum
 RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 {
+
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
     int index = _imp->outputComponents.lock()->getValue();
     ImageComponents comps = index == 0 ? ImageComponents::getRGBAComponents() : ImageComponents::getAlphaComponents();
+#else
+    const ImageComponents& comps = ImageComponents::getRGBAComponents();
+#endif
     metadata.setImageComponents(-1, comps);
     metadata.setImageComponents(0, comps);
     return eStatusOK;
@@ -185,6 +200,12 @@ RotoShapeRenderNode::isIdentity(double time,
 StatusEnum
 RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
+
+#if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO) && !defined(HAVE_OSMESA)
+    setPersistentMessage(eMessageTypeError, tr("Roto requires either OSMesa (CONFIG += enable-osmesa) or Cairo (CONFIG += enable-cairo) in order to render on CPU").toStdString());
+    return eStatusFailed;
+#endif
+
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
@@ -204,14 +225,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     assert(rotoItem->isActivated(args.time) && (!isBezier || (isBezier->isCurveFinished() && ( isBezier->getControlPointsCount() > 1 ))));
 
     ParallelRenderArgsPtr frameArgs = getParallelRenderArgsTLS();
-    OSGLContextPtr glContext;
+    const OSGLContextPtr& glContext = args.glContext;
     AbortableRenderInfoPtr abortInfo;
     if (frameArgs) {
-        if (args.useOpenGL) {
-            glContext = frameArgs->openGLContext.lock();
-        } else {
-            glContext = frameArgs->cpuOpenGLContext.lock();
-        }
         abortInfo = frameArgs->abortInfo.lock();
     }
     assert(abortInfo && glContext);
@@ -225,10 +241,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
-
-    // Check that the supplied output image has the correct storage
-    assert((outputPlane.second->getStorageMode() == eStorageModeGLTex && args.useOpenGL) || (outputPlane.second->getStorageMode() != eStorageModeGLTex && !args.useOpenGL));
-
 
     bool isDuringPainting = isDuringPaintStrokeCreationThreadLocal();
     double distNextIn = 0.;
@@ -301,40 +313,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         }
     }
 
-    // We do not support tiles so the renderWindow passed to render should be the RoD in pixels of the shape
-
-    //  Attach the OpenGL context
-    boost::scoped_ptr<Image::WriteAccess> wacc;
-    boost::scoped_ptr<OSGLContextAttacher> contextLocker;
-    if (glContext->isGPUContext()) {
-        assert(args.useOpenGL);
-        contextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                    , args.time
-#endif
-                                                    ));
-    } else {
-
-#ifndef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
-        assert(!args.useOpenGL);
-        wacc.reset(new Image::WriteAccess(outputPlane.second.get()));
-        unsigned char* data = wacc->pixelAt(args.roi.x1, args.roi.y1);
-        assert(data);
-        contextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                    , args.time
-#endif
-                                                    , args.roi.width()
-                                                    , args.roi.height()
-                                                    , data));
-#endif
-
-    }
-    if (contextLocker) {
-        contextLocker->attach();
-    }
     // Now we are good to start rendering
-
 
     double distToNextOut;
     Point lastCenterOut;
@@ -363,7 +342,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             }
 #endif
 
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
                 RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting) {
@@ -388,7 +367,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                                                        isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
                 }
                 
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             }
 #endif
         }   break;
@@ -402,14 +381,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (isStrokeFirstTick && strokeMultiIndex == 0) {
                 outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);
             }
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
                 RotoShapeRenderCairo::renderSmear_cairo(args.time, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, strokes, &distToNextOut, &lastCenterOut);
             } else {
 #endif
                 double opacity = rotoItem->getOpacity(args.time);
                 RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, opacity, args.time, mipmapLevel, &distToNextOut, &lastCenterOut);
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             }
 #endif
             if (isDuringPainting) {
@@ -435,7 +414,7 @@ RotoShapeRenderNode::purgeCaches()
     if (!rotoItem) {
         return;
     }
-#ifdef ROTO_ENABLE_CPU_RENDER_USES_CAIRO
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
     RotoShapeRenderCairo::purgeCaches_cairo(rotoItem);
 #endif
 }
