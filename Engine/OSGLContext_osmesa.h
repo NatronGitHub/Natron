@@ -69,6 +69,8 @@ public:
                                    int height,
                                    void* buffer);
 
+    static bool unSetContext(const OSGLContext_osmesa* context);
+
 private:
     friend struct OSGLContext_osmesaPrivate;
     boost::scoped_ptr<OSGLContext_osmesaPrivate> _imp;

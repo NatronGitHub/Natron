@@ -111,13 +111,19 @@ OSGLContext_osmesa::makeContextCurrent(const OSGLContext_osmesa* context,
                                        int height,
                                        void* buffer)
 {
-    if ( !OSMesaMakeCurrent( context ? context->_imp->ctx : 0, buffer, type, width, height ) ) {
-        return false;
-    }
-    return true;
+    bool ret = OSMesaMakeCurrent( context ? context->_imp->ctx : 0, buffer, type, width, height );
+    return ret;
 }
 
+bool
+OSGLContext_osmesa::unSetContext(const OSGLContext_osmesa* context)
+{
+    bool ret = OSMesaMakeCurrent( context ? context->_imp->ctx : 0, 0, 0, 0, 0 );
+    OSMesaMakeCurrent(0, 0, 0, 0, 0);
+    assert(OSMesaGetCurrentContext() == 0);
+    return ret;
 
+}
 NATRON_NAMESPACE_EXIT;
 
 #endif //HAVE_OSMESA

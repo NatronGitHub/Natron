@@ -1121,10 +1121,6 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
             Image::setupGLViewport<GL>(roi, roi);
 
-            // Clear the tmpTexture out before copying
-            //GL::glClearColor(0., 0., 0., 0.);
-            //GL::glClear(GL_COLOR_BUFFER_BIT);
-
             // Compute the texture coordinates to match the srcRoi
             Point srcTexCoords[4], vertexCoords[4];
             vertexCoords[0].x = roi.x1;
@@ -1266,7 +1262,6 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         strokeSecondPassShader->setUniform("tex", 0);
         strokeSecondPassShader->setUniform("fillColor", fillColor);
         Image::setupGLViewport<GL>(dstBounds, roi);
-
         {
             // Compute the texture coordinates to match the srcRoi
             Point srcTexCoords[4], vertexCoords[4];

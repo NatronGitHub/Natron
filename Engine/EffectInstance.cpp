@@ -2584,6 +2584,10 @@ static void finishGLRender()
     GL::glDisable(GL_SCISSOR_TEST);
     GL::glActiveTexture(GL_TEXTURE0);
     GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (!GL::isGPU()) {
+        GL::glFlush(); // waits until commands are submitted but does not wait for the commands to finish executing
+        GL::glFinish(); // waits for all previously submitted commands to complete executing
+    }
     glCheckError(GL);
 }
 
@@ -4239,7 +4243,7 @@ EffectInstance::dettachAllOpenGLContexts()
         }
     }
     if ( !_imp->attachedContexts.empty() ) {
-        OSGLContext::unsetCurrentContextNoRender(true);
+        OSGLContext::unsetCurrentContextNoRenderInternal(true, 0);
     }
     _imp->attachedContexts.clear();
 }

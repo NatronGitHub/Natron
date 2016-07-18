@@ -536,9 +536,8 @@ OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
 
 }
 
-
 void
-OSGLContext::unsetCurrentContextNoRender(bool useGPU)
+OSGLContext::unsetCurrentContextNoRenderInternal(bool useGPU, const Natron::OSGLContext* context)
 {
     if (useGPU) {
 #ifdef __NATRON_WIN32__
@@ -550,9 +549,15 @@ OSGLContext::unsetCurrentContextNoRender(bool useGPU)
 #endif
     } else {
 #ifdef HAVE_OSMESA
-        OSGLContext_osmesa::makeContextCurrent(0, 0, 0, 0, 0);
+        OSGLContext_osmesa::unSetContext(context ? context->_imp->_osmesaContext.get() : 0);
 #endif
     }
+}
+
+void
+OSGLContext::unsetCurrentContextNoRender(bool useGPU)
+{
+    unsetCurrentContextNoRenderInternal(useGPU, this);
 }
 
 void

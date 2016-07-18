@@ -111,7 +111,9 @@ public:
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
      **/
     void setContextCurrentNoRender(int width = 0, int height = 0, void* buffer = 0);
-    static void unsetCurrentContextNoRender(bool useGPU);
+    void unsetCurrentContextNoRender(bool useGPU);
+
+    static void unsetCurrentContextNoRenderInternal(bool useGPU, const OSGLContext* context);
 
     /**
      * @brief Returns all renderers capable of rendering OpenGL
