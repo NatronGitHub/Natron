@@ -1470,7 +1470,9 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
         return;
     }
 
-
+    // If we were to copy exactly the portion in prevCenter, the smear would leave traces
+    // too long. To dampen the effect of the smear, we clamp the spacing
+    Point prevPoint = RotoShapeRenderNodePrivate::dampenSmearEffect(prevCenter, center, *spacing);
 
     const OSGLContextPtr& glContext = myData->glContext;
     const ImagePtr& dstImage = myData->dstImage;
@@ -1496,7 +1498,7 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Specifies the src and dst rectangle
-    RectI prevDotBounds(prevCenter.x - brushSizePixels / 2., prevCenter.y - brushSizePixels / 2., prevCenter.x + brushSizePixels / 2. + 1, prevCenter.y + brushSizePixels / 2. + 1);
+    RectI prevDotBounds(prevPoint.x - brushSizePixels / 2., prevPoint.y - brushSizePixels / 2., prevPoint.x + brushSizePixels / 2. + 1, prevPoint.y + brushSizePixels / 2. + 1);
     RectI nextDotBounds(center.x - brushSizePixels / 2., center.y - brushSizePixels / 2., center.x + brushSizePixels / 2. + 1, center.y + brushSizePixels / 2.+ 1);
 
     int nbVertices = myData->nbPointsPerSegment + 2;

@@ -76,6 +76,10 @@ public:
                                      unsigned int mipmapLevel,
                                      double* distToNextOut,
                                      Point* lastCenterPoint);
+
+    // If we were to copy exactly the portion in prevCenter, the smear would leave traces
+    // too long. To dampen the effect of the smear, we clamp the spacing
+    static Point dampenSmearEffect(const Point& prevCenter, const Point& center, const double spacing);
 };
 
 NATRON_NAMESPACE_EXIT;

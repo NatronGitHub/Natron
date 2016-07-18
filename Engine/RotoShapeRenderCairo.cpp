@@ -1056,7 +1056,13 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
         return;
     }
 
-    renderSmearDot(myData->maskData, myData->maskStride, myData->maskWidth, myData->maskHeight, prevCenter, center, myData->brushSizePixel, myData->dstImage->getComponentsCount(), myData->dstImage);
+
+    // If we were to copy exactly the portion in prevCenter, the smear would leave traces
+    // too long. To dampen the effect of the smear, we clamp the spacing
+    Point prevPoint = RotoShapeRenderNodePrivate::dampenSmearEffect(prevCenter, center, *spacing);
+
+
+    renderSmearDot(myData->maskData, myData->maskStride, myData->maskWidth, myData->maskHeight, prevPoint, center, myData->brushSizePixel, myData->dstImage->getComponentsCount(), myData->dstImage);
 }
 
 

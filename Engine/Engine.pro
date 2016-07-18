@@ -178,7 +178,6 @@ SOURCES += \
     RotoShapeRenderNodePrivate.cpp \
     RotoShapeRenderCairo.cpp \
     RotoShapeRenderGL.cpp \
-    RotoSmear.cpp \
     RotoStrokeItem.cpp \
     RotoUndoCommand.cpp \
     ScriptObject.cpp \
@@ -404,7 +403,6 @@ HEADERS += \
     RotoShapeRenderNodePrivate.h \
     RotoShapeRenderCairo.h \
     RotoShapeRenderGL.h \
-    RotoSmear.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \
     RotoUndoCommand.h \

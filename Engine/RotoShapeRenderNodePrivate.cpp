@@ -25,6 +25,7 @@
 #include "RotoShapeRenderNodePrivate.h"
 
 #include "Engine/KnobTypes.h"
+#include "Engine/Image.h"
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/RotoStrokeItem.h"
 
@@ -35,8 +36,25 @@ RotoShapeRenderNodePrivate::RotoShapeRenderNodePrivate()
 }
 
 
+Point
+RotoShapeRenderNodePrivate::dampenSmearEffect(const Point& prevCenter, const Point& center, const double spacing)
+{
+    Point prevPoint;
 
+    Point delta;
+    delta.x = center.x - prevCenter.x;
+    delta.y = center.y - prevCenter.y;
 
+    double halfSpacing = spacing / 2.;
+
+    double vx = Image::clamp(std::abs(delta.x / halfSpacing), 0., .7);
+    double vy = Image::clamp(std::abs(delta.y / halfSpacing), 0., .7);
+
+    prevPoint.x = prevCenter.x + vx * delta.x;
+    prevPoint.y = prevCenter.y + vy * delta.y;
+    
+    return prevPoint;
+}
 
 void
 RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
@@ -140,6 +158,9 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             //Spacing at 0 we do not render the stroke
             double dx = next->first.x - it->first.x;
             double dy = next->first.y - it->first.y;
+
+            // This is the distance between the current and next discretized points
+            // Since the distance between each points may vary, we uniformly position a dot along the segments
             double dist = std::sqrt(dx * dx + dy * dy);
 
             // while the next point can be drawn on this segment, draw a point and advance

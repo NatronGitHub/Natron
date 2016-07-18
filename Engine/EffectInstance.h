@@ -99,7 +99,6 @@
 #define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop") // DO NOT change the capitalization, even if it's wrong
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
 #define PLUGINID_NATRON_ROTO (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Roto")
-#define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
 #define PLUGINID_NATRON_ROTOSHAPE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoShape")
 #define PLUGINID_NATRON_PRECOMP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Precomp")
 #define PLUGINID_NATRON_TRACKER   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Tracker")
@@ -221,7 +220,7 @@ public:
         eSupportsYes = 1
     };
 
-protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint, RotoSmear
+protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 

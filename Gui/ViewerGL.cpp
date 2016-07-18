@@ -208,7 +208,7 @@ ViewerGL::resizeGL(int w,
     ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
 
-    bool isLoadingProject = _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
+    bool isLoadingProject = _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     bool canResize = _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&  !_imp->viewerTab->getGui()->getApp()->isDuringPainting();
 
     if (!zoomSinceLastFit && canResize) {
