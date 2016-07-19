@@ -271,9 +271,9 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
 
     assert(wglInfo);
-
+    std::cout << "Before useNVGPUAffinity..." << std::endl;
     bool useNVGPUAffinity = rendererID.rendererHandle && wglInfo->NV_gpu_affinity;
-
+    std::cout << "After useNVGPUAffinity:" << useNVGPUAffinity << std::endl;
     if (useNVGPUAffinity) {
         HGPUNV GpuMask[2] = {(HGPUNV)rendererID.rendererHandle, NULL};
         _dc = wglInfo->CreateAffinityDCNV(GpuMask);
@@ -415,6 +415,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     if (useNVGPUAffinity) {
         _handle = wglInfo->CreateContext(_dc);
     } else if ( (rendererID.renderID > 0) && wglInfo->AMD_gpu_association ) {
+        std::cout << "Calling CreateAssociatedContextAttribsAMD with ID " << rendererID.renderID << std::endl;
         std::vector<int> attribs;
         setAttribs(major, minor, coreProfile, attribs);
         _handle = wglInfo->CreateAssociatedContextAttribsAMD( (UINT)rendererID.renderID, share, &attribs[0] );
