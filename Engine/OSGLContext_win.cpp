@@ -31,6 +31,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
 
+#include "Global/MemoryInfo.h"
 
 #ifdef NATRON_USE_OPTIMUS_HPG
 
@@ -669,6 +670,7 @@ static std::string GetGPUInfoAMDInternal_string(const OSGLContext_wgl_data* wglI
             data.resize(totalSize);
         }
         std::cout << "Loop idx = " << safeCounter << std::endl;
+
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_BYTE, data.size(), &data[0]);
         std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
@@ -695,7 +697,11 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
             data.resize(totalSize);
         }
         std::cout << "Loop idx = " << safeCounter << std::endl;
-        numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, data.size(), &data[0]);
+
+        // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
+        // It works fine in 64 bits mode
+        int arrayDepth = isApplication32Bits() ? data.size() / 4 : data.size();
+        numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, arrayDepth, &data[0]);
         std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
     } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
