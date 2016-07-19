@@ -25,7 +25,7 @@
 #include "OSGLContext_win.h"
 
 #ifdef __NATRON_WIN32__
-
+#include <iostream>
 #include <sstream>
 
 #include "Engine/AppManager.h"
@@ -655,11 +655,15 @@ nvx_get_GPU_mem_info()
 void
 OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
+
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
     assert(wglInfo);
     if (!wglInfo) {
         return;
     }
+    std::cout << "Starting to debug OSGLContext_win::getGPUInfos..." << std::endl;
+    std::cout << "wglInfo->NV_gpu_affinity ? " << (bool)wglInfo->NV_gpu_affinity << std::endl;
+    std::cout << "wglInfo->AMD_gpu_association ? " << (bool)wglInfo->AMD_gpu_association << std::endl;
     if (wglInfo->NV_gpu_affinity) {
         // https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
         std::vector<HGPUNV> gpuHandles;
@@ -756,6 +760,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
     } else {
         // No extension, use default
+        std::cout << "Creating context..." << std::endl;
         boost::scoped_ptr<OSGLContext_win> context;
         try {
             context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );
@@ -765,10 +770,12 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             return;
         }
 
+        std::cout << "Making context current..." << std::endl;
         if ( !makeContextCurrent( context.get() ) ) {
             return;
         }
 
+        std::cout << "CHecking OpenGL version..." << std::endl;
         try {
             OSGLContext::checkOpenGLVersion();
         } catch (const std::exception& e) {
@@ -777,15 +784,19 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             return;
         }
 
+        std::cout << "Getting OpenGL strings..." << std::endl;
         OpenGLRendererInfo info;
         info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
         info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
         info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
+
+        std::cout << "Getting GL_MAX_TEXTURE_SIZE..." << std::endl;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
+        std::cout << "Calling nvx_get_GPU_mem_info..." << std::endl;
         info.maxMemBytes = nvx_get_GPU_mem_info();
         renderers.push_back(info);
-
+        std::cout << "remove current context..." << std::endl;
         makeContextCurrent(0);
     }
 } // OSGLContext_win::getGPUInfos

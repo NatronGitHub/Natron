@@ -683,12 +683,13 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
+        std::cout << "START LOADING OPENGL, creatingContext = " << createOpenGLContext << std::endl;
         OSGLContextPtr glContext;
         bool checkRenderingReq = true;
         if (createOpenGLContext) {
             try {
                 _imp->initGLAPISpecific();
-
+                std::cout << "Creating OpenGL context "<< std::endl;
                 glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
                 if (glContext) {
                     // Make the context current and check its version
@@ -719,10 +720,11 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 checkRenderingReq = false;
             }
             if (!glContext) {
+                std::cout << "Could not create OpenGL context "<< std::endl;
                 return false;
             }
         }
-
+        std::cout << "calling initGl (loading GLAD) "<< std::endl;
         // The following requires a valid OpenGL context to be created
         _imp->initGl(checkRenderingReq);
         if (createOpenGLContext) {
@@ -747,7 +749,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         } else {
             updateAboutWindowLibrariesVersion();
         }
-
+        std::cout << "Successfully loaded OpenGL "<< std::endl;
         return true;
     }
 
