@@ -668,7 +668,9 @@ static std::string GetGPUInfoAMDInternal_string(const OSGLContext_wgl_data* wglI
         if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
+        std::cout << "Loop idx = " << safeCounter << std::endl;
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_BYTE, data.size(), &data[0]);
+        std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
     } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
     assert(numVals > 0);
@@ -692,7 +694,9 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
         if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
+        std::cout << "Loop idx = " << safeCounter << std::endl;
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, data.size(), &data[0]);
+        std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
     } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
     assert(numVals > 0);
