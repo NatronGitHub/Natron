@@ -25,7 +25,6 @@
 #include "OSGLContext_win.h"
 
 #ifdef __NATRON_WIN32__
-#include <iostream>
 #include <sstream>
 
 #include "Engine/AppManager.h"
@@ -275,9 +274,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     if (!wglInfo) {
         throw std::invalid_argument("No wgl info");
     }
-    std::cout << "Before useNVGPUAffinity..." << std::endl;
     bool useNVGPUAffinity = rendererID.rendererHandle && wglInfo->NV_gpu_affinity;
-    std::cout << "After useNVGPUAffinity:" << useNVGPUAffinity << std::endl;
     if (useNVGPUAffinity) {
         HGPUNV GpuMask[2] = {(HGPUNV)rendererID.rendererHandle, NULL};
         _dc = wglInfo->CreateAffinityDCNV(GpuMask);
@@ -419,7 +416,6 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     if (useNVGPUAffinity) {
         _handle = wglInfo->CreateContext(_dc);
     } else if ( (rendererID.renderID > 0) && wglInfo->AMD_gpu_association ) {
-        std::cout << "Calling CreateAssociatedContextAttribsAMD with ID " << rendererID.renderID << std::endl;
         std::vector<int> attribs;
         setAttribs(major, minor, coreProfile, attribs);
         _handle = wglInfo->CreateAssociatedContextAttribsAMD( (UINT)rendererID.renderID, share, &attribs[0] );
@@ -669,10 +665,8 @@ static std::string GetGPUInfoAMDInternal_string(const OSGLContext_wgl_data* wglI
         if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
-        std::cout << "Loop idx = " << safeCounter << std::endl;
 
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_BYTE, data.size(), &data[0]);
-        std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
     } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
     assert(numVals > 0);
@@ -696,13 +690,11 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
         if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
-        std::cout << "Loop idx = " << safeCounter << std::endl;
 
         // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
         // It works fine in 64 bits mode
         int arrayDepth = data.size();
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, arrayDepth, &data[0]);
-        std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
     } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
     assert(numVals > 0);
@@ -722,9 +714,6 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!wglInfo) {
         return;
     }
-    std::cout << "Starting to debug OSGLContext_win::getGPUInfos..." << std::endl;
-    std::cout << "wglInfo->NV_gpu_affinity ? " << (bool)wglInfo->NV_gpu_affinity << std::endl;
-    std::cout << "wglInfo->AMD_gpu_association ? " << (bool)wglInfo->AMD_gpu_association << std::endl;
     bool defaultFallback = false;
     if (wglInfo->NV_gpu_affinity) {
         // https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
@@ -779,55 +768,47 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     } else if (wglInfo->AMD_gpu_association) {
         //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
         UINT getGpuIDMaxCount = wglInfo->GetGpuIDAMD(0, 0);
-        std::cout << "GetGpuIDAMD(0, 0): " << getGpuIDMaxCount << std::endl;
         UINT maxCount = getGpuIDMaxCount;
         std::vector<UINT> gpuIDs(maxCount);
         if (maxCount == 0) {
             defaultFallback = true;
         } else {
             UINT gpuCount = wglInfo->GetGpuIDAMD(maxCount, &gpuIDs[0]);
-            std::cout << "GetGpuIDAMD(maxCount, &gpuIDs[0]): " << gpuCount << std::endl;
             if (gpuCount > maxCount) {
                 gpuIDs.resize(gpuCount);
             }
             for (UINT index = 0; index < gpuCount; ++index) {
-                std::cout << "GPU INDEX: " << index << ", ID= " << gpuIDs[index] << std::endl;
                 assert(index < gpuIDs.size());
                 UINT gpuID = gpuIDs[index];
 
                 OpenGLRendererInfo info;
-                std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RENDERER_STRING_AMD): " << std::endl;
                 info.rendererName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_RENDERER_STRING_AMD);
                 if (info.rendererName.empty()) {
                     continue;
                 }
-                std::cout << info.rendererName << std::endl;
 
-                std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_VENDOR_AMD): " << std::endl;
                 info.vendorName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_VENDOR_AMD);
                 if (info.vendorName.empty()) {
                     continue;
                 }
-                std::cout << info.vendorName << std::endl;
 
-                std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_OPENGL_VERSION_STRING_AMD): " << std::endl;
                 info.glVersionString = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_OPENGL_VERSION_STRING_AMD);
                 if (info.glVersionString.empty()) {
                     continue;
                 }
-                std::cout << info.glVersionString << std::endl;
 
-                /*int ramMB;
-                std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RAM_AMD): " << std::endl;
-                if (!GetGPUInfoAMDInternal_int(wglInfo, gpuID, WGL_GPU_RAM_AMD, &ramMB)) {
-                    continue;
+                int ramMB = 0;
+                if (!isApplication32Bits()) {
+                    // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
+                    // It works fine in 64 bits mode
+                    if (!GetGPUInfoAMDInternal_int(wglInfo, gpuID, WGL_GPU_RAM_AMD, &ramMB)) {
+                        continue;
+                    }
                 }
                 info.maxMemBytes = ramMB * 1e6;
-                std::cout << info.maxMemBytes << std::endl;*/
-                info.maxMemBytes = 0;
-                info.rendererID.renderID = gpuID;
 
-                std::cout << "Creating context... " << std::endl;
+                info.rendererID.renderID = gpuID;
+                
                 boost::scoped_ptr<OSGLContext_win> context;
 
                 GLRendererID gid;
@@ -838,12 +819,10 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     continue;
                 }
 
-                std::cout << "Trying to make context current... " << std::endl;
                 if ( !makeContextCurrent( context.get() ) ) {
                     continue;
                 }
 
-                std::cout << "Checking opengl version... " << std::endl;
                 try {
                     OSGLContext::checkOpenGLVersion();
                 } catch (const std::exception& e) {
@@ -851,7 +830,6 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     continue;
                 }
 
-                std::cout << "Checking GL_MAX_TEXTURE_SIZE... " << std::endl;
                 glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
                 renderers.push_back(info);
                 
