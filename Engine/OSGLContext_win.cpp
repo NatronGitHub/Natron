@@ -775,23 +775,27 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 gpuIDs.resize(gpuCount);
             }
             for (int i = 0; i < (int)gpuCount; ++i) {
+
+                assert(i < (int)gpuIDs.size());
+                UINT gpuID = gpuIDs[i];
+
                 OpenGLRendererInfo info;
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RENDERER_STRING_AMD): " << std::endl;
-                info.rendererName = GetGPUInfoAMDInternal_string(wglInfo, gpuIDs[i], WGL_GPU_RENDERER_STRING_AMD);
+                info.rendererName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_RENDERER_STRING_AMD);
                 if (info.rendererName.empty()) {
                     continue;
                 }
                 std::cout << info.rendererName << std::endl;
 
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_VENDOR_AMD): " << std::endl;
-                info.vendorName = GetGPUInfoAMDInternal_string(wglInfo, gpuIDs[i], WGL_GPU_VENDOR_AMD);
+                info.vendorName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_VENDOR_AMD);
                 if (info.vendorName.empty()) {
                     continue;
                 }
                 std::cout << info.vendorName << std::endl;
 
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_OPENGL_VERSION_STRING_AMD): " << std::endl;
-                info.glVersionString = GetGPUInfoAMDInternal_string(wglInfo, gpuIDs[i], WGL_GPU_OPENGL_VERSION_STRING_AMD);
+                info.glVersionString = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_OPENGL_VERSION_STRING_AMD);
                 if (info.glVersionString.empty()) {
                     continue;
                 }
@@ -799,13 +803,13 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
                 int ramMB;
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RAM_AMD): " << std::endl;
-                if (!GetGPUInfoAMDInternal_int(wglInfo, gpuIDs[i], WGL_GPU_RAM_AMD, &ramMB)) {
+                if (!GetGPUInfoAMDInternal_int(wglInfo, gpuID, WGL_GPU_RAM_AMD, &ramMB)) {
                     continue;
                 }
                 info.maxMemBytes = ramMB * 1e6;
                 std::cout << info.maxMemBytes << std::endl;
 
-                info.rendererID.renderID = gpuIDs[i];
+                info.rendererID.renderID = gpuID;
 
 
 
