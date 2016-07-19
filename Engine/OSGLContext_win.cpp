@@ -660,11 +660,11 @@ static std::string GetGPUInfoAMDInternal_string(const OSGLContext_wgl_data* wglI
     INT numVals;
     do {
         totalSize += 1024;
-        if (data.size() < totalSize) {
+        if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
-        numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_BYTE, data->size(), &data[0]);
-    } while (numVals > 0 && numVals == data.size());
+        numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_BYTE, data.size(), &data[0]);
+    } while (numVals > 0 && numVals == (INT)data.size());
     assert(numVals > 0);
     if (numVals <= 0) {
         return std::string();
@@ -682,11 +682,11 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
     INT numVals;
     do {
         totalSize += 1;
-        if (data.size() < totalSize) {
+        if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, data.size(), &data[0]);
-    } while (numVals > 0 && numVals == data.size());
+    } while (numVals > 0 && numVals == (INT)data.size());
     assert(numVals > 0);
     if (numVals <= 0) {
         return false;
