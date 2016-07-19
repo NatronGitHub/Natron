@@ -658,13 +658,15 @@ static std::string GetGPUInfoAMDInternal_string(const OSGLContext_wgl_data* wglI
     int totalSize = 0;
 
     INT numVals;
+    int safeCounter = 0;
     do {
         totalSize += 1024;
         if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_BYTE, data.size(), &data[0]);
-    } while (numVals > 0 && numVals == (INT)data.size());
+        ++safeCounter;
+    } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
     assert(numVals > 0);
     if (numVals <= 0) {
         return std::string();
@@ -680,13 +682,15 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
     int totalSize = 0;
 
     INT numVals;
+    int safeCounter = 0;
     do {
-        totalSize += 1;
+        totalSize += 10;
         if ((int)data.size() < totalSize) {
             data.resize(totalSize);
         }
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, data.size(), &data[0]);
-    } while (numVals > 0 && numVals == (INT)data.size());
+        ++safeCounter;
+    } while (numVals > 0 && numVals == (INT)data.size() && safeCounter < 1000);
     assert(numVals > 0);
     if (numVals <= 0) {
         return false;
@@ -760,7 +764,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
         UINT getGpuIDMaxCount = wglInfo->GetGpuIDAMD(0, 0);
         std::cout << "GetGpuIDAMD(0, 0): " << getGpuIDMaxCount << std::endl;
-        UINT maxCount = 10;
+        UINT maxCount = getGpuIDMaxCount;
         std::vector<UINT> gpuIDs(maxCount);
         if (maxCount == 0) {
             defaultFallback = true;
@@ -770,7 +774,6 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             if (gpuCount > maxCount) {
                 gpuIDs.resize(gpuCount);
             }
-            std::vector<char> tmpBuf(1024);
             for (int i = 0; i < (int)gpuCount; ++i) {
                 OpenGLRendererInfo info;
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RENDERER_STRING_AMD): " << std::endl;
