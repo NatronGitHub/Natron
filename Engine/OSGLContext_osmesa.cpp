@@ -96,11 +96,26 @@ OSGLContext_osmesa::OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs
 
 OSGLContext_osmesa::~OSGLContext_osmesa()
 {
-    OSMesaMakeCurrent(_imp->ctx, NULL, 0, 0, 0); // detach buffer from context
-    OSMesaMakeCurrent(NULL, NULL, 0, 0, 0); // disactivate the context (not really recessary)
-    OSMesaDestroyContext( _imp->ctx );
+    unSetContext(this);
     assert( !OSMesaGetCurrentContext() );
+    OSMesaDestroyContext( _imp->ctx );
 
+}
+
+int
+OSGLContext_osmesa::getMaxWidth()
+{
+    GLint value;
+    OSMesaGetIntegerv(OSMESA_MAX_WIDTH, &value);
+    return (int)value;
+}
+
+int
+OSGLContext_osmesa::getMaxHeight()
+{
+    GLint value;
+    OSMesaGetIntegerv(OSMESA_MAX_HEIGHT, &value);
+    return (int)value;
 }
 
 
@@ -118,8 +133,8 @@ OSGLContext_osmesa::makeContextCurrent(const OSGLContext_osmesa* context,
 bool
 OSGLContext_osmesa::unSetContext(const OSGLContext_osmesa* context)
 {
-    bool ret = OSMesaMakeCurrent( context ? context->_imp->ctx : 0, 0, 0, 0, 0 );
-    OSMesaMakeCurrent(0, 0, 0, 0, 0);
+    bool ret = OSMesaMakeCurrent( context ? context->_imp->ctx : NULL, NULL, 0, 0, 0 ); // detach buffer from context
+    OSMesaMakeCurrent(NULL, NULL, 0, 0, 0); // deactivate the context (not really recessary)
     assert(OSMesaGetCurrentContext() == 0);
     return ret;
 

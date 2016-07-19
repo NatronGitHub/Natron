@@ -55,9 +55,6 @@ struct GPUContextPoolPrivate
     OSGLContextWPtr lastUsedCPUGLContext;
     OSGLContextWPtr cpuGLShareContext;
 
-    int currentOpenGLRendererMaxTexSize;
-    int currentCPUOpenGLRendererMaxTexSize;
-
     GPUContextPoolPrivate()
         : contextPoolMutex()
         , glContextPool()
@@ -66,8 +63,6 @@ struct GPUContextPoolPrivate
         , cpuGLContextPool()
         , lastUsedCPUGLContext()
         , cpuGLShareContext()
-        , currentOpenGLRendererMaxTexSize(0)
-        , currentCPUOpenGLRendererMaxTexSize(0)
     {
     }
 };
@@ -87,14 +82,6 @@ GPUContextPool::clear()
     QMutexLocker k(&_imp->contextPoolMutex);
 
     _imp->glContextPool.clear();
-}
-
-
-int
-GPUContextPool::getCurrentOpenGLRendererMaxTextureSize() const
-{
-    QMutexLocker k(&_imp->contextPoolMutex);
-    return _imp->currentOpenGLRendererMaxTexSize;
 }
 
 OSGLContextPtr
@@ -155,10 +142,9 @@ GPUContextPool::attachGLContextToRender(bool retrieveLastContext, bool checkIfGL
     assert(newContext);
 
     if (settings) {
-        if (!_imp->currentOpenGLRendererMaxTexSize) {
-            newContext->setContextCurrentNoRender();
-            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &_imp->currentOpenGLRendererMaxTexSize);
-        }
+        // Initialize once static max size props
+        (void)newContext->getMaxOpenGLHeight();
+        (void)newContext->getMaxOpenGLWidth();
     }
 
     // If this is the first context, set it as the sharing context
@@ -239,10 +225,9 @@ GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
     assert(newContext);
 
     if (settings) {
-        if (!_imp->currentCPUOpenGLRendererMaxTexSize) {
-            newContext->setContextCurrentNoRender();
-            GL_CPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &_imp->currentCPUOpenGLRendererMaxTexSize);
-        }
+        // Initialize once static max size props
+        (void)newContext->getMaxOpenGLHeight();
+        (void)newContext->getMaxOpenGLWidth();
     }
 
     // If this is the first context, set it as the sharing context
@@ -260,13 +245,6 @@ void
 GPUContextPool::releaseCPUGLContextFromRender(const OSGLContextPtr& context)
 {
     Q_UNUSED(context);
-}
-
-int
-GPUContextPool::getCurrentCPUOpenGLRendererMaxTextureSize() const
-{
-    QMutexLocker k(&_imp->contextPoolMutex);
-    return _imp->currentCPUOpenGLRendererMaxTexSize;
 }
 
 NATRON_NAMESPACE_EXIT;

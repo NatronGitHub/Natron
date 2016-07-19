@@ -1155,7 +1155,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
             
             shader->unbind();
         }
-    }
+    } // if (doBuildUp) {
 
 
     ImagePtr firstPassDstImage;
@@ -1198,7 +1198,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
     GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), hardnessData, GL_DYNAMIC_DRAW);
     GL::glEnableVertexAttribArray(hardnessLoc);
-    GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0 /*stride*/, 0 /*data*/);
+    GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0, 0);
 
 
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);

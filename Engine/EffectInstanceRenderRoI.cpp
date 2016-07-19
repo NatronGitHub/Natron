@@ -771,9 +771,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             // Ensure that the texture will be at least smaller than the maximum OpenGL texture size
             if (storage == eStorageModeGLTex) {
-                int maxTextureSize = appPTR->getGPUContextPool()->getCurrentOpenGLRendererMaxTextureSize();
-                if ( (roi.width() >= maxTextureSize) ||
-                     ( roi.height() >= maxTextureSize) ) {
+                if ( (roi.width() >= glRenderContext->getMaxOpenGLWidth()) ||
+                     ( roi.height() >= glRenderContext->getMaxOpenGLHeight()) ) {
                     // Fallback on CPU rendering since the image is larger than the maximum allowed OpenGL texture size
                     storage = eStorageModeRAM;
                 }
@@ -797,7 +796,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
-    const bool supportsOSMesa = canCPUImplementationSupportOSMesa() && glCpuContext;
+    bool supportsOSMesa = canCPUImplementationSupportOSMesa() && glCpuContext;
 
     if (storage == eStorageModeGLTex) {
         // Make the OpenGL context current to this thread
@@ -809,6 +808,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     } else {
         if (supportsOSMesa) {
             glRenderContext = glCpuContext;
+            if ( (roi.width() >= glRenderContext->getMaxOpenGLWidth()) ||
+                ( roi.height() >= glRenderContext->getMaxOpenGLHeight()) ) {
+                supportsOSMesa = false;
+            }
         }
     }
 
@@ -1455,7 +1458,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    createInCache,
                                    &it->second.fullscaleImage,
                                    &it->second.downscaleImage);
-
+                if (getNode()->getScriptName_mt_safe().find("RotoPaint1_Brush") != std::string::npos) {
+                    qDebug() << getNode()->getScriptName_mt_safe().c_str() << " allocating image.";
+                }
                 // For plug-ins that paint over themselves, the first time clear the image out
                 if (isPaintingOverItselfEnabled()) {
                     it->second.downscaleImage->fillBoundsZero(glRenderContext);
@@ -1508,6 +1513,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         }
                     }
                 } else {
+                    if (getNode()->getScriptName_mt_safe().find("RotoPaint1_Brush") != std::string::npos && !it->second.fullscaleImage->getBounds().contains(downscaledImageBounds)) {
+                        qDebug() << getNode()->getScriptName_mt_safe().c_str() << " resizing:";
+                        it->second.fullscaleImage->getBounds().debug();
+                        qDebug() << "to:";
+                        downscaledImageBounds.debug();
+                    }
                     hasResized = it->second.fullscaleImage->ensureBounds(glRenderContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                          fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
                 }

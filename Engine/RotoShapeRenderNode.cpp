@@ -206,6 +206,13 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     return eStatusFailed;
 #endif
 
+#if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO)
+    if (!args.useOpenGL) {
+        setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node. This might be because you are trying to render an image too big for OpenGL.").toStdString());
+        return eStatusFailed;
+    }
+#endif
+
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
@@ -314,7 +321,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 
     // Now we are good to start rendering
-
+    qDebug() << "Roto render: bounds = ";
+    outputPlane.second->getBounds().debug();
+    qDebug() << "roi = ";
+    args.roi.debug();
     double distToNextOut;
     Point lastCenterOut;
 

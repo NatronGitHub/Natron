@@ -69,6 +69,9 @@ public:
                                    int height,
                                    void* buffer);
 
+    static int getMaxWidth();
+    static int getMaxHeight();
+
     static bool unSetContext(const OSGLContext_osmesa* context);
 
 private:

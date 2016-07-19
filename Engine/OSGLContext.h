@@ -87,6 +87,14 @@ public:
      **/
     bool isGPUContext() const;
 
+    /**
+     * @brief Returns minimum of GL_MAX_TEXTURE_SIZE (and  OSMESA_MAX_WIDTH/OSMESA_MAX_HEIGHT on OSMesa)
+     * Context needs to be bound.
+     **/
+    int getMaxOpenGLWidth();
+    int getMaxOpenGLHeight();
+
+
     unsigned int getOrCreatePBOId();
 
     unsigned int getOrCreateFBOId();

@@ -429,6 +429,54 @@ OSGLContext::isGPUContext() const
     return _imp->useGPUContext;
 }
 
+int
+OSGLContext::getMaxOpenGLWidth()
+{
+    static int maxCPUWidth = 0;
+    static int maxGPUWidth = 0;
+    if (_imp->useGPUContext) {
+        if (maxGPUWidth == 0) {
+            setContextCurrentNoRender();
+            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUWidth);
+        }
+        return maxGPUWidth;
+    } else {
+#ifdef HAVE_OSMESA
+        if (maxCPUWidth == 0) {
+            setContextCurrentNoRender();
+            GL_CPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUWidth);
+            int osmesaMaxWidth = OSGLContext_osmesa::getMaxWidth();
+            maxCPUWidth = std::min(maxCPUWidth, osmesaMaxWidth);
+        }
+#endif
+        return maxCPUWidth;
+    }
+}
+
+int
+OSGLContext::getMaxOpenGLHeight()
+{
+    static int maxCPUHeight = 0;
+    static int maxGPUHeight = 0;
+    if (_imp->useGPUContext) {
+        if (maxGPUHeight == 0) {
+            setContextCurrentNoRender();
+            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUHeight);
+        }
+        return maxGPUHeight;
+    } else {
+#ifdef HAVE_OSMESA
+        if (maxCPUHeight == 0) {
+            setContextCurrentNoRender();
+            GL_CPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUHeight);
+            int osmesaMaxHeight = OSGLContext_osmesa::getMaxHeight();
+            maxCPUHeight = std::min(maxCPUHeight, osmesaMaxHeight);
+        }
+#endif
+        return maxCPUHeight;
+    }
+}
+
 unsigned int
 OSGLContext::getOrCreatePBOId()
 {
