@@ -244,7 +244,8 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
         (*oldNewScriptNameMapping)[internalSerialization->getNodeScriptName()] = n->getScriptName();
     }
 
-    if ( !nodes.empty() ) {
+    // For PyPlugs, don't recurse otherwise we would recreate all nodes on top of the ones created by the python script
+    if ( !nodes.empty() && n->getPluginPythonModule().empty()) {
         std::string parentName;
         boost::shared_ptr<NodeCollection> collection;
         if (isGrp) {
