@@ -765,7 +765,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
             makeContextCurrent(0);
         }
-    } else if (wglInfo->AMD_gpu_association) {
+    } else if (wglInfo->AMD_gpu_association && !isApplication32Bits()) {
         //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
         UINT getGpuIDMaxCount = wglInfo->GetGpuIDAMD(0, 0);
         UINT maxCount = getGpuIDMaxCount;
