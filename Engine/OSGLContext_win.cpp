@@ -790,10 +790,10 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             if (gpuCount > maxCount) {
                 gpuIDs.resize(gpuCount);
             }
-            for (int i = 0; i < (int)gpuCount; ++i) {
-
-                assert(i < (int)gpuIDs.size());
-                UINT gpuID = gpuIDs[i];
+            for (UINT index = 0; index < gpuCount; ++index) {
+                std::cout << "GPU INDEX: " << index << ", ID= " << gpuIDs[index] << std::endl;
+                assert(index < gpuIDs.size());
+                UINT gpuID = gpuIDs[index];
 
                 OpenGLRendererInfo info;
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RENDERER_STRING_AMD): " << std::endl;
