@@ -798,7 +798,6 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 }
 
                 info.maxMemBytes = 0;
-#if 0
                 if (!isApplication32Bits()) {
                     int ramMB = 0;
                     // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
@@ -808,7 +807,6 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     }
                     info.maxMemBytes = ramMB * 1e6;
                 }
-#endif
 
                 info.rendererID.renderID = gpuID;
                 
