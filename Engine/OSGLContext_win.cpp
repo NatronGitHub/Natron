@@ -700,7 +700,7 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
 
         // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
         // It works fine in 64 bits mode
-        int arrayDepth = isApplication32Bits() ? data.size() / 4 : data.size();
+        int arrayDepth = data.size();
         numVals = wglInfo->GetGPUInfoAMD(gpuID, info, GL_UNSIGNED_INT, arrayDepth, &data[0]);
         std::cout << "numVals= " << numVals << std::endl;
         ++safeCounter;
@@ -817,24 +817,22 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 }
                 std::cout << info.glVersionString << std::endl;
 
-                int ramMB;
+                /*int ramMB;
                 std::cout << "wglInfo->GetGPUInfoAMD(WGL_GPU_RAM_AMD): " << std::endl;
                 if (!GetGPUInfoAMDInternal_int(wglInfo, gpuID, WGL_GPU_RAM_AMD, &ramMB)) {
                     continue;
                 }
                 info.maxMemBytes = ramMB * 1e6;
-                std::cout << info.maxMemBytes << std::endl;
-
+                std::cout << info.maxMemBytes << std::endl;*/
+                info.maxMemBytes = 0;
                 info.rendererID.renderID = gpuID;
-
-
 
                 std::cout << "Creating context... " << std::endl;
                 boost::scoped_ptr<OSGLContext_win> context;
 
+                GLRendererID gid;
+                gid.renderID = info.rendererID.renderID;
                 try {
-                    GLRendererID gid;
-                    gid.renderID = info.rendererID.renderID;
                     context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, 0) );
                 } catch (const std::exception& e) {
                     continue;
