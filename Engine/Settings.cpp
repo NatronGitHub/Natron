@@ -2223,7 +2223,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onQueueRendersChanged( _queueRenders->getValue() );
     } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _powerOf2Tiling.get() ) {
+    } else if ( k == _powerOf2Tiling.get() && !_restoringSettings) {
         appPTR->onViewerTileCacheSizeChanged();
     } else if ( k == _texturesMode.get() &&  !_restoringSettings) {
          appPTR->onViewerTileCacheSizeChanged();
