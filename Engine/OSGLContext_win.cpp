@@ -271,6 +271,9 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
 
     assert(wglInfo);
+    if (!wglInfo) {
+        throw std::invalid_argument("No wgl info");
+    }
     std::cout << "Before useNVGPUAffinity..." << std::endl;
     bool useNVGPUAffinity = rendererID.rendererHandle && wglInfo->NV_gpu_affinity;
     std::cout << "After useNVGPUAffinity:" << useNVGPUAffinity << std::endl;
