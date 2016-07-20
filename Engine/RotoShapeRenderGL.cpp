@@ -1080,8 +1080,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         setupTexParams<GL>(target);
     }
     RectI dstBounds = dstImage->getBounds();
-    
+
     ImagePtr tmpTexture;
+
     if (doBuildUp) {
 
         // In GPU mode, copy the original texture onto the tmpTexture
@@ -1117,52 +1118,17 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
             assert(shader);
             shader->bind();
             shader->setUniform("srcTex", 0);
-
-
-            Image::setupGLViewport<GL>(roi, roi);
-
-            // Compute the texture coordinates to match the srcRoi
-            Point srcTexCoords[4], vertexCoords[4];
-            vertexCoords[0].x = roi.x1;
-            vertexCoords[0].y = roi.y1;
-            srcTexCoords[0].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
-            srcTexCoords[0].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
-
-            vertexCoords[1].x = roi.x2;
-            vertexCoords[1].y = roi.y1;
-            srcTexCoords[1].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
-            srcTexCoords[1].y = (roi.y1 - dstBounds.y1) / (double)dstBounds.height();
-
-            vertexCoords[2].x = roi.x2;
-            vertexCoords[2].y = roi.y2;
-            srcTexCoords[2].x = (roi.x2 - dstBounds.x1) / (double)dstBounds.width();
-            srcTexCoords[2].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
-
-            vertexCoords[3].x = roi.x1;
-            vertexCoords[3].y = roi.y2;
-            srcTexCoords[3].x = (roi.x1 - dstBounds.x1) / (double)dstBounds.width();
-            srcTexCoords[3].y = (roi.y2 - dstBounds.y1) / (double)dstBounds.height();
-            
-            GL::glBegin(GL_POLYGON);
-            for (int i = 0; i < 4; ++i) {
-                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-            }
-            GL::glEnd();
-            
-            
-            glCheckError(GL);
-            
+            Image::applyTextureMapping<GL>(dstBounds, roi, roi);
             shader->unbind();
         }
     } // if (doBuildUp) {
 
 
     ImagePtr firstPassDstImage;
-    if (!doBuildUp) {
-        firstPassDstImage = dstImage;
-    } else {
+    if (doBuildUp) {
         firstPassDstImage = tmpTexture;
+    } else {
+        firstPassDstImage = dstImage;
     }
 
     GL::glBindTexture( target, 0 );
@@ -1261,40 +1227,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         strokeSecondPassShader->bind();
         strokeSecondPassShader->setUniform("tex", 0);
         strokeSecondPassShader->setUniform("fillColor", fillColor);
-        Image::setupGLViewport<GL>(dstBounds, roi);
-        {
-            // Compute the texture coordinates to match the srcRoi
-            Point srcTexCoords[4], vertexCoords[4];
-            vertexCoords[0].x = roi.x1;
-            vertexCoords[0].y = roi.y1;
-            srcTexCoords[0].x = 0.;
-            srcTexCoords[0].y = 0.;
-
-            vertexCoords[1].x = roi.x2;
-            vertexCoords[1].y = roi.y1;
-            srcTexCoords[1].x = 1.;
-            srcTexCoords[1].y = 0.;
-
-            vertexCoords[2].x = roi.x2;
-            vertexCoords[2].y = roi.y2;
-            srcTexCoords[2].x = 1.;
-            srcTexCoords[2].y = 1.;
-
-            vertexCoords[3].x = roi.x1;
-            vertexCoords[3].y = roi.y2;
-            srcTexCoords[3].x = 0.;
-            srcTexCoords[3].y = 1.;
-
-            GL::glBegin(GL_POLYGON);
-            for (int i = 0; i < 4; ++i) {
-                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-            }
-            GL::glEnd();
-            glCheckError(GL);
-        }
-
-
+        Image::applyTextureMapping<GL>(roi, dstBounds, roi);
         strokeSecondPassShader->unbind();
         glCheckError(GL);
     }

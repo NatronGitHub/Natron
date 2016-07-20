@@ -634,7 +634,7 @@ copyUnProcessedChannelsGL(const RectI& roi,
         processChannels[3] ? 1.f : 0.f
     };
     shader->setUniform("processChannels", procChannelsV);
-    Image::applyTextureMapping<GL>(bounds, srcRoi);
+    Image::applyTextureMapping<GL>(originalImage->getBounds(), bounds, srcRoi);
     shader->unbind();
 
     glCheckError(GL);

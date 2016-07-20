@@ -241,7 +241,7 @@ void applyMaskMixGL(const Image* maskImg,
     shader->setUniform("outputImageTex", 0);
     shader->setUniform("mixValue", mix);
     shader->setUniform("maskEnabled", (maskImg && masked) ? 1 : 0);
-    Image::applyTextureMapping<GL>(bounds, realRoI);
+    Image::applyTextureMapping<GL>(originalImg ? originalImg->getBounds() : bounds, bounds, realRoI);
     shader->unbind();
 
 

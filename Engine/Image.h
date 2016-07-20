@@ -266,31 +266,31 @@ public:
     }
 
     template <typename GL>
-    static void applyTextureMapping(const RectI& bounds, const RectI& roi)
+    static void applyTextureMapping(const RectI& srcBounds, const RectI& dstBounds, const RectI& roi)
     {
-        setupGLViewport<GL>(bounds, roi);
+        setupGLViewport<GL>(dstBounds, roi);
 
         // Compute the texture coordinates to match the srcRoi
         Point srcTexCoords[4], vertexCoords[4];
         vertexCoords[0].x = roi.x1;
         vertexCoords[0].y = roi.y1;
-        srcTexCoords[0].x = (roi.x1 - bounds.x1) / (double)bounds.width();
-        srcTexCoords[0].y = (roi.y1 - bounds.y1) / (double)bounds.height();
+        srcTexCoords[0].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[0].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
 
         vertexCoords[1].x = roi.x2;
         vertexCoords[1].y = roi.y1;
-        srcTexCoords[1].x = (roi.x2 - bounds.x1) / (double)bounds.width();
-        srcTexCoords[1].y = (roi.y1 - bounds.y1) / (double)bounds.height();
+        srcTexCoords[1].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[1].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
 
         vertexCoords[2].x = roi.x2;
         vertexCoords[2].y = roi.y2;
-        srcTexCoords[2].x = (roi.x2 - bounds.x1) / (double)bounds.width();
-        srcTexCoords[2].y = (roi.y2 - bounds.y1) / (double)bounds.height();
+        srcTexCoords[2].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[2].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
 
         vertexCoords[3].x = roi.x1;
         vertexCoords[3].y = roi.y2;
-        srcTexCoords[3].x = (roi.x1 - bounds.x1) / (double)bounds.width();
-        srcTexCoords[3].y = (roi.y2 - bounds.y1) / (double)bounds.height();
+        srcTexCoords[3].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[3].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
 
         GL::glBegin(GL_POLYGON);
         for (int i = 0; i < 4; ++i) {

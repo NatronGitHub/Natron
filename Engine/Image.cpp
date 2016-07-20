@@ -965,41 +965,7 @@ pasteFromGL(const Image & src,
         shader->bind();
         shader->setUniform("srcTex", 0);
 
-        RectI roi = srcRoi;
-        RectI bounds = dstBounds;
-        Image::applyTextureMapping<GL>(bounds, roi);
-
-        {
-            // Compute the texture coordinates to match the srcRoi
-            Point srcTexCoords[4], vertexCoords[4];
-            vertexCoords[0].x = roi.x1;
-            vertexCoords[0].y = roi.y1;
-            srcTexCoords[0].x = 0.;
-            srcTexCoords[0].y = 0.;
-
-            vertexCoords[1].x = roi.x2;
-            vertexCoords[1].y = roi.y1;
-            srcTexCoords[1].x = 1.;
-            srcTexCoords[1].y = 0.;
-
-            vertexCoords[2].x = roi.x2;
-            vertexCoords[2].y = roi.y2;
-            srcTexCoords[2].x = 1.;
-            srcTexCoords[2].y = 1.;
-
-            vertexCoords[3].x = roi.x1;
-            vertexCoords[3].y = roi.y2;
-            srcTexCoords[3].x = 0.;
-            srcTexCoords[3].y = 1.;
-
-            GL::glBegin(GL_POLYGON);
-            for (int i = 0; i < 4; ++i) {
-                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-            }
-            GL::glEnd();
-            glCheckError(GL);
-        }
+        Image::applyTextureMapping<GL>(srcBounds, dstBounds, srcRoi);
 
         shader->unbind();
         GL::glBindTexture(target, 0);
