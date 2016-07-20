@@ -264,13 +264,16 @@ NodeGraph::checkForHints(bool shiftdown,
         if ( _imp->_highLightedEdge && !_imp->_hintInputEdge->isVisible() ) {
             if ( edge->isOutputEdge() ) {
                 int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
-                _imp->_hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
-                _imp->_hintInputEdge->setSourceAndDestination(edge->getSource(), selectedNode);
+                if (prefInput != -1) {
+                    _imp->_hintInputEdge->setInputNumber(prefInput);
+                    _imp->_hintInputEdge->setSourceAndDestination(edge->getSource(), selectedNode);
+                    _imp->_hintInputEdge->setVisible(true);
+                }
             } else {
                 _imp->_hintInputEdge->setInputNumber( edge->getInputNumber() );
                 _imp->_hintInputEdge->setSourceAndDestination( selectedNode, edge->getDest() );
+                _imp->_hintInputEdge->setVisible(true);
             }
-            _imp->_hintInputEdge->setVisible(true);
         } else if ( _imp->_highLightedEdge && _imp->_hintInputEdge->isVisible() ) {
             _imp->_hintInputEdge->initLine();
         }
