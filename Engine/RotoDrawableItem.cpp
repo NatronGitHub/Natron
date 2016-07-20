@@ -155,6 +155,22 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     }
 }
 
+static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode, const RotoDrawableItemPtr& item)
+{
+    assert(rotopaintNode);
+    assert(node);
+    assert(item);
+    node->attachRotoItem(item);
+
+    // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
+    KnobChoicePtr glRenderKnob = node->getOpenGLEnabledKnob();
+    if (glRenderKnob) {
+        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getOpenGLEnabledKnob();
+        assert(rotoPaintGLRenderKnob);
+        glRenderKnob->slaveTo(0, rotoPaintGLRenderKnob, 0);
+    }
+}
+
 void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
@@ -349,20 +365,19 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     ///Attach this stroke to the underlying nodes used
     if (_imp->effectNode) {
-        _imp->effectNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->effectNode, node, thisShared);
     }
     if (_imp->maskNode) {
-        _imp->maskNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->maskNode, node, thisShared);
     }
-
     if (_imp->mergeNode) {
-        _imp->mergeNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->mergeNode, node, thisShared);
     }
     if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->timeOffsetNode, node, thisShared);
     }
     if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->frameHoldNode, node, thisShared);
     }
 
 

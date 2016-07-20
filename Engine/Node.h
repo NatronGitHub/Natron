@@ -602,6 +602,8 @@ public:
 
     void onOpenGLEnabledKnobChangedOnProject(bool activated);
 
+    KnobChoicePtr getOpenGLEnabledKnob() const;
+
 private:
 
     bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);

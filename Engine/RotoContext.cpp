@@ -2193,6 +2193,16 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     if ( getNode()->isDuringPaintStrokeCreation() ) {
         mergeNode->setWhileCreatingPaintStroke(true);
     }
+
+    {
+        // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
+        KnobChoicePtr glRenderKnob = mergeNode->getOpenGLEnabledKnob();
+        if (glRenderKnob) {
+            KnobChoicePtr rotoPaintGLRenderKnob = node->getOpenGLEnabledKnob();
+            assert(rotoPaintGLRenderKnob);
+            glRenderKnob->slaveTo(0, rotoPaintGLRenderKnob, 0);
+        }
+    }
     *availableInputIndex = 1;
 
     QMutexLocker k(&_imp->rotoContextMutex);

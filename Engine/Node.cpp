@@ -3470,7 +3470,8 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     if (_imp->plugin && _imp->plugin->isOpenGLEnabled()) {
         glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
     }
-    if (glSupport != ePluginOpenGLRenderSupportNone) {
+    // The Roto node needs to have a "GPU enabled" knob to control the nodes internally
+    if (glSupport != ePluginOpenGLRenderSupportNone || dynamic_cast<RotoPaint*>(_imp->effect.get())) {
         KnobChoicePtr openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect, tr("GPU Rendering"), 1, false);
         assert(openglRenderingKnob);
         openglRenderingKnob->setAnimationEnabled(false);
@@ -4063,7 +4064,8 @@ Node::initializeKnobs(bool loadingSerialization)
     assert(!_imp->knobsInitialized);
 
     ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
-    bool effectIsGroup = getPluginID() == PLUGINID_NATRON_GROUP;
+    ///For RotoPaint we need to access it's default knobs within the roto context
+    bool effectIsGroup = getPluginID() == PLUGINID_NATRON_GROUP || dynamic_cast<RotoPaint*>(_imp->effect.get());
 
     if (!effectIsGroup) {
         //Initialize plug-in knobs
@@ -8814,6 +8816,12 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     return ret;
 } // Node::onEffectKnobValueChanged
+
+KnobChoicePtr
+Node::getOpenGLEnabledKnob() const
+{
+    return _imp->openglRenderingEnabledKnob.lock();
+}
 
 void
 Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
