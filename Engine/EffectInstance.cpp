@@ -2336,8 +2336,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                 rectToRender.imgs,
                                                 rectToRender.inputRois,
                                                 firstFrame,
-                                                lastFrame,
-                                                planes->useOpenGL);
+                                                lastFrame);
 
 
     boost::shared_ptr<TimeLapse> timeRecorder;

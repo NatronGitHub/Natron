@@ -1091,7 +1091,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
                                                               const RectI& downscaledImageBounds,
                                                               bool renderFullScaleThenDownscale,
                                                               U64 nodeHash,
-                                                              bool renderMipMapLevel,
+                                                              unsigned int renderMipMapLevel,
                                                               bool* createInCache,
                                                               bool *renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                               ImagePtr *isPlaneCached,

@@ -1833,7 +1833,6 @@ public:
         ComponentsNeededMapPtr  compsNeeded;
         double firstFrame, lastFrame;
         InputMatrixMapPtr transformRedirections;
-        bool isDoingOpenGLRender;
 
         RenderArgs();
 

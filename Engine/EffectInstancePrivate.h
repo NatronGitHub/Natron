@@ -281,8 +281,7 @@ public:
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
-                         int lastFrame,
-                         bool isDoingOpenGLRender);
+                         int lastFrame);
 
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                          const EffectDataTLSPtr& otherThreadData);
@@ -391,7 +390,7 @@ public:
                                        const RectI& downscaledImageBounds,
                                        bool renderFullScaleThenDownscale,
                                        U64 nodeHash,
-                                       bool renderMipMapLevel,
+                                       unsigned int renderMipMapLevel,
                                        bool* createInCache,
                                        bool *renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                        ImagePtr *isPlaneCached,
