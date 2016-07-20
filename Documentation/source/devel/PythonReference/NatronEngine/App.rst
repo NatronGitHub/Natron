@@ -326,7 +326,7 @@ Here is an example on how to pass properties to the createNode function::
 	  
 	  *Type*: bool
 	  
-	  *Default*: False
+	  *Default*: True
 	  
 	  *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
   
