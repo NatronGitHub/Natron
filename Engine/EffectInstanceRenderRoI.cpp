@@ -807,7 +807,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     *thisEffectOutputPremult = _publicInterface->getPremult();
     *supportsRS = _publicInterface->supportsRenderScaleMaybe();
     *renderFullScaleThenDownscale = (*supportsRS == eSupportsNo && args.mipMapLevel != 0);
-    *renderMappedMipMapLevel = renderFullScaleThenDownscale ? 0 : args.mipMapLevel;
+    *renderMappedMipMapLevel = *renderFullScaleThenDownscale ? 0 : args.mipMapLevel;
     *renderMappedScale = ( Image::getScaleFromMipMapLevel(*renderMappedMipMapLevel) );
     assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
 
@@ -840,7 +840,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
                     // Nothing to render
                     return false;
                 }
-                if ( (*supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
+                if ( (*supportsRS == eSupportsMaybe) && (*renderMappedMipMapLevel != 0) ) {
                     // supportsRenderScaleMaybe may have changed, update it
                     *supportsRS = _publicInterface->supportsRenderScaleMaybe();
                     *renderFullScaleThenDownscale = (*supportsRS == eSupportsNo && args.mipMapLevel != 0);
