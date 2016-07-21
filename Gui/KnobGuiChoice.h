@@ -85,7 +85,7 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
 private:
-    boost::scoped_ptr<KnobWidgetDnD> _dnd;
+    boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
 class KnobGuiChoice

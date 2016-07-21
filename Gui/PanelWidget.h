@@ -96,7 +96,7 @@ protected:
     /**
      * @brief To be called in the enterEvent handler of all derived classes.
      **/
-    void enterEventBase();
+    bool enterEventBase();
 
     /**
      * @brief To be called in the leaveEvent handler of all derived classes.

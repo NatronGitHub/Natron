@@ -91,7 +91,7 @@ KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
                            int dimension,
                            QWidget* parent)
     : ComboBox(parent)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
 {
 }
 

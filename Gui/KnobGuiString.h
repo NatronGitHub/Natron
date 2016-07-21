@@ -124,7 +124,7 @@ private:
     bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
     bool _hasChanged;
     bool dirty;
-    boost::scoped_ptr<KnobWidgetDnD> _dnd;
+    boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
 class KnobLineEdit
@@ -153,7 +153,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 
 private:
-    boost::scoped_ptr<KnobWidgetDnD> _dnd;
+    boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
 /*****************************/

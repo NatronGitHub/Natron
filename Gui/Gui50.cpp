@@ -86,6 +86,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/LogWindow.h"
 #include "Gui/NodeGraph.h"
@@ -1060,10 +1061,7 @@ Gui::isFocusStealingPossible()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QWidget* currentFocus = qApp->focusWidget();
     bool focusStealingNotPossible = ( dynamic_cast<QLineEdit*>(currentFocus) ||
-                                      dynamic_cast<QTextEdit*>(currentFocus) ||
-                                      dynamic_cast<QCheckBox*>(currentFocus) ||
-                                      dynamic_cast<ComboBox*>(currentFocus) ||
-                                      dynamic_cast<QComboBox*>(currentFocus) );
+                                      dynamic_cast<QTextEdit*>(currentFocus) );
 
     return !focusStealingNotPossible;
 }
@@ -1073,6 +1071,7 @@ Gui::setCurrentPanelFocus(PanelWidget* widget)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->currentPanelFocus = widget;
+
 }
 
 PanelWidget*
@@ -1081,6 +1080,22 @@ Gui::getCurrentPanelFocus() const
     assert( QThread::currentThread() == qApp->thread() );
 
     return _imp->currentPanelFocus;
+}
+
+void
+Gui::setCurrentKnobWidgetFocus(const boost::shared_ptr<KnobWidgetDnD>& widget)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    _imp->currentKnobFocus = widget;
+}
+
+boost::shared_ptr<KnobWidgetDnD>
+Gui::getCurrentKnobWidgetFocus() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    return _imp->currentKnobFocus.lock();
 }
 
 static PanelWidget*

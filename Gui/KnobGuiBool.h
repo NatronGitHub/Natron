@@ -96,7 +96,7 @@ private:
 private:
     bool useCustomColor;
     QColor customColor;
-    boost::scoped_ptr<KnobWidgetDnD> _dnd;
+    boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
 class KnobGuiBool

@@ -94,7 +94,7 @@ AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob,
     , readOnlyNatron(false)
     , _hasChanged(false)
     , dirty(false)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
 {
     setTabStopWidth(20); // a tab width of 20 is more reasonable than 80 for programming languages (e.g. Shadertoy)
 }
@@ -253,7 +253,7 @@ KnobLineEdit::KnobLineEdit(const KnobGuiPtr& knob,
                            int dimension,
                            QWidget* parent)
     : LineEdit(parent)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
 {}
 
 KnobLineEdit::~KnobLineEdit()

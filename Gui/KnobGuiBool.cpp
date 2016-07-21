@@ -91,7 +91,7 @@ Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob,
     : AnimatedCheckBox(parent)
     , useCustomColor(false)
     , customColor()
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
 {
 }
 
