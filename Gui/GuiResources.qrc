@@ -163,12 +163,14 @@
         <file>Resources/Images/execScript.png</file>
         <file>Resources/Images/expoOFF.png</file>
         <file>Resources/Images/expoON.png</file>
-        <file>Resources/Images/featherDisabled.png</file>
+        <file>Resources/Images/featherDisabled.png</file> 
         <file>Resources/Images/featherEnabled.png</file>
         <file>Resources/Images/featherLinkDisabled.png</file>
         <file>Resources/Images/featherLinkEnabled.png</file>
         <file>Resources/Images/firstFrame.png</file>
         <file>Resources/Images/forward1.png</file>
+        <file>Resources/Images/fullFrameOn.png</file>
+        <file>Resources/Images/fullFrameOff.png</file>
         <file>Resources/Images/gammaOFF.png</file>
         <file>Resources/Images/gammaON.png</file>
         <file>Resources/Images/group_icon.png</file>

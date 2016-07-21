@@ -923,13 +923,18 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 void
 AppManager::onViewerTileCacheSizeChanged()
 {
-    _imp->_viewerCache->clear();
-    _imp->setViewerCacheTileSize();
+    if (_imp->_viewerCache) {
+        _imp->_viewerCache->clear();
+        _imp->setViewerCacheTileSize();
+    }
 }
 
 void
 AppManagerPrivate::setViewerCacheTileSize()
 {
+    if (!_viewerCache) {
+        return;
+    }
     std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
 
     // Viewer tiles are always RGBA
@@ -1070,6 +1075,9 @@ AppManager::getAppType() const
 void
 AppManager::clearPlaybackCache()
 {
+    if (!_imp->_viewerCache) {
+        return;
+    }
     _imp->_viewerCache->clearInMemoryPortion();
     clearLastRenderedTextures();
 }
@@ -1077,12 +1085,20 @@ AppManager::clearPlaybackCache()
 void
 AppManager::clearViewerCache()
 {
+    if (!_imp->_viewerCache) {
+        return;
+    }
+
     _imp->_viewerCache->clear();
 }
 
 void
 AppManager::clearDiskCache()
 {
+    if (!_imp->_viewerCache) {
+        return;
+    }
+
     clearLastRenderedTextures();
     _imp->_viewerCache->clear();
     _imp->_diskCache->clear();
