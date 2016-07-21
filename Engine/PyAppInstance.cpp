@@ -108,6 +108,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
 
     bool skipNoNodeGuiProp = false;
     for (std::map<QString, NodeCreationProperty*>::const_iterator it = props.begin(); it!=props.end(); ++it) {

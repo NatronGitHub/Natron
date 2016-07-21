@@ -1,5 +1,17 @@
 # History
 
+## Version 2.1.2
+
+- Viewer: A new button can now force full-frame rendering instead of the visible portion. This may be useful to remove borders artifacts when panning/zooming during playback
+- Fix a bug where the Glow node would not work correctly
+- Windows: Fix a bug where the 32-bit version would crash on launch with AMD Graphic Cards
+- Fix a bug where the Read node would sometimes show an error dialog but everything was in fact fine
+- Fix a bug where changing the output filename in a Write node would reset encoder specific parameters
+- Tracker: when clicking "Set Input RoD" in the From points of the corner pin, automatically re-compute the To points over all keyframes
+- Tracker: A bug was found in the internal algorithm when tracking with a rotation/affine model. This was fixed in co-operation with Blender developers
+- Fix a bug where the .lock file of a project would not go away even if closing Natron correctly
+- Fix a bug where expressions would not work in some circumstances
+
 ## Version 2.1.1
 
 - Fix a bug where enabling GPU rendering from the settings would not be taken into account correctly by the ShaderToy node

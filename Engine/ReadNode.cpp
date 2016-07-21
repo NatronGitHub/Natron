@@ -468,6 +468,12 @@ ReadNodePrivate::destroyReadNode()
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
 
             if (!isGeneric || mustSerializeKnob) {
+
+                if (!isGeneric) {
+                    // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                    (*it)->setSecret(false);
+                }
+
                 KnobSerializationPtr s( new KnobSerialization(*it) );
                 serialized.push_back(s);
             }
@@ -631,7 +637,17 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     bool defaultFallback = false;
 
-    if ( !ReadNode::isBundledReader(readerPluginID, false) ) {
+    if (readerPluginID.empty()) {
+        if (throwErrors) {
+            QString message = tr("Could not find a decoder to read %1 file format")
+            .arg( QString::fromUtf8( ext.c_str() ) );
+            throw std::runtime_error( message.toStdString() );
+        }
+        defaultFallback = true;
+
+    }
+
+    if ( !defaultFallback && !ReadNode::isBundledReader(readerPluginID, false) ) {
         if (throwErrors) {
             QString message = tr("%1 is not a bundled reader, please create it from the Image->Readers menu or with the tab menu in the Nodegraph")
                               .arg( QString::fromUtf8( readerPluginID.c_str() ) );

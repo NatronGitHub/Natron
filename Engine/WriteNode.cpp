@@ -433,6 +433,11 @@ WriteNodePrivate::destroyWriteNode()
             bool mustSerializeKnob;
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
             if (!isGeneric || mustSerializeKnob) {
+
+                if (!isGeneric) {
+                    // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                    (*it)->setSecret(false);
+                }
                 KnobSerializationPtr s( new KnobSerialization(*it) );
                 serialized.push_back(s);
             }

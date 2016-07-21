@@ -851,15 +851,19 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // We render the image that is the nearest mipmap level higher in quality.
     // For instance, if we were to render at 48% zoom factor, we would render at 50% which is mipmapLevel=1
     // If on the other hand the zoom factor would be at 51%, then we would render at 100% which is mipmapLevel=0
-    int zoomMipMapLevel;
-    {
-        double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
-        zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
-    }
 
     // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
     // and the requested user proxy mipmap level
-    outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipMapLevel );
+    if (isFullFrameProcessingEnabled()) {
+        outArgs->mipmapLevelWithoutDraft = 0;
+    } else {
+        int zoomMipMapLevel;
+        {
+            double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+            zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
+        }
+        outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipMapLevel );
+    }
     outArgs->mipMapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
 
     outArgs->draftModeEnabled = getApp()->isDraftRenderEnabled();

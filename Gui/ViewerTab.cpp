@@ -816,6 +816,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QPixmap pixOutPoint;
     QPixmap pixPauseEnabled;
     QPixmap pixPauseDisabled;
+    QPixmap pixFullFrameOn;
+    QPixmap pixFullFrameOff;
 
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME, &pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, &pixPrevKF);
@@ -842,6 +844,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_TIMELINE_OUT, &pixOutPoint);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_DISABLED, &pixPauseDisabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_ENABLED, &pixPauseEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_FULL_FRAME_OFF, &pixFullFrameOff);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_FULL_FRAME_ON, &pixFullFrameOn);
 
     _imp->firstFrame_Button->setIcon( QIcon(pixFirst) );
     _imp->previousKeyFrame_Button->setIcon( QIcon(pixPrevKF) );
@@ -873,6 +877,11 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     icClip.addPixmap(pixClipToProjectEnabled, QIcon::Normal, QIcon::On);
     icClip.addPixmap(pixClipToProjectDisabled, QIcon::Normal, QIcon::Off);
     _imp->clipToProjectFormatButton->setIcon(icClip);
+
+    QIcon icfullFrame;
+    icfullFrame.addPixmap(pixFullFrameOn, QIcon::Normal, QIcon::On);
+    icfullFrame.addPixmap(pixFullFrameOff, QIcon::Normal, QIcon::Off);
+    _imp->fullFrameProcessingButton->setIcon(icfullFrame);
 
     QIcon icRoI;
     icRoI.addPixmap(pixViewerRoIEnabled, QIcon::Normal, QIcon::On);

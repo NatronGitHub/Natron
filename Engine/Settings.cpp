@@ -161,6 +161,7 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_enableCrashReports);
 
     _testCrashReportButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Test Crash Reporting") );
+    _testCrashReportButton->setName("testCrashReporting");
     _testCrashReportButton->setHintToolTip( tr("This button is for developers only to test whether the crash reporting system "
                                                "works correctly. Do not use this.") );
     _generalTab->addKnob(_testCrashReportButton);
@@ -2212,7 +2213,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         appPTR->onQueueRendersChanged( _queueRenders->getValue() );
     } else if ( ( k == _checkerboardTileSize ) || ( k == _checkerboardColor1 ) || ( k == _checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _powerOf2Tiling ) {
+    } else if ( k == _powerOf2Tiling && !_restoringSettings) {
         appPTR->onViewerTileCacheSizeChanged();
     } else if ( k == _texturesMode &&  !_restoringSettings) {
          appPTR->onViewerTileCacheSizeChanged();
