@@ -738,6 +738,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
             boost::scoped_ptr<OSGLContext_win> context;
             try {
+
                 GLRendererID gid;
                 gid.rendererHandle = info.rendererID.rendererHandle;
                 context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, gid, 0) );
