@@ -485,7 +485,7 @@ public:
                               const ParallelRenderArgsPtr& frameArgs,
                               const AbortableRenderInfoPtr& abortInfo,
                               const ImagePlanesToRenderPtr &planesToRender,
-                              const OSGLContextPtr& glRenderContext,
+                              const OSGLContextPtr& glGpuContext,
                               bool hasSomethingToRender,
                               const RectD& rod,
                               const RectI& roi,

@@ -484,9 +484,10 @@ RotoStrokeItem::appendPoint(bool newStroke,
         }
         // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
         // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
-        stroke->xCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
-        stroke->yCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
-        stroke->pressureCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
+        KeyframeTypeEnum interpolation = _imp->type == eRotoStrokeTypeSmear ? eKeyframeTypeFree : eKeyframeTypeCatmullRom;
+        stroke->xCurve->setKeyFrameInterpolation(interpolation, ki);
+        stroke->yCurve->setKeyFrameInterpolation(interpolation, ki);
+        stroke->pressureCurve->setKeyFrameInterpolation(interpolation, ki);
     } // QMutexLocker k(&itemMutex);
 
 

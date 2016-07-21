@@ -2565,7 +2565,7 @@ static void setupGLForRender(const ImagePtr& image,
     // setup the output viewport
     Image::setupGLViewport<GL>(roi, roi);
 
-    // Enable scissor to make the plug-in doesn't render outside of the viewport...
+    // Enable scissor to make the plug-in not render outside of the viewport...
     GL::glEnable(GL_SCISSOR_TEST);
     GL::glScissor( roi.x1 - imageBounds.x1, roi.y1 - imageBounds.y1, roi.width(), roi.height() );
 

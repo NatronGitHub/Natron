@@ -1069,7 +1069,7 @@ EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
     }
 
     *useOpenGL = *storage == eStorageModeGLTex || supportsOSMesa;
-
+    assert(!*useOpenGL || *glRenderContext);
     *resolvedError = eRenderRoIRetCodeOk;
     return true;
 } // EffectInstance::Implementation::resolveRenderDevice
@@ -1849,7 +1849,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
                                                      const ParallelRenderArgsPtr& frameArgs,
                                                      const AbortableRenderInfoPtr& abortInfo,
                                                      const ImagePlanesToRenderPtr &planesToRender,
-                                                     const OSGLContextPtr& glRenderContext,
+                                                     const OSGLContextPtr& glGpuContext,
                                                      bool hasSomethingToRender,
                                                      const RectD& rod,
                                                      const RectI& roi,
@@ -1970,14 +1970,14 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!*glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-                    glContextLocker->reset( new OSGLContextAttacher(glRenderContext, abortInfo
+                    glContextLocker->reset( new OSGLContextAttacher(glGpuContext, abortInfo
 #ifdef DEBUG
                                                                    , frameArgs->time
 #endif
                                                                    ) );
                 }
                 (*glContextLocker)->attach();
-                it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage, glRenderContext);
+                it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage, glGpuContext);
             } else if ( args.returnStorage != eStorageModeGLTex && (imageStorage == eStorageModeGLTex) ) {
                 assert(args.returnStorage == eStorageModeRAM);
                 assert(glContextLocker);
@@ -2228,7 +2228,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Termination /////////////////////////////////////////////////////////////////////////////
-    _imp->renderRoITermination(args, frameArgs, abortInfo, planesToRender, glRenderContext, hasSomethingToRender, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
+    _imp->renderRoITermination(args, frameArgs, abortInfo, planesToRender, glGpuContext, hasSomethingToRender, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
 
     return eRenderRoIRetCodeOk;
 } // renderRoI

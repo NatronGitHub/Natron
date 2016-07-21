@@ -379,10 +379,12 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         }   break;
         case eRotoShapeRenderTypeSmear: {
             RectI bgImgRoI;
-            ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, args.useOpenGL ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
-            assert(bgImg->getStorageMode() == outputPlane.second->getStorageMode());
+            ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, (args.useOpenGL && glContext->isGPUContext()) ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
-
+            if (!bgImg) {
+                setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
+                return eStatusFailed;
+            }
             // Ensure that initially everything in the background is the source image
             if (isStrokeFirstTick && strokeMultiIndex == 0) {
                 outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);

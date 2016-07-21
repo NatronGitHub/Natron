@@ -43,7 +43,7 @@ NATRON_NAMESPACE_ENTER;
 // This is to workaround bugs when rendering with OSMesa that I was unable to remove.
 // Basically rendering directly to the default framebuffer doesn't seem to work properly
 #define STROKE_RENDER_OSMESA_USE_SLOW_PATH
-
+#define SMEAR_RENDER_OSMESA_USE_SLOW_PATH
 
 static const char* rotoRamp_FragmentShader =
 "uniform vec4 fillColor;\n"
@@ -1661,6 +1661,11 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
         glCheckError(GL);
         
         smearShader->unbind();
+
+        if (!GL::isGPU()) {
+            GL::glFlush();
+            GL::glFinish();
+        }
     }
 
     // Now copy to the destination rect with blending on
@@ -1669,58 +1674,66 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     {
 
+        RectI outputBounds;
+        ImagePtr dstTexture = dstImage;
+#ifdef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
+        if (!GL::isGPU()) {
+            ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+            params->setBounds(nextDotBounds);
+            {
+                CacheEntryStorageInfo& info = params->getStorageInfo();
+                info.textureTarget = target;
+                info.isGPUTexture = GL::isGPU();
+                info.mode = eStorageModeGLTex;
+            }
+            dstTexture.reset( new Image(dstImage->getKey(), params) );
+            // Copy the content of the existing dstImage
+
+            GL::glBindTexture( target, dstTexture->getGLTextureID() );
+            outputBounds = nextDotBounds;
+            setupTexParams<GL>(target);
+        }
+#endif
+
         GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
-        if (GL::isGPU()) {
-            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+#ifndef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
+        if (GL::isGPU())
+#endif
+        {
+            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstTexture->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
-        } else {
+        }
+#ifndef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
+        else {
             // In CPU mode to draw on dstImage we draw on the default framebuffer
             GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
-        Image::setupGLViewport<GL>(dstBounds, nextDotBounds);
+#endif
+
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         copyShader->bind();
         copyShader->setUniform("srcTex", 0);
-
-
-        {
-            // Compute the texture coordinates to match the srcRoi
-            Point srcTexCoords[4], vertexCoords[4];
-            vertexCoords[0].x = nextDotBounds.x1;
-            vertexCoords[0].y = nextDotBounds.y1;
-            srcTexCoords[0].x = 0.;
-            srcTexCoords[0].y = 0.;
-
-            vertexCoords[1].x = nextDotBounds.x2;
-            vertexCoords[1].y = nextDotBounds.y1;
-            srcTexCoords[1].x = 1.;
-            srcTexCoords[1].y = 0.;
-
-            vertexCoords[2].x = nextDotBounds.x2;
-            vertexCoords[2].y = nextDotBounds.y2;
-            srcTexCoords[2].x = 1.;
-            srcTexCoords[2].y = 1.;
-
-            vertexCoords[3].x = nextDotBounds.x1;
-            vertexCoords[3].y = nextDotBounds.y2;
-            srcTexCoords[3].x = 0.;
-            srcTexCoords[3].y = 1.;
-
-            GL::glBegin(GL_POLYGON);
-            for (int i = 0; i < 4; ++i) {
-                GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-                GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-            }
-            GL::glEnd();
-            glCheckError(GL);
-        }
-
-
+        Image::applyTextureMapping<GL>(nextDotBounds, outputBounds, nextDotBounds);
         copyShader->unbind();
         glCheckError(GL);
+
+        GL::glBindTexture( target, 0);
+        GL::glDisable(GL_BLEND);
+
+#ifdef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
+        if (!GL::isGPU()) {
+            GL::glFlush();
+            GL::glFinish();
+
+            // With OSMesa slow path we copy back with glReadPixels the content of the tmpTexture to the dstImage.
+            // Somehow mapping the tmpTexture directly to the default framebuffer (backed by dstImage) doesn't work properly...
+            assert(!GL::isGPU());
+            dstImage->pasteFrom(*dstTexture, nextDotBounds, false, glContext);
+        }
+#endif
+
     }
-    GL::glBindTexture( target, 0);
-    GL::glDisable(GL_BLEND);
+
 
 }
 
