@@ -603,6 +603,7 @@ RotoPaint::initializeKnobs()
     selectionToolButton->setEvaluateOnChange(false);
     selectionToolButton->setSecretByDefault(true);
     selectionToolButton->setInViewerContextCanHaveShortcut(true);
+    selectionToolButton->setIsPersistant(false);
     toolbar->addKnob(selectionToolButton);
     _imp->ui->selectToolGroup = selectionToolButton;
     boost::shared_ptr<KnobGroup> editPointsToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamEditPointsToolButtonLabel) );
@@ -611,6 +612,7 @@ RotoPaint::initializeKnobs()
     editPointsToolButton->setEvaluateOnChange(false);
     editPointsToolButton->setSecretByDefault(true);
     editPointsToolButton->setInViewerContextCanHaveShortcut(true);
+    editPointsToolButton->setIsPersistant(false);
     toolbar->addKnob(editPointsToolButton);
     _imp->ui->pointsEditionToolGroup = editPointsToolButton;
     boost::shared_ptr<KnobGroup> editBezierToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamBezierEditionToolButtonLabel) );
@@ -619,6 +621,7 @@ RotoPaint::initializeKnobs()
     editBezierToolButton->setEvaluateOnChange(false);
     editBezierToolButton->setSecretByDefault(true);
     editBezierToolButton->setInViewerContextCanHaveShortcut(true);
+    editBezierToolButton->setIsPersistant(false);
     toolbar->addKnob(editBezierToolButton);
     _imp->ui->bezierEditionToolGroup = editBezierToolButton;
     boost::shared_ptr<KnobGroup> paintToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamPaintBrushToolButtonLabel) );
@@ -627,6 +630,7 @@ RotoPaint::initializeKnobs()
     paintToolButton->setEvaluateOnChange(false);
     paintToolButton->setSecretByDefault(true);
     paintToolButton->setInViewerContextCanHaveShortcut(true);
+    paintToolButton->setIsPersistant(false);
     toolbar->addKnob(paintToolButton);
     _imp->ui->paintBrushToolGroup = paintToolButton;
 
@@ -638,6 +642,7 @@ RotoPaint::initializeKnobs()
         cloneToolButton->setEvaluateOnChange(false);
         cloneToolButton->setSecretByDefault(true);
         cloneToolButton->setInViewerContextCanHaveShortcut(true);
+        cloneToolButton->setIsPersistant(false);
         toolbar->addKnob(cloneToolButton);
         _imp->ui->cloneBrushToolGroup = cloneToolButton;
         effectToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamEffectBrushToolButtonLabel) );
@@ -646,6 +651,7 @@ RotoPaint::initializeKnobs()
         effectToolButton->setEvaluateOnChange(false);
         effectToolButton->setSecretByDefault(true);
         effectToolButton->setInViewerContextCanHaveShortcut(true);
+        effectToolButton->setIsPersistant(false);
         toolbar->addKnob(effectToolButton);
         _imp->ui->effectBrushToolGroup = effectToolButton;
         mergeToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamMergeBrushToolButtonLabel) );
@@ -654,6 +660,7 @@ RotoPaint::initializeKnobs()
         mergeToolButton->setEvaluateOnChange(false);
         mergeToolButton->setSecretByDefault(true);
         mergeToolButton->setInViewerContextCanHaveShortcut(true);
+        mergeToolButton->setIsPersistant(false);
         toolbar->addKnob(mergeToolButton);
         _imp->ui->mergeBrushToolGroup = mergeToolButton;
     }
@@ -668,6 +675,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "cursor.png");
+        tool->setIsPersistant(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectAllAction = tool;
     }
@@ -680,6 +688,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "selectPoints.png");
+        tool->setIsPersistant(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectPointsAction = tool;
     }
@@ -692,6 +701,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "selectCurves.png");
+        tool->setIsPersistant(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectCurvesAction = tool;
     }
@@ -704,6 +714,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "selectFeather.png");
+        tool->setIsPersistant(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectFeatherPointsAction = tool;
     }
@@ -716,6 +727,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "addPoints.png");
+        tool->setIsPersistant(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->addPointsAction = tool;
     }
@@ -728,6 +740,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "removePoints.png");
+        tool->setIsPersistant(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->removePointsAction = tool;
     }
@@ -740,6 +753,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "cuspPoints.png");
+        tool->setIsPersistant(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->cuspPointsAction = tool;
     }
@@ -752,6 +766,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "smoothPoints.png");
+        tool->setIsPersistant(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->smoothPointsAction = tool;
     }
@@ -764,6 +779,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "openCloseCurve.png");
+        tool->setIsPersistant(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->openCloseCurveAction = tool;
     }
@@ -777,6 +793,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "removeFeather.png");
+        tool->setIsPersistant(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->removeFeatherAction = tool;
     }
@@ -790,6 +807,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "bezier32.png");
+        tool->setIsPersistant(false);
         editBezierToolButton->addKnob(tool);
         _imp->ui->drawBezierAction = tool;
     }
@@ -803,6 +821,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "ellipse.png");
+        tool->setIsPersistant(false);
         editBezierToolButton->addKnob(tool);
         _imp->ui->drawEllipseAction = tool;
     }
@@ -816,6 +835,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rectangle.png");
+        tool->setIsPersistant(false);
         editBezierToolButton->addKnob(tool);
         _imp->ui->drawRectangleAction = tool;
     }
@@ -828,6 +848,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_solid.png");
+        tool->setIsPersistant(false);
         paintToolButton->addKnob(tool);
         _imp->ui->brushAction = tool;
     }
@@ -840,6 +861,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rotoToolPencil.png");
+        tool->setIsPersistant(false);
         paintToolButton->addKnob(tool);
         _imp->ui->pencilAction = tool;
     }
@@ -853,6 +875,7 @@ RotoPaint::initializeKnobs()
         tool->setSecretByDefault(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_eraser.png");
+        tool->setIsPersistant(false);
         paintToolButton->addKnob(tool);
         _imp->ui->eraserAction = tool;
     }
@@ -866,6 +889,7 @@ RotoPaint::initializeKnobs()
             tool->setSecretByDefault(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_clone.png");
+            tool->setIsPersistant(false);
             cloneToolButton->addKnob(tool);
             _imp->ui->cloneAction = tool;
         }
@@ -878,6 +902,7 @@ RotoPaint::initializeKnobs()
             tool->setSecretByDefault(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_reveal.png");
+            tool->setIsPersistant(false);
             cloneToolButton->addKnob(tool);
             _imp->ui->revealAction = tool;
         }
@@ -892,6 +917,7 @@ RotoPaint::initializeKnobs()
             tool->setSecretByDefault(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_blur.png");
+            tool->setIsPersistant(false);
             effectToolButton->addKnob(tool);
             _imp->ui->blurAction = tool;
         }
@@ -904,6 +930,7 @@ RotoPaint::initializeKnobs()
             tool->setSecretByDefault(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_smear.png");
+            tool->setIsPersistant(false);
             effectToolButton->addKnob(tool);
             _imp->ui->smearAction = tool;
         }
@@ -916,6 +943,7 @@ RotoPaint::initializeKnobs()
             tool->setSecretByDefault(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_dodge.png");
+            tool->setIsPersistant(false);
             mergeToolButton->addKnob(tool);
             _imp->ui->dodgeAction = tool;
         }
@@ -928,6 +956,7 @@ RotoPaint::initializeKnobs()
             tool->setSecretByDefault(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_burn.png");
+            tool->setIsPersistant(false);
             mergeToolButton->addKnob(tool);
             _imp->ui->burnAction = tool;
         }
