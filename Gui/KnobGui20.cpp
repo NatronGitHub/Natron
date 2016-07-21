@@ -837,7 +837,7 @@ KnobGui::refreshKnobWarningIndicatorVisibility()
 void
 KnobGui::onExprChanged(int dimension)
 {
-    if (_imp->guiRemoved) {
+    if (_imp->guiRemoved || _imp->customInteract) {
         return;
     }
     KnobPtr knob = getKnob();

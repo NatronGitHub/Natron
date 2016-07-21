@@ -312,6 +312,9 @@ KnobGuiColor::updateLabel(double r,
 void
 KnobGuiColor::setPickingEnabled(bool enabled)
 {
+    if (!_colorLabel) {
+        return;
+    }
     if (_colorLabel->isPickingEnabled() == enabled) {
         return;
     }
