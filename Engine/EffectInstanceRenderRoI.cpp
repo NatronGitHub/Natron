@@ -1575,9 +1575,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                createInCache,
                                &it->second.fullscaleImage,
                                &it->second.downscaleImage);
-            if (_publicInterface->getNode()->getScriptName_mt_safe().find("RotoPaint1_Brush") != std::string::npos) {
-                qDebug() << _publicInterface->getNode()->getScriptName_mt_safe().c_str() << " allocating image.";
-            }
+            
             // For plug-ins that paint over themselves, the first time clear the image out
             if (_publicInterface->isPaintingOverItselfEnabled()) {
                 it->second.downscaleImage->fillBoundsZero(glRenderContext);
@@ -1630,12 +1628,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                     }
                 }
             } else {
-                if (_publicInterface->getNode()->getScriptName_mt_safe().find("RotoPaint1_Brush") != std::string::npos && !it->second.fullscaleImage->getBounds().contains(downscaledImageBounds)) {
-                    qDebug() << _publicInterface->getNode()->getScriptName_mt_safe().c_str() << " resizing:";
-                    it->second.fullscaleImage->getBounds().debug();
-                    qDebug() << "to:";
-                    downscaledImageBounds.debug();
-                }
                 hasResized = it->second.fullscaleImage->ensureBounds(glRenderContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                      fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
             }

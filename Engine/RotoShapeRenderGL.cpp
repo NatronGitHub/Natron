@@ -40,6 +40,10 @@
 
 NATRON_NAMESPACE_ENTER;
 
+// This is to workaround bugs when rendering with OSMesa that I was unable to remove.
+// Basically rendering directly to the default framebuffer doesn't seem to work properly
+#define STROKE_RENDER_OSMESA_USE_SLOW_PATH
+
 
 static const char* rotoRamp_FragmentShader =
 "uniform vec4 fillColor;\n"
@@ -543,8 +547,8 @@ void setupTexParams(int target)
     GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 }
 
@@ -1083,8 +1087,29 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
     ImagePtr tmpTexture;
 
-    if (doBuildUp) {
+#ifdef STROKE_RENDER_OSMESA_USE_SLOW_PATH
+    // With OSMesa instead of rendering directly to the default framebuffer, we render to texture
+    // Otherwise it seems the default framebuffer gets cleared
+    if (!GL::isGPU()) {
+        // Since we need to render to texture in any case, upload the content of dstImage to a temporary texture
+        tmpTexture = EffectInstance::convertRAMImageRoIToOpenGLTexture(dstImage, roi, glContext);
 
+        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        setupTexParams<GL>(target);
+
+
+    }
+#endif
+
+    // In build-up mode we have to copy the dstImage to a temporary texture anyway because we cannot render to a texture
+    // and use it as source.
+    if (doBuildUp
+#ifdef STROKE_RENDER_OSMESA_USE_SLOW_PATH
+        && GL::isGPU() // < with OSmesa slow path we already upload the dstImage to the tmpTexture
+#endif
+        ) {
+
+#ifndef STROKE_RENDER_OSMESA_USE_SLOW_PATH
         // In GPU mode, copy the original texture onto the tmpTexture
         // In CPU mode, upload the tmpTexture directly from the dstImage
         if (!GL::isGPU()) {
@@ -1094,7 +1119,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
             setupTexParams<GL>(target);
             
 
-        } else {
+        } else
+#endif
+        {
             ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
             params->setBounds(roi);
             {
@@ -1123,9 +1150,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         }
     } // if (doBuildUp) {
 
-
+    // Do the actual rendering of the geometry, this is very fast and optimized
     ImagePtr firstPassDstImage;
-    if (doBuildUp) {
+    if (tmpTexture) {
         firstPassDstImage = tmpTexture;
     } else {
         firstPassDstImage = dstImage;
@@ -1211,29 +1238,85 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     strokeShader->unbind();
     GL::glDisable(GL_BLEND);
 
+    // Geometry is rendered, in build-up mode we still have to apply a second shader
+    // to correctly set alpha channel
     if (doBuildUp) {
 
-        //GL::glBindTexture( target, dstImage->getGLTextureID() );
-        if (GL::isGPU()) {
+        // If OSMesa slow path is enabled or we are rendering with OpenGL we need to
+        // bind the dstImage to the FBO. In CPU mode we need to allocate a copy of tmpTexture
+        // because we cannot render to dstImage (which is not a texture) and we cannot use tmpTexture
+        // both as input and output.
+        RectI outputBounds = dstBounds;
+        ImagePtr dstTexture;
+#ifndef STROKE_RENDER_OSMESA_USE_SLOW_PATH
+        if (GL::isGPU())
+#endif
+        {
+            if (!GL::isGPU()) {
+                ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+                params->setBounds(roi);
+                {
+                    CacheEntryStorageInfo& info = params->getStorageInfo();
+                    info.textureTarget = target;
+                    info.isGPUTexture = GL::isGPU();
+                    info.mode = eStorageModeGLTex;
+                }
+                dstTexture.reset( new Image(dstImage->getKey(), params) );
+                // Copy the content of the existing dstImage
+
+                GL::glBindTexture( target, dstTexture->getGLTextureID() );
+                outputBounds = roi;
+                setupTexParams<GL>(target);
+            } else {
+                dstTexture = dstImage;
+            }
             GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstTexture->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
-        } else {
+        }
+#ifndef STROKE_RENDER_OSMESA_USE_SLOW_PATH
+        else
+        {
             // In CPU mode render to the default framebuffer that is already backed by the dstImage
             GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
-
+#endif
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         strokeSecondPassShader->bind();
         strokeSecondPassShader->setUniform("tex", 0);
         strokeSecondPassShader->setUniform("fillColor", fillColor);
-        Image::applyTextureMapping<GL>(roi, dstBounds, roi);
+        Image::applyTextureMapping<GL>(roi, outputBounds, roi);
         strokeSecondPassShader->unbind();
         glCheckError(GL);
+
+#ifdef STROKE_RENDER_OSMESA_USE_SLOW_PATH
+        if (!GL::isGPU()) {
+            // With OSMesa slow path we still have to call glReadPixels...
+            assert(dstTexture && dstImage != dstTexture);
+            dstImage->pasteFrom(*dstTexture, roi, false, glContext);
+        }
+#endif
+
     }
+#ifdef STROKE_RENDER_OSMESA_USE_SLOW_PATH
+    else if (tmpTexture) {
+        // With OSMesa slow path we copy back with glReadPixels the content of the tmpTexture to the dstImage.
+        // Somehow mapping the tmpTexture directly to the default framebuffer (backed by dstImage) doesn't work properly...
+        assert(!GL::isGPU());
+        dstImage->pasteFrom(*tmpTexture, roi, false, glContext);
+
+        /*GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
+        assert(shader);
+        shader->bind();
+        shader->setUniform("srcTex", 0);
+        Image::applyTextureMapping<GL>(roi, dstBounds, roi);
+        shader->unbind();*/
+    }
+#endif
     GL::glBindTexture( target, 0);
 
-}
+} // void renderStroke_gl_multiDrawElements
 
 
 static void

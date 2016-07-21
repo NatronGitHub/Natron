@@ -321,13 +321,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 
     // Now we are good to start rendering
-    qDebug() << "Roto render: bounds = ";
-    outputPlane.second->getBounds().debug();
-    qDebug() << "roi = ";
-    args.roi.debug();
+
     double distToNextOut;
     Point lastCenterOut;
-
 
     boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
     if (args.glContextData) {

@@ -1403,13 +1403,12 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
     assert(bounds.contains(roi));
 
     ImageParamsPtr params( new ImageParams( *image->getParams() ) );
-    params->setBounds(roi);
     CacheEntryStorageInfo& info = params->getStorageInfo();
+    info.bounds = roi;
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
     info.isGPUTexture = GL::isGPU();
 
-  ;
 
     GLuint pboID = glContext->getOrCreatePBOId();
     assert(pboID != 0);
@@ -1440,9 +1439,9 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
         } else {
             image->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, -1, false, false, tmpImg.get());
         }
-        srcRowBytes = roi.width() * 4 * sizeof(float);
+        srcRowBytes = tmpImg->getRowElements() * sizeof(float);
     } else {
-        srcRowBytes = bounds.width() * 4 * sizeof(float);
+        srcRowBytes = image->getRowElements() * sizeof(float);
     }
 
     Image::ReadAccess racc( tmpImg ? tmpImg.get() : image.get() );
@@ -2564,7 +2563,7 @@ static void setupGLForRender(const ImagePtr& image,
     }
 
     // setup the output viewport
-    Image::setupGLViewport<GL>(imageBounds, roi);
+    Image::setupGLViewport<GL>(roi, roi);
 
     // Enable scissor to make the plug-in doesn't render outside of the viewport...
     GL::glEnable(GL_SCISSOR_TEST);
