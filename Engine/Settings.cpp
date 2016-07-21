@@ -161,6 +161,7 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_enableCrashReports);
 
     _testCrashReportButton = AppManager::createKnob<KnobButton>( this, tr("Test Crash Reporting") );
+    _testCrashReportButton->setName("testCrashReporting");
     _testCrashReportButton->setHintToolTip( tr("This button is for developers only to test whether the crash reporting system "
                                                "works correctly. Do not use this.") );
     _generalTab->addKnob(_testCrashReportButton);
