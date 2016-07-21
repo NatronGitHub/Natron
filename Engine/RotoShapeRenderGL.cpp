@@ -1500,7 +1500,7 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     *spacing = radius * 2. * brushSpacing;
 
 
-    // Check for initilazation cases
+    // Check for initialization cases
     if (prevCenter.x == INT_MIN || prevCenter.y == INT_MIN) {
         return;
     }
