@@ -320,7 +320,7 @@ ViewerGL::paintGL()
         ///Determine whether we need to draw each texture or not
         int activeInputs[2];
         ViewerInstancePtr internalViewer = _imp->viewerTab->getInternalNode();
-        if (!internalViewer) {
+        if (!internalViewer || !internalViewer->getNode()) {
             return;
         }
         internalViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
