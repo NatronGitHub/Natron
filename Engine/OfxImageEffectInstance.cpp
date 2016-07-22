@@ -445,7 +445,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
     KnobIPtr knob;
-    bool paramShouldBePersistant = true;
+    bool paramShouldBePersistent = true;
     bool secretByDefault = descriptor.getSecret();
     bool enabledByDefault = descriptor.getEnabled();
 
@@ -542,7 +542,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             }
         }
         instance = ret;
-        paramShouldBePersistant = false;
+        paramShouldBePersistent = false;
     } else if (paramType == kOfxParamTypePage) {
         OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
@@ -562,7 +562,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             }
         }
         instance = ret;
-        paramShouldBePersistant = false;
+        paramShouldBePersistent = false;
     } else if (paramType == kOfxParamTypePushButton) {
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
@@ -579,7 +579,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             }
         }
         instance = ret;
-        //paramShouldBePersistant = false;
+        //paramShouldBePersistent = false;
     } else if (paramType == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
@@ -619,9 +619,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     //knob->setName(paramName);
     knob->setEvaluateOnChange( descriptor.getEvaluateOnChange() );
 
-    bool persistant = descriptor.getIsPersistant();
-    if (!paramShouldBePersistant) {
-        persistant = false;
+    bool persistent = descriptor.getIsPersistent();
+    if (!paramShouldBePersistent) {
+        persistent = false;
     }
 
     const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon, 1);
@@ -633,7 +633,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setHintIsMarkdown(isMarkdown);
 
     knob->setIsMetadataSlave( isClipPreferencesSlaveParam(paramName) );
-    knob->setIsPersistant(persistant);
+    knob->setIsPersistent(persistent);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecretByDefault(secretByDefault);
     knob->setDefaultAllDimensionsEnabled(enabledByDefault);

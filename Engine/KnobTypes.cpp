@@ -416,7 +416,7 @@ KnobButton::KnobButton(const KnobHolderPtr& holder,
     , _checkable(false)
     , _isToolButtonAction(false)
 {
-    //setIsPersistant(false);
+    //setIsPersistent(false);
 }
 
 bool
@@ -1443,7 +1443,7 @@ KnobPage::KnobPage(const KnobHolderPtr& holder,
     : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _isToolBar(false)
 {
-    setIsPersistant(false);
+    setIsPersistent(false);
 }
 
 bool

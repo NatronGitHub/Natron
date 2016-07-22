@@ -996,13 +996,13 @@ public:
      * @brief Should the knob be saved in the project ? This is MT-safe
      * because it never changes throughout the object's life-time.
      **/
-    virtual bool getIsPersistant() const = 0;
+    virtual bool getIsPersistent() const = 0;
 
     /**
      * @brief Should the knob be saved in the project ?
      * By default this is set to true.
      **/
-    virtual void setIsPersistant(bool b) = 0;
+    virtual void setIsPersistent(bool b) = 0;
 
     /**
      * @brief If set to false, the knob will not be able to use undo/redo actions.
@@ -1501,8 +1501,8 @@ public:
     virtual int determineHierarchySize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEvaluateOnChange(bool b) OVERRIDE FINAL;
     virtual bool getEvaluateOnChange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getIsPersistant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setIsPersistant(bool b) OVERRIDE FINAL;
+    virtual bool getIsPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setIsPersistent(bool b) OVERRIDE FINAL;
     virtual void setCanUndo(bool val) OVERRIDE FINAL;
     virtual bool getCanUndo() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsMetadataSlave(bool slave) OVERRIDE FINAL;

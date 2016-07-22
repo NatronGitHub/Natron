@@ -456,7 +456,7 @@ static PyObject* Sbk_ParamFunc_getIsEnabled(PyObject* self, PyObject* args, PyOb
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_getIsPersistant(PyObject* self)
+static PyObject* Sbk_ParamFunc_getIsPersistent(PyObject* self)
 {
     ParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -469,8 +469,8 @@ static PyObject* Sbk_ParamFunc_getIsPersistant(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getIsPersistant()const
-            bool cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getIsPersistant();
+            // getIsPersistent()const
+            bool cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getIsPersistent();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -1225,7 +1225,7 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_ParamFunc_setPersistent(PyObject* self, PyObject* pyArg)
 {
     ParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1237,13 +1237,13 @@ static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setPersistant(bool)
+    // 0: setPersistent(bool)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setPersistant(bool)
+        overloadId = 0; // setPersistent(bool)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_ParamFunc_setPersistant_TypeError;
+    if (overloadId == -1) goto Sbk_ParamFunc_setPersistent_TypeError;
 
     // Call function/method
     {
@@ -1251,8 +1251,8 @@ static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setPersistant(bool)
-            cppSelf->setPersistant(cppArg0);
+            // setPersistent(bool)
+            cppSelf->setPersistent(cppArg0);
         }
     }
 
@@ -1261,9 +1261,9 @@ static PyObject* Sbk_ParamFunc_setPersistant(PyObject* self, PyObject* pyArg)
     }
     Py_RETURN_NONE;
 
-    Sbk_ParamFunc_setPersistant_TypeError:
+    Sbk_ParamFunc_setPersistent_TypeError:
         const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setPersistant", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setPersistent", overloads);
         return 0;
 }
 
@@ -1466,7 +1466,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getHelp", (PyCFunction)Sbk_ParamFunc_getHelp, METH_NOARGS},
     {"getIsAnimationEnabled", (PyCFunction)Sbk_ParamFunc_getIsAnimationEnabled, METH_NOARGS},
     {"getIsEnabled", (PyCFunction)Sbk_ParamFunc_getIsEnabled, METH_VARARGS|METH_KEYWORDS},
-    {"getIsPersistant", (PyCFunction)Sbk_ParamFunc_getIsPersistant, METH_NOARGS},
+    {"getIsPersistent", (PyCFunction)Sbk_ParamFunc_getIsPersistent, METH_NOARGS},
     {"getIsVisible", (PyCFunction)Sbk_ParamFunc_getIsVisible, METH_NOARGS},
     {"getLabel", (PyCFunction)Sbk_ParamFunc_getLabel, METH_NOARGS},
     {"getNumDimensions", (PyCFunction)Sbk_ParamFunc_getNumDimensions, METH_NOARGS},
@@ -1483,7 +1483,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
     {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
     {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_O},
-    {"setPersistant", (PyCFunction)Sbk_ParamFunc_setPersistant, METH_O},
+    {"setPersistent", (PyCFunction)Sbk_ParamFunc_setPersistent, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
     {"setVisibleByDefault", (PyCFunction)Sbk_ParamFunc_setVisibleByDefault, METH_O},
     {"slaveTo", (PyCFunction)Sbk_ParamFunc_slaveTo, METH_VARARGS},

@@ -497,7 +497,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->setSecretByDefault(true);
     trackRangeDialog->setEvaluateOnChange(false);
     trackRangeDialog->setDefaultValue(false);
-    trackRangeDialog->setIsPersistant(false);
+    trackRangeDialog->setIsPersistent(false);
     trackRangeDialog->setAsDialog(true);
     trackingPage->addKnob(trackRangeDialog);
     _imp->ui->trackRangeDialogGroup = trackRangeDialog;
@@ -508,7 +508,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFirstFrame->setSecretByDefault(true);
     trackRangeDialogFirstFrame->setEvaluateOnChange(false);
     trackRangeDialogFirstFrame->setAnimationEnabled(false);
-    trackRangeDialogFirstFrame->setIsPersistant(false);
+    trackRangeDialogFirstFrame->setIsPersistent(false);
     trackRangeDialogFirstFrame->setDefaultValue(INT_MIN);
     trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
     _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
@@ -519,7 +519,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogLastFrame->setSecretByDefault(true);
     trackRangeDialogLastFrame->setEvaluateOnChange(false);
     trackRangeDialogLastFrame->setAnimationEnabled(false);
-    trackRangeDialogLastFrame->setIsPersistant(false);
+    trackRangeDialogLastFrame->setIsPersistent(false);
     trackRangeDialogLastFrame->setDefaultValue(INT_MIN);
     trackRangeDialog->addKnob(trackRangeDialogLastFrame);
     _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
@@ -530,7 +530,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFrameStep->setSecretByDefault(true);
     trackRangeDialogFrameStep->setEvaluateOnChange(false);
     trackRangeDialogFrameStep->setAnimationEnabled(false);
-    trackRangeDialogFrameStep->setIsPersistant(false);
+    trackRangeDialogFrameStep->setIsPersistent(false);
     trackRangeDialogFrameStep->setDefaultValue(INT_MIN);
     trackRangeDialog->addKnob(trackRangeDialogFrameStep);
     _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
@@ -542,7 +542,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogOkButton->setAddNewLine(false);
     trackRangeDialogOkButton->setEvaluateOnChange(false);
     trackRangeDialogOkButton->setSpacingBetweenItems(3);
-    trackRangeDialogOkButton->setIsPersistant(false);
+    trackRangeDialogOkButton->setIsPersistent(false);
     trackRangeDialog->addKnob(trackRangeDialogOkButton);
     _imp->ui->trackRangeDialogOkButton = trackRangeDialogOkButton;
 

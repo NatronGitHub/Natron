@@ -251,7 +251,7 @@ public:
         ret->setAnimationEnabled( ref->isAnimationEnabled() );
         ret->setHintToolTip( ref->getHintToolTip() );
         ret->setEvaluateOnChange( ref->getEvaluateOnChange() );
-        ret->setIsPersistant(false);
+        ret->setIsPersistent(false);
         ret->setAddNewLine( ref->isNewLineActivated() );
         bool refSecret = ref->getIsSecret();
 
