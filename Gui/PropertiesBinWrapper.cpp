@@ -30,6 +30,7 @@
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/RightClickableWidget.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -54,7 +55,17 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
 void
 PropertiesBinWrapper::enterEvent(QEvent* e)
 {
-    enterEventBase();
+    if (enterEventBase()) {
+        if (getGui()) {
+            boost::shared_ptr<KnobWidgetDnD> currentKnobWidget = getGui()->getCurrentKnobWidgetFocus();
+            if (currentKnobWidget) {
+                QWidget* internalWidget = currentKnobWidget->getWidget();
+                if (internalWidget) {
+                    internalWidget->setFocus();
+                }
+            }
+        }
+    }
     QWidget::enterEvent(e);
 }
 

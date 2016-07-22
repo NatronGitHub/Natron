@@ -27,6 +27,35 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_TrackerFunc_createTrack(PyObject* self)
+{
+    ::Tracker* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Tracker*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // createTrack()
+            Track * cppResult = cppSelf->createTrack();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_TrackerFunc_getAllTracks(PyObject* self)
 {
     ::Tracker* cppSelf = 0;
@@ -246,6 +275,7 @@ static PyObject* Sbk_TrackerFunc_stopTracking(PyObject* self)
 }
 
 static PyMethodDef Sbk_Tracker_methods[] = {
+    {"createTrack", (PyCFunction)Sbk_TrackerFunc_createTrack, METH_NOARGS},
     {"getAllTracks", (PyCFunction)Sbk_TrackerFunc_getAllTracks, METH_NOARGS},
     {"getSelectedTracks", (PyCFunction)Sbk_TrackerFunc_getSelectedTracks, METH_NOARGS},
     {"getTrackByName", (PyCFunction)Sbk_TrackerFunc_getTrackByName, METH_O},

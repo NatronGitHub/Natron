@@ -160,7 +160,7 @@ KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
                                        const KnobGuiPtr& knob,
                                        QWidget* parent )
     : ClickableLabel(icon, parent)
-    , _dnd( new KnobWidgetDnD(knob, -1, this) )
+, _dnd(KnobWidgetDnD::create(knob, -1, this) )
 {
     knob->enableRightClickMenu(this, -1);
 }
@@ -169,7 +169,7 @@ KnobClickableLabel::KnobClickableLabel(const QString& text,
                                        const KnobGuiPtr& knob,
                                        QWidget* parent)
     : ClickableLabel(text, parent)
-    , _dnd( new KnobWidgetDnD(knob, -1, this) )
+    , _dnd( KnobWidgetDnD::create(knob, -1, this) )
 {
     knob->enableRightClickMenu(this, -1);
 }

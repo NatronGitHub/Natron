@@ -44,19 +44,31 @@ Track::~Track()
 void
 Track::setScriptName(const QString& scriptName)
 {
-    _marker->setScriptName( scriptName.toStdString() );
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return;
+    }
+    marker->setScriptName( scriptName.toStdString() );
 }
 
 QString
 Track::getScriptName() const
 {
-    return QString::fromUtf8( _marker->getScriptName_mt_safe().c_str() );
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return QString();
+    }
+    return QString::fromUtf8( marker->getScriptName_mt_safe().c_str() );
 }
 
 Param*
 Track::getParam(const QString& scriptName) const
 {
-    KnobIPtr knob = _marker->getKnobByName( scriptName.toStdString() );
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return 0;
+    }
+    KnobIPtr knob = marker->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -66,10 +78,35 @@ Track::getParam(const QString& scriptName) const
     return ret;
 }
 
+std::list<Param*>
+Track::getParams() const
+{
+    
+    std::list<Param*> ret;
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return ret;
+    }
+    const KnobsVec& knobs = marker->getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        Param* p = Effect::createParamWrapperForKnob(*it);
+        if (p) {
+            ret.push_back(p);
+        }
+    }
+
+    return ret;
+}
+
 void
 Track::reset()
 {
-    _marker->resetTrack();
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return;
+    }
+    marker->resetTrack();
 }
 
 Tracker::Tracker(const TrackerContextPtr& ctx)
@@ -84,7 +121,11 @@ Tracker::~Tracker()
 Track*
 Tracker::getTrackByName(const QString& name) const
 {
-    TrackMarkerPtr t = _ctx->getMarkerByName( name.toStdString() );
+    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    if (!ctx) {
+        return 0;
+    }
+    TrackMarkerPtr t = ctx->getMarkerByName( name.toStdString() );
 
     if (t) {
         return new Track(t);
@@ -99,26 +140,39 @@ Tracker::startTracking(const std::list<Track*>& marks,
                        int end,
                        bool forward)
 {
+    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    if (!ctx) {
+        return;
+    }
     std::list<TrackMarkerPtr> markers;
 
     for (std::list<Track*>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
         markers.push_back( (*it)->getInternalMarker() );
     }
-    _ctx->trackMarkers(markers, start, end, forward, (OverlaySupport*)(NULL));
+
+    ctx->trackMarkers(markers, start, end, forward, (OverlaySupport*)(NULL));
 }
 
 void
 Tracker::stopTracking()
 {
-    _ctx->abortTracking();
+    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    if (!ctx) {
+        return;
+    }
+    ctx->abortTracking();
 }
 
 void
 Tracker::getAllTracks(std::list<Track*>* tracks) const
 {
+    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    if (!ctx) {
+        return;
+    }
     std::vector<TrackMarkerPtr> markers;
 
-    _ctx->getAllMarkers(&markers);
+    ctx->getAllMarkers(&markers);
     for (std::vector<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         tracks->push_back( new Track(*it) );
     }
@@ -127,12 +181,30 @@ Tracker::getAllTracks(std::list<Track*>* tracks) const
 void
 Tracker::getSelectedTracks(std::list<Track*>* tracks) const
 {
+    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    if (!ctx) {
+        return;
+    }
     std::list<TrackMarkerPtr> markers;
 
-    _ctx->getSelectedMarkers(&markers);
+    ctx->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         tracks->push_back( new Track(*it) );
     }
+}
+
+Track*
+Tracker::createTrack()
+{
+    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    if (!ctx) {
+        return 0;
+    }
+    TrackMarkerPtr track = ctx->createMarker();
+    if (!track) {
+        return 0;
+    }
+    return new Track(track);
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

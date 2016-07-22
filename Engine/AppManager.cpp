@@ -1268,6 +1268,9 @@ AppManager::onAllPluginsLoaded()
     const PluginsMap& plugins = getPluginsList();
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert( !it->second.empty() );
+        if (it->second.empty()) {
+            continue;
+        }
         PluginMajorsOrdered::iterator first = it->second.begin();
         bool isUserCreatable = false;
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1277,6 +1280,7 @@ AppManager::onAllPluginsLoaded()
             }
         }
         if (!isUserCreatable) {
+            (*first)->setLabelWithoutSuffix((*first)->getPluginLabel());
             continue;
         }
 

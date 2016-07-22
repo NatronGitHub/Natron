@@ -190,7 +190,7 @@ private:
 private:
     KnobGuiWPtr knob;
     int dimension;
-    boost::scoped_ptr<KnobWidgetDnD> _dnd;
+    boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
 NATRON_NAMESPACE_EXIT;

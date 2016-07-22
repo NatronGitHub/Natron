@@ -50,7 +50,7 @@ public:
 
     TrackMarkerPtr getInternalMarker() const
     {
-        return _marker;
+        return _marker.lock();
     }
 
     void setScriptName(const QString& scriptName);
@@ -58,11 +58,14 @@ public:
 
     Param* getParam(const QString& scriptName) const;
 
+    std::list<Param*> getParams() const;
+
     void reset();
 
 private:
 
-    TrackMarkerPtr _marker;
+
+    boost::weak_ptr<TrackMarker> _marker;
 };
 
 class Tracker
@@ -73,11 +76,18 @@ public:
 
     ~Tracker();
 
+    boost::shared_ptr<TrackerContext> getInternalContext() const
+    {
+        return _ctx.lock();
+    }
+
     Track* getTrackByName(const QString& name) const;
 
     void getAllTracks(std::list<Track*>* markers) const;
 
     void getSelectedTracks(std::list<Track*>* markers) const;
+
+    Track* createTrack();
 
     void startTracking(const std::list<Track*>& marks,
                        int start,
@@ -88,7 +98,8 @@ public:
 
 private:
 
-    TrackerContextPtr _ctx;
+
+    boost::weak_ptr<TrackerContext> _ctx;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

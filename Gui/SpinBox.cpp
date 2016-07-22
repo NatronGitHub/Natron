@@ -982,7 +982,7 @@ KnobSpinBox::KnobSpinBox(QWidget* parent,
     : SpinBox(parent, type)
     , knob(knob)
     , dimension(dimension)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
 {
 }
 
