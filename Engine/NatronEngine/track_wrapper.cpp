@@ -20,6 +20,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyParameter.h>
+#include <list>
 
 
 
@@ -72,6 +73,46 @@ static PyObject* Sbk_TrackFunc_getParam(PyObject* self, PyObject* pyArg)
         const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Track.getParam", overloads);
         return 0;
+}
+
+static PyObject* Sbk_TrackFunc_getParams(PyObject* self)
+{
+    ::Track* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Track*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getParams()const
+            // Begin code injection
+
+            std::list<Param*> params = cppSelf->getParams();
+            PyObject* ret = PyList_New((int) params.size());
+            int idx = 0;
+            for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_TrackFunc_getScriptName(PyObject* self)
@@ -167,6 +208,7 @@ static PyObject* Sbk_TrackFunc_setScriptName(PyObject* self, PyObject* pyArg)
 
 static PyMethodDef Sbk_Track_methods[] = {
     {"getParam", (PyCFunction)Sbk_TrackFunc_getParam, METH_O},
+    {"getParams", (PyCFunction)Sbk_TrackFunc_getParams, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_TrackFunc_getScriptName, METH_NOARGS},
     {"reset", (PyCFunction)Sbk_TrackFunc_reset, METH_NOARGS},
     {"setScriptName", (PyCFunction)Sbk_TrackFunc_setScriptName, METH_O},

@@ -13,6 +13,8 @@ See :ref:`detailed<tracker.details>` description below.
 Functions
 ^^^^^^^^^
 
+*    def :meth:`createTrack<NatronEngine.Tracker.createTrack>` ()
+*    def :meth:`getTrackByName<NatronEngine.Tracker.getTrackByName>` (scriptName)
 *    def :meth:`getAllTracks<NatronEngine.Tracker.getAllTracks>` ()
 *    def :meth:`getSelectedTracks<NatronEngine.Tracker.getSelectedTracks>` ()
 *    def :meth:`startTracking<NatronEngine.Tracker.startTracking>` (tracks, start, end, forward)
@@ -30,6 +32,20 @@ and also allow to start and stop tracking from a Python script.
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. method:: NatronEngine.Tracker.createTrack()
+
+	:rtype: :class:`Track<NatronEngine.Track>`
+	
+	Creates a new track in the tracker with default values
+
+
+.. method:: NatronEngine.Tracker.getTrackByName(scriptName)
+
+	:rtype: :class:`Track<NatronEngine.Track>`
+	
+	Returns a track matching the given *scriptName* if any
+
+
 
 .. method:: NatronEngine.Tracker.getAllTracks()
 
@@ -43,7 +59,7 @@ Member functions description
 	
 	Returns the user selected tracks
 	
-.. method:: NatronEngine.Tracker.startTracking> (tracks, start, end, forward)
+.. method:: NatronEngine.Tracker.startTracking (tracks, start, end, forward)
 	
 	Start tracking the given *tracks* from *start* frame to *end* frame (*end* frame will
 	not be tracked) in the direction given by *forward*.

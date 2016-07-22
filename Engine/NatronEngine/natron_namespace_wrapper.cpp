@@ -1280,6 +1280,12 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_DISABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_DISABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_VIEWER_FULL_FRAME_ON", (long) NATRON_NAMESPACE::NATRON_PIXMAP_VIEWER_FULL_FRAME_ON))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_VIEWER_FULL_FRAME_OFF", (long) NATRON_NAMESPACE::NATRON_PIXMAP_VIEWER_FULL_FRAME_OFF))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_VIEWER_REFRESH", (long) NATRON_NAMESPACE::NATRON_PIXMAP_VIEWER_REFRESH))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
