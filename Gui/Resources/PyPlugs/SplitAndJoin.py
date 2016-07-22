@@ -53,7 +53,7 @@ def createInstance(app,group):
     joinViewsNode.setPosition(selectedNodePosition[0], yposition + selectedNodeSize[1] * 3.)
 
     for i, v in enumerate(views):
-        oneViewNode = app.createNode("net.sf.openfx.oneViewPlugin")
+        oneViewNode = app.createNode("fr.inria.built-in.OneView")
         oneViewNode.setLabel(v)
         oneViewNode.getParam("view").set(i)
         oneViewNode.setPosition(xposition,yposition)

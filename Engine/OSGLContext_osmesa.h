@@ -67,6 +67,7 @@ public:
                                    int type,
                                    int width,
                                    int height,
+                                   int rowWidth,
                                    void* buffer);
 
     static int getMaxWidth();

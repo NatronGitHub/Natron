@@ -118,7 +118,7 @@ public:
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
      **/
-    void setContextCurrentNoRender(int width = 0, int height = 0, void* buffer = 0);
+    void setContextCurrentNoRender(int width = 0, int height = 0, int rowWidth = 0, void* buffer = 0);
     void unsetCurrentContextNoRender(bool useGPU);
 
     static void unsetCurrentContextNoRenderInternal(bool useGPU, const OSGLContext* context);
@@ -151,6 +151,7 @@ private:
 #endif
                                , int width
                                , int height
+                               , int rowWidth
                                , void* buffer);
 
     void setContextCurrentInternal(const AbortableRenderInfoPtr& render
@@ -159,6 +160,7 @@ private:
 #endif
                                    , int width
                                    , int height
+                                   , int rowWidth
                                    , void* buffer);
 
     /**
@@ -184,7 +186,7 @@ class OSGLContextAttacher
     double _frameTime;
 #endif
     bool _attached;
-    int _width, _height;
+    int _width, _height, _rowWidth;
     void* _buffer;
 
 public:
@@ -221,7 +223,7 @@ public:
                         ,
                         double frameTime
 #endif
-                        , int width, int height, void* buffer
+                        , int width, int height, int rowWidth, void* buffer
     )
     : _c(c)
     , _a(render)
@@ -231,6 +233,7 @@ public:
     , _attached(false)
     , _width(width)
     , _height(height)
+    , _rowWidth(rowWidth)
     , _buffer(buffer)
     {
         assert(c);
@@ -251,6 +254,7 @@ public:
 #endif
                                           , _width
                                           , _height
+                                          , _rowWidth
                                           , _buffer);
             } else {
                 _c->setContextCurrent_GPU(_a.lock()

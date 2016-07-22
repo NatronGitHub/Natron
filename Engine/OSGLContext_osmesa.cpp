@@ -124,9 +124,11 @@ OSGLContext_osmesa::makeContextCurrent(const OSGLContext_osmesa* context,
                                        int type,
                                        int width,
                                        int height,
+                                       int rowWidth,
                                        void* buffer)
 {
     bool ret = OSMesaMakeCurrent( context ? context->_imp->ctx : 0, buffer, type, width, height );
+    OSMesaPixelStore(OSMESA_ROW_LENGTH, rowWidth);
     return ret;
 }
 

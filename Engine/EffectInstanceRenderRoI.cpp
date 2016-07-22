@@ -1556,6 +1556,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
             continue;
         }
 
+        RotoDrawableItemPtr rotoItem = _publicInterface->getNode()->getAttachedRotoItem();
         if (!it->second.fullscaleImage) {
             ///The image is not cached
             _publicInterface->allocateImagePlane(*key,
@@ -1583,7 +1584,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
 
             // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
             // to prepare the potential next paint brush stroke made by the user
-            RotoDrawableItemPtr rotoItem = _publicInterface->getNode()->getAttachedRotoItem();
             if (rotoItem && (frameArgs->isDuringPaintStrokeCreation || rotoItem->getContext()->isDoingNeatRender())) {
                 _publicInterface->getNode()->setPaintBuffer(it->second.downscaleImage);
             }
@@ -1630,6 +1630,14 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
             } else {
                 hasResized = it->second.fullscaleImage->ensureBounds(glRenderContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                      fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
+                if (hasResized) {
+                    // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
+                    // to prepare the potential next paint brush stroke made by the user
+                    it->second.downscaleImage = it->second.fullscaleImage;
+                    if (rotoItem && (frameArgs->isDuringPaintStrokeCreation || rotoItem->getContext()->isDoingNeatRender())) {
+                        _publicInterface->getNode()->setPaintBuffer(it->second.fullscaleImage);
+                    }
+                }
             }
 
 

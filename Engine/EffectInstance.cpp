@@ -2530,8 +2530,9 @@ static void setupGLForRender(const ImagePtr& image,
 {
     RectI imageBounds = image->getBounds();
 
-
+    RectI viewportBounds;
     if (GL::isGPU()) {
+        viewportBounds = imageBounds;
         int textureTarget = image->getGLTextureTarget();
         GL::glEnable(textureTarget);
         assert(image->getStorageMode() == eStorageModeGLTex);
@@ -2546,9 +2547,10 @@ static void setupGLForRender(const ImagePtr& image,
         assert(GL::glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
         glCheckFramebufferError(GL);
     } else {
+        viewportBounds = roi;
         assert(image->getStorageMode() == eStorageModeDisk || image->getStorageMode() == eStorageModeRAM);
         Image::WriteAccess outputWriteAccess(image.get());
-        unsigned char* data = outputWriteAccess.pixelAt(imageBounds.x1, imageBounds.y1);
+        unsigned char* data = outputWriteAccess.pixelAt(roi.x1, roi.y1);
         assert(data);
 
         // With OSMesa we render directly to the context framebuffer
@@ -2556,18 +2558,19 @@ static void setupGLForRender(const ImagePtr& image,
 #ifdef DEBUG
                                                          , time
 #endif
+                                                         , roi.width()
+                                                         , roi.height()
                                                          , imageBounds.width()
-                                                         , imageBounds.height()
                                                         , data));
         (*glContextAttacher)->attach();
     }
 
     // setup the output viewport
-    Image::setupGLViewport<GL>(roi, roi);
+    Image::setupGLViewport<GL>(viewportBounds, roi);
 
     // Enable scissor to make the plug-in not render outside of the viewport...
     GL::glEnable(GL_SCISSOR_TEST);
-    GL::glScissor( roi.x1 - imageBounds.x1, roi.y1 - imageBounds.y1, roi.width(), roi.height() );
+    GL::glScissor( roi.x1 - viewportBounds.x1, roi.y1 - viewportBounds.y1, roi.width(), roi.height() );
 
     if (callGLFinish) {
         // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)

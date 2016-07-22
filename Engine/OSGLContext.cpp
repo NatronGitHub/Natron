@@ -505,7 +505,7 @@ OSGLContext::getOrCreateFBOId()
 
 
 void
-OSGLContext::setContextCurrentNoRender(int width, int height, void* buffer)
+OSGLContext::setContextCurrentNoRender(int width, int height, int rowWidth, void* buffer)
 {
 
     if (_imp->useGPUContext) {
@@ -520,10 +520,10 @@ OSGLContext::setContextCurrentNoRender(int width, int height, void* buffer)
 #ifdef HAVE_OSMESA
 
         if (buffer) {
-            OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, width, height, buffer);
+            OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, width, height, rowWidth, buffer);
         } else {
             // Make the context current with a stub buffer
-            OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, 1, 1, &_imp->_osmesaStubBuffer[0]);
+            OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, 1, 1, 1, &_imp->_osmesaStubBuffer[0]);
         }
 #endif
     }
@@ -537,29 +537,31 @@ OSGLContext::setContextCurrent_GPU(const AbortableRenderInfoPtr& abortInfo
 #endif
                                )
 {
-    setContextCurrentInternal(abortInfo, frameTime, 0, 0, 0);
+    setContextCurrentInternal(abortInfo, frameTime, 0, 0, 0, 0);
 }
 
 void
 OSGLContext::setContextCurrent_CPU(const AbortableRenderInfoPtr& abortInfo
 #ifdef DEBUG
-                           , double frameTime
+                                   , double frameTime
 #endif
-                           , int width
-                           , int height
-                           , void* buffer)
+                                   , int width
+                                   , int height
+                                   , int rowWidth
+                                   , void* buffer)
 {
-    setContextCurrentInternal(abortInfo, frameTime, width, height, buffer);
+    setContextCurrentInternal(abortInfo, frameTime, width, height, rowWidth, buffer);
 }
 
 void
 OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
 #ifdef DEBUG
-                               , double frameTime
+                                       , double frameTime
 #endif
-                               , int width
-                               , int height
-                               , void* buffer)
+                                       , int width
+                                       , int height
+                                       , int rowWidth
+                                       , void* buffer)
 {
     assert(_imp && (_imp->_platformContext
 #ifdef HAVE_OSMESA
@@ -580,7 +582,7 @@ OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
 #endif
     ++_imp->renderOwningContextCount;
 
-    setContextCurrentNoRender(width, height, buffer);
+    setContextCurrentNoRender(width, height, rowWidth, buffer);
 
 }
 
