@@ -367,10 +367,16 @@ TrackMarker::setScriptName(const std::string& name)
         return false;
     }
 
+    std::string currentName;
+    {
+        QMutexLocker l(&_imp->trackMutex);
+        currentName = _imp->trackScriptName;
+    }
+
 
     std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
 
-    if ( cpy.empty() ) {
+    if ( cpy.empty() || cpy == currentName) {
         return false;
     }
 
@@ -380,7 +386,9 @@ TrackMarker::setScriptName(const std::string& name)
     }
 
     TrackMarkerPtr thisShared = shared_from_this();
-    getContext()->removeItemAsPythonField(thisShared);
+    if (!currentName.empty()) {
+        getContext()->removeItemAsPythonField(thisShared);
+    }
 
     {
         QMutexLocker l(&_imp->trackMutex);

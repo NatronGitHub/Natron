@@ -11,6 +11,7 @@ This applies currently to the following objects:
 	*	:doc:`PythonReference/NatronEngine/Layer`
 	*	:doc:`PythonReference/NatronEngine/BezierCurve`
 	*	:doc:`PythonReference/NatronEngine/App`
+	*	:doc:`PythonReference/NatronEngine/Track`
 	*	:doc:`PythonReference/NatronEngine/PyCoreApplication`
 	*	:doc:`PythonReference/NatronGui/PyTabWidget`
 	*	:doc:`PythonReference/NatronGui/PyViewer`
@@ -101,7 +102,8 @@ with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronE
 Knowing the script-name of an item of a Roto node:
 --------------------------------------------------
 
-In the settings panel of a roto node, the script-name of an item is visible in the *Script* column of the table:
+In the settings panel of a roto node, the script-name of an item is visible 
+in the tooltip when hovering the mouse on the label of the item
 
 .. figure:: rotoScriptName.png
 	:width: 300px
@@ -109,6 +111,22 @@ In the settings panel of a roto node, the script-name of an item is visible in t
 	
 In command-line mode or via the *Script Editor* you can also get the script-name of an item
 with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/ItemBase` class.
+
+.. _trackerScriptName:
+
+Knowing the script-name of a track in a Tracker node:
+-----------------------------------------------------
+
+In the settings panel of a tracker node, the script-name of an item is visible 
+in the tooltip when hovering the mouse on the label column.
+
+.. figure:: trackerScriptName.png
+	:width: 300px
+	:align: center
+	
+In command-line mode or via the *Script Editor* you can also get the script-name of an item
+with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/Track` class.
+
 
 
 Knowing the script-name of a tab-widget:

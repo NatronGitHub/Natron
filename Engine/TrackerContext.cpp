@@ -245,19 +245,20 @@ TrackerContext::createMarker()
     track = TrackMarker::create( shared_from_this() );
 #endif
 
-    track->initializeKnobsPublic();
-    std::string name = generateUniqueTrackName(kTrackBaseName);
-
-    track->setScriptName(name);
-    track->setLabel(name);
-    track->resetCenter();
     int index;
     {
         QMutexLocker k(&_imp->trackerContextMutex);
         index  = _imp->markers.size();
         _imp->markers.push_back(track);
     }
-    declareItemAsPythonField(track);
+    
+    track->initializeKnobsPublic();
+    std::string name = generateUniqueTrackName(kTrackBaseName);
+
+    track->setScriptName(name);
+    track->setLabel(name);
+    track->resetCenter();
+
     Q_EMIT trackInserted(track, index);
 
     return track;

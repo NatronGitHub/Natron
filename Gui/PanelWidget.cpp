@@ -82,7 +82,7 @@ PanelWidget::getParentPane() const
     return getParentPaneRecursive(_thisWidget);
 }
 
-void
+bool
 PanelWidget::enterEventBase()
 {
     TabWidget* parentPane = getParentPane();
@@ -98,7 +98,9 @@ PanelWidget::enterEventBase()
         if (stack) {
             stack->setActive();
         }
+        return true;
     }
+    return false;
 }
 
 void

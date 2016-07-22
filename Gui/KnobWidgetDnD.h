@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 #include <QtCore/QCoreApplication>
@@ -41,17 +42,28 @@
 NATRON_NAMESPACE_ENTER;
 
 struct KnobWidgetDnDPrivate;
-class KnobWidgetDnD
+class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 {
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
-
-public:
 
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   int dimension,
                   QWidget* widget);
 
+public:
+
+
+    static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
+                                            int dimension,
+                                            QWidget* widget)
+    {
+        return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, widget));
+    }
+
+
     ~KnobWidgetDnD();
+
+    QWidget* getWidget() const;
 
     void keyPress(QKeyEvent* e);
     void keyRelease(QKeyEvent* e);
