@@ -2189,8 +2189,8 @@ exportUserKnob(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(False)");
     }
 
-    if ( !knob->getIsPersistant() ) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setPersistant(False)");
+    if ( !knob->getIsPersistent() ) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("param.setPersistent(False)");
     }
 
     if ( !knob->getEvaluateOnChange() ) {
@@ -2349,7 +2349,7 @@ exportAllNodeKnobs(int indentLevel,
     std::list<KnobPage*> userPages;
 
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        if ( (*it2)->getIsPersistant() && !(*it2)->isUserKnob() ) {
+        if ( (*it2)->getIsPersistent() && !(*it2)->isUserKnob() ) {
             QString getParamStr  = QString::fromUtf8("lastNode.getParam(\"");
             const std::string& paramName =  (*it2)->getName();
             if ( paramName.empty() ) {

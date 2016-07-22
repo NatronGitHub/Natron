@@ -48,7 +48,7 @@ ProjectSerialization::initialize(const Project* project)
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
         KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[i].get() );
-        if ( knobs[i]->getIsPersistant() &&
+        if ( knobs[i]->getIsPersistent() &&
              !isGroup && !isPage && !isButton &&
              knobs[i]->hasModificationsForSerialization() ) {
             boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );

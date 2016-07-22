@@ -1224,7 +1224,7 @@ Settings::initializeKnobsCaching()
 
     _maxRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
     _maxRAMLabel->setName("maxRamLabel");
-    _maxRAMLabel->setIsPersistant(false);
+    _maxRAMLabel->setIsPersistent(false);
     _maxRAMLabel->setAsLabel();
     _cachingTab->addKnob(_maxRAMLabel);
 
@@ -1247,7 +1247,7 @@ Settings::initializeKnobsCaching()
     _cachingTab->addKnob(_unreachableRAMPercent);
     _unreachableRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
     _unreachableRAMLabel->setName("unreachableRAMLabel");
-    _unreachableRAMLabel->setIsPersistant(false);
+    _unreachableRAMLabel->setIsPersistent(false);
     _unreachableRAMLabel->setAsLabel();
     _cachingTab->addKnob(_unreachableRAMLabel);
 

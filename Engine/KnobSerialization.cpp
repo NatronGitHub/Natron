@@ -219,7 +219,7 @@ findMaster(const KnobPtr & knob,
         ///now that we have the master node, find the corresponding knob
         const std::vector< KnobPtr > & otherKnobs = masterNode->getKnobs();
         for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
+            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistent() ) {
                 return otherKnobs[j];
                 break;
             }

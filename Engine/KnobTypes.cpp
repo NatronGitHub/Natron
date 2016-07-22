@@ -454,7 +454,7 @@ KnobButton::KnobButton(KnobHolder* holder,
     , _checkable(false)
     , _isToolButtonAction(false)
 {
-    //setIsPersistant(false);
+    //setIsPersistent(false);
 }
 
 KnobButton::KnobButton(KnobHolder* holder,
@@ -466,7 +466,7 @@ KnobButton::KnobButton(KnobHolder* holder,
     , _checkable(false)
     , _isToolButtonAction(false)
 {
-    //setIsPersistant(false);
+    //setIsPersistent(false);
 }
 
 bool
@@ -1549,7 +1549,7 @@ KnobPage::KnobPage(KnobHolder* holder,
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _isToolBar(false)
 {
-    setIsPersistant(false);
+    setIsPersistent(false);
 }
 
 KnobPage::KnobPage(KnobHolder* holder,
@@ -1559,7 +1559,7 @@ KnobPage::KnobPage(KnobHolder* holder,
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isToolBar(false)
 {
-    setIsPersistant(false);
+    setIsPersistent(false);
 }
 
 bool
