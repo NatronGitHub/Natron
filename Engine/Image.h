@@ -190,7 +190,8 @@ public:
           ImageFieldingOrderEnum fielding,
           bool useBitmap = false,
           StorageModeEnum storage = eStorageModeRAM,
-          U32 textureTarget = GL_TEXTURE_2D);
+          U32 textureTarget = GL_TEXTURE_2D,
+          bool isGPUTexture = true);
 
     //Same as above but parameters are in the ImageParams object
     Image(const ImageKey & key,
@@ -250,6 +251,19 @@ public:
      **/
     bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output, const OSGLContextPtr& glContext);
 
+    /*
+     Compute the rectangles (A,B,C,D) where to set the image to 0
+
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     */
+    static void getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect);
 
     template <typename GL>
     static void setupGLViewport(const RectI& bounds, const RectI& roi)
@@ -524,6 +538,11 @@ public:
     }
 
     static unsigned char* pixelAtStatic(int x, int y, const RectI& bounds, int nComps, int dataSizeOf, unsigned char* buf);
+
+    static inline unsigned char* getPixelAddress_internal(int x, int y, unsigned char* basePtr, int pixelSize, const RectI& bounds)
+    {
+        return basePtr + (qint64)( y - bounds.y1 ) * pixelSize * bounds.width() + (qint64)( x - bounds.x1 ) * pixelSize;
+    }
 
 private:
 

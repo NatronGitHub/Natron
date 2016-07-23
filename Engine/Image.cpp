@@ -542,6 +542,7 @@ Bitmap::markForRendered(const RectI & roi)
 void
 Bitmap::markForRendering(const RectI & roi)
 {
+    assert(!_map.empty());
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -556,6 +557,7 @@ Bitmap::markForRendering(const RectI & roi)
 void
 Bitmap::clear(const RectI& roi)
 {
+    assert(!_map.empty());
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -708,7 +710,8 @@ Image::Image(const ImageComponents& components,
              ImageFieldingOrderEnum fielding,
              bool useBitmap,
              StorageModeEnum storage,
-             U32 textureTarget)
+             U32 textureTarget,
+             bool isGPUTexture )
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
 {
@@ -726,6 +729,7 @@ Image::Image(const ImageComponents& components,
                                                                   textureTarget) ),
                   NULL /*cacheAPI*/
                   );
+    _params->getStorageInfo().isGPUTexture = isGPUTexture;
 
     _bitDepth = bitdepth;
     _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
@@ -1091,6 +1095,42 @@ pasteFromGL(const Image & src,
     
 }
 
+void
+Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect)
+{
+    /*
+     Compute the rectangles (A,B,C,D) where to set the image to 0
+
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     */
+    aRect.x1 = biggerBounds.x1;
+    aRect.y1 = srcBounds.y2;
+    aRect.y2 = biggerBounds.y2;
+    aRect.x2 = biggerBounds.x2;
+
+    bRect.x1 = srcBounds.x2;
+    bRect.y1 = srcBounds.y1;
+    bRect.x2 = biggerBounds.x2;
+    bRect.y2 = srcBounds.y2;
+
+    cRect.x1 = biggerBounds.x1;
+    cRect.y1 = biggerBounds.y1;
+    cRect.x2 = biggerBounds.x2;
+    cRect.y2 = srcBounds.y1;
+
+    dRect.x1 = biggerBounds.x1;
+    dRect.y1 = srcBounds.y1;
+    dRect.x2 = srcBounds.x1;
+    dRect.y2 = srcBounds.y2;
+
+}
 
 void
 Image::resizeInternal(const OSGLContextPtr& glContext,
@@ -1114,7 +1154,8 @@ Image::resizeInternal(const OSGLContextPtr& glContext,
                                       srcImg->getFieldingOrder(),
                                       srcImg->usesBitMap(),
                                       srcImg->getStorageMode(),
-                                      srcImg->getGLTextureTarget()) );
+                                      srcImg->getGLTextureTarget(),
+                                      srcImg->getParams()->getStorageInfo().isGPUTexture) );
     } else {
         ImageParamsPtr params( new ImageParams( *srcImg->getParams() ) );
         params->setBounds(merge);
@@ -1128,42 +1169,9 @@ Image::resizeInternal(const OSGLContextPtr& glContext,
         if (srcImg->getStorageMode() == eStorageModeGLTex) {
             (*outputImage)->fillBoundsZero(glContext);
         } else {
-            /*
-             Compute the rectangles (A,B,C,D) where to set the image to 0
 
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-             CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-             */
-            RectI aRect;
-            aRect.x1 = merge.x1;
-            aRect.y1 = srcBounds.y2;
-            aRect.y2 = merge.y2;
-            aRect.x2 = merge.x2;
-
-            RectI bRect;
-            bRect.x1 = srcBounds.x2;
-            bRect.y1 = srcBounds.y1;
-            bRect.x2 = merge.x2;
-            bRect.y2 = srcBounds.y2;
-
-            RectI cRect;
-            cRect.x1 = merge.x1;
-            cRect.y1 = merge.y1;
-            cRect.x2 = merge.x2;
-            cRect.y2 = srcBounds.y1;
-
-            RectI dRect;
-            dRect.x1 = merge.x1;
-            dRect.y1 = srcBounds.y1;
-            dRect.x2 = srcBounds.x1;
-            dRect.y2 = srcBounds.y2;
-
+            RectI aRect,bRect,cRect,dRect;
+            getABCDRectangles(srcBounds, merge, aRect, bRect, cRect, dRect);
             Image::WriteAccess wacc( outputImage->get() );
             std::size_t pixelSize = srcImg->getComponentsCount() * getSizeOfForBitDepth(depth);
 

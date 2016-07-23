@@ -56,7 +56,7 @@ RotoShapeRenderNodePrivate::dampenSmearEffect(const Point& prevCenter, const Poi
     return prevPoint;
 }
 
-void
+bool
 RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
                                                  PFNRenderStrokeBeginRender beginCallback,
                                                  PFNRenderStrokeRenderDot renderDotCallback,
@@ -83,7 +83,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         KnobDoublePtr brushSpacingKnob = stroke->getBrushSpacingKnob();
         brushSpacing = brushSpacingKnob->getValueAtTime(time);
         if (brushSpacing == 0.) {
-            return;
+            return false;
         }
         brushSpacing = std::max(brushSpacing, 0.05);
 
@@ -95,7 +95,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
         writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
         if ( (writeOnEnd - writeOnStart) <= 0. ) {
-            return;
+            return false;
         }
 
 
@@ -116,6 +116,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
 
     double distToNext = distToNextIn;
 
+    bool hasRenderedDot = false;
     beginCallback(userData, brushSizePixel, brushSpacing, brushHardness, pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize, doBuildup, shapeColor, opacity);
 
     Point prevCenter = lastCenterPointIn;
@@ -135,7 +136,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             visiblePortion.push_back(*it);
         }
         if ( visiblePortion.empty() ) {
-            return;
+            continue;
         }
 
         std::list<std::pair<Point, double> >::iterator it = visiblePortion.begin();
@@ -172,9 +173,14 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
 
                 // draw the dot
                 double spacing;
-                renderDotCallback(userData, prevCenter, *lastCenterPoint, pressure, &spacing);
+                bool rendered = renderDotCallback(userData, prevCenter, *lastCenterPoint, pressure, &spacing);
+                hasRenderedDot |= rendered;
                 prevCenter = *lastCenterPoint;
                 distToNext += spacing;
+                /*if (rendered) {
+                } else {
+                    break;
+                }*/
             }
 
             // go to the next segment
@@ -188,6 +194,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
 
     *distToNextOut = distToNextIn;
 
+    return hasRenderedDot;
 }
 
 NATRON_NAMESPACE_EXIT;

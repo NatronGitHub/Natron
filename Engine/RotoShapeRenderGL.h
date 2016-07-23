@@ -127,7 +127,7 @@ public:
                                 double *distToNextOut,
                                 Point* lastCenterPointOut);
 
-    static void renderSmear_gl(const OSGLContextPtr& glContext,
+    static bool renderSmear_gl(const OSGLContextPtr& glContext,
                                const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
                                const RectI& roi,
                                const ImagePtr& dstImage,

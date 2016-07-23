@@ -165,7 +165,7 @@ public:
                                          Point* lastCenterPointOut);
 
 
-    static void renderSmear_cairo(double time,
+    static bool renderSmear_cairo(double time,
                                   unsigned int mipMapLevel,
                                   const RotoStrokeItem* rotoItem,
                                   const RectI& roi,

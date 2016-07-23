@@ -40,12 +40,24 @@ public:
 
     boost::weak_ptr<KnobChoice> outputComponents, renderType;
 
+    // When drawing a smear with OSMesa we cannot use the output image directly
+    // because the first draw done by OSMesa will clear the framebuffer instead
+    // of preserving the actual content.
+    ImagePtr osmesaSmearTmpTexture;
+
 
     RotoShapeRenderNodePrivate();
 
-
+    /**
+     * @brief A blind pointer passed to all callbacks during the renderStroke_generic algorithm
+     * so that the implementation specific renderer can manage its own datas.
+     **/
     typedef void* RenderStrokeDataPtr;
 
+    /**
+     * @brief Callback used before starting rendering any dot in renderStroke_generic
+     * This is used to set renderer specific settings linked to the user parameters.
+     **/
     typedef void (*PFNRenderStrokeBeginRender) (
     RenderStrokeDataPtr userData,
     double brushSizePixel,
@@ -58,11 +70,29 @@ public:
     double shapeColor[3],
     double opacity);
 
+    /**
+     * @brief Called when finished to render all strokes passed to renderStroke_generic
+     * If possible, all drawing should happen at once in this function rather than each renderDot call.
+     **/
     typedef void (*PFNRenderStrokeEndRender) (RenderStrokeDataPtr userData);
 
-    typedef void (*PFNRenderStrokeRenderDot) (RenderStrokeDataPtr userData, const Point &prevCenter, const Point &center, double pressure, double *spacing);
+    /**
+     * @brief Callback called to draw a dot at the given center location with given pressure. The prevCenter indicates the location
+     * of the latest dot previously rendered. This function must return in spacing the distance wished to the next dot.
+     * @returns True if successfully rendered a dot, false otherwise.
+     **/
+    typedef bool (*PFNRenderStrokeRenderDot) (RenderStrokeDataPtr userData, const Point &prevCenter, const Point &center, double pressure, double *spacing);
 
-    static void renderStroke_generic(RenderStrokeDataPtr userData,
+    /**
+     * @brief This is the generic algorithm used to render strokes. 
+     * The algorithm will render dots (using the renderDotCallback) at uniformly
+     * distributed positions betweens segment along the stroke. 
+     * Since the user may be interactively drawing, the algorithm may take
+     * in input the last dot center point and last distToNext to actually 
+     * continue a stroke.
+     * @returns true if at least one dot was rendered, false otherwise
+     **/
+    static bool renderStroke_generic(RenderStrokeDataPtr userData,
                                      PFNRenderStrokeBeginRender beginCallback,
                                      PFNRenderStrokeRenderDot renderDotCallback,
                                      PFNRenderStrokeEndRender endCallback,

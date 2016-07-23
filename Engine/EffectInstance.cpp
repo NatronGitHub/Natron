@@ -1399,8 +1399,7 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
                                     const OSGLContextPtr& glContext)
 {
     assert(image->getStorageMode() != eStorageModeGLTex);
-    RectI bounds = image->getBounds();
-    assert(bounds.contains(roi));
+    RectI srcBounds = image->getBounds();
 
     ImageParamsPtr params( new ImageParams( *image->getParams() ) );
     CacheEntryStorageInfo& info = params->getStorageInfo();
@@ -1416,7 +1415,8 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
     // bind PBO to update texture source
     GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
-    std::size_t dstRowBytes = roi.width() * 4 * info.dataTypeSize;
+    std::size_t pixelSize = 4 * info.dataTypeSize;
+    std::size_t dstRowBytes = roi.width() * pixelSize;
     std::size_t dataSize = dstRowBytes * roi.height();
 
     // Note that glMapBufferARB() causes sync issue.
@@ -1444,20 +1444,73 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
         srcRowBytes = image->getRowElements() * sizeof(float);
     }
 
+    // Intersect the Roi with the src image
+
+    RectI realRoI;
+    roi.intersect(image->getBounds(), &realRoI);
+
     Image::ReadAccess racc( tmpImg ? tmpImg.get() : image.get() );
-    const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
-    assert(srcdata);
+    const unsigned char* srcRoIPixels = racc.pixelAt(realRoI.x1, realRoI.y1);
+    assert(srcRoIPixels);
 
 
 
     unsigned char* gpuData = (unsigned char*)GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     if (gpuData) {
+        // Copy the RoI
+        std::size_t roiRowBytes = realRoI.width() * pixelSize;
         // update data directly on the mapped buffer
-        for (int y = roi.y1; y < roi.y2; ++y) {
-            memcpy(gpuData, srcdata, dstRowBytes);
-            srcdata += srcRowBytes;
-            gpuData += dstRowBytes;
+
+        unsigned char* dstData = gpuData;
+        const unsigned char* srcRoIData = srcRoIPixels;
+        for (int y = realRoI.y1; y < realRoI.y2; ++y) {
+            memcpy(dstData, srcRoIData, roiRowBytes);
+            srcRoIData += srcRowBytes;
+            dstData += dstRowBytes;
         }
+
+        // Null the 4 potential rectangles between the realRoI and RoI
+        RectI aRect,bRect,cRect,dRect;
+        Image::getABCDRectangles(realRoI, roi, aRect, bRect, cRect, dRect);
+
+
+        if (!aRect.isNull()) {
+            unsigned char* pix = Image::getPixelAddress_internal(aRect.x1, aRect.y1, gpuData, (int)pixelSize, roi);
+            assert(pix);
+            std::size_t memsize = aRect.area() * pixelSize;
+            std::memset(pix, 0, memsize);
+        }
+
+        if (!cRect.isNull()) {
+            unsigned char* pix = Image::getPixelAddress_internal(cRect.x1, cRect.y1, gpuData, (int)pixelSize, roi);
+            assert(pix);
+            std::size_t memsize = cRect.area() * pixelSize;
+            std::memset(pix, 0, memsize);
+        }
+        if ( !bRect.isNull() ) {
+            unsigned char* pix = Image::getPixelAddress_internal(bRect.x1, bRect.y1, gpuData, (int)pixelSize, roi);
+            assert(pix);
+            int mw = roi.width();
+            std::size_t rowsize = mw * pixelSize;
+            int bw = bRect.width();
+            std::size_t rectRowSize = bw * pixelSize;
+            for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
+                std::memset(pix, 0, rectRowSize);
+            }
+        }
+
+        if ( !dRect.isNull() ) {
+            unsigned char* pix = Image::getPixelAddress_internal(dRect.x1, dRect.y1, gpuData, (int)pixelSize, roi);
+            assert(pix);
+            int mw = roi.width();
+            std::size_t rowsize = mw * pixelSize;
+            int dw = dRect.width();
+            std::size_t rectRowSize = dw * pixelSize;
+            for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
+                std::memset(pix, 0, rectRowSize);
+            }
+        }
+
         GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);

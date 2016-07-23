@@ -881,7 +881,7 @@ renderStrokeEnd_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData
 
 }
 
-static void
+static bool
 renderStrokeRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                             const Point &/*prevCenter*/,
                             const Point &center,
@@ -893,6 +893,7 @@ renderStrokeRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr user
     std::vector<std::pair<double,double> > opacityStops;
     getRenderDotParams(myData->opacity, myData->brushSizePixel, myData->brushHardness, myData->brushSpacing, pressure, myData->pressureAffectsOpacity, myData->pressureAffectsSize, myData->pressureAffectsHardness, &internalDotRadius, &externalDotRadius, spacing, &opacityStops);
     RotoShapeRenderCairo::renderDot_cairo(myData->cr, myData->dotPatterns, center, internalDotRadius, externalDotRadius, pressure, myData->buildUp, opacityStops, myData->opacity);
+    return true;
 }
 
 void
@@ -1039,13 +1040,12 @@ renderSmearDot(const unsigned char* maskData,
                 for (int k = 0; k < nComps; ++k) {
                     dstPixels[k] = srcPixels[k] * mask_scale + dstPixels[k] * one_minus_mask_scale;
                 }
-            } else {
-            }
+            } 
         }
     }
 } // renderSmearDot
 
-static void
+static bool
 renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                             const Point &prevCenter,
                             const Point &center,
@@ -1056,10 +1056,10 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
     double internalRadius, externalRadius;
     getRenderDotParams(myData->opacity, myData->brushSizePixel, myData->brushHardness, myData->brushSpacing, pressure, myData->pressureAffectsOpacity, myData->pressureAffectsSize, myData->pressureAffectsHardness, &internalRadius, &externalRadius, spacing, 0);
     if (prevCenter.x == INT_MIN || prevCenter.y == INT_MIN) {
-        return;
+        return false;
     }
     if (prevCenter.x == center.x && prevCenter.y == center.y) {
-        return;
+        return false;
     }
 
 
@@ -1069,10 +1069,11 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
 
 
     renderSmearDot(myData->maskData, myData->maskStride, myData->maskWidth, myData->maskHeight, prevPoint, center, myData->brushSizePixel, myData->dstImage->getComponentsCount(), myData->dstImage);
+    return true;
 }
 
 
-void
+bool
 RotoShapeRenderCairo::renderSmear_cairo(double time,
                                         unsigned int mipMapLevel,
                                         const RotoStrokeItem* rotoItem,
@@ -1089,7 +1090,7 @@ RotoShapeRenderCairo::renderSmear_cairo(double time,
     data.opacity = rotoItem->getOpacity(time);
     data.dstImage = dstImage;
 
-    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+    bool renderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                      renderSmearBegin_cairo,
                                                      renderSmearRenderDot_cairo,
                                                      renderStrokeEnd_cairo,
@@ -1103,6 +1104,7 @@ RotoShapeRenderCairo::renderSmear_cairo(double time,
                                                      mipMapLevel,
                                                      distToNextOut,
                                                      lastCenterPointOut);
+    return renderedDot;
 
 } // RotoShapeRenderCairo::renderSmear_cairo
 

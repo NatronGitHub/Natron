@@ -1289,7 +1289,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
     }
 }
 
-static void
+static bool
 renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                          const Point &/*prevCenter*/,
                          const Point &center,
@@ -1317,6 +1317,7 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
 
 
     renderDot_gl(*myData, center, radius, myData->shapeColor, opacity,  brushHardness);
+    return true;
 }
 
 void
@@ -1410,7 +1411,7 @@ renderSmearBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
 }
 
 template <typename GL>
-static void renderSmearDotInternal(RenderSmearGLData* myData,
+static bool renderSmearDotInternal(RenderSmearGLData* myData,
                                    const Point &prevCenter,
                                    const Point &center,
                                    double pressure,
@@ -1434,14 +1435,17 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     double radius = std::max(brushSizePixels, 1.) / 2.;
     *spacing = radius * 2. * brushSpacing;
 
+    qDebug() << "Smear, prev = (" << prevCenter.x << prevCenter.y << ") next = (" << center.x << center.y << ")";
 
     // Check for initialization cases
     if (prevCenter.x == INT_MIN || prevCenter.y == INT_MIN) {
-        return;
+        return false;
     }
     if (prevCenter.x == center.x && prevCenter.y == center.y) {
-        return;
+        return false;
     }
+
+    qDebug() << "OK";
 
     // If we were to copy exactly the portion in prevCenter, the smear would leave traces
     // too long. To dampen the effect of the smear, we clamp the spacing
@@ -1452,7 +1456,6 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     RectI dstBounds = dstImage->getBounds();
 
     GLuint fboID = glContext->getOrCreateFBOId();
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
 
     int target = GL_TEXTURE_2D;
 
@@ -1463,10 +1466,9 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     GL::glActiveTexture(GL_TEXTURE0);
 
     // This is the output texture
-    if (GL::isGPU()) {
-        GL::glBindTexture( target, dstImage->getGLTextureID() );
-        setupTexParams<GL>(target);
-    }
+    GL::glBindTexture( target, dstImage->getGLTextureID() );
+    setupTexParams<GL>(target);
+
 
     // Specifies the src and dst rectangle
     RectI prevDotBounds(prevPoint.x - brushSizePixels / 2., prevPoint.y - brushSizePixels / 2., prevPoint.x + brushSizePixels / 2. + 1, prevPoint.y + brushSizePixels / 2. + 1);
@@ -1498,6 +1500,13 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     // Copy the original rectangle to a tmp texture and premultiply by an alpha mask with a dot shape
     ImagePtr tmpTexture;
     {
+
+
+        // In GPU mode, we copy directly from dstImage because it is a texture already.
+        // In CPU mode we must upload the portion we are interested in to OSmesa first
+        RectI roi;
+        prevDotBounds.intersect(dstBounds, &roi);
+
         ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
         params->setBounds(prevDotBounds);
         {
@@ -1511,7 +1520,7 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
 
         GL::glBindTexture( target, tmpTexture->getGLTextureID() );
         setupTexParams<GL>(target);
-
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError(GL);
 
@@ -1522,22 +1531,11 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
         GL::glClear(GL_COLOR_BUFFER_BIT);
 
         // Now draw onto the intersection with the dstBOunds with the smear shader
-        RectI roi;
-        prevDotBounds.intersect(dstBounds, &roi);
+
         Image::setupGLViewport<GL>(prevDotBounds, roi);
 
-        // In GPU mode, we copy directly from dstImage because it is a texture already.
-        // In CPU mode we must upload the portion we are interested in to OSmesa first
-        ImagePtr originalImage;
-        if (GL::isGPU()) {
-            originalImage = dstImage;
-        } else {
-            originalImage = EffectInstance::convertRAMImageRoIToOpenGLTexture(dstImage, roi, glContext);
-        }
 
-        GL::glBindTexture( target, originalImage->getGLTextureID() );
-
-        setupTexParams<GL>(target);
+        GL::glBindTexture( target, dstImage->getGLTextureID() );
 
 
         OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], opacity};
@@ -1607,72 +1605,27 @@ static void renderSmearDotInternal(RenderSmearGLData* myData,
     GL::glEnable(GL_BLEND);
     GL::glBlendEquation(GL_FUNC_ADD);
     GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
 
-        RectI outputBounds;
-        ImagePtr dstTexture = dstImage;
-#ifdef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
-        if (!GL::isGPU()) {
-            ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
-            params->setBounds(nextDotBounds);
-            {
-                CacheEntryStorageInfo& info = params->getStorageInfo();
-                info.textureTarget = target;
-                info.isGPUTexture = GL::isGPU();
-                info.mode = eStorageModeGLTex;
-            }
-            dstTexture.reset( new Image(dstImage->getKey(), params) );
-            // Copy the content of the existing dstImage
 
-            GL::glBindTexture( target, dstTexture->getGLTextureID() );
-            outputBounds = nextDotBounds;
-            setupTexParams<GL>(target);
-        }
-#endif
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+    glCheckFramebufferError(GL);
 
-        GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
-#ifndef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
-        if (GL::isGPU())
-#endif
-        {
-            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstTexture->getGLTextureID(), 0 /*LoD*/);
-            glCheckFramebufferError(GL);
-        }
-#ifndef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
-        else {
-            // In CPU mode to draw on dstImage we draw on the default framebuffer
-            GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
-#endif
-
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
-        copyShader->bind();
-        copyShader->setUniform("srcTex", 0);
-        Image::applyTextureMapping<GL>(nextDotBounds, outputBounds, nextDotBounds);
-        copyShader->unbind();
-        glCheckError(GL);
-
-        GL::glBindTexture( target, 0);
-        GL::glDisable(GL_BLEND);
-
-#ifdef SMEAR_RENDER_OSMESA_USE_SLOW_PATH
-        if (!GL::isGPU()) {
-            GL::glFlush();
-            GL::glFinish();
-
-            // With OSMesa slow path we copy back with glReadPixels the content of the tmpTexture to the dstImage.
-            // Somehow mapping the tmpTexture directly to the default framebuffer (backed by dstImage) doesn't work properly...
-            assert(!GL::isGPU());
-            dstImage->pasteFrom(*dstTexture, nextDotBounds, false, glContext);
-        }
-#endif
+    GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+    Image::applyTextureMapping<GL>(nextDotBounds, dstBounds, nextDotBounds);
+    GL::glBindTexture( target, 0);
+    GL::glDisable(GL_BLEND);
+    glCheckError(GL);
+    if (!GL::isGPU()) {
+        GL::glFlush();
+        GL::glFinish();
 
     }
 
 
-}
+    return true;
+} // renderSmearDotInternal
 
-static void
+static bool
 renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                          const Point &prevCenter,
                          const Point &center,
@@ -1680,8 +1633,6 @@ renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData
                          double *spacing)
 {
     RenderSmearGLData* myData = (RenderSmearGLData*)userData;
-
-
     /*
      To smear we need to copy the portion of the texture around prevCenter to the portion around center. We cannot use the same
      texture in input and output. The only solution to correctly smear is to first copy the original rectangle to a temporary texture  which
@@ -1689,14 +1640,10 @@ renderSmearRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData
      enabled.
      */
     if (myData->glContext->isGPUContext()) {
-        renderSmearDotInternal<GL_GPU>(myData, prevCenter, center, pressure, spacing);
+        return renderSmearDotInternal<GL_GPU>(myData, prevCenter, center, pressure, spacing);
     } else {
-        renderSmearDotInternal<GL_CPU>(myData, prevCenter, center, pressure, spacing);
+        return renderSmearDotInternal<GL_CPU>(myData, prevCenter, center, pressure, spacing);
     }
-    
-
-
-    //renderDot_gl(*myData, center, radius, myData->shapeColor, opacity,  brushHardness);
 }
 
 static void
@@ -1705,7 +1652,7 @@ renderSmearEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData*/)
 
 }
 
-void
+bool
 RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
                                   const RectI& roi,
@@ -1725,7 +1672,7 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
     data.glData = glData;
     data.dstImage = dstImage;
     data.roi = roi;
-    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+    bool hasRenderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                      renderSmearBegin_gl,
                                                      renderSmearRenderDot_gl,
                                                      renderSmearEnd_gl,
@@ -1739,6 +1686,19 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
                                                      mipmapLevel,
                                                      distToNextOut,
                                                      lastCenterPointOut);
+
+    // Also report the results to the dst image on the default framebuffer
+    if (!glContext->isGPUContext()) {
+        // Disable scissors because we are going to use opengl outside of RoI
+        GL_CPU::glDisable(GL_SCISSOR_TEST);
+        GL_CPU::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL_CPU::glBindTexture( GL_TEXTURE_2D, dstImage->getGLTextureID());
+        setupTexParams<GL_CPU>(GL_TEXTURE_2D);
+        RectI bounds = dstImage->getBounds();
+        Image::applyTextureMapping<GL_CPU>(bounds, bounds, bounds);
+        GL_CPU::glBindTexture( GL_TEXTURE_2D, 0);
+    }
+    return hasRenderedDot;
 } // RotoShapeRenderGL::renderSmear_gl
 
 NATRON_NAMESPACE_EXIT;
