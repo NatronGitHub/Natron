@@ -542,8 +542,8 @@ void setupTexParams(int target)
     GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 }
 
@@ -1435,8 +1435,6 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     double radius = std::max(brushSizePixels, 1.) / 2.;
     *spacing = radius * 2. * brushSpacing;
 
-    qDebug() << "Smear, prev = (" << prevCenter.x << prevCenter.y << ") next = (" << center.x << center.y << ")";
-
     // Check for initialization cases
     if (prevCenter.x == INT_MIN || prevCenter.y == INT_MIN) {
         return false;
@@ -1444,8 +1442,6 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     if (prevCenter.x == center.x && prevCenter.y == center.y) {
         return false;
     }
-
-    qDebug() << "OK";
 
     // If we were to copy exactly the portion in prevCenter, the smear would leave traces
     // too long. To dampen the effect of the smear, we clamp the spacing

@@ -119,6 +119,8 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
     bool hasRenderedDot = false;
     beginCallback(userData, brushSizePixel, brushSpacing, brushHardness, pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize, doBuildup, shapeColor, opacity);
 
+
+    *lastCenterPoint = lastCenterPointIn;
     Point prevCenter = lastCenterPointIn;
     for (std::list<std::list<std::pair<Point, double> > >::const_iterator strokeIt = strokes.begin(); strokeIt != strokes.end(); ++strokeIt) {
         int firstPoint = (int)std::floor( (strokeIt->size() * writeOnStart) );
@@ -145,6 +147,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             double spacing;
             *lastCenterPoint = it->first;
             renderDotCallback(userData, prevCenter, *lastCenterPoint, it->second, &spacing);
+            distToNext += spacing;
             continue;
         }
 
@@ -192,7 +195,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
 
     endCallback(userData);
 
-    *distToNextOut = distToNextIn;
+    *distToNextOut = distToNext;
 
     return hasRenderedDot;
 }

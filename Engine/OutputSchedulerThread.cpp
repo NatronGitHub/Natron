@@ -3599,6 +3599,10 @@ public:
             _args->scheduler->processProducedFrame(_args->stats, ret);
         }
 
+        _args->request.reset();
+        _args->args[0].reset();
+        _args->args[1].reset();
+
         ///This thread is done, clean-up its TLS
         appPTR->getAppTLS()->cleanupTLSForThread();
 
@@ -3644,7 +3648,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 GenericSchedulerThread::TaskQueueBehaviorEnum
 ViewerCurrentFrameRequestScheduler::tasksQueueBehaviour() const
 {
-    return eTaskQueueBehaviorProcessInOrder;
+    return eTaskQueueBehaviorSkipToMostRecent;
 }
 
 GenericSchedulerThread::ThreadStateEnum
@@ -3652,14 +3656,31 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 {
     ThreadStateEnum state = eThreadStateActive;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> args = boost::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
-
     assert(args);
 
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
-    qDebug() << getThreadName().c_str() << "Thread loop once, waiting for" << args->age << "to be produced";
+    qDebug() << getThreadName().c_str() << "Thread loop once, starting" << args->age ;
 #endif
 
-    ///Wait for the work to be done
+
+    // Start the work in a thread of the thread pool if we can.
+    // Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
+    int maxThreads = _imp->threadPool->maxThreadCount();
+    if (args->useSingleThread) {
+        maxThreads = 1;
+    }
+    if ( (maxThreads == 1) || (_imp->threadPool->activeThreadCount() >= maxThreads - 1) ) {
+        _imp->backupThread.startTask(args->functorArgs);
+    } else {
+        RenderCurrentFrameFunctorRunnable* task = new RenderCurrentFrameFunctorRunnable(args->functorArgs);
+        _imp->appendRunnableTask(task);
+        _imp->threadPool->start(task);
+    }
+
+    // Clear the shared ptr now that we started the task in the thread pool
+    args->functorArgs.reset();
+
+    // Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
     {
         QMutexLocker k(&_imp->producedFramesMutex);
@@ -3678,7 +3699,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
                 break;
             }
             _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
-
             for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
                 if (it->age == args->age) {
                     found = it;
@@ -3686,7 +3706,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
                 }
             }
         }
-
         if ( found != _imp->producedFrames.end() ) {
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
             qDebug() << getThreadName().c_str() << "Found" << args->age << "produced";
@@ -3711,7 +3730,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 #endif
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
-
 
     if (state == eThreadStateActive) {
         state = resolveState();
@@ -3948,6 +3966,10 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         // Identify this render request with an age
         boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request(new ViewerCurrentFrameRequestSchedulerStartArgs);
         request->age = _imp->ageCounter;
+        request->functorArgs = functorArgs;
+        // When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
+        request->useSingleThread = rotoUse1Thread || isTracking;
+        functorArgs->request = request;
 
         // If we reached the max amount of age, reset to 0... should never happen anyway
         if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {
@@ -3957,24 +3979,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         }
 
         startTask(request);
-        functorArgs->request = request;
 
-        /*
-         * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
-         */
-        int maxThreads = _imp->threadPool->maxThreadCount();
-
-        //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-        if (rotoUse1Thread || isTracking) {
-            maxThreads = 1;
-        }
-        if ( (maxThreads == 1) || (_imp->threadPool->activeThreadCount() >= maxThreads - 1) ) {
-            _imp->backupThread.startTask(functorArgs);
-        } else {
-            RenderCurrentFrameFunctorRunnable* task = new RenderCurrentFrameFunctorRunnable(functorArgs);
-            _imp->appendRunnableTask(task);
-            _imp->threadPool->start(task);
-        }
     }
 } // ViewerCurrentFrameRequestScheduler::renderCurrentFrame
 
@@ -3987,6 +3992,13 @@ ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()
 {
 }
+
+GenericSchedulerThread::TaskQueueBehaviorEnum
+ViewerCurrentFrameRequestRendererBackup::tasksQueueBehaviour() const 
+{
+    return eTaskQueueBehaviorSkipToMostRecent;
+}
+
 
 GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
