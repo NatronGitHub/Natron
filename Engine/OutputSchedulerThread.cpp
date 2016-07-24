@@ -3669,6 +3669,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
     if (args->useSingleThread) {
         maxThreads = 1;
     }
+    args->functorArgs->request = args;
     if ( (maxThreads == 1) || (_imp->threadPool->activeThreadCount() >= maxThreads - 1) ) {
         _imp->backupThread.startTask(args->functorArgs);
     } else {
@@ -3969,7 +3970,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         request->functorArgs = functorArgs;
         // When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
         request->useSingleThread = rotoUse1Thread || isTracking;
-        functorArgs->request = request;
 
         // If we reached the max amount of age, reset to 0... should never happen anyway
         if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {

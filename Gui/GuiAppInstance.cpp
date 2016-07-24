@@ -1131,56 +1131,7 @@ GuiAppInstance::setDraftRenderEnabled(bool b)
     }
 }
 
-void
-GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
-                                  const RotoStrokeItemPtr& stroke,
-                                  bool isPainting)
-{
-    {
-        QMutexLocker k(&_imp->rotoDataMutex);
-        bool newStroke = stroke != _imp->rotoData.stroke;
-        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode.lock()) || newStroke ) ) {
-            if (_imp->rotoData.stroke) {
-                _imp->rotoData.stroke->clearPaintBuffers();
-            }
-        }
 
-        _imp->rotoData.isPainting = isPainting;
-        if (isPainting) {
-            _imp->rotoData.rotoPaintNode = rotopaintNode;
-            _imp->rotoData.stroke = stroke;
-        }
-
-        //Reset the index if the stroke is different
-        if (newStroke) {
-            _imp->rotoData.lastStrokeIndex = -1;
-            _imp->rotoData.multiStrokeIndex = 0;
-        }
-
-        if (rotopaintNode) {
-            _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
-        }
-    }
-}
-
-void
-GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
-                                           RotoStrokeItemPtr* stroke,
-                                           bool *isPainting) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-    assert(node && stroke && isPainting);
-    *node = _imp->rotoData.rotoPaintNode.lock();
-    *stroke = _imp->rotoData.stroke;
-    *isPainting = _imp->rotoData.isPainting;
-}
-
-bool
-GuiAppInstance::isDuringPainting() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-    return _imp->rotoData.isPainting;
-}
 
 bool
 GuiAppInstance::isRenderStatsActionChecked() const
@@ -1262,6 +1213,57 @@ GuiAppInstance::getOfxHostOSHandle() const
     WId ret = _imp->_gui->winId();
 
     return (void*)ret;
+}
+
+void
+GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
+                                  const RotoStrokeItemPtr& stroke,
+                                  bool isPainting)
+{
+    {
+        QMutexLocker k(&_imp->rotoDataMutex);
+        bool newStroke = stroke != _imp->rotoData.stroke;
+        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode.lock()) || newStroke ) ) {
+            if (_imp->rotoData.stroke) {
+                _imp->rotoData.stroke->clearPaintBuffers();
+            }
+        }
+
+        _imp->rotoData.isPainting = isPainting;
+        if (isPainting) {
+            _imp->rotoData.rotoPaintNode = rotopaintNode;
+            _imp->rotoData.stroke = stroke;
+        }
+
+        //Reset the index if the stroke is different
+        if (newStroke) {
+            _imp->rotoData.lastStrokeIndex = -1;
+            _imp->rotoData.multiStrokeIndex = 0;
+        }
+
+        if (rotopaintNode) {
+            _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
+        }
+    }
+}
+
+void
+GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
+                                           RotoStrokeItemPtr* stroke,
+                                           bool *isPainting) const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    assert(node && stroke && isPainting);
+    *node = _imp->rotoData.rotoPaintNode.lock();
+    *stroke = _imp->rotoData.stroke;
+    *isPainting = _imp->rotoData.isPainting;
+}
+
+bool
+GuiAppInstance::isDuringPainting() const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    return _imp->rotoData.isPainting;
 }
 
 void

@@ -313,6 +313,7 @@ RotoStrokeItem::setStrokeFinished()
     resetTransformCenter();
 
     NodePtr effectNode = getEffectNode();
+    NodePtr maskNode = getMaskNode();
     NodePtr mergeNode = getMergeNode();
     NodePtr timeOffsetNode = getTimeOffsetNode();
     NodePtr frameHoldNode = getFrameHoldNode();
@@ -330,6 +331,10 @@ RotoStrokeItem::setStrokeFinished()
     if (frameHoldNode) {
         frameHoldNode->setWhileCreatingPaintStroke(false);
         frameHoldNode->incrementKnobsAge();
+    }
+    if (maskNode) {
+        maskNode->setWhileCreatingPaintStroke(false);
+        maskNode->incrementKnobsAge();
     }
 
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(false);

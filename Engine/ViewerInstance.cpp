@@ -406,6 +406,9 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     if ( !rotoPaintNode->getEffectInstance() ) {
         return eViewerRenderRetCodeFail;
     }
+
+    assert(getApp()->isDuringPainting());
+    
     rotoPaintNode->getEffectInstance()->clearActionsCache();
 
     ViewerRenderRetCode status[2] = {
