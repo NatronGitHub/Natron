@@ -2075,6 +2075,7 @@ RotoContext::setIsDoingNeatRender(bool doing)
         _imp->mustDoNeatRender = false;
     } else if (_imp->doingNeatRender) {
         _imp->doingNeatRender = false;
+        _imp->mustDoNeatRender = false;
         _imp->doingNeatRenderCond.wakeAll();
     }
 }
@@ -2086,12 +2087,23 @@ RotoContext::evaluateNeatStrokeRender()
         QMutexLocker k(&_imp->doingNeatRenderMutex);
         _imp->mustDoNeatRender = true;
     }
-    evaluateChange();
+
+    _imp->incrementRotoAge();
+    getNode()->incrementKnobsAge();
+    getNode()->getEffectInstance()->abortAnyEvaluation();
+    std::list<ViewerInstancePtr> viewers;
+
+    getNode()->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
+         it != viewers.end();
+         ++it) {
+        (*it)->renderCurrentFrameNow(true);
+    }
 
     //EvaluateChange will call setIsDoingNeatRender(true);
     {
         QMutexLocker k(&_imp->doingNeatRenderMutex);
-        while (_imp->doingNeatRender) {
+        while (_imp->doingNeatRender || _imp->mustDoNeatRender) {
             _imp->doingNeatRenderCond.wait(&_imp->doingNeatRenderMutex);
         }
     }

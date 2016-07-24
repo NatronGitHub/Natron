@@ -68,7 +68,7 @@ class Bitmap
 public:
     Bitmap(const RectI & bounds)
         : _bounds(bounds)
-        , _map( bounds.area() )
+        , _map()
         , _dirtyZone()
         , _dirtyZoneSet(false)
     {
@@ -76,7 +76,8 @@ public:
         // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
         // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
         //assert(!rod.isNull());
-        std::fill(_map.begin(), _map.end(), 0);
+        _map.resize(bounds.area());
+        memset(_map.getData(), 0, _map.size());
     }
 
     Bitmap()
@@ -91,8 +92,7 @@ public:
     {
         _bounds = bounds;
         _map.resize( _bounds.area() );
-
-        std::fill(_map.begin(), _map.end(), 0);
+        memset(_map.getData(), 0, _map.size());
     }
 
     ~Bitmap()
@@ -101,7 +101,7 @@ public:
 
     void setTo1()
     {
-        std::fill(_map.begin(), _map.end(), 1);
+        memset(_map.getData(), 1, _map.size());
     }
 
     const RectI & getBounds() const
@@ -132,12 +132,12 @@ public:
 
     const char* getBitmap() const
     {
-        return &_map.front();
+        return _map.getData();
     }
 
     char* getBitmap()
     {
-        return &_map.front();
+        return _map.getData();
     }
 
     const char* getBitmapAt(int x, int y) const;
@@ -155,7 +155,7 @@ public:
 
 private:
     RectI _bounds;
-    std::vector<char> _map;
+    RamBuffer<char> _map;
 
     /**
      * This represents the zone that has potentially something to render. In minimalNonMarkedRects

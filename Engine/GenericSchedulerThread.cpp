@@ -482,7 +482,14 @@ GenericSchedulerThread::run()
                     case eTaskQueueBehaviorSkipToMostRecent: {
                         if ( !_imp->enqueuedTasks.empty() ) {
                             args = _imp->enqueuedTasks.back();
-                            _imp->enqueuedTasks.clear();
+                            _imp->enqueuedTasks.pop_back();
+                            std::list<ThreadStartArgsPtr> unskippableTasks;
+                            for (std::list<ThreadStartArgsPtr>::iterator it = _imp->enqueuedTasks.begin(); it != _imp->enqueuedTasks.end(); ++it) {
+                                if (!(*it)->isSkippable()) {
+                                    unskippableTasks.push_back(*it);
+                                }
+                            }
+                            _imp->enqueuedTasks = unskippableTasks;
                         }
                         break;
                     }

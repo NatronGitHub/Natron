@@ -38,7 +38,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define BM_GET(i, j) & _map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
+#define BM_GET(i, j) mapStart + ( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )
 
 #define PIXEL_UNAVAILABLE 2
 
@@ -46,7 +46,7 @@ template <int trimap>
 RectI
 minimalNonMarkedBbox_internal(const RectI& roi,
                               const RectI& _bounds,
-                              const std::vector<char>& _map,
+                              const char* mapStart,
                               bool* isBeingRenderedElsewhere)
 {
     RectI bbox;
@@ -204,7 +204,7 @@ template <int trimap>
 void
 minimalNonMarkedRects_internal(const RectI & roi,
                                const RectI& _bounds,
-                               const std::vector<char>& _map,
+                               const char* mapStart,
                                std::list<RectI>& ret,
                                bool* isBeingRenderedElsewhere)
 {
@@ -241,7 +241,7 @@ minimalNonMarkedRects_internal(const RectI & roi,
         return;
     }
 
-    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, _map, isBeingRenderedElsewhere);
+    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, mapStart, isBeingRenderedElsewhere);
     assert( (trimap && isBeingRenderedElsewhere) || (!trimap && !isBeingRenderedElsewhere) );
 
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -448,7 +448,7 @@ minimalNonMarkedRects_internal(const RectI & roi,
     assert( bboxD.bottom() == bboxX.bottom() );
 
     // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX, _bounds, _map, isBeingRenderedElsewhere);
+    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX, _bounds, mapStart, isBeingRenderedElsewhere);
 
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxX);
@@ -466,9 +466,9 @@ Bitmap::minimalNonMarkedBbox(const RectI & roi) const
             return RectI();
         }
 
-        return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map, NULL);
+        return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map.getData(), NULL);
     } else {
-        return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map, NULL);
+        return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map.getData(), NULL);
     }
 }
 
@@ -481,9 +481,9 @@ Bitmap::minimalNonMarkedRects(const RectI & roi,
         if ( !roi.intersect(_dirtyZone, &realRoi) ) {
             return;
         }
-        minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map, ret, NULL);
+        minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map.getData(), ret, NULL);
     } else {
-        minimalNonMarkedRects_internal<0>(roi, _bounds, _map, ret, NULL);
+        minimalNonMarkedRects_internal<0>(roi, _bounds, _map.getData(), ret, NULL);
     }
 }
 
@@ -500,9 +500,9 @@ Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,
             return RectI();
         }
 
-        return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map, isBeingRenderedElsewhere);
+        return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map.getData(), isBeingRenderedElsewhere);
     } else {
-        return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map, isBeingRenderedElsewhere);
+        return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map.getData(), isBeingRenderedElsewhere);
     }
 }
 
@@ -518,9 +518,9 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
 
             return;
         }
-        minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map, ret, isBeingRenderedElsewhere);
+        minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map.getData(), ret, isBeingRenderedElsewhere);
     } else {
-        minimalNonMarkedRects_internal<1>(roi, _bounds, _map, ret, isBeingRenderedElsewhere);
+        minimalNonMarkedRects_internal<1>(roi, _bounds, _map.getData(), ret, isBeingRenderedElsewhere);
     }
 }
 
@@ -529,6 +529,7 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
 void
 Bitmap::markForRendered(const RectI & roi)
 {
+    char* mapStart = _map.getData();
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -542,7 +543,8 @@ Bitmap::markForRendered(const RectI & roi)
 void
 Bitmap::markForRendering(const RectI & roi)
 {
-    assert(!_map.empty());
+    assert(_map.size() > 0);
+    char* mapStart = _map.getData();
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -557,7 +559,8 @@ Bitmap::markForRendering(const RectI & roi)
 void
 Bitmap::clear(const RectI& roi)
 {
-    assert(!_map.empty());
+    assert(_map.size() > 0);
+    char* mapStart = _map.getData();
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -581,6 +584,7 @@ Bitmap::getBitmapAt(int x,
                     int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
+        const char* mapStart = _map.getData();
         return BM_GET(y, x);
     } else {
         return NULL;
@@ -592,6 +596,7 @@ Bitmap::getBitmapAt(int x,
                     int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
+        char* mapStart = _map.getData();
         return BM_GET(y, x);
     } else {
         return NULL;

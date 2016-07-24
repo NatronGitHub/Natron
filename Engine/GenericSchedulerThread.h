@@ -38,11 +38,15 @@ class GenericThreadStartArgs
     // Used to wake-up the thread when calling abortThreadedTask
     bool _isNull;
 
+    // For schedulers with policy eTaskQueueBehaviorSkipToMostRecent, controls
+    // Whether this task can effectively be skipped
+    bool _canSkip;
 public:
 
 
     GenericThreadStartArgs(bool isNullTask = false)
         : _isNull(isNullTask)
+        , _canSkip(true)
     {
     }
 
@@ -51,6 +55,16 @@ public:
     bool isNull() const
     {
         return _isNull;
+    }
+
+    void setCanSkip(bool b)
+    {
+        _canSkip = b;
+    }
+
+    bool isSkippable() const
+    {
+        return _canSkip;
     }
 };
 

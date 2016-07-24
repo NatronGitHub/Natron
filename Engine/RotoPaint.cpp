@@ -2639,7 +2639,7 @@ RotoPaint::onOverlayPenDown(double time,
                     assert(layer);
                     context->addItem(layer, 0, _imp->ui->strokeBeingPaint, RotoItem::eSelectionReasonOther);
                 }
-
+                qDebug() << "Setting user paintin ON";
                 context->getNode()->getApp()->setUserIsPainting(context->getNode(), _imp->ui->strokeBeingPaint, true);
 
                 KnobIntPtr lifeTimeFrameKnob = _imp->ui->strokeBeingPaint->getLifeTimeFrameKnob();
@@ -3128,7 +3128,6 @@ RotoPaint::onOverlayPenUp(double /*time*/,
 
     if (_imp->ui->state == eEventStateBuildingStroke) {
         assert(_imp->ui->strokeBeingPaint);
-        context->getNode()->getApp()->setUserIsPainting(context->getNode(), _imp->ui->strokeBeingPaint, false);
         assert( _imp->ui->strokeBeingPaint->getParentLayer() );
 
         bool multiStrokeEnabled = _imp->ui->isMultiStrokeEnabled();
@@ -3147,6 +3146,8 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         context->evaluateNeatStrokeRender();
         setCurrentCursor(eCursorDefault);
         _imp->ui->strokeBeingPaint->setStrokeFinished();
+        qDebug() << "Setting user painting OFF"; 
+        context->getNode()->getApp()->setUserIsPainting(context->getNode(), _imp->ui->strokeBeingPaint, false);
         ret = true;
     }
 

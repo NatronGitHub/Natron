@@ -249,7 +249,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
 
-    bool isDuringPainting = isDuringPaintStrokeCreationThreadLocal();
+    bool isDuringPainting = frameArgs->isDuringPaintStrokeCreation;
     double distNextIn = 0.;
     Point lastCenterIn = { INT_MIN, INT_MIN };
     bool isStrokeFirstTick = true;

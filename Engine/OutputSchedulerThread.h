@@ -664,10 +664,14 @@ public:
 
     /**
      * @brief Basically it just renders with the current frame on the timeline.
-     * @param abortPrevious If true then it will stop any ongoing render and render the current frame
-     * in a separate thread
      **/
     void renderCurrentFrame(bool enableRenderStats, bool canAbort);
+
+    /**
+     * @brief Same as renderCurrentFrame, except that it does not concatenate render requests and starts the render
+     * request now. On the main-thread, if a lot of render request are to be made, pref using renderCurrentFrame
+     **/
+    void renderCurrentFrameNow(bool enableRenderStats, bool canAbort);
 
     /**
      * @brief Whether the playback can be automatically restarted by a single render request
@@ -834,7 +838,6 @@ protected:
 
 private:
 
-    void renderCurrentFrameInternal(bool enableRenderStats, bool canAbort);
 
 
     /**
