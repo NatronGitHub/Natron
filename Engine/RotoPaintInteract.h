@@ -397,6 +397,11 @@ struct RotoPaintPrivate
     bool isPaintByDefault;
     boost::weak_ptr<KnobBool> premultKnob;
     boost::weak_ptr<KnobBool> enabledKnobs[4];
+
+    mutable QMutex doingNeatRenderMutex;
+    bool doingNeatRender;
+    bool mustDoNeatRender;
+
     boost::shared_ptr<RotoPaintInteract> ui;
 
     RotoPaintPrivate(RotoPaint* publicInterface,

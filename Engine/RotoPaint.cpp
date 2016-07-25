@@ -47,7 +47,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
-
+#include "Engine/ViewerInstance.h"
 
 #include "Global/GLIncludes.h"
 #include "Global/GlobalDefines.h"
@@ -2247,6 +2247,9 @@ RotoPaint::onOverlayPenDown(double time,
                             double timestamp,
                             PenType pen)
 {
+    if (isDoingNeatRender()) {
+        return true;
+    }
     NodePtr node = getNode();
 
     std::pair<double, double> pixelScale;
@@ -2639,7 +2642,6 @@ RotoPaint::onOverlayPenDown(double time,
                     assert(layer);
                     context->addItem(layer, 0, _imp->ui->strokeBeingPaint, RotoItem::eSelectionReasonOther);
                 }
-                qDebug() << "Setting user paintin ON";
                 context->getNode()->getApp()->setUserIsPainting(context->getNode(), _imp->ui->strokeBeingPaint, true);
 
                 KnobIntPtr lifeTimeFrameKnob = _imp->ui->strokeBeingPaint->getLifeTimeFrameKnob();
@@ -2681,6 +2683,9 @@ RotoPaint::onOverlayPenMotion(double time,
                               double pressure,
                               double timestamp)
 {
+    if (isDoingNeatRender()) {
+        return true;
+    }
     std::pair<double, double> pixelScale;
 
     getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
@@ -3091,6 +3096,9 @@ RotoPaint::onOverlayPenUp(double /*time*/,
                           double /*pressure*/,
                           double /*timestamp*/)
 {
+    if (isDoingNeatRender()) {
+        return true;
+    }
     RotoContextPtr context = getNode()->getRotoContext();
 
     assert(context);
@@ -3138,16 +3146,9 @@ RotoPaint::onOverlayPenUp(double /*time*/,
             pushUndoCommand( new AddMultiStrokeUndoCommand(_imp->ui, _imp->ui->strokeBeingPaint) );
         }
 
-        /**
-         * Do a neat render for the stroke (better interpolation). This call is blocking otherwise the user might
-         * attempt to make a new stroke while the previous stroke is not finished... this would yield artifacts.
-         **/
-        setCurrentCursor(eCursorBusy);
-        context->evaluateNeatStrokeRender();
-        setCurrentCursor(eCursorDefault);
+         // Do a neat render for the stroke (better interpolation).
         _imp->ui->strokeBeingPaint->setStrokeFinished();
-        qDebug() << "Setting user painting OFF"; 
-        context->getNode()->getApp()->setUserIsPainting(context->getNode(), _imp->ui->strokeBeingPaint, false);
+        evaluateNeatStrokeRender();
         ret = true;
     }
 
@@ -3174,6 +3175,9 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
                             Key key,
                             KeyboardModifiers /*modifiers*/)
 {
+    if (isDoingNeatRender()) {
+        return true;
+    }
     bool didSomething = false;
 
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
@@ -3214,6 +3218,9 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
                           Key key,
                           KeyboardModifiers /*modifiers*/)
 {
+    if (isDoingNeatRender()) {
+        return true;
+    }
     bool didSomething = false;
 
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
@@ -3325,6 +3332,59 @@ RotoPaint::onSelectionChanged(int reason)
     if ( (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract ) {
         _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
         redrawOverlayInteract();
+    }
+}
+
+
+
+void
+RotoPaint::evaluateNeatStrokeRender()
+{
+    {
+        QMutexLocker k(&_imp->doingNeatRenderMutex);
+        _imp->mustDoNeatRender = true;
+    }
+
+    getNode()->getRotoContext()->evaluateChange();
+
+}
+
+
+bool
+RotoPaint::isDoingNeatRender() const
+{
+    QMutexLocker k(&_imp->doingNeatRenderMutex);
+
+    return _imp->doingNeatRender;
+}
+
+bool
+RotoPaint::mustDoNeatRender() const
+{
+    QMutexLocker k(&_imp->doingNeatRenderMutex);
+
+    return _imp->mustDoNeatRender;
+}
+
+void
+RotoPaint::setIsDoingNeatRender(bool doing)
+{
+    bool setUserPaintingOff = false;
+    {
+        QMutexLocker k(&_imp->doingNeatRenderMutex);
+
+        if (doing && _imp->mustDoNeatRender) {
+            assert(!_imp->doingNeatRender);
+            _imp->doingNeatRender = true;
+            _imp->mustDoNeatRender = false;
+        } else if (_imp->doingNeatRender) {
+            _imp->doingNeatRender = false;
+            _imp->mustDoNeatRender = false;
+            setUserPaintingOff = true;
+        }
+    }
+    if (setUserPaintingOff) {
+        getApp()->setUserIsPainting(getNode(), _imp->ui->strokeBeingPaint, false);
     }
 }
 

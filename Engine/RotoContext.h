@@ -187,6 +187,8 @@ public:
                                      double* endTime,
                                      double* timeStep) const;
 
+    bool isDoingNeatRender() const;
+
 private:
 
 
@@ -359,21 +361,6 @@ public:
     RotoLayerPtr findDeepestSelectedLayer() const;
 
     void dequeueGuiActions();
-
-    /**
-     * @brief When finishing a stroke with the paint brush, we need to re-render it because the interpolation of the curve
-     * will be much smoother with more points than what it was during painting.
-     * We explicitly freeze the UI while waiting for the image to be drawn, otherwise the user might attempt to do a
-     * multiple stroke on top of it which could make some artifacts.
-     **/
-    void evaluateNeatStrokeRender();
-
-
-    bool mustDoNeatRender() const;
-
-    void setIsDoingNeatRender(bool doing);
-
-    bool isDoingNeatRender() const;
 
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
 

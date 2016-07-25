@@ -2554,8 +2554,9 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                         ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( idIt->second->getBitDepth() );
                         ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
                         RectI convertWindow;
-                        idIt->second->getBounds().intersect(downscaledRectToRender, &convertWindow);
-                        idIt->second->convertToFormat( convertWindow, colorspace, dstColorspace, 3, false, false, it->second.downscaleImage.get() );
+                        if (idIt->second->getBounds().intersect(downscaledRectToRender, &convertWindow)) {
+                            idIt->second->convertToFormat( convertWindow, colorspace, dstColorspace, 3, false, false, it->second.downscaleImage.get() );
+                        }
                     } else {
                         it->second.downscaleImage->pasteFrom(*(idIt->second), downscaledRectToRender, false, glContext);
                     }

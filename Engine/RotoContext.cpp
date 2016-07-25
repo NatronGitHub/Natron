@@ -2051,64 +2051,12 @@ RotoContext::getMotionBlurTypeKnob() const
 bool
 RotoContext::isDoingNeatRender() const
 {
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    return _imp->doingNeatRender;
-}
-
-bool
-RotoContext::mustDoNeatRender() const
-{
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    return _imp->mustDoNeatRender;
-}
-
-void
-RotoContext::setIsDoingNeatRender(bool doing)
-{
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    if (doing && _imp->mustDoNeatRender) {
-        assert(!_imp->doingNeatRender);
-        _imp->doingNeatRender = true;
-        _imp->mustDoNeatRender = false;
-    } else if (_imp->doingNeatRender) {
-        _imp->doingNeatRender = false;
-        _imp->mustDoNeatRender = false;
-        _imp->doingNeatRenderCond.wakeAll();
+    RotoPaint* rotoNode = dynamic_cast<RotoPaint*>(getNode()->getEffectInstance().get());
+    if (!rotoNode) {
+        return false;
     }
+    return rotoNode->isDoingNeatRender();
 }
-
-void
-RotoContext::evaluateNeatStrokeRender()
-{
-    {
-        QMutexLocker k(&_imp->doingNeatRenderMutex);
-        _imp->mustDoNeatRender = true;
-    }
-
-    _imp->incrementRotoAge();
-    getNode()->incrementKnobsAge();
-    getNode()->getEffectInstance()->abortAnyEvaluation();
-    std::list<ViewerInstancePtr> viewers;
-
-    getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
-         it != viewers.end();
-         ++it) {
-        (*it)->renderCurrentFrameNow(true);
-    }
-
-    //EvaluateChange will call setIsDoingNeatRender(true);
-    {
-        QMutexLocker k(&_imp->doingNeatRenderMutex);
-        while (_imp->doingNeatRender || _imp->mustDoNeatRender) {
-            _imp->doingNeatRenderCond.wait(&_imp->doingNeatRenderMutex);
-        }
-    }
-}
-
 
 
 void

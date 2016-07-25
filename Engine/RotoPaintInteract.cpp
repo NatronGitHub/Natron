@@ -50,7 +50,9 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
     , isPaintByDefault(isPaintByDefault)
     , premultKnob()
     , enabledKnobs()
-, ui( RotoPaintInteract::create(this) )
+    , doingNeatRender(false)
+    , mustDoNeatRender(false)
+    , ui( RotoPaintInteract::create(this) )
 {
 }
 

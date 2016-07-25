@@ -62,6 +62,7 @@
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/UpdateViewerParams.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -3436,14 +3437,20 @@ public:
         , isRotoNeatRender(isRotoNeatRender)
     {
         if (isRotoPaintRequest && isRotoNeatRender) {
-            isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(true);
+            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(isRotoPaintRequest->getEffectInstance().get());
+            if (isRotoNode) {
+                isRotoNode->setIsDoingNeatRender(true);
+            }
         }
     }
 
     ~CurrentFrameFunctorArgs()
     {
         if (isRotoPaintRequest && isRotoNeatRender) {
-            isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(false);
+            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(isRotoPaintRequest->getEffectInstance().get());
+            if (isRotoNode) {
+                isRotoNode->setIsDoingNeatRender(false);
+            }
         }
     }
 };
@@ -3470,12 +3477,6 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     // Used to attribute an age to each renderCurrentFrameRequest
     U64 ageCounter;
 
-    // When we do a Roto neat render, we wait on the main-thread
-    // hence we cannot allow this thread to run a task on the main-thread
-    // otherwise we get a deadlock
-    bool allowRunningMainThread;
-    QMutex allowRunningMainThreadMutex;
-
     ViewerCurrentFrameRequestSchedulerPrivate(const ViewerInstancePtr& viewer)
         : viewer(viewer)
         , threadPool( QThreadPool::globalInstance() )
@@ -3486,8 +3487,6 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         , currentFrameRenderTasksCond()
         , currentFrameRenderTasks()
         , ageCounter(0)
-        , allowRunningMainThread(false)
-        , allowRunningMainThreadMutex()
     {
     }
 
@@ -3563,7 +3562,9 @@ public:
         ///it calls appendToBuffer by itself
         ViewerInstance::ViewerRenderRetCode stat = ViewerInstance::eViewerRenderRetCodeFail;
         BufferableObjectList ret;
-
+        if (_args->isRotoNeatRender || _args->isRotoPaintRequest) {
+            qDebug() << "Exec roto render: " << _args->isRotoNeatRender;
+        }
         try {
             if (!_args->isRotoPaintRequest || _args->isRotoNeatRender) {
                 stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
@@ -3686,7 +3687,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         _imp->threadPool->start(task);
     }
 
-    bool isRotoNeatRender = args->functorArgs->isRotoNeatRender;
     // Clear the shared ptr now that we started the task in the thread pool
     args->functorArgs.reset();
 
@@ -3741,11 +3741,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
 
-    if (isRotoNeatRender) {
-        QMutexLocker k(&_imp->allowRunningMainThreadMutex);
-        _imp->allowRunningMainThread = true;
-    }
-    
     if (state == eThreadStateActive) {
         state = resolveState();
     }
@@ -3753,14 +3748,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         return state;
     }
 
-    {
-        QMutexLocker k(&_imp->allowRunningMainThreadMutex);
-        if (_imp->allowRunningMainThread) {
-            requestExecutionOnMainThread(mtArgs);
-
-        }
-    }
-
+    requestExecutionOnMainThread(mtArgs);
 
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
     qDebug() << getThreadName().c_str() << "Frame processed" << args->age;
@@ -3884,8 +3872,15 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
     bool rotoUse1Thread = false;
-    bool isRotoNeatRender = rotoPaintNode ? rotoPaintNode->getRotoContext()->mustDoNeatRender() : false;
+    bool isRotoNeatRender = false;
+    if (rotoPaintNode) {
+        RotoPaint* isRotoPaint = dynamic_cast<RotoPaint*>(rotoPaintNode->getEffectInstance().get());
+        if (isRotoPaint) {
+            isRotoNeatRender = isRotoPaint->mustDoNeatRender();
+        }
+    }
     if (isDrawing || (rotoPaintNode && isRotoNeatRender)) {
+        qDebug() << "Queing roto render, neat= " << isRotoNeatRender;
         rotoUse1Thread = true;
     } else {
         rotoPaintNode.reset();
@@ -3991,10 +3986,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         request->useSingleThread = rotoUse1Thread || isTracking;
         if (isRotoNeatRender) {
             request->setCanSkip(false);
-            {
-                QMutexLocker k(&_imp->allowRunningMainThreadMutex);
-                _imp->allowRunningMainThread = false;
-            }
         }
         // If we reached the max amount of age, reset to 0... should never happen anyway
         if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {

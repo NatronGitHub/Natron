@@ -2151,7 +2151,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount * dstRowSize) {
         const PIX * const srcLineStart = src;
         PIX * const dstLineBatchStart = dst;
-        ycount = scale - (yo - yi * scale); // how many lines should be filled
+        ycount = scale - ((yo - dstRoi.y1) - (yi - srcRoi.y1) * scale); // how many lines should be filled
         ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
         int xi = srcRoi.x1;
@@ -2160,7 +2160,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         PIX * dstPixFirst = dstLineBatchStart;
         // fill the first line
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += _nbComponents, xo += xcount, dstPixFirst += xcount * _nbComponents) {
-            xcount = scale - (xo - xi * scale);
+            xcount = scale - ((xo - dstRoi.x1) - (xi - srcRoi.x1) * scale);
             xcount = std::min(xcount, dstRoi.x2 - xo);
             //assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary

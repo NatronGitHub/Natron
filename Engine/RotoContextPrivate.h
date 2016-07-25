@@ -1254,10 +1254,7 @@ public:
     std::list<RotoItemPtr > selectedItems;
     RotoItemPtr lastInsertedItem;
     RotoItemPtr lastLockedItem;
-    mutable QMutex doingNeatRenderMutex;
-    QWaitCondition doingNeatRenderCond;
-    bool doingNeatRender;
-    bool mustDoNeatRender;
+
 
     /*
      * A merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
@@ -1274,8 +1271,6 @@ public:
         , isCurrentlyLoading(false)
         , node(n)
         , age(0)
-        , doingNeatRender(false)
-        , mustDoNeatRender(false)
         , globalMergeNodes()
     {
         EffectInstancePtr effect = n->getEffectInstance();

@@ -160,7 +160,6 @@ static const char* rotoSmearDot_FragmentShader =
 "}"
 ;
 
-
 RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
 : EffectOpenGLContextData(isGPUContext)
 , _vboVerticesID(0)
@@ -533,6 +532,7 @@ RotoShapeRenderNodeOpenGLData::getOrCreateSmearShader()
 
     return _smearShader;
 }
+
 
 
 template <typename GL>
@@ -1446,7 +1446,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     // If we were to copy exactly the portion in prevCenter, the smear would leave traces
     // too long. To dampen the effect of the smear, we clamp the spacing
     Point prevPoint = RotoShapeRenderNodePrivate::dampenSmearEffect(prevCenter, center, *spacing);
-
+    qDebug() << "Prev: " << prevPoint.x <<prevPoint.y<< "next: " << center.x <<center.y;
     const OSGLContextPtr& glContext = myData->glContext;
     const ImagePtr& dstImage = myData->dstImage;
     RectI dstBounds = dstImage->getBounds();
@@ -1600,12 +1600,13 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     // Now copy to the destination rect with blending on
     GL::glEnable(GL_BLEND);
     GL::glBlendEquation(GL_FUNC_ADD);
-    GL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL::glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 
 
     GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
     glCheckFramebufferError(GL);
 
+    // Use a shader that does not copy the alpha
     GL::glBindTexture( target, tmpTexture->getGLTextureID() );
     Image::applyTextureMapping<GL>(nextDotBounds, dstBounds, nextDotBounds);
     GL::glBindTexture( target, 0);

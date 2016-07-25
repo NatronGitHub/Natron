@@ -839,13 +839,6 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
 
 
 
-            if (_imp->maskNode) {
-                if ( _imp->mergeNode->getInput(2) != _imp->maskNode) {
-                    //Connect the merge node mask to the mask node
-                    _imp->mergeNode->replaceInput(_imp->maskNode, 2);
-                }
-            }
-
         } else {
             _imp->mergeNode->disconnectInput(0);
             _imp->mergeNode->disconnectInput(1);
@@ -938,6 +931,15 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
             assert(false);
         }
     } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
+
+
+    if (_imp->maskNode) {
+        if ( _imp->mergeNode->getInput(2) != _imp->maskNode) {
+            //Connect the merge node mask to the mask node
+            _imp->mergeNode->replaceInput(_imp->maskNode, 2);
+        }
+    }
+
 } // RotoDrawableItem::refreshNodesConnections
 
 void
