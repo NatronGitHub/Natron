@@ -253,6 +253,10 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
                                const QString& help)
 {
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    std::string activeEntry = knob->getActiveEntryText_mt_safe();
 
     if ( knob->getHostCanAddOptions() &&
          ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
@@ -265,6 +269,15 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
         _comboBox->setCurrentIndex_no_emit(activeIndex);
     } else {
         _comboBox->setCurrentText( QString::fromUtf8( knob->getActiveEntryText_mt_safe().c_str() ) );
+    }
+    if ( !activeEntry.empty() ) {
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        if (!activeIndexPresent) {
+            QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
+            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, GuiUtils::convertFromPlainText(error, Qt::WhiteSpaceNormal) );
+        } else {
+            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+        }
     }
 }
 
