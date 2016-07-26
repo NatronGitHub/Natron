@@ -1485,6 +1485,17 @@ NodeGroup::purgeCaches()
     }
 }
 
+void
+NodeGroup::clearLastRenderedImage()
+{
+    EffectInstance::clearLastRenderedImage();
+    NodesList nodes = getNodes();
+
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->getEffectInstance()->purgeCaches();
+    }
+}
+
 bool
 NodeGroup::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,

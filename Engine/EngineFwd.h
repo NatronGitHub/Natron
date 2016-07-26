@@ -252,6 +252,7 @@ class UpdateViewerParams;
 class ViewIdx;
 class ViewerCurrentFrameRequestSchedulerStartArgs;
 class ViewerInstance;
+class ViewerNode;
 class WriteNode;
 
 namespace Color {
@@ -364,6 +365,7 @@ typedef boost::shared_ptr<TrackMarkerPM> TrackMarkerPMPtr;
 typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<UpdateViewerParams> UpdateViewerParamsPtr;
 typedef boost::shared_ptr<ViewerInstance> ViewerInstancePtr;
+typedef boost::shared_ptr<ViewerNode> ViewerNodePtr;
 typedef boost::shared_ptr<WriteNode> WriteNodePtr;
 typedef boost::weak_ptr<AbortableRenderInfo> AbortableRenderInfoWPtr;
 typedef boost::weak_ptr<AppInstance> AppInstanceWPtr;
@@ -381,6 +383,7 @@ typedef boost::weak_ptr<KnobString> KnobStringWPtr;
 typedef boost::weak_ptr<Node> NodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;
 typedef boost::weak_ptr<ViewerInstance> ViewerInstanceWPtr;
+typedef boost::weak_ptr<ViewerNode> ViewerNodeWPtr;
 typedef std::list<ImagePtr> ImageList;
 typedef std::list<NodePtr> NodesList;
 typedef std::list<NodeWPtr> NodesWList;

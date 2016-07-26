@@ -563,6 +563,7 @@ private: // derives from KnobI
                bool declaredByPlugin);
 
 public:
+
     static KnobHelperPtr create(const KnobHolderPtr& holder,
                                 const std::string &label,
                                 int dimension,
@@ -585,6 +586,8 @@ public:
     {
         return true;
     }
+
+    static const std::string& getSeparatorOption();
 
     /**
      * @brief Fills-up the menu with the given entries and optionnally their tooltip.

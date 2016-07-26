@@ -200,6 +200,7 @@ SOURCES += \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
+    ViewerNode.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
@@ -437,6 +438,7 @@ HEADERS += \
     VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
+    ViewerNode.h \
     ViewIdx.h \
     WriteNode.h \
     ../Global/Enums.h \

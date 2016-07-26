@@ -353,8 +353,8 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
@@ -366,6 +366,7 @@ public:
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE FINAL;
+    virtual void clearLastRenderedImage() OVERRIDE ;
 
     NodePtr getOutputNode(bool useGuiConnexions) const;
 

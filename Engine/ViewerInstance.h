@@ -401,12 +401,12 @@ private:
 
     virtual std::string getPluginID() const OVERRIDE FINAL
     {
-        return PLUGINID_NATRON_VIEWER;
+        return PLUGINID_NATRON_VIEWER_INTERNAL;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL
     {
-        return "Viewer";
+        return "ViewerProcess";
     }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;

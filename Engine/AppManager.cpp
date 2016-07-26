@@ -1908,7 +1908,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
     std::map<int, Plugin*> matches;
 
     if ( pluginId == QString::fromUtf8("Viewer") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_VIEWER), majorVersion, minorVersion);
+        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP), majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("Dot") ) {
         return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_DOT), majorVersion, minorVersion );
     } else if ( pluginId == QString::fromUtf8("DiskCache") ) {

@@ -641,6 +641,13 @@ KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
     }
 }
 
+const std::string&
+KnobChoice::getSeparatorOption()
+{
+    static const std::string str("NatronKnobChoiceSeparator");
+    return str;
+}
+
 bool
 KnobChoice::populateChoices(const std::vector<std::string> &entries,
                             const std::vector<std::string> &entriesHelp,

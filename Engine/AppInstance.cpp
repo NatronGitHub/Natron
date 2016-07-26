@@ -1032,7 +1032,7 @@ static bool
 isEntitledForInspector(Plugin* plugin,
                        OFX::Host::ImageEffect::Descriptor* ofxDesc)
 {
-    if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER) ) ||
+    if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP) ) ||
          ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ) ||
          ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) ) {
         return true;
