@@ -703,7 +703,7 @@ typedef GLboolean (* PFNGLISVERTEXARRAYAPPLEPROC)(GLuint array);
 extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArrayAPPLE;
 extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArray;
 
-}
+} // extern "C"
 
 void
 AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type)

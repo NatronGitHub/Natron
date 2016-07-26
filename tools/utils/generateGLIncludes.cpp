@@ -105,20 +105,20 @@ static void writeHeader(QTextStream& ts)
 }
 
 
-static void writeStartClass(QTextStream& ts)
+static void writeStartClass(const QString& namespaceName, QTextStream& ts)
 {
-    ts << "namespace Natron {\n\n";
+    ts << "namespace " << namespaceName << " {\n\n";
     ts << "template <bool USEOPENGL>\n";
     ts << "class OSGLFunctions\n";
     ts << "{\n\n\n";
 }
 
-static void writeEndClass(QTextStream& ts)
+static void writeEndClass(const QString& namespaceName, QTextStream& ts)
 {
     ts << "}; // class OSGLFunctions\n\n\n";
     ts << "typedef OSGLFunctions<true> GL_GPU;\n";
     ts << "typedef OSGLFunctions<false> GL_CPU;\n\n\n";
-    ts << "} // namespace Natron\n\n";
+    ts << "} // namespace " << namespaceName << "\n\n";
 }
 
 static void writeFooter(QTextStream& ts)
@@ -135,19 +135,19 @@ struct FunctionSignature {
     QStringList parameters;
 };
 
-static void writeTemplateIncludeStart(const QString& defineVal, QTextStream& ts)
+static void writeTemplateIncludeStart( const QString& baseFileName, const QString& defineVal, QTextStream& ts)
 {
     ts << "/*THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h, DO NOT EDIT*/\n\n\n\n";
     ts << "#ifndef " << defineVal << "\n";
     ts << "#define " << defineVal << "\n\n";
-    ts << "#include \"OSGLFunctions.h\"\n";
+    ts << "#include \"" << baseFileName << ".h\"\n";
     ts << "\n\n\n";
 
 }
 
-static void writeImplementationHeaderFile(const std::list<FunctionSignature>& functions, const QString& path, const QString &API, bool templateValue)
+static void writeImplementationHeaderFile(const QString& namespaceName, const QString& baseFileName, const std::list<FunctionSignature>& functions, const QString& path, const QString &API, bool templateValue, bool includeDebug)
 {
-    QString outputHeaderFilename = path + "/OSGLFunctions_" + API + ".h";
+    QString outputHeaderFilename = path + "/" + baseFileName + "_" + API + ".h";
     QFile of(outputHeaderFilename);
     if (!of.open(QIODevice::WriteOnly)) {
         std::cout << "Could not open " << outputHeaderFilename.toStdString() << std::endl;
@@ -157,7 +157,7 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
 
     QString defineVal = QString("OSGLFUNCTIONS_") + API + "_H";
 
-    writeTemplateIncludeStart(defineVal, ots);
+    writeTemplateIncludeStart(baseFileName, defineVal, ots);
 
     if (!templateValue) {
         ots << "#ifdef HAVE_OSMESA\n\n";
@@ -171,18 +171,21 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
     if (templateValue) {
         ots << "extern \"C\" {\n";
         for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
-            ots << "#ifdef DEBUG\n";
-            ots << "extern " << it->funcPNType << " glad_debug_" << it->funcName << ";\n";
-            ots << "#else\n";
-            ots << "void ";
+            if (includeDebug) {
+                ots << "#ifdef DEBUG\n";
+                ots << "extern " << it->funcPNType << " glad_debug_" << it->funcName << ";\n";
+                ots << "#else\n";
+            }
             ots << "extern " << it->funcPNType << " glad_" << it->funcName << ";\n";
-            ots << "#endif\n";
+            if (includeDebug) {
+                ots << "#endif\n";
+            }
         }
         ots << "} // extern C\n";
         ots << "\n\n";
     }
 
-    ots << "namespace Natron {\n\n";
+    ots << "namespace " << namespaceName <<" {\n\n";
 
     ots << "template <>\n";
     ots << "void OSGLFunctions<";
@@ -198,11 +201,15 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
     for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
         if (templateValue) {
             // OpenGL functions are directly pointing to the ones loaded by glad
-            ots << "#ifdef DEBUG\n";
-            ots << "    _m" << it->funcName << " = glad_debug_" << it->funcName << ";\n";
-            ots << "#else\n";
+            if (includeDebug) {
+                ots << "#ifdef DEBUG\n";
+                ots << "    _m" << it->funcName << " = glad_debug_" << it->funcName << ";\n";
+                ots << "#else\n";
+            }
             ots << "    _m" << it->funcName << " = glad_" << it->funcName << ";\n";
-            ots << "#endif\n";
+            if (includeDebug) {
+                ots << "#endif\n";
+            }
         } else {
             // Mesa functions are loaded
             ots << "    _m" << it->funcName << " = (" << it->funcPNType << ")OSMesaGetProcAddress(\"" << it->funcName << "\");\n";
@@ -216,13 +223,13 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
 
 
 
-    ots << "} // namespace Natron \n\n";
+    ots << "} // namespace " << namespaceName << " \n\n";
     ots << "#endif // " << defineVal << "\n";
 }
 
-static void writeImplementationCppFile(const QString& path, const QString &API, bool templateValue)
+static void writeImplementationCppFile(const QString& namespaceName, const QString& baseFileName, const QString& path, const QString &API, bool templateValue)
 {
-    QString outputFilename = path + "/OSGLFunctions_" + API + ".cpp";
+    QString outputFilename = path + "/" + baseFileName + "_" + API + ".cpp";
     QFile of(outputFilename);
     if (!of.open(QIODevice::WriteOnly)) {
         std::cout << "Could not open " << outputFilename.toStdString() << std::endl;
@@ -230,8 +237,8 @@ static void writeImplementationCppFile(const QString& path, const QString &API, 
     }
     QTextStream ots(&of);
     ots << "/*THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h, DO NOT EDIT*/\n\n\n\n";
-    ots << "#include \"OSGLFunctions_" << API << ".h\"\n\n\n";
-    ots << "namespace Natron {\n\n";
+    ots << "#include \"" << baseFileName << "_" << API << ".h\"\n\n\n";
+    ots << "namespace " << namespaceName << " {\n\n";
     ots << "template class OSGLFunctions<";
     if (templateValue) {
         ots << "true";
@@ -239,15 +246,17 @@ static void writeImplementationCppFile(const QString& path, const QString &API, 
         ots << "false";
     }
     ots << ">;\n\n";
-    ots << "} // namespace Natron \n\n";
+    ots << "} // namespace " << namespaceName << " \n\n";
 }
 
 
 int main(int argc, char** argv)
 {
 
-    if (argc != 3) {
-        std::cout << "Usage: generateGLIncludes /path/to/glad.h /path/to/output" << std::endl;
+    if (argc != 6) {
+        std::cout << "This program takes in input glad.h and outputs the include and implementation files for OSMesa OpenGL function and regular OpenGL functions." << std::endl;
+        std::cout << "Usage: generateGLIncludes <glad.h path> <output dir path> <namespace name> <baseFileName> <inlcude glad debug symbols>" << std::endl;
+        std::cout << "Example: generateGLIncludes /Users/alexandre/development/Natron/Global/gladRel/include/glad/glad.h /Users/alexandre/development/Natron/Engine Natron OSGLFunctions 1" << std::endl;
         return 1;
     }
 
@@ -265,9 +274,18 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    QString namespaceName(argv[3]);
+    QString baseFilename(argv[4]);
+    bool supportGladDebug;
+    {
+
+        QString supportDebugSymbolsStr(argv[5]);
+        supportGladDebug = (bool)supportDebugSymbolsStr.toInt();
+    }
+
     QString absoluteDirPath = outputDir.absolutePath();
 
-    QString outputHeaderFilename = absoluteDirPath + "/OSGLFunctions.h";
+    QString outputHeaderFilename = absoluteDirPath + "/" + baseFilename + ".h";
     QFile of_header(outputHeaderFilename);
     if (!of_header.open(QIODevice::WriteOnly)) {
         std::cout << "Could not open " << outputHeaderFilename.toStdString() << std::endl;
@@ -285,6 +303,7 @@ int main(int argc, char** argv)
 
     QString prevLine;
     while ( !its.atEnd() ) {
+        // Read each line of glad.h
         QString line = its.readLine();
 
         {
@@ -297,6 +316,7 @@ int main(int argc, char** argv)
             }
         }
 
+        // Search for a function
         QString typedefToken("typedef ");
         QString pfnToken("(APIENTRYP PFNGL");
         int foundFuncDef = line.indexOf(typedefToken);
@@ -393,7 +413,7 @@ int main(int argc, char** argv)
             }
 
             signatures.push_back(signature);
-        }
+        } // if (foundFuncDef != -1 && foundPNFToken != -1) {
 
         prevLine = line;
     }
@@ -404,7 +424,7 @@ int main(int argc, char** argv)
     ots_header << "\n\n\n";
     ots_header << functionTypedefsStr;
     ots_header << "\n\n\n";
-    writeStartClass(ots_header);
+    writeStartClass(namespaceName, ots_header);
     ots_header << "\n\n\n";
 
     // Define the singleton
@@ -463,14 +483,14 @@ int main(int argc, char** argv)
         ots_header << "    }\n\n";
     }
     ots_header << "\n\n\n\n";
-    writeEndClass(ots_header);
+    writeEndClass(namespaceName, ots_header);
 
     writeFooter(ots_header);
 
-    writeImplementationHeaderFile(signatures, absoluteDirPath, "gl", true);
-    writeImplementationCppFile(absoluteDirPath, "gl", true);
-    writeImplementationHeaderFile(signatures, absoluteDirPath, "mesa", false);
-    writeImplementationCppFile(absoluteDirPath, "mesa", false);
+    writeImplementationHeaderFile(namespaceName, baseFilename, signatures, absoluteDirPath, "gl", true, supportGladDebug);
+    writeImplementationCppFile(namespaceName, baseFilename, absoluteDirPath, "gl", true);
+    writeImplementationHeaderFile(namespaceName, baseFilename, signatures, absoluteDirPath, "mesa", false, supportGladDebug);
+    writeImplementationCppFile(namespaceName, baseFilename, absoluteDirPath, "mesa", false);
 
 
 

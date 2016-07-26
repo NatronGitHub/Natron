@@ -1785,6 +1785,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
                     renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
                     attachGLOK = false;
                 } else if (stat == eStatusFailed) {
+                    // Should we not use eRenderRoIStatusRenderOutOfGPUMemory also so that we try CPU rendering instead of failing the render alltogether ?
                     renderRetCode = eRenderRoIStatusRenderFailed;
                     attachGLOK = false;
                 }
