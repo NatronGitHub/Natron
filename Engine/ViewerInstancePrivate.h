@@ -46,6 +46,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/FrameEntry.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 #include "Engine/Image.h"
 #include "Engine/TextureRect.h"
@@ -417,6 +418,29 @@ public:
     //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
     //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
     OnGoingRenders currentRenderAges[2];
+
+    boost::weak_ptr<KnobChoice> layersKnob;
+    boost::weak_ptr<KnobChoice> alphaChannelKnob;
+    boost::weak_ptr<KnobChoice> displayChannelsKnob[2];
+    boost::weak_ptr<KnobButton> clipToProjectButtonKnob;
+    boost::weak_ptr<KnobButton> fullFrameButtonKnob;
+    boost::weak_ptr<KnobButton> toggleUserRoIButtonKnob;
+    boost::weak_ptr<KnobDouble> userRoIBtmLeftKnob,userRoISizeKnob;
+    boost::weak_ptr<KnobButton> toggleProxyModeButtonKnob;
+    boost::weak_ptr<KnobChoice> proxyChoiceKnob;
+    boost::weak_ptr<KnobButton> pauseButtonKnob[2];
+    boost::weak_ptr<KnobChoice> aInputNodeChoiceKnob;
+    boost::weak_ptr<KnobChoice> blendingModeChoiceKnob;
+    boost::weak_ptr<KnobChoice> bInputNodeChoiceKnob;
+
+    boost::weak_ptr<KnobButton> enableGainButtonKnob;
+    boost::weak_ptr<KnobDouble> gainSliderKnob;
+    boost::weak_ptr<KnobButton> enableAutoContrastButtonKnob;
+    boost::weak_ptr<KnobButton> enableGammaButtonKnob;
+    boost::weak_ptr<KnobDouble> gammaSliderKnob;
+    boost::weak_ptr<KnobChoice> colorspaceKnob;
+    boost::weak_ptr<KnobChoice> activeViewKnob;
+
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -871,6 +871,12 @@ public:
     virtual int  getInViewerContextItemSpacing() const = 0;
 
     /**
+     * @brief Controls whether to add horizontal stretch before or after (or none) stretch
+     **/
+    virtual void setInViewerContextStretch(StretchEnum stretch) = 0;
+    virtual StretchEnum getInViewerContextStretch() const = 0;
+
+    /**
      * @brief Set whether the knob should have a vertical separator after or not in the viewer
      **/
     virtual void setInViewerContextAddSeparator(bool addSeparator) = 0;
@@ -1473,6 +1479,8 @@ public:
     virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
     virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextStretch(StretchEnum stretch) OVERRIDE FINAL;
+    virtual StretchEnum getInViewerContextStretch() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextAddSeparator(bool addSeparator) OVERRIDE FINAL;
     virtual bool  getInViewerContextAddSeparator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextNewLineActivated(bool activated) OVERRIDE FINAL;

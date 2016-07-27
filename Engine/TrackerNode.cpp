@@ -94,7 +94,7 @@ TrackerNode::getPluginDescription() const
 }
 
 void
-TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
+TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
 {
     // Viewer buttons
     shortcuts->push_back( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, Key_Z) );

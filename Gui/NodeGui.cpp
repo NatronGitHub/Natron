@@ -3860,6 +3860,48 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
     }
 }
 
+static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr& node, const NodeGui* self, Menu* m)
+{
+    std::vector<std::string> entries = choiceKnob->getEntries_mt_safe();
+    if ( entries.empty() ) {
+        return;
+    }
+
+    for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
+        KnobIPtr knob = node->getKnobByName(*it);
+        if (!knob) {
+            // Plug-in specified invalid knob name in the menu
+            continue;
+        }
+        KnobButtonPtr button = toKnobButton(knob);
+        KnobChoicePtr isChoice = toKnobChoice(knob);
+        if (isChoice) {
+            Menu* subMenu = new Menu(m);
+            subMenu->setTitle(QString::fromUtf8(isChoice->getLabel().c_str()));
+            QAction* menuAction = subMenu->menuAction();
+            m->addAction(menuAction);
+            populateMenuRecursive(isChoice, node, self, subMenu);
+            continue;
+        }
+        if (!button) {
+            // Plug-in must only use buttons inside menu
+            continue;
+        }
+        bool checkable = button->getIsCheckable();
+        ActionWithShortcut* action = new ActionWithShortcut(node->getPlugin()->getPluginShortcutGroup().toStdString(),
+                                                            button->getName(),
+                                                            button->getLabel(),
+                                                            m);
+        if (checkable) {
+            action->setCheckable(true);
+            action->setChecked( button->getValue() );
+        }
+        QObject::connect( action, SIGNAL(triggered()), self, SLOT(onRightClickActionTriggered()) );
+        m->addAction(action);
+    }
+
+}
+
 void
 NodeGui::onRightClickMenuKnobPopulated()
 {
@@ -3885,36 +3927,8 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!isChoice) {
         return;
     }
-    std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-    if ( entries.empty() ) {
-        return;
-    }
-
     Menu m(isViewer);
-    for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
-        KnobIPtr knob = node->getKnobByName(*it);
-        if (!knob) {
-            // Plug-in specified invalid knob name in the menu
-            continue;
-        }
-        KnobButtonPtr button = toKnobButton(knob);
-        if (!button) {
-            // Plug-in must only use buttons inside menu
-            continue;
-        }
-        bool checkable = button->getIsCheckable();
-        ActionWithShortcut* action = new ActionWithShortcut(node->getPlugin()->getPluginShortcutGroup().toStdString(),
-                                                            button->getName(),
-                                                            button->getLabel(),
-                                                            &m);
-        if (checkable) {
-            action->setCheckable(true);
-            action->setChecked( button->getValue() );
-        }
-        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onRightClickActionTriggered()) );
-        m.addAction(action);
-    }
-
+    populateMenuRecursive(isChoice, node, this, &m);
     m.exec( QCursor::pos() );
 } // NodeGui::onRightClickMenuKnobPopulated
 

@@ -69,15 +69,40 @@ public:
     ///Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
 
-    virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL
+    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
+
+
+    virtual bool isOutput() const OVERRIDE FINAL
     {
         return true;
     }
 
-    virtual bool supportsMultipleClipsFPS() const OVERRIDE FINAL
+    virtual int getMajorVersion() const OVERRIDE FINAL
     {
-        return true;
+        return 1;
     }
+
+    virtual int getMinorVersion() const OVERRIDE FINAL
+    {
+        return 0;
+    }
+
+    virtual std::string getPluginID() const OVERRIDE FINAL
+    {
+        return PLUGINID_NATRON_VIEWER_GROUP;
+    }
+
+    virtual std::string getPluginLabel() const OVERRIDE FINAL
+    {
+        return "Viewer";
+    }
+
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    virtual std::string getPluginDescription() const OVERRIDE FINAL
+    {
+        return "The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree.";
+    }
+
 
     /**
      * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when
@@ -113,12 +138,6 @@ public:
 
     void setFullFrameProcessingEnabled(bool fullFrame);
     bool isFullFrameProcessingEnabled() const;
-
-
-    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
 
     bool isLatestRender(int textureIndex, U64 renderAge) const;
 
@@ -239,6 +258,8 @@ private:
        *******OVERRIDEN FROM EFFECT INSTANCE******
      *******************************************/
 
+    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                              ViewSpec /*view*/,
                              double /*time*/,
@@ -247,41 +268,6 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual bool isOutput() const OVERRIDE FINAL
-    {
-        return true;
-    }
-
-    virtual int getMajorVersion() const OVERRIDE FINAL
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL
-    {
-        return 0;
-    }
-
-    virtual std::string getPluginID() const OVERRIDE FINAL
-    {
-        return PLUGINID_NATRON_VIEWER_GROUP;
-    }
-
-    virtual std::string getPluginLabel() const OVERRIDE FINAL
-    {
-        return "Viewer";
-    }
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL
-    {
-        return "The Viewer node can display the output of a node graph.";
-    }
-
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
-    {
-        return eRenderSafetyFullySafe;
-    }
 
     /*******************************************/
 

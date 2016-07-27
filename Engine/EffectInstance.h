@@ -539,7 +539,7 @@ public:
      * Make sure that within the same plug-in there are no conflicting shortcuts.
      * Each shortcut ID can then be set to KnobButton used to indicate they have a shortcut.
      **/
-    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* /*shortcuts*/) {}
+    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* /*shortcuts*/) const {}
 
 
     /**

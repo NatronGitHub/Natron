@@ -1093,7 +1093,7 @@ RotoPaint::initializeKnobs()
 } // RotoPaint::initializeKnobs
 
 void
-RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
+RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
 {
     // Viewer buttons
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamAutoKeyingEnabled, kRotoUIParamAutoKeyingEnabledLabel) );

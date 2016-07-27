@@ -393,6 +393,15 @@ enum ValueChangedReasonEnum
     eValueChangedReasonRestoreDefault,
 };
 
+
+// Used to add stretch before or after widgets
+enum StretchEnum
+{
+    eStretchNone,
+    eStretchBefore,
+    eStretchAfter
+};
+
 enum AnimationLevelEnum
 {
     eAnimationLevelNone = 0,

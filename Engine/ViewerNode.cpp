@@ -24,8 +24,11 @@
 
 #include "ViewerNode.h"
 
+#include <ofxNatron.h>
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
@@ -37,23 +40,13 @@
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
-#define kViewerNodeParamLayers "layer"
-#define kViewerNodeParamLayersLabel "Layer"
-#define kViewerNodeParamLayersHint "The layer that the Viewer node will fetch upstream in the tree. " \
-"The channels of the layer will be mapped to the RGBA channels of the viewer according to " \
-"its number of channels. (e.g: UV would be mapped to RG)"
 
-#define kViewerNodeParamAlphaChannel "alphaChannel"
-#define kViewerNodeParamAlphaChannelLabel "Alpha Channel"
-#define kViewerNodeParamAlphaChannelHint "Select here a channel of any layer that will be used when displaying the " \
-"alpha channel with the Channels choice on the right"
-
-#define kViewerNodeParamDisplayChannels "displayChannels"
-#define kViewerNodeParamDisplayChannelsLabel "Display Channels"
-#define kViewerNodeParamDisplayChannelsHint "The channels to display on the viewer from the selected layer"
-
+/*
+ Below are knobs definitions that are not used by the internal ViewerInstance and just used by the Gui
+ */
 #define kViewerNodeParamZoom "zoom"
 #define kViewerNodeParamZoomLabel "Zoom"
 #define kViewerNodeParamZoomHint "The zoom applied to the image on the viewer"
@@ -66,117 +59,128 @@
 #define kViewerNodeParamFitViewportLabel "Fit Viewport"
 #define kViewerNodeParamFitViewportHint "Scales the image so it doesn't exceed the size of the viewport and centers it"
 
-#define kViewerNodeParamClipToProject "clipToProject"
-#define kViewerNodeParamClipToProjectLabel "Clip To Project"
-#define kViewerNodeParamClipToProjectHint "Clips the portion of the image displayed " \
-"on the viewer to the project format. " \
-"When off, everything in the union of all nodes " \
-"region of definition is displayed"
-
-#define kViewerNodeParamFullFrame "fullFrame"
-#define kViewerNodeParamFullFrameLabel "Full Frame"
-#define kViewerNodeParamFullFrameHint "When checked, the viewer will render the image in its entirety (at full resolution) not just the visible portion. This may be useful when panning/zooming during playback"
-
-#define kViewerNodeParamEnableUserRoI "enableRegionOfInterest"
-#define kViewerNodeParamEnableUserRoILabel "Region Of Interest"
-#define kViewerNodeParamEnableUserRoIHint "When active, enables the region of interest that limits " \
-"the portion of the viewer that is kept updated. Press %2 to create and drag a new region."
-
-#define kViewerNodeParamUserRoI "userRoI"
-
-#define kViewerNodeParamEnableProxyMode "proxyMode"
-#define kViewerNodeParamEnableProxyModeLabel "Proxy Mode"
-#define kViewerNodeParamEnableProxyModeHint "Activates the downscaling by the amount indicated by the value on the right. " \
-"The rendered images are degraded and as a result of this the whole rendering pipeline is much faster"
-
-#define kViewerNodeParamProxyLevel "proxyLevel"
-#define kViewerNodeParamProxyLevelLabel "Proxy Level"
-#define kViewerNodeParamProxyLevelHint "When proxy mode is activated, it scales down the rendered image by this factor " \
-"to accelerate the rendering"
-
-#define kViewerNodeParamRefreshViewport "refreshViewport"
-#define kViewerNodeParamRefreshViewportLabel "Refresh Viewport"
-#define kViewerNodeParamRefreshViewportHint "Forces a new render of the current frame. Press %2 to activate in-depth render statistics useful " \
-"for debugging the composition"
-
-#define kViewerNodeParamPauseRender "pauseUpdates"
-#define kViewerNodeParamPauseRenderLabel "Pause Updates"
-#define kViewerNodeParamPauseRenderHint "When activated the viewer will not update after any change that would modify the image " \
-"displayed in the viewport. Use %2 to pause both input A and B"
-
-#define kViewerNodeParamAInput "aInput"
-#define kViewerNodeParamAInputLabel "A"
-#define kViewerNodeParamAInputHint "What node to display in the viewer input A"
-
-#define kViewerNodeParamBInput "bInput"
-#define kViewerNodeParamBInputLabel "B"
-#define kViewerNodeParamBInputHint "What node to display in the viewer input B"
-
-#define kViewerNodeParamOperation "operation"
-#define kViewerNodeParamOperationLabel "Operation"
-#define kViewerNodeParamOperationHint "Operation applied between viewer inputs A and B. a and b are the alpha components of each input. d is the wipe dissolve factor, controlled by the arc handle"
-
-#define kViewerNodeParamOperationWipeUnder "Wipe Under"
-#define kViewerNodeParamOperationWipeUnderHint "A(1 - d) + Bd"
-
-#define kViewerNodeParamOperationWipeOver "Wipe Over"
-#define kViewerNodeParamOperationWipeOverHint "A + B(1 - a)d"
-
-#define kViewerNodeParamOperationWipeMinus "Wipe Minus"
-#define kViewerNodeParamOperationWipeMinusHint "A - B"
-
-#define kViewerNodeParamOperationWipeOnionSkin "Wipe Onion skin"
-#define kViewerNodeParamOperationWipeOnionSkinHint "A + B"
-
-#define kViewerNodeParamOperationStackUnder "Stack Under"
-#define kViewerNodeParamOperationStackUnderHint "B"
-
-#define kViewerNodeParamOperationStackOver "Stack Over"
-#define kViewerNodeParamOperationStackOverHint "A + B(1 - a)"
-
-#define kViewerNodeParamOperationStackMinus "Stack Minus"
-#define kViewerNodeParamOperationStackMinusHint "A - B"
-
-#define kViewerNodeParamOperationStackOnionSkin "Stack Onion skin"
-#define kViewerNodeParamOperationStackOnionSkinHint "A + B"
-
-#define kViewerNodeParamEnableGain "enableGain"
-#define kViewerNodeParamEnableGainLabel "Enable Gain"
-#define kViewerNodeParamEnableGainHint "Switch between \"neutral\" 1.0 gain f-stop and the previous setting"
-
-#define kViewerNodeParamGain "gain"
-#define kViewerNodeParamGainLabel "Gain"
-#define kViewerNodeParamGainHint "Gain is shown as f-stops. The image is multipled by pow(2,value) before display"
-
-#define kViewerNodeParamEnableAutoContrast "autoContrast"
-#define kViewerNodeParamEnableAutoContrastLabel "Auto Contrast"
-#define kViewerNodeParamEnableAutoContrastHint "Automatically adjusts the gain and the offset applied " \
-"to the colors of the visible image portion on the viewer"
-
-#define kViewerNodeParamEnableGamma "enableGamma"
-#define kViewerNodeParamEnableGammaLabel "Enable Gamma"
-#define kViewerNodeParamEnableGammaHint "Gamma correction: Switch between gamma=1.0 and user setting"
-
-#define kViewerNodeParamGamma "gamma"
-#define kViewerNodeParamGammaLabel "Gamma"
-#define kViewerNodeParamGammaHint "Viewer gamma correction level (applied after gain and before colorspace correction)"
-
 #define kViewerNodeParamCheckerBoard "enableCheckerBoard"
 #define kViewerNodeParamCheckerBoardLabel "Enable Checkerboard"
 #define kViewerNodeParamCheckerBoardHint "If checked, the viewer draws a checkerboard under input A instead of black (disabled under the wipe area and in stack modes)"
 
-#define kViewerNodeParamColorspace "deviceColorspace"
-#define kViewerNodeParamColorspaceLabel "Device Colorspace"
-#define kViewerNodeParamColorspaceHint "The operation applied to the image before it is displayed " \
-"on screen. The image is converted to this colorspace before being displayed on the monitor"
-
-#define kViewerNodeParamView "activeView"
-#define kViewerNodeParamViewLabel "Active View"
-#define kViewerNodeParamViewHint "The view displayed on the viewer"
-
 #define kViewerNodeParamEnableColorPicker "enableInfoBar"
 #define kViewerNodeParamEnableColorPickerLabel "Show Info Bar"
 #define kViewerNodeParamEnableColorPickerHint "Show/Hide information bar in the bottom of the viewer. If unchecked it also deactivates any active color picker"
+
+
+// Right-click menu actions
+
+// The right click menu
+#define kViewerNodeParamRightClickMenu kNatronOfxParamRightClickMenu
+
+#define kViewerNodeParamRightClickMenuToggleWipe "toggleWipeAction"
+#define kViewerNodeParamRightClickMenuToggleWipeLabel "Toggle Wipe"
+
+#define kViewerNodeParamRightClickMenuCenterWipe "centerWipeAction"
+#define kViewerNodeParamRightClickMenuCenterWipeLabel "Center Wipe"
+
+#define kViewerNodeParamRightClickMenuPreviousLayer "previousLayerAction"
+#define kViewerNodeParamRightClickMenuPreviousLayerLabel "Previous Layer"
+
+#define kViewerNodeParamRightClickMenuNextLayer "nextLayerAction"
+#define kViewerNodeParamRightClickMenuNextLayerLabel "Next Layer"
+
+#define kViewerNodeParamRightClickMenuSwitchAB "switchABAction"
+#define kViewerNodeParamRightClickMenuSwitchABLabel "Switch Input A and B"
+
+#define kViewerNodeParamRightClickMenuShowHideOverlays "showHideOverlays"
+#define kViewerNodeParamRightClickMenuShowHideOverlaysLabel "Show/Hide Overlays"
+
+#define kViewerNodeParamRightClickMenuShowHideSubMenu "showHideSubMenu"
+
+#define kViewerNodeParamRightClickMenuHideAll "hideAll"
+#define kViewerNodeParamRightClickMenuHideAllLabel "Hide All"
+
+#define kViewerNodeParamRightClickMenuShowHidePlayer "showHidePlayer"
+#define kViewerNodeParamRightClickMenuShowHidePlayerLabel "Show/Hide Player"
+
+#define kViewerNodeParamRightClickMenuShowHideTimeline "showHideTimeline"
+#define kViewerNodeParamRightClickMenuShowHideTimelineLabel "Show/Hide Timeline"
+
+#define kViewerNodeParamRightClickMenuShowHideInfoBar "showHideInfoBar"
+#define kViewerNodeParamRightClickMenuShowHideInfoBarLabel "Show/Hide Info-bar"
+
+#define kViewerNodeParamRightClickMenuShowHideLeftToolbar "showHideLeftToolbar"
+#define kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel "Show/Hide Left Toolbar"
+
+#define kViewerNodeParamRightClickMenuShowHideTopToolbar "showHideTopToolbar"
+#define kViewerNodeParamRightClickMenuShowHideTopToolbarLabel "Show/Hide Top Toolbar"
+
+
+// Viewer Actions
+#define kViewerNodeParamActionLuminance "displayLuminance"
+#define kViewerNodeParamActionLuminanceA "displayLuminanceA"
+#define kViewerNodeParamActionLuminanceALabel "Display Luminance For A Input Only"
+#define kViewerNodeParamActionLuminanceLabel "Display Luminance"
+
+#define kViewerNodeParamActionRed "displayRed"
+#define kViewerNodeParamActionRedLabel "Display Red"
+#define kViewerNodeParamActionRedA "displayRedA"
+#define kViewerNodeParamActionRedALabel "Display Red For A Input Only"
+
+#define kViewerNodeParamActionGreen "displayGreen"
+#define kViewerNodeParamActionGreenLabel "Display Green"
+#define kViewerNodeParamActionGreenA "displayGreenA"
+#define kViewerNodeParamActionGreenALabel "Display Green For A Input Only"
+
+#define kViewerNodeParamActionBlue "displayBlue"
+#define kViewerNodeParamActionBlueLabel "Display Blue"
+#define kViewerNodeParamActionBlueA "displayBlueA"
+#define kViewerNodeParamActionBlueALabel "Display Blue For A Input Only"
+
+#define kViewerNodeParamActionAlpha "displayAlpha"
+#define kViewerNodeParamActionAlphaLabel "Display Alpha"
+#define kViewerNodeParamActionAlphaA "displayAlphaA"
+#define kViewerNodeParamActionAlphaALabel "Display Alpha For A Input Only"
+
+#define kViewerNodeParamActionMatte "displayMatte"
+#define kViewerNodeParamActionMatteLabel "Display Matte"
+#define kViewerNodeParamActionMatteA "displayMatteA"
+#define kViewerNodeParamActionMatteALabel "Display Matte For A Input Only"
+
+#define kViewerNodeParamActionZoomIn "zoomInAction"
+#define kViewerNodeParamActionZoomInLabel "Zoom In"
+
+#define kViewerNodeParamActionZoomOut "zoomOut"
+#define kViewerNodeParamActionZoomOutLabel "Zoom Out"
+
+#define kViewerNodeParamActionScaleOne "scaleOne"
+#define kViewerNodeParamActionScaleOneLabel "Zoom 100%"
+
+#define kViewerNodeParamActionProxy2 "proxy2"
+#define kViewerNodeParamActionProxy2Label "Proxy Level 2"
+
+#define kViewerNodeParamActionProxy4 "proxy4"
+#define kViewerNodeParamActionProxy4Label "Proxy Level 4"
+
+#define kViewerNodeParamActionProxy8 "proxy8"
+#define kViewerNodeParamActionProxy8Label "Proxy Level 8"
+
+#define kViewerNodeParamActionProxy16 "proxy16"
+#define kViewerNodeParamActionProxy16Label "Proxy Level 16"
+
+#define kViewerNodeParamActionProxy32 "proxy32"
+#define kViewerNodeParamActionProxy32Label "Proxy Level 32"
+
+#define kViewerNodeParamActionLeftView "leftView"
+#define kViewerNodeParamActionLeftViewLabel "Left View"
+
+#define kViewerNodeParamActionRightView "rightView"
+#define kViewerNodeParamActionRightViewLabel "Right View"
+
+#define kViewerNodeParamActionPauseAB "pauseAB"
+#define kViewerNodeParamActionPauseABLabel "Pause input A and B"
+
+#define kViewerNodeParamActionRefreshWithStats "enableStats"
+#define kViewerNodeParamActionRefreshWithStatsLabel "Enable Render Stats"
+
+#define kViewerNodeParamActionCreateNewRoI "createNewRoI"
+#define kViewerNodeParamActionCreateNewRoILabel "Create New Region Of Interest"
 
 #define VIEWER_UI_SECTIONS_SPACING_PX 5
 
@@ -189,6 +193,8 @@ struct ViewerNodePrivate
     // Pointer to ViewerGL (interface)
     OpenGLViewerI* uiContext;
 
+    NodeWPtr internalViewerProcessNode;
+
     boost::weak_ptr<KnobChoice> layersKnob;
     boost::weak_ptr<KnobChoice> alphaChannelKnob;
     boost::weak_ptr<KnobChoice> displayChannelsKnob;
@@ -198,7 +204,6 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobButton> clipToProjectButtonKnob;
     boost::weak_ptr<KnobButton> fullFrameButtonKnob;
     boost::weak_ptr<KnobButton> toggleUserRoIButtonKnob;
-    boost::weak_ptr<KnobDouble> userRoIKnob;
     boost::weak_ptr<KnobButton> toggleProxyModeButtonKnob;
     boost::weak_ptr<KnobChoice> proxyChoiceKnob;
     boost::weak_ptr<KnobButton> refreshButtonKnob;
@@ -217,11 +222,49 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobChoice> activeViewKnob;
     boost::weak_ptr<KnobButton> enableInfoBarButtonKnob;
 
+    // Right click menu
+    boost::weak_ptr<KnobChoice> rightClickMenu;
+    boost::weak_ptr<KnobButton> rightClickToggleWipe;
+    boost::weak_ptr<KnobButton> rightClickCenterWipe;
+    boost::weak_ptr<KnobButton> rightClickPreviousLayer;
+    boost::weak_ptr<KnobButton> rightClickNextLayer;
+    boost::weak_ptr<KnobButton> rightClickSwitchAB;
+    boost::weak_ptr<KnobButton> rightClickShowHideOverlays;
+    boost::weak_ptr<KnobChoice> rightClickShowHideSubMenu;
+    boost::weak_ptr<KnobButton> rightClickHideAll;
+    boost::weak_ptr<KnobButton> rightClickShowHidePlayer;
+    boost::weak_ptr<KnobButton> rightClickShowHideTimeline;
+    boost::weak_ptr<KnobButton> rightClickShowHideLeftToolbar;
+    boost::weak_ptr<KnobButton> rightClickShowHideTopToolbar;
+    boost::weak_ptr<KnobButton> rightClickShowHideInfoBar;
+
+    // Viewer actions
+    boost::weak_ptr<KnobButton> displayLuminanceAction[2];
+    boost::weak_ptr<KnobButton> displayRedAction[2];
+    boost::weak_ptr<KnobButton> displayGreenAction[2];
+    boost::weak_ptr<KnobButton> displayBlueAction[2];
+    boost::weak_ptr<KnobButton> displayAlphaAction[2];
+    boost::weak_ptr<KnobButton> displayMatteAction[2];
+    boost::weak_ptr<KnobButton> zoomInAction;
+    boost::weak_ptr<KnobButton> zoomOutAction;
+    boost::weak_ptr<KnobButton> zoomScaleOneAction;
+    boost::weak_ptr<KnobButton> proxyLevelAction[5];
+    boost::weak_ptr<KnobButton> leftViewAction;
+    boost::weak_ptr<KnobButton> rightViewAction;
+    boost::weak_ptr<KnobButton> pauseABAction;
+    boost::weak_ptr<KnobButton> enableStatsAction;
+    boost::weak_ptr<KnobButton> createUserRoIAction;
+
     ViewerNodePrivate(ViewerNode* publicInterface)
     : _publicInterface(publicInterface)
     , uiContext(0)
     {
 
+    }
+
+    NodePtr getInternalViewerNode() const
+    {
+        return internalViewerProcessNode.lock();
     }
 };
 
@@ -273,60 +316,120 @@ ViewerNode::getPluginGrouping(std::list<std::string>* grouping) const
 }
 
 void
+ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
+{
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamClipToProject, kViewerNodeParamClipToProjectLabel, Key_C, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamFullFrame, kViewerNodeParamFullFrameLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableUserRoI, kViewerNodeParamEnableUserRoILabel, Key_W, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableProxyMode, kViewerNodeParamEnableProxyModeLabel, Key_P, eKeyboardModifierControl) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPauseRender, kViewerNodeParamPauseRenderLabel, Key_P) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableGain, kViewerNodeParamEnableGainLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableAutoContrast, kViewerNodeParamEnableAutoContrastLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableGamma, kViewerNodeParamEnableGammaLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRefreshViewport, kViewerNodeParamRefreshViewportLabel, Key_U) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamFitViewport, kViewerNodeParamFitViewportLabel, Key_F) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamSyncViewports, kViewerNodeParamSyncViewportsLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamCheckerBoard, kViewerNodeParamCheckerBoardLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableColorPicker, kViewerNodeParamEnableColorPickerLabel) );
+
+    // Right-click actions
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuToggleWipe, kViewerNodeParamRightClickMenuToggleWipeLabel, Key_W) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuCenterWipe, kViewerNodeParamRightClickMenuCenterWipeLabel, Key_F, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousLayer, kViewerNodeParamRightClickMenuPreviousLayerLabel, Key_Page_Up) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextLayer, kViewerNodeParamRightClickMenuNextLayerLabel, Key_Page_Down) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuSwitchAB, kViewerNodeParamRightClickMenuSwitchABLabel, Key_Return) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideOverlays, kViewerNodeParamRightClickMenuShowHideOverlaysLabel, Key_O) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHidePlayer, kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTimeline, kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideInfoBar, kViewerNodeParamRightClickMenuShowHideInfoBarLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideLeftToolbar, kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTopToolbar, kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
+
+    // Viewer actions
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionLuminance, kViewerNodeParamActionLuminanceLabel, Key_Y) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRed, kViewerNodeParamActionRedLabel, Key_R) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRedA, kViewerNodeParamActionRedALabel, Key_R, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionGreen, kViewerNodeParamActionGreenLabel, Key_G) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionGreenA, kViewerNodeParamActionGreenALabel, Key_G, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionBlue, kViewerNodeParamActionBlueLabel, Key_B) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionBlueA, kViewerNodeParamActionBlueALabel, Key_B, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionAlpha, kViewerNodeParamActionAlphaLabel, Key_A) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionAlphaA, kViewerNodeParamActionAlphaALabel, Key_A, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionMatte, kViewerNodeParamActionMatteLabel, Key_M) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionMatteA, kViewerNodeParamActionMatteALabel, Key_M, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionZoomIn, kViewerNodeParamActionZoomInLabel, Key_plus) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionZoomOut, kViewerNodeParamActionZoomOutLabel, Key_minus) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionScaleOne, kViewerNodeParamActionScaleOneLabel, Key_1, eKeyboardModifierControl) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy2, kViewerNodeParamActionProxy2Label, Key_1, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy4, kViewerNodeParamActionProxy4Label, Key_2, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy8, kViewerNodeParamActionProxy8Label, Key_3, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy16, kViewerNodeParamActionProxy16Label, Key_4, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy32, kViewerNodeParamActionProxy32Label, Key_5, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionLeftView, kViewerNodeParamActionLeftViewLabel, Key_Left, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRightView, kViewerNodeParamActionRightViewLabel, Key_Right, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionCreateNewRoI, kViewerNodeParamActionCreateNewRoILabel, Key_W, eKeyboardModifierAlt) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionPauseAB, kViewerNodeParamActionPauseABLabel, Key_P, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRefreshWithStats, kViewerNodeParamActionRefreshWithStatsLabel, Key_U, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)) );
+}
+
+/**
+ * @brief Creates a duplicate of the knob identified by knobName which is a knob in the internalNode onto the effect and add it to the given page.
+ **/
+template <typename KNOBTYPE>
+boost::shared_ptr<KNOBTYPE>
+createDuplicateKnob( const std::string& knobName,
+                    const NodePtr& internalNode,
+                    const EffectInstancePtr& effect,
+                    const KnobPagePtr& page = KnobPagePtr(),
+                    const KnobGroupPtr& group = KnobGroupPtr() )
+{
+    KnobIPtr internalNodeKnob = internalNode->getKnobByName(knobName);
+    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
+}
+
+void
 ViewerNode::initializeKnobs()
 {
 
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
+    ViewerNodePtr thisShared = shared_from_this();
+    NodePtr internalViewerNode;
+    {
+        QString fixedNamePrefix = QString::fromUtf8( getNode()->getScriptName_mt_safe().c_str() );
+        fixedNamePrefix.append( QLatin1Char('_') );
+        QString nodeName = fixedNamePrefix + QLatin1String("internalViewer");
+        CreateNodeArgs args(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared);
+        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
+        internalViewerNode = getApp()->createNode(args);
+        _imp->internalViewerProcessNode = internalViewerNode;
+        assert(internalViewerNode);
+    }
+
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( thisShared, tr("Controls") );
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamLayersLabel) );
-        param->setName(kViewerNodeParamLayers);
-        param->setHintToolTip(tr(kViewerNodeParamLayersHint));
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamLayers, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
         _imp->layersKnob = param;
     }
+
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamAlphaChannelLabel) );
-        param->setName(kViewerNodeParamAlphaChannel);
-        param->setHintToolTip(tr(kViewerNodeParamAlphaChannelHint));
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamAlphaChannel, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
         _imp->alphaChannelKnob = param;
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamDisplayChannelsLabel) );
-        param->setName(kViewerNodeParamDisplayChannels);
-        param->setHintToolTip(tr(kViewerNodeParamDisplayChannelsHint));
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamDisplayChannels, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("Luminance");
-            entries.push_back("RGB");
-            entries.push_back("Red");
-            entries.push_back("Green");
-            entries.push_back("Blue");
-            entries.push_back("Alpha");
-            entries.push_back("Matte");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
         _imp->displayChannelsKnob = param;
     }
 
+
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamZoomLabel) );
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamZoomLabel) );
         param->setName(kViewerNodeParamZoom);
         param->setHintToolTip(tr(kViewerNodeParamZoomHint));
         param->setSecretByDefault(true);
@@ -356,74 +459,39 @@ ViewerNode::initializeKnobs()
         _imp->zoomChoiceKnob = param;
     }
 
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamSyncViewportsLabel) );
-        param->setName(kViewerNodeParamSyncViewports);
-        param->setHintToolTip(tr(kViewerNodeParamSyncViewportsHint));
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setSecretByDefault(true);
-        param->setCheckable(true);
-        param->setEvaluateOnChange(false);
-        param->setIconLabel(NATRON_IMAGES_PATH "locked.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "unlocked.png", false);
-        page->addKnob(param);
-        _imp->syncViewersButtonKnob = param;
-    }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamFitViewportLabel) );
-        param->setName(kViewerNodeParamFitViewport);
-        param->setHintToolTip(tr(kViewerNodeParamFitViewportHint));
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setSecretByDefault(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "centerViewer.png", true);
-        page->addKnob(param);
-        _imp->centerViewerButtonKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamClipToProjectLabel) );
-        param->setName(kViewerNodeParamClipToProject);
-        param->setHintToolTip(tr(kViewerNodeParamClipToProjectHint));
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamClipToProject, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "cliptoprojectEnabled.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "cliptoprojectDisable.png", false);
-        page->addKnob(param);
         _imp->clipToProjectButtonKnob = param;
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamFullFrameLabel) );
-        param->setName(kViewerNodeParamFullFrame);
-        param->setHintToolTip(tr(kViewerNodeParamFullFrameHint));
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamFullFrame, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "fullFrameOn.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "fullFrameOff.png", false);
-        page->addKnob(param);
         _imp->fullFrameButtonKnob = param;
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableUserRoILabel) );
-        param->setName(kViewerNodeParamEnableUserRoI);
-        param->setHintToolTip(tr(kViewerNodeParamEnableUserRoIHint));
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamEnableUserRoI, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "viewer_roiEnabled.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "viewer_roiDisabled.png", false);
-        page->addKnob(param);
         _imp->toggleUserRoIButtonKnob = param;
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableProxyModeLabel) );
-        param->setName(kViewerNodeParamEnableProxyMode);
-        param->setHintToolTip(tr(kViewerNodeParamEnableProxyMode));
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamEnableProxyMode, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
@@ -434,21 +502,99 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamProxyLevelLabel) );
-        param->setName(kViewerNodeParamProxyLevel);
-        param->setHintToolTip(tr(kViewerNodeParamProxyLevelHint));
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamProxyLevel, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("2");
-            entries.push_back("4");
-            entries.push_back("8");
-            entries.push_back("16");
-            entries.push_back("32");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
         _imp->proxyChoiceKnob = param;
+    }
+
+
+    {
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamPauseRender, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "pauseEnabled.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png", false);
+        _imp->pauseButtonKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamAInput, internalViewerNode, thisShared, page);
+        param->setName(kViewerNodeParamAInput);
+        param->setSecretByDefault(true);
+        _imp->aInputNodeChoiceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamOperation, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "roto_merge.png");
+        _imp->blendingModeChoiceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamBInput, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        _imp->bInputNodeChoiceKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamEnableGain, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "expoON.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "expoOFF.png", false);
+        _imp->enableGainButtonKnob = param;
+    }
+
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kViewerNodeParamGain, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setDisplayMinimum(-6.);
+        param->setDisplayMaximum(6.);
+        _imp->gainSliderKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamEnableAutoContrast, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "AutoContrastON.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "AutoContrast.png", false);
+        _imp->enableAutoContrastButtonKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = createDuplicateKnob<KnobButton>(kViewerNodeParamEnableGamma, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "gammaON.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "gammaOFF.png", false);
+        _imp->enableGammaButtonKnob = param;
+    }
+
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kViewerNodeParamGamma, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        param->setDisplayMinimum(0.);
+        param->setDisplayMaximum(4.);
+        param->setDefaultValue(1.);
+        _imp->gammaSliderKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamColorspace, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        _imp->colorspaceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamView, internalViewerNode, thisShared, page);
+        param->setSecretByDefault(true);
+        _imp->activeViewKnob = param;
     }
 
     {
@@ -465,158 +611,33 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamPauseRenderLabel) );
-        param->setName(kViewerNodeParamPauseRender);
-        param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
-        param->setSecretByDefault(true);
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSyncViewportsLabel) );
+        param->setName(kViewerNodeParamSyncViewports);
+        param->setHintToolTip(tr(kViewerNodeParamSyncViewportsHint));
         param->setInViewerContextCanHaveShortcut(true);
+        param->setSecretByDefault(true);
         param->setCheckable(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "pauseEnabled.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png", false);
+        param->setEvaluateOnChange(false);
+        param->setIconLabel(NATRON_IMAGES_PATH "locked.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "unlocked.png", false);
         page->addKnob(param);
-        _imp->pauseButtonKnob = param;
+        _imp->syncViewersButtonKnob = param;
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamAInputLabel) );
-        param->setName(kViewerNodeParamAInput);
-        param->setHintToolTip(tr(kViewerNodeParamAInputHint));
-        param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->aInputNodeChoiceKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamOperationLabel) );
-        param->setName(kViewerNodeParamOperation);
-        param->setHintToolTip(tr(kViewerNodeParamOperation));
-        param->setSecretByDefault(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "roto_merge.png");
-        {
-            std::vector<std::string> entries, helps;
-            entries.push_back("-");
-            helps.push_back("");
-            entries.push_back(kViewerNodeParamOperationWipeUnder);
-            helps.push_back(kViewerNodeParamOperationWipeUnderHint);
-            entries.push_back(kViewerNodeParamOperationWipeOver);
-            helps.push_back(kViewerNodeParamOperationWipeOverHint);
-            entries.push_back(kViewerNodeParamOperationWipeMinus);
-            helps.push_back(kViewerNodeParamOperationWipeMinusHint);
-            entries.push_back(kViewerNodeParamOperationWipeOnionSkin);
-            helps.push_back(kViewerNodeParamOperationWipeOnionSkinHint);
-
-            entries.push_back(kViewerNodeParamOperationStackUnder);
-            helps.push_back(kViewerNodeParamOperationStackUnderHint);
-            entries.push_back(kViewerNodeParamOperationStackOver);
-            helps.push_back(kViewerNodeParamOperationStackOverHint);
-            entries.push_back(kViewerNodeParamOperationStackMinus);
-            helps.push_back(kViewerNodeParamOperationStackMinusHint);
-            entries.push_back(kViewerNodeParamOperationStackOnionSkin);
-            helps.push_back(kViewerNodeParamOperationStackOnionSkinHint);
-            param->populateChoices(entries, helps);
-        }
-        page->addKnob(param);
-        _imp->blendingModeChoiceKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamBInputLabel) );
-        param->setName(kViewerNodeParamBInput);
-        param->setHintToolTip(tr(kViewerNodeParamBInputHint));
-        param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->bInputNodeChoiceKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableGainLabel) );
-        param->setName(kViewerNodeParamEnableGain);
-        param->setHintToolTip(tr(kViewerNodeParamEnableGainHint));
-        param->setSecretByDefault(true);
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamFitViewportLabel) );
+        param->setName(kViewerNodeParamFitViewport);
+        param->setHintToolTip(tr(kViewerNodeParamFitViewportHint));
         param->setInViewerContextCanHaveShortcut(true);
-        param->setCheckable(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "expoON.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "expoOFF.png", false);
+        param->setSecretByDefault(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "centerViewer.png", true);
         page->addKnob(param);
-        _imp->enableGainButtonKnob = param;
+        _imp->centerViewerButtonKnob = param;
     }
 
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kViewerNodeParamGainLabel), 1 );
-        param->setName(kViewerNodeParamGain);
-        param->setHintToolTip(tr(kViewerNodeParamGainHint));
-        param->setSecretByDefault(true);
-        param->setDisplayMinimum(-6.);
-        param->setDisplayMaximum(6.);
-        page->addKnob(param);
-        _imp->enableGainButtonKnob = param;
-    }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableAutoContrastLabel) );
-        param->setName(kViewerNodeParamEnableAutoContrast);
-        param->setHintToolTip(tr(kViewerNodeParamEnableAutoContrastHint));
-        param->setSecretByDefault(true);
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setCheckable(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "AutoContrastON.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "AutoContrast.png", false);
-        page->addKnob(param);
-        _imp->enableAutoContrastButtonKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableGammaLabel) );
-        param->setName(kViewerNodeParamEnableGamma);
-        param->setHintToolTip(tr(kViewerNodeParamEnableGammaHint));
-        param->setSecretByDefault(true);
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setCheckable(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "gammaON.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "gammaOFF.png", false);
-        page->addKnob(param);
-        _imp->enableGammaButtonKnob = param;
-    }
-
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kViewerNodeParamGammaLabel), 1 );
-        param->setName(kViewerNodeParamGamma);
-        param->setHintToolTip(tr(kViewerNodeParamGammaHint));
-        param->setSecretByDefault(true);
-        param->setDisplayMinimum(0.);
-        param->setDisplayMaximum(4.);
-        param->setDefaultValue(1.);
-        page->addKnob(param);
-        _imp->gammaSliderKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamColorspaceLabel) );
-        param->setName(kViewerNodeParamColorspace);
-        param->setHintToolTip(tr(kViewerNodeParamColorspaceHint));
-        param->setSecretByDefault(true);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("Linear(None)");
-            entries.push_back("sRGB");
-            entries.push_back("Rec.709");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->colorspaceKnob = param;
-    }
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamCheckerBoardLabel) );
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamCheckerBoardLabel) );
         param->setName(kViewerNodeParamCheckerBoard);
         param->setHintToolTip(tr(kViewerNodeParamCheckerBoardHint));
         param->setSecretByDefault(true);
@@ -629,22 +650,9 @@ ViewerNode::initializeKnobs()
         _imp->enableCheckerboardButtonKnob = param;
     }
 
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamViewLabel) );
-        param->setName(kViewerNodeParamView);
-        param->setHintToolTip(tr(kViewerNodeParamViewHint));
-        param->setSecretByDefault(true);
-        {
-            // Views gets populated in getPreferredMetadata
-            std::vector<std::string> entries;
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->activeViewKnob = param;
-    }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableColorPickerLabel) );
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableColorPickerLabel) );
         param->setName(kViewerNodeParamEnableColorPicker);
         param->setHintToolTip(tr(kViewerNodeParamEnableColorPickerHint));
         param->setSecretByDefault(true);
@@ -657,28 +665,31 @@ ViewerNode::initializeKnobs()
         _imp->enableInfoBarButtonKnob = param;
     }
 
-    // RotoPaint
     addKnobToViewerUI(_imp->layersKnob.lock());
     addKnobToViewerUI(_imp->alphaChannelKnob.lock());
     addKnobToViewerUI(_imp->displayChannelsKnob.lock());
-    _imp->displayChannelsKnob.lock()->setInViewerContextAddSeparator(true);
-    addKnobToViewerUI(_imp->zoomChoiceKnob.lock());
-    addKnobToViewerUI(_imp->syncViewersButtonKnob.lock());
-    addKnobToViewerUI(_imp->centerViewerButtonKnob.lock());
-    _imp->centerViewerButtonKnob.lock()->setInViewerContextAddSeparator(true);
-    addKnobToViewerUI(_imp->clipToProjectButtonKnob.lock());
-    addKnobToViewerUI(_imp->fullFrameButtonKnob.lock());
-    addKnobToViewerUI(_imp->toggleUserRoIButtonKnob.lock());
-    addKnobToViewerUI(_imp->toggleProxyModeButtonKnob.lock());
-    addKnobToViewerUI(_imp->proxyChoiceKnob.lock());
-    _imp->proxyChoiceKnob.lock()->setInViewerContextAddSeparator(true);
-    addKnobToViewerUI(_imp->refreshButtonKnob.lock());
-    addKnobToViewerUI(_imp->pauseButtonKnob.lock());
-    _imp->pauseButtonKnob.lock()->setInViewerContextAddSeparator(true);
+    _imp->displayChannelsKnob.lock()->setInViewerContextStretch(eStretchAfter);
     addKnobToViewerUI(_imp->aInputNodeChoiceKnob.lock());
     addKnobToViewerUI(_imp->blendingModeChoiceKnob.lock());
     addKnobToViewerUI(_imp->bInputNodeChoiceKnob.lock());
-    _imp->bInputNodeChoiceKnob.lock()->setInViewerContextNewLineActivated(true);
+    _imp->bInputNodeChoiceKnob.lock()->setInViewerContextStretch(eStretchAfter);
+
+    addKnobToViewerUI(_imp->clipToProjectButtonKnob.lock());
+    addKnobToViewerUI(_imp->toggleProxyModeButtonKnob.lock());
+    addKnobToViewerUI(_imp->proxyChoiceKnob.lock());
+    addKnobToViewerUI(_imp->fullFrameButtonKnob.lock());
+    addKnobToViewerUI(_imp->toggleUserRoIButtonKnob.lock());
+    _imp->toggleUserRoIButtonKnob.lock()->setInViewerContextAddSeparator(true);
+    addKnobToViewerUI(_imp->refreshButtonKnob.lock());
+    addKnobToViewerUI(_imp->pauseButtonKnob.lock());
+    _imp->pauseButtonKnob.lock()->setInViewerContextAddSeparator(true);
+
+    addKnobToViewerUI(_imp->centerViewerButtonKnob.lock());
+    addKnobToViewerUI(_imp->syncViewersButtonKnob.lock());
+    addKnobToViewerUI(_imp->zoomChoiceKnob.lock());
+    _imp->zoomChoiceKnob.lock()->setInViewerContextNewLineActivated(true);
+
+
     addKnobToViewerUI(_imp->enableGainButtonKnob.lock());
     addKnobToViewerUI(_imp->gainSliderKnob.lock());
     addKnobToViewerUI(_imp->enableAutoContrastButtonKnob.lock());
@@ -687,10 +698,352 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->colorspaceKnob.lock());
     addKnobToViewerUI(_imp->enableCheckerboardButtonKnob.lock());
     addKnobToViewerUI(_imp->activeViewKnob.lock());
-
-    // Add stretch here
+    _imp->activeViewKnob.lock()->setInViewerContextStretch(eStretchAfter);
     addKnobToViewerUI(_imp->enableInfoBarButtonKnob.lock());
 
+    // Right click menu
+    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kViewerNodeParamRightClickMenu) );
+    rightClickMenu->setSecretByDefault(true);
+    rightClickMenu->setEvaluateOnChange(false);
+    page->addKnob(rightClickMenu);
+    _imp->rightClickMenu = rightClickMenu;
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuToggleWipeLabel) );
+        action->setName(kViewerNodeParamRightClickMenuToggleWipe);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickToggleWipe = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuCenterWipeLabel) );
+        action->setName(kViewerNodeParamRightClickMenuCenterWipe);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickCenterWipe = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuPreviousLayerLabel) );
+        action->setName(kViewerNodeParamRightClickMenuPreviousLayer);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickPreviousLayer = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuNextLayerLabel) );
+        action->setName(kViewerNodeParamRightClickMenuNextLayer);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickNextLayer = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuSwitchABLabel) );
+        action->setName(kViewerNodeParamRightClickMenuSwitchAB);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickSwitchAB = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideOverlaysLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHideOverlays);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickShowHideOverlays = action;
+    }
+
+    KnobChoicePtr showHideSubMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kViewerNodeParamRightClickMenuShowHideSubMenu) );
+    showHideSubMenu->setSecretByDefault(true);
+    showHideSubMenu->setEvaluateOnChange(false);
+    page->addKnob(showHideSubMenu);
+    _imp->rightClickShowHideSubMenu = showHideSubMenu;
+
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuHideAllLabel) );
+        action->setName(kViewerNodeParamRightClickMenuHideAll);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickHideAll = action;
+    }
+
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHidePlayer);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickShowHidePlayer = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHideTimeline);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickShowHideTimeline = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHideLeftToolbar);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickShowHideLeftToolbar = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHideTopToolbar);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickShowHideTopToolbar = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideInfoBarLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHideInfoBar);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickShowHideInfoBar = action;
+    }
+
+    // Viewer actions
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionLuminanceLabel) );
+        action->setName(kViewerNodeParamActionLuminance);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayLuminanceAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionLuminanceALabel) );
+        action->setName(kViewerNodeParamActionLuminanceA);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayLuminanceAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionRedLabel) );
+        action->setName(kViewerNodeParamActionRed);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayRedAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionRedALabel) );
+        action->setName(kViewerNodeParamActionRedA);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayRedAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionGreenLabel) );
+        action->setName(kViewerNodeParamActionGreen);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayGreenAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionGreenALabel) );
+        action->setName(kViewerNodeParamActionGreenA);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayGreenAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionBlueLabel) );
+        action->setName(kViewerNodeParamActionBlue);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayBlueAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionBlueALabel) );
+        action->setName(kViewerNodeParamActionBlueA);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayBlueAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionAlphaLabel) );
+        action->setName(kViewerNodeParamActionAlpha);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayAlphaAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionAlphaALabel) );
+        action->setName(kViewerNodeParamActionAlphaA);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayAlphaAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionMatteLabel) );
+        action->setName(kViewerNodeParamActionMatte);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayMatteAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionMatteALabel) );
+        action->setName(kViewerNodeParamActionMatteA);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->displayMatteAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionZoomInLabel) );
+        action->setName(kViewerNodeParamActionZoomIn);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->zoomInAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionZoomOutLabel) );
+        action->setName(kViewerNodeParamActionZoomOut);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->zoomOutAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionScaleOneLabel) );
+        action->setName(kViewerNodeParamActionScaleOne);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->zoomScaleOneAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionProxy2Label) );
+        action->setName(kViewerNodeParamActionProxy2);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->proxyLevelAction[0] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionProxy4Label) );
+        action->setName(kViewerNodeParamActionProxy4);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->proxyLevelAction[1] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionProxy8Label) );
+        action->setName(kViewerNodeParamActionProxy8);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->proxyLevelAction[2] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionProxy16Label) );
+        action->setName(kViewerNodeParamActionProxy16);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->proxyLevelAction[3] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionProxy32Label) );
+        action->setName(kViewerNodeParamActionProxy32);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->proxyLevelAction[4] = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionLeftViewLabel) );
+        action->setName(kViewerNodeParamActionLeftView);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->leftViewAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionRightViewLabel) );
+        action->setName(kViewerNodeParamActionRightView);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightViewAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionPauseABLabel) );
+        action->setName(kViewerNodeParamActionPauseAB);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->pauseABAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionCreateNewRoILabel) );
+        action->setName(kViewerNodeParamActionCreateNewRoI);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->createUserRoIAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamActionRefreshWithStatsLabel) );
+        action->setName(kViewerNodeParamActionRefreshWithStats);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->enableStatsAction = action;
+    }
 
 } // initializeKnobs
 
@@ -700,8 +1053,120 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
+    if (!k) {
+        return false;
+    }
+
+    bool caught = true;
+    if (k == _imp->enableGainButtonKnob.lock()) {
+
+    } else if (k == _imp->enableGammaButtonKnob.lock()) {
+
+    } else if (k == _imp->enableAutoContrastButtonKnob.lock()) {
+
+    } else if (k == _imp->refreshButtonKnob.lock()) {
+
+    } else if (k == _imp->syncViewersButtonKnob.lock()) {
+
+    } else if (k == _imp->centerViewerButtonKnob.lock()) {
+
+    } else if (k == _imp->enableInfoBarButtonKnob.lock()) {
+
+    } else if (k == _imp->rightClickToggleWipe.lock()) {
+
+    } else if (k == _imp->rightClickCenterWipe.lock()) {
+
+    } else if (k == _imp->rightClickNextLayer.lock()) {
+
+    } else if (k == _imp->rightClickPreviousLayer.lock()) {
+
+    } else if (k == _imp->rightClickShowHideOverlays.lock()) {
+
+    } else if (k == _imp->rightClickSwitchAB.lock()) {
+
+    } else if (k == _imp->rightClickHideAll.lock()) {
+
+    } else if (k == _imp->rightClickShowHideTopToolbar.lock()) {
+
+    } else if (k == _imp->rightClickShowHideLeftToolbar.lock()) {
+
+    } else if (k == _imp->rightClickShowHidePlayer.lock()) {
+
+    } else if (k == _imp->rightClickShowHideTimeline.lock()) {
+
+    } else if (k == _imp->rightClickShowHideInfoBar.lock()) {
+
+    } else if (k == _imp->displayRedAction[0].lock()) {
+
+    } else if (k == _imp->displayRedAction[1].lock()) {
+
+    } else if (k == _imp->displayGreenAction[0].lock()) {
+
+    } else if (k == _imp->displayGreenAction[1].lock()) {
+
+    } else if (k == _imp->displayBlueAction[0].lock()) {
+
+    } else if (k == _imp->displayBlueAction[1].lock()) {
+
+    } else if (k == _imp->displayAlphaAction[0].lock()) {
+
+    } else if (k == _imp->displayAlphaAction[1].lock()) {
+
+    } else if (k == _imp->displayMatteAction[0].lock()) {
+
+    } else if (k == _imp->displayMatteAction[1].lock()) {
+
+    } else if (k == _imp->displayLuminanceAction[0].lock()) {
+
+    } else if (k == _imp->displayLuminanceAction[1].lock()) {
+
+    } else if (k == _imp->zoomInAction.lock()) {
+
+    } else if (k == _imp->zoomOutAction.lock()) {
+
+    } else if (k == _imp->zoomScaleOneAction.lock()) {
+
+    } else if (k == _imp->proxyLevelAction[0].lock()) {
+
+    } else if (k == _imp->proxyLevelAction[1].lock()) {
+
+    } else if (k == _imp->proxyLevelAction[2].lock()) {
+
+    } else if (k == _imp->proxyLevelAction[3].lock()) {
+
+    } else if (k == _imp->proxyLevelAction[4].lock()) {
+
+    } else if (k == _imp->leftViewAction.lock()) {
+
+    } else if (k == _imp->rightViewAction.lock()) {
+
+    } else if (k == _imp->pauseABAction.lock()) {
+
+    } else if (k == _imp->createUserRoIAction.lock()) {
+
+    } else if (k == _imp->enableStatsAction.lock()) {
+
+    } else {
+        caught = false;
+    }
+    return caught;
 
 } // knobChanged
+
+
+bool
+ViewerNode::onOverlayPenDown(double time,
+                            const RenderScale & /*renderScale*/,
+                            ViewIdx /*view*/,
+                            const QPointF & /*viewportPos*/,
+                            const QPointF & pos,
+                            double pressure,
+                            double timestamp,
+                            PenType pen)
+{
+
+
+} // onOverlayPenDown
 
 OpenGLViewerI*
 ViewerNode::getUiContext() const

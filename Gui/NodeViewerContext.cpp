@@ -306,11 +306,16 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         knobsMapping.insert( std::make_pair(*it, ret) );
 
         bool makeNewLine = (*it)->getInViewerContextNewLineActivated();
+        StretchEnum stretchVal = (*it)->getInViewerContextStretch();
+
         KnobClickableLabel* label = 0;
         std::string inViewerLabel = (*it)->getInViewerContextLabel();
         if ( !inViewerLabel.empty() ) {
             label = new KnobClickableLabel(QString::fromUtf8( inViewerLabel.c_str() ) + QLatin1String(":"), ret, widgetsContainer);
             QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
+        }
+        if (stretchVal == eStretchBefore) {
+            lastRowLayout->addStretch();
         }
         ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, makeNewLine, 0, knobsOnSameLine);
 
@@ -327,6 +332,8 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             if ( next != knobsOrdered.end() ) {
                 if ( (*it)->getInViewerContextAddSeparator() ) {
                     addSpacer(lastRowLayout);
+                } else if ( stretchVal == eStretchAfter) {
+                    lastRowLayout->addStretch();
                 } else {
                     int spacing = (*it)->getInViewerContextItemSpacing();
                     lastRowLayout->addSpacing( TO_DPIX(spacing) );

@@ -249,6 +249,7 @@ struct KnobHelperPrivate
     int inViewerContextAddSeparator;
     int inViewerContextItemSpacing;
     int inViewerContextAddNewLine;
+    StretchEnum inViewerContextStretch;
     std::string inViewerContextLabel;
     bool inViewerContextHasShortcut;
     KnobIWPtr parentKnob;
@@ -336,6 +337,7 @@ struct KnobHelperPrivate
         , inViewerContextAddSeparator(false)
         , inViewerContextItemSpacing(5)
         , inViewerContextAddNewLine(false)
+        , inViewerContextStretch(eStretchNone)
         , inViewerContextLabel()
         , inViewerContextHasShortcut(false)
         , parentKnob()
@@ -1810,6 +1812,18 @@ int
 KnobHelper::getInViewerContextItemSpacing() const
 {
     return _imp->inViewerContextItemSpacing;
+}
+
+void
+KnobHelper::setInViewerContextStretch(StretchEnum stretch)
+{
+    _imp->inViewerContextStretch = stretch;
+}
+
+StretchEnum
+KnobHelper::getInViewerContextStretch() const
+{
+    return _imp->inViewerContextStretch;
 }
 
 void

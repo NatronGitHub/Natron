@@ -305,6 +305,300 @@ ViewerInstance::getFrameRange(double *first,
     }
 }
 
+bool
+ViewerInstance::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
+                         ViewSpec /*view*/,
+                         double /*time*/,
+                         bool /*originatedFromMainThread*/)
+{
+
+}
+
+
+void
+ViewerInstance::initializeKnobs()
+{
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamLayersLabel) );
+        param->setName(kViewerNodeParamLayers);
+        param->setHintToolTip(tr(kViewerNodeParamLayersHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("-");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->layersKnob = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamAlphaChannelLabel) );
+        param->setName(kViewerNodeParamAlphaChannel);
+        param->setHintToolTip(tr(kViewerNodeParamAlphaChannelHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("-");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->alphaChannelKnob = param;
+    }
+
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamDisplayChannelsLabel) );
+        param->setName(kViewerNodeParamDisplayChannels);
+        param->setHintToolTip(tr(kViewerNodeParamDisplayChannelsHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("Luminance");
+            entries.push_back("RGB");
+            entries.push_back("Red");
+            entries.push_back("Green");
+            entries.push_back("Blue");
+            entries.push_back("Alpha");
+            entries.push_back("Matte");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->displayChannelsKnob[0] = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamDisplayChannelsLabel) );
+        param->setName(kViewerNodeParamDisplayChannelsB);
+        {
+            std::vector<std::string> entries;
+            entries.push_back("Luminance");
+            entries.push_back("RGB");
+            entries.push_back("Red");
+            entries.push_back("Green");
+            entries.push_back("Blue");
+            entries.push_back("Alpha");
+            entries.push_back("Matte");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->displayChannelsKnob[1] = param;
+    }
+
+
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamClipToProjectLabel) );
+        param->setName(kViewerNodeParamClipToProject);
+        param->setHintToolTip(tr(kViewerNodeParamClipToProjectHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->clipToProjectButtonKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamFullFrameLabel) );
+        param->setName(kViewerNodeParamFullFrame);
+        param->setHintToolTip(tr(kViewerNodeParamFullFrameHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->fullFrameButtonKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableUserRoILabel) );
+        param->setName(kViewerNodeParamEnableUserRoI);
+        param->setHintToolTip(tr(kViewerNodeParamEnableUserRoIHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->toggleUserRoIButtonKnob = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
+        page->addKnob(param);
+        _imp->userRoIBtmLeftKnob = param;
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamUserRoISize), 2 );
+        page->addKnob(param);
+        _imp->userRoISizeKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableProxyModeLabel) );
+        param->setName(kViewerNodeParamEnableProxyMode);
+        param->setHintToolTip(tr(kViewerNodeParamEnableProxyMode));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->toggleProxyModeButtonKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamProxyLevelLabel) );
+        param->setName(kViewerNodeParamProxyLevel);
+        param->setHintToolTip(tr(kViewerNodeParamProxyLevelHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("2");
+            entries.push_back("4");
+            entries.push_back("8");
+            entries.push_back("16");
+            entries.push_back("32");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->proxyChoiceKnob = param;
+    }
+
+    
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamPauseRenderLabel) );
+        param->setName(kViewerNodeParamPauseRender);
+        param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->pauseButtonKnob[0] = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamPauseRenderLabel) );
+        param->setName(kViewerNodeParamPauseRenderB);
+        param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->pauseButtonKnob[1] = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamAInputLabel) );
+        param->setName(kViewerNodeParamAInput);
+        param->setHintToolTip(tr(kViewerNodeParamAInputHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("-");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->aInputNodeChoiceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamOperationLabel) );
+        param->setName(kViewerNodeParamOperation);
+        param->setHintToolTip(tr(kViewerNodeParamOperation));
+        {
+            std::vector<std::string> entries, helps;
+            entries.push_back("-");
+            helps.push_back("");
+            entries.push_back(kViewerNodeParamOperationWipeUnder);
+            helps.push_back(kViewerNodeParamOperationWipeUnderHint);
+            entries.push_back(kViewerNodeParamOperationWipeOver);
+            helps.push_back(kViewerNodeParamOperationWipeOverHint);
+            entries.push_back(kViewerNodeParamOperationWipeMinus);
+            helps.push_back(kViewerNodeParamOperationWipeMinusHint);
+            entries.push_back(kViewerNodeParamOperationWipeOnionSkin);
+            helps.push_back(kViewerNodeParamOperationWipeOnionSkinHint);
+
+            entries.push_back(kViewerNodeParamOperationStackUnder);
+            helps.push_back(kViewerNodeParamOperationStackUnderHint);
+            entries.push_back(kViewerNodeParamOperationStackOver);
+            helps.push_back(kViewerNodeParamOperationStackOverHint);
+            entries.push_back(kViewerNodeParamOperationStackMinus);
+            helps.push_back(kViewerNodeParamOperationStackMinusHint);
+            entries.push_back(kViewerNodeParamOperationStackOnionSkin);
+            helps.push_back(kViewerNodeParamOperationStackOnionSkinHint);
+            param->populateChoices(entries, helps);
+        }
+        page->addKnob(param);
+        _imp->blendingModeChoiceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamBInputLabel) );
+        param->setName(kViewerNodeParamBInput);
+        param->setHintToolTip(tr(kViewerNodeParamBInputHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("-");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->bInputNodeChoiceKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableGainLabel) );
+        param->setName(kViewerNodeParamEnableGain);
+        param->setHintToolTip(tr(kViewerNodeParamEnableGainHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->enableGainButtonKnob = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kViewerNodeParamGainLabel), 1 );
+        param->setName(kViewerNodeParamGain);
+        param->setHintToolTip(tr(kViewerNodeParamGainHint));
+        page->addKnob(param);
+        _imp->gainSliderKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableAutoContrastLabel) );
+        param->setName(kViewerNodeParamEnableAutoContrast);
+        param->setHintToolTip(tr(kViewerNodeParamEnableAutoContrastHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->enableAutoContrastButtonKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableGammaLabel) );
+        param->setName(kViewerNodeParamEnableGamma);
+        param->setHintToolTip(tr(kViewerNodeParamEnableGammaHint));
+        param->setCheckable(true);
+        page->addKnob(param);
+        _imp->enableGammaButtonKnob = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kViewerNodeParamGammaLabel), 1 );
+        param->setName(kViewerNodeParamGamma);
+        param->setHintToolTip(tr(kViewerNodeParamGammaHint));
+        param->setDefaultValue(1.);
+        page->addKnob(param);
+        _imp->gammaSliderKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamColorspaceLabel) );
+        param->setName(kViewerNodeParamColorspace);
+        param->setHintToolTip(tr(kViewerNodeParamColorspaceHint));
+        {
+            std::vector<std::string> entries;
+            entries.push_back("Linear(None)");
+            entries.push_back("sRGB");
+            entries.push_back("Rec.709");
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->colorspaceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamViewLabel) );
+        param->setName(kViewerNodeParamView);
+        param->setHintToolTip(tr(kViewerNodeParamViewHint));
+        {
+            // Views gets populated in getPreferredMetadata
+            std::vector<std::string> entries;
+            param->populateChoices(entries);
+        }
+        page->addKnob(param);
+        _imp->activeViewKnob = param;
+    }
+
+}
+
 void
 ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
 {

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_VIEWERNODE_H
-#define NATRON_ENGINE_VIEWERNODE_H
+#ifndef NATRON_ENGINE_VIEWER_INSTANCE_H
+#define NATRON_ENGINE_VIEWER_INSTANCE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -37,6 +37,129 @@
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+
+
+#define kViewerNodeParamLayers "layer"
+#define kViewerNodeParamLayersLabel "Layer"
+#define kViewerNodeParamLayersHint "The layer that the Viewer node will fetch upstream in the tree. " \
+"The channels of the layer will be mapped to the RGBA channels of the viewer according to " \
+"its number of channels. (e.g: UV would be mapped to RG)"
+
+#define kViewerNodeParamAlphaChannel "alphaChannel"
+#define kViewerNodeParamAlphaChannelLabel "Alpha Channel"
+#define kViewerNodeParamAlphaChannelHint "Select here a channel of any layer that will be used when displaying the " \
+"alpha channel with the Channels choice on the right"
+
+#define kViewerNodeParamDisplayChannels "displayChannels"
+#define kViewerNodeParamDisplayChannelsB "displayChannelsB"
+#define kViewerNodeParamDisplayChannelsLabel "Display Channels"
+#define kViewerNodeParamDisplayChannelsHint "The channels to display on the viewer from the selected layer"
+
+#define kViewerNodeParamClipToProject "clipToProject"
+#define kViewerNodeParamClipToProjectLabel "Clip To Project"
+#define kViewerNodeParamClipToProjectHint "Clips the portion of the image displayed " \
+"on the viewer to the project format. " \
+"When off, everything in the union of all nodes " \
+"region of definition is displayed"
+
+#define kViewerNodeParamFullFrame "fullFrame"
+#define kViewerNodeParamFullFrameLabel "Full Frame"
+#define kViewerNodeParamFullFrameHint "When checked, the viewer will render the image in its entirety (at full resolution) not just the visible portion. This may be useful when panning/zooming during playback"
+
+#define kViewerNodeParamEnableUserRoI "enableRegionOfInterest"
+#define kViewerNodeParamEnableUserRoILabel "Region Of Interest"
+#define kViewerNodeParamEnableUserRoIHint "When active, enables the region of interest that limits " \
+"the portion of the viewer that is kept updated. Press %2 to create and drag a new region."
+
+#define kViewerNodeParamUserRoIBottomLeft "userRoIBtmLeft"
+#define kViewerNodeParamUserRoISize "userRoISize"
+
+#define kViewerNodeParamEnableProxyMode "proxyMode"
+#define kViewerNodeParamEnableProxyModeLabel "Proxy Mode"
+#define kViewerNodeParamEnableProxyModeHint "Activates the downscaling by the amount indicated by the value on the right. " \
+"The rendered images are degraded and as a result of this the whole rendering pipeline is much faster"
+
+#define kViewerNodeParamProxyLevel "proxyLevel"
+#define kViewerNodeParamProxyLevelLabel "Proxy Level"
+#define kViewerNodeParamProxyLevelHint "When proxy mode is activated, it scales down the rendered image by this factor " \
+"to accelerate the rendering"
+
+#define kViewerNodeParamRefreshViewport "refreshViewport"
+#define kViewerNodeParamRefreshViewportLabel "Refresh Viewport"
+#define kViewerNodeParamRefreshViewportHint "Forces a new render of the current frame. Press %2 to activate in-depth render statistics useful " \
+"for debugging the composition"
+
+#define kViewerNodeParamPauseRender "pauseUpdates"
+#define kViewerNodeParamPauseRenderB "pauseUpdatesB"
+#define kViewerNodeParamPauseRenderLabel "Pause Updates"
+#define kViewerNodeParamPauseRenderHint "When activated the viewer will not update after any change that would modify the image " \
+"displayed in the viewport. Use %2 to pause both input A and B"
+
+#define kViewerNodeParamAInput "aInput"
+#define kViewerNodeParamAInputLabel "A"
+#define kViewerNodeParamAInputHint "What node to display in the viewer input A"
+
+#define kViewerNodeParamBInput "bInput"
+#define kViewerNodeParamBInputLabel "B"
+#define kViewerNodeParamBInputHint "What node to display in the viewer input B"
+
+#define kViewerNodeParamOperation "operation"
+#define kViewerNodeParamOperationLabel "Operation"
+#define kViewerNodeParamOperationHint "Operation applied between viewer inputs A and B. a and b are the alpha components of each input. d is the wipe dissolve factor, controlled by the arc handle"
+
+#define kViewerNodeParamOperationWipeUnder "Wipe Under"
+#define kViewerNodeParamOperationWipeUnderHint "A(1 - d) + Bd"
+
+#define kViewerNodeParamOperationWipeOver "Wipe Over"
+#define kViewerNodeParamOperationWipeOverHint "A + B(1 - a)d"
+
+#define kViewerNodeParamOperationWipeMinus "Wipe Minus"
+#define kViewerNodeParamOperationWipeMinusHint "A - B"
+
+#define kViewerNodeParamOperationWipeOnionSkin "Wipe Onion skin"
+#define kViewerNodeParamOperationWipeOnionSkinHint "A + B"
+
+#define kViewerNodeParamOperationStackUnder "Stack Under"
+#define kViewerNodeParamOperationStackUnderHint "B"
+
+#define kViewerNodeParamOperationStackOver "Stack Over"
+#define kViewerNodeParamOperationStackOverHint "A + B(1 - a)"
+
+#define kViewerNodeParamOperationStackMinus "Stack Minus"
+#define kViewerNodeParamOperationStackMinusHint "A - B"
+
+#define kViewerNodeParamOperationStackOnionSkin "Stack Onion skin"
+#define kViewerNodeParamOperationStackOnionSkinHint "A + B"
+
+#define kViewerNodeParamEnableGain "enableGain"
+#define kViewerNodeParamEnableGainLabel "Enable Gain"
+#define kViewerNodeParamEnableGainHint "Switch between \"neutral\" 1.0 gain f-stop and the previous setting"
+
+#define kViewerNodeParamGain "gain"
+#define kViewerNodeParamGainLabel "Gain"
+#define kViewerNodeParamGainHint "Gain is shown as f-stops. The image is multipled by pow(2,value) before display"
+
+#define kViewerNodeParamEnableAutoContrast "autoContrast"
+#define kViewerNodeParamEnableAutoContrastLabel "Auto Contrast"
+#define kViewerNodeParamEnableAutoContrastHint "Automatically adjusts the gain and the offset applied " \
+"to the colors of the visible image portion on the viewer"
+
+#define kViewerNodeParamEnableGamma "enableGamma"
+#define kViewerNodeParamEnableGammaLabel "Enable Gamma"
+#define kViewerNodeParamEnableGammaHint "Gamma correction: Switch between gamma=1.0 and user setting"
+
+#define kViewerNodeParamGamma "gamma"
+#define kViewerNodeParamGammaLabel "Gamma"
+#define kViewerNodeParamGammaHint "Viewer gamma correction level (applied after gain and before colorspace correction)"
+
+#define kViewerNodeParamColorspace "deviceColorspace"
+#define kViewerNodeParamColorspaceLabel "Device Colorspace"
+#define kViewerNodeParamColorspaceHint "The operation applied to the image before it is displayed " \
+"on screen. The image is converted to this colorspace before being displayed on the monitor"
+
+#define kViewerNodeParamView "activeView"
+#define kViewerNodeParamViewLabel "Active View"
+#define kViewerNodeParamViewHint "The view displayed on the viewer"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -382,6 +505,14 @@ private:
        *******OVERRIDEN FROM EFFECT INSTANCE******
      *******************************************/
 
+    virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
+                             ViewSpec /*view*/,
+                             double /*time*/,
+                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+
+
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
     virtual bool isOutput() const OVERRIDE FINAL
     {
         return true;
@@ -460,4 +591,4 @@ toViewerInstance(const EffectInstancePtr& effect)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_VIEWERNODE_H
+#endif // NATRON_ENGINE_VIEWER_INSTANCE_H
