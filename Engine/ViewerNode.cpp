@@ -255,9 +255,14 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobButton> enableStatsAction;
     boost::weak_ptr<KnobButton> createUserRoIAction;
 
+    double lastFstopValue;
+    double lastGammaValue;
+    
     ViewerNodePrivate(ViewerNode* publicInterface)
     : _publicInterface(publicInterface)
     , uiContext(0)
+    , lastFstopValue(0)
+    , lastGammaValue(1)
     {
 
     }
@@ -1059,11 +1064,46 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     bool caught = true;
     if (k == _imp->enableGainButtonKnob.lock()) {
-
+        double value;
+        bool down = _imp->enableGainButtonKnob.lock()->getValue();
+        if (down) {
+            value = _imp->lastFstopValue;
+        } else {
+            value = 0;
+        }
+        _imp->gainSliderKnob.lock()->setValue(value);
+    } else if (k == _imp->gainSliderKnob.lock()) {
+        KnobButtonPtr enableKnob = _imp->enableGainButtonKnob.lock();
+        bool down = enableKnob->getValue();
+        if (!down) {
+            enableKnob->setValue(true);
+        }
+        _imp->lastFstopValue =  _imp->gainSliderKnob.lock()->getValue();
     } else if (k == _imp->enableGammaButtonKnob.lock()) {
+        double value;
+        bool down = _imp->enableGammaButtonKnob.lock()->getValue();
+        if (down) {
+            value = _imp->lastGammaValue;
+        } else {
+            value = 0;
+        }
+        _imp->gammaSliderKnob.lock()->setValue(value);
+
+    } else if (k == _imp->gammaSliderKnob.lock()) {
+        KnobButtonPtr enableKnob = _imp->enableGammaButtonKnob.lock();
+        bool down = enableKnob->getValue();
+        if (!down) {
+            enableKnob->setValue(true);
+        }
+        _imp->lastGammaValue =  _imp->gammaSliderKnob.lock()->getValue();
 
     } else if (k == _imp->enableAutoContrastButtonKnob.lock()) {
-
+        bool enable = _imp->enableAutoContrastButtonKnob.lock()->getValue();
+        _imp->enableGammaButtonKnob.lock()->setAllDimensionsEnabled(!enable);
+        _imp->gammaSliderKnob.lock()->setAllDimensionsEnabled(!enable);
+        _imp->enableGainButtonKnob.lock()->setAllDimensionsEnabled(!enable);
+        _imp->gainSliderKnob.lock()->setAllDimensionsEnabled(!enable);
+        
     } else if (k == _imp->refreshButtonKnob.lock()) {
 
     } else if (k == _imp->syncViewersButtonKnob.lock()) {
