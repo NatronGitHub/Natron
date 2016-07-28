@@ -126,6 +126,8 @@ AppManagerPrivate::AppManagerPrivate()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , glVersionMajor(0)
+    , glVersionMinor(0)
     , renderingContextPool()
     , openGLRenderers()
 {
@@ -588,6 +590,16 @@ AppManagerPrivate::initGLAPISpecific()
 }
 
 extern "C" {
+extern int gladLoadGL(void);
+struct gladGLversionStruct {
+    int major;
+    int minor;
+};
+typedef void (* GLADcallback)(const char *name, void *funcptr, int len_args, ...);
+extern void glad_set_pre_callback(GLADcallback);
+extern void glad_set_post_callback(GLADcallback);
+extern gladGLversionStruct GLVersion;
+
 extern int GLAD_GL_ARB_vertex_buffer_object;
 extern int GLAD_GL_ARB_framebuffer_object;
 extern int GLAD_GL_ARB_pixel_buffer_object;
@@ -596,102 +608,102 @@ extern int GLAD_GL_ARB_texture_float;
 extern int GLAD_GL_EXT_framebuffer_object;
 extern int GLAD_GL_APPLE_vertex_array_object;
 
-typedef GLboolean (APIENTRYP PFNGLISRENDERBUFFEREXTPROC)(GLuint renderbuffer);
+typedef GLboolean (* PFNGLISRENDERBUFFEREXTPROC)(GLuint renderbuffer);
 extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbufferEXT;
 extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbuffer;
 
-typedef void (APIENTRYP PFNGLBINDRENDERBUFFEREXTPROC)(GLenum target, GLuint renderbuffer);
+typedef void (* PFNGLBINDRENDERBUFFEREXTPROC)(GLenum target, GLuint renderbuffer);
 extern PFNGLBINDRENDERBUFFEREXTPROC glad_glBindRenderbufferEXT;
 extern PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer;
 
-typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSEXTPROC)(GLsizei n, const GLuint* renderbuffers);
+typedef void (* PFNGLDELETERENDERBUFFERSEXTPROC)(GLsizei n, const GLuint* renderbuffers);
 extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffersEXT;
 extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffers;
 
 
-typedef void (APIENTRYP PFNGLGENRENDERBUFFERSEXTPROC)(GLsizei n, GLuint* renderbuffers);
+typedef void (* PFNGLGENRENDERBUFFERSEXTPROC)(GLsizei n, GLuint* renderbuffers);
 extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffersEXT;
 extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffers;
     
-typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEEXTPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (* PFNGLRENDERBUFFERSTORAGEEXTPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorageEXT;
 extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorage;
 
-typedef void (APIENTRYP PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC)(GLenum target, GLenum pname, GLint* params);
+typedef void (* PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC)(GLenum target, GLenum pname, GLint* params);
 extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameterivEXT;
 extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameteriv;
 
 
-typedef void (APIENTRYP PFNGLBINDFRAMEBUFFEREXTPROC)(GLenum target, GLuint framebuffer);
+typedef void (* PFNGLBINDFRAMEBUFFEREXTPROC)(GLenum target, GLuint framebuffer);
 extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebufferEXT;
 extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebuffer;
 
 
-typedef GLboolean (APIENTRYP PFNGLISFRAMEBUFFEREXTPROC)(GLuint framebuffer);
+typedef GLboolean (* PFNGLISFRAMEBUFFEREXTPROC)(GLuint framebuffer);
 extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebufferEXT;
 extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebuffer;
 
 
-typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSEXTPROC)(GLsizei n, const GLuint* framebuffers);
+typedef void (* PFNGLDELETEFRAMEBUFFERSEXTPROC)(GLsizei n, const GLuint* framebuffers);
 extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffersEXT;
 extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffers;
 
 
-typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSEXTPROC)(GLsizei n, GLuint* framebuffers);
+typedef void (* PFNGLGENFRAMEBUFFERSEXTPROC)(GLsizei n, GLuint* framebuffers);
 extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffersEXT;
 extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffers;
 
 
-typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)(GLenum target);
+typedef GLenum (* PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)(GLenum target);
 extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatusEXT;
 extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatus;
 
 
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE1DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (* PFNGLFRAMEBUFFERTEXTURE1DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1DEXT;
 extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1D;
 
 
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (* PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2DEXT;
 extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2D;
 
 
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+typedef void (* PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3DEXT;
 extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3D;
 
 
-typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (* PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbufferEXT;
 extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbuffer;
 
 
-typedef void (APIENTRYP PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)(GLenum target, GLenum attachment, GLenum pname, GLint* params);
+typedef void (* PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)(GLenum target, GLenum attachment, GLenum pname, GLint* params);
 extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameterivEXT;
 extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameteriv;
 
-typedef void (APIENTRYP PFNGLGENERATEMIPMAPEXTPROC)(GLenum target);
+typedef void (* PFNGLGENERATEMIPMAPEXTPROC)(GLenum target);
 extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmapEXT;
 extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmap;
 
-typedef void (APIENTRYP PFNGLBINDVERTEXARRAYAPPLEPROC)(GLuint array);
+typedef void (* PFNGLBINDVERTEXARRAYAPPLEPROC)(GLuint array);
 extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArrayAPPLE;
 extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArray;
 
-typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSAPPLEPROC)(GLsizei n, const GLuint* arrays);
+typedef void (* PFNGLDELETEVERTEXARRAYSAPPLEPROC)(GLsizei n, const GLuint* arrays);
 extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArraysAPPLE;
 extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArrays;
 
-typedef void (APIENTRYP PFNGLGENVERTEXARRAYSAPPLEPROC)(GLsizei n, GLuint* arrays);
+typedef void (* PFNGLGENVERTEXARRAYSAPPLEPROC)(GLsizei n, GLuint* arrays);
 extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArraysAPPLE;
 extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArrays;
 
-typedef GLboolean (APIENTRYP PFNGLISVERTEXARRAYAPPLEPROC)(GLuint array);
+typedef GLboolean (* PFNGLISVERTEXARRAYAPPLEPROC)(GLuint array);
 extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArrayAPPLE;
 extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArray;
 
-}
+} // extern "C"
 
 void
 AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type)
@@ -740,7 +752,6 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
     assert( !openGLFunctionsMutex.tryLock() );
 
     hasInitializedOpenGLFunctions = true;
-
 
 #ifdef DEBUG
     glad_set_pre_callback(pre_gl_call);
@@ -792,6 +803,8 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         glHasTextureFloat = true;
     }
 
+    glVersionMajor = GLVersion.major;
+    glVersionMinor = GLVersion.minor;
 
 
     if ( !glLoaded ||

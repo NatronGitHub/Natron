@@ -84,7 +84,9 @@ public:
 
     void incrementNodesAge();
 
-    void refreshNodesConnections();
+    void refreshNodesConnections(bool isTreeConcatenated);
+
+    void clearPaintBuffers();
 
     virtual void clone(const RotoItem*  other) OVERRIDE;
 
@@ -143,6 +145,7 @@ public:
     void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
+
     KnobBoolPtr getActivatedKnob() const;
     KnobDoublePtr getFeatherKnob() const;
     KnobDoublePtr getFeatherFallOffKnob() const;
@@ -169,6 +172,8 @@ public:
     KnobDoublePtr getShutterOffsetKnob() const;
     KnobDoublePtr getShutterKnob() const;
     KnobChoicePtr getShutterTypeKnob() const;
+    KnobChoicePtr getFallOffRampTypeKnob() const;
+
 
     void setKeyframeOnAllTransformParameters(double time);
 
@@ -190,6 +195,7 @@ public:
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
+    NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
 
     void resetNodesThreadSafety();
@@ -201,26 +207,7 @@ public:
 
     void resetTransformCenter();
 
-    ImagePtr renderMaskFromStroke(const ImageComponents& components,
-                                                  const double time,
-                                                  const ViewIdx view,
-                                                  const ImageBitDepthEnum depth,
-                                                  const unsigned int mipmapLevel,
-                                                  const RectD& rotoNodeSrcRod);
 
-private:
-
-    ImagePtr renderMaskInternal(const RectI & roi,
-                                                const ImageComponents& components,
-                                                const double startTime,
-                                                const double endTime,
-                                                const double timeStep,
-                                                const double time,
-                                                const bool inverted,
-                                                const ImageBitDepthEnum depth,
-                                                const unsigned int mipmapLevel,
-                                                const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                const ImagePtr &image);
 
 Q_SIGNALS:
 

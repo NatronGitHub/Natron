@@ -20,7 +20,8 @@ TARGET = Engine
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc
-CONFIG += boost qt cairo python shiboken pyside 
+CONFIG += boost qt python shiboken pyside
+enable-cairo: CONFIG += cairo
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
@@ -82,12 +83,12 @@ SOURCES += \
     CreateNodeArgs.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
-    DefaultShaders.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
+    EffectOpenGLContextData.cpp \
     ExistenceCheckThread.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
@@ -99,7 +100,6 @@ SOURCES += \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
     GPUContextPool.cpp \
-    GLShader.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -133,9 +133,12 @@ SOURCES += \
     NodeGroupSerialization.cpp \
     NoOpBase.cpp \
     OSGLContext.cpp \
+    OSGLContext_osmesa.cpp \
     OSGLContext_mac.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
+    OSGLFunctions_gl.cpp \
+    OSGLFunctions_mesa.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -165,13 +168,17 @@ SOURCES += \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
+    RotoBezierTriangulation.cpp \
     RotoContext.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
     RotoLayer.cpp \
     RotoPaint.cpp \
     RotoPaintInteract.cpp \
-    RotoSmear.cpp \
+    RotoShapeRenderNode.cpp \
+    RotoShapeRenderNodePrivate.cpp \
+    RotoShapeRenderCairo.cpp \
+    RotoShapeRenderGL.cpp \
     RotoStrokeItem.cpp \
     RotoUndoCommand.cpp \
     ScriptObject.cpp \
@@ -271,12 +278,12 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
-    DefaultShaders.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
     EffectInstancePrivate.h \
+    EffectOpenGLContextData.h \
     ExistenceCheckThread.h \
     EngineFwd.h \
     FeatherPoint.h \
@@ -337,9 +344,14 @@ HEADERS += \
     NodeSerialization.h \
     NoOpBase.h \
     OSGLContext.h \
+    OSGLContext_osmesa.h \
     OSGLContext_mac.h \
     OSGLContext_win.h \
     OSGLContext_x11.h \
+    OSGLFunctions.h \
+    OSGLFunctions_gl.h \
+    OSGLFunctions_mesa.h \
+    OSGLFramebufferConfig.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
     OfxHost.h \
@@ -375,6 +387,7 @@ HEADERS += \
     RectI.h \
     RectISerialization.h \
     RenderStats.h \
+    RotoBezierTriangulation.h \
     RotoContext.h \
     RotoContextPrivate.h \
     RotoContextSerialization.h \
@@ -387,7 +400,10 @@ HEADERS += \
     RotoPaint.h \
     RotoPaintInteract.h \
     RotoPoint.h \
-    RotoSmear.h \
+    RotoShapeRenderNode.h \
+    RotoShapeRenderNodePrivate.h \
+    RotoShapeRenderCairo.h \
+    RotoShapeRenderGL.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \
     RotoUndoCommand.h \

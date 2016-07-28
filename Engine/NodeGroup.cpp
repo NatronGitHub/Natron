@@ -2553,7 +2553,7 @@ NodeCollection::exportGroupInternal(int indentLevel,
     NodesList rotos;
     NodesList newNodes;
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isRotoPaintingNode() || (*it)->isRotoNode() ) {
+        if ( (*it)->isRotoPaintingNode() ) {
             rotos.push_back(*it);
         } else {
             newNodes.push_back(*it);

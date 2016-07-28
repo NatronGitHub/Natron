@@ -57,6 +57,7 @@
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
+#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -112,6 +113,18 @@ public:
             return;
         }
         data = (T*)malloc( size * sizeof(T) );
+        if (!data) {
+            throw std::bad_alloc();
+        }
+    }
+
+    void resizeAndPreserve(U64 size)
+    {
+        if (size == 0 || size == count) {
+            return;
+        }
+        count = size;
+        data = (T*)realloc(data,size * sizeof(T));
         if (!data) {
             throw std::bad_alloc();
         }
@@ -431,7 +444,8 @@ public:
     }
 
     void allocateGLTexture(const RectI& rectangle,
-                           U32 target)
+                           U32 target,
+                           bool isGPUTexture)
     {
         if (_glTexture) {
             return;
@@ -466,7 +480,8 @@ public:
                                       type,
                                       format,
                                       internalFormat,
-                                      glType) );
+                                      glType,
+                                      isGPUTexture /*useOpenGL*/) );
 
 
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
@@ -521,6 +536,9 @@ public:
                 char* dst = (char*)_backingFile->data();
                 std::memcpy( dst, src, other._buffer->size() * sizeof(DataType) );
             }
+        } else if (_storageMode == eStorageModeGLTex) {
+            assert(other._storageMode == eStorageModeGLTex);
+            _glTexture.swap(other._glTexture);
         }
     }
 
@@ -1205,7 +1223,7 @@ private:
             U64 count = getElementsCountFromParams();
             _data.allocateRAM(count);
         } else if (info.mode == eStorageModeGLTex) {
-            _data.allocateGLTexture(info.bounds, info.textureTarget);
+            _data.allocateGLTexture(info.bounds, info.textureTarget, info.isGPUTexture);
         }
     }
 

@@ -1403,7 +1403,7 @@ NodeGui::initializeInputs()
     int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
         Edge* edge = new Edge( i, 0., thisShared, parentItem() );
-        if ( node->getEffectInstance()->isInputRotoBrush(i) || !isVisible() ) {
+        if ( !isVisible() ) {
             edge->setActive(false);
             edge->hide();
         }
@@ -1416,8 +1416,7 @@ NodeGui::initializeInputs()
             assert(gui);
             edge->setSource(gui);
         }
-        if ( !node->getEffectInstance()->isInputMask(i) &&
-             !node->getEffectInstance()->isInputRotoBrush(i) ) {
+        if ( !node->getEffectInstance()->isInputMask(i) ) {
             if (!input) {
                 ++emptyInputsCount;
             }
@@ -1437,33 +1436,32 @@ NodeGui::initializeInputs()
         double angle =  piDividedbyX;
         int maskIndex = 0;
         for (U32 i = 0; i < _inputEdges.size(); ++i) {
-            if ( !node->getEffectInstance()->isInputRotoBrush(i) ) {
-                double edgeAngle;
-                bool incrAngle = true;
-                if ( node->getEffectInstance()->isInputMask(i) ) {
-                    if (maskIndex == 0) {
-                        edgeAngle = 0;
-                        incrAngle = false;
-                        ++maskIndex;
-                    } else if (maskIndex == 1) {
-                        edgeAngle = M_PI;
-                        incrAngle = false;
-                        ++maskIndex;
-                    } else {
-                        edgeAngle = angle;
-                    }
+            double edgeAngle;
+            bool incrAngle = true;
+            if ( node->getEffectInstance()->isInputMask(i) ) {
+                if (maskIndex == 0) {
+                    edgeAngle = 0;
+                    incrAngle = false;
+                    ++maskIndex;
+                } else if (maskIndex == 1) {
+                    edgeAngle = M_PI;
+                    incrAngle = false;
+                    ++maskIndex;
                 } else {
                     edgeAngle = angle;
                 }
-                _inputEdges[i]->setAngle(edgeAngle);
-                if (incrAngle) {
-                    angle += piDividedbyX;
-                }
-                if ( !_inputEdges[i]->hasSource() ) {
-                    _inputEdges[i]->initLine();
-                }
+            } else {
+                edgeAngle = angle;
+            }
+            _inputEdges[i]->setAngle(edgeAngle);
+            if (incrAngle) {
+                angle += piDividedbyX;
+            }
+            if ( !_inputEdges[i]->hasSource() ) {
+                _inputEdges[i]->initLine();
             }
         }
+
     }
 } // initializeInputs
 
@@ -1821,9 +1819,8 @@ NodeGui::showGui()
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         _graph->scene()->addItem(_inputEdges[i]);
         _inputEdges[i]->setParentItem( parentItem() );
-        if ( !node->getEffectInstance()->isInputRotoBrush(i) ) {
-            _inputEdges[i]->setActive(true);
-        }
+        _inputEdges[i]->setActive(true);
+
     }
     if (_outputEdge) {
         _graph->scene()->addItem(_outputEdge);

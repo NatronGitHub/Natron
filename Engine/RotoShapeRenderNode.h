@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef ROTOSMEAR_H
-#define ROTOSMEAR_H
+
+#ifndef ROTOSHAPERENDERNODE_H
+#define ROTOSHAPERENDERNODE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -35,23 +36,43 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+
+#define kRotoShapeRenderNodeParamOutputComponents "outputComponents"
+#define kRotoShapeRenderNodeParamOutputComponentsLabel "Output Components"
+
+#define kRotoShapeRenderNodeParamOutputComponentsAlpha "Alpha"
+#define kRotoShapeRenderNodeParamOutputComponentsRGBA "RGBA"
+
+#define kRotoShapeRenderNodeParamType "type"
+#define kRotoShapeRenderNodeParamTypeLabel "Type"
+
+#define kRotoShapeRenderNodeParamTypeSolid "Solid"
+#define kRotoShapeRenderNodeParamTypeSmear "Smear"
+
 NATRON_NAMESPACE_ENTER;
 
-struct RotoSmearPrivate;
-class RotoSmear
-    : public EffectInstance
+class RotoShapeRenderNodePrivate;
+class RotoShapeRenderNode : public EffectInstance
 {
-private: // derives from EffectInstance
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    RotoSmear(const NodePtr& node);
+    RotoShapeRenderNode(NodePtr n);
+
 
 public:
+
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new RotoSmear(node) );
+        return EffectInstancePtr( new RotoShapeRenderNode(node) );
     }
 
-    virtual ~RotoSmear();
+
+
+    virtual ~RotoShapeRenderNode();
+
+    static EffectInstance* BuildEffect(NodePtr n)
+    {
+        return new RotoShapeRenderNode(n);
+    }
+
 
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -72,12 +93,12 @@ public:
 
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return PLUGINID_NATRON_ROTOSMEAR;
+        return PLUGINID_NATRON_ROTOSHAPE;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return "Smear";
+        return "RotoShape";
     }
 
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN { return std::string(); }
@@ -89,7 +110,7 @@ public:
 
     virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return "Source";
+        return std::string("Source");
     }
 
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -121,15 +142,33 @@ public:
     {
         return false;
     }
+    
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL
+    {
+        return ePluginOpenGLRenderSupportYes;
+    }
 
     virtual bool isPaintingOverItselfEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 
+    virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
 
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
+    virtual void purgeCaches() OVERRIDE FINAL;
+
+    virtual StatusEnum attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
+
+    virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+
     virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+
+    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & roi,
@@ -137,16 +176,13 @@ private:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    boost::scoped_ptr<RotoSmearPrivate> _imp;
-};
 
-inline RotoSmearPtr
-toRotoSmear(const EffectInstancePtr& effect)
-{
-    return boost::dynamic_pointer_cast<RotoSmear>(effect);
-}
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+
+    boost::scoped_ptr<RotoShapeRenderNodePrivate> _imp;
+
+};
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // ROTOSMEAR_H
+#endif // ROTOSHAPERENDERNODE_H

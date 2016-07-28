@@ -641,11 +641,11 @@ nvx_get_GPU_mem_info()
 
     int v = 0;
     // Clear error
-    GLenum _glerror_ = glGetError();
-    glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &v);
+    GLenum _glerror_ = GL_GPU::glGetError();
+    GL_GPU::glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &v);
 
     // If error, return 0
-    _glerror_ = glGetError();
+    _glerror_ = GL_GPU::glGetError();
     if (_glerror_ != GL_NO_ERROR) {
         return 0;
     }
@@ -738,9 +738,10 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
             boost::scoped_ptr<OSGLContext_win> context;
             try {
+
                 GLRendererID gid;
                 gid.rendererHandle = info.rendererID.rendererHandle;
-                context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, 0) );
+                context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, gid, 0) );
             } catch (const std::exception& e) {
                 continue;
             }
@@ -750,17 +751,17 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             }
 
             try {
-                OSGLContext::checkOpenGLVersion();
+                OSGLContext::checkOpenGLVersion(true);
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
                 continue;
             }
 
-            info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
-            info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
-            info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
+            info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
+            info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
+            info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
             info.maxMemBytes = nvx_get_GPU_mem_info();
-            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
             renderers.push_back(info);
 
             makeContextCurrent(0);
@@ -792,6 +793,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     continue;
                 }
 
+
                 info.glVersionString = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_OPENGL_VERSION_STRING_AMD);
                 if (info.glVersionString.empty()) {
                     continue;
@@ -815,7 +817,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 GLRendererID gid;
                 gid.renderID = info.rendererID.renderID;
                 try {
-                    context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, 0) );
+                    context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, gid, 0) );
                 } catch (const std::exception& e) {
                     continue;
                 }
@@ -846,7 +848,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         // No extension, use default
         boost::scoped_ptr<OSGLContext_win> context;
         try {
-            context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );
+            context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, GLRendererID(), 0) );
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
 
@@ -858,7 +860,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
 
         try {
-            OSGLContext::checkOpenGLVersion();
+            OSGLContext::checkOpenGLVersion(true);
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
 
@@ -866,10 +868,10 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
 
         OpenGLRendererInfo info;
-        info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
-        info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
-        info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
-        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+        info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
+        info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
+        info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
+        GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = nvx_get_GPU_mem_info();
         renderers.push_back(info);

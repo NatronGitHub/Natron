@@ -734,16 +734,18 @@ void
 KnobGuiValue::onIncrementChanged(const double incr,
                                  const int index)
 {
-    assert(_imp->spinBoxes.size() > (std::size_t)index);
-    _imp->spinBoxes[index].first->setIncrement( valueAccordingToType(false, index, incr) );
+    if (_imp->spinBoxes.size() > (std::size_t)index) {
+        _imp->spinBoxes[index].first->setIncrement( valueAccordingToType(false, index, incr) );
+    }
 }
 
 void
 KnobGuiValue::onDecimalsChanged(const int deci,
                                 const int index)
 {
-    assert(_imp->spinBoxes.size() > (std::size_t)index);
-    _imp->spinBoxes[index].first->decimals(deci);
+    if (_imp->spinBoxes.size() > (std::size_t)index) {
+        _imp->spinBoxes[index].first->decimals(deci);
+    }
 }
 
 void

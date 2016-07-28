@@ -155,6 +155,7 @@ public:
         info.dataTypeSize = getSizeOfForBitDepth(bitdepth);
         info.numComponents = (std::size_t)components.getNumComponents();
         info.textureTarget = textureTarget;
+        info.isGPUTexture = true;
     }
 
     virtual ~ImageParams()

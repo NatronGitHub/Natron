@@ -36,8 +36,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-// If set, multiple frame renders may use the same GPU context instead of locking it for the whole render of a frame.
-#define NATRON_RENDER_SHARED_CONTEXT
 
 struct GPUContextPoolPrivate;
 class GPUContextPool
@@ -53,35 +51,44 @@ public:
 
     /**
      * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
-     * The context will not be available to other renders until releaseGLContextFromRender() is called
-     * for on the same thread that called this function.
-     * This function is blocking and the calling thread will wait until one context is made available
-     * in the pool again.
-     * If a context is already attached on the thread, this function returns immediately
+     * Multiple frame renders may share the same context, but when they lock it with the 
+     * setContextCurrent() function, they own the context and lock out all other renders trying to use it.
      * After returning this function, the context must be made current before
      * OpenGL calls can be made.
-     * If during the render, other threads are participating and needs to make the context current, they
-     * may call makeContextCurrent with the context returned from this function.
      *
-     * @param renderUniqueAbortInfo These are the infos that uniquely identify the render attached to the context
+     * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
      **/
-    OSGLContextPtr attachGLContextToRender(bool checkIfGLLoaded = true);
+    OSGLContextPtr attachGLContextToRender(bool retrieveLastContext = false, bool checkIfGLLoaded = true);
 
     /**
-     * @brief Releases the given OpenGL context from a render. After this call the context may be re-used
-     * by other threads waiting in attachContextToThread().
-     * This function MUST be call when a render is finished and the argument passed should be the context returned
-     * from the function attachGLContextToRender().
+     * @brief Releases the given OpenGL context from a render which was previously retrieved from attachGLContextToRender()
      **/
     void releaseGLContextFromRender(const OSGLContextPtr& context);
 
+    ////////////////////////////////////////////////////////////////
+
+    ////////////////////////////// OpenGL CPU related (OSMesa) //////////////////////
+
     /**
-     * @brief Returns the max texture size, i.e: the value returned by glGetIntegerv(GL_MAX_TEXTURE_SIZE,&v)
-     * This does not call glGetIntegerv and does not require a context to be bound.
+     * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
+     * Multiple frame renders may share the same context, but when they lock it with the
+     * setContextCurrent() function, they own the context and lock out all other renders trying to use it.
+     * After returning this function, the context must be made current before
+     * OpenGL calls can be made.
+     *
+     * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
      **/
-    int getCurrentOpenGLRendererMaxTextureSize() const;
+    OSGLContextPtr attachCPUGLContextToRender(bool retrieveLastContext = false);
+
+    /**
+     * @brief Releases the given OpenGL context from a render which was previously retrieved from attachGLContextToRender()
+     **/
+    void releaseCPUGLContextFromRender(const OSGLContextPtr& context);
+
+
 
     ////////////////////////////////////////////////////////////////
+
 
     /**
      * @brief Clear all created contexts

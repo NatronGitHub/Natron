@@ -1432,8 +1432,9 @@ Gui::saveWarning()
 void
 Gui::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const
 {
-    assert(_imp->_projectGui);
-    _imp->_projectGui->load(isAutosave, obj);
+    if (_imp->_projectGui) {
+        _imp->_projectGui->load(isAutosave, obj);
+    }
 }
 
 void

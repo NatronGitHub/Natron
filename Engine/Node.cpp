@@ -330,6 +330,7 @@ public:
         , duringPaintStrokeCreation(false)
         , lastStrokeMovementMutex()
         , strokeBitmapCleared(false)
+        , paintBuffer()
         , useAlpha0ToConvertFromRGBToRGBA(false)
         , isBeingDestroyedMutex()
         , isBeingDestroyed(false)
@@ -526,7 +527,6 @@ public:
     std::list<ImageComponents> createdComponents; // comps created by the user
     boost::weak_ptr<RotoDrawableItem> paintStroke;
 
-    // These are dynamic props
     mutable QMutex pluginsPropMutex;
     RenderSafetyEnum pluginSafety, currentThreadSafety;
     bool currentSupportTiles;
@@ -538,6 +538,10 @@ public:
     mutable QMutex lastStrokeMovementMutex;
     bool strokeBitmapCleared;
 
+    // During painting this is the buffer we use
+    ImagePtr paintBuffer;
+
+    // These are dynamic props
 
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
@@ -633,7 +637,7 @@ Node::createRotoContextConditionnally()
     assert(!_imp->rotoContext);
     assert(_imp->effect);
     ///Initialize the roto context if any
-    if ( isRotoNode() || isRotoPaintingNode() ) {
+    if ( isRotoPaintingNode() ) {
         _imp->effect->beginChanges();
         _imp->rotoContext = RotoContext::create( shared_from_this() );
         _imp->effect->endChanges(true);
@@ -941,8 +945,7 @@ Node::load(const CreateNodeArgs& args)
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
-    const QString& pluginID = _imp->plugin->getPluginID();
-    if ( isRotoPaintingNode() || ( pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) {
+    if ( isRotoPaintingNode() ) {
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
 
@@ -1164,6 +1167,20 @@ Node::setLastPaintStrokeDataNoRotopaint()
     _imp->effect->setDuringPaintStrokeCreationThreadLocal(true);
 }
 
+ImagePtr
+Node::getPaintBuffer() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->paintBuffer;
+}
+
+void
+Node::setPaintBuffer(const ImagePtr& image)
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    _imp->paintBuffer = image;
+}
+
 void
 Node::invalidateLastPaintStrokeDataNoRotopaint()
 {
@@ -1189,11 +1206,11 @@ Node::getPaintStrokeRoD(double time,
     if (duringPaintStroke) {
         *bbox = getPaintStrokeRoD_duringPainting();
     } else {
-        RotoDrawableItemPtr stroke = _imp->paintStroke.lock();
-        if (!stroke) {
+        RotoDrawableItemPtr item = _imp->paintStroke.lock();
+        if (!item) {
             throw std::logic_error("");
         }
-        *bbox = stroke->getBoundingBox(time);
+        *bbox = item->getBoundingBox(time);
     }
 }
 
@@ -1251,35 +1268,6 @@ Node::getLastPaintStrokePoints(double time,
     }
 }
 
-ImagePtr
-Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                 double par,
-                                 const ImageComponents& components,
-                                 ImageBitDepthEnum depth) const
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    std::list<RectI> restToRender;
-    RotoDrawableItemPtr item = _imp->paintStroke.lock();
-    RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
-
-    assert(stroke);
-    if (!stroke) {
-        throw std::logic_error("");
-    }
-
-    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
-
-    RectD lastStrokeBbox;
-    std::list<std::pair<Point, double> > lastStrokePoints;
-    double distNextIn = 0.;
-    ImagePtr strokeImage;
-    getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
-    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
-
-    getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
-
-    return strokeImage;
-}
 
 void
 Node::refreshAcceptedBitDepths()
@@ -1535,11 +1523,6 @@ Node::computeHashInternal()
         _imp->hash.append(_imp->knobsAge);
 
         ///append all inputs hash
-        RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
-        NodePtr attachedStrokeContextNode;
-        if (attachedStroke) {
-            attachedStrokeContextNode = attachedStroke->getContext()->getNode();
-        }
         {
             ViewerInstancePtr isViewer = isEffectViewerInstance();
 
@@ -1557,10 +1540,7 @@ Node::computeHashInternal()
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
-                        //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-                        if ( attachedStroke && (input == attachedStrokeContextNode) ) {
-                            continue;
-                        }
+
                         ///Add the index of the input to its hash.
                         ///Explanation: if we didn't add this, just switching inputs would produce a similar
                         ///hash.
@@ -1573,12 +1553,6 @@ Node::computeHashInternal()
         // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
         // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
         // node respecitively have their hash correctly set.
-
-        //        RotoContextPtr roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
-        //        if (roto) {
-        //            U64 rotoAge = roto->getAge();
-        //            _imp->hash.append(rotoAge);
-        //        }
 
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         Hash64_appendQString( &_imp->hash, QString::fromUtf8( getScriptName().c_str() ) );
@@ -2786,9 +2760,6 @@ Node::getPreferredInputInternal(bool connected) const
     std::list<int> optionalEmptyMasks;
 
     for (int i = 0; i < nInputs; ++i) {
-        if ( _imp->effect->isInputRotoBrush(i) ) {
-            continue;
-        }
         if ( (connected && inputs[i]) || (!connected && !inputs[i]) ) {
             if ( !_imp->effect->isInputOptional(i) ) {
                 if (firstNonOptionalEmptyInput == -1) {
@@ -2813,9 +2784,7 @@ Node::getPreferredInputInternal(bool connected) const
         if ( !optionalEmptyInputs.empty() ) {
             //We return the first optional empty input
             std::list<int>::iterator first = optionalEmptyInputs.begin();
-            while ( first != optionalEmptyInputs.end() && _imp->effect->isInputRotoBrush(*first) ) {
-                ++first;
-            }
+
             if ( first == optionalEmptyInputs.end() ) {
                 return -1;
             } else {
@@ -3501,7 +3470,8 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     if (_imp->plugin && _imp->plugin->isOpenGLEnabled()) {
         glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
     }
-    if (glSupport != ePluginOpenGLRenderSupportNone) {
+    // The Roto node needs to have a "GPU enabled" knob to control the nodes internally
+    if (glSupport != ePluginOpenGLRenderSupportNone || dynamic_cast<RotoPaint*>(_imp->effect.get())) {
         KnobChoicePtr openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect, tr("GPU Rendering"), 1, false);
         assert(openglRenderingKnob);
         openglRenderingKnob->setAnimationEnabled(false);
@@ -3981,8 +3951,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         hasMaskChannelSelector[i].first = false;
         hasMaskChannelSelector[i].second = isMask;
 
-        if ( (isMask || supportsOnlyAlpha) &&
-             !_imp->effect->isInputRotoBrush(i) ) {
+        if ( isMask || supportsOnlyAlpha ) {
             hasMaskChannelSelector[i].first = true;
         }
     }
@@ -4095,7 +4064,8 @@ Node::initializeKnobs(bool loadingSerialization)
     assert(!_imp->knobsInitialized);
 
     ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
-    bool effectIsGroup = getPluginID() == PLUGINID_NATRON_GROUP;
+    ///For RotoPaint we need to access it's default knobs within the roto context
+    bool effectIsGroup = getPluginID() == PLUGINID_NATRON_GROUP || dynamic_cast<RotoPaint*>(_imp->effect.get());
 
     if (!effectIsGroup) {
         //Initialize plug-in knobs
@@ -4569,6 +4539,16 @@ Node::isForceCachingEnabled() const
     KnobBoolPtr b = _imp->forceCaching.lock();
 
     return b ? b->getValue() : false;
+}
+
+void
+Node::setForceCachingEnabled(bool value)
+{
+    KnobBoolPtr b = _imp->forceCaching.lock();
+    if (!b) {
+        return;
+    }
+    b->setValue(value);
 }
 
 void
@@ -5348,11 +5328,6 @@ Node::canConnectInput(const NodePtr& input,
         return eCanConnectInput_graphCycles;
     }
 
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
-
-        return eCanConnectInput_indexOutOfRange;
-    }
 
     if ( !_imp->effect->supportsMultiResolution() ) {
         CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
@@ -5396,11 +5371,6 @@ Node::connectInput(const NodePtr & input,
 
     ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input ) ) {
-        return false;
-    }
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
-
         return false;
     }
 
@@ -5497,11 +5467,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
     if ( !checkIfConnectingInputIsOk( input ) ) {
         return false;
     }
-    if ( _imp->effect->isInputRotoBrush(inputNumber) ) {
-        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
 
-        return false;
-    }
 
     ///For effects that do not support multi-resolution, make sure the input effect is correct
     ///otherwise the rendering might crash
@@ -6625,18 +6591,25 @@ Node::makePreviewImage(SequenceTime time,
         if (isAbortable) {
             isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
         }
-        ParallelRenderArgsSetter frameRenderArgs( time,
-                                                  ViewIdx(0), //< preview only renders view 0 (left)
-                                                  isRenderUserInteraction, //<isRenderUserInteraction
-                                                  isSequentialRender, //isSequential
-                                                  abortInfo, // abort info
-                                                  thisNode, // viewer requester
-                                                  0, //texture index
-                                                  getApp()->getTimeLine().get(), // timeline
-                                                  NodePtr(), //rotoPaint node
-                                                  false, // isAnalysis
-                                                  true, // isDraft
-                                                  RenderStatsPtr() );
+
+
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = ViewIdx(0);
+        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = thisNode;
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = true;
+        tlsArgs->stats = RenderStatsPtr();
+
+        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
         FrameRequestMap request;
         stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
         if (stat == eStatusFailed) {
@@ -6734,14 +6707,6 @@ Node::isOpenFXNode() const
     return _imp->effect->isOpenFX();
 }
 
-bool
-Node::isRotoNode() const
-{
-    ///Runs only in the main thread (checked by getName())
-
-    ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    return getPluginID() == PLUGINID_OFX_ROTO;
-}
 
 /**
  * @brief Returns true if the node is a rotopaint node
@@ -7793,18 +7758,23 @@ Node::onInputChanged(int inputNb,
         if (isAbortable) {
             isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
         }
-        ParallelRenderArgsSetter frameRenderArgs( time,
-                                                  ViewIdx(0),
-                                                  isRenderUserInteraction,
-                                                  isSequentialRender,
-                                                  abortInfo,
-                                                  shared_from_this(),
-                                                  0, //texture index
-                                                  getApp()->getTimeLine().get(),
-                                                  NodePtr(),
-                                                  false,
-                                                  false,
-                                                  RenderStatsPtr() );
+
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = ViewIdx(0);
+        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = shared_from_this();
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = false;
+        tlsArgs->stats = RenderStatsPtr();
+        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
 
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
@@ -8846,6 +8816,12 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     return ret;
 } // Node::onEffectKnobValueChanged
+
+KnobChoicePtr
+Node::getOpenGLEnabledKnob() const
+{
+    return _imp->openglRenderingEnabledKnob.lock();
+}
 
 void
 Node::onOpenGLEnabledKnobChangedOnProject(bool activated)

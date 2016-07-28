@@ -50,7 +50,9 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
     , isPaintByDefault(isPaintByDefault)
     , premultKnob()
     , enabledKnobs()
-, ui( RotoPaintInteract::create(this) )
+    , doingNeatRender(false)
+    , mustDoNeatRender(false)
+    , ui( RotoPaintInteract::create(this) )
 {
 }
 
@@ -189,38 +191,38 @@ RotoPaintInteract::drawSelectedCp(double time,
 
     bool drawLeftHandle = leftDeriv.x != x || leftDeriv.y != y;
     bool drawRightHandle = rightDeriv.y != x || rightDeriv.y != y;
-    glEnable(GL_POINT_SMOOTH);
-    glBegin(GL_POINTS);
+    GL_GPU::glEnable(GL_POINT_SMOOTH);
+    GL_GPU::glBegin(GL_POINTS);
     if (drawLeftHandle) {
         if (colorLeftTangent) {
-            glColor3f(0.2, 1., 0.);
+            GL_GPU::glColor3f(0.2, 1., 0.);
         }
-        glVertex2d(leftDeriv.x, leftDeriv.y);
+        GL_GPU::glVertex2d(leftDeriv.x, leftDeriv.y);
         if (colorLeftTangent) {
-            glColor3d(0.85, 0.67, 0.);
+            GL_GPU::glColor3d(0.85, 0.67, 0.);
         }
     }
     if (drawRightHandle) {
         if (colorRightTangent) {
-            glColor3f(0.2, 1., 0.);
+            GL_GPU::glColor3f(0.2, 1., 0.);
         }
-        glVertex2d(rightDeriv.x, rightDeriv.y);
+        GL_GPU::glVertex2d(rightDeriv.x, rightDeriv.y);
         if (colorRightTangent) {
-            glColor3d(0.85, 0.67, 0.);
+            GL_GPU::glColor3d(0.85, 0.67, 0.);
         }
     }
-    glEnd();
+    GL_GPU::glEnd();
 
-    glBegin(GL_LINE_STRIP);
+    GL_GPU::glBegin(GL_LINE_STRIP);
     if (drawLeftHandle) {
-        glVertex2d(leftDeriv.x, leftDeriv.y);
+        GL_GPU::glVertex2d(leftDeriv.x, leftDeriv.y);
     }
-    glVertex2d(x, y);
+    GL_GPU::glVertex2d(x, y);
     if (drawRightHandle) {
-        glVertex2d(rightDeriv.x, rightDeriv.y);
+        GL_GPU::glVertex2d(rightDeriv.x, rightDeriv.y);
     }
-    glEnd();
-    glDisable(GL_POINT_SMOOTH);
+    GL_GPU::glEnd();
+    GL_GPU::glDisable(GL_POINT_SMOOTH);
 } // drawSelectedCp
 
 void
@@ -234,23 +236,23 @@ RotoPaintInteract::drawEllipse(double x,
                                double b,
                                double a)
 {
-    glColor3f(r * l * a, g * l * a, b * l * a);
+    GL_GPU::glColor3f(r * l * a, g * l * a, b * l * a);
 
-    glPushMatrix();
+    GL_GPU::glPushMatrix();
     //  center the oval at x_center, y_center
-    glTranslatef( (float)x, (float)y, 0.f );
+    GL_GPU::glTranslatef( (float)x, (float)y, 0.f );
     //  draw the oval using line segments
-    glBegin(GL_LINE_LOOP);
+    GL_GPU::glBegin(GL_LINE_LOOP);
     // we don't need to be pixel-perfect here, it's just an interact!
     // 40 segments is enough.
     double m = 2 * 3.14159265358979323846264338327950288419717 / 40.;
     for (int i = 0; i < 40; ++i) {
         double theta = i * m;
-        glVertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
+        GL_GPU::glVertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
     }
-    glEnd();
+    GL_GPU::glEnd();
 
-    glPopMatrix();
+    GL_GPU::glPopMatrix();
 }
 
 void
@@ -260,39 +262,39 @@ RotoPaintInteract::drawArrow(double centerX,
                              bool hovered,
                              const std::pair<double, double> & pixelScale)
 {
-    GLProtectMatrix p(GL_MODELVIEW);
+    GLProtectMatrix<GL_GPU> p(GL_MODELVIEW);
 
     if (hovered) {
-        glColor3f(0., 1., 0.);
+        GL_GPU::glColor3f(0., 1., 0.);
     } else {
-        glColor3f(1., 1., 1.);
+        GL_GPU::glColor3f(1., 1., 1.);
     }
 
     double arrowLenght =  kTransformArrowLenght * pixelScale.second;
     double arrowWidth = kTransformArrowWidth * pixelScale.second;
     double arrowHeadHeight = 4 * pixelScale.second;
 
-    glTranslatef(centerX, centerY, 0.);
-    glRotatef(rotate, 0., 0., 1.);
+    GL_GPU::glTranslatef(centerX, centerY, 0.);
+    GL_GPU::glRotatef(rotate, 0., 0., 1.);
     QPointF bottom(0., -arrowLenght);
     QPointF top(0, arrowLenght);
     ///the arrow head is 4 pixels long and kTransformArrowWidth * 2 large
-    glBegin(GL_LINES);
-    glVertex2f( top.x(), top.y() );
-    glVertex2f( bottom.x(), bottom.y() );
-    glEnd();
+    GL_GPU::glBegin(GL_LINES);
+    GL_GPU::glVertex2f( top.x(), top.y() );
+    GL_GPU::glVertex2f( bottom.x(), bottom.y() );
+    GL_GPU::glEnd();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( bottom.x(), bottom.y() );
-    glVertex2f(bottom.x() + arrowWidth, bottom.y() + arrowHeadHeight);
-    glVertex2f(bottom.x() - arrowWidth, bottom.y() + arrowHeadHeight);
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2f( bottom.x(), bottom.y() );
+    GL_GPU::glVertex2f(bottom.x() + arrowWidth, bottom.y() + arrowHeadHeight);
+    GL_GPU::glVertex2f(bottom.x() - arrowWidth, bottom.y() + arrowHeadHeight);
+    GL_GPU::glEnd();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( top.x(), top.y() );
-    glVertex2f(top.x() - arrowWidth, top.y() - arrowHeadHeight);
-    glVertex2f(top.x() + arrowWidth, top.y() - arrowHeadHeight);
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2f( top.x(), top.y() );
+    GL_GPU::glVertex2f(top.x() - arrowWidth, top.y() - arrowHeadHeight);
+    GL_GPU::glVertex2f(top.x() + arrowWidth, top.y() - arrowHeadHeight);
+    GL_GPU::glEnd();
 }
 
 void
@@ -302,41 +304,41 @@ RotoPaintInteract::drawBendedArrow(double centerX,
                                    bool hovered,
                                    const std::pair<double, double> & pixelScale)
 {
-    GLProtectMatrix p(GL_MODELVIEW);
+    GLProtectMatrix<GL_GPU> p(GL_MODELVIEW);
 
     if (hovered) {
-        glColor3f(0., 1., 0.);
+        GL_GPU::glColor3f(0., 1., 0.);
     } else {
-        glColor3f(1., 1., 1.);
+        GL_GPU::glColor3f(1., 1., 1.);
     }
 
     double arrowLenght =  kTransformArrowLenght * pixelScale.second;
     double arrowWidth = kTransformArrowWidth * pixelScale.second;
     double arrowHeadHeight = 4 * pixelScale.second;
 
-    glTranslatef(centerX, centerY, 0.);
-    glRotatef(rotate, 0., 0., 1.);
+    GL_GPU::glTranslatef(centerX, centerY, 0.);
+    GL_GPU::glRotatef(rotate, 0., 0., 1.);
 
     /// by default we draw the top left
     QPointF bottom(0., -arrowLenght / 2.);
     QPointF right(arrowLenght / 2., 0.);
-    glBegin (GL_LINE_STRIP);
-    glVertex2f ( bottom.x(), bottom.y() );
-    glVertex2f (0., 0.);
-    glVertex2f ( right.x(), right.y() );
-    glEnd ();
+    GL_GPU::glBegin (GL_LINE_STRIP);
+    GL_GPU::glVertex2f ( bottom.x(), bottom.y() );
+    GL_GPU::glVertex2f (0., 0.);
+    GL_GPU::glVertex2f ( right.x(), right.y() );
+    GL_GPU::glEnd ();
 
-    glBegin(GL_POLYGON);
-    glVertex2f(bottom.x(), bottom.y() - arrowHeadHeight);
-    glVertex2f( bottom.x() - arrowWidth, bottom.y() );
-    glVertex2f( bottom.x() + arrowWidth, bottom.y() );
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2f(bottom.x(), bottom.y() - arrowHeadHeight);
+    GL_GPU::glVertex2f( bottom.x() - arrowWidth, bottom.y() );
+    GL_GPU::glVertex2f( bottom.x() + arrowWidth, bottom.y() );
+    GL_GPU::glEnd();
 
-    glBegin(GL_POLYGON);
-    glVertex2f( right.x() + arrowHeadHeight, right.y() );
-    glVertex2f(right.x(), right.y() - arrowWidth);
-    glVertex2f(right.x(), right.y() + arrowWidth);
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2f( right.x() + arrowHeadHeight, right.y() );
+    GL_GPU::glVertex2f(right.x(), right.y() - arrowWidth);
+    GL_GPU::glVertex2f(right.x(), right.y() + arrowWidth);
+    GL_GPU::glEnd();
 }
 
 void
@@ -347,30 +349,30 @@ RotoPaintInteract::drawSelectedCpsBBOX()
     p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
 
         QPointF topLeft = selectedCpsBbox.topLeft();
         QPointF btmRight = selectedCpsBbox.bottomRight();
 
-        glLineWidth(1.5);
+        GL_GPU::glLineWidth(1.5);
 
         if (hoverState == eHoverStateBbox) {
-            glColor4f(0.9, 0.5, 0, 1.);
+            GL_GPU::glColor4f(0.9, 0.5, 0, 1.);
         } else {
-            glColor4f(0.8, 0.8, 0.8, 1.);
+            GL_GPU::glColor4f(0.8, 0.8, 0.8, 1.);
         }
-        glBegin(GL_LINE_LOOP);
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::glEnd();
 
         double midX = ( topLeft.x() + btmRight.x() ) / 2.;
         double midY = ( btmRight.y() + topLeft.y() ) / 2.;
@@ -381,14 +383,14 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QLineF selectedCpsCrossVertLine;
         selectedCpsCrossVertLine.setLine(midX, midY - xHairMidSizeY, midX, midY + xHairMidSizeY);
 
-        glBegin(GL_LINES);
-        glVertex2f( std::max( selectedCpsCrossHorizLine.p1().x(), topLeft.x() ), selectedCpsCrossHorizLine.p1().y() );
-        glVertex2f( std::min( selectedCpsCrossHorizLine.p2().x(), btmRight.x() ), selectedCpsCrossHorizLine.p2().y() );
-        glVertex2f( selectedCpsCrossVertLine.p1().x(), std::max( selectedCpsCrossVertLine.p1().y(), btmRight.y() ) );
-        glVertex2f( selectedCpsCrossVertLine.p2().x(), std::min( selectedCpsCrossVertLine.p2().y(), topLeft.y() ) );
-        glEnd();
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f( std::max( selectedCpsCrossHorizLine.p1().x(), topLeft.x() ), selectedCpsCrossHorizLine.p1().y() );
+        GL_GPU::glVertex2f( std::min( selectedCpsCrossHorizLine.p2().x(), btmRight.x() ), selectedCpsCrossHorizLine.p2().y() );
+        GL_GPU::glVertex2f( selectedCpsCrossVertLine.p1().x(), std::max( selectedCpsCrossVertLine.p1().y(), btmRight.y() ) );
+        GL_GPU::glVertex2f( selectedCpsCrossVertLine.p2().x(), std::min( selectedCpsCrossVertLine.p2().y(), topLeft.y() ) );
+        GL_GPU::glEnd();
 
-        glCheckError();
+        glCheckError(GL_GPU);
 
 
         QPointF midTop( ( topLeft.x() + btmRight.x() ) / 2., topLeft.y() );
@@ -397,18 +399,18 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QPointF midLeft(topLeft.x(), ( topLeft.y() + btmRight.y() ) / 2.);
 
         ///draw the 4 corners points and the 4 mid points
-        glPointSize(5.f);
-        glBegin(GL_POINTS);
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::glPointSize(5.f);
+        GL_GPU::glBegin(GL_POINTS);
+        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
 
-        glVertex2f( midTop.x(), midTop.y() );
-        glVertex2f( midRight.x(), midRight.y() );
-        glVertex2f( midBtm.x(), midBtm.y() );
-        glVertex2f( midLeft.x(), midLeft.y() );
-        glEnd();
+        GL_GPU::glVertex2f( midTop.x(), midTop.y() );
+        GL_GPU::glVertex2f( midRight.x(), midRight.y() );
+        GL_GPU::glVertex2f( midBtm.x(), midBtm.y() );
+        GL_GPU::glVertex2f( midLeft.x(), midLeft.y() );
+        GL_GPU::glEnd();
 
         ///now draw the handles to indicate the user he/she can transform the selection rectangle
         ///draw it only if it is not dragged
@@ -736,8 +738,9 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
     }
     selectedToolAction = actionButton;
     {
-        boost::shared_ptr<KnobI> parentKnob = actionButton->getParentKnob();
-        boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+        KnobIPtr parentKnob = actionButton->getParentKnob();
+        KnobGroupPtr parentGroup = toKnobGroup(parentKnob);
+
         assert(parentGroup);
         selectedToolRole = parentGroup;
     }
@@ -780,7 +783,6 @@ RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
 
     RotoRoleEnum roleEnum;
     getRoleForGroup(parentGroup, &roleEnum);
-
 
     KnobGroupPtr curGroup = selectedToolRole.lock();
     KnobButtonPtr curToolButton = selectedToolAction.lock();

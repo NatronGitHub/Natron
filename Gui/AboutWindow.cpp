@@ -338,17 +338,27 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
 void
 AboutWindow::updateLibrariesVersions()
 {
-    QString libsText = QString::fromUtf8("<p> Python %1 </p>"
-                                         "<p> Qt %2 </p>"
-                                         "<p> Boost %3 </p>"
-                                         "<p> OpenGL %5 </p>"
-                                         "<p> Cairo %6 </p>")
-                       .arg( QString::fromUtf8(PY_VERSION) )
-                       .arg( appPTR->getQtVersion() )
-                       .arg( appPTR->getBoostVersion() )
-                       .arg( appPTR->getOpenGLVersion() )
-                       .arg( appPTR->getCairoVersion() );
 
+    QString pythonStr = QString::fromUtf8("<p> Python %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+    QString qtStr = QString::fromUtf8("<p> Qt %1 </p>").arg( appPTR->getQtVersion() );
+    QString boostStr = QString::fromUtf8("<p> Boost %1 </p>").arg( appPTR->getBoostVersion() );
+    QString openglStr = QString::fromUtf8("<p> OpenGL %1 </p>").arg( appPTR->getOpenGLVersion() );
+
+    QString cairoVersionStr = appPTR->getCairoVersion();
+    QString cairoStr;
+    if (!cairoVersionStr.isEmpty()) {
+        cairoStr = QString::fromUtf8("<p> Cairo %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+    }
+
+
+    QString libsText;
+    libsText += pythonStr;
+    libsText += qtStr;
+    libsText += boostStr;
+    libsText += openglStr;
+    if (!cairoStr.isEmpty()) {
+        libsText += cairoStr;
+    }
     _libsText->setText(libsText);
 }
 

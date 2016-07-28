@@ -68,7 +68,7 @@ class Bitmap
 public:
     Bitmap(const RectI & bounds)
         : _bounds(bounds)
-        , _map( bounds.area() )
+        , _map()
         , _dirtyZone()
         , _dirtyZoneSet(false)
     {
@@ -76,7 +76,8 @@ public:
         // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
         // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
         //assert(!rod.isNull());
-        std::fill(_map.begin(), _map.end(), 0);
+        _map.resize(bounds.area());
+        memset(_map.getData(), 0, _map.size());
     }
 
     Bitmap()
@@ -91,8 +92,7 @@ public:
     {
         _bounds = bounds;
         _map.resize( _bounds.area() );
-
-        std::fill(_map.begin(), _map.end(), 0);
+        memset(_map.getData(), 0, _map.size());
     }
 
     ~Bitmap()
@@ -101,7 +101,7 @@ public:
 
     void setTo1()
     {
-        std::fill(_map.begin(), _map.end(), 1);
+        memset(_map.getData(), 1, _map.size());
     }
 
     const RectI & getBounds() const
@@ -132,12 +132,12 @@ public:
 
     const char* getBitmap() const
     {
-        return &_map.front();
+        return _map.getData();
     }
 
     char* getBitmap()
     {
-        return &_map.front();
+        return _map.getData();
     }
 
     const char* getBitmapAt(int x, int y) const;
@@ -155,7 +155,7 @@ public:
 
 private:
     RectI _bounds;
-    std::vector<char> _map;
+    RamBuffer<char> _map;
 
     /**
      * This represents the zone that has potentially something to render. In minimalNonMarkedRects
@@ -190,7 +190,8 @@ public:
           ImageFieldingOrderEnum fielding,
           bool useBitmap = false,
           StorageModeEnum storage = eStorageModeRAM,
-          U32 textureTarget = GL_TEXTURE_2D);
+          U32 textureTarget = GL_TEXTURE_2D,
+          bool isGPUTexture = true);
 
     //Same as above but parameters are in the ImageParams object
     Image(const ImageKey & key,
@@ -242,20 +243,82 @@ public:
      * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
      * a new buffer. This is not thread-safe and should be called only while under an ImageLocker
      **/
-    bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparent = false, bool setBitmapTo1 = false);
+    bool ensureBounds(const OSGLContextPtr& glContext, const RectI& newBounds, bool fillWithBlackAndTransparent = false, bool setBitmapTo1 = false);
 
     /**
      * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
      * write lock from this image.
      **/
-    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output);
+    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output, const OSGLContextPtr& glContext);
 
+    /*
+     Compute the rectangles (A,B,C,D) where to set the image to 0
 
-    static void applyTextureMapping(const RectI& bounds, const RectI& roi);
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     */
+    static void getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect);
+
+    template <typename GL>
+    static void setupGLViewport(const RectI& bounds, const RectI& roi)
+    {
+        GL::glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        GL::glMatrixMode(GL_PROJECTION);
+        GL::glLoadIdentity();
+        GL::glOrtho( roi.x1, roi.x2,
+                    roi.y1, roi.y2,
+                    -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+        GL::glMatrixMode(GL_MODELVIEW);
+        GL::glLoadIdentity();
+        glCheckError(GL);
+    }
+
+    template <typename GL>
+    static void applyTextureMapping(const RectI& srcBounds, const RectI& dstBounds, const RectI& roi)
+    {
+        setupGLViewport<GL>(dstBounds, roi);
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = roi.x1;
+        vertexCoords[0].y = roi.y1;
+        srcTexCoords[0].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[0].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[1].x = roi.x2;
+        vertexCoords[1].y = roi.y1;
+        srcTexCoords[1].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[1].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[2].x = roi.x2;
+        vertexCoords[2].y = roi.y2;
+        srcTexCoords[2].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[2].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[3].x = roi.x1;
+        vertexCoords[3].y = roi.y2;
+        srcTexCoords[3].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[3].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
+
+        GL::glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        GL::glEnd();
+        glCheckError(GL);
+    }
 
 private:
 
-    static void resizeInternal(const Image* srcImg,
+    static void resizeInternal(const OSGLContextPtr& glContext,
+                               const Image* srcImg,
                                const RectI& srcBounds,
                                const RectI& merge,
                                bool fillWithBlackAndTransparent,
@@ -475,6 +538,11 @@ public:
     }
 
     static unsigned char* pixelAtStatic(int x, int y, const RectI& bounds, int nComps, int dataSizeOf, unsigned char* buf);
+
+    static inline unsigned char* getPixelAddress_internal(int x, int y, unsigned char* basePtr, int pixelSize, const RectI& bounds)
+    {
+        return basePtr + (qint64)( y - bounds.y1 ) * pixelSize * bounds.width() + (qint64)( x - bounds.x1 ) * pixelSize;
+    }
 
 private:
 
@@ -739,6 +807,7 @@ public:
      * The internal bitmap will be copied aswell
      **/
     void pasteFrom( const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr() );
+
 
     /**
      * @brief Downscales a portion of this image into output.

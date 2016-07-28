@@ -365,6 +365,8 @@ public:
                                             RotoStrokeItemPtr* /*stroke*/,
                                             bool* /*isPainting*/) const { }
 
+    virtual bool isDuringPainting() const { return false; }
+
     virtual bool isRenderStatsActionChecked() const { return false; }
 
     bool saveTemp(const std::string& filename);
@@ -382,7 +384,8 @@ public:
     virtual AppInstancePtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
 
-    virtual void updateLastPaintStrokeData(int /*newAge*/,
+    virtual void updateLastPaintStrokeData(bool /*isFirstTick*/,
+                                           int /*newAge*/,
                                            const std::list<std::pair<Point, double> >& /*points*/,
                                            const RectD& /*lastPointsBbox*/,
                                            int /*strokeIndex*/) {}
@@ -397,12 +400,12 @@ public:
 
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
                                      std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
+                                     bool */*isFirstTick*/,
+                                     int */*strokeMultiIndex*/,
                                      double */*distNextIn*/,
-                                     ImagePtr* /*strokeImage*/) const {}
+                                     Point* /*lastCenter*/) const {}
 
-    virtual void updateStrokeImage(const ImagePtr& /*image*/,
-                                   double /*distNextOut*/,
-                                   bool /*setDistNextOut*/) {}
+    virtual void updateStrokeData(const Point& /*lastCenter*/, double /*distNextOut*/) {}
 
     virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
 

@@ -497,12 +497,14 @@ ViewerTab::onCurrentTimeSpinBoxChanged(double time)
 void
 ViewerTab::centerViewer()
 {
-    _imp->viewer->fitImageToFormat();
-    if ( _imp->viewer->displayingImage() ) {
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-        viewerNode->renderCurrentFrame(true);
-    } else {
-        _imp->viewer->update();
+    if (getGui() && !getGui()->getApp()->isDuringPainting()) {
+        _imp->viewer->fitImageToFormat();
+        if ( _imp->viewer->displayingImage() ) {
+            ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+            viewerNode->renderCurrentFrame(true);
+        } else {
+            _imp->viewer->update();
+        }
     }
 }
 
@@ -583,6 +585,9 @@ ViewerTab::leaveEvent(QEvent* e)
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
+    if (!getInternalNode() || !getInternalNode()->getNode()) {
+        return;
+    }
     //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
     if ( getGui() ) {
         getGui()->setActiveViewer(this);

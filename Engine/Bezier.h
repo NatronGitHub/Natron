@@ -118,7 +118,8 @@ public:
                                       const Point & p1,
                                       const Point & p2,
                                       const Point & p3,
-                                      RectD *bbox);
+                                      RectD *bbox,
+                                      bool* bboxSet);
 
     bool isOpenBezier() const;
 
@@ -362,8 +363,8 @@ public:
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
-                            std::list<std::list<ParametricPoint> >* points,
-                            std::list<ParametricPoint >* pointsSingleList,
+                            std::vector<std::vector<ParametricPoint> >* points,
+                            std::vector<ParametricPoint >* pointsSingleList,
                             RectD* bbox);
     static void point_line_intersection(const Point &p1,
                                         const Point &p2,
@@ -382,7 +383,7 @@ public:
 #else
                                     double errorScale,
 #endif
-                                    std::list<std::list<ParametricPoint> >* points,
+                                    std::vector<std::vector<ParametricPoint> >* points,
                                     RectD* bbox) const;
 
     void evaluateAtTime_DeCasteljau(bool useGuiCurves,
@@ -393,7 +394,7 @@ public:
 #else
                                     double errorScale,
 #endif
-                                    std::list<ParametricPoint >* points,
+                                    std::vector<ParametricPoint >* points,
                                     RectD* bbox) const;
 
 private:
@@ -406,8 +407,8 @@ private:
 #else
                                     double errorScale,
 #endif
-                                    std::list<std::list<ParametricPoint> >* points,
-                                    std::list<ParametricPoint >* pointsSingleList,
+                                    std::vector<std::vector<ParametricPoint> >* points,
+                                    std::vector<ParametricPoint >* pointsSingleList,
                                     RectD* bbox) const;
 
 public:
@@ -418,7 +419,7 @@ public:
     void evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiCurves,
                                                  double time,
                                                  unsigned int mipMapLevel,
-                                                 std::list<std::list<ParametricPoint> >* points,
+                                                 std::vector<std::vector<ParametricPoint> >* points,
                                                  RectD* bbox) const;
 
     /**
@@ -434,7 +435,7 @@ public:
                                                  double errorScale,
 #endif
                                                  bool evaluateIfEqual,
-                                                 std::list<std::list<ParametricPoint>  >* points,
+                                                 std::vector<std::vector<ParametricPoint>  >* points,
                                                  RectD* bbox) const;
 
     void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
@@ -446,7 +447,7 @@ public:
                                                  double errorScale,
 #endif
                                                  bool evaluateIfEqual,
-                                                 std::list<ParametricPoint >* points,
+                                                 std::vector<ParametricPoint >* points,
                                                  RectD* bbox) const;
 
 private:
@@ -460,8 +461,8 @@ private:
                                                           double errorScale,
 #endif
                                                           bool evaluateIfEqual,
-                                                          std::list<std::list<ParametricPoint>  >* points,
-                                                          std::list<ParametricPoint >* pointsSingleList,
+                                                          std::vector<std::vector<ParametricPoint>  >* points,
+                                                          std::vector<ParametricPoint >* pointsSingleList,
                                                           RectD* bbox) const;
 
 public:

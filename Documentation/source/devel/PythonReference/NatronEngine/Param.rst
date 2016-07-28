@@ -30,10 +30,10 @@ Functions
 *    def :meth:`getParent<NatronEngine.Param.getParent>` ()
 *    def :meth:`getScriptName<NatronEngine.Param.getScriptName>` ()
 *    def :meth:`getTypeName<NatronEngine.Param.getTypeName>` ()
-*	 def :meth:`random<NatronEngine.Param.random` ([min=0.,max=1.])
-*	 def :meth:`random<NatronEngine.Param.random` (seed)
-*	 def :meth:`randomInt<NatronEngine.Param.randomInt` (min,max)
-*	 def :meth:`randomInt<NatronEngine.Param.randomInt` (seed)
+*	 def :meth:`random<NatronEngine.Param.random>` ([min=0.,max=1.])
+*	 def :meth:`random<NatronEngine.Param.random>` (seed)
+*	 def :meth:`randomInt<NatronEngine.Param.randomInt>` (min,max)
+*	 def :meth:`randomInt<NatronEngine.Param.randomInt>` (seed)
 *    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
 *    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
@@ -543,7 +543,7 @@ This is used generally to make user parameters on groups with the "Pick" option 
 	:param otherParam: :class:`Param<NatronEngine.Param>`
 	:param thisDimension: :class:`int<PySide.QtCore.int>`
 	:param otherDimension: :class:`int<PySide.QtCore.int>`
-	:rtype: :class:`bool<PySide.QtCore.bool>	
+	:rtype: :class:`bool<PySide.QtCore.bool>`	
 	
 Set this parameter as a slave of *otherParam*. 
 They need to be both of the same *type* but may vary in dimension, as long as 

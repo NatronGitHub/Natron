@@ -40,6 +40,7 @@
 #include "Engine/Texture.h"
 #include "Engine/TrackerUndoCommand.h"
 
+#include "Global/GLIncludes.h"
 
 #define POINT_SIZE 5
 #define CROSS_SIZE 6

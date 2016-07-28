@@ -48,6 +48,7 @@
 #include <OpenGL/CGLTypes.h>
 
 #include "Engine/OSGLContext.h"
+#include "Engine/AppManager.h"
 
 // see Availability.h
 #ifdef __MAC_OS_X_VERSION_MIN_REQUIRED
@@ -516,7 +517,7 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         // Create a dummy OpenGL context for that specific renderer to retrieve more infos
         // See https://developer.apple.com/library/mac/technotes/tn2080/_index.html
         std::vector<CGLPixelFormatAttribute> attributes;
-        makeAttribsFromFBConfig(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, rendererID, attributes);
+        makeAttribsFromFBConfig(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, rendererID, attributes);
         CGLPixelFormatObj pixelFormat;
         GLint numPixelFormats;
         CGLError errorCode = CGLChoosePixelFormat(&attributes[0], &pixelFormat, &numPixelFormats);
@@ -537,12 +538,12 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             continue;
         }
         // get renderer strings
-        info.rendererName = std::string( (char*)glGetString (GL_RENDERER) );
-        info.vendorName = std::string( (char*)glGetString (GL_VENDOR) );
-        info.glVersionString = std::string( (char*)glGetString (GL_VERSION) );
+        info.rendererName = std::string( (char*)GL_GPU::glGetString (GL_RENDERER) );
+        info.vendorName = std::string( (char*)GL_GPU::glGetString (GL_VENDOR) );
+        info.glVersionString = std::string( (char*)GL_GPU::glGetString (GL_VERSION) );
         //std::string strExt((char*)glGetString (GL_EXTENSIONS));
 
-        glGetIntegerv (GL_MAX_TEXTURE_SIZE,
+        GL_GPU::glGetIntegerv (GL_MAX_TEXTURE_SIZE,
                        &info.maxTextureSize);
 
         CGLDestroyContext (cglContext);

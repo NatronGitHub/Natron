@@ -50,8 +50,6 @@
 #endif
 #endif
 
-
-#include <cairo/cairo.h>
 #include <boost/version.hpp>
 
 #include <QtCore/QDebug>
@@ -86,13 +84,15 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/ReadNode.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/RotoSmear.h"
+#include "Engine/RotoShapeRenderNode.h"
+#include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
@@ -689,7 +689,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             try {
                 _imp->initGLAPISpecific();
 
-                glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                glContext = _imp->renderingContextPool->attachGLContextToRender(false, false /*checkIfGLLoaded*/);
                 if (glContext) {
                     // Make the context current and check its version
                     glContext->setContextCurrentNoRender();
@@ -725,10 +725,16 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 
         // The following requires a valid OpenGL context to be created
         _imp->initGl(checkRenderingReq);
+
+        // Load our OpenGL functions both in OSMesa and GL (from glad)
+        GL_GPU::load();
+        GL_CPU::load();
+
+
         if (createOpenGLContext) {
             if (hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
                 try {
-                    OSGLContext::checkOpenGLVersion();
+                    OSGLContext::checkOpenGLVersion(true);
                 } catch (const std::exception& e) {
                     AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
                     data.hasRequirements = false;
@@ -739,7 +745,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             }
             
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
-            glContext->unsetCurrentContextNoRender();
+            glContext->unsetCurrentContextNoRender(true);
 
             // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
             // selected by the user in the settings (which are not created yet).
@@ -752,6 +758,18 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
     }
 
     return false;
+}
+
+int
+AppManager::getOpenGLVersionMajor() const
+{
+    return _imp->glVersionMajor;
+}
+
+int
+AppManager::getOpenGLVersionMinor() const
+{
+    return _imp->glVersionMinor;
 }
 
 #ifdef __NATRON_WIN32__
@@ -1377,7 +1395,7 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerBuiltInPlugin<DiskCacheNode>(QString::fromUtf8(NATRON_IMAGES_PATH "diskcache_icon.png"), false, false);
     registerBuiltInPlugin<RotoPaint>(QString::fromUtf8(NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png"), false, false);
     registerBuiltInPlugin<RotoNode>(QString::fromUtf8(NATRON_IMAGES_PATH "rotoNodeIcon.png"), false, false);
-    registerBuiltInPlugin<RotoSmear>(QString::fromUtf8(""), false, true);
+    registerBuiltInPlugin<RotoShapeRenderNode>(QString::fromUtf8(""), false, true);
     registerBuiltInPlugin<PrecompNode>(QString::fromUtf8(NATRON_IMAGES_PATH "precompNodeIcon.png"), false, false);
     registerBuiltInPlugin<TrackerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "trackerNodeIcon.png"), false, false);
     registerBuiltInPlugin<JoinViewsNode>(QString::fromUtf8(NATRON_IMAGES_PATH "joinViewsNode.png"), false, false);
@@ -1883,6 +1901,7 @@ AppManager::getKnobFactory() const
 
 Plugin*
 AppManager::getPluginBinaryFromOldID(const QString & pluginId,
+                                     bool projectIsLowerCase,
                                      int majorVersion,
                                      int minorVersion) const
 {
@@ -1897,6 +1916,8 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
     } else if ( pluginId == QString::fromUtf8("Backdrop") ) { // DO NOT change the capitalization, even if it's wrong
         return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_BACKDROP), majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("RotoOFX  [Draw]") ) {
+        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_ROTO), majorVersion, minorVersion);
+    } else if ( ( !projectIsLowerCase && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( projectIsLowerCase && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) )  {
         return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_ROTO), majorVersion, minorVersion);
     }
 
@@ -2112,9 +2133,10 @@ AppManager::getImage(const ImageKey & key,
 bool
 AppManager::getImageOrCreate(const ImageKey & key,
                              const ImageParamsPtr& params,
+                             ImageLocker* locker,
                              ImagePtr* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
+    return _imp->_nodeCache->getOrCreate(key, params, locker, returnValue);
 }
 
 bool
@@ -3268,8 +3290,8 @@ AppManager::getOpenGLVersion() const
     if (!_imp->hasInitializedOpenGLFunctions) {
         return QString();
     }
-    QString glslVer = QString::fromUtf8( (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION) );
-    QString openglVer = QString::fromUtf8( (const char*)glGetString(GL_VERSION) );
+    QString glslVer = QString::fromUtf8( (const char*)GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
+    QString openglVer = QString::fromUtf8( (const char*)GL_GPU::glGetString(GL_VERSION) );
 
     return openglVer + QString::fromUtf8(", GLSL ") + glslVer;
 }
@@ -3289,7 +3311,11 @@ AppManager::getQtVersion() const
 QString
 AppManager::getCairoVersion() const
 {
-    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+    return RotoShapeRenderCairo::getCairoVersion();
+#else
+    return QString();
+#endif
 }
 
 QString

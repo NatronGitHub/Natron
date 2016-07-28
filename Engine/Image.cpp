@@ -35,11 +35,10 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/GLShader.h"
 
 NATRON_NAMESPACE_ENTER;
 
-#define BM_GET(i, j) & _map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
+#define BM_GET(i, j) mapStart + ( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )
 
 #define PIXEL_UNAVAILABLE 2
 
@@ -47,7 +46,7 @@ template <int trimap>
 RectI
 minimalNonMarkedBbox_internal(const RectI& roi,
                               const RectI& _bounds,
-                              const std::vector<char>& _map,
+                              const char* mapStart,
                               bool* isBeingRenderedElsewhere)
 {
     RectI bbox;
@@ -205,7 +204,7 @@ template <int trimap>
 void
 minimalNonMarkedRects_internal(const RectI & roi,
                                const RectI& _bounds,
-                               const std::vector<char>& _map,
+                               const char* mapStart,
                                std::list<RectI>& ret,
                                bool* isBeingRenderedElsewhere)
 {
@@ -242,7 +241,7 @@ minimalNonMarkedRects_internal(const RectI & roi,
         return;
     }
 
-    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, _map, isBeingRenderedElsewhere);
+    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, mapStart, isBeingRenderedElsewhere);
     assert( (trimap && isBeingRenderedElsewhere) || (!trimap && !isBeingRenderedElsewhere) );
 
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -449,7 +448,7 @@ minimalNonMarkedRects_internal(const RectI & roi,
     assert( bboxD.bottom() == bboxX.bottom() );
 
     // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX, _bounds, _map, isBeingRenderedElsewhere);
+    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX, _bounds, mapStart, isBeingRenderedElsewhere);
 
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxX);
@@ -467,9 +466,9 @@ Bitmap::minimalNonMarkedBbox(const RectI & roi) const
             return RectI();
         }
 
-        return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map, NULL);
+        return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map.getData(), NULL);
     } else {
-        return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map, NULL);
+        return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map.getData(), NULL);
     }
 }
 
@@ -482,9 +481,9 @@ Bitmap::minimalNonMarkedRects(const RectI & roi,
         if ( !roi.intersect(_dirtyZone, &realRoi) ) {
             return;
         }
-        minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map, ret, NULL);
+        minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map.getData(), ret, NULL);
     } else {
-        minimalNonMarkedRects_internal<0>(roi, _bounds, _map, ret, NULL);
+        minimalNonMarkedRects_internal<0>(roi, _bounds, _map.getData(), ret, NULL);
     }
 }
 
@@ -501,9 +500,9 @@ Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,
             return RectI();
         }
 
-        return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map, isBeingRenderedElsewhere);
+        return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map.getData(), isBeingRenderedElsewhere);
     } else {
-        return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map, isBeingRenderedElsewhere);
+        return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map.getData(), isBeingRenderedElsewhere);
     }
 }
 
@@ -519,9 +518,9 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
 
             return;
         }
-        minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map, ret, isBeingRenderedElsewhere);
+        minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map.getData(), ret, isBeingRenderedElsewhere);
     } else {
-        minimalNonMarkedRects_internal<1>(roi, _bounds, _map, ret, isBeingRenderedElsewhere);
+        minimalNonMarkedRects_internal<1>(roi, _bounds, _map.getData(), ret, isBeingRenderedElsewhere);
     }
 }
 
@@ -530,6 +529,7 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
 void
 Bitmap::markForRendered(const RectI & roi)
 {
+    char* mapStart = _map.getData();
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -543,6 +543,8 @@ Bitmap::markForRendered(const RectI & roi)
 void
 Bitmap::markForRendering(const RectI & roi)
 {
+    assert(_map.size() > 0);
+    char* mapStart = _map.getData();
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -557,6 +559,8 @@ Bitmap::markForRendering(const RectI & roi)
 void
 Bitmap::clear(const RectI& roi)
 {
+    assert(_map.size() > 0);
+    char* mapStart = _map.getData();
     char* buf = BM_GET( roi.bottom(), roi.left() );
     int w = _bounds.width();
     int roiw = roi.width();
@@ -580,6 +584,7 @@ Bitmap::getBitmapAt(int x,
                     int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
+        const char* mapStart = _map.getData();
         return BM_GET(y, x);
     } else {
         return NULL;
@@ -591,6 +596,7 @@ Bitmap::getBitmapAt(int x,
                     int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
+        char* mapStart = _map.getData();
         return BM_GET(y, x);
     } else {
         return NULL;
@@ -709,7 +715,8 @@ Image::Image(const ImageComponents& components,
              ImageFieldingOrderEnum fielding,
              bool useBitmap,
              StorageModeEnum storage,
-             U32 textureTarget)
+             U32 textureTarget,
+             bool isGPUTexture )
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
 {
@@ -727,6 +734,7 @@ Image::Image(const ImageComponents& components,
                                                                   textureTarget) ),
                   NULL /*cacheAPI*/
                   );
+    _params->getStorageInfo().isGPUTexture = isGPUTexture;
 
     _bitDepth = bitdepth;
     _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
@@ -916,8 +924,222 @@ Image::setRoD(const RectD& rod)
     _params->setRoD(rod);
 }
 
+
+
+template <typename GL>
+static void
+pasteFromGL(const Image & src,
+            Image* dst,
+            const RectI & srcRoi,
+            bool /*copyBitmap*/,
+            const OSGLContextPtr& glContext,
+            const RectI& srcBounds,
+            const RectI& dstBounds,
+            StorageModeEnum thisStorage,
+            StorageModeEnum otherStorage,
+            int target)
+{
+
+    int texID = dst->getGLTextureID();
+    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to OpenGL texture
+
+        GLuint fboID = glContext->getOrCreateFBOId();
+        GL::glDisable(GL_SCISSOR_TEST);
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glEnable(target);
+        GL::glActiveTexture(GL_TEXTURE0);
+
+        GL::glBindTexture( target, texID );
+
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+        GL::glBindTexture( target, src.getGLTextureID() );
+
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
+        assert(shader);
+        shader->bind();
+        shader->setUniform("srcTex", 0);
+
+        Image::applyTextureMapping<GL>(srcBounds, dstBounds, srcRoi);
+
+        shader->unbind();
+        GL::glBindTexture(target, 0);
+        
+        glCheckError(GL);
+    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
+        // RAM image to OpenGL texture
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+        GLuint pboID = glContext->getOrCreatePBOId();
+        GL::glEnable(target);
+
+        // bind PBO to update texture source
+        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+
+        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
+
+        // Note that glMapBufferARB() causes sync issue.
+        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+        // until GPU to finish its job. To avoid waiting (idle), you can call
+        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+        // If you do that, the previous data in PBO will be discarded and
+        // glMapBufferARB() returns a new allocated pointer immediately
+        // even if GPU is still working with the previous data.
+        GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
+        // map the buffer object into client's memory
+        void* gpuData = GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+        assert(gpuData);
+        if (gpuData) {
+            // update data directly on the mapped buffer
+            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            tmpImg->pasteFrom(src, roi);
+
+            Image::ReadAccess racc(tmpImg ? tmpImg.get() : dst);
+            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
+            assert(srcdata);
+
+            memcpy(gpuData, srcdata, dataSize);
+
+            GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            assert(result == GL_TRUE);
+            Q_UNUSED(result);
+        }
+
+        // bind the texture
+        GL::glBindTexture( target, texID );
+        // copy pixels from PBO to texture object
+        // Use offset instead of pointer (last parameter is 0).
+        GL::glTexSubImage2D(target,
+                            0,              // level
+                            roi.x1, roi.y1,               // xoffset, yoffset
+                            roi.width(), roi.height(),
+                            src.getGLTextureFormat(),            // format
+                            src.getGLTextureType(),       // type
+                            0);
+
+        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        GL::glBindTexture(target, 0);
+        glCheckError(GL);
+    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to RAM image
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+
+        GLuint fboID = glContext->getOrCreateFBOId();
+
+        int srcTarget = src.getGLTextureTarget();
+
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glEnable(srcTarget);
+        GL::glBindTexture( srcTarget, src.getGLTextureID() );
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
+        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
+        GL::glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
+        glCheckFramebufferError(GL);
+        // Ensure all drawing commands are finished
+        GL::glFlush();
+        GL::glFinish();
+        glCheckError(GL);
+        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM) );
+
+        {
+            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
+            unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
+
+            GL::glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            GL::glBindTexture(srcTarget, 0);
+        }
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCheckError(GL);
+
+        // Ok now convert from RGBA to this image format if needed
+        if ( tmpImg->getComponentsCount() != dst->getComponentsCount() ) {
+            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, dst);
+        } else {
+            dst->pasteFrom(*tmpImg, roi, false);
+        }
+    } 
+    
+}
+
 void
-Image::resizeInternal(const Image* srcImg,
+Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect)
+{
+    /*
+     Compute the rectangles (A,B,C,D) where to set the image to 0
+
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     */
+    aRect.x1 = biggerBounds.x1;
+    aRect.y1 = srcBounds.y2;
+    aRect.y2 = biggerBounds.y2;
+    aRect.x2 = biggerBounds.x2;
+
+    bRect.x1 = srcBounds.x2;
+    bRect.y1 = srcBounds.y1;
+    bRect.x2 = biggerBounds.x2;
+    bRect.y2 = srcBounds.y2;
+
+    cRect.x1 = biggerBounds.x1;
+    cRect.y1 = biggerBounds.y1;
+    cRect.x2 = biggerBounds.x2;
+    cRect.y2 = srcBounds.y1;
+
+    dRect.x1 = biggerBounds.x1;
+    dRect.y1 = srcBounds.y1;
+    dRect.x2 = srcBounds.x1;
+    dRect.y2 = srcBounds.y2;
+
+}
+
+void
+Image::resizeInternal(const OSGLContextPtr& glContext,
+                      const Image* srcImg,
                       const RectI& srcBounds,
                       const RectI& merge,
                       bool fillWithBlackAndTransparent,
@@ -928,14 +1150,17 @@ Image::resizeInternal(const Image* srcImg,
     ///Allocate to resized image
     if (!createInCache) {
         outputImage->reset( new Image( srcImg->getComponents(),
-                                       srcImg->getRoD(),
-                                       merge,
-                                       srcImg->getMipMapLevel(),
-                                       srcImg->getPixelAspectRatio(),
-                                       srcImg->getBitDepth(),
-                                       srcImg->getPremultiplication(),
-                                       srcImg->getFieldingOrder(),
-                                       srcImg->usesBitMap() ) );
+                                      srcImg->getRoD(),
+                                      merge,
+                                      srcImg->getMipMapLevel(),
+                                      srcImg->getPixelAspectRatio(),
+                                      srcImg->getBitDepth(),
+                                      srcImg->getPremultiplication(),
+                                      srcImg->getFieldingOrder(),
+                                      srcImg->usesBitMap(),
+                                      srcImg->getStorageMode(),
+                                      srcImg->getGLTextureTarget(),
+                                      srcImg->getParams()->getStorageInfo().isGPUTexture) );
     } else {
         ImageParamsPtr params( new ImageParams( *srcImg->getParams() ) );
         params->setBounds(merge);
@@ -945,119 +1170,101 @@ Image::resizeInternal(const Image* srcImg,
     ImageBitDepthEnum depth = srcImg->getBitDepth();
 
     if (fillWithBlackAndTransparent) {
-        /*
-           Compute the rectangles (A,B,C,D) where to set the image to 0
 
-           AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-           AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-           CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-           CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-         */
-        RectI aRect;
-        aRect.x1 = merge.x1;
-        aRect.y1 = srcBounds.y2;
-        aRect.y2 = merge.y2;
-        aRect.x2 = merge.x2;
+        if (srcImg->getStorageMode() == eStorageModeGLTex) {
+            (*outputImage)->fillBoundsZero(glContext);
+        } else {
 
-        RectI bRect;
-        bRect.x1 = srcBounds.x2;
-        bRect.y1 = srcBounds.y1;
-        bRect.x2 = merge.x2;
-        bRect.y2 = srcBounds.y2;
+            RectI aRect,bRect,cRect,dRect;
+            getABCDRectangles(srcBounds, merge, aRect, bRect, cRect, dRect);
+            Image::WriteAccess wacc( outputImage->get() );
+            std::size_t pixelSize = srcImg->getComponentsCount() * getSizeOfForBitDepth(depth);
 
-        RectI cRect;
-        cRect.x1 = merge.x1;
-        cRect.y1 = merge.y1;
-        cRect.x2 = merge.x2;
-        cRect.y2 = srcBounds.y1;
-
-        RectI dRect;
-        dRect.x1 = merge.x1;
-        dRect.y1 = srcBounds.y1;
-        dRect.x2 = srcBounds.x1;
-        dRect.y2 = srcBounds.y2;
-
-        Image::WriteAccess wacc( outputImage->get() );
-        std::size_t pixelSize = srcImg->getComponentsCount() * getSizeOfForBitDepth(depth);
-
-        if ( !aRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(aRect.x1, aRect.y1);
-            assert(pix);
-            double a = aRect.area();
-            std::size_t memsize = a * pixelSize;
-            std::memset(pix, 0, memsize);
-            if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
-                char* bm = wacc.bitmapAt(aRect.x1, aRect.y1);
-                assert(bm);
-                std::memset(bm, 1, a);
-            }
-        }
-        if ( !cRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(cRect.x1, cRect.y1);
-            assert(pix);
-            double a = cRect.area();
-            std::size_t memsize = a * pixelSize;
-            std::memset(pix, 0, memsize);
-            if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
-                char* bm = (char*)wacc.bitmapAt(cRect.x1, cRect.y1);
-                assert(bm);
-                std::memset(bm, 1, a);
-            }
-        }
-        if ( !bRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(bRect.x1, bRect.y1);
-            assert(pix);
-            int mw = merge.width();
-            std::size_t rowsize = mw * pixelSize;
-            int bw = bRect.width();
-            std::size_t rectRowSize = bw * pixelSize;
-            char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(bRect.x1, bRect.y1) : 0;
-            for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
-                std::memset(pix, 0, rectRowSize);
-                if (bm) {
-                    std::memset(bm, 1, bw);
-                    bm += mw;
+            if ( !aRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(aRect.x1, aRect.y1);
+                assert(pix);
+                double a = aRect.area();
+                std::size_t memsize = a * pixelSize;
+                std::memset(pix, 0, memsize);
+                if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
+                    char* bm = wacc.bitmapAt(aRect.x1, aRect.y1);
+                    assert(bm);
+                    std::memset(bm, 1, a);
                 }
             }
-        }
-        if ( !dRect.isNull() ) {
-            char* pix = (char*)wacc.pixelAt(dRect.x1, dRect.y1);
-            assert(pix);
-            int mw = merge.width();
-            std::size_t rowsize = mw * pixelSize;
-            int dw = dRect.width();
-            std::size_t rectRowSize = dw * pixelSize;
-            char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(dRect.x1, dRect.y1) : 0;
-            for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
-                std::memset(pix, 0, rectRowSize);
-                if (bm) {
-                    std::memset(bm, 1, dw);
-                    bm += mw;
+            if ( !cRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(cRect.x1, cRect.y1);
+                assert(pix);
+                double a = cRect.area();
+                std::size_t memsize = a * pixelSize;
+                std::memset(pix, 0, memsize);
+                if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
+                    char* bm = (char*)wacc.bitmapAt(cRect.x1, cRect.y1);
+                    assert(bm);
+                    std::memset(bm, 1, a);
                 }
             }
+            if ( !bRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(bRect.x1, bRect.y1);
+                assert(pix);
+                int mw = merge.width();
+                std::size_t rowsize = mw * pixelSize;
+                int bw = bRect.width();
+                std::size_t rectRowSize = bw * pixelSize;
+                char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(bRect.x1, bRect.y1) : 0;
+                for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
+                    std::memset(pix, 0, rectRowSize);
+                    if (bm) {
+                        std::memset(bm, 1, bw);
+                        bm += mw;
+                    }
+                }
+            }
+            if ( !dRect.isNull() ) {
+                char* pix = (char*)wacc.pixelAt(dRect.x1, dRect.y1);
+                assert(pix);
+                int mw = merge.width();
+                std::size_t rowsize = mw * pixelSize;
+                int dw = dRect.width();
+                std::size_t rectRowSize = dw * pixelSize;
+                char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(dRect.x1, dRect.y1) : 0;
+                for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
+                    std::memset(pix, 0, rectRowSize);
+                    if (bm) {
+                        std::memset(bm, 1, dw);
+                        bm += mw;
+                    }
+                }
+            } // if (srcImg->getStorageMode() == eStorageModeGLTex) {
         }
     } // fillWithBlackAndTransparent
 
+    if (srcImg->getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        if (glContext->isGPUContext()) {
+            pasteFromGL<GL_GPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget());
+        } else {
+            pasteFromGL<GL_CPU>(*srcImg, outputImage->get(), srcBounds, false, glContext, srcBounds, merge, (*outputImage)->getStorageMode(), srcImg->getStorageMode(), (*outputImage)->getGLTextureTarget());
+        }
 
-    switch (depth) {
-    case eImageBitDepthByte:
-        (*outputImage)->pasteFromForDepth<unsigned char>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
-        break;
-    case eImageBitDepthShort:
-        (*outputImage)->pasteFromForDepth<unsigned short>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        (*outputImage)->pasteFromForDepth<float>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
-        break;
-    case eImageBitDepthNone:
-        break;
+        //pasteFrom(*srcImg, srcBounds, false, glContext);
+    } else {
+        switch (depth) {
+            case eImageBitDepthByte:
+                (*outputImage)->pasteFromForDepth<unsigned char>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
+                break;
+            case eImageBitDepthShort:
+                (*outputImage)->pasteFromForDepth<unsigned short>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
+                break;
+            case eImageBitDepthHalf:
+                assert(false);
+                break;
+            case eImageBitDepthFloat:
+                (*outputImage)->pasteFromForDepth<float>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
+                break;
+            case eImageBitDepthNone:
+                break;
+        }
     }
 } // Image::resizeInternal
 
@@ -1065,7 +1272,8 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
-                             ImagePtr* output)
+                             ImagePtr* output,
+                             const OSGLContextPtr& glContext)
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
@@ -1077,18 +1285,17 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds,
     RectI merge = newBounds;
     merge.merge(_bounds);
 
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
+    resizeInternal(glContext, this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
 
     return true;
 }
 
 bool
-Image::ensureBounds(const RectI& newBounds,
+Image::ensureBounds(const OSGLContextPtr& glContext,
+                    const RectI& newBounds,
                     bool fillWithBlackAndTransparent,
                     bool setBitmapTo1)
 {
-    // OpenGL textures are not resizable yet
-    assert(_params->getStorageInfo().mode != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
         return false;
     }
@@ -1098,7 +1305,7 @@ Image::ensureBounds(const RectI& newBounds,
     merge.merge(_bounds);
 
     ImagePtr tmpImg;
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, false, &tmpImg);
+    resizeInternal(glContext, this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, false, &tmpImg);
 
 
     ///Change the size of the current buffer
@@ -1113,50 +1320,6 @@ Image::ensureBounds(const RectI& newBounds,
     return true;
 }
 
-void
-Image::applyTextureMapping(const RectI& bounds,
-                           const RectI& roi)
-{
-    glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho( roi.x1, roi.x2,
-             roi.y1, roi.y2,
-             -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glCheckError();
-
-    // Compute the texture coordinates to match the srcRoi
-    Point srcTexCoords[4], vertexCoords[4];
-    vertexCoords[0].x = roi.x1;
-    vertexCoords[0].y = roi.y1;
-    srcTexCoords[0].x = (roi.x1 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[0].y = (roi.y1 - bounds.y1) / (double)bounds.height();
-
-    vertexCoords[1].x = roi.x2;
-    vertexCoords[1].y = roi.y1;
-    srcTexCoords[1].x = (roi.x2 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[1].y = (roi.y1 - bounds.y1) / (double)bounds.height();
-
-    vertexCoords[2].x = roi.x2;
-    vertexCoords[2].y = roi.y2;
-    srcTexCoords[2].x = (roi.x2 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[2].y = (roi.y2 - bounds.y1) / (double)bounds.height();
-
-    vertexCoords[3].x = roi.x1;
-    vertexCoords[3].y = roi.y2;
-    srcTexCoords[3].x = (roi.x1 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[3].y = (roi.y2 - bounds.y1) / (double)bounds.height();
-
-    glBegin(GL_POLYGON);
-    for (int i = 0; i < 4; ++i) {
-        glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-        glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-    }
-    glEnd();
-    glCheckError();
-}
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
@@ -1165,149 +1328,12 @@ Image::pasteFrom(const Image & src,
                  bool copyBitmap,
                  const OSGLContextPtr& glContext)
 {
-    StorageModeEnum thisStorage = getStorageMode();
-    StorageModeEnum otherStorage = src.getStorageMode();
-
-    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
-        // OpenGL texture to OpenGL texture
-        assert(_params->getStorageInfo().textureTarget == src.getParams()->getStorageInfo().textureTarget);
-
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glBindTexture( target, getGLTextureID() );
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-        glBindTexture( target, src.getGLTextureID() );
-
-        applyTextureMapping(dstBounds, srcRoi);
-
-        glBindTexture(target, 0);
-        glCheckError();
-    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
-        // RAM image to OpenGL texture
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
-
-        // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
-            return;
-        }
-        GLuint pboID = glContext->getPBOId();
-        int target = getGLTextureTarget();
-        glEnable(target);
-
-        // bind PBO to update texture source
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
-
-        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
-
-        // Note that glMapBufferARB() causes sync issue.
-        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
-        // until GPU to finish its job. To avoid waiting (idle), you can call
-        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
-        // If you do that, the previous data in PBO will be discarded and
-        // glMapBufferARB() returns a new allocated pointer immediately
-        // even if GPU is still working with the previous data.
-        glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
-
-        // map the buffer object into client's memory
-        void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-        assert(gpuData);
-        if (gpuData) {
-            // update data directly on the mapped buffer
-            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
-            tmpImg->pasteFrom(src, roi);
-
-            Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
-            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
-            assert(srcdata);
-            
-            memcpy(gpuData, srcdata, dataSize);
-
-            GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-            assert(result == GL_TRUE);
-            Q_UNUSED(result);
-        }
-
-        // bind the texture
-        glBindTexture( target, getGLTextureID() );
-        // copy pixels from PBO to texture object
-        // Use offset instead of pointer (last parameter is 0).
-        glTexSubImage2D(target,
-                        0,              // level
-                        roi.x1, roi.y1,               // xoffset, yoffset
-                        roi.width(), roi.height(),
-                        src.getGLTextureFormat(),            // format
-                        src.getGLTextureType(),       // type
-                        0);
-
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-        glBindTexture(target, 0);
-        glCheckError();
-    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
-        // OpenGL texture to RAM image
-
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
-
-        // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
-            return;
-        }
-
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = src.getGLTextureTarget();
-        glEnable(target);
-        glBindTexture( target, src.getGLTextureID() );
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
-        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
-        glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
-        glCheckFramebufferError();
-        // Ensure all drawing commands are finished
-        glFlush();
-        glFinish();
-        glCheckError();
-        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
-
-        {
-            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
-            unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
-
-            glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            glBindTexture(target, 0);
-        }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glCheckError();
-
-        // Ok now convert from RGBA to this image format if needed
-        if ( tmpImg->getComponentsCount() != getComponentsCount() ) {
-            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, this);
+    if (getStorageMode() == eStorageModeGLTex || src.getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        if (glContext->isGPUContext()) {
+            pasteFromGL<GL_GPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget());
         } else {
-            pasteFrom(*tmpImg, roi, false);
+            pasteFromGL<GL_CPU>(src, this, srcRoi, copyBitmap, glContext, src.getBounds(), getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget());
         }
     } else {
         assert(getStorageMode() != eStorageModeGLTex && src.getStorageMode() != eStorageModeGLTex);
@@ -1397,6 +1423,50 @@ Image::fillForDepth(const RectI & roi_,
     }
 }
 
+template <typename GL>
+void fillGL(const RectI & roi,
+            float r,
+            float g,
+            float b,
+            float a,
+            const OSGLContextPtr& glContext,
+            const RectI& bounds,
+            int target,
+            int texID)
+{
+    RectI realRoI = roi;
+    bool doInteresect = roi.intersect(bounds, &realRoI);
+    if (!doInteresect) {
+        // no intersection between roi and the bounds of the image
+        return;
+    }
+
+    assert(glContext);
+
+    GLuint fboID = glContext->getOrCreateFBOId();
+
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, texID );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+
+    Image::setupGLViewport<GL>(bounds, roi);
+    GL::glClearColor(r, g, b, a);
+    GL::glClear(GL_COLOR_BUFFER_BIT);
+
+    GL::glBindTexture(target, 0);
+    glCheckError(GL);
+}
+
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::fill(const RectI & roi,
@@ -1409,43 +1479,11 @@ Image::fill(const RectI & roi,
     QWriteLocker k(&_entryLock);
 
     if (getStorageMode() == eStorageModeGLTex) {
-        RectI realRoI = roi;
-        bool doInteresect = roi.intersect(_bounds, &realRoI);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the image
-            return;
+        if (glContext->isGPUContext()) {
+            fillGL<GL_GPU>(roi, r, g, b, a, glContext, _bounds, getGLTextureTarget(), getGLTextureID());
+        } else {
+            fillGL<GL_CPU>(roi, r, g, b, a, glContext, _bounds, getGLTextureTarget(), getGLTextureID());
         }
-
-        assert(glContext);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateFillShader();
-        assert(shader);
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture( target, getGLTextureID() );
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-
-        shader->bind();
-        OfxRGBAColourF fillColor = {r, g, b, a};
-        shader->setUniform("fillColor", fillColor);
-        applyTextureMapping(_bounds, realRoI);
-        shader->unbind();
-
-
-        glBindTexture(target, 0);
-        glCheckError();
-
         return;
     }
 
@@ -2113,7 +2151,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount * dstRowSize) {
         const PIX * const srcLineStart = src;
         PIX * const dstLineBatchStart = dst;
-        ycount = scale - (yo - yi * scale); // how many lines should be filled
+        ycount = scale - ((yo - dstRoi.y1) - (yi - srcRoi.y1) * scale); // how many lines should be filled
         ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
         int xi = srcRoi.x1;
@@ -2122,7 +2160,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         PIX * dstPixFirst = dstLineBatchStart;
         // fill the first line
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += _nbComponents, xo += xcount, dstPixFirst += xcount * _nbComponents) {
-            xcount = scale - (xo - xi * scale);
+            xcount = scale - ((xo - dstRoi.x1) - (xi - srcRoi.x1) * scale);
             xcount = std::min(xcount, dstRoi.x2 - xo);
             //assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary

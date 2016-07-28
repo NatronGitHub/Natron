@@ -64,8 +64,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QImage>
 #include <QProgressDialog>
 
-#include <cairo/cairo.h>
-
 #include <boost/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)

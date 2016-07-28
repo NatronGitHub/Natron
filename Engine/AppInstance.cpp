@@ -1069,24 +1069,16 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     NodePtr node;
     Plugin* plugin = 0;
-    QString findId;
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    bool trustPluginID = args.getProperty<bool>(kCreateNodeArgsPropTrustPluginID);
+
     QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
     int versionMinor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 1);
 
-    //Roto has moved to a built-in plugin
-    if ( (!trustPluginID || serialization) &&
-         ( ( !_imp->_projectCreatedWithLowerCaseIDs && ( argsPluginID == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( _imp->_projectCreatedWithLowerCaseIDs && ( argsPluginID == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) ) ) {
-        findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
-    } else {
-        findId = argsPluginID;
-    }
-
     bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 
+    QString findId = argsPluginID;
 
 #ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
@@ -1107,7 +1099,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     } catch (const std::exception & e1) {
         ///Ok try with the old Ids we had in Natron prior to 1.0
         try {
-            plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, versionMajor, versionMinor);
+            plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, _imp->_projectCreatedWithLowerCaseIDs, versionMajor, versionMinor);
         } catch (const std::exception& e2) {
             if (!isSilentCreation) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),

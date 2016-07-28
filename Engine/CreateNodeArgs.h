@@ -144,13 +144,6 @@
  **/
 #define kCreateNodeArgsPropSilent "CreateNodeArgsPropSilent"
 
-/**
- * @brief optional x1 bool property
- * Default value - false
- * If true, Natron will not attempt to convert the plug-in ID to another known plug-in ID. For example if trying to create an instance of PLUGINID_OFX_ROTO, then Natron will stick to it.
- * If not set Natron will try to convert the plug-in ID to a known value, such as PLUGINID_NATRON_ROTO
- **/
-#define kCreateNodeArgsPropTrustPluginID "CreateNodeArgsPropTrustPluginID"
 
 /**
  * @brief optional x1 NodeCollectionPtr A pointer to the group in which the node will be created. If not set, Natron
@@ -299,7 +292,6 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);
         createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
-        createProperty<bool>(kCreateNodeArgsPropTrustPluginID, false);
         createProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
         createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
         createProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());

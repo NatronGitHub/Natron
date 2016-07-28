@@ -211,7 +211,7 @@ public:
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
+    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr> attachedContexts;
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
@@ -281,8 +281,7 @@ public:
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
-                         int lastFrame,
-                         bool isDoingOpenGLRender);
+                         int lastFrame);
 
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                          const EffectDataTLSPtr& otherThreadData);
@@ -293,6 +292,212 @@ public:
     void addInputImageTempPointer(int inputNb, const ImagePtr & img);
 
     void clearInputImagePointers();
+
+    void
+    determineRectsToRender(ImagePtr& isPlaneCached,
+                           const ParallelRenderArgsPtr& frameArgs,
+                           double time,
+                           ViewIdx view,
+                           const RenderScale& argsScale,
+                           const RenderScale& renderMappedScale,
+                           const RectI& roi,
+                           const RectI& upscaledImageBounds,
+                           const RectI& downscaledImageBounds,
+                           bool renderFullScaleThenDownscale,
+                           bool isDuringPaintStroke,
+                           unsigned int mipMapLevel,
+                           double par,
+                           bool cacheIsAlmostFull,
+                           const InputImagesMap& argsInputImageList,
+                           StorageModeEnum storage,
+                           const OSGLContextAttacherPtr& glContextLocker,
+                           const EffectInstance::ImagePlanesToRenderPtr& planesToRender,
+                           bool *redoCacheLookup,
+                           bool *fillGrownBoundsWithZeroes,
+                           bool *tryIdentityOptim,
+                           RectI *lastStrokePixelRoD,
+                           RectI *inputsRoDIntersectionPixel);
+
+    EffectInstance::RenderRoIRetCode determinePlanesToRender(const EffectInstance::RenderRoIArgs& args, std::list<ImageComponents> *requestedComponents, std::map<ImageComponents, ImagePtr>* outputPlanes);
+
+    EffectInstance::RenderRoIRetCode handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
+                                                          const ParallelRenderArgsPtr& frameArgs,
+                                                          const FrameViewRequest* requestPassData,
+                                                          SupportsEnum supportsRS,
+                                                          double par,
+                                                          unsigned int mipMapLevel,
+                                                          U64 nodeHash,
+                                                          ImagePremultiplicationEnum thisEffectOutputPremult,
+                                                          const RectD& rod,
+                                                          const std::list<ImageComponents> &requestedComponents,
+                                                          const std::vector<ImageComponents>& outputComponents,
+                                                          const ComponentsNeededMapPtr& neededComps,
+                                                          RenderScale& renderMappedScale,
+                                                          unsigned int &renderMappedMipMapLevel,
+                                                          bool &renderFullScaleThenDownscale,
+                                                          std::map<ImageComponents, ImagePtr>* outputPlanes,
+                                                          bool *isIdentity);
+
+    bool setupRenderRoIParams(const RenderRoIArgs & args,
+                              EffectDataTLSPtr* tls,
+                              AbortableRenderInfoPtr *abortInfo,
+                              ParallelRenderArgsPtr* frameArgs,
+                              OSGLContextPtr *glGpuContext,
+                              OSGLContextPtr *glCpuContext,
+                              U64 *nodeHash,
+                              double *par,
+                              ImageFieldingOrderEnum *fieldingOrder,
+                              ImagePremultiplicationEnum *thisEffectOutputPremult,
+                              SupportsEnum *supportsRS,
+                              bool *renderFullScaleThenDownscale,
+                              unsigned int *renderMappedMipMapLevel,
+                              RenderScale *renderMappedScale,
+                              const FrameViewRequest** requestPassData,
+                              RectD* rod,
+                              RectI* roi,
+                              bool* isProjectFormat,
+                              ComponentsNeededMapPtr *neededComps,
+                              std::bitset<4> *processChannels,
+                              const std::vector<ImageComponents>** outputComponents);
+
+    bool resolveRenderDevice(const RenderRoIArgs & args,
+                             const ParallelRenderArgsPtr& frameArgs,
+                             const AbortableRenderInfoPtr& abortInfo,
+                             const OSGLContextPtr& glGpuContext,
+                             const OSGLContextPtr& glCpuContext,
+                             const RectI& downscaleImageBounds,
+                             RenderScale* renderMappedScale,
+                             unsigned int *renderMappedMipMapLevel,
+                             bool *renderFullScaleThenDownscale,
+                             RectI* roi,
+                             StorageModeEnum* storage,
+                             OSGLContextPtr *glRenderContext,
+                             OSGLContextAttacherPtr *glContextLocker,
+                             bool *useOpenGL,
+                             EffectInstance::RenderRoIRetCode* resolvedError);
+
+    bool renderRoILookupCacheFirstTime(const RenderRoIArgs & args,
+                                       const ParallelRenderArgsPtr& frameArgs,
+                                       StorageModeEnum storage,
+                                       const OSGLContextPtr& glRenderContext,
+                                       const OSGLContextAttacherPtr& glContextLocker,
+                                       const ImagePlanesToRenderPtr &planesToRender,
+                                       const std::list<ImageComponents>& requestedComponents,
+                                       const std::vector<ImageComponents>& outputComponents,
+                                       const RectD& rod,
+                                       const RectI& roi,
+                                       const RectI& upscaledImageBounds,
+                                       const RectI& downscaledImageBounds,
+                                       bool renderFullScaleThenDownscale,
+                                       U64 nodeHash,
+                                       unsigned int renderMipMapLevel,
+                                       bool* createInCache,
+                                       bool *renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                       ImagePtr *isPlaneCached,
+                                       boost::scoped_ptr<ImageKey>* key,
+                                       std::map<ImageComponents, ImagePtr>* outputPlanes);
+
+
+    EffectInstance::RenderRoIRetCode renderRoIRenderInputImages(const RenderRoIArgs & args,
+                                                                const EffectDataTLSPtr& tls,
+                                                                const ComponentsNeededMapPtr& neededComps,
+                                                                const FrameViewRequest* requestPassData,
+                                                                const ImagePlanesToRenderPtr &planesToRender,
+                                                                bool useTransforms,
+                                                                StorageModeEnum storage,
+                                                                const std::vector<ImageComponents>& outputComponents,
+                                                                ImagePremultiplicationEnum thisEffectOutputPremult,
+                                                                const RectD& rod,
+                                                                double par,
+                                                                U64 nodeHash,
+                                                                bool renderFullScaleThenDownscale,
+                                                                unsigned int renderMappedMipMapLevel,
+                                                                const RenderScale& renderMappedScale,
+                                                                bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                                boost::shared_ptr<FramesNeededMap>* framesNeeded);
+
+    EffectInstance::RenderRoIRetCode renderRoISecondCacheLookup(const RenderRoIArgs & args,
+                                                                const EffectDataTLSPtr& tls,
+                                                                const ParallelRenderArgsPtr& frameArgs,
+                                                                const ComponentsNeededMapPtr& neededComps,
+                                                                const FrameViewRequest* requestPassData,
+                                                                const ImagePlanesToRenderPtr &planesToRender,
+                                                                const OSGLContextAttacherPtr& glContextLocker,
+                                                                bool useTransforms,
+                                                                StorageModeEnum storage,
+                                                                const std::vector<ImageComponents>& outputComponents,
+                                                                const RectD& rod,
+                                                                const RectI& roi,
+                                                                const RectI& upscaledImageBounds,
+                                                                const RectI& downscaledImageBounds,
+                                                                const RectI& inputsRoDIntersectionPixel,
+                                                                bool tryIdentityOptim,
+                                                                double par,
+                                                                bool renderFullScaleThenDownscale,
+                                                                bool createInCache,
+                                                                unsigned int renderMappedMipMapLevel,
+                                                                const RenderScale& renderMappedScale,
+                                                                bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                                const boost::shared_ptr<FramesNeededMap>& framesNeeded,
+                                                                const boost::scoped_ptr<ImageKey>& key,
+                                                                ImagePtr *isPlaneCached);
+
+    void renderRoIAllocateOutputPlanes(const RenderRoIArgs & args,
+                                       const ParallelRenderArgsPtr& frameArgs,
+                                       const ImagePlanesToRenderPtr &planesToRender,
+                                       const OSGLContextAttacherPtr& glContextLocker,
+                                       const OSGLContextPtr& glRenderContext,
+                                       ImageFieldingOrderEnum fieldingOrder,
+                                       ImageBitDepthEnum outputDepth,
+                                       bool isProjectFormat,
+                                       bool fillGrownBoundsWithZeroes,
+                                       StorageModeEnum storage,
+                                       const std::vector<ImageComponents>& outputComponents,
+                                       const RectD& rod,
+                                       const RectI& upscaledImageBounds,
+                                       const RectI& downscaledImageBounds,
+                                       const RectI& lastStrokePixelRoD,
+                                       double par,
+                                       bool renderFullScaleThenDownscale,
+                                       bool createInCache,
+                                       const boost::scoped_ptr<ImageKey>& key);
+
+
+    EffectInstance::RenderRoIStatusEnum renderRoILaunchInternalRender(const RenderRoIArgs & args,
+                                                                      const ParallelRenderArgsPtr& frameArgs,
+                                                                      const ImagePlanesToRenderPtr &planesToRender,
+                                                                      const ComponentsNeededMapPtr& neededComps,
+                                                                      const OSGLContextPtr& glRenderContext,
+                                                                      ImageBitDepthEnum outputDepth,
+                                                                      const ImageComponents &outputClipPrefComps,
+                                                                      bool hasSomethingToRender,
+                                                                      StorageModeEnum storage,
+                                                                      U64 nodeHash,
+                                                                      const RectD& rod,
+                                                                      const RectI& roi,
+                                                                      unsigned int renderMappedMipMapLevel,
+                                                                      const std::bitset<4> &processChannels,
+                                                                      double par,
+                                                                      bool renderFullScaleThenDownscale,
+                                                                      bool *renderAborted);
+
+    void renderRoITermination(const RenderRoIArgs & args,
+                              const ParallelRenderArgsPtr& frameArgs,
+                              const AbortableRenderInfoPtr& abortInfo,
+                              const ImagePlanesToRenderPtr &planesToRender,
+                              const OSGLContextPtr& glGpuContext,
+                              bool hasSomethingToRender,
+                              const RectD& rod,
+                              const RectI& roi,
+                              const RectI& downscaledImageBounds,
+                              const RectI& originalRoI,
+                              double par,
+                              bool renderFullScaleThenDownscale,
+                              bool renderAborted,
+                              EffectInstance::RenderRoIStatusEnum renderRetCode,
+                              std::map<ImageComponents, ImagePtr>* outputPlanes,
+                              OSGLContextAttacherPtr* glContextLocker);
+
 
 
     struct TiledRenderingFunctorArgs
@@ -315,30 +520,12 @@ public:
         bool byPassCache;
         std::bitset<4> processChannels;
         ImagePlanesToRenderPtr planes;
+        OSGLContextPtr glContext;
     };
+    
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
                                                   QThread* callingThread);
-
-    RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
-                                                  const bool renderFullScaleThenDownscale,
-                                                  const bool isSequentialRender,
-                                                  const bool isRenderResponseToUserInteraction,
-                                                  const int firstFrame, const int lastFrame,
-                                                  const int preferredInput,
-                                                  const unsigned int mipMapLevel,
-                                                  const unsigned int renderMappedMipMapLevel,
-                                                  const RectD & rod,
-                                                  const double time,
-                                                  const ViewIdx view,
-                                                  const double par,
-                                                  const bool byPassCache,
-                                                  const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const ImageComponents & outputClipPrefsComps,
-                                                  const ComponentsNeededMapPtr & compsNeeded,
-                                                  const std::bitset<4>& processChannels,
-                                                  const ImagePlanesToRenderPtr & planes);
-
 
     ///These are the image passed to the plug-in to render
     /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
@@ -361,22 +548,78 @@ public:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRetEnum renderHandler(const EffectDataTLSPtr& tls,
-                                          const unsigned int mipMapLevel,
-                                          const bool renderFullScaleThenDownscale,
-                                          const bool isSequentialRender,
-                                          const bool isRenderResponseToUserInteraction,
-                                          const RectI & renderMappedRectToRender,
-                                          const RectI & downscaledRectToRender,
-                                          const bool byPassCache,
-                                          const bool bitmapMarkedForRendering,
-                                          const ImageBitDepthEnum outputClipPrefDepth,
-                                          const ImageComponents & outputClipPrefsComps,
-                                          const std::bitset<4>& processChannels,
-                                          const ImagePtr & originalInputImage,
-                                          const ImagePtr & maskImage,
-                                          const ImagePremultiplicationEnum originalImagePremultiplication,
-                                          ImagePlanesToRender & planes);
+    RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
+                                                  const OSGLContextPtr& glContext,
+                                                  const bool renderFullScaleThenDownscale,
+                                                  const bool isSequentialRender,
+                                                  const bool isRenderResponseToUserInteraction,
+                                                  const int firstFrame, const int lastFrame,
+                                                  const int preferredInput,
+                                                  const unsigned int mipMapLevel,
+                                                  const unsigned int renderMappedMipMapLevel,
+                                                  const RectD & rod,
+                                                  const double time,
+                                                  const ViewIdx view,
+                                                  const double par,
+                                                  const bool byPassCache,
+                                                  const ImageBitDepthEnum outputClipPrefDepth,
+                                                  const ImageComponents & outputClipPrefsComps,
+                                                  const ComponentsNeededMapPtr & compsNeeded,
+                                                  const std::bitset<4>& processChannels,
+                                                  const ImagePlanesToRenderPtr & planes);
+
+
+    RenderingFunctorRetEnum renderHandlerIdentity(const EffectDataTLSPtr& tls,
+                                                  const OSGLContextPtr& glContext,
+                                                  const bool renderFullScaleThenDownscale,
+                                                  const RectI & renderMappedRectToRender,
+                                                  const RectI & downscaledRectToRender,
+                                                  const ImageBitDepthEnum outputClipPrefDepth,
+                                                  const double time,
+                                                  const ViewIdx view,
+                                                  const unsigned int mipMapLevel,
+                                                  const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                                  ImagePlanesToRender & planes);
+
+    RenderingFunctorRetEnum renderHandlerInternal(const EffectDataTLSPtr& tls,
+                                                  const OSGLContextPtr& glContext,
+                                                  EffectInstance::RenderActionArgs &actionArgs,
+                                                  const ImagePlanesToRender & planes,
+                                                  bool multiPlanar,
+                                                  bool bitmapMarkedForRendering,
+                                                  const ImageComponents & outputClipPrefsComps,
+                                                  const ImageBitDepthEnum outputClipPrefDepth,
+                                                  std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
+                                                  boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher);
+
+    void setupRenderArgs(const EffectDataTLSPtr& tls,
+                         const OSGLContextPtr& glContext,
+                         unsigned int mipMapLevel,
+                         bool isSequentialRender,
+                         bool isRenderResponseToUserInteraction,
+                         bool byPassCache,
+                         const ImagePlanesToRender & planes,
+                         const RectI & renderMappedRectToRender,
+                         const std::bitset<4>& processChannels,
+                         EffectInstance::RenderActionArgs &actionArgs,
+                         boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
+                         boost::shared_ptr<TimeLapse> *timeRecorder);
+
+    void renderHandlerPostProcess(const EffectDataTLSPtr& tls,
+                                  const RectToRender & rectToRender,
+                                  int preferredInput,
+                                  const OSGLContextPtr& glContext,
+                                  const EffectInstance::RenderActionArgs &actionArgs,
+                                  const ImagePlanesToRender & planes,
+                                  const RectI& downscaledRectToRender,
+                                  const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                  bool renderFullScaleThenDownscale,
+                                  unsigned int mipMapLevel,
+                                  const std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
+                                  const std::bitset<4>& processChannels);
+
+
+
 
     static bool aborted(bool isRenderResponseToUserInteraction,
                         const AbortableRenderInfoPtr& abortInfo,

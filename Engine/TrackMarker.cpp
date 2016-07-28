@@ -1124,18 +1124,22 @@ TrackMarker::getMarkerImage(int time,
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
     }
 
-    ParallelRenderArgsSetter frameRenderArgs( time,
-                                              ViewIdx(0), //<  view 0 (left)
-                                              isRenderUserInteraction, //<isRenderUserInteraction
-                                              isSequentialRender, //isSequential
-                                              abortInfo, //abort info
-                                              getContext()->getNode(), // viewer requester
-                                              0, //texture index
-                                              node->getApp()->getTimeLine().get(),
-                                              NodePtr(),
-                                              true, //isAnalysis
-                                              false, //draftMode
-                                              RenderStatsPtr() );
+    ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+    tlsArgs->time = time;
+    tlsArgs->view = ViewIdx(0);
+    tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+    tlsArgs->isSequential = isSequentialRender;
+    tlsArgs->abortInfo = abortInfo;
+    tlsArgs->treeRoot = getContext()->getNode();
+    tlsArgs->textureIndex = 0;
+    tlsArgs->timeline = node->getApp()->getTimeLine();
+    tlsArgs->activeRotoPaintNode = NodePtr();
+    tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+    tlsArgs->isDoingRotoNeatRender = false;
+    tlsArgs->isAnalysis = true;
+    tlsArgs->draftMode = true;
+    tlsArgs->stats = RenderStatsPtr();
+    ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
     RenderScale scale;
     scale.x = scale.y = 1.;
     EffectInstance::RenderRoIArgs args( time,

@@ -271,7 +271,7 @@ TimeLineGui::resizeGL(int width,
     if (height == 0) {
         height = 1;
     }
-    glViewport (0, 0, width, height);
+    GL_GPU::glViewport (0, 0, width, height);
 }
 
 void
@@ -321,7 +321,7 @@ TimeLineGui::paintGL()
     }
 
 
-    glCheckError();
+    glCheckError(GL_GPU);
 
     SequenceTime leftBound, rightBound;
     {
@@ -359,26 +359,26 @@ TimeLineGui::paintGL()
     settings->getTimelineBGColor(&clearR, &clearG, &clearB);
 
     if ( (left == right) || (top == bottom) ) {
-        glClearColor(clearR, clearG, clearB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glClearColor(clearR, clearG, clearB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         return;
     }
 
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
         //GLProtectMatrix p(GL_PROJECTION); // no need to protect
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(left, right, bottom, top, 1, -1);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
+        GL_GPU::glLoadIdentity();
+        GL_GPU::glOrtho(left, right, bottom, top, 1, -1);
         //GLProtectMatrix m(GL_MODELVIEW); // no need to protect
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        GL_GPU::glMatrixMode(GL_MODELVIEW);
+        GL_GPU::glLoadIdentity();
 
-        glClearColor(clearR, clearG, clearB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glClearColor(clearR, clearG, clearB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         QPointF btmLeft = toTimeLineCoordinates(0, height() - 1);
         QPointF topRight = toTimeLineCoordinates(width() - 1, 0);
@@ -397,32 +397,32 @@ TimeLineGui::paintGL()
         QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame, 0);
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame, 0);
 
-        glScissor( firstFrameWidgetPos.x(), 0,
+        GL_GPU::glScissor( firstFrameWidgetPos.x(), 0,
                    lastFrameWidgetPos.x() - firstFrameWidgetPos.x(), height() );
 
         double bgR, bgG, bgB;
         settings->getBaseColor(&bgR, &bgG, &bgB);
 
-        glEnable(GL_SCISSOR_TEST);
-        glClearColor(bgR, bgG, bgB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glCheckErrorIgnoreOSXBug();
-        glDisable(GL_SCISSOR_TEST);
+        GL_GPU::glEnable(GL_SCISSOR_TEST);
+        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
+        GL_GPU::glDisable(GL_SCISSOR_TEST);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         if (_imp->state == eTimelineStateSelectingZoomRange) {
             // draw timeline selected range
             // https://github.com/MrKepzie/Natron/issues/917
             // draw the select range, from _imp->mousePressX to _imp->mouseMoveX
-            glColor4f(1, 1, 1, 0.3);
-            glBegin(GL_POLYGON);
-            glVertex2f( toTimeLine(_imp->mousePressX), btmLeft.y() );
-            glVertex2f( toTimeLine(_imp->mousePressX), topRight.y() );
-            glVertex2f( toTimeLine(_imp->mouseMoveX), topRight.y() );
-            glVertex2f( toTimeLine(_imp->mouseMoveX), btmLeft.y() );
-            glEnd();
+            GL_GPU::glColor4f(1, 1, 1, 0.3);
+            GL_GPU::glBegin(GL_POLYGON);
+            GL_GPU::glVertex2f( toTimeLine(_imp->mousePressX), btmLeft.y() );
+            GL_GPU::glVertex2f( toTimeLine(_imp->mousePressX), topRight.y() );
+            GL_GPU::glVertex2f( toTimeLine(_imp->mouseMoveX), topRight.y() );
+            GL_GPU::glVertex2f( toTimeLine(_imp->mouseMoveX), btmLeft.y() );
+            GL_GPU::glEnd();
         }
 
 
@@ -454,12 +454,12 @@ TimeLineGui::paintGL()
         settings->getDiskCachedColor(&dcR, &dcG, &dcB);
 
 
-        glColor4f(txtR / 2., txtG / 2., txtB / 2., 1.);
-        glBegin(GL_LINES);
-        glVertex2f(btmLeft.x(), lineYpos);
-        glVertex2f(topRight.x(), lineYpos);
-        glEnd();
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glColor4f(txtR / 2., txtG / 2., txtB / 2., 1.);
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f(btmLeft.x(), lineYpos);
+        GL_GPU::glVertex2f(topRight.x(), lineYpos);
+        GL_GPU::glEnd();
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         double tickBottom = toTimeLineCoordinates( 0, height() - 1 - fontM.height() ).y();
         double tickTop = toTimeLineCoordinates( 0, height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) ).y();
@@ -497,13 +497,13 @@ TimeLineGui::paintGL()
             if (isFloating) {
                 continue;
             }
-            glColor4f(txtR, txtG, txtB, alpha);
+            GL_GPU::glColor4f(txtR, txtG, txtB, alpha);
 
-            glBegin(GL_LINES);
-            glVertex2f(value, tickBottom);
-            glVertex2f(value, tickTop);
-            glEnd();
-            glCheckErrorIgnoreOSXBug();
+            GL_GPU::glBegin(GL_LINES);
+            GL_GPU::glVertex2f(value, tickBottom);
+            GL_GPU::glVertex2f(value, tickTop);
+            GL_GPU::glEnd();
+            glCheckErrorIgnoreOSXBug(GL_GPU);
 
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
@@ -522,12 +522,12 @@ TimeLineGui::paintGL()
                                Image::clamp<qreal>(txtG, 0., 1.),
                                Image::clamp<qreal>(txtB, 0., 1.) );
                     c.setAlpha(255 * alphaText);
-                    glCheckError();
+                    glCheckError(GL_GPU);
                     renderText(value, btmLeft.y(), s, c, _imp->font);
                 }
             }
         }
-        glCheckError();
+        glCheckError(GL_GPU);
 
         int cursorWidth = TO_DPIX(CURSOR_WIDTH);
         int cursorHeight = TO_DPIY(CURSOR_HEIGHT);
@@ -572,9 +572,9 @@ TimeLineGui::paintGL()
 
 
         //draw an alpha cursor if the mouse is hovering the timeline
-        glEnable(GL_POLYGON_SMOOTH);
-        glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
-        glCheckError();
+        GL_GPU::glEnable(GL_POLYGON_SMOOTH);
+        GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
+        glCheckError(GL_GPU);
         if (_imp->alphaCursor) {
             int currentPosBtmWidgetCoordX = _imp->lastMouseEventWidgetCoord.x();
             int currentPosBtmWidgetCoordY = toWidgetCoordinates(0, lineYpos).y();
@@ -592,18 +592,18 @@ TimeLineGui::paintGL()
             QColor currentColor;
             if ( foundHoveredAsKeyframe != keyframes.end() ) {
                 if (foundHoveredAsKeyframe->isUserKey) {
-                    glColor4f(userkfR, userkfG, userkfB, 0.4);
+                    GL_GPU::glColor4f(userkfR, userkfG, userkfB, 0.4);
                     currentColor.setRgbF( Image::clamp<qreal>(userkfR, 0., 1.),
                                           Image::clamp<qreal>(userkfG, 0., 1.),
                                           Image::clamp<qreal>(userkfB, 0., 1.) );
                 } else {
-                    glColor4f(kfR, kfG, kfB, 0.4);
+                    GL_GPU::glColor4f(kfR, kfG, kfB, 0.4);
                     currentColor.setRgbF( Image::clamp<qreal>(kfR, 0., 1.),
                                           Image::clamp<qreal>(kfG, 0., 1.),
                                           Image::clamp<qreal>(kfB, 0., 1.) );
                 }
             } else {
-                glColor4f(cursorR, cursorG, cursorB, 0.4);
+                GL_GPU::glColor4f(cursorR, cursorG, cursorB, 0.4);
                 currentColor.setRgbF( Image::clamp<qreal>(cursorR, 0., 1.),
                                       Image::clamp<qreal>(cursorG, 0., 1.),
                                       Image::clamp<qreal>(cursorB, 0., 1.) );
@@ -611,12 +611,12 @@ TimeLineGui::paintGL()
             currentColor.setAlpha(100);
 
 
-            glBegin(GL_POLYGON);
-            glVertex2f( currentPosBtm.x(), currentPosBtm.y() );
-            glVertex2f( currentPosTopLeft.x(), currentPosTopLeft.y() );
-            glVertex2f( currentPosTopRight.x(), currentPosTopRight.y() );
-            glEnd();
-            glCheckErrorIgnoreOSXBug();
+            GL_GPU::glBegin(GL_POLYGON);
+            GL_GPU::glVertex2f( currentPosBtm.x(), currentPosBtm.y() );
+            GL_GPU::glVertex2f( currentPosTopLeft.x(), currentPosTopLeft.y() );
+            GL_GPU::glVertex2f( currentPosTopRight.x(), currentPosTopRight.y() );
+            GL_GPU::glEnd();
+            glCheckErrorIgnoreOSXBug(GL_GPU);
 
             renderText(mouseNumberPos.x(), mouseNumberPos.y(), mouseNumber, currentColor, _imp->font);
         }
@@ -626,18 +626,18 @@ TimeLineGui::paintGL()
         QColor actualCursorColor;
         if ( isCurrentTimeAKeyframe != keyframes.end() ) {
             if (isCurrentTimeAKeyframe->isUserKey) {
-                glColor4f(userkfR, userkfG, userkfB, 1.);
+                GL_GPU::glColor4f(userkfR, userkfG, userkfB, 1.);
                 actualCursorColor.setRgbF( Image::clamp<qreal>(userkfR, 0., 1.),
                                            Image::clamp<qreal>(userkfG, 0., 1.),
                                            Image::clamp<qreal>(userkfB, 0., 1.) );
             } else {
-                glColor4f(kfR, kfG, kfB, 1.);
+                GL_GPU::glColor4f(kfR, kfG, kfB, 1.);
                 actualCursorColor.setRgbF( Image::clamp<qreal>(kfR, 0., 1.),
                                            Image::clamp<qreal>(kfG, 0., 1.),
                                            Image::clamp<qreal>(kfB, 0., 1.) );
             }
         } else {
-            glColor4f(cursorR, cursorG, cursorB, 1.);
+            GL_GPU::glColor4f(cursorR, cursorG, cursorB, 1.);
             actualCursorColor.setRgbF( Image::clamp<qreal>(cursorR, 0., 1.),
                                        Image::clamp<qreal>(cursorG, 0., 1.),
                                        Image::clamp<qreal>(cursorB, 0., 1.) );
@@ -647,12 +647,12 @@ TimeLineGui::paintGL()
         double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2.;
         double cursorTextPos = toTimeLine(cursorTextXposWidget);
         renderText(cursorTextPos, cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font);
-        glBegin(GL_POLYGON);
-        glVertex2f( cursorBtm.x(), cursorBtm.y() );
-        glVertex2f( cursorTopLeft.x(), cursorTopLeft.y() );
-        glVertex2f( cursorTopRight.x(), cursorTopRight.y() );
-        glEnd();
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f( cursorBtm.x(), cursorBtm.y() );
+        GL_GPU::glVertex2f( cursorTopLeft.x(), cursorTopLeft.y() );
+        GL_GPU::glVertex2f( cursorTopRight.x(), cursorTopRight.y() );
+        GL_GPU::glEnd();
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
 
         QColor boundsColor;
@@ -670,13 +670,13 @@ TimeLineGui::paintGL()
                     renderText(leftBoundTextPos, leftBoundTop.y(),
                                leftBoundStr, boundsColor, _imp->font);
                 }
-                glColor4f(boundsR, boundsG, boundsB, 1.);
-                glBegin(GL_POLYGON);
-                glVertex2f( leftBoundBtm.x(), leftBoundBtm.y() );
-                glVertex2f( leftBoundBtmRight.x(), leftBoundBtmRight.y() );
-                glVertex2f( leftBoundTop.x(), leftBoundTop.y() );
-                glEnd();
-                glCheckErrorIgnoreOSXBug();
+                GL_GPU::glColor4f(boundsR, boundsG, boundsB, 1.);
+                GL_GPU::glBegin(GL_POLYGON);
+                GL_GPU::glVertex2f( leftBoundBtm.x(), leftBoundBtm.y() );
+                GL_GPU::glVertex2f( leftBoundBtmRight.x(), leftBoundBtmRight.y() );
+                GL_GPU::glVertex2f( leftBoundTop.x(), leftBoundTop.y() );
+                GL_GPU::glEnd();
+                glCheckErrorIgnoreOSXBug(GL_GPU);
             }
 
             if ( ( rightBoundBtmLeft.x() >= btmLeft.x() ) && ( rightBoundBtm.x() <= topRight.x() ) ) {
@@ -687,58 +687,58 @@ TimeLineGui::paintGL()
                     renderText(rightBoundTextPos, rightBoundTop.y(),
                                rightBoundStr, boundsColor, _imp->font);
                 }
-                glColor4f(boundsR, boundsG, boundsB, 1.);
-                glCheckError();
-                glBegin(GL_POLYGON);
-                glVertex2f( rightBoundBtm.x(), rightBoundBtm.y() );
-                glVertex2f( rightBoundBtmLeft.x(), rightBoundBtmLeft.y() );
-                glVertex2f( rightBoundTop.x(), rightBoundTop.y() );
-                glEnd();
-                glCheckErrorIgnoreOSXBug();
+                GL_GPU::glColor4f(boundsR, boundsG, boundsB, 1.);
+                glCheckError(GL_GPU);
+                GL_GPU::glBegin(GL_POLYGON);
+                GL_GPU::glVertex2f( rightBoundBtm.x(), rightBoundBtm.y() );
+                GL_GPU::glVertex2f( rightBoundBtmLeft.x(), rightBoundBtmLeft.y() );
+                GL_GPU::glVertex2f( rightBoundTop.x(), rightBoundTop.y() );
+                GL_GPU::glEnd();
+                glCheckErrorIgnoreOSXBug(GL_GPU);
             }
         }
 
 
         //draw cached frames
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glCheckError();
-        glLineWidth(2);
-        glCheckError();
-        glBegin(GL_LINES);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        glCheckError(GL_GPU);
+        GL_GPU::glLineWidth(2);
+        glCheckError(GL_GPU);
+        GL_GPU::glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
             if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
                 if (i->mode == eStorageModeRAM) {
-                    glColor4f(cachedR, cachedG, cachedB, 1.);
+                    GL_GPU::glColor4f(cachedR, cachedG, cachedB, 1.);
                 } else if (i->mode == eStorageModeDisk) {
-                    glColor4f(dcR, dcG, dcB, 1.);
+                    GL_GPU::glColor4f(dcR, dcG, dcB, 1.);
                 }
-                glVertex2f(i->time, cachedLineYPos);
-                glVertex2f(i->time + 1, cachedLineYPos);
+                GL_GPU::glVertex2f(i->time, cachedLineYPos);
+                GL_GPU::glVertex2f(i->time + 1, cachedLineYPos);
             }
         }
-        glEnd();
+        GL_GPU::glEnd();
 
         ///now draw keyframes
-        glBegin(GL_LINES);
-        glColor4f(kfR, kfG, kfB, 1.);
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glColor4f(kfR, kfG, kfB, 1.);
         std::list<SequenceTime> remainingUserKeys;
         for (TimeLineKeysSet::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
             if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
                 if (!i->isUserKey) {
-                    glVertex2f(i->time, lineYpos);
-                    glVertex2f(i->time + 1, lineYpos);
+                    GL_GPU::glVertex2f(i->time, lineYpos);
+                    GL_GPU::glVertex2f(i->time + 1, lineYpos);
                 } else {
                     remainingUserKeys.push_back(i->time);
                 }
             }
         }
-        glEnd();
+        GL_GPU::glEnd();
 
         //const double keyHeight = TO_DPIY(USER_KEYFRAMES_HEIGHT);
         //const double keyTop = toTimeLineCoordinates(0, lineYPosWidget - keyHeight).y();
         //const double keyBtm = toTimeLineCoordinates(0, lineYPosWidget + keyHeight).y();
-        glColor4f(userkfR, userkfG, userkfB, 1.);
+        GL_GPU::glColor4f(userkfR, userkfG, userkfB, 1.);
         QColor userKeyColor;
         userKeyColor.setRgbF( Image::clamp<qreal>(userkfR, 0., 1.),
                               Image::clamp<qreal>(userkfG, 0., 1.),
@@ -759,27 +759,27 @@ TimeLineGui::paintGL()
                                                       kfBtmWidgetCoord.y() + cursorHeight);
             QPointF kfBtmRight = toTimeLineCoordinates(kfBtmWidgetCoord.x() + cursorWidth / 2.,
                                                        kfBtmWidgetCoord.y() + cursorHeight);
-            glBegin(GL_POLYGON);
-            glVertex2f( kfBtm.x(), cursorBtm.y() );
-            glVertex2f( kfTopLeft.x(), kfTopLeft.y() );
-            glVertex2f( kfTopRight.x(), kfTopRight.y() );
-            glEnd();
-            glBegin(GL_POLYGON);
-            glVertex2f( kfBtm.x(), cursorBtm.y() );
-            glVertex2f( kfBtmLeft.x(), kfBtmLeft.y() );
-            glVertex2f( kfBtmRight.x(), kfBtmRight.y() );
-            glEnd();
+            GL_GPU::glBegin(GL_POLYGON);
+            GL_GPU::glVertex2f( kfBtm.x(), cursorBtm.y() );
+            GL_GPU::glVertex2f( kfTopLeft.x(), kfTopLeft.y() );
+            GL_GPU::glVertex2f( kfTopRight.x(), kfTopRight.y() );
+            GL_GPU::glEnd();
+            GL_GPU::glBegin(GL_POLYGON);
+            GL_GPU::glVertex2f( kfBtm.x(), cursorBtm.y() );
+            GL_GPU::glVertex2f( kfBtmLeft.x(), kfBtmLeft.y() );
+            GL_GPU::glVertex2f( kfBtmRight.x(), kfBtmRight.y() );
+            GL_GPU::glEnd();
 
             /*QString kfStr = QString::number(*it);
                double kfXposWidget = kfBtmWidgetCoord.x() - fontM.width(kfStr) / 2.;
                double kfTextPos = toTimeLine(kfXposWidget);
                renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, _imp->font);*/
         }
-        glCheckErrorIgnoreOSXBug();
-        glDisable(GL_POLYGON_SMOOTH);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
+        GL_GPU::glDisable(GL_POLYGON_SMOOTH);
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
 
-    glCheckError();
+    glCheckError(GL_GPU);
 } // paintGL
 
 void
@@ -791,7 +791,7 @@ TimeLineGui::renderText(double x,
 {
     assert( QGLContext::currentContext() == context() );
 
-    glCheckError();
+    glCheckError(GL_GPU);
     if ( text.isEmpty() ) {
         return;
     }
@@ -808,7 +808,7 @@ TimeLineGui::renderText(double x,
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
-    glCheckError();
+    glCheckError(GL_GPU);
 }
 
 void

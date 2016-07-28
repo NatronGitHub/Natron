@@ -106,8 +106,6 @@ public:
 
     void setBendPointVisible(bool visible);
 
-    bool isRotoEdge() const;
-
     bool isMask() const;
 
     bool isNearbyBendPoint(const QPointF & scenePoint);

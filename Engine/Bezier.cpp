@@ -80,13 +80,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -283,27 +276,41 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
                               const Point & p1,
                               const Point & p2,
                               const Point & p3,
-                              RectD *bbox) ///< input/output
+                              RectD *bbox,
+                              bool* bboxSet) ///< input/output
 {
     {
         double x1, x2;
         bezierBounds(p0.x, p1.x, p2.x, p3.x, &x1, &x2);
-        if (x1 < bbox->x1) {
+        if (bboxSet && !*bboxSet) {
             bbox->x1 = x1;
-        }
-        if (x2 > bbox->x2) {
             bbox->x2 = x2;
+        } else {
+            if (x1 < bbox->x1) {
+                bbox->x1 = x1;
+            }
+            if (x2 > bbox->x2) {
+                bbox->x2 = x2;
+            }
         }
     }
     {
         double y1, y2;
         bezierBounds(p0.y, p1.y, p2.y, p3.y, &y1, &y2);
-        if (y1 < bbox->y1) {
+        if (bboxSet && !*bboxSet) {
             bbox->y1 = y1;
-        }
-        if (y2 > bbox->y2) {
             bbox->y2 = y2;
+        } else {
+            if (y1 < bbox->y1) {
+                bbox->y1 = y1;
+            }
+            if (y2 > bbox->y2) {
+                bbox->y2 = y2;
+            }
         }
+    }
+    if (bboxSet && !*bboxSet) {
+        *bboxSet = true;
     }
 }
 
@@ -323,7 +330,8 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
                         ViewIdx view,
                         unsigned int mipMapLevel,
                         const Transform::Matrix3x3& transform,
-                        RectD* bbox) ///< input/output
+                        RectD* bbox,
+                        bool *bboxSet) ///< input/output
 {
     Point p0, p1, p2, p3;
     Transform::Point3D p0M, p1M, p2M, p3M;
@@ -370,7 +378,7 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
         p3.x /= pot;
         p3.y /= pot;
     }
-    Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox);
+    Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
 }
 
 void
@@ -405,6 +413,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
     if ( next != points.end() ) {
         ++next;
     }
+    bool bboxSet = false;
     for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it) {
         if ( next == points.end() ) {
             if (!finished && !isOpenBezier) {
@@ -412,7 +421,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipMapLevel, transform, bbox);
+        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipMapLevel, transform, bbox, &bboxSet);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -708,8 +717,9 @@ bezierSegmentEval(bool useGuiCurves,
                   double errorScale,
 #endif
                   const Transform::Matrix3x3& transform,
-                  std::list< ParametricPoint >* points, ///< output
-                  RectD* bbox = NULL) ///< input/output (optional)
+                  std::vector< ParametricPoint >* points, ///< output
+                  RectD* bbox = NULL,
+                  bool* bboxSet = NULL) ///< input/output (optional)
 {
     Transform::Point3D p0M, p1M, p2M, p3M;
     Point p0, p1, p2, p3;
@@ -784,7 +794,7 @@ bezierSegmentEval(bool useGuiCurves,
     recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
 #endif
     if (bbox) {
-        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox);
+        Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox, bboxSet);
     }
 } // bezierSegmentEval
 
@@ -2516,10 +2526,11 @@ Bezier::deCastelJau(bool useGuiCurves,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
-                    std::list<std::list<ParametricPoint> >* points,
-                    std::list<ParametricPoint >* pointsSingleList,
+                    std::vector<std::vector<ParametricPoint> >* points,
+                    std::vector<ParametricPoint >* pointsSingleList,
                     RectD* bbox)
 {
+    bool bboxSet = false;
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     BezierCPs::const_iterator next = cps.begin();
 
@@ -2536,13 +2547,24 @@ Bezier::deCastelJau(bool useGuiCurves,
             next = cps.begin();
         }
 
+        RectD segbbox;
+        bool segbboxSet = false;
         if (points) {
-            std::list<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
+            std::vector<ParametricPoint> segmentPoints;
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+        }
+
+        if (bbox) {
+            if (!bboxSet) {
+                *bbox = segbbox;
+                bboxSet = true;
+            } else {
+                bbox->merge(segbbox);
+            }
         }
 
         // increment for next iteration
@@ -2561,7 +2583,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 #else
                                    double errorScale,
 #endif
-                                   std::list<std::list< ParametricPoint> >* points,
+                                   std::vector<std::vector< ParametricPoint> >* points,
                                    RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
@@ -2582,7 +2604,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 #else
                                    double errorScale,
 #endif
-                                   std::list<ParametricPoint >* pointsSingleList,
+                                   std::vector<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
@@ -2603,8 +2625,8 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 #else
                                             double errorScale,
 #endif
-                                            std::list<std::list<ParametricPoint> >* points,
-                                            std::list<ParametricPoint >* pointsSingleList,
+                                            std::vector<std::vector<ParametricPoint> >* points,
+                                            std::vector<ParametricPoint >* pointsSingleList,
                                             RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
@@ -2625,7 +2647,7 @@ void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 double time,
                                                 unsigned int mipMapLevel,
-                                                std::list<std::list<ParametricPoint> >* points,
+                                                std::vector<std::vector<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel,
@@ -2647,7 +2669,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                                 double errorScale,
 #endif
                                              bool evaluateIfEqual,
-                                             std::list<ParametricPoint >* points,
+                                             std::vector<ParametricPoint >* points,
                                              RectD* bbox) const
 {
     evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipMapLevel,
@@ -2669,8 +2691,8 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
                                                          double errorScale,
 #endif
                                                          bool evaluateIfEqual,
-                                                         std::list<std::list<ParametricPoint>  >* points,
-                                                         std::list<ParametricPoint >* pointsSingleList,
+                                                         std::vector<std::vector<ParametricPoint>  >* points,
+                                                         std::vector<ParametricPoint >* pointsSingleList,
                                                          RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
@@ -2709,7 +2731,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
             continue;
         }
         if (points) {
-            std::list<ParametricPoint> segmentPoints;
+            std::vector<ParametricPoint> segmentPoints;
             bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
@@ -2753,7 +2775,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 double errorScale,
 #endif
                                                 bool evaluateIfEqual, ///< evaluate only if feather points are different from control points
-                                                std::list<std::list<ParametricPoint> >* points, ///< output
+                                                std::vector<std::vector<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
     evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
@@ -2823,38 +2845,39 @@ Bezier::getBoundingBox(double time) const
     RectD bbox;
     bool bboxSet = false;
     for (double t = startTime; t <= endTime; t += mbFrameStep) {
-        RectD subBbox; // a very empty bbox
-        subBbox.setupInfinity();
+        RectD pointsBbox;
 
         Transform::Matrix3x3 transform;
         getTransformAtTime(t, &transform);
 
         QMutexLocker l(&itemMutex);
-        bezierSegmentListBboxUpdate(false, _imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
+        bezierSegmentListBboxUpdate(false, _imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &pointsBbox);
 
 
         if (useFeatherPoints() && !_imp->isOpenBezier) {
-            bezierSegmentListBboxUpdate(false, _imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
+            RectD featherPointsBbox;
+            bezierSegmentListBboxUpdate(false, _imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &featherPointsBbox);
+            pointsBbox.merge(featherPointsBbox);
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
             // enclosing the real bbox and close enough
             double featherDistance = getFeatherDistance(t);
-            subBbox.x1 -= featherDistance;
-            subBbox.x2 += featherDistance;
-            subBbox.y1 -= featherDistance;
-            subBbox.y2 += featherDistance;
+            pointsBbox.x1 -= featherDistance;
+            pointsBbox.x2 += featherDistance;
+            pointsBbox.y1 -= featherDistance;
+            pointsBbox.y2 += featherDistance;
         } else if (_imp->isOpenBezier) {
             double brushSize = getBrushSizeKnob()->getValueAtTime(t);
             double halfBrushSize = brushSize / 2. + 1;
-            subBbox.x1 -= halfBrushSize;
-            subBbox.x2 += halfBrushSize;
-            subBbox.y1 -= halfBrushSize;
-            subBbox.y2 += halfBrushSize;
+            pointsBbox.x1 -= halfBrushSize;
+            pointsBbox.x2 += halfBrushSize;
+            pointsBbox.y1 -= halfBrushSize;
+            pointsBbox.y2 += halfBrushSize;
         }
         if (!bboxSet) {
             bboxSet = true;
-            bbox = subBbox;
+            bbox = pointsBbox;
         } else {
-            bbox.merge(subBbox);
+            bbox.merge(pointsBbox);
         }
     }
 

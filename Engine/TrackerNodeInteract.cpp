@@ -103,7 +103,7 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 TrackerNodeInteract::~TrackerNodeInteract()
 {
     if (pboID != 0) {
-        glDeleteBuffers(1, &pboID);
+        GL_GPU::glDeleteBuffers(1, &pboID);
     }
 }
 
@@ -577,23 +577,23 @@ TrackerNodeInteract::drawEllipse(double x,
                                  double b,
                                  double a)
 {
-    glColor3f(r * l * a, g * l * a, b * l * a);
+    GL_GPU::glColor3f(r * l * a, g * l * a, b * l * a);
 
-    glPushMatrix();
+    GL_GPU::glPushMatrix();
     //  center the oval at x_center, y_center
-    glTranslatef( (float)x, (float)y, 0.f );
+    GL_GPU::glTranslatef( (float)x, (float)y, 0.f );
     //  draw the oval using line segments
-    glBegin(GL_LINE_LOOP);
+    GL_GPU::glBegin(GL_LINE_LOOP);
     // we don't need to be pixel-perfect here, it's just an interact!
     // 40 segments is enough.
     double m = 2 * 3.14159265358979323846264338327950288419717 / 40.;
     for (int i = 0; i < 40; ++i) {
         double theta = i * m;
-        glVertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
+        GL_GPU::glVertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
     }
-    glEnd();
+    GL_GPU::glEnd();
 
-    glPopMatrix();
+    GL_GPU::glPopMatrix();
 }
 
 TrackerNodeInteract::KeyFrameTexIDs
@@ -740,17 +740,17 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 Point innerBtmRight = toMagWindowPoint(btmRight, canonicalSearchWindow, textureRectCanonical);
 
                 //Map texture
-                glColor4f(1., 1., 1., 1.);
-                glEnable(GL_TEXTURE_2D);
-                glBindTexture( GL_TEXTURE_2D, it2->second->getTexID() );
-                glBegin(GL_POLYGON);
-                glTexCoord2d(0, 0); glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-                glTexCoord2d(0, 1); glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-                glTexCoord2d(1, 1); glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-                glTexCoord2d(1, 0); glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-                glEnd();
+                GL_GPU::glColor4f(1., 1., 1., 1.);
+                GL_GPU::glEnable(GL_TEXTURE_2D);
+                GL_GPU::glBindTexture( GL_TEXTURE_2D, it2->second->getTexID() );
+                GL_GPU::glBegin(GL_POLYGON);
+                GL_GPU::glTexCoord2d(0, 0); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+                GL_GPU::glTexCoord2d(0, 1); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+                GL_GPU::glTexCoord2d(1, 1); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+                GL_GPU::glTexCoord2d(1, 0); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+                GL_GPU::glEnd();
 
-                glBindTexture(GL_TEXTURE_2D, 0);
+                GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
 
                 QPointF textPos = overlay->toCanonicalCoordinates( QPointF(xOffsetPixels + 5, fontHeight + 5 ) );
                 overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2]);
@@ -761,13 +761,13 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 overlay->renderText(framePos.x(), framePos.y(), frameText.toStdString(), overlayColor[0], overlayColor[1], overlayColor[2]);
 
                 //Draw contour
-                glEnable(GL_LINE_SMOOTH);
-                glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                glEnable(GL_BLEND);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                GL_GPU::glEnable(GL_LINE_SMOOTH);
+                GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                GL_GPU::glEnable(GL_BLEND);
+                GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
                 if (time == currentTime) {
-                    glColor4f(0.93, 0.54, 0, 1);
+                    GL_GPU::glColor4f(0.93, 0.54, 0, 1);
                 } else {
                     KeyFrameTexIDs::const_iterator next = it2;
                     ++next;
@@ -779,63 +779,63 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                     }
                     if ( ( next == keysToRender.end() ) && (time < currentTime) ) {
                         //Beyond the last keyframe
-                        glColor4f(0.93, 0.54, 0, 1);
+                        GL_GPU::glColor4f(0.93, 0.54, 0, 1);
                     } else if ( ( prev == keysToRender.end() ) && (time > currentTime) ) {
                         //Before the first keyframe
-                        glColor4f(0.93, 0.54, 0, 1);
+                        GL_GPU::glColor4f(0.93, 0.54, 0, 1);
                     } else {
                         if (time < currentTime) {
                             assert( next != keysToRender.end() );
                             if (next->first > currentTime) {
-                                glColor4f(1, 0.75, 0.47, 1);
+                                GL_GPU::glColor4f(1, 0.75, 0.47, 1);
                             } else {
-                                glColor4f(1., 1., 1., 0.5);
+                                GL_GPU::glColor4f(1., 1., 1., 0.5);
                             }
                         } else {
                             //time > currentTime
                             assert( prev != keysToRender.end() );
                             if (prev->first < currentTime) {
-                                glColor4f(1, 0.75, 0.47, 1);
+                                GL_GPU::glColor4f(1, 0.75, 0.47, 1);
                             } else {
-                                glColor4f(1., 1., 1., 0.5);
+                                GL_GPU::glColor4f(1., 1., 1., 0.5);
                             }
                         }
                     }
                 }
 
-                glLineWidth(1.5);
-                glCheckError();
-                glBegin(GL_LINE_LOOP);
-                glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-                glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-                glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-                glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-                glEnd();
+                GL_GPU::glLineWidth(1.5);
+                glCheckError(GL_GPU);
+                GL_GPU::glBegin(GL_LINE_LOOP);
+                GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+                GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+                GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+                GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+                GL_GPU::glEnd();
 
-                glCheckError();
+                glCheckError(GL_GPU);
 
 
                 //Draw internal marker
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
-                    glMatrixMode(GL_PROJECTION);
+                    GL_GPU::glMatrixMode(GL_PROJECTION);
                     int direction = (l == 0) ? 1 : -1;
                     // translate (1,-1) pixels
-                    glTranslated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
-                    glMatrixMode(GL_MODELVIEW);
+                    GL_GPU::glTranslated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
+                    GL_GPU::glMatrixMode(GL_MODELVIEW);
 
-                    glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
+                    GL_GPU::glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
 
-                    glBegin(GL_LINE_LOOP);
-                    glVertex2d(innerTopLeft.x, innerTopLeft.y);
-                    glVertex2d(innerTopRight.x, innerTopRight.y);
-                    glVertex2d(innerBtmRight.x, innerBtmRight.y);
-                    glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
-                    glEnd();
+                    GL_GPU::glBegin(GL_LINE_LOOP);
+                    GL_GPU::glVertex2d(innerTopLeft.x, innerTopLeft.y);
+                    GL_GPU::glVertex2d(innerTopRight.x, innerTopRight.y);
+                    GL_GPU::glVertex2d(innerBtmRight.x, innerBtmRight.y);
+                    GL_GPU::glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
+                    GL_GPU::glEnd();
 
-                    glBegin(GL_POINTS);
-                    glVertex2d(centerPointCanonical.x, centerPointCanonical.y);
-                    glEnd();
+                    GL_GPU::glBegin(GL_POINTS);
+                    GL_GPU::glVertex2d(centerPointCanonical.x, centerPointCanonical.y);
+                    GL_GPU::glEnd();
                 }
 
                 xOffsetPixels += TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX);
@@ -924,39 +924,39 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     topRightTex = Transform::matApply(m, topRightTex);
 
     //Map texture
-    glColor4f(1., 1., 1., 1.);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture( GL_TEXTURE_2D, selectedMarkerTexture->getTexID() );
-    glBegin(GL_POLYGON);
-    glTexCoord2d(btmLeftTex.x, btmRightTex.y); glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-    glTexCoord2d(topLeftTex.x, topLeftTex.y); glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-    glTexCoord2d(topRightTex.x, topRightTex.y); glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-    glTexCoord2d(btmRightTex.x, btmRightTex.y); glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-    glEnd();
+    GL_GPU::glColor4f(1., 1., 1., 1.);
+    GL_GPU::glEnable(GL_TEXTURE_2D);
+    GL_GPU::glBindTexture( GL_TEXTURE_2D, selectedMarkerTexture->getTexID() );
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glTexCoord2d(btmLeftTex.x, btmRightTex.y); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+    GL_GPU::glTexCoord2d(topLeftTex.x, topLeftTex.y); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+    GL_GPU::glTexCoord2d(topRightTex.x, topRightTex.y); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+    GL_GPU::glTexCoord2d(btmRightTex.x, btmRightTex.y); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+    GL_GPU::glEnd();
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
 
     //Draw contour
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glColor4f(1., 1., 1., 0.5);
-    glLineWidth(1.5);
-    glCheckError();
-    glBegin(GL_LINE_LOOP);
-    glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-    glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-    glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-    glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-    glEnd();
+    GL_GPU::glEnable(GL_LINE_SMOOTH);
+    GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+    GL_GPU::glEnable(GL_BLEND);
+    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL_GPU::glColor4f(1., 1., 1., 0.5);
+    GL_GPU::glLineWidth(1.5);
+    glCheckError(GL_GPU);
+    GL_GPU::glBegin(GL_LINE_LOOP);
+    GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+    GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+    GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+    GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+    GL_GPU::glEnd();
 
-    glColor4f(0.8, 0.8, 0.8, 1.);
-    glPointSize(POINT_SIZE);
-    glBegin(GL_POINTS);
-    glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-    glEnd();
-    glCheckError();
+    GL_GPU::glColor4f(0.8, 0.8, 0.8, 1.);
+    GL_GPU::glPointSize(POINT_SIZE);
+    GL_GPU::glBegin(GL_POINTS);
+    GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+    GL_GPU::glEnd();
+    glCheckError(GL_GPU);
 
     int fontHeight = overlay->getWidgetFontHeight();
     QPointF textPos = overlay->toCanonicalCoordinates( QPointF(5, fontHeight + 5) );
@@ -966,24 +966,24 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 
     for (int l = 0; l < 2; ++l) {
         // shadow (uses GL_PROJECTION)
-        glMatrixMode(GL_PROJECTION);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
         int direction = (l == 0) ? 1 : -1;
         // translate (1,-1) pixels
-        glTranslated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
-        glMatrixMode(GL_MODELVIEW);
+        GL_GPU::glTranslated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
+        GL_GPU::glMatrixMode(GL_MODELVIEW);
 
-        glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
+        GL_GPU::glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
 
-        glBegin(GL_LINE_LOOP);
-        glVertex2d(innerTopLeft.x, innerTopLeft.y);
-        glVertex2d(innerTopRight.x, innerTopRight.y);
-        glVertex2d(innerBtmRight.x, innerBtmRight.y);
-        glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
-        glEnd();
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2d(innerTopLeft.x, innerTopLeft.y);
+        GL_GPU::glVertex2d(innerTopRight.x, innerTopRight.y);
+        GL_GPU::glVertex2d(innerBtmRight.x, innerBtmRight.y);
+        GL_GPU::glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
+        GL_GPU::glEnd();
 
-        glBegin(GL_POINTS);
-        glVertex2d(centerPoint.x, centerPoint.y);
-        glEnd();
+        GL_GPU::glBegin(GL_POINTS);
+        GL_GPU::glVertex2d(centerPoint.x, centerPoint.y);
+        GL_GPU::glEnd();
 
         ///Draw ellipse if scaling
         if ( (eventState == eMouseStateScalingSelectedMarker) || (hoverState == eDrawStateShowScalingHint) ) {
@@ -1170,14 +1170,14 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     region.y2 = roi.y2;
 
     GLint currentBoundPBO = 0;
-    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
+    GL_GPU::glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
 
     if (pboID == 0) {
-        glGenBuffers(1, &pboID);
+        GL_GPU::glGenBuffers(1, &pboID);
     }
 
     // bind PBO to update texture source
-    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
+    GL_GPU::glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
 
     // Note that glMapBufferARB() causes sync issue.
     // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
@@ -1186,11 +1186,11 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+    GL_GPU::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // map the buffer object into client's memory
-    GLvoid *buf = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    glCheckError();
+    GLvoid *buf = GL_GPU::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    glCheckError(GL_GPU);
     assert(buf);
     if (buf) {
         // update data directly on the mapped buffer
@@ -1252,11 +1252,11 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
             }
         }
         
-        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        GLboolean result = GL_GPU::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
     }
-    glCheckError();
+    glCheckError(GL_GPU);
 
     // copy pixels from PBO to texture object
     // using glBindTexture followed by glTexSubImage2D.
@@ -1264,9 +1264,9 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     tex->fillOrAllocateTexture(region, RectI(), false, 0);
 
     // restore previously bound PBO
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+    GL_GPU::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
 
-    glCheckError();
+    glCheckError(GL_GPU);
 } // TrackerNodeInteract::convertImageTosRGBOpenGLTexture
 
 void
@@ -1349,7 +1349,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
         selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                                 format, internalFormat, glType) );
+                                                 format, internalFormat, glType, true /*useGL*/) );
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;
@@ -1390,7 +1390,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
             int format, internalFormat, glType;
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
             GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                          format, internalFormat, glType) );
+                                          format, internalFormat, glType, true) );
             keyTextures[it->first.time] = tex;
             convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 

@@ -357,18 +357,24 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     if (isAbortable) {
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
     }
-    ParallelRenderArgsSetter frameRenderArgs( frame,
-                                              ViewIdx(0), //<  view 0 (left)
-                                              isRenderUserInteraction, //<isRenderUserInteraction
-                                              isSequentialRender, //isSequential
-                                              abortInfo, //abort info
-                                              node, //  requester
-                                              0, //texture index
-                                              node->getApp()->getTimeLine().get(), //Timeline
-                                              NodePtr(), // rotoPaintNode
-                                              true, //isAnalysis
-                                              false, //draftMode
-                                              RenderStatsPtr() ); // Stats
+
+
+    ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+    tlsArgs->time = frame;
+    tlsArgs->view = ViewIdx(0);
+    tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+    tlsArgs->isSequential = isSequentialRender;
+    tlsArgs->abortInfo = abortInfo;
+    tlsArgs->treeRoot = node;
+    tlsArgs->textureIndex = 0;
+    tlsArgs->timeline = node->getApp()->getTimeLine();
+    tlsArgs->activeRotoPaintNode = NodePtr();
+    tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+    tlsArgs->isDoingRotoNeatRender = false;
+    tlsArgs->isAnalysis = true;
+    tlsArgs->draftMode = false;
+    tlsArgs->stats = RenderStatsPtr();
+    ParallelRenderArgsSetter frameRenderArgs(tlsArgs); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         downscale,

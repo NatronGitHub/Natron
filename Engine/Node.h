@@ -276,11 +276,6 @@ public:
     bool isOpenFXNode() const;
 
     /**
-     * @brief Returns true if the node is either a roto  node
-     **/
-    bool isRotoNode() const;
-
-    /**
      * @brief Returns true if this node is a tracker
      **/
     bool isTrackerNodePlugin() const;
@@ -489,6 +484,9 @@ public:
 
     void prepareForNextPaintStrokeRender();
 
+    ImagePtr getPaintBuffer() const;
+    void setPaintBuffer(const ImagePtr& image);
+
     //Used by nodes below the rotopaint tree to optimize the RoI
     void setLastPaintStrokeDataNoRotopaint();
     void invalidateLastPaintStrokeDataNoRotopaint();
@@ -502,10 +500,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                                        double par,
-                                                        const ImageComponents& components,
-                                                        ImageBitDepthEnum depth) const;
+
 
     void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;
@@ -606,6 +601,8 @@ public:
     bool isSettingsPanelMinimized() const;
 
     void onOpenGLEnabledKnobChangedOnProject(bool activated);
+
+    KnobChoicePtr getOpenGLEnabledKnob() const;
 
 private:
 
@@ -1083,6 +1080,7 @@ public:
 
     bool isForceCachingEnabled() const;
 
+    void setForceCachingEnabled(bool b);
 
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.

@@ -103,7 +103,7 @@ CustomParamInteract::paintGL()
     }
 
 
-    glCheckError();
+    glCheckError(GL_GPU);
 
     /*
        http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
@@ -112,19 +112,19 @@ CustomParamInteract::paintGL()
        The GL_MODELVIEW matrix will be the identity matrix.
      */
     {
-        GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(-0.5, width() - 0.5, -0.5, height() - 0.5, 1, -1);
-        GLProtectMatrix m(GL_MODELVIEW);
-        glLoadIdentity();
+        GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT);
+        GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
+        GL_GPU::glLoadIdentity();
+        GL_GPU::glOrtho(-0.5, width() - 0.5, -0.5, height() - 0.5, 1, -1);
+        GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
+        GL_GPU::glLoadIdentity();
 
         /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
         _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
-        glCheckError();
+        glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
 
@@ -151,7 +151,7 @@ CustomParamInteract::resizeGL(int w,
     if (h == 0) {
         h = 1;
     }
-    glViewport (0, 0, w, h);
+    GL_GPU::glViewport (0, 0, w, h);
     _imp->entryPoint->setSize(w, h);
 }
 
@@ -220,24 +220,24 @@ CustomParamInteract::saveOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
-    glCheckAttribStack();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glCheckClientAttribStack();
-    glPushClientAttrib(GL_ALL_ATTRIB_BITS);
-    glMatrixMode(GL_PROJECTION);
-    glCheckProjectionStack();
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glCheckModelviewStack();
-    glPushMatrix();
+    glCheckAttribStack(GL_GPU);
+    GL_GPU::glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack(GL_GPU);
+    GL_GPU::glPushClientAttrib(GL_ALL_ATTRIB_BITS);
+    GL_GPU::glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack(GL_GPU);
+    GL_GPU::glPushMatrix();
+    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack(GL_GPU);
+    GL_GPU::glPushMatrix();
 
     // set defaults to work around OFX plugin bugs
-    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glEnable(GL_TEXTURE_2D);					//Activate texturing
     //glActiveTexture (GL_TEXTURE0);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
@@ -246,14 +246,14 @@ CustomParamInteract::restoreOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
     //glActiveTexture(_imp->activeTexture);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glPopClientAttrib();
-    glPopAttrib();
+    GL_GPU::glMatrixMode(GL_PROJECTION);
+    GL_GPU::glPopMatrix();
+    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    GL_GPU::glPopMatrix();
+    GL_GPU::glPopClientAttrib();
+    GL_GPU::glPopAttrib();
 }
 
 /**

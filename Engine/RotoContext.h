@@ -57,29 +57,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 NATRON_NAMESPACE_ENTER;
 
-//Small RAII class that properly destroys the cairo image upon destruction
-class CairoImageWrapper
-{
-public:
 
-    CairoImageWrapper()
-        : cairoImg(0)
-        , ctx(0)
-    {
-    }
-
-    CairoImageWrapper(cairo_surface_t* img,
-                      cairo_t* context)
-        : cairoImg(img)
-        , ctx(context)
-    {
-    }
-
-    ~CairoImageWrapper();
-
-    cairo_surface_t* cairoImg;
-    cairo_t* ctx;
-};
 
 /**
  * @class This class is a member of all effects instantiated in the context "paint". It describes internally
@@ -197,14 +175,6 @@ public:
 
 
     /**
-     * @brief Returns the region of definition of the shape unioned to the region of definition of the node
-     * or the project format.
-     **/
-    void getMaskRegionOfDefinition(double time,
-                                   ViewIdx view,
-                                   RectD* rod) const; //!< rod in canonical coordinates
-
-    /**
      * @brief Returns true if  all items have the same compositing operator and there are only strokes or bezier (because they
      * are not masked)
      **/
@@ -216,6 +186,8 @@ public:
                                      double* startTime,
                                      double* endTime,
                                      double* timeStep) const;
+
+    bool isDoingNeatRender() const;
 
 private:
 
@@ -366,6 +338,8 @@ public:
     void declareItemAsPythonField(const RotoItemPtr& item);
     void removeItemAsPythonField(const RotoItemPtr& item);
 
+    bool canConcatenatedRotoPaintTree() const;
+
     /**
      * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
      * To be called whenever changes position in the hierarchy or when one gets removed/inserted
@@ -388,21 +362,6 @@ public:
 
     void dequeueGuiActions();
 
-    /**
-     * @brief When finishing a stroke with the paint brush, we need to re-render it because the interpolation of the curve
-     * will be much smoother with more points than what it was during painting.
-     * We explicitly freeze the UI while waiting for the image to be drawn, otherwise the user might attempt to do a
-     * multiple stroke on top of it which could make some artifacts.
-     **/
-    void evaluateNeatStrokeRender();
-
-
-    bool mustDoNeatRender() const;
-
-    void setIsDoingNeatRender(bool doing);
-
-    bool isDoingNeatRender() const;
-
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
 
     bool knobChanged(const KnobIPtr& k,
@@ -411,7 +370,6 @@ public:
                      double time,
                      bool originatedFromMainThread);
 
-    static bool allocateAndRenderSingleDotStroke(int brushSizePixel, double brushHardness, double alpha, CairoImageWrapper& wrapper);
 
 Q_SIGNALS:
 

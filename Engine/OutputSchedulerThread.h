@@ -69,7 +69,7 @@ struct BufferedFrame
 };
 
 typedef std::list<BufferedFrame> BufferedFrames;
-
+class CurrentFrameFunctorArgs;
 class ViewerCurrentFrameRequestSchedulerStartArgs
     : public GenericThreadStartArgs
 {
@@ -77,6 +77,8 @@ public:
 
 
     U64 age;
+    boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs;
+    bool useSingleThread;
 
     ViewerCurrentFrameRequestSchedulerStartArgs()
         : GenericThreadStartArgs()
@@ -589,7 +591,6 @@ private:
 };
 
 struct ViewerArgs;
-class CurrentFrameFunctorArgs;
 
 /**
  * @brief Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
@@ -610,11 +611,8 @@ private:
     /**
      * @brief How to pick the task to process from the consumer thread
      **/
-    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL
-    {
-        return eTaskQueueBehaviorProcessInOrder;
-    }
-
+    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL;
+    
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
@@ -666,10 +664,14 @@ public:
 
     /**
      * @brief Basically it just renders with the current frame on the timeline.
-     * @param abortPrevious If true then it will stop any ongoing render and render the current frame
-     * in a separate thread
      **/
     void renderCurrentFrame(bool enableRenderStats, bool canAbort);
+
+    /**
+     * @brief Same as renderCurrentFrame, except that it does not concatenate render requests and starts the render
+     * request now. On the main-thread, if a lot of render request are to be made, pref using renderCurrentFrame
+     **/
+    void renderCurrentFrameNow(bool enableRenderStats, bool canAbort);
 
     /**
      * @brief Whether the playback can be automatically restarted by a single render request
@@ -836,7 +838,6 @@ protected:
 
 private:
 
-    void renderCurrentFrameInternal(bool enableRenderStats, bool canAbort);
 
 
     /**

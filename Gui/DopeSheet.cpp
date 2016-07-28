@@ -348,7 +348,7 @@ DopeSheet::addNode(const NodeGuiPtr& nodeGui)
             return;
         }
 
-        if ( node->isRotoNode() || node->isRotoPaintingNode() ) {
+        if ( node->isRotoPaintingNode() ) {
             return;
         }
 

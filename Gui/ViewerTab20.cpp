@@ -75,11 +75,8 @@ void
 ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
-    NodePtr rotoPaintNode;
-    RotoStrokeItemPtr curStroke;
-    bool isDrawing;
 
-    getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
+    bool isDrawing = getGui()->getApp()->isDuringPainting();
 
     if ( !getGui() ||
          !getGui()->getApp() ||
@@ -132,9 +129,9 @@ ViewerTab::drawOverlays(double time,
 
             GLdouble oglMat[16];
             transformToOpenGLMatrix(mat, oglMat);
-            glMatrixMode(GL_MODELVIEW);
-            glGetFloatv(GL_MODELVIEW_MATRIX, oldMat);
-            glMultMatrixd(oglMat);
+            GL_GPU::glMatrixMode(GL_MODELVIEW);
+            GL_GPU::glGetFloatv(GL_MODELVIEW_MATRIX, oldMat);
+            GL_GPU::glMultMatrixd(oglMat);
         }
 
 #endif
@@ -148,8 +145,8 @@ ViewerTab::drawOverlays(double time,
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
-            glMatrixMode(GL_MODELVIEW);
-            glLoadMatrixf(oldMat);
+            GL_GPU::glMatrixMode(GL_MODELVIEW);
+            GL_GPU::glLoadMatrixf(oldMat);
         }
 #endif
     }
@@ -1056,7 +1053,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 bool
 ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    if ( !getInternalNode() || !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
 

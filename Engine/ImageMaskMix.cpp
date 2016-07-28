@@ -26,7 +26,6 @@
 
 #include <cassert>
 #include <stdexcept>
-#include "Engine/GLShader.h"
 #include "Engine/OSGLContext.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -184,6 +183,77 @@ Image::applyMaskMixForSrcComponents(const RectI& roi,
     }
 }
 
+template <typename GL>
+void applyMaskMixGL(const Image* maskImg,
+                    const Image* originalImg,
+                    bool masked,
+                    bool maskInvert,
+                    float mix,
+                    const OSGLContextPtr& glContext,
+                    const RectI& bounds,
+                    const RectI& realRoI,
+                    int target,
+                    int texID,
+                    int originalTexID,
+                    int maskTexID)
+{
+    assert(!originalImg || originalImg->getStorageMode() == eStorageModeGLTex);
+    GLShaderBasePtr shader = glContext->getOrCreateMaskMixShader(maskImg != 0, maskInvert);
+    assert(shader);
+    GLuint fboID = glContext->getOrCreateFBOId();
+
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, texID );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+
+    GL::glActiveTexture(GL_TEXTURE1);
+    GL::glBindTexture(target, originalImg ? originalTexID : 0);
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glActiveTexture(GL_TEXTURE2);
+    GL::glBindTexture(target, maskImg ? maskTexID : 0);
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+    shader->bind();
+    shader->setUniform("originalImageTex", 1);
+    shader->setUniform("maskImageTex", 2);
+    shader->setUniform("outputImageTex", 0);
+    shader->setUniform("mixValue", mix);
+    shader->setUniform("maskEnabled", (maskImg && masked) ? 1 : 0);
+    Image::applyTextureMapping<GL>(originalImg ? originalImg->getBounds() : bounds, bounds, realRoI);
+    shader->unbind();
+
+
+    GL::glBindTexture(target, 0);
+    GL::glActiveTexture(GL_TEXTURE1);
+    GL::glBindTexture(target, 0);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture(target, 0);
+    glCheckError(GL);
+
+}
+
 void
 Image::applyMaskMix(const RectI& roi,
                     const Image* maskImg,
@@ -215,62 +285,11 @@ Image::applyMaskMix(const RectI& roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
-        assert(!originalImg || originalImg->getStorageMode() == eStorageModeGLTex);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateMaskMixShader(maskImg != 0);
-        assert(shader);
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture( target, getGLTextureID() );
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(target, originalImg ? originalImg->getGLTextureID() : 0);
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(target, maskImg ? maskImg->getGLTextureID() : 0);
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-
-        shader->bind();
-        shader->setUniform("originalImageTex", 1);
-        shader->setUniform("maskImageTex", 2);
-        shader->setUniform("outputImageTex", 0);
-        shader->setUniform("mixValue", mix);
-        shader->setUniform("maskEnabled", maskImg ? 1 : 0);
-        applyTextureMapping(_bounds, realRoI);
-        shader->unbind();
-
-
-        glBindTexture(target, 0);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(target, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, 0);
-        glCheckError();
-
+        if (glContext->isGPUContext()) {
+            applyMaskMixGL<GL_GPU>(maskImg, originalImg, maskImg, maskInvert, mix, glContext, _bounds, realRoI, getGLTextureTarget(), getGLTextureID(), originalImg->getGLTextureID(), maskImg->getGLTextureID());
+        } else {
+            applyMaskMixGL<GL_CPU>(maskImg, originalImg, maskImg, maskInvert, mix, glContext, _bounds, realRoI, getGLTextureTarget(), getGLTextureID(), originalImg->getGLTextureID(), maskImg->getGLTextureID());
+        }
         return;
     }
 

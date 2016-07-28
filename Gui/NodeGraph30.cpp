@@ -234,13 +234,12 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
                 continue;
             }
             EffectInstancePtr isEffect = toEffectInstance( listener->getHolder() );
-            if (!isEffect) {
+            if (!isEffect || !isEffect->getNode()->getGroup() || !isEffect->getNode()->isActivated() || !isEffect->getNode()->getNodeGui()) {
                 continue;
             }
             if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
                 continue;
             }
-
 
             if ( isEffect && ( isEffect != node->getNode()->getEffectInstance() ) ) {
                 std::string masterNodeName = node->getNode()->getFullyQualifiedName();
@@ -306,14 +305,10 @@ NodeGraph::deleteSelection()
                     }
                     EffectInstancePtr isEffect = toEffectInstance( listener->getHolder() );
 
-                    if (!isEffect) {
+                    if (!isEffect || !isEffect->getNode()->getGroup() || !isEffect->getNode()->isActivated() || !isEffect->getNode()->getNodeGui()) {
                         continue;
                     }
                     if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
-                        continue;
-                    }
-
-                    if ( !isEffect->getNode()->getGroup() ) {
                         continue;
                     }
 

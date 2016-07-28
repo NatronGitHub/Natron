@@ -1292,7 +1292,7 @@ ReadNode::beginSequenceRender(double first,
                               bool draftMode,
                               ViewIdx view,
                               bool isOpenGLRender,
-                              const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
+                              const EffectOpenGLContextDataPtr& glContextData)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
@@ -1313,7 +1313,7 @@ ReadNode::endSequenceRender(double first,
                             bool draftMode,
                             ViewIdx view,
                             bool isOpenGLRender,
-                            const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
+                            const EffectOpenGLContextDataPtr& glContextData)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {

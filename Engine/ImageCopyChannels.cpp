@@ -30,7 +30,6 @@
 #include <QtCore/QDebug>
 
 #include "Engine/OSGLContext.h"
-#include "Engine/GLShader.h"
 
 
 // disable some warnings due to unused parameters
@@ -581,6 +580,71 @@ Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) cons
     return true;
 }
 
+template <typename GL>
+void
+copyUnProcessedChannelsGL(const RectI& roi,
+                          const ImagePremultiplicationEnum outputPremult,
+                          const ImagePremultiplicationEnum originalImagePremult,
+                          const std::bitset<4> processChannels,
+                          const ImagePtr& originalImage,
+                          bool ignorePremult,
+                          const OSGLContextPtr& glContext,
+                          const RectI& bounds,
+                          const RectI& srcRoi,
+                          int target,
+                          int texID,
+                          int originalTexID)
+{
+    assert(originalImage->getStorageMode() == eStorageModeGLTex);
+    GLShaderBasePtr shader = glContext->getOrCreateCopyUnprocessedChannelsShader(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
+    assert(shader);
+    GLuint fboID = glContext->getOrCreateFBOId();
+
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, texID );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+    glCheckError(GL);
+    GL::glActiveTexture(GL_TEXTURE1);
+    GL::glBindTexture( target, originalTexID );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+    shader->bind();
+    shader->setUniform("originalImageTex", 1);
+    shader->setUniform("outputImageTex", 0);
+    OfxRGBAColourF procChannelsV = {
+        processChannels[0] ? 1.f : 0.f,
+        processChannels[1] ? 1.f : 0.f,
+        processChannels[2] ? 1.f : 0.f,
+        processChannels[3] ? 1.f : 0.f
+    };
+    shader->setUniform("processChannels", procChannelsV);
+    Image::applyTextureMapping<GL>(originalImage->getBounds(), bounds, srcRoi);
+    shader->unbind();
+
+    glCheckError(GL);
+    GL::glBindTexture(target, 0);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture(target, 0);
+    glCheckError(GL);
+
+}
+
 void
 Image::copyUnProcessedChannels(const RectI& roi,
                                const ImagePremultiplicationEnum outputPremult,
@@ -621,55 +685,11 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
-        assert(originalImage->getStorageMode() == eStorageModeGLTex);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateCopyUnprocessedChannelsShader(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
-        assert(shader);
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture( target, getGLTextureID() );
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-        glCheckError();
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture( target, originalImage->getGLTextureID() );
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-
-        shader->bind();
-        shader->setUniform("originalImageTex", 1);
-        shader->setUniform("outputImageTex", 0);
-        OfxRGBAColourF procChannelsV = {
-            processChannels[0] ? 1.f : 0.f,
-            processChannels[1] ? 1.f : 0.f,
-            processChannels[2] ? 1.f : 0.f,
-            processChannels[3] ? 1.f : 0.f
-        };
-        shader->setUniform("processChannels", procChannelsV);
-        applyTextureMapping(_bounds, srcRoi);
-        shader->unbind();
-
-        glCheckError();
-        glBindTexture(target, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, 0);
-        glCheckError();
-
+        if (glContext->isGPUContext()) {
+            copyUnProcessedChannelsGL<GL_GPU>(roi, outputPremult, originalImagePremult, processChannels, originalImage, ignorePremult, glContext, _bounds, srcRoi, getGLTextureTarget(), getGLTextureID(), originalImage->getGLTextureID());
+        } else {
+            copyUnProcessedChannelsGL<GL_CPU>(roi, outputPremult, originalImagePremult, processChannels, originalImage, ignorePremult, glContext, _bounds, srcRoi, getGLTextureTarget(), getGLTextureID(), originalImage->getGLTextureID());
+        }
         return;
     }
 

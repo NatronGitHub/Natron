@@ -47,6 +47,13 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/EngineFwd.h"
 
+
+// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
+// 512 should be OK, see:
+// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
+#define ROTO_PRESSURE_LEVELS 512
+
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -95,15 +102,8 @@ public:
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
 
-    double renderSingleStroke(const RectD& rod,
-                              const std::list<std::pair<Point, double> >& points,
-                              unsigned int mipmapLevel,
-                              double par,
-                              const ImageComponents& components,
-                              ImageBitDepthEnum depth,
-                              double distToNext,
-                              ImagePtr *wholeStrokeImage);
-
+    void setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext);
+    void getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const;
 
     bool getMostRecentStrokeChangesSinceAge(double time,
                                             int lastAge,
@@ -111,6 +111,7 @@ public:
                                             std::list<std::pair<Point, double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
+                                            bool *isStrokeFirstTick,
                                             int* newAge,
                                             int* strokeIndex);
 

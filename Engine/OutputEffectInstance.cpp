@@ -110,6 +110,12 @@ OutputEffectInstance::renderCurrentFrame(bool canAbort)
 }
 
 void
+OutputEffectInstance::renderCurrentFrameNow(bool canAbort)
+{
+    _engine->renderCurrentFrameNow(getApp()->isRenderStatsActionChecked(), canAbort);
+}
+
+void
 OutputEffectInstance::renderCurrentFrameWithRenderStats(bool canAbort)
 {
     _engine->renderCurrentFrame(true, canAbort);

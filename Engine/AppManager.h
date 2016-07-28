@@ -179,7 +179,7 @@ public:
                             int majorVersion,
                             int minorVersion,
                             bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
+    Plugin* getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -194,9 +194,12 @@ public:
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
     bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
+                          ImageLocker* locker,
                           ImagePtr* returnValue) const;
 
+
     bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
+
 
     bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
                                     ImagePtr* returnValue) const;
@@ -533,6 +536,10 @@ public:
     QString getCairoVersion() const;
 
     QString getPySideVersion() const;
+
+    int getOpenGLVersionMajor() const;
+
+    int getOpenGLVersionMinor() const;
 
     bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 

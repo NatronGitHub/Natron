@@ -51,12 +51,11 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include <cairo/cairo.h>
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/AppManager.h"
 #include "Engine/BezierCP.h"
+#include "Engine/Bezier.h"
 #include "Engine/Curve.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
@@ -99,6 +98,25 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoFeatherFallOffParamLabel "Feather fall-off"
 #define kRotoFeatherFallOffHint \
     "Controls the rate at which the feather is applied on the selected shape(s)."
+
+#define kRotoFeatherFallOffType "fallOffType"
+#define kRotoFeatherFallOffTypeLabel ""
+#define kRotoFeatherFallOffTypeHint "Select the type of interpolation used to create the fall-off ramp between the inner shape and the outter feather edge"
+
+#define kRotoFeatherFallOffTypeLinear "Linear"
+#define kRotoFeatherFallOffTypeLinearHint "Linear ramp"
+
+#define kRotoFeatherFallOffTypePLinear "PLinear"
+#define kRotoFeatherFallOffTypePLinearHint "Perceptually linear ramp in Rec.709"
+
+#define kRotoFeatherFallOffTypeEaseIn "Ease-in"
+#define kRotoFeatherFallOffTypeEaseInHint "Catmull-Rom spline, smooth start, linear end (a.k.a. smooth0)"
+
+#define kRotoFeatherFallOffTypeEaseOut "Ease-out"
+#define kRotoFeatherFallOffTypeEaseOutHint "Catmull-Rom spline, linear start, smooth end (a.k.a. smooth1)"
+
+#define kRotoFeatherFallOffTypeSmooth "Smooth"
+#define kRotoFeatherFallOffTypeSmoothHint "Traditional smoothstep ramp"
 
 #define kRotoActivatedParam "activated"
 #define kRotoActivatedParamLabel "Activated"
@@ -365,27 +383,6 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-struct RotoFeatherVertex
-{
-    double x,y;
-    bool isInner;
-};
-
-struct RotoTriangleStrips
-{
-    std::list<Point> vertices;
-};
-
-struct RotoTriangleFans
-{
-    std::list<Point> vertices;
-};
-
-struct RotoTriangles
-{
-    std::list<Point> vertices;
-};
-
 struct BezierPrivate
 {
     BezierCPs points; //< the control points of the curve
@@ -572,135 +569,6 @@ struct RotoLayerPrivate
     }
 };
 
-
-///Keep this in synch with the cairo_operator_t enum !
-///We are not going to create a similar enum just to represent the same thing
-inline void
-getCairoCompositingOperators(std::vector<std::string>* operators,
-                             std::vector<std::string>* toolTips)
-{
-    assert(operators->size() == CAIRO_OPERATOR_CLEAR);
-    operators->push_back("clear");
-    toolTips->push_back("clear destination layer");
-
-    assert(operators->size() == CAIRO_OPERATOR_SOURCE);
-    operators->push_back("source");
-    toolTips->push_back("replace destination layer");
-
-    assert(operators->size() == CAIRO_OPERATOR_OVER);
-    operators->push_back("over");
-    toolTips->push_back("draw source layer on top of destination layer ");
-
-    assert(operators->size() == CAIRO_OPERATOR_IN);
-    operators->push_back("in");
-    toolTips->push_back("draw source where there was destination content");
-
-    assert(operators->size() == CAIRO_OPERATOR_OUT);
-    operators->push_back("out");
-    toolTips->push_back("draw source where there was no destination content");
-
-    assert(operators->size() == CAIRO_OPERATOR_ATOP);
-    operators->push_back("atop");
-    toolTips->push_back("draw source on top of destination content and only there");
-
-    assert(operators->size() == CAIRO_OPERATOR_DEST);
-    operators->push_back("dest");
-    toolTips->push_back("ignore the source");
-
-    assert(operators->size() == CAIRO_OPERATOR_DEST_OVER);
-    operators->push_back("dest-over");
-    toolTips->push_back("draw destination on top of source");
-
-    assert(operators->size() == CAIRO_OPERATOR_DEST_IN);
-    operators->push_back("dest-in");
-    toolTips->push_back("leave destination only where there was source content");
-
-    assert(operators->size() == CAIRO_OPERATOR_DEST_OUT);
-    operators->push_back("dest-out");
-    toolTips->push_back("leave destination only where there was no source content");
-
-    assert(operators->size() == CAIRO_OPERATOR_DEST_ATOP);
-    operators->push_back("dest-atop");
-    toolTips->push_back("leave destination on top of source content and only there ");
-
-    assert(operators->size() == CAIRO_OPERATOR_XOR);
-    operators->push_back("xor");
-    toolTips->push_back("source and destination are shown where there is only one of them");
-
-    assert(operators->size() == CAIRO_OPERATOR_ADD);
-    operators->push_back("add");
-    toolTips->push_back("source and destination layers are accumulated");
-
-    assert(operators->size() == CAIRO_OPERATOR_SATURATE);
-    operators->push_back("saturate");
-    toolTips->push_back("like over, but assuming source and dest are disjoint geometries ");
-
-    assert(operators->size() == CAIRO_OPERATOR_MULTIPLY);
-    operators->push_back("multiply");
-    toolTips->push_back("source and destination layers are multiplied. This causes the result to be at least as dark as the darker inputs.");
-
-    assert(operators->size() == CAIRO_OPERATOR_SCREEN);
-    operators->push_back("screen");
-    toolTips->push_back("source and destination are complemented and multiplied. This causes the result to be at least as "
-                        "light as the lighter inputs.");
-
-    assert(operators->size() == CAIRO_OPERATOR_OVERLAY);
-    operators->push_back("overlay");
-    toolTips->push_back("multiplies or screens, depending on the lightness of the destination color. ");
-
-    assert(operators->size() == CAIRO_OPERATOR_DARKEN);
-    operators->push_back("darken");
-    toolTips->push_back("replaces the destination with the source if it is darker, otherwise keeps the source");
-
-    assert(operators->size() == CAIRO_OPERATOR_LIGHTEN);
-    operators->push_back("lighten");
-    toolTips->push_back("replaces the destination with the source if it is lighter, otherwise keeps the source.");
-
-    assert(operators->size() == CAIRO_OPERATOR_COLOR_DODGE);
-    operators->push_back("color-dodge");
-    toolTips->push_back("brightens the destination color to reflect the source color. ");
-
-    assert(operators->size() == CAIRO_OPERATOR_COLOR_BURN);
-    operators->push_back("color-burn");
-    toolTips->push_back("darkens the destination color to reflect the source color.");
-
-    assert(operators->size() == CAIRO_OPERATOR_HARD_LIGHT);
-    operators->push_back("hard-light");
-    toolTips->push_back("Multiplies or screens, dependent on source color.");
-
-    assert(operators->size() == CAIRO_OPERATOR_SOFT_LIGHT);
-    operators->push_back("soft-light");
-    toolTips->push_back("Darkens or lightens, dependent on source color.");
-
-    assert(operators->size() == CAIRO_OPERATOR_DIFFERENCE);
-    operators->push_back("difference");
-    toolTips->push_back("Takes the difference of the source and destination color. ");
-
-    assert(operators->size() == CAIRO_OPERATOR_EXCLUSION);
-    operators->push_back("exclusion");
-    toolTips->push_back("Produces an effect similar to difference, but with lower contrast. ");
-
-    assert(operators->size() == CAIRO_OPERATOR_HSL_HUE);
-    operators->push_back("HSL-hue");
-    toolTips->push_back("Creates a color with the hue of the source and the saturation and luminosity of the target.");
-
-    assert(operators->size() == CAIRO_OPERATOR_HSL_SATURATION);
-    operators->push_back("HSL-saturation");
-    toolTips->push_back("Creates a color with the saturation of the source and the hue and luminosity of the target."
-                        " Painting with this mode onto a gray area produces no change.");
-
-    assert(operators->size() == CAIRO_OPERATOR_HSL_COLOR);
-    operators->push_back("HSL-color");
-    toolTips->push_back("Creates a color with the hue and saturation of the source and the luminosity of the target."
-                        " This preserves the gray levels of the target and is useful for coloring monochrome"
-                        " images or tinting color images");
-
-    assert(operators->size() == CAIRO_OPERATOR_HSL_LUMINOSITY);
-    operators->push_back("HSL-luminosity");
-    toolTips->push_back("Creates a color with the luminosity of the source and the hue and saturation of the target."
-                        " This produces an inverse effect to HSL-color.");
-} // getCompositingOperators
-
 struct RotoDrawableItemPrivate
 {
     Q_DECLARE_TR_FUNCTIONS(RotoDrawableItem)
@@ -719,7 +587,7 @@ public:
      * Each effect is followed by a merge (except for the ones that use a merge) with the user given operator
      * onto the previous tree upstream of the effectNode.
      */
-    NodePtr effectNode;
+    NodePtr effectNode, maskNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
     double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
@@ -727,6 +595,7 @@ public:
     KnobDoublePtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     KnobDoublePtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                   //alpha value is half the original value when at half distance from the feather distance
+    KnobChoicePtr fallOffRampType;
     KnobChoicePtr lifeTime;
     KnobBoolPtr activated; //< should the curve be visible/rendered ? (animable)
     KnobIntPtr lifeTimeFrame;
@@ -772,17 +641,16 @@ public:
 #endif
     std::list<KnobIPtr > knobs; //< list for easy access to all knobs
 
-    //Used to prevent 2 threads from writing the same image in the rotocontext
-    mutable QReadWriteLock cacheAccessMutex;
-
     RotoDrawableItemPrivate(bool isPaintingNode)
         : effectNode()
+        , maskNode()
         , mergeNode()
         , timeOffsetNode()
         , frameHoldNode()
         , opacity()
         , feather()
         , featherFallOff()
+        , fallOffRampType()
         , lifeTime()
         , activated()
         , lifeTimeFrame()
@@ -822,7 +690,6 @@ public:
         , timeOffset( KnobInt::create(KnobHolderPtr(), tr(kRotoBrushTimeOffsetParamLabel), 1, true) )
         , timeOffsetMode( KnobChoice::create(KnobHolderPtr(), tr(kRotoBrushTimeOffsetModeParamLabel), 1, true) )
         , knobs()
-        , cacheAccessMutex()
     {
         opacity = KnobDouble::create(KnobHolderPtr(), tr(kRotoOpacityParamLabel), 1, true);
         opacity->setHintToolTip( tr(kRotoOpacityHint) );
@@ -855,6 +722,26 @@ public:
         featherFallOff->setDisplayMaximum(5.);
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         knobs.push_back(featherFallOff);
+
+        fallOffRampType = KnobChoice::create(KnobHolderPtr(), tr(kRotoFeatherFallOffTypeLabel), 1, true);
+        fallOffRampType->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
+        fallOffRampType->setName(kRotoFeatherFallOffType);
+        fallOffRampType->populate();
+        {
+            std::vector<std::string> entries,helps;
+            entries.push_back(kRotoFeatherFallOffTypeLinear);
+            helps.push_back(kRotoFeatherFallOffTypeLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypePLinear);
+            helps.push_back(kRotoFeatherFallOffTypePLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseIn);
+            helps.push_back(kRotoFeatherFallOffTypeEaseInHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseOut);
+            helps.push_back(kRotoFeatherFallOffTypeEaseOutHint);
+            entries.push_back(kRotoFeatherFallOffTypeSmooth);
+            helps.push_back(kRotoFeatherFallOffTypeSmoothHint);
+            fallOffRampType->populateChoices(entries, helps);
+        }
+        knobs.push_back(fallOffRampType);
 
 
         lifeTime = KnobChoice::create(KnobHolderPtr(), tr(kRotoDrawableItemLifeTimeParamLabel), 1, true);
@@ -1255,6 +1142,8 @@ struct RotoStrokeItemPrivate
     mutable QMutex strokeDotPatternsMutex;
     std::vector<cairo_pattern_t*> strokeDotPatterns;
 
+    OSGLContextWPtr drawingGlCpuContext,drawingGlGpuContext;
+
     RotoStrokeItemPrivate(RotoStrokeType type)
         : type(type)
         , finished(false)
@@ -1265,6 +1154,8 @@ struct RotoStrokeItemPrivate
         , wholeStrokeBboxWhilePainting()
         , strokeDotPatternsMutex()
         , strokeDotPatterns()
+        , drawingGlCpuContext()
+        , drawingGlGpuContext()
     {
         bbox.x1 = std::numeric_limits<double>::infinity();
         bbox.x2 = -std::numeric_limits<double>::infinity();
@@ -1299,6 +1190,7 @@ public:
     boost::weak_ptr<KnobDouble> opacity;
     boost::weak_ptr<KnobDouble> feather;
     boost::weak_ptr<KnobDouble> featherFallOff;
+    boost::weak_ptr<KnobChoice> fallOffType;
     boost::weak_ptr<KnobChoice> lifeTime;
     boost::weak_ptr<KnobBool> activated; //<allows to disable a shape on a specific frame range
     boost::weak_ptr<KnobInt> lifeTimeFrame;
@@ -1362,10 +1254,7 @@ public:
     std::list<RotoItemPtr > selectedItems;
     RotoItemPtr lastInsertedItem;
     RotoItemPtr lastLockedItem;
-    mutable QMutex doingNeatRenderMutex;
-    QWaitCondition doingNeatRenderCond;
-    bool doingNeatRender;
-    bool mustDoNeatRender;
+
 
     /*
      * A merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
@@ -1382,8 +1271,6 @@ public:
         , isCurrentlyLoading(false)
         , node(n)
         , age(0)
-        , doingNeatRender(false)
-        , mustDoNeatRender(false)
         , globalMergeNodes()
     {
         EffectInstancePtr effect = n->getEffectInstance();
@@ -1514,12 +1401,41 @@ public:
         featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOffKnob->setDefaultAllDimensionsEnabled(false);
         featherFallOffKnob->setIsPersistent(false);
+        featherFallOffKnob->setAddNewLine(false);
         shapePage->addKnob(featherFallOffKnob);
         knobs.push_back(featherFallOffKnob);
         shapeKnobs.push_back(featherFallOffKnob);
         featherFallOff = featherFallOffKnob;
 
+
+        boost::shared_ptr<KnobChoice> fallOffRampTypeKnob = AppManager::createKnob<KnobChoice>(effect, tr(kRotoFeatherFallOffTypeLabel), 1, true);
+        fallOffRampTypeKnob->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
+        fallOffRampTypeKnob->setName(kRotoFeatherFallOffType);
+        fallOffRampTypeKnob->populate();
+        fallOffRampTypeKnob->setDefaultAllDimensionsEnabled(false);
+        fallOffRampTypeKnob->setIsPersistent(false);
         {
+            std::vector<std::string> entries,helps;
+            entries.push_back(kRotoFeatherFallOffTypeLinear);
+            helps.push_back(kRotoFeatherFallOffTypeLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypePLinear);
+            helps.push_back(kRotoFeatherFallOffTypePLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseIn);
+            helps.push_back(kRotoFeatherFallOffTypeEaseInHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseOut);
+            helps.push_back(kRotoFeatherFallOffTypeEaseOutHint);
+            entries.push_back(kRotoFeatherFallOffTypeSmooth);
+            helps.push_back(kRotoFeatherFallOffTypeSmoothHint);
+            fallOffRampTypeKnob->populateChoices(entries, helps);
+        }
+        shapePage->addKnob(fallOffRampTypeKnob);
+        fallOffType = fallOffRampTypeKnob;
+        shapeKnobs.push_back(fallOffRampTypeKnob);
+        knobs.push_back(fallOffRampTypeKnob);
+
+
+        {
+
             KnobChoicePtr sourceType = AppManager::createKnob<KnobChoice>(effect, tr(kRotoBrushSourceColorLabel), 1, true);
             sourceType->setName(kRotoBrushSourceColor);
             sourceType->setHintToolTip( tr(kRotoBrushSourceColorHint) );
@@ -2185,35 +2101,8 @@ public:
         return minLayer;
     }
 
-    static void renderDot(cairo_t* cr,
-                          std::vector<cairo_pattern_t*>* dotPatterns,
-                          const Point &center,
-                          double internalDotRadius,
-                          double externalDotRadius,
-                          double pressure,
-                          bool doBuildUp,
-                          const std::vector<std::pair<double, double> >& opacityStops,
-                          double opacity);
-    static double renderStroke(cairo_t* cr,
-                               std::vector<cairo_pattern_t*>& dotPatterns,
-                               const std::list<std::list<std::pair<Point, double> > >& strokes,
-                               double distToNext,
-                               const RotoDrawableItem* stroke,
-                               bool doBuildup,
-                               double opacity,
-                               double time,
-                               unsigned int mipmapLevel);
-    static void renderBezier(cairo_t* cr, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
-    static void renderFeather(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
-    static void renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3],  double fallOff, cairo_pattern_t * mesh);
-    static void renderInternalShape_cairo(const std::list<RotoTriangles>& triangles,
-                                          const std::list<RotoTriangleFans>& fans,
-                                          const std::list<RotoTriangleStrips>& strips,
-                                          double shapeColor[3],  cairo_pattern_t * mesh);
-    static void computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel,  double featherDist, std::list<RotoFeatherVertex>* featherMesh, std::list<RotoTriangleFans>* internalFans, std::list<RotoTriangles>* internalTriangles,std::list<RotoTriangleStrips>* internalStrips);
-    static void renderInternalShape(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
-    static void bezulate(double time, const BezierCPs& cps, std::list<BezierCPs>* patches);
-    static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
+    
+
 };
 
 NATRON_NAMESPACE_EXIT;

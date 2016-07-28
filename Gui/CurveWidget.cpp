@@ -428,24 +428,24 @@ CurveWidget::saveOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
-    glCheckAttribStack();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glCheckClientAttribStack();
-    glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-    glMatrixMode(GL_PROJECTION);
-    glCheckProjectionStack();
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glCheckModelviewStack();
-    glPushMatrix();
+    glCheckAttribStack(GL_GPU);
+    GL_GPU::glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack(GL_GPU);
+    GL_GPU::glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+    GL_GPU::glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack(GL_GPU);
+    GL_GPU::glPushMatrix();
+    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack(GL_GPU);
+    GL_GPU::glPushMatrix();
 
     // set defaults to work around OFX plugin bugs
-    glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glEnable(GL_TEXTURE_2D);					//Activate texturing
     //glActiveTexture (GL_TEXTURE0);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
@@ -454,14 +454,14 @@ CurveWidget::restoreOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
     //glActiveTexture(_imp->activeTexture);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glPopClientAttrib();
-    glPopAttrib();
+    GL_GPU::glMatrixMode(GL_PROJECTION);
+    GL_GPU::glPopMatrix();
+    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    GL_GPU::glPopMatrix();
+    GL_GPU::glPopClientAttrib();
+    GL_GPU::glPopAttrib();
 }
 
 void
@@ -479,7 +479,7 @@ CurveWidget::resizeGL(int width,
     if (height == 0) {
         height = 1;
     }
-    glViewport (0, 0, width, height);
+    GL_GPU::glViewport (0, 0, width, height);
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
     if ( (width > 0) && (height > 0) ) {
@@ -515,7 +515,7 @@ CurveWidget::paintGL()
     }
 
 
-    glCheckError();
+    glCheckError(GL_GPU);
     if (_imp->zoomCtx.factor() <= 0) {
         return;
     }
@@ -529,25 +529,25 @@ CurveWidget::paintGL()
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&bgR, &bgG, &bgB);
 
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        glClearColor(bgR, bgG, bgB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         return;
     }
 
     {
-        GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
-        GLProtectMatrix m(GL_MODELVIEW);
-        glLoadIdentity();
-        glCheckError();
+        GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
+        GL_GPU::glLoadIdentity();
+        GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
+        GL_GPU::glLoadIdentity();
+        glCheckError(GL_GPU);
 
-        glClearColor(bgR, bgG, bgB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         boost::shared_ptr<OfxParamOverlayInteract> customInteract = getCustomInteract();
         if (customInteract) {
@@ -574,7 +574,7 @@ CurveWidget::paintGL()
             _imp->drawSelectionRectangle();
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-    glCheckError();
+    glCheckError(GL_GPU);
 } // CurveWidget::paintGL
 
 bool
@@ -620,7 +620,7 @@ CurveWidget::renderText(double x,
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
-    glCheckError();
+    glCheckError(GL_GPU);
 }
 
 void

@@ -1125,6 +1125,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         return;
     }
 
+
     if (!getNode()->getInput(0)) {
         Q_EMIT trackingFinished();
         return;

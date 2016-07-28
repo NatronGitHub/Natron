@@ -115,7 +115,7 @@ TextRendererPrivate::clearUsedTextures()
         //A name returned by glGenTextures, but not yet associated with a texture by calling glBindTexture, is not the name of a texture.
         //Not sure if we should leave this assert here since  textures are not bound any longer at this point.
         //        assert(glIsTexture(texture));
-        glDeleteTextures( 1, &(*it) );
+        GL_GPU::glDeleteTextures( 1, &(*it) );
     }
 }
 
@@ -135,22 +135,22 @@ TextRendererPrivate::newTransparentTexture()
 {
     GLuint savedTexture;
 
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     GLuint texture;
 
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    assert( glIsTexture(texture) );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL_GPU::glGenTextures(1, &texture);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, texture);
+    assert( GL_GPU::glIsTexture(texture) );
+    GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     QImage image(TEXTURE_SIZE, TEXTURE_SIZE, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     image = QGLWidget::convertToGLFormat(image);
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
+    GL_GPU::glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
                   0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits() );
 
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
     _usedTextures.push_back(texture);
 }
 
@@ -191,16 +191,16 @@ TextRendererPrivate::createCharacter(QChar c)
 
     // fill the texture with the QImage
     image = QGLWidget::convertToGLFormat(image);
-    glCheckError();
+    glCheckError(GL_GPU);
 
     GLuint savedTexture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    assert( glIsTexture(texture) );
-    glTexSubImage2D( GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
+    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, texture);
+    assert( GL_GPU::glIsTexture(texture) );
+    GL_GPU::glTexSubImage2D( GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
                      GL_UNSIGNED_BYTE, image.bits() );
-    glCheckError();
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
+    glCheckError(GL_GPU);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
 
 
     CharBitmap *character = new CharBitmap;
@@ -267,7 +267,7 @@ TextRenderer::renderText(float x,
                          const QColor &color,
                          const QFont &font) const
 {
-    glCheckError();
+    glCheckError(GL_GPU);
     boost::shared_ptr<TextRendererPrivate> p;
     FontRenderers::iterator it = _imp->renderers.find(font);
     if ( it != _imp->renderers.end() ) {
@@ -279,18 +279,18 @@ TextRenderer::renderText(float x,
     assert(p);
 
     GLuint savedTexture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
-        GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-        GLProtectMatrix pr(GL_MODELVIEW);
+        GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+        GLProtectMatrix<GL_GPU> pr(GL_MODELVIEW);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_TEXTURE_2D);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_TEXTURE_2D);
         GLuint texture = 0;
 
-        glTranslatef(x, y, 0);
-        glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
+        GL_GPU::glTranslatef(x, y, 0);
+        GL_GPU::glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
         for (int i = 0; i < text.length(); ++i) {
             CharBitmap *c = p->createCharacter(text[i]);
             if (!c) {
@@ -298,28 +298,28 @@ TextRenderer::renderText(float x,
             }
             if (texture != c->texID) {
                 texture = c->texID;
-                glBindTexture(GL_TEXTURE_2D, texture);
-                assert( glIsTexture(texture) );
+                GL_GPU::glBindTexture(GL_TEXTURE_2D, texture);
+                assert( GL_GPU::glIsTexture(texture) );
             }
-            glCheckError();
-            glBegin(GL_QUADS);
-            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
-            glVertex2f(0, 0);
-            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-            glVertex2f(c->w * scalex, 0);
-            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
-            glVertex2f(c->w * scalex, c->h * scaley);
-            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-            glVertex2f(0, c->h * scaley);
-            glEnd();
-            glCheckErrorIgnoreOSXBug();
-            glTranslatef(c->w * scalex, 0, 0);
-            glCheckError();
+            glCheckError(GL_GPU);
+            GL_GPU::glBegin(GL_QUADS);
+            GL_GPU::glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
+            GL_GPU::glVertex2f(0, 0);
+            GL_GPU::glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
+            GL_GPU::glVertex2f(c->w * scalex, 0);
+            GL_GPU::glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
+            GL_GPU::glVertex2f(c->w * scalex, c->h * scaley);
+            GL_GPU::glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
+            GL_GPU::glVertex2f(0, c->h * scaley);
+            GL_GPU::glEnd();
+            glCheckErrorIgnoreOSXBug(GL_GPU);
+            GL_GPU::glTranslatef(c->w * scalex, 0, 0);
+            glCheckError(GL_GPU);
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
 
-    glCheckError();
+    glCheckError(GL_GPU);
 } // renderText
 
 NATRON_NAMESPACE_EXIT;

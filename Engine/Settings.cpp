@@ -64,6 +64,10 @@
 #include <ofxhPluginCache.h>
 #endif
 
+#ifdef HAVE_OSMESA
+#include <GL/osmesa.h>
+#endif
+
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
 
 
@@ -74,6 +78,13 @@
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
 NATRON_NAMESPACE_ENTER;
+
+enum CPUDriverEnum {
+    eCPUDriverSoftPipe = 0,
+    eCPUDriverLLVMPipe
+};
+
+static const CPUDriverEnum defaultMesaDriver = eCPUDriverLLVMPipe;
 
 
 Settings::Settings()
@@ -420,6 +431,33 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     }
     _availableOpenGLRenderers->populateChoices(entries);
     _availableOpenGLRenderers->setSecret(renderers.size() == 1);
+
+
+#ifdef HAVE_OSMESA
+#ifdef OSMESA_GALLIUM_DRIVER
+    std::vector<std::string> mesaDrivers;
+    mesaDrivers.push_back("softpipe");
+    mesaDrivers.push_back("llvmpipe");
+    _osmesaRenderers->populateChoices(mesaDrivers);
+    _osmesaRenderers->setSecret(false);
+#else
+    _osmesaRenderers->setSecret(false);
+#endif
+#else
+    _osmesaRenderers->setSecret(true);
+#endif
+}
+
+GLRendererID
+Settings::getOpenGLCPUDriver() const
+{
+    GLRendererID ret;
+    if (!_osmesaRenderers->getIsSecret()) {
+        ret.renderID =  _osmesaRenderers->getValue();
+    } else {
+        ret.renderID = 0;
+    }
+    return ret;
 }
 
 bool
@@ -475,6 +513,12 @@ Settings::initializeKnobsGPU()
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
     _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
+
+    _osmesaRenderers = AppManager::createKnob<KnobChoice>(shared_from_this(), tr("CPU OpenGL renderer"));
+    _osmesaRenderers->setName("cpuOpenGLRenderer");
+    _osmesaRenderers->setHintToolTip(tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. You may select which driver OSMesa uses to perform it's CPU rendering. llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    _gpuPage->addKnob(_osmesaRenderers);
+
 
     _nOpenGLContexts = AppManager::createKnob<KnobInt>( shared_from_this(), tr("No. of OpenGL Contexts") );
     _nOpenGLContexts->setName("maxOpenGLContexts");
@@ -1441,12 +1485,13 @@ Settings::setDefaultValues()
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0, 0);
 
+
+    _osmesaRenderers->setDefaultValue(defaultMesaDriver);
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setDefaultValue(0, 0);
 #endif
     _nOpenGLContexts->setDefaultValue(2);
-#pragma message WARN("enable OpenGL by default after 2.1 release")
-    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLEnabled);
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);

@@ -17,6 +17,8 @@ Documentation/html
 breakpadclient.pri
 breakpadpro.pri
 google-breakpad/
+tools/utils/generateGLIncludes.xcodeproj/
+tools/utils/generateGLIncludes.pro.user
 libs/hoedown/hoedown.xcodeproj/
 libs/libtess/libtess.xcodeproj/
 libs/libtess/tess.xcodeproj/

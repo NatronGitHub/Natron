@@ -16,24 +16,67 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef DEFAULTSHADERS_H
-#define DEFAULTSHADERS_H
-
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/EngineFwd.h"
+
+#include "EffectOpenGLContextData.h"
+
+#include <QDebug>
+
+#include "Engine/GLShader.h"
 
 NATRON_NAMESPACE_ENTER;
 
-extern const char* fillConstant_FragmentShader;
-extern const char* applyMaskMix_FragmentShader;
-extern const char* copyUnprocessedChannels_FragmentShader;
+
+struct EffectOpenGLContextDataPrivate
+{
+
+    bool isGPUContext;
+
+    // True if we did not unlock the context mutex in attachOpenGLContext()
+    bool hasTakenLock;
+
+
+    EffectOpenGLContextDataPrivate(bool isGPUContext)
+    : isGPUContext(isGPUContext)
+    , hasTakenLock(false)
+    {
+
+    }
+};
+
+EffectOpenGLContextData::EffectOpenGLContextData(bool isGPUContext)
+: _imp(new EffectOpenGLContextDataPrivate(isGPUContext))
+{
+}
+
+EffectOpenGLContextData::~EffectOpenGLContextData()
+{
+    
+}
+
+bool
+EffectOpenGLContextData::isGPUContext() const
+{
+    return _imp->isGPUContext;
+}
+
+void
+EffectOpenGLContextData::setHasTakenLock(bool b)
+{
+    _imp->hasTakenLock = b;
+}
+
+bool
+EffectOpenGLContextData::getHasTakenLock() const
+{
+    return _imp->hasTakenLock;
+}
+
+
 
 NATRON_NAMESPACE_EXIT;
-
-#endif // DEFAULTSHADERS_H

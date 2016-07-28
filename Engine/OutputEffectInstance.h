@@ -112,6 +112,7 @@ public:
     void notifyRenderFinished();
 
     void renderCurrentFrame(bool canAbort);
+    void renderCurrentFrameNow(bool canAbort);
 
     void renderCurrentFrameWithRenderStats(bool canAbort);
 

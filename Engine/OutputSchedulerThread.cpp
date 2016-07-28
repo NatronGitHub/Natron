@@ -62,6 +62,7 @@
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/UpdateViewerParams.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -1089,7 +1090,7 @@ OutputSchedulerThread::startRender()
                                                 false,
                                                 ViewIdx(0),
                                                 false /*useOpenGL*/,
-                                                EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
+                                                EffectOpenGLContextDataPtr() ) == eStatusFailed) {
             l.unlock();
 
 
@@ -1180,7 +1181,7 @@ OutputSchedulerThread::stopRender()
                                                          false,
                                                          ViewIdx(0),
                                                          false /*use OpenGL render*/,
-                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
+                                                         EffectOpenGLContextDataPtr() ) );
     }
 
 
@@ -2300,18 +2301,23 @@ private:
                     isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
                 }
 
-                ParallelRenderArgsSetter frameRenderArgs(time,
-                                                         viewsToRender[view],
-                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
-                                                         isSequentialRender,
-                                                         abortInfo, //abortInfo
-                                                         activeInputNode, // viewer requester
-                                                         0, //texture index
-                                                         output->getApp()->getTimeLine().get(),
-                                                         NodePtr(),
-                                                         false,
-                                                         false,
-                                                         stats);
+                ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+                tlsArgs->time = time;
+                tlsArgs->view = viewsToRender[view];
+                tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
+                tlsArgs->isSequential = isSequentialRender;
+                tlsArgs->abortInfo = abortInfo;
+                tlsArgs->treeRoot = activeInputNode;
+                tlsArgs->textureIndex = 0;
+                tlsArgs->timeline = output->getApp()->getTimeLine();
+                tlsArgs->activeRotoPaintNode = NodePtr();
+                tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+                tlsArgs->isDoingRotoNeatRender = false;
+                tlsArgs->isAnalysis = false;
+                tlsArgs->draftMode = false;
+                tlsArgs->stats = RenderStatsPtr();
+
+                ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
                 {
                     FrameRequestMap request;
@@ -2417,18 +2423,22 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
 
         setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
 
-        ParallelRenderArgsSetter frameRenderArgs(it->time,
-                                                 it->view,
-                                                 isRenderDueToRenderInteraction,  // is this render due to user interaction ?
-                                                 isSequentialRender, // is this sequential ?
-                                                 abortInfo, //abortInfo
-                                                 effect->getNode(), //tree root
-                                                 0, //texture index
-                                                 effect->getApp()->getTimeLine().get(),
-                                                 NodePtr(),
-                                                 false,
-                                                 false,
-                                                 it->stats);
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = it->time;
+        tlsArgs->view = it->view;
+        tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = effect->getNode();
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = effect->getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = false;
+        tlsArgs->stats = it->stats;
+        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
         ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
         rod.toPixelEnclosing(0, par, &roi);
@@ -2814,7 +2824,7 @@ private:
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), stats, args[i].get() );
+            status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), false, stats, args[i].get() );
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (status[i] == ViewerInstance::eViewerRenderRetCodeFail) {
                 //Just clear the viewer, nothing to do
@@ -2859,7 +2869,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), true,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), RotoStrokeItemPtr(), false, true,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3052,13 +3062,13 @@ RenderEngine::onCurrentFrameRenderRequestPosted()
             }
         }
         r = queueBegin;
-        renderCurrentFrameInternal(r.enableStats, r.enableAbort);
+        renderCurrentFrameNow(r.enableStats, r.enableAbort);
         _imp->refreshQueue.erase( _imp->refreshQueue.begin() );
     }
 }
 
 void
-RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
+RenderEngine::renderCurrentFrameNow(bool enableRenderStats,
                                          bool canAbort)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -3427,14 +3437,20 @@ public:
         , isRotoNeatRender(isRotoNeatRender)
     {
         if (isRotoPaintRequest && isRotoNeatRender) {
-            isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(true);
+            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(isRotoPaintRequest->getEffectInstance().get());
+            if (isRotoNode) {
+                isRotoNode->setIsDoingNeatRender(true);
+            }
         }
     }
 
     ~CurrentFrameFunctorArgs()
     {
         if (isRotoPaintRequest && isRotoNeatRender) {
-            isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(false);
+            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(isRotoPaintRequest->getEffectInstance().get());
+            if (isRotoNode) {
+                isRotoNode->setIsDoingNeatRender(false);
+            }
         }
     }
 };
@@ -3546,11 +3562,13 @@ public:
         ///it calls appendToBuffer by itself
         ViewerInstance::ViewerRenderRetCode stat = ViewerInstance::eViewerRenderRetCodeFail;
         BufferableObjectList ret;
-
+        if (_args->isRotoNeatRender || _args->isRotoPaintRequest) {
+            qDebug() << "Exec roto render: " << _args->isRotoNeatRender;
+        }
         try {
             if (!_args->isRotoPaintRequest || _args->isRotoNeatRender) {
                 stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
-                                                   NodePtr(), true, _args->args, _args->request, _args->stats);
+                                                   _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->isRotoNeatRender, true, _args->args, _args->request, _args->stats);
             } else {
                 stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->stats, &_args->args[0], &_args->args[1]);
             }
@@ -3589,6 +3607,10 @@ public:
             assert( QThread::currentThread() == qApp->thread() );
             _args->scheduler->processProducedFrame(_args->stats, ret);
         }
+
+        _args->request.reset();
+        _args->args[0].reset();
+        _args->args[1].reset();
 
         ///This thread is done, clean-up its TLS
         appPTR->getAppTLS()->cleanupTLSForThread();
@@ -3635,7 +3657,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 GenericSchedulerThread::TaskQueueBehaviorEnum
 ViewerCurrentFrameRequestScheduler::tasksQueueBehaviour() const
 {
-    return eTaskQueueBehaviorProcessInOrder;
+    return eTaskQueueBehaviorSkipToMostRecent;
 }
 
 GenericSchedulerThread::ThreadStateEnum
@@ -3643,14 +3665,32 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 {
     ThreadStateEnum state = eThreadStateActive;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> args = boost::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
-
     assert(args);
 
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
-    qDebug() << getThreadName().c_str() << "Thread loop once, waiting for" << args->age << "to be produced";
+    qDebug() << getThreadName().c_str() << "Thread loop once, starting" << args->age ;
 #endif
 
-    ///Wait for the work to be done
+
+    // Start the work in a thread of the thread pool if we can.
+    // Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
+    int maxThreads = _imp->threadPool->maxThreadCount();
+    if (args->useSingleThread) {
+        maxThreads = 1;
+    }
+    args->functorArgs->request = args;
+    if ( (maxThreads == 1) || (_imp->threadPool->activeThreadCount() >= maxThreads - 1) ) {
+        _imp->backupThread.startTask(args->functorArgs);
+    } else {
+        RenderCurrentFrameFunctorRunnable* task = new RenderCurrentFrameFunctorRunnable(args->functorArgs);
+        _imp->appendRunnableTask(task);
+        _imp->threadPool->start(task);
+    }
+
+    // Clear the shared ptr now that we started the task in the thread pool
+    args->functorArgs.reset();
+
+    // Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
     {
         QMutexLocker k(&_imp->producedFramesMutex);
@@ -3669,7 +3709,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
                 break;
             }
             _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
-
             for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
                 if (it->age == args->age) {
                     found = it;
@@ -3677,7 +3716,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
                 }
             }
         }
-
         if ( found != _imp->producedFrames.end() ) {
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
             qDebug() << getThreadName().c_str() << "Found" << args->age << "produced";
@@ -3702,7 +3740,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 #endif
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
-
 
     if (state == eThreadStateActive) {
         state = resolveState();
@@ -3807,6 +3844,9 @@ void
 ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                        bool canAbort)
 {
+    if (!_imp->viewer || !_imp->viewer->getNode()) {
+        return;
+    }
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
     ViewIdx view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : ViewIdx(0);
@@ -3833,17 +3873,18 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 
     bool rotoUse1Thread = false;
     bool isRotoNeatRender = false;
-    if (!isDrawing) {
-        isRotoNeatRender = rotoPaintNode ? rotoPaintNode->getRotoContext()->mustDoNeatRender() : false;
-        if (rotoPaintNode && isRotoNeatRender) {
-            rotoUse1Thread = true;
-        } else {
-            rotoPaintNode.reset();
-            curStroke.reset();
+    if (rotoPaintNode) {
+        RotoPaint* isRotoPaint = dynamic_cast<RotoPaint*>(rotoPaintNode->getEffectInstance().get());
+        if (isRotoPaint) {
+            isRotoNeatRender = isRotoPaint->mustDoNeatRender();
         }
-    } else {
-        assert(rotoPaintNode);
+    }
+    if (isDrawing || (rotoPaintNode && isRotoNeatRender)) {
+        qDebug() << "Queing roto render, neat= " << isRotoNeatRender;
         rotoUse1Thread = true;
+    } else {
+        rotoPaintNode.reset();
+        curStroke.reset();
     }
 
     boost::shared_ptr<ViewerArgs> args[2];
@@ -3852,7 +3893,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, stats, args[i].get() );
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, isRotoNeatRender, stats, args[i].get() );
 
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (clearTexture[i] || args[i]->params->isViewerPaused) {
@@ -3916,6 +3957,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
             return;
         }
     }
+
     boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs( new CurrentFrameFunctorArgs(view,
                                                                                         frame,
                                                                                         stats,
@@ -3928,6 +3970,9 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                         isRotoNeatRender) );
     functorArgs->args[0] = args[0];
     functorArgs->args[1] = args[1];
+    if (isRotoNeatRender) {
+        functorArgs->setCanSkip(false);
+    }
 
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         RenderCurrentFrameFunctorRunnable task(functorArgs);
@@ -3936,7 +3981,12 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         // Identify this render request with an age
         boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request(new ViewerCurrentFrameRequestSchedulerStartArgs);
         request->age = _imp->ageCounter;
-
+        request->functorArgs = functorArgs;
+        // When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
+        request->useSingleThread = rotoUse1Thread || isTracking;
+        if (isRotoNeatRender) {
+            request->setCanSkip(false);
+        }
         // If we reached the max amount of age, reset to 0... should never happen anyway
         if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {
             _imp->ageCounter = 0;
@@ -3945,24 +3995,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         }
 
         startTask(request);
-        functorArgs->request = request;
 
-        /*
-         * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
-         */
-        int maxThreads = _imp->threadPool->maxThreadCount();
-
-        //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-        if (rotoUse1Thread || isTracking) {
-            maxThreads = 1;
-        }
-        if ( (maxThreads == 1) || (_imp->threadPool->activeThreadCount() >= maxThreads - 1) ) {
-            _imp->backupThread.startTask(functorArgs);
-        } else {
-            RenderCurrentFrameFunctorRunnable* task = new RenderCurrentFrameFunctorRunnable(functorArgs);
-            _imp->appendRunnableTask(task);
-            _imp->threadPool->start(task);
-        }
     }
 } // ViewerCurrentFrameRequestScheduler::renderCurrentFrame
 
@@ -3975,6 +4008,13 @@ ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()
 {
 }
+
+GenericSchedulerThread::TaskQueueBehaviorEnum
+ViewerCurrentFrameRequestRendererBackup::tasksQueueBehaviour() const 
+{
+    return eTaskQueueBehaviorSkipToMostRecent;
+}
+
 
 GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const ThreadStartArgsPtr& inArgs)

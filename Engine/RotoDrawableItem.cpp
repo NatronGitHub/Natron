@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoShapeRenderNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -86,14 +87,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamFilter "filter"
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
-
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
 
 
 NATRON_NAMESPACE_ENTER;
@@ -144,6 +137,10 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
         _imp->effectNode->setWhileCreatingPaintStroke(true);
         _imp->effectNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->setWhileCreatingPaintStroke(true);
+        _imp->maskNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+    }
     if (_imp->mergeNode) {
         _imp->mergeNode->setWhileCreatingPaintStroke(true);
         _imp->mergeNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
@@ -155,6 +152,22 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     if (_imp->frameHoldNode) {
         _imp->frameHoldNode->setWhileCreatingPaintStroke(true);
         _imp->frameHoldNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+    }
+}
+
+static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode, const RotoDrawableItemPtr& item)
+{
+    assert(rotopaintNode);
+    assert(node);
+    assert(item);
+    node->attachRotoItem(item);
+
+    // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
+    KnobChoicePtr glRenderKnob = node->getOpenGLEnabledKnob();
+    if (glRenderKnob) {
+        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getOpenGLEnabledKnob();
+        assert(rotoPaintGLRenderKnob);
+        glRenderKnob->slaveTo(0, rotoPaintGLRenderKnob, 0);
     }
 }
 
@@ -189,6 +202,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
         type = eRotoStrokeTypeSolid;
     }
 
+    QString maskPluginID = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
+
     switch (type) {
     case eRotoStrokeTypeBlur:
         pluginId = QString::fromUtf8(PLUGINID_OFX_BLURCIMG);
@@ -197,7 +212,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
         pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
         break;
     case eRotoStrokeTypeSolid:
-        pluginId = QString::fromUtf8(PLUGINID_OFX_ROTO);
+    case eRotoStrokeTypeSmear:
+        pluginId = maskPluginID;
         break;
     case eRotoStrokeTypeClone:
     case eRotoStrokeTypeReveal:
@@ -210,9 +226,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
     case eRotoStrokeTypeSharpen:
         //todo
         break;
-    case eRotoStrokeTypeSmear:
-        pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSMEAR);
-        break;
     }
 
     QString baseFixedName = fixedNamePrefix;
@@ -222,7 +235,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
         CreateNodeArgs args( pluginId.toStdString(), NodeCollectionPtr() );
         args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty<bool>(kCreateNodeArgsPropTrustPluginID, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
@@ -231,6 +243,15 @@ RotoDrawableItem::createNodes(bool connectNodes)
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
         }
         assert(_imp->effectNode);
+
+        if (type == eRotoStrokeTypeSmear) {
+            // For smear setup the type parameter
+            KnobIPtr knob = _imp->effectNode->getKnobByName(kRotoShapeRenderNodeParamType);
+            assert(knob);
+            KnobChoicePtr typeChoice = toKnobChoice(knob);
+            assert(typeChoice);
+            typeChoice->setValue(1);
+        }
 
         if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
             {
@@ -278,14 +299,28 @@ RotoDrawableItem::createNodes(bool connectNodes)
     assert(_imp->mergeNode);
 
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
-        int maxInp = _imp->mergeNode->getMaxInputCount();
-        for (int i = 0; i < maxInp; ++i) {
-            if ( _imp->mergeNode->getEffectInstance()->isInputMask(i) ) {
-                //Connect this rotopaint node as a mask
-                bool ok = _imp->mergeNode->connectInput(node, i);
-                assert(ok);
-                Q_UNUSED(ok);
-                break;
+        // Create the mask plug-in
+
+        {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("Mask") );
+            CreateNodeArgs args( maskPluginID.toStdString(), NodeCollectionPtr() );
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+            _imp->maskNode = app->createNode(args);
+            if (!_imp->maskNode) {
+                throw std::runtime_error("Rotopaint requires the plug-in " + maskPluginID.toStdString() + " in order to work");
+            }
+            assert(_imp->maskNode);
+            {
+                // For masks set the output components to alpha
+                KnobIPtr knob = _imp->maskNode->getKnobByName(kRotoShapeRenderNodeParamOutputComponents);
+                assert(knob);
+                KnobChoicePtr typeChoice = toKnobChoice(knob);
+                assert(typeChoice);
+                typeChoice->setValue(1);
             }
         }
     }
@@ -330,21 +365,24 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     ///Attach this stroke to the underlying nodes used
     if (_imp->effectNode) {
-        _imp->effectNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->effectNode, node, thisShared);
+    }
+    if (_imp->maskNode) {
+        attachStrokeToNode(_imp->maskNode, node, thisShared);
     }
     if (_imp->mergeNode) {
-        _imp->mergeNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->mergeNode, node, thisShared);
     }
     if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->timeOffsetNode, node, thisShared);
     }
     if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->attachRotoItem(thisShared);
+        attachStrokeToNode(_imp->frameHoldNode, node, thisShared);
     }
 
 
     if (connectNodes) {
-        refreshNodesConnections();
+        refreshNodesConnections(false);
     }
 } // RotoDrawableItem::createNodes
 
@@ -365,6 +403,10 @@ RotoDrawableItem::disconnectNodes()
     if (_imp->effectNode) {
         _imp->effectNode->disconnectInput(0);
     }
+    if (_imp->maskNode) {
+        _imp->mergeNode->disconnectInput(_imp->maskNode);
+        _imp->maskNode->disconnectInput(0);
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->disconnectInput(0);
     }
@@ -379,6 +421,10 @@ RotoDrawableItem::deactivateNodes()
     if (_imp->effectNode) {
         _imp->effectNode->deactivate(std::list< NodePtr >(), true, false, false, false);
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->deactivate(std::list< NodePtr >(), true, false, false, false);
+    }
+
     if (_imp->mergeNode) {
         _imp->mergeNode->deactivate(std::list< NodePtr >(), true, false, false, false);
     }
@@ -397,6 +443,9 @@ RotoDrawableItem::activateNodes()
         _imp->effectNode->activate(std::list< NodePtr >(), false, false);
     }
     _imp->mergeNode->activate(std::list< NodePtr >(), false, false);
+    if (_imp->maskNode) {
+        _imp->maskNode->activate(std::list< NodePtr >(), false, false);
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->activate(std::list< NodePtr >(), false, false);
     }
@@ -550,7 +599,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
     }
 #endif
     else if (knob == _imp->sourceColor) {
-        refreshNodesConnections();
+        refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
     } else if (knob == _imp->effectStrength) {
         double strength = _imp->effectStrength->getValue();
         switch (type) {
@@ -585,7 +634,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
             offset->setValue(value);
         }
     } else if ( (knob == _imp->timeOffsetMode) && _imp->timeOffsetNode ) {
-        refreshNodesConnections();
+        refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
@@ -665,6 +714,9 @@ RotoDrawableItem::incrementNodesAge()
     if (_imp->effectNode) {
         _imp->effectNode->incrementKnobsAge();
     }
+    if (_imp->maskNode) {
+        _imp->maskNode->incrementKnobsAge();
+    }
     if (_imp->mergeNode) {
         _imp->mergeNode->incrementKnobsAge();
     }
@@ -694,6 +746,14 @@ RotoDrawableItem::getTimeOffsetNode() const
     return _imp->timeOffsetNode;
 }
 
+
+NodePtr
+RotoDrawableItem::getMaskNode() const
+{
+    return _imp->maskNode;
+}
+
+
 NodePtr
 RotoDrawableItem::getFrameHoldNode() const
 {
@@ -701,7 +761,27 @@ RotoDrawableItem::getFrameHoldNode() const
 }
 
 void
-RotoDrawableItem::refreshNodesConnections()
+RotoDrawableItem::clearPaintBuffers()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->maskNode) {
+        _imp->maskNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->setPaintBuffer(ImagePtr());
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->setPaintBuffer(ImagePtr());
+    }
+}
+
+void
+RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
 {
     RotoDrawableItemPtr previous = findPreviousInHierarchy();
     NodePtr rotoPaintInput =  getContext()->getNode()->getInput(0);
@@ -738,23 +818,31 @@ RotoDrawableItem::refreshNodesConnections()
                 effectInput = _imp->frameHoldNode;
             }
             if (_imp->effectNode->getInput(0) != effectInput) {
-                _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInputBase(effectInput, 0);
+                _imp->effectNode->replaceInput(effectInput, 0);
             }
-        }
-        /*
-         * This case handles: Stroke, Blur, Sharpen, Smear, Clone
-         */
-        if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
-            _imp->mergeNode->disconnectInput(1);
-            _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
         }
 
-        if (_imp->mergeNode->getInput(0) != upstreamNode) {
-            _imp->mergeNode->disconnectInput(0);
-            if (upstreamNode) {
-                _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+        if (!isTreeConcatenated) {
+            /*
+             * This case handles: Stroke, Blur, Sharpen, Smear, Clone
+             */
+            if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
+                _imp->mergeNode->replaceInput(_imp->effectNode, 1); // A
             }
+
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+                }
+            }
+
+
+
+        } else {
+            _imp->mergeNode->disconnectInput(0);
+            _imp->mergeNode->disconnectInput(1);
+            _imp->mergeNode->disconnectInput(2);
         }
 
 
@@ -774,8 +862,7 @@ RotoDrawableItem::refreshNodesConnections()
 
         if (revealInput) {
             if (effectInput->getInput(0) != revealInput) {
-                effectInput->disconnectInput(0);
-                effectInput->connectInputBase(revealInput, 0);
+                effectInput->replaceInput(revealInput, 0);
             }
         } else {
             if ( effectInput->getInput(0) ) {
@@ -844,6 +931,15 @@ RotoDrawableItem::refreshNodesConnections()
             assert(false);
         }
     } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
+
+
+    if (_imp->maskNode) {
+        if ( _imp->mergeNode->getInput(2) != _imp->maskNode) {
+            //Connect the merge node mask to the mask node
+            _imp->mergeNode->replaceInput(_imp->maskNode, 2);
+        }
+    }
+
 } // RotoDrawableItem::refreshNodesConnections
 
 void
@@ -853,6 +949,9 @@ RotoDrawableItem::resetNodesThreadSafety()
         _imp->effectNode->revertToPluginThreadSafety();
     }
     _imp->mergeNode->revertToPluginThreadSafety();
+    if (_imp->maskNode) {
+        _imp->maskNode->revertToPluginThreadSafety();
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->revertToPluginThreadSafety();
     }
@@ -1314,6 +1413,13 @@ RotoDrawableItem::getLifeTimeFrameKnob() const
 {
     return _imp->lifeTimeFrame;
 }
+
+KnobChoicePtr
+RotoDrawableItem::getFallOffRampTypeKnob() const
+{
+    return _imp->fallOffRampType;
+}
+
 
 KnobDoublePtr
 RotoDrawableItem::getMotionBlurAmountKnob() const

@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
+#include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/RotoItemSerialization.h"
 #include "Engine/RotoPoint.h"
@@ -81,13 +82,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -109,12 +103,9 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
 
 RotoStrokeItem::~RotoStrokeItem()
 {
-    for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-        if (_imp->strokeDotPatterns[i]) {
-            cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
-            _imp->strokeDotPatterns[i] = 0;
-        }
-    }
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+    RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
+#endif
     deactivateNodes();
 }
 
@@ -137,9 +128,13 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 {
     //Increment the half brush size so that the stroke is enclosed in the RoD
     halfBrushSize += 1.;
+    halfBrushSize = std::max(0.5, halfBrushSize);
+
+    bool bboxSet = false;
     if (bbox) {
-        bbox->setupInfinity();
+        bbox->clear();
     }
+
     if ( xCurve.empty() ) {
         return;
     }
@@ -184,89 +179,115 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             bbox->y1 = p.y;
             bbox->y2 = p.y;
             double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-            double padding = std::max(0.5, halfBrushSize) * pressure;
+            double padding = halfBrushSize * pressure;
             bbox->x1 -= padding;
             bbox->x2 += padding;
             bbox->y1 -= padding;
             bbox->y2 += padding;
+            bboxSet = true;
         }
 
-        return;
     }
 
-    double pressure = 0;
+    double pressure = 0.;
     for (;
          xNext != xCurve.end() && yNext != yCurve.end() && pNext != pCurve.end();
          ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
         assert( xIt != xCurve.end() && yIt != yCurve.end() && pIt != pCurve.end() );
 
-        double x1 = xIt->getValue();
-        double y1 = yIt->getValue();
-        double z1 = 1.;
-        double press1 = pIt->getValue();
-        double x2 = xNext->getValue();
-        double y2 = yNext->getValue();
-        double z2 = 1;
-        double press2 = pNext->getValue();
-        double dt = ( xNext->getTime() - xIt->getTime() );
-        double x1pr = x1 + dt * xIt->getRightDerivative() / 3.;
-        double y1pr = y1 + dt * yIt->getRightDerivative() / 3.;
-        double z1pr = 1.;
-        double press1pr = press1 + dt * pIt->getRightDerivative() / 3.;
-        double x2pl = x2 - dt * xNext->getLeftDerivative() / 3.;
-        double y2pl = y2 - dt * yNext->getLeftDerivative() / 3.;
-        double z2pl = 1;
-        double press2pl = press2 - dt * pNext->getLeftDerivative() / 3.;
-        Transform::matApply(transform, &x1, &y1, &z1);
-        Transform::matApply(transform, &x1pr, &y1pr, &z1pr);
-        Transform::matApply(transform, &x2pl, &y2pl, &z2pl);
-        Transform::matApply(transform, &x2, &y2, &z2);
+        double dt = xNext->getTime() - xIt->getTime();
+        double pressp0 = pIt->getValue();
+        double pressp3 = pNext->getValue();
+        double pressp1 = pressp0 + dt * pIt->getRightDerivative() / 3.;
+        double pressp2 = pressp3 - dt * pNext->getLeftDerivative() / 3.;
+
+        pressure = std::max(pressure, pressureAffectsSize ? std::max(pressp0, pressp3) : 1.);
+
+        Transform::Point3D p0, p1, p2, p3;
+        p0.z = p1.z = p2.z = p3.z = 1;
+        p0.x = xIt->getValue();
+        p0.y = yIt->getValue();
+        p1.x = p0.x + dt * xIt->getRightDerivative() / 3.;
+        p1.y = p0.y + dt * yIt->getRightDerivative() / 3.;
+        p3.x = xNext->getValue();
+        p3.y = yNext->getValue();
+        p2.x = p3.x - dt * xNext->getLeftDerivative() / 3.;
+        p2.y = p3.y - dt * yNext->getLeftDerivative() / 3.;
+
+
+        p0 = Transform::matApply(transform, p0);
+        p1 = Transform::matApply(transform, p1);
+        p2 = Transform::matApply(transform, p2);
+        p3 = Transform::matApply(transform, p3);
+
+
 
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
          */
         double dx1, dy1, dx2, dy2, dx3, dy3;
-        dx1 = x1pr - x1;
-        dy1 = y1pr - y1;
-        dx2 = x2pl - x1pr;
-        dy2 = y2pl - y1pr;
-        dx3 = x2 - x2pl;
-        dy3 = y2 - y2pl;
+        dx1 = p1.x - p0.x;
+        dy1 = p1.y - p0.y;
+        dx2 = p2.x - p1.x;
+        dy2 = p2.y - p1.y;
+        dx3 = p3.x - p2.x;
+        dy3 = p3.y - p2.y;
         double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-                        std::sqrt(dx2 * dx2 + dy2 * dy2) +
-                        std::sqrt(dx3 * dx3 + dy3 * dy3);
+        std::sqrt(dx2 * dx2 + dy2 * dy2) +
+        std::sqrt(dx3 * dx3 + dy3 * dy3);
         double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
         double incr = 1. / (double)(nbPointsPerSegment - 1);
 
-        pressure = std::max(pressure, pressureAffectsSize ? std::max(press1, press2) : 1.);
-
+        RectD pointBox;
+        bool pointBboxSet = false;
 
         for (int i = 0; i < nbPointsPerSegment; ++i) {
             double t = incr * i;
             Point p;
-            p.x = Bezier::bezierEval(x1, x1pr, x2pl, x2, t);
-            p.y = Bezier::bezierEval(y1, y1pr, y2pl, y2, t);
+            p.x = Bezier::bezierEval(p0.x, p1.x, p2.x, p3.x, t);
+            p.y = Bezier::bezierEval(p0.y, p1.y, p2.y, p3.y, t);
 
             if (bbox) {
-                bbox->x1 = std::min(p.x, bbox->x1);
-                bbox->x2 = std::max(p.x, bbox->x2);
-                bbox->y1 = std::min(p.y, bbox->y1);
-                bbox->y2 = std::max(p.y, bbox->y2);
+                if (!pointBboxSet) {
+                    pointBox.x1 = p.x;
+                    pointBox.x2 = p.x;
+                    pointBox.y1 = p.y;
+                    pointBox.y2 = p.y;
+                    pointBboxSet = true;
+                } else {
+                    pointBox.x1 = std::min(p.x, pointBox.x1);
+                    pointBox.x2 = std::max(p.x, pointBox.x2);
+                    pointBox.y1 = std::min(p.y, pointBox.y1);
+                    pointBox.y2 = std::max(p.y, pointBox.y2);
+
+                }
             }
 
-            double pi = Bezier::bezierEval(press1, press1pr, press2pl, press2, t);
+            double pi = Bezier::bezierEval(pressp0, pressp1, pressp2, pressp3, t);
             p.x /= pot;
             p.y /= pot;
             points->push_back( std::make_pair(p, pi) );
         }
+
+        double padding = halfBrushSize * pressure;
+        pointBox.x1 -= padding;
+        pointBox.x2 += padding;
+        pointBox.y1 -= padding;
+        pointBox.y2 += padding;
+
+        
+        if (bbox) {
+            if (!bboxSet) {
+                bboxSet = true;
+                *bbox = pointBox;
+            } else {
+                bbox->merge(pointBox);
+            }
+        }
+
+
     } // for (; xNext != xCurve.end() ;++xNext, ++yNext, ++pNext) {
-    if (bbox) {
-        double padding = std::max(0.5, halfBrushSize) * pressure;
-        bbox->x1 -= padding;
-        bbox->x2 += padding;
-        bbox->y1 -= padding;
-        bbox->y2 += padding;
-    }
+
 } // evaluateStrokeInternal
 
 bool
@@ -284,18 +305,15 @@ RotoStrokeItem::setStrokeFinished()
         QMutexLocker k(&itemMutex);
         _imp->finished = true;
 
-        for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-            if (_imp->strokeDotPatterns[i]) {
-                cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
-                _imp->strokeDotPatterns[i] = 0;
-            }
-        }
-        _imp->strokeDotPatterns.clear();
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+        RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
+#endif
     }
 
     resetTransformCenter();
 
     NodePtr effectNode = getEffectNode();
+    NodePtr maskNode = getMaskNode();
     NodePtr mergeNode = getMergeNode();
     NodePtr timeOffsetNode = getTimeOffsetNode();
     NodePtr frameHoldNode = getFrameHoldNode();
@@ -313,6 +331,10 @@ RotoStrokeItem::setStrokeFinished()
     if (frameHoldNode) {
         frameHoldNode->setWhileCreatingPaintStroke(false);
         frameHoldNode->incrementKnobsAge();
+    }
+    if (maskNode) {
+        maskNode->setWhileCreatingPaintStroke(false);
+        maskNode->incrementKnobsAge();
     }
 
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(false);
@@ -467,9 +489,10 @@ RotoStrokeItem::appendPoint(bool newStroke,
         }
         // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
         // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
-        stroke->xCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
-        stroke->yCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
-        stroke->pressureCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
+        KeyframeTypeEnum interpolation = _imp->type == eRotoStrokeTypeSmear ? eKeyframeTypeFree : eKeyframeTypeCatmullRom;
+        stroke->xCurve->setKeyFrameInterpolation(interpolation, ki);
+        stroke->yCurve->setKeyFrameInterpolation(interpolation, ki);
+        stroke->pressureCurve->setKeyFrameInterpolation(interpolation, ki);
     } // QMutexLocker k(&itemMutex);
 
 
@@ -521,16 +544,32 @@ RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
 std::vector<cairo_pattern_t*>
 RotoStrokeItem::getPatternCache() const
 {
-    assert( !_imp->strokeDotPatternsMutex.tryLock() );
-
+    _imp->strokeDotPatternsMutex.lock();
     return _imp->strokeDotPatterns;
 }
 
 void
 RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
 {
-    assert( !_imp->strokeDotPatternsMutex.tryLock() );
     _imp->strokeDotPatterns = cache;
+    _imp->strokeDotPatternsMutex.unlock();
+}
+
+void
+RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext)
+{
+    QMutexLocker k(&itemMutex);
+    _imp->drawingGlGpuContext = gpuContext;
+    _imp->drawingGlCpuContext = cpuContext;
+}
+
+
+void
+RotoStrokeItem::getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const
+{
+    QMutexLocker k(&itemMutex);
+    *gpuContext = _imp->drawingGlGpuContext.lock();
+    *cpuContext = _imp->drawingGlCpuContext.lock();
 }
 
 RectD
@@ -548,6 +587,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
                                                    std::list<std::pair<Point, double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,
+                                                   bool *isStrokeFirstTick,
                                                    int* newAge,
                                                    int* strokeIndex)
 {
@@ -561,6 +601,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         QMutexLocker k(&itemMutex);
         *wholeStrokeBbox = _imp->wholeStrokeBboxWhilePainting;
     }
+    *isStrokeFirstTick = false;
 
     QMutexLocker k(&itemMutex);
     assert( !_imp->strokes.empty() );
@@ -601,6 +642,11 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         *wholeStrokeBbox = computeBoundingBoxInternal(time);
     }
 
+
+    if (lastAge == -1) {
+        *isStrokeFirstTick = true;
+    }
+
     KeyFrameSet xCurve = stroke->xCurve->getKeyFrames_mt_safe();
     KeyFrameSet yCurve = stroke->yCurve->getKeyFrames_mt_safe();
     KeyFrameSet pCurve = stroke->pressureCurve->getKeyFrames_mt_safe();
@@ -616,6 +662,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         return false;
     }
 
+
     KeyFrameSet realX, realY, realP;
     KeyFrameSet::iterator xIt = xCurve.begin();
     KeyFrameSet::iterator yIt = yCurve.begin();
@@ -625,7 +672,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     std::advance(pIt, lastAge);
     *newAge = (int)xCurve.size() - 1;
 
-    if ( lastAge != (int)(xCurve.size() - 1) ) {
+    if ( lastAge < (int)xCurve.size() ) {
         for (; xIt != xCurve.end(); ++xIt, ++yIt, ++pIt) {
             realX.insert(*xIt);
             realY.insert(*yIt);
@@ -755,14 +802,18 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     bool bboxSet = false;
     double halfBrushSize = getBrushSizeKnob()->getValueAtTime(time) / 2. + 1;
+    halfBrushSize = std::max(0.5, halfBrushSize);
 
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         KeyFrameSet xCurve = it->xCurve->getKeyFrames_mt_safe();
         KeyFrameSet yCurve = it->yCurve->getKeyFrames_mt_safe();
         KeyFrameSet pCurve = it->pressureCurve->getKeyFrames_mt_safe();
 
+        RectD curveBox;
+        bool curveBoxSet = false;
+
         if ( xCurve.empty() ) {
-            return RectD();
+            continue;
         }
 
         assert( xCurve.size() == yCurve.size() && xCurve.size() == pCurve.size() );
@@ -784,26 +835,20 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
             p.z = 1.;
             p = Transform::matApply(transform, p);
             double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-            RectD subBox;
-            subBox.x1 = p.x;
-            subBox.x2 = p.x;
-            subBox.y1 = p.y;
-            subBox.y2 = p.y;
-            subBox.x1 -= halfBrushSize * pressure;
-            subBox.x2 += halfBrushSize * pressure;
-            subBox.y1 -= halfBrushSize * pressure;
-            subBox.y2 += halfBrushSize * pressure;
-            if (!bboxSet) {
-                bboxSet = true;
-                bbox = subBox;
-            } else {
-                bbox.merge(subBox);
-            }
+            curveBox.x1 = p.x;
+            curveBox.x2 = p.x;
+            curveBox.y1 = p.y;
+            curveBox.y2 = p.y;
+            curveBox.x1 -= halfBrushSize * pressure;
+            curveBox.x2 += halfBrushSize * pressure;
+            curveBox.y1 -= halfBrushSize * pressure;
+            curveBox.y2 += halfBrushSize * pressure;
+            curveBoxSet = true;
         }
 
+
         for (; xNext != xCurve.end(); ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
-            RectD subBox;
-            subBox.setupInfinity();
+
 
             double dt = xNext->getTime() - xIt->getTime();
             double pressure = pressureAffectsSize ? std::max( pIt->getValue(), pNext->getValue() ) : 1.;
@@ -830,19 +875,31 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
             p2_.x = p2.x; p2_.y = p2.y;
             p3_.x = p3.x; p3_.y = p3.y;
 
-            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &subBox);
-            subBox.x1 -= halfBrushSize * pressure;
-            subBox.x2 += halfBrushSize * pressure;
-            subBox.y1 -= halfBrushSize * pressure;
-            subBox.y2 += halfBrushSize * pressure;
+            RectD pointBox;
+            bool pointBoxSet = false;
+            Bezier::bezierPointBboxUpdate(p0_, p1_, p2_, p3_, &pointBox, &pointBoxSet);
+            pointBox.x1 -= halfBrushSize * pressure;
+            pointBox.x2 += halfBrushSize * pressure;
+            pointBox.y1 -= halfBrushSize * pressure;
+            pointBox.y2 += halfBrushSize * pressure;
 
-            if (!bboxSet) {
-                bboxSet = true;
-                bbox = subBox;
+            if (!curveBoxSet) {
+                curveBoxSet = true;
+                curveBox = pointBox;
             } else {
-                bbox.merge(subBox);
+                curveBox.merge(pointBox);
             }
+
         }
+
+        assert(curveBoxSet);
+        if (!bboxSet) {
+            bboxSet = true;
+            bbox = curveBox;
+        } else {
+            bbox.merge(curveBox);
+        }
+
     }
 
     return bbox;
@@ -929,7 +986,9 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
                 bboxSet = true;
             }
         }
-        strokes->push_back(points);
+        if (!points.empty()) {
+            strokes->push_back(points);
+        }
     }
 }
 

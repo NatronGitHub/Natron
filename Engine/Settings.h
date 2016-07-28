@@ -371,6 +371,8 @@ public:
 
     bool isOpenGLRenderingEnabled() const;
 
+    GLRendererID getOpenGLCPUDriver() const;
+
     int getMaxOpenGLContexts() const;
 
     bool isDriveLetterToUNCPathConversionEnabled() const;
@@ -445,6 +447,7 @@ private:
     KnobPagePtr _gpuPage;
     KnobStringPtr _openglRendererString;
     KnobChoicePtr _availableOpenGLRenderers;
+    KnobChoicePtr _osmesaRenderers;
     KnobIntPtr _nOpenGLContexts;
     KnobChoicePtr _enableOpenGL;
 

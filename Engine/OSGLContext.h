@@ -31,32 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-//========================================================================
-// GLFW 3.2 - www.glfw.org
-//------------------------------------------------------------------------
-// Copyright (c) 2002-2006 Marcus Geelnard
-// Copyright (c) 2006-2010 Camilla Berglund <elmindreda@elmindreda.org>
-//
-// This software is provided 'as-is', without any express or implied
-// warranty. In no event will the authors be held liable for any damages
-// arising from the use of this software.
-//
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-//
-// 1. The origin of this software must not be misrepresented; you must not
-//    claim that you wrote the original software. If you use this software
-//    in a product, an acknowledgment in the product documentation would
-//    be appreciated but is not required.
-//
-// 2. Altered source versions must be plainly marked as such, and must not
-//    be misrepresented as being the original software.
-//
-// 3. This notice may not be removed or altered from any source
-//    distribution.
-//
-//========================================================================
+
 
 #include <cstddef>
 #include <string>
@@ -69,71 +44,12 @@
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Engine/OSGLFramebufferConfig.h"
+#include "Engine/GLShader.h"
 #include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
-
-/* @brief Framebuffer configuration.
- *
- *  This describes buffers and their sizes.  It also contains
- *  a platform-specific ID used to map back to the backend API object.
- *
- *  It is used to pass framebuffer parameters from shared code to the platform
- *  API and also to enumerate and select available framebuffer configs.
- */
-class FramebufferConfig
-{
-public:
-
-    static const int ATTR_DONT_CARE = -1;
-    int redBits;
-    int greenBits;
-    int blueBits;
-    int alphaBits;
-    int depthBits;
-    int stencilBits;
-    int accumRedBits;
-    int accumGreenBits;
-    int accumBlueBits;
-    int accumAlphaBits;
-    int auxBuffers;
-    GLboolean stereo;
-    int samples;
-    GLboolean sRGB;
-    GLboolean doublebuffer;
-    uintptr_t handle;
-
-    FramebufferConfig();
-};
-
-class GLRendererID
-{
-public:
-    int renderID;
-
-    // wgl NV extension use handles and not integers
-    void* rendererHandle;
-
-    GLRendererID()
-        : renderID(-1)
-        , rendererHandle(0) {}
-
-    explicit GLRendererID(int id) : renderID(id), rendererHandle(0) {}
-
-    explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
-};
-
-class OpenGLRendererInfo
-{
-public:
-    std::size_t maxMemBytes;
-    std::string rendererName;
-    std::string vendorName;
-    std::string glVersionString;
-    int maxTextureSize;
-    GLRendererID rendererID;
-};
 
 /**
  * @brief This class encapsulates a cross-platform OpenGL context used for offscreen rendering.
@@ -151,8 +67,9 @@ public:
      **/
     explicit OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
-                         int major = GLVersion.major,
-                         int minor = GLVersion.minor,
+                         bool useGPUContext,
+                         int major = -1,
+                         int minor = -1,
                          const GLRendererID& rendererID = GLRendererID(),
                          bool coreProfile = false);
 
@@ -163,31 +80,48 @@ public:
      * it fails by throwing an exception with the required version.
      * Note: the context must be made current before calling this function
      **/
-    static void checkOpenGLVersion();
+    static void checkOpenGLVersion(bool gpuAPI);
+
+    /**
+     * @brief Returns whether this is a GPU or CPU OpenGL context
+     **/
+    bool isGPUContext() const;
+
+    /**
+     * @brief Returns minimum of GL_MAX_TEXTURE_SIZE (and  OSMESA_MAX_WIDTH/OSMESA_MAX_HEIGHT on OSMesa)
+     * Context needs to be bound.
+     **/
+    int getMaxOpenGLWidth();
+    int getMaxOpenGLHeight();
 
 
-    GLuint getPBOId() const;
+    unsigned int getOrCreatePBOId();
 
-    GLuint getFBOId() const;
+    unsigned int getOrCreateFBOId();
+
 
     // Helper functions used by platform dependent implementations
     static bool stringInExtensionString(const char* string, const char* extensions);
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);
 
+    GLShaderBasePtr getOrCreateCopyTexShader();
 
-    /**
-     * @brief Returns one of the built-in shaders, used in the Image class.
-     * Note: this context must be made current before calling this function
-     **/
-    boost::shared_ptr<GLShader> getOrCreateFillShader();
-    boost::shared_ptr<GLShader> getOrCreateMaskMixShader(bool maskEnabled);
-    boost::shared_ptr<GLShader> getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
+    GLShaderBasePtr getOrCreateFillShader();
+
+    GLShaderBasePtr getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert);
+
+    GLShaderBasePtr getOrCreateCopyUnprocessedChannelsShader(bool doR,
+                                                             bool doG,
+                                                             bool doB,
+                                                             bool doA);
 
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
      **/
-    void setContextCurrentNoRender();
-    static void unsetCurrentContextNoRender();
+    void setContextCurrentNoRender(int width = 0, int height = 0, int rowWidth = 0, void* buffer = 0);
+    void unsetCurrentContextNoRender(bool useGPU);
+
+    static void unsetCurrentContextNoRenderInternal(bool useGPU, const OSGLContext* context);
 
     /**
      * @brief Returns all renderers capable of rendering OpenGL
@@ -204,11 +138,30 @@ private:
      *
      *  @thread_safety This function may be called from any thread.
      */
-    void setContextCurrent(const AbortableRenderInfoPtr& render
+    void setContextCurrent_GPU(const AbortableRenderInfoPtr& render
 #ifdef DEBUG
                            , double frameTime
 #endif
                            );
+
+
+    void setContextCurrent_CPU(const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                               , double frameTime
+#endif
+                               , int width
+                               , int height
+                               , int rowWidth
+                               , void* buffer);
+
+    void setContextCurrentInternal(const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                                   , double frameTime
+#endif
+                                   , int width
+                                   , int height
+                                   , int rowWidth
+                                   , void* buffer);
 
     /**
      * @brief Releases the OpenGL context from this thread.
@@ -233,8 +186,14 @@ class OSGLContextAttacher
     double _frameTime;
 #endif
     bool _attached;
+    int _width, _height, _rowWidth;
+    void* _buffer;
+
 public:
 
+    /**
+     * @brief Locks the given context to this render. The context MUST be a GPU OpenGL context.
+     **/
     OSGLContextAttacher(const OSGLContextPtr& c,
                         const AbortableRenderInfoPtr& render
 #ifdef DEBUG
@@ -248,18 +207,62 @@ public:
     , _frameTime(frameTime)
 #endif
     , _attached(false)
+    , _width(0)
+    , _height(0)
+    , _buffer(0)
     {
+        assert(c);
+    }
 
+    /**
+     * @brief Locks the given context to this render. The context MUST be a CPU OpenGL context.
+     **/
+    OSGLContextAttacher(const OSGLContextPtr& c,
+                        const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                        ,
+                        double frameTime
+#endif
+                        , int width, int height, int rowWidth, void* buffer
+    )
+    : _c(c)
+    , _a(render)
+#ifdef DEBUG
+    , _frameTime(frameTime)
+#endif
+    , _attached(false)
+    , _width(width)
+    , _height(height)
+    , _rowWidth(rowWidth)
+    , _buffer(buffer)
+    {
+        assert(c);
+    }
+
+    OSGLContextPtr getContext() const
+    {
+        return _c;
     }
 
     void attach()
     {
         if (!_attached) {
-            _c->setContextCurrent(_a.lock()
+            if (!_c->isGPUContext()) {
+                _c->setContextCurrent_CPU(_a.lock()
 #ifdef DEBUG
-                                 , _frameTime
+                                          , _frameTime
 #endif
-                                 );
+                                          , _width
+                                          , _height
+                                          , _rowWidth
+                                          , _buffer);
+            } else {
+                _c->setContextCurrent_GPU(_a.lock()
+#ifdef DEBUG
+                                          , _frameTime
+#endif
+                                          );
+            }
             _attached = true;
         }
     }
