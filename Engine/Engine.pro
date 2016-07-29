@@ -349,8 +349,6 @@ HEADERS += \
     OSGLContext_win.h \
     OSGLContext_x11.h \
     OSGLFunctions.h \
-    OSGLFunctions_gl.h \
-    OSGLFunctions_mesa.h \
     OSGLFramebufferConfig.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
