@@ -688,7 +688,7 @@ ViewerNode::initializeKnobs()
         param->setHintToolTip(tr(kViewerNodeParamZoomHint));
         param->setSecretByDefault(true);
         param->setMissingEntryWarningEnabled(false);
-        param->setIsPersistant(false);
+        param->setIsPersistent(false);
         {
             std::vector<std::string> entries;
             entries.push_back("Fit");
@@ -864,7 +864,7 @@ ViewerNode::initializeKnobs()
         // Do not set evaluate on change, trigger the render ourselves in knobChance
         // We do this so that we can set down/up the button during render to give feedback to the user without triggering a new render
         param->setEvaluateOnChange(false);
-        param->setIsPersistant(false);
+        param->setIsPersistent(false);
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);

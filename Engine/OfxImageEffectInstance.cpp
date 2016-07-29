@@ -619,7 +619,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     //knob->setName(paramName);
     knob->setEvaluateOnChange( descriptor.getEvaluateOnChange() );
 
-    bool persistent = descriptor.getIsPersistent();
+    bool persistent = descriptor.getIsPersistant();
     if (!paramShouldBePersistent) {
         persistent = false;
     }
