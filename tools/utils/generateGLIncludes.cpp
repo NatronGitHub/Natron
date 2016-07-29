@@ -135,30 +135,18 @@ struct FunctionSignature {
     QStringList parameters;
 };
 
-static void writeTemplateIncludeStart( const QString& baseFileName, const QString& defineVal, QTextStream& ts)
-{
-    ts << "/*THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h, DO NOT EDIT*/\n\n\n\n";
-    ts << "#ifndef " << defineVal << "\n";
-    ts << "#define " << defineVal << "\n\n";
-    ts << "#include \"" << baseFileName << ".h\"\n";
-    ts << "\n\n\n";
 
-}
-
-static void writeImplementationHeaderFile(const QString& namespaceName, const QString& baseFileName, const std::list<FunctionSignature>& functions, const QString& path, const QString &API, bool templateValue, bool includeDebug)
+static void writeImplementationCppFile(const QString& namespaceName, const QString& baseFileName, const std::list<FunctionSignature>& functions, const QString& path, const QString &API, bool templateValue, bool includeDebug)
 {
-    QString outputHeaderFilename = path + "/" + baseFileName + "_" + API + ".h";
-    QFile of(outputHeaderFilename);
+    QString outputFilename = path + "/" + baseFileName + "_" + API + ".cpp";
+    QFile of(outputFilename);
     if (!of.open(QIODevice::WriteOnly)) {
-        std::cout << "Could not open " << outputHeaderFilename.toStdString() << std::endl;
+        std::cout << "Could not open " << outputFilename.toStdString() << std::endl;
         throw std::runtime_error("");
     }
     QTextStream ots(&of);
-
-    QString defineVal = QString("OSGLFUNCTIONS_") + API + "_H";
-
-    writeTemplateIncludeStart(baseFileName, defineVal, ots);
-
+    ots << "/*THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h, DO NOT EDIT*/\n\n\n\n";
+    ots << "#include \"" << baseFileName << ".h\"\n\n";
     if (!templateValue) {
         ots << "#ifdef HAVE_OSMESA\n\n";
         ots << "#include <GL/gl_mangle.h>\n";
@@ -185,8 +173,9 @@ static void writeImplementationHeaderFile(const QString& namespaceName, const QS
         ots << "\n\n";
     }
 
-    ots << "namespace " << namespaceName <<" {\n\n";
+    ots << "namespace " << namespaceName << " {\n\n";
 
+    // Write the load functions
     ots << "template <>\n";
     ots << "void OSGLFunctions<";
     if (templateValue) {
@@ -222,23 +211,6 @@ static void writeImplementationHeaderFile(const QString& namespaceName, const QS
     ots << "} // load_functions \n\n";
 
 
-
-    ots << "} // namespace " << namespaceName << " \n\n";
-    ots << "#endif // " << defineVal << "\n";
-}
-
-static void writeImplementationCppFile(const QString& namespaceName, const QString& baseFileName, const QString& path, const QString &API, bool templateValue)
-{
-    QString outputFilename = path + "/" + baseFileName + "_" + API + ".cpp";
-    QFile of(outputFilename);
-    if (!of.open(QIODevice::WriteOnly)) {
-        std::cout << "Could not open " << outputFilename.toStdString() << std::endl;
-        throw std::runtime_error("");
-    }
-    QTextStream ots(&of);
-    ots << "/*THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h, DO NOT EDIT*/\n\n\n\n";
-    ots << "#include \"" << baseFileName << "_" << API << ".h\"\n\n\n";
-    ots << "namespace " << namespaceName << " {\n\n";
     ots << "template class OSGLFunctions<";
     if (templateValue) {
         ots << "true";
@@ -487,10 +459,8 @@ int main(int argc, char** argv)
 
     writeFooter(ots_header);
 
-    writeImplementationHeaderFile(namespaceName, baseFilename, signatures, absoluteDirPath, "gl", true, supportGladDebug);
-    writeImplementationCppFile(namespaceName, baseFilename, absoluteDirPath, "gl", true);
-    writeImplementationHeaderFile(namespaceName, baseFilename, signatures, absoluteDirPath, "mesa", false, supportGladDebug);
-    writeImplementationCppFile(namespaceName, baseFilename, absoluteDirPath, "mesa", false);
+    writeImplementationCppFile(namespaceName, baseFilename, signatures, absoluteDirPath, "gl", true, supportGladDebug);
+    writeImplementationCppFile(namespaceName, baseFilename, signatures, absoluteDirPath, "mesa", false, supportGladDebug);
 
 
 

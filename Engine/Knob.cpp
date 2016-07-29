@@ -259,7 +259,7 @@ struct KnobHelperPrivate
     bool CanUndo;
     QMutex evaluateOnChangeMutex;
     bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
-    bool IsPersistant; //will it be serialized?
+    bool IsPersistent; //will it be serialized?
     std::string tooltipHint;
     bool hintIsMarkdown;
     bool isAnimationEnabled;
@@ -350,7 +350,7 @@ struct KnobHelperPrivate
         , CanUndo(true)
         , evaluateOnChangeMutex()
         , evaluateOnChange(true)
-        , IsPersistant(true)
+        , IsPersistent(true)
         , tooltipHint()
         , hintIsMarkdown(false)
         , isAnimationEnabled(true)
@@ -620,7 +620,7 @@ KnobHelper::populate()
         _imp->evaluateOnChange = false;
     }
     if (isSep) {
-        _imp->IsPersistant = false;
+        _imp->IsPersistent = false;
     }
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
@@ -3121,15 +3121,15 @@ KnobHelper::setEvaluateOnChange(bool b)
 }
 
 bool
-KnobHelper::getIsPersistant() const
+KnobHelper::getIsPersistent() const
 {
-    return _imp->IsPersistant;
+    return _imp->IsPersistent;
 }
 
 void
-KnobHelper::setIsPersistant(bool b)
+KnobHelper::setIsPersistent(bool b)
 {
-    _imp->IsPersistant = b;
+    _imp->IsPersistent = b;
 }
 
 void
@@ -3456,8 +3456,8 @@ KnobHelper::slaveToInternal(int dimension,
         //For buttons, don't evaluate or the instanceChanged action of the button will be called,
         //just refresh the hasModifications flag so it gets serialized
         isBtn->computeHasModifications();
-        //force the aliased parameter to be persistant if it's not, otherwise it will not be saved
-        isBtn->setIsPersistant(true);
+        //force the aliased parameter to be persistent if it's not, otherwise it will not be saved
+        isBtn->setIsPersistent(true);
     }
 
     ///Register this as a listener of the master

@@ -1814,9 +1814,9 @@ Node::loadKnob(const KnobIPtr & knob,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
             found = true;
-            // don't load the value if the Knob is not persistant! (it is just the default value in this case)
+            // don't load the value if the Knob is not persistent! (it is just the default value in this case)
             ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
-            //if ( knob->getIsPersistant() ) {
+            //if ( knob->getIsPersistent() ) {
             KnobIPtr serializedKnob = (*it)->getKnob();
 
             // A knob might change its type between versions, do not load it
@@ -2328,7 +2328,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 page->addKnob(knob);
             }
 
-            knob->setIsPersistant( isRegular->isPersistent() );
+            knob->setIsPersistent( isRegular->isPersistent() );
             knob->setAnimationEnabled( isRegular->isAnimationEnabled() );
             knob->setEvaluateOnChange( isRegular->getEvaluatesOnChange() );
             knob->setName( isRegular->getName() );
@@ -3372,7 +3372,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     hideInputs->setDefaultValue(false);
     hideInputs->setAnimationEnabled(false);
     hideInputs->setAddNewLine(false);
-    hideInputs->setIsPersistant(true);
+    hideInputs->setIsPersistent(true);
     hideInputs->setEvaluateOnChange(false);
     hideInputs->setHintToolTip( tr("When checked, the input arrows of the node in the nodegraph will be hidden") );
     _imp->hideInputs = hideInputs;
@@ -3384,7 +3384,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     fCaching->setDefaultValue(false);
     fCaching->setAnimationEnabled(false);
     fCaching->setAddNewLine(false);
-    fCaching->setIsPersistant(true);
+    fCaching->setIsPersistent(true);
     fCaching->setEvaluateOnChange(false);
     fCaching->setHintToolTip( tr("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
                                  "images.") );
@@ -3397,7 +3397,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     previewEnabled->setName(kEnablePreviewKnobName);
     previewEnabled->setAnimationEnabled(false);
     previewEnabled->setAddNewLine(false);
-    previewEnabled->setIsPersistant(false);
+    previewEnabled->setIsPersistent(false);
     previewEnabled->setEvaluateOnChange(false);
     previewEnabled->setHintToolTip( tr("Whether to show a preview on the node box in the node-graph.") );
     settingsPage->addKnob(previewEnabled);
@@ -3560,7 +3560,7 @@ Node::createInfoPage()
     KnobStringPtr nodeInfos = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
     nodeInfos->setName("nodeInfos");
     nodeInfos->setAnimationEnabled(false);
-    nodeInfos->setIsPersistant(false);
+    nodeInfos->setIsPersistent(false);
     nodeInfos->setAsMultiLine();
     nodeInfos->setAsCustomHTMLText(true);
     nodeInfos->setEvaluateOnChange(false);
@@ -3868,7 +3868,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         premultWarning->setSecretByDefault(true);
         premultWarning->setAsLabel();
         premultWarning->setEvaluateOnChange(false);
-        premultWarning->setIsPersistant(false);
+        premultWarning->setIsPersistent(false);
         premultWarning->setHintToolTip( tr("The alpha checkbox is checked and the RGB "
                                            "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
                                            "may be incorrect because the alpha channel changed but their value did not. "
@@ -9279,7 +9279,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     const KnobsVec & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant() ) {
+        if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistent() ) {
             continue;
         }
         if ( !knobs[i]->canAnimate() ) {

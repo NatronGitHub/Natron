@@ -48,7 +48,7 @@ ProjectSerialization::initialize(const Project* project)
         KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
         KnobPagePtr isPage = toKnobPage(knobs[i]);
         KnobButtonPtr isButton = toKnobButton(knobs[i]);
-        if ( knobs[i]->getIsPersistant() &&
+        if ( knobs[i]->getIsPersistent() &&
              !isGroup && !isPage && !isButton &&
              knobs[i]->hasModificationsForSerialization() ) {
             KnobSerializationPtr newKnobSer( new KnobSerialization(knobs[i]) );

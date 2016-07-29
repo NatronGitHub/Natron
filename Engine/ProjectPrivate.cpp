@@ -137,7 +137,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             for (std::list<KnobSerializationPtr>::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
                 if ( (*it)->getName() == projectKnobs[i]->getName() ) {
                     ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
-                    //if ( projectKnobs[i]->getIsPersistant() ) {
+                    //if ( projectKnobs[i]->getIsPersistent() ) {
 
                     KnobChoicePtr isChoice = toKnobChoice(projectKnobs[i]);
                     if (isChoice) {

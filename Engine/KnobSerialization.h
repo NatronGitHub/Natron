@@ -783,7 +783,7 @@ public:
         _label = knob->getLabel();
         _triggerNewLine = knob->isNewLineActivated();
         _evaluatesOnChange = knob->getEvaluateOnChange();
-        _isPersistent = knob->getIsPersistant();
+        _isPersistent = knob->getIsPersistent();
         _animationEnabled = knob->isAnimationEnabled();
         _tooltip = knob->getHintToolTip();
 

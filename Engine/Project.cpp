@@ -930,7 +930,7 @@ Project::initializeKnobs()
 
     _imp->projectName = AppManager::createKnob<KnobString>( shared_from_this(), tr("Project Name") );
     _imp->projectName->setName("projectName");
-    _imp->projectName->setIsPersistant(false);
+    _imp->projectName->setIsPersistent(false);
 //    _imp->projectName->setAsLabel();
     _imp->projectName->setDefaultEnabled(0, false);
     _imp->projectName->setAnimationEnabled(false);
@@ -939,7 +939,7 @@ Project::initializeKnobs()
 
     _imp->projectPath = AppManager::createKnob<KnobString>( shared_from_this(), tr("Project path") );
     _imp->projectPath->setName("projectPath");
-    _imp->projectPath->setIsPersistant(false);
+    _imp->projectPath->setIsPersistent(false);
     _imp->projectPath->setAnimationEnabled(false);
     _imp->projectPath->setDefaultEnabled(0, false);
     // _imp->projectPath->setAsLabel();
