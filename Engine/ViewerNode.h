@@ -40,15 +40,13 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
-
 struct ViewerNodePrivate;
 class ViewerNode
     : public NodeGroup
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private: // derives from EffectInstance
     // TODO: enable_shared_from_this
@@ -62,20 +60,74 @@ public:
         return boost::dynamic_pointer_cast<ViewerNode>(KnobHolder::shared_from_this());
     }
 
+    ViewerInstancePtr getInternalViewerNode() const;
+
     virtual ~ViewerNode();
 
-    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
-
-    ///Called upon node creation and then never changed
+    // Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
 
+    /**
+     * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when
+     * the node is deleted.
+     **/
+    void invalidateUiContext();
+
+    void refreshViewsKnobVisibility();
+    
+    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
+
+    NodePtr getCurrentAInput() const;
+
+    NodePtr getCurrentBInput() const;
+
+    ViewerCompositingOperatorEnum getCurrentOperator() const;
+
+    void connectInputToIndex(int groupInputIndex, int internalInputIndex);
+
+    void setPickerEnabled(bool enabled);
+
+    void setCurrentView(ViewIdx view);
+
+    virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
+
+    void setZoomComboBoxText(const std::string& text);
+
+    void setDisplayChannels(int index, bool setBoth);
+
+    void setRefreshButtonDown(bool down);
+
+    bool isViewersSynchroEnabled() const;
+
+    void setViewersSynchroEnabled(bool enabled);
+
+    bool isLeftToolbarVisible() const;
+
+    bool isTopToolbarVisible() const;
+
+    bool isClipToProjectEnabled() const;
+
+    double getWipeAmount() const;
+
+    double getWipeAngle() const;
+
+    QPointF getWipeCenter() const;
+
+    void resetWipe(); 
+
+    bool isCheckerboardEnabled() const;
+
+    bool isUserRoIEnabled() const;
+
+    bool isOverlayEnabled() const;
+
+    bool isFullFrameProcessingEnabled() const;
+
+    double getGain() const;
+
+    double getGamma() const;
+
     virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
-
-
-    virtual bool isOutput() const OVERRIDE FINAL
-    {
-        return true;
-    }
 
     virtual int getMajorVersion() const OVERRIDE FINAL
     {
@@ -92,174 +144,45 @@ public:
         return PLUGINID_NATRON_VIEWER_GROUP;
     }
 
-    virtual std::string getPluginLabel() const OVERRIDE FINAL
-    {
-        return "Viewer";
-    }
+    virtual std::string getPluginLabel() const OVERRIDE FINAL;
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL
-    {
-        return "The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree.";
-    }
 
+    virtual std::string getPluginDescription() const OVERRIDE FINAL;
 
-    /**
-     * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when
-     * the node is deleted.
-     **/
-    void invalidateUiContext();
-
-    void aboutToUpdateTextures();
-
-    void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
-
-    virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
-
-    /**
-     *@brief Bypasses the cache so the next frame will be rendered fully
-     **/
-    void forceFullComputationOnNextFrame();
-    virtual void clearLastRenderedImage() OVERRIDE FINAL;
-
-    void disconnectViewer();
-
-    void disconnectTexture(int index, bool clearRod);
-
-    int getLutType() const WARN_UNUSED_RETURN;
-
-    double getGain() const WARN_UNUSED_RETURN;
-
-    int getMipMapLevel() const WARN_UNUSED_RETURN;
-
-    int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
-
-    DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
-
-    void setFullFrameProcessingEnabled(bool fullFrame);
-    bool isFullFrameProcessingEnabled() const;
-
-    bool isLatestRender(int textureIndex, U64 renderAge) const;
-
-
-    void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
-
-    void setActiveLayer(const ImageComponents& layer, bool doRender);
-
-    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
-
-    bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
-
-    void onAutoContrastChanged(bool autoContrast, bool refresh);
-
-    /**
-     * @brief Returns the current view, MT-safe
-     **/
-    ViewIdx getViewerCurrentView() const;
-
-    void onGainChanged(double exp);
-
-    void onGammaChanged(double value);
-
-    double getGamma() const WARN_UNUSED_RETURN;
-
-    void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
-
-    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-
-    void getActiveInputs(int & a, int &b) const;
-
-    void setInputA(int inputNb);
-
-    void setInputB(int inputNb);
-
-    int getLastRenderedTime() const;
-
-    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
-    TimeLinePtr getTimeline() const;
-
-    void getTimelineBounds(int* first, int* last) const;
-
-    static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
-    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
-
-    bool isViewerUIVisible() const;
-
-    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
-
-    float interpolateGammaLut(float value);
-
-    void markAllOnGoingRendersAsAborted(bool keepOldestRender);
-
-    /**
-     * @brief Used to re-render only selected portions of the texture.
-     * This requires that the renderviewer_internal() function gets called on a single thread
-     * because the texture will get resized (i.e copied and swapped) to fit new RoIs.
-     * After this call, the function isDoingPartialUpdates() will return true until
-     * clearPartialUpdateParams() gets called.
-     **/
-    void setPartialUpdateParams(const std::list<RectD>& rois, bool recenterViewer);
-    void clearPartialUpdateParams();
-
-    void setDoingPartialUpdates(bool doing);
-    bool isDoingPartialUpdates() const;
-
-    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
-
-    ///Only callable on MT
-    void setActivateInputChangeRequestedFromViewer(bool fromViewer);
-
-    bool isInputChangeRequestedFromViewer() const;
-
-    void setViewerPaused(bool paused, bool allInputs);
-
-    bool isViewerPaused(int texIndex) const;
-
-    unsigned int getViewerMipMapLevel() const;
 
 public Q_SLOTS:
 
 
-    void onMipMapLevelChanged(int level);
-
-
-    /**
-     * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
-     **/
-    void redrawViewer();
-
-    void redrawViewerNow();
-
-
-    void executeDisconnectTextureRequestOnMainThread(int index, bool clearRoD);
-
-
-Q_SIGNALS:
-
-    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
-
-    void s_callRedrawOnMainThread();
-
-    void viewerDisconnected();
-
-    void clipPreferencesChanged();
-
-    void availableComponentsChanged();
-
-    void disconnectTextureRequest(int index,bool clearRoD);
-
-    void viewerRenderingStarted();
-    void viewerRenderingEnded();
+    void onInputNameChanged(int,QString);
 
 private:
-    /*******************************************
-       *******OVERRIDEN FROM EFFECT INSTANCE******
-     *******************************************/
+
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+
+    virtual bool hasOverlay() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
 
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+    virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(double time,
+                                           const RenderScale & renderScale,
+                                           ViewIdx view,
+                                           const QPointF & viewportPos,
+                                           const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+
+
     virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                              ViewSpec /*view*/,
                              double /*time*/,
@@ -268,8 +191,6 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-
-    /*******************************************/
 
 private:
 

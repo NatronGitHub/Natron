@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ScriptObject.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
@@ -492,8 +493,11 @@ GuiApp::getViewer(const QString& scriptName) const
     if ( !ptr || !ptr->isActivated() ) {
         return 0;
     }
-
-    ViewerInstancePtr viewer = ptr->isEffectViewerInstance();
+    ViewerNodePtr isViewerNode = ptr->isEffectViewerNode();
+    if (!isViewerNode) {
+        return 0;
+    }
+    ViewerInstancePtr viewer = isViewerNode->getInternalViewerNode();
     if (!viewer) {
         return 0;
     }
@@ -509,11 +513,11 @@ GuiApp::getActiveViewer() const
     if (!tab) {
         return 0;
     }
-    ViewerInstancePtr instance = tab->getInternalNode();
+    ViewerNodePtr instance = tab->getInternalNode();
     if (!instance) {
         return 0;
     }
-    NodePtr node = instance->getNode();
+    NodePtr node = instance->getInternalViewerNode()->getNode();
     if (!node) {
         return 0;
     }
@@ -630,7 +634,8 @@ PyViewer::renderCurrentFrame(bool useCache)
     if (useCache) {
         _viewer->getInternalNode()->renderCurrentFrame(false);
     } else {
-        _viewer->refresh();
+        _viewer->getInternalNode()->getInternalViewerNode()->forceFullComputationOnNextFrame();
+        _viewer->getInternalNode()->renderCurrentFrame(false);
     }
 }
 
@@ -673,154 +678,6 @@ PyViewer::getPlaybackMode() const
     return _viewer->getPlaybackMode();
 }
 
-ViewerCompositingOperatorEnum
-PyViewer::getCompositingOperator() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return eViewerCompositingOperatorNone;
-    }
-
-    return _viewer->getCompositingOperator();
-}
-
-void
-PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setCompositingOperator(op);
-}
-
-int
-PyViewer::getAInput() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return -1;
-    }
-    int a, b;
-    _viewer->getInternalNode()->getActiveInputs(a, b);
-
-    return a;
-}
-
-void
-PyViewer::setAInput(int index)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
-    if (!input) {
-        return;
-    }
-    _viewer->setInputA(index);
-}
-
-int
-PyViewer::getBInput() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return -1;
-    }
-    int a, b;
-    _viewer->getInternalNode()->getActiveInputs(a, b);
-
-    return b;
-}
-
-void
-PyViewer::setBInput(int index)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
-    if (!input) {
-        return;
-    }
-    _viewer->setInputB(index);
-}
-
-void
-PyViewer::setChannels(DisplayChannelsEnum channels)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    std::string c = ViewerTab::getChannelsString(channels);
-    _viewer->setChannels(c);
-}
-
-DisplayChannelsEnum
-PyViewer::getChannels() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return eDisplayChannelsRGB;
-    }
-
-    return _viewer->getChannels();
-}
-
-void
-PyViewer::setProxyModeEnabled(bool enabled)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setRenderScaleActivated(enabled);
-}
-
-bool
-PyViewer::isProxyModeEnabled() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return false;
-    }
-
-    return _viewer->getRenderScaleActivated();
-}
-
-void
-PyViewer::setProxyIndex(int index)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setMipMapLevel(index + 1);
-}
-
-int
-PyViewer::getProxyIndex() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return 0;
-    }
-
-    return _viewer->getMipMapLevel() - 1;
-}
-
-void
-PyViewer::setCurrentView(int index)
-{
-    if (index < 0) {
-        return;
-    }
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setCurrentView( ViewIdx(index) );
-}
-
-int
-PyViewer::getCurrentView() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return 0;
-    }
-
-    return _viewer->getCurrentView().value();
-}
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

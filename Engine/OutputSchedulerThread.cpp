@@ -3849,7 +3849,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     }
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
-    ViewIdx view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : ViewIdx(0);
+    ViewIdx view = viewsCount > 0 ? _imp->viewer->getCurrentView() : ViewIdx(0);
     U64 viewerHash = _imp->viewer->getHash();
     ViewerInstance::ViewerRenderRetCode status[2] = {
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail

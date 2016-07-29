@@ -67,10 +67,6 @@ public:
      **/
     virtual void fitImageToFormat() = 0;
 
-    /**
-     * @brief Must return true if the portion of the image displayed is clipped to the project window.
-     **/
-    virtual bool isClippingImageToProjectWindow() const = 0;
 
     /**
      * @brief Given the region of definition of an image, must return the portion of that image which is
@@ -85,16 +81,6 @@ public:
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
      **/
     virtual ImageBitDepthEnum getBitDepth() const = 0;
-
-    /**
-     * @brief Returns true if the user has enabled the region of interest
-     **/
-    virtual bool isUserRegionOfInterestEnabled() const = 0;
-
-    /**
-     * @brief Must return the user's region of interest rectangle in canonical coordinates.
-     **/
-    virtual RectD getUserRegionOfInterest() const = 0;
 
     /**
      * @brief Should clear any partial texture overlayed previously transferred with transferBufferFromRAMtoGPU
@@ -164,11 +150,6 @@ public:
     virtual void removeGUI() = 0;
 
     /**
-     * @brief Must return the current view displayed if multi-view is enabled, 0 otherwise.
-     **/
-    virtual ViewIdx getCurrentView() const = 0;
-
-    /**
      * @brief Must return the time currently displayed
      **/
     virtual int getCurrentlyDisplayedTime() const = 0;
@@ -177,16 +158,6 @@ public:
      * @brief Get the viewer's timeline's range
      **/
     virtual void getViewerFrameRange(int* first, int* last) const = 0;
-
-    /**
-     * @brief Must return the current compositing operator applied to the viewer input A and B.
-     **/
-    virtual ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
-
-    /**
-     * @brief Set the current compositing operator
-     **/
-    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) = 0;
 
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer
@@ -232,6 +203,58 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
+
+    /**
+     * @brief Get the current orthographic projection
+     **/
+    virtual void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const = 0;
+
+    /**
+     * @brief Set the current orthographic projection
+     **/
+    virtual void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio) = 0;
+
+    /**
+     * @brief Translates the viewport by dx, dy
+     **/
+    virtual void translateViewport(double dx, double dy) = 0;
+
+    /**
+     * @brief Zoom the viewport so that it's new scale factor is equal to newZoomFactor
+     **/
+    virtual void zoomViewport(double newZoomFactor) = 0;
+
+    /**
+     * @brief Set the color picker info bar visibility
+     **/
+    virtual void setInfoBarVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the color picker info bar visibility for one input only
+     **/
+    virtual void setInfoBarVisible(int index, bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility (the one used by Roto)
+     **/
+    virtual void setLeftToolBarVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility
+     **/
+    virtual void setTopToolBarVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility
+     **/
+    virtual void setPlayerVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility
+     **/
+    virtual void setTimelineVisible(bool visible) = 0;
+
+
 };
 
 NATRON_NAMESPACE_EXIT;

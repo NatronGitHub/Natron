@@ -211,7 +211,7 @@ SOURCES += \
     ViewerGLPrivate.cpp \
     ViewerTab.cpp \
     ViewerTab10.cpp \
-    ViewerTab20.cpp \
+    ViewerTabOverlays.cpp \
     ViewerTab30.cpp \
     ViewerTab40.cpp \
     ViewerTabPrivate.cpp \

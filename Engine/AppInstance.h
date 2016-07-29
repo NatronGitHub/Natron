@@ -265,6 +265,8 @@ public:
         return true;
     }
 
+    virtual void showRenderStatsWindow() {}
+
     /**
      * @brief Checks for a new version of Natron
      **/
@@ -277,6 +279,10 @@ public:
     {
     }
 
+    virtual void setMasterSyncViewer(const NodePtr& viewerNode) { Q_UNUSED(viewerNode); }
+
+    virtual NodePtr getMasterSyncViewer() const { return NodePtr(); }
+
     ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
 
     double getProjectFrameRate() const;
@@ -285,6 +291,7 @@ public:
 
     virtual std::string saveImageFileDialog() { return std::string(); }
 
+    virtual bool checkAllReadersModificationDate(bool /*errorAndWarn*/) { return true; }
 
     void onOCIOConfigPathChanged(const std::string& path);
 

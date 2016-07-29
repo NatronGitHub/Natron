@@ -497,13 +497,13 @@ enum SchedulingPolicyEnum
 
 enum DisplayChannelsEnum
 {
-    eDisplayChannelsRGB = 0,
+    eDisplayChannelsY = 0,
+    eDisplayChannelsRGB,
     eDisplayChannelsR,
     eDisplayChannelsG,
     eDisplayChannelsB,
     eDisplayChannelsA,
-    eDisplayChannelsY,
-    eDisplayChannelsMatte,
+    eDisplayChannelsMatte
 };
 
 /** @brief Enumerates the contexts a plugin can be used in */

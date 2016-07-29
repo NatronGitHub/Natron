@@ -42,7 +42,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
-
+#include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
 #include "Gui/ChannelsComboBox.h"
@@ -65,84 +65,10 @@
 NATRON_NAMESPACE_ENTER;
 
 void
-ViewerTab::onInputChanged(int inputNb)
-{
-    ///rebuild the name maps
-    NodePtr inp;
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    const std::vector<NodeWPtr > &inputs  = viewerNode->getNode()->getGuiInputs();
-
-    if ( (inputNb >= 0) && ( inputNb < (int)inputs.size() ) ) {
-        inp = inputs[inputNb].lock();
-    }
-
-
-    if (inp) {
-        ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
-        if ( found != _imp->inputNamesMap.end() ) {
-            NodePtr input = found->second.input.lock();
-            if (!input) {
-                return;
-            }
-            const std::string & curInputName = input->getLabel();
-            found->second.input = inp;
-            int indexInA = _imp->firstInputImage->itemIndex( QString::fromUtf8( curInputName.c_str() ) );
-            int indexInB = _imp->secondInputImage->itemIndex( QString::fromUtf8( curInputName.c_str() ) );
-            assert(indexInA != -1 && indexInB != -1);
-            found->second.name = QString::fromUtf8( inp->getLabel().c_str() );
-            _imp->firstInputImage->setItemText(indexInA, found->second.name);
-            _imp->secondInputImage->setItemText(indexInB, found->second.name);
-        } else {
-            ViewerTabPrivate::InputName inpName;
-            inpName.input = inp;
-            inpName.name = QString::fromUtf8( inp->getLabel().c_str() );
-            _imp->inputNamesMap.insert( std::make_pair(inputNb, inpName) );
-            _imp->firstInputImage->addItem(inpName.name);
-            _imp->secondInputImage->addItem(inpName.name);
-        }
-    } else {
-        ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
-
-        ///The input has been disconnected
-        if ( found != _imp->inputNamesMap.end() ) {
-            NodePtr input = found->second.input.lock();
-            if (!input) {
-                return;
-            }
-            const std::string & curInputName = input->getLabel();
-            _imp->firstInputImage->blockSignals(true);
-            _imp->secondInputImage->blockSignals(true);
-            _imp->firstInputImage->removeItem( QString::fromUtf8( curInputName.c_str() ) );
-            _imp->secondInputImage->removeItem( QString::fromUtf8( curInputName.c_str() ) );
-            _imp->firstInputImage->blockSignals(false);
-            _imp->secondInputImage->blockSignals(false);
-            _imp->inputNamesMap.erase(found);
-        }
-    }
-
-    //refreshLayerAndAlphaChannelComboBox();
-} // ViewerTab::onInputChanged
-
-void
-ViewerTab::onInputNameChanged(int inputNb,
-                              const QString & name)
-{
-    ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
-
-    assert( found != _imp->inputNamesMap.end() );
-    int indexInA = _imp->firstInputImage->itemIndex(found->second.name);
-    int indexInB = _imp->secondInputImage->itemIndex(found->second.name);
-    assert(indexInA != -1 && indexInB != -1);
-    _imp->firstInputImage->setItemText(indexInA, name);
-    _imp->secondInputImage->setItemText(indexInB, name);
-    found->second.name = name;
-}
-
-void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
     RenderEnginePtr engine = viewerNode->getRenderEngine();
 
     assert(engine);
@@ -162,46 +88,6 @@ ViewerTab::setImageFormat(int textureIndex,
                           ImageBitDepthEnum depth)
 {
     _imp->infoWidget[textureIndex]->setImageFormat(components, depth);
-}
-
-void
-ViewerTab::setViewerPaused(bool paused,
-                           bool allInputs)
-{
-    _imp->pauseButton->setChecked(paused);
-    _imp->pauseButton->setDown(paused);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setViewerPaused(paused, allInputs);
-    abortRendering();
-    if ( !viewerNode->getApp()->getProject()->isLoadingProject() ) {
-        if (!paused) {
-            // Refresh the viewer
-            viewerNode->renderCurrentFrame(true);
-        }
-    }
-}
-
-bool
-ViewerTab::isViewerPaused(int texIndex) const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    return viewerNode->isViewerPaused(texIndex);
-}
-
-void
-ViewerTab::toggleViewerPauseMode(bool allInputs)
-{
-    bool isPaused = _imp->pauseButton->isDown();
-
-    setViewerPaused(!isPaused, allInputs);
-}
-
-void
-ViewerTab::onPauseViewerButtonClicked(bool clicked)
-{
-    bool allInputs = qApp->keyboardModifiers().testFlag(Qt::ShiftModifier);
-
-    setViewerPaused(clicked, allInputs);
 }
 
 void
@@ -335,247 +221,73 @@ ViewerTab::clearTimelineCacheLine()
 }
 
 void
-ViewerTab::toggleInfobarVisbility()
-{
-    bool visible;
-    {
-        QMutexLocker l(&_imp->visibleToolbarsMutex);
-        visible = !_imp->infobarVisible;
-    }
-
-    setInfobarVisible(visible);
-}
-
-void
-ViewerTab::togglePlayerVisibility()
-{
-    bool visible;
-    {
-        QMutexLocker l(&_imp->visibleToolbarsMutex);
-        visible = !_imp->playerVisible;
-    }
-
-    setPlayerVisible(visible);
-}
-
-void
-ViewerTab::toggleTimelineVisibility()
-{
-    bool visible;
-    {
-        QMutexLocker l(&_imp->visibleToolbarsMutex);
-        visible = !_imp->timelineVisible;
-    }
-
-    setTimelineVisible(visible);
-}
-
-void
-ViewerTab::toggleLeftToolbarVisiblity()
-{
-    bool visible;
-    {
-        QMutexLocker l(&_imp->visibleToolbarsMutex);
-        visible = !_imp->leftToolbarVisible;
-    }
-
-    setLeftToolbarVisible(visible);
-}
-
-void
-ViewerTab::toggleRightToolbarVisibility()
-{
-    bool visible;
-    {
-        QMutexLocker l(&_imp->visibleToolbarsMutex);
-        visible =  !_imp->rightToolbarVisible;
-    }
-
-    setRightToolbarVisible(visible);
-}
-
-void
-ViewerTab::toggleTopToolbarVisibility()
-{
-    bool visible;
-    {
-        QMutexLocker l(&_imp->visibleToolbarsMutex);
-        visible = !_imp->topToolbarVisible;
-    }
-
-    setTopToolbarVisible(visible);
-}
-
-void
 ViewerTab::setLeftToolbarVisible(bool visible)
 {
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
 
-    _imp->leftToolbarVisible = visible;
     for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
         QToolBar* bar = it->currentContext->getToolBar();
         if (bar) {
-            bar->setVisible(_imp->leftToolbarVisible);
+            bar->setVisible(visible);
         }
     }
 }
 
 void
-ViewerTab::setRightToolbarVisible(bool visible)
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    _imp->rightToolbarVisible = visible;
-}
-
-void
 ViewerTab::setTopToolbarVisible(bool visible)
 {
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
 
-    _imp->topToolbarVisible = visible;
-    _imp->firstSettingsRow->setVisible(_imp->topToolbarVisible);
-    _imp->secondSettingsRow->setVisible(_imp->topToolbarVisible);
+    _imp->firstSettingsRow->setVisible(visible);
+    _imp->secondSettingsRow->setVisible(visible);
     for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
-        it->currentContext->getContainerWidget()->setVisible(_imp->topToolbarVisible);
+        it->currentContext->getContainerWidget()->setVisible(visible);
     }
 }
 
 void
 ViewerTab::setPlayerVisible(bool visible)
 {
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    _imp->playerVisible = visible;
-    _imp->playerButtonsContainer->setVisible(_imp->playerVisible);
+    _imp->playerButtonsContainer->setVisible(visible);
 }
 
 void
 ViewerTab::setTimelineVisible(bool visible)
 {
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    _imp->timelineVisible = visible;
-    _imp->timeLineGui->setVisible(_imp->timelineVisible);
+    _imp->timeLineGui->setVisible(visible);
 }
 
 void
 ViewerTab::setInfobarVisible(bool visible)
 {
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
+    getGui()->clearColorPickers();
+    setInfobarVisibleInternal(visible);
+}
 
-    _imp->infobarVisible = visible;
+
+void
+ViewerTab::setInfobarVisible(int index, bool visible)
+{
+    manageSlotsForInfoWidget(index, visible);
+    _imp->infoWidget[index]->setVisible(visible);
+}
+
+void
+ViewerTab::setInfobarVisibleInternal(bool visible)
+{
+    ViewerNodePtr internalNode = getInternalNode();
     for (int i = 0; i < 2; ++i) {
         if (i == 1) {
-            int inputIndex = -1;
 
-            for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
-                if ( it->second.name == _imp->secondInputImage->getCurrentIndexText() ) {
-                    inputIndex = it->first;
-                    break;
-                }
+            NodePtr bInput = internalNode->getCurrentBInput();
+            if (!bInput) {
+                continue;
             }
-            if ( (getCompositingOperator() == eViewerCompositingOperatorNone) || (inputIndex == -1) ) {
+            if (internalNode->getCurrentOperator() == eViewerCompositingOperatorNone) {
                 continue;
             }
         }
 
-        _imp->infoWidget[i]->setVisible(_imp->infobarVisible);
+        _imp->infoWidget[i]->setVisible(visible);
     }
-}
-
-void
-ViewerTab::showAllToolbars()
-{
-    if ( !isTopToolbarVisible() ) {
-        toggleTopToolbarVisibility();
-    }
-    if ( !isRightToolbarVisible() ) {
-        toggleRightToolbarVisibility();
-    }
-    if ( !isLeftToolbarVisible() ) {
-        toggleLeftToolbarVisiblity();
-    }
-    if ( !isInfobarVisible() ) {
-        toggleInfobarVisbility();
-    }
-    if ( !isPlayerVisible() ) {
-        togglePlayerVisibility();
-    }
-    if ( !isTimelineVisible() ) {
-        toggleTimelineVisibility();
-    }
-}
-
-void
-ViewerTab::hideAllToolbars()
-{
-    if ( isTopToolbarVisible() ) {
-        toggleTopToolbarVisibility();
-    }
-    if ( isRightToolbarVisible() ) {
-        toggleRightToolbarVisibility();
-    }
-    if ( isLeftToolbarVisible() ) {
-        toggleLeftToolbarVisiblity();
-    }
-    if ( isInfobarVisible() ) {
-        toggleInfobarVisbility();
-    }
-    if ( isPlayerVisible() ) {
-        togglePlayerVisibility();
-    }
-    if ( isTimelineVisible() ) {
-        toggleTimelineVisibility();
-    }
-}
-
-bool
-ViewerTab::isInfobarVisible() const
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    return _imp->infobarVisible;
-}
-
-bool
-ViewerTab::isTopToolbarVisible() const
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    return _imp->topToolbarVisible;
-}
-
-bool
-ViewerTab::isPlayerVisible() const
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    return _imp->playerVisible;
-}
-
-bool
-ViewerTab::isTimelineVisible() const
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    return _imp->timelineVisible;
-}
-
-bool
-ViewerTab::isLeftToolbarVisible() const
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    return _imp->leftToolbarVisible;
-}
-
-bool
-ViewerTab::isRightToolbarVisible() const
-{
-    QMutexLocker l(&_imp->visibleToolbarsMutex);
-
-    return _imp->rightToolbarVisible;
 }
 
 void
@@ -617,22 +329,6 @@ ViewerTab::getTimeLine() const
     return _imp->timeLineGui->getTimeline();
 }
 
-bool
-ViewerTab::isPickerEnabled() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->pickerButton->isChecked();
-}
-
-void
-ViewerTab::setPickerEnabled(bool enabled)
-{
-    _imp->pickerButton->setChecked(enabled);
-    _imp->pickerButton->setDown(enabled);
-    setInfobarVisible(true);
-}
-
 void
 ViewerTab::onMousePressCalledInViewer()
 {
@@ -643,68 +339,14 @@ ViewerTab::onMousePressCalledInViewer()
 }
 
 void
-ViewerTab::onPickerButtonClickedInternal(ViewerTab* caller,
-                                         bool clicked)
-{
-    if (this == caller) {
-        const std::list<ViewerTab*> &viewers = getGui()->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            if ( (*it) != caller ) {
-                (*it)->onPickerButtonClickedInternal(caller, clicked);
-            }
-        }
-    }
-
-    _imp->pickerButton->setDown(clicked);
-
-    setInfobarVisible(clicked);
-    getGui()->clearColorPickers();
-}
-
-void
-ViewerTab::onPickerButtonClicked(bool clicked)
-{
-    onPickerButtonClickedInternal(this, clicked);
-}
-
-void
-ViewerTab::onCheckerboardButtonClicked()
-{
-    {
-        QMutexLocker l(&_imp->checkerboardMutex);
-        _imp->checkerboardEnabled = !_imp->checkerboardEnabled;
-    }
-    _imp->checkerboardButton->setDown(_imp->checkerboardEnabled);
-    _imp->viewer->redraw();
-}
-
-bool
-ViewerTab::isCheckerboardEnabled() const
-{
-    QMutexLocker l(&_imp->checkerboardMutex);
-
-    return _imp->checkerboardEnabled;
-}
-
-void
-ViewerTab::setCheckerboardEnabled(bool enabled)
-{
-    {
-        QMutexLocker l(&_imp->checkerboardMutex);
-        _imp->checkerboardEnabled = enabled;
-    }
-    _imp->checkerboardButton->setDown(enabled);
-    _imp->checkerboardButton->setChecked(enabled);
-}
-
-void
 ViewerTab::onSpinboxFpsChangedInternal(double fps)
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
     if ( !getGui() ) {
         //might be caled from a focus out event when leaving gui
         return;
     }
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
+
     _imp->fpsBox->setValue(fps);
     viewerNode->getRenderEngine()->setDesiredFPS(fps);
     {
@@ -734,7 +376,7 @@ ViewerTab::getDesiredFps() const
 void
 ViewerTab::setDesiredFps(double fps)
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
     {
         QMutexLocker l(&_imp->fpsMutex);
         _imp->fps = fps;
@@ -755,20 +397,22 @@ ViewerTab::setProjection(double zoomLeft,
     str.append( QLatin1Char('%') );
     str.prepend( QString::fromUtf8("  ") );
     str.append( QString::fromUtf8("  ") );
-    _imp->zoomCombobox->setCurrentText_no_emit(str);
+    getInternalNode()->setZoomComboBoxText(str.toStdString());
 }
 
 void
 ViewerTab::refreshViewerRenderingState()
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    int value = viewerNode->getNode()->getIsNodeRenderingCounter();
-
-    if (value >= 1) {
-        _imp->refreshButton->setIcon(_imp->iconRefreshOn);
-    } else {
-        _imp->refreshButton->setIcon(_imp->iconRefreshOff);
+    ViewerNodePtr internalNode = getInternalNode();
+    if (!internalNode) {
+        return;
     }
+    ViewerInstancePtr viewerNode = internalNode->getInternalViewerNode();
+    if (!viewerNode) {
+        return;
+    }
+    int value = viewerNode->getNode()->getIsNodeRenderingCounter();
+    internalNode->setRefreshButtonDown(value > 0);
 }
 
 void
@@ -833,7 +477,7 @@ ViewerTab::onInternalNodeLabelChanged(const QString& name)
 void
 ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
     // always running in the main thread
     std::string newName = viewerNode->getNode()->getFullyQualifiedName();
     std::string oldName = getScriptName();
@@ -856,435 +500,6 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 }
 
 void
-ViewerTab::refreshLayerAndAlphaChannelComboBox()
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if (!viewerNode) {
-        return;
-    }
-
-    QString layerCurChoice = _imp->layerChoice->getCurrentIndexText();
-    QString alphaCurChoice = _imp->alphaChannelChoice->getCurrentIndexText();
-    std::set<ImageComponents> components;
-    _imp->getComponentsAvailabel(&components);
-
-    _imp->layerChoice->clear();
-    _imp->alphaChannelChoice->clear();
-
-    _imp->layerChoice->addItem( QString::fromUtf8("-") );
-    _imp->alphaChannelChoice->addItem( QString::fromUtf8("-") );
-
-    std::set<ImageComponents>::iterator foundColorIt = components.end();
-    std::set<ImageComponents>::iterator foundOtherIt = components.end();
-    std::set<ImageComponents>::iterator foundCurIt = components.end();
-    std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
-    std::string foundAlphaChannel;
-
-    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-        QString layerName = QString::fromUtf8( it->getLayerName().c_str() );
-        QString itemName = layerName + QLatin1Char('.') + QString::fromUtf8( it->getComponentsGlobalName().c_str() );
-        _imp->layerChoice->addItem(itemName);
-
-        if (itemName == layerCurChoice) {
-            foundCurIt = it;
-        }
-
-        if ( layerName == QString::fromUtf8(kNatronColorPlaneName) ) {
-            foundColorIt = it;
-        } else {
-            foundOtherIt = it;
-        }
-
-        const std::vector<std::string>& channels = it->getComponentsNames();
-        for (U32 i = 0; i < channels.size(); ++i) {
-            QString itemName = layerName + QLatin1Char('.') + QString::fromUtf8( channels[i].c_str() );
-            if (itemName == alphaCurChoice) {
-                foundCurAlphaIt = it;
-                foundAlphaChannel = channels[i];
-            }
-            _imp->alphaChannelChoice->addItem(itemName);
-        }
-
-        if ( layerName == QString::fromUtf8(kNatronColorPlaneName) ) {
-            //There's RGBA or alpha, set it to A
-            std::string alphaChoice;
-            if (channels.size() == 4) {
-                alphaChoice = channels[3];
-            } else if (channels.size() == 1) {
-                alphaChoice = channels[0];
-            }
-            if ( !alphaChoice.empty() ) {
-                _imp->alphaChannelChoice->setCurrentIndex_no_emit(_imp->alphaChannelChoice->count() - 1);
-            } else {
-                alphaCurChoice = _imp->alphaChannelChoice->itemText(0);
-            }
-
-            viewerNode->setAlphaChannel(*it, alphaChoice, false);
-        }
-    }
-
-    if ( ( layerCurChoice == QString::fromUtf8("-") ) || layerCurChoice.isEmpty() || ( foundCurIt == components.end() ) ) {
-        // Try to find color plane, otherwise fallback on any other layer
-        if ( foundColorIt != components.end() ) {
-            layerCurChoice = QString::fromUtf8( foundColorIt->getLayerName().c_str() )
-                             + QLatin1Char('.') + QString::fromUtf8( foundColorIt->getComponentsGlobalName().c_str() );
-            foundCurIt = foundColorIt;
-        } else if ( foundOtherIt != components.end() ) {
-            layerCurChoice = QString::fromUtf8( foundOtherIt->getLayerName().c_str() )
-                             + QLatin1Char('.') + QString::fromUtf8( foundOtherIt->getComponentsGlobalName().c_str() );
-            foundCurIt = foundOtherIt;
-        } else {
-            layerCurChoice = QString::fromUtf8("-");
-            foundCurIt = components.end();
-        }
-    }
-
-
-    if ( foundCurIt == components.end() ) {
-        _imp->layerChoice->setCurrentText_no_emit(layerCurChoice);
-        viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
-    } else {
-        int layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
-        assert(layerIdx != -1);
-        _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
-        if (foundCurIt->getNumComponents() == 1) {
-            //Switch auto to alpha if there's only this to view
-            _imp->viewerChannels->setCurrentIndex_no_emit(5);
-            setDisplayChannels(5, true);
-            _imp->viewerChannelsAutoswitchedToAlpha = true;
-        } else {
-            //Switch back to RGB if we auto-switched to alpha
-            if ( _imp->viewerChannelsAutoswitchedToAlpha && (foundCurIt->getNumComponents() > 1) && (_imp->viewerChannels->activeIndex() == 5) ) {
-                _imp->viewerChannels->setCurrentIndex_no_emit(1);
-                setDisplayChannels(1, true);
-            }
-        }
-        viewerNode->setActiveLayer(*foundCurIt, false);
-    }
-
-    if ( ( alphaCurChoice == QString::fromUtf8("-") ) || alphaCurChoice.isEmpty() || ( foundCurAlphaIt == components.end() ) ) {
-        ///Try to find color plane, otherwise fallback on any other layer
-        if ( ( foundColorIt != components.end() ) &&
-             ( ( foundColorIt->getComponentsNames().size() == 4) || ( foundColorIt->getComponentsNames().size() == 1) ) ) {
-            std::size_t lastComp = foundColorIt->getComponentsNames().size() - 1;
-
-            alphaCurChoice = QString::fromUtf8( foundColorIt->getLayerName().c_str() )
-                             + QLatin1Char('.') + QString::fromUtf8( foundColorIt->getComponentsNames()[lastComp].c_str() );
-            foundAlphaChannel = foundColorIt->getComponentsNames()[lastComp];
-            foundCurAlphaIt = foundColorIt;
-        } else {
-            alphaCurChoice = QString::fromUtf8("-");
-            foundCurAlphaIt = components.end();
-        }
-    }
-
-    if ( ( foundCurAlphaIt == components.end() ) || foundAlphaChannel.empty() ) {
-        _imp->alphaChannelChoice->setCurrentText_no_emit(alphaCurChoice);
-        viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
-    } else {
-        int layerIdx = _imp->alphaChannelChoice->itemIndex(alphaCurChoice);
-        assert(layerIdx != -1);
-        _imp->alphaChannelChoice->setCurrentIndex_no_emit(layerIdx);
-
-        viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
-    }
-
-    {
-        QMutexLocker k(&_imp->currentLayerMutex);
-        _imp->currentLayerChoice = layerCurChoice;
-        _imp->currentAlphaLayerChoice = alphaCurChoice;
-    }
-} // ViewerTab::refreshLayerAndAlphaChannelComboBox
-
-void
-ViewerTab::onAlphaChannelComboChanged(int index)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    std::set<ImageComponents> components;
-
-    _imp->getComponentsAvailabel(&components);
-
-    {
-        QMutexLocker k(&_imp->currentLayerMutex);
-        _imp->currentAlphaLayerChoice = _imp->alphaChannelChoice->getCurrentIndexText();
-    }
-    int i = 1; // because of the "-" choice
-    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-        const std::vector<std::string>& channels = it->getComponentsNames();
-        if ( index >= ( (int)channels.size() + i ) ) {
-            i += channels.size();
-        } else {
-            for (U32 j = 0; j < channels.size(); ++j, ++i) {
-                if (i == index) {
-                    viewerNode->setAlphaChannel(*it, channels[j], true);
-
-                    return;
-                }
-            }
-        }
-    }
-    viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
-}
-
-void
-ViewerTab::onLayerComboChanged(int index)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    std::set<ImageComponents> components;
-
-    _imp->getComponentsAvailabel(&components);
-    {
-        QMutexLocker k(&_imp->currentLayerMutex);
-        _imp->currentLayerChoice = _imp->layerChoice->getCurrentIndexText();
-    }
-    if ( ( index >= (int)(components.size() + 1) ) || (index < 0) ) {
-        qDebug() << "ViewerTab::onLayerComboChanged: invalid index";
-
-        return;
-    }
-    int i = 1; // because of the "-" choice
-    int chanCount = 1; // because of the "-" choice
-    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
-        chanCount += it->getComponentsNames().size();
-        if (i == index) {
-            viewerNode->setActiveLayer(*it, true);
-
-            ///If it has an alpha channel, set it
-            if (it->getComponentsNames().size() == 4) {
-                _imp->alphaChannelChoice->setCurrentIndex_no_emit(chanCount - 1);
-                viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3], true);
-            }
-
-            return;
-        }
-    }
-
-    _imp->alphaChannelChoice->setCurrentIndex_no_emit(0);
-    viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
-    viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
-}
-
-QString
-ViewerTab::getCurrentLayerName() const
-{
-    QMutexLocker k(&_imp->currentLayerMutex);
-
-    return _imp->currentLayerChoice;
-}
-
-QString
-ViewerTab::getCurrentAlphaLayerName() const
-{
-    QMutexLocker k(&_imp->currentLayerMutex);
-
-    return _imp->currentAlphaLayerChoice;
-}
-
-void
-ViewerTab::setCurrentLayers(const QString& layer,
-                            const QString& alphaLayer)
-{
-    _imp->layerChoice->setCurrentText_no_emit(layer);
-    _imp->alphaChannelChoice->setCurrentText_no_emit(alphaLayer);
-    refreshLayerAndAlphaChannelComboBox();
-}
-
-void
-ViewerTab::onGainToggled(bool clicked)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    double value;
-
-    if (clicked) {
-        value = _imp->lastFstopValue;
-    } else {
-        value = 0;
-    }
-    _imp->toggleGainButton->setDown(clicked);
-    _imp->gainBox->setValue(value);
-    _imp->gainSlider->seekScalePosition(value);
-
-    double gain = std::pow(2, value);
-    _imp->viewer->setGain(gain);
-    viewerNode->onGainChanged(gain);
-}
-
-void
-ViewerTab::onGainSliderChanged(double v)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if ( !_imp->toggleGainButton->isChecked() ) {
-        _imp->toggleGainButton->setChecked(true);
-        _imp->toggleGainButton->setDown(true);
-    }
-    _imp->gainBox->setValue(v);
-    double gain = std::pow(2, v);
-    _imp->viewer->setGain(gain);
-    viewerNode->onGainChanged(gain);
-    _imp->lastFstopValue = v;
-}
-
-void
-ViewerTab::onGainSpinBoxValueChanged(double v)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if ( !_imp->toggleGainButton->isChecked() ) {
-        _imp->toggleGainButton->setChecked(true);
-        _imp->toggleGainButton->setDown(true);
-    }
-    _imp->gainSlider->seekScalePosition(v);
-    double gain = std::pow(2, v);
-    _imp->viewer->setGain(gain);
-    viewerNode->onGainChanged(gain);
-    _imp->lastFstopValue = v;
-}
-
-void
-ViewerTab::onGammaToggled(bool clicked)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    double value;
-
-    if (clicked) {
-        value = _imp->lastGammaValue;
-    } else {
-        value = 1.;
-    }
-    _imp->toggleGammaButton->setDown(clicked);
-    _imp->gammaBox->setValue(value);
-    _imp->gammaSlider->seekScalePosition(value);
-    _imp->viewer->setGamma(value);
-    viewerNode->onGammaChanged(value);
-}
-
-void
-ViewerTab::onGammaSliderValueChanged(double value)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if ( !_imp->toggleGammaButton->isChecked() ) {
-        _imp->toggleGammaButton->setChecked(true);
-        _imp->toggleGammaButton->setDown(true);
-    }
-    _imp->gammaBox->setValue(value);
-    _imp->viewer->setGamma(value);
-    viewerNode->onGammaChanged(value);
-    _imp->lastGammaValue = value;
-}
-
-void
-ViewerTab::onGammaSpinBoxValueChanged(double value)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if ( !_imp->toggleGammaButton->isChecked() ) {
-        _imp->toggleGammaButton->setChecked(true);
-        _imp->toggleGammaButton->setDown(true);
-    }
-    _imp->gammaSlider->seekScalePosition(value);
-    _imp->viewer->setGamma(value);
-    viewerNode->onGammaChanged(value);
-    _imp->lastGammaValue = value;
-}
-
-void
-ViewerTab::onGammaSliderEditingFinished(bool hasMovedOnce)
-{
-    bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
-
-    if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers(true);
-    }
-}
-
-void
-ViewerTab::onGainSliderEditingFinished(bool hasMovedOnce)
-{
-    bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
-
-    if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers(true);
-    }
-}
-
-bool
-ViewerTab::isViewersSynchroEnabled() const
-{
-    return _imp->syncViewerButton->isDown();
-}
-
-void
-ViewerTab::synchronizeOtherViewersProjection()
-{
-    assert( getGui() );
-    getGui()->setMasterSyncViewer(this);
-    double left, bottom, factor, par;
-    _imp->viewer->getProjection(&left, &bottom, &factor, &par);
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ( (*it) != this ) {
-            (*it)->getViewer()->setProjection(left, bottom, factor, par);
-            (*it)->getInternalNode()->renderCurrentFrame(true);
-        }
-    }
-}
-
-void
-ViewerTab::onSyncViewersButtonPressed(bool clicked)
-{
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->_imp->syncViewerButton->setDown(clicked);
-        (*it)->_imp->syncViewerButton->setChecked(clicked);
-    }
-    if (clicked) {
-        synchronizeOtherViewersProjection();
-    }
-}
-
-void
-ViewerTab::zoomIn()
-{
-    double factor = _imp->viewer->getZoomFactor();
-
-    factor *= 1.1;
-    factor *= 100;
-    _imp->viewer->zoomSlot(factor);
-    QString text = QString::number( std::floor(factor + 0.5) ) + QLatin1Char('%');
-    _imp->zoomCombobox->setCurrentText_no_emit(text);
-}
-
-void
-ViewerTab::zoomOut()
-{
-    double factor = _imp->viewer->getZoomFactor();
-
-    factor *= 0.9;
-    factor *= 100;
-    _imp->viewer->zoomSlot(factor);
-    QString text = QString::number( std::floor(factor + 0.5) ) + QLatin1Char('%');
-    _imp->zoomCombobox->setCurrentText_no_emit(text);
-}
-
-void
-ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
-{
-    QString text = _imp->zoomCombobox->getCurrentIndexText();
-
-    if ( text == QString::fromUtf8("+") ) {
-        zoomIn();
-    } else if ( text == QString::fromUtf8("-") ) {
-        zoomOut();
-    } else if ( text == QString::fromUtf8("Fit") ) {
-        centerViewer();
-    } else {
-        text.remove( QLatin1Char('%') );
-        int v = text.toInt();
-        assert(v > 0);
-        _imp->viewer->zoomSlot(v);
-    }
-}
-
-void
 ViewerTab::onRenderStatsAvailable(int time,
                                   ViewIdx view,
                                   double wallTime,
@@ -1294,6 +509,22 @@ ViewerTab::onRenderStatsAvailable(int time,
     RenderStatsDialog* dialog = getGui()->getRenderStatsDialog();
     if (dialog) {
         dialog->addStats(time, view, wallTime, stats);
+    }
+}
+
+void
+ViewerTab::synchronizeOtherViewersProjection()
+{
+    assert( getGui() );
+    getGui()->getApp()->setMasterSyncViewer(getInternalNode()->getNode());
+    double left, bottom, factor, par;
+    _imp->viewer->getProjection(&left, &bottom, &factor, &par);
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        if ( (*it) != this ) {
+            (*it)->getViewer()->setProjection(left, bottom, factor, par);
+            (*it)->getInternalNode()->renderCurrentFrame(true);
+        }
     }
 }
 
@@ -1319,10 +550,10 @@ ViewerTab::toggleTripleSync(bool toggled)
 void
 ViewerTab::onPanelMadeCurrent()
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
     // Refresh the image since so far the viewer was probably not in sync with internal data
     if ( viewerNode && getGui() && !getGui()->getApp()->getProject()->isLoadingProject() && getGui()->getApp()->getNodesBeingCreated().empty() ) {
-        viewerNode->renderCurrentFrame(true);
+        viewerNode->getInternalViewerNode()->renderCurrentFrame(true);
     }
 }
 

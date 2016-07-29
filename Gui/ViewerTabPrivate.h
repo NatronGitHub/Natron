@@ -53,15 +53,10 @@ NATRON_NAMESPACE_ENTER;
 
 struct ViewerTabPrivate
 {
-    struct InputName
-    {
-        QString name;
-        NodeWPtr input;
-    };
-
-    typedef std::map<int, InputName> InputNamesMap;
 
     ViewerTab* publicInterface; // can not be a smart ptr
+
+    ViewerNodeWPtr viewerNode; // < pointer to the internal node
 
     /*OpenGL viewer*/
     ViewerGL* viewer;
@@ -75,52 +70,7 @@ struct ViewerTabPrivate
     QWidget* firstSettingsRow, *secondSettingsRow;
     QHBoxLayout* firstRowLayout, *secondRowLayout;
 
-    /*1st row*/
-    //ComboBox* viewerLayers;
-    ComboBox* layerChoice;
-    ComboBox* alphaChannelChoice;
-    mutable QMutex currentLayerMutex;
-    QString currentLayerChoice, currentAlphaLayerChoice;
-    ChannelsComboBox* viewerChannels;
-    bool viewerChannelsAutoswitchedToAlpha;
-    ComboBox* zoomCombobox;
-    Button* syncViewerButton;
-    Button* centerViewerButton;
-    Button* clipToProjectFormatButton;
-    Button* fullFrameProcessingButton;
-    Button* enableViewerRoI;
-    Button* refreshButton;
-    Button* pauseButton;
-    QIcon iconRefreshOff, iconRefreshOn;
-    Button* activateRenderScale;
-    bool renderScaleActive;
-    ComboBox* renderScaleCombo;
-    Label* firstInputLabel;
-    ComboBox* firstInputImage;
-    Label* compositingOperatorLabel;
-    ComboBox* compositingOperator;
-    Label* secondInputLabel;
-    ComboBox* secondInputImage;
-
-    /*2nd row*/
-    Button* toggleGainButton;
-    SpinBox* gainBox;
-    ScaleSliderQWidget* gainSlider;
-    double lastFstopValue;
-    Button* autoContrast;
-    SpinBox* gammaBox;
-    double lastGammaValue;
-    Button* toggleGammaButton;
-    ScaleSliderQWidget* gammaSlider;
-    ComboBox* viewerColorSpace;
-    Button* checkerboardButton;
-    Button* pickerButton;
-    ComboBox* viewsComboBox;
-    ViewIdx currentViewIndex;
-    QMutex currentViewMutex;
-    /*Info*/
     InfoViewerWidget* infoWidget[2];
-
 
     /*TimeLine buttons*/
     QWidget* playerButtonsContainer;
@@ -174,23 +124,9 @@ struct ViewerTabPrivate
     // This is the current active context for each plug-in
     // We don't use a map because we need to retain the insertion order for each plug-in
     std::list<PluginViewerContext> currentNodeContext;
-    InputNamesMap inputNamesMap;
-    mutable QMutex compOperatorMutex;
-    ViewerCompositingOperatorEnum compOperator;
-    ViewerCompositingOperatorEnum compOperatorPrevious;
 
     // Weak_ptr because the viewer node  itself controls the lifetime of this widget
-    ViewerInstanceWPtr viewerNode; // < pointer to the internal node
-    mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
-    bool infobarVisible;
-    bool playerVisible;
-    bool timelineVisible;
-    bool leftToolbarVisible;
-    bool rightToolbarVisible;
-    bool topToolbarVisible;
     bool isFileDialogViewer;
-    mutable QMutex checkerboardMutex;
-    bool checkerboardEnabled;
     mutable QMutex fpsMutex;
     double fps;
 
@@ -200,7 +136,7 @@ struct ViewerTabPrivate
     bool hasCaughtPenMotionWhileDragging;
 
     ViewerTabPrivate(ViewerTab* publicInterface,
-                     const ViewerInstancePtr& node);
+                     const ViewerNodePtr& node);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
@@ -217,8 +153,6 @@ struct ViewerTabPrivate
                           double *newTime) const;
 
 #endif
-
-    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 
     std::list<PluginViewerContext>::iterator findActiveNodeContextForPlugin(const std::string& pluginID);
 

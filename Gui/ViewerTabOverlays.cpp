@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
@@ -97,7 +98,7 @@ ViewerTab::drawOverlays(double time,
         return;
     }
 
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
 
@@ -164,7 +165,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
 
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -308,13 +309,14 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
 
+    ViewIdx view = getInternalNode()->getCurrentView();
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         QPointF transformViewportPos;
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        ViewIdx view = getCurrentView();
+
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (ok) {
@@ -387,7 +389,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
@@ -568,7 +570,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     getGui()->getNodesEntitledForOverlays(nodes);
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF transformViewportPos;
@@ -719,7 +721,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const Qt::KeyboardModifiers& mods)
 {
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
@@ -848,7 +850,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     _imp->lastOverlayNode.reset();
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -909,7 +911,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1016,7 +1018,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -1069,7 +1071,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-    ViewIdx view = getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);

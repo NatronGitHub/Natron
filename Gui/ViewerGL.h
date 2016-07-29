@@ -101,10 +101,6 @@ public:
     // MT-SAFE: don't return a reference
     Format getDisplayWindow() const;
 
-
-    void setClipToDisplayWindow(bool b);
-
-    virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
     virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
@@ -148,15 +144,6 @@ public:
 
     void fitImageToFormat(bool useProjectFormat);
 
-    /**
-     *@brief Turns on the overlays on the viewer.
-     **/
-    void turnOnOverlay();
-
-    /**
-     *@brief Turns off the overlays on the viewer.
-     **/
-    void turnOffOverlay();
 
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
     virtual bool isViewerUIVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -235,29 +222,11 @@ public:
 public Q_SLOTS:
 
 
-    /**
-     *@brief Slot used by the GUI to zoom at the current center the viewport.
-     *@param v[in] an integer holding the desired zoom factor (in percent).
-     **/
-    void zoomSlot(int v);
-
-    /**
-     *@brief Convenience function. See ViewerGL::zoomSlot(int)
-     **/
-    void zoomSlot(double v);
-
-
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 
     virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) OVERRIDE FINAL;
 
     void clearColorBuffer(double r = 0., double g = 0., double b = 0., double a = 1.);
-
-    void toggleOverlays();
-
-    void toggleWipe();
-
-    void centerWipe();
 
     void onProjectFormatChanged(const Format & format);
 
@@ -282,7 +251,6 @@ public:
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL;
 
 public:
@@ -292,18 +260,25 @@ public:
 
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
+    virtual void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const OVERRIDE FINAL;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+    virtual void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio) OVERRIDE FINAL;
 
-    void setUserRoIEnabled(bool b);
+    virtual void translateViewport(double dx, double dy) OVERRIDE FINAL;
 
-    void setBuildNewUserRoI(bool b);
+    virtual void zoomViewport(double newZoomFactor) OVERRIDE FINAL;
 
-    virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
-    virtual RectD getUserRegionOfInterest() const OVERRIDE FINAL;
+    virtual void setInfoBarVisible(bool visible) OVERRIDE FINAL;
 
-    void setUserRoI(const RectD & r);
+    virtual void setInfoBarVisible(int index, bool visible) OVERRIDE FINAL;
+
+    virtual void setLeftToolBarVisible(bool visible) OVERRIDE FINAL;
+
+    virtual void setTopToolBarVisible(bool visible) OVERRIDE FINAL;
+
+    virtual void setPlayerVisible(bool visible) OVERRIDE FINAL;
+
+    virtual void setTimelineVisible(bool visible) OVERRIDE FINAL;
 
     /**
      * @brief Swap the OpenGL buffers.
@@ -369,7 +344,7 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    ViewerInstancePtr getInternalNode() const;
+    ViewerNodePtr getInternalNode() const;
     ViewerTab* getViewerTab() const;
 
     /**
@@ -383,23 +358,9 @@ public:
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     virtual ViewerInstancePtr getInternalViewerNode() const OVERRIDE FINAL;
 
-    /**
-     * @brief can only be called on the main-thread
-     **/
-    void setGain(double d);
-
-    void setGamma(double g);
-
-    void setLut(int lut);
-
-    bool isWipeHandleVisible() const;
-
     void setZoomOrPannedSinceLastFit(bool enabled);
 
     bool getZoomOrPannedSinceLastFit() const;
-
-    virtual ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
-    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left, double &right, double &bottom, double &top) const;
@@ -520,8 +481,6 @@ private:
     GLuint getPboID(int index);
 
 
-    void populateMenu();
-
     /**
      *@brief Prints a message if the current frame buffer is incomplete.
      * where will be printed to indicate a function. If silent is off,
@@ -555,50 +514,21 @@ private:
     /**
      *@brief Called inside paintGL(). It will draw all the overlays.
      **/
-    void drawOverlay(unsigned int mipMapLevel);
-
-    /**
-     * @brief Called by drawOverlay to draw the user region of interest.
-     **/
-    void drawUserRoI();
+    void drawOverlay(unsigned int mipMapLevel,
+                     const NodePtr& aInput,
+                     const NodePtr& bInput);
 
     void drawPickerRectangle();
 
     void drawPickerPixel();
 
-    void drawWipeControl();
 
     /**
      *@brief Draws the persistent message if it is on.
      **/
     void drawPersistentMessage();
 
-    bool isNearByUserRoITopEdge(const RectD & roi,
-                                const QPointF & zoomPos,
-                                double zoomScreenPixelWidth,
-                                double zoomScreenPixelHeight);
-
-    bool isNearByUserRoIRightEdge(const RectD & roi,
-                                  const QPointF & zoomPos,
-                                  double zoomScreenPixelWidth,
-                                  double zoomScreenPixelHeight);
-
-    bool isNearByUserRoILeftEdge(const RectD & roi,
-                                 const QPointF & zoomPos,
-                                 double zoomScreenPixelWidth,
-                                 double zoomScreenPixelHeight);
-
-
-    bool isNearByUserRoIBottomEdge(const RectD & roi,
-                                   const QPointF & zoomPos,
-                                   double zoomScreenPixelWidth,
-                                   double zoomScreenPixelHeight);
-
-    bool isNearByUserRoI(double x,
-                         double y,
-                         const QPointF & zoomPos,
-                         double zoomScreenPixelWidth,
-                         double zoomScreenPixelHeight);
+    
 
     void updateInfoWidgetColorPicker(const QPointF & imgPos,
                                      const QPoint & widgetPos);

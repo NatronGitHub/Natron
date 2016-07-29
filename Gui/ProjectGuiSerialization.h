@@ -67,7 +67,8 @@ GCC_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_PAUSE_VIEWER 12
 #define VIEWER_DATA_INTRODUCES_LAYER 13
 #define VIEWER_DATA_INTRODUCES_FULL_FRAME_PROC 14
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FULL_FRAME_PROC
+#define VIEWER_DATA_MOVE_TO_ENGINE 15
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_MOVE_TO_ENGINE
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -101,32 +102,10 @@ struct ViewerData
     double zoomLeft;
     double zoomBottom;
     double zoomFactor;
-    bool userRoIenabled;
-    RectD userRoI; // in canonical coordinates
-    bool isClippedToProject;
-    bool isFullFrameProcessEnabled;
-    bool autoContrastEnabled;
-    double gain;
-    double gamma;
-    bool renderScaleActivated;
-    int mipMapLevel;
-    std::string colorSpace;
-    std::string channels;
-    std::string layerName, alphaLayerName;
     bool zoomOrPanSinceLastFit;
-    int wipeCompositingOp;
-    bool leftToolbarVisible;
-    bool rightToolbarVisible;
-    bool topToolbarVisible;
-    bool playerVisible;
-    bool infobarVisible;
-    bool timelineVisible;
-    bool checkerboardEnabled;
-    bool isPauseEnabled[2];
     double fps;
     bool fpsLocked;
     int leftBound, rightBound;
-    int aChoice, bChoice;
     unsigned int version;
 
     friend class ::boost::serialization::access;
@@ -143,31 +122,47 @@ struct ViewerData
             double zoomPar;
             ar & ::boost::serialization::make_nvp("zoomPAR", zoomPar);
         }
-        ar & ::boost::serialization::make_nvp("UserRoIEnabled", userRoIenabled);
-        ar & ::boost::serialization::make_nvp("UserRoI", userRoI);
-        ar & ::boost::serialization::make_nvp("ClippedToProject", isClippedToProject);
-        ar & ::boost::serialization::make_nvp("AutoContrast", autoContrastEnabled);
-        ar & ::boost::serialization::make_nvp("Gain", gain);
-        if (version >= VIEWER_DATA_INTRODUCES_GAMMA) {
-            ar & ::boost::serialization::make_nvp("Gain", gamma);
-        } else {
-            gamma = 1.;
+
+        if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+            bool userRoIenabled;
+            ar & ::boost::serialization::make_nvp("UserRoIEnabled", userRoIenabled);
+            RectD userRoI;
+            ar & ::boost::serialization::make_nvp("UserRoI", userRoI);
+            bool isClippedToProject;
+            ar & ::boost::serialization::make_nvp("ClippedToProject", isClippedToProject);
+            bool autoContrastEnabled;
+            ar & ::boost::serialization::make_nvp("AutoContrast", autoContrastEnabled);
+            double gain;
+            ar & ::boost::serialization::make_nvp("Gain", gain);
+            if (version >= VIEWER_DATA_INTRODUCES_GAMMA) {
+                double gamma;
+                ar & ::boost::serialization::make_nvp("Gain", gamma);
+            }
+
+            int colorSpace;
+            ar & ::boost::serialization::make_nvp("ColorSpace", colorSpace);
+            if (version >= VIEWER_DATA_INTRODUCES_LAYER) {
+                std::string layerName,alphaLayerName;
+                ar & ::boost::serialization::make_nvp("Layer", layerName);
+                ar & ::boost::serialization::make_nvp("AlphaLayer", alphaLayerName);
+            }
+            int channels;
+            ar & ::boost::serialization::make_nvp("Channels", channels);
+            bool renderScaleActivated;
+            ar & ::boost::serialization::make_nvp("RenderScaleActivated", renderScaleActivated);
+            unsigned int mipMapLevel;
+            ar & ::boost::serialization::make_nvp("MipMapLevel", mipMapLevel);
         }
-        ar & ::boost::serialization::make_nvp("ColorSpace", colorSpace);
-        if (version >= VIEWER_DATA_INTRODUCES_LAYER) {
-            ar & ::boost::serialization::make_nvp("Layer", layerName);
-            ar & ::boost::serialization::make_nvp("AlphaLayer", alphaLayerName);
-        }
-        ar & ::boost::serialization::make_nvp("Channels", channels);
-        ar & ::boost::serialization::make_nvp("RenderScaleActivated", renderScaleActivated);
-        ar & ::boost::serialization::make_nvp("MipMapLevel", mipMapLevel);
+
 
         if (version >= VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING) {
             ar & ::boost::serialization::make_nvp("ZoomOrPanSinceFit", zoomOrPanSinceLastFit);
-            ar & ::boost::serialization::make_nvp("CompositingOP", wipeCompositingOp);
+            if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+                int wipeCompositingOp;
+                ar & ::boost::serialization::make_nvp("CompositingOP", wipeCompositingOp);
+            }
         } else {
             zoomOrPanSinceLastFit = false;
-            wipeCompositingOp = 0;
         }
         if ( (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE) && (version < VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) ) {
             bool frameRangeLocked;
@@ -181,34 +176,33 @@ struct ViewerData
         }
 
         if (version >= VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY) {
-            ar & ::boost::serialization::make_nvp("LeftToolbarVisible", leftToolbarVisible);
-            ar & ::boost::serialization::make_nvp("RightToolbarVisible", rightToolbarVisible);
-            ar & ::boost::serialization::make_nvp("TopToolbarVisible", topToolbarVisible);
-            ar & ::boost::serialization::make_nvp("PlayerVisible", playerVisible);
-            ar & ::boost::serialization::make_nvp("TimelineVisible", timelineVisible);
-            ar & ::boost::serialization::make_nvp("InfobarVisible", infobarVisible);
-        } else {
-            leftToolbarVisible = true;
-            rightToolbarVisible = true;
-            topToolbarVisible = true;
-            playerVisible = true;
-            timelineVisible = true;
-            infobarVisible = true;
+            if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+                bool leftToolbarVisible, rightToolbarVisible, topToolbarVisible, playerVisible, timelineVisible, infobarVisible;
+                ar & ::boost::serialization::make_nvp("LeftToolbarVisible", leftToolbarVisible);
+                ar & ::boost::serialization::make_nvp("RightToolbarVisible", rightToolbarVisible);
+                ar & ::boost::serialization::make_nvp("TopToolbarVisible", topToolbarVisible);
+                ar & ::boost::serialization::make_nvp("PlayerVisible", playerVisible);
+                ar & ::boost::serialization::make_nvp("TimelineVisible", timelineVisible);
+                ar & ::boost::serialization::make_nvp("InfobarVisible", infobarVisible);
+            }
         }
 
         if (version >= VIEWER_DATA_INTRODUCES_PAUSE_VIEWER) {
-            ar & ::boost::serialization::make_nvp("isInputAPaused", isPauseEnabled[0]);
-            ar & ::boost::serialization::make_nvp("isInputBPaused", isPauseEnabled[1]);
-        } else {
-            isPauseEnabled[0] = isPauseEnabled[1] = false;
+            if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+                bool isPauseEnabled[2];
+                ar & ::boost::serialization::make_nvp("isInputAPaused", isPauseEnabled[0]);
+                ar & ::boost::serialization::make_nvp("isInputBPaused", isPauseEnabled[1]);
+            }
         }
 
-        if (version >= VIEWER_DATA_INTRODUCES_CHECKERBOARD) {
-            ar & ::boost::serialization::make_nvp("CheckerboardEnabled", checkerboardEnabled);
-        } else {
-            checkerboardEnabled = false;
-        }
 
+        if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+            if (version >= VIEWER_DATA_INTRODUCES_CHECKERBOARD) {
+                bool checkerboardEnabled;
+                ar & ::boost::serialization::make_nvp("CheckerboardEnabled", checkerboardEnabled);
+            }
+        }
+        
         if (version >= VIEWER_DATA_INTRODUCES_FPS) {
             ar & ::boost::serialization::make_nvp("Fps", fps);
         } else {
@@ -221,18 +215,17 @@ struct ViewerData
             fpsLocked = true;
         }
 
-        if (version >= VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS) {
-            ar & ::boost::serialization::make_nvp("aInput", aChoice);
-            ar & ::boost::serialization::make_nvp("bInput", bChoice);
-        } else {
-            aChoice = -1;
-            bChoice = -1;
-        }
+        if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+            if (version >= VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS) {
+                int aChoice, bChoice;
+                ar & ::boost::serialization::make_nvp("aInput", aChoice);
+                ar & ::boost::serialization::make_nvp("bInput", bChoice);
+            }
 
-        if (version >= VIEWER_DATA_INTRODUCES_FULL_FRAME_PROC) {
-            ar & ::boost::serialization::make_nvp("fullFrame", isFullFrameProcessEnabled);
-        } else {
-            isFullFrameProcessEnabled = false;
+            if (version >= VIEWER_DATA_INTRODUCES_FULL_FRAME_PROC) {
+                bool isFullFrameProcessEnabled;
+                ar & ::boost::serialization::make_nvp("fullFrame", isFullFrameProcessEnabled);
+            }
         }
     } // serialize
 };

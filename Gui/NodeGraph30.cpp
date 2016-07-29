@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/CurveWidget.h"
@@ -83,40 +84,38 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
 
-    boost::shared_ptr<InspectorNode> v;
+    ViewerNodePtr viewerNode;
     if (lastUsedViewer) {
-        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
-                                                        getInternalNode()->getNode() );
+        viewerNode = lastUsedViewer->getInternalNode();
     } else {
-        CreateNodeArgs args( PLUGINID_NATRON_VIEWER,
+        CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP,
                              getGroup() );
-        NodePtr viewerNode = getGui()->getApp()->createNode(args);
+        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        NodePtr node = getGui()->getApp()->createNode(args);
 
-        if (!viewerNode) {
+        if (!node) {
             return;
         }
-        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
+        viewerNode = node->isEffectViewerNode();
     }
 
-    if (!v) {
+    if (!viewerNode) {
         return;
     }
 
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
-    if ( !v->isActivated() ) {
+    if ( !viewerNode->getNode()->isActivated() ) {
         return;
     }
 
     ///get a ptr to the NodeGui
-    NodeGuiIPtr gui_i = v->getNodeGui();
+    NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
     bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
-        v->setActiveInputAndRefresh(inputNB, isASide);
-        gui->refreshEdges();
-
+        viewerNode->connectInputToIndex(inputNB, isASide ? 0 : 1);
         return;
     }
 

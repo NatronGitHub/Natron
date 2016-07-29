@@ -39,6 +39,7 @@
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
 #include "Gui/ChannelsComboBox.h"
@@ -61,173 +62,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-bool
-ViewerTab::isClippedToProject() const
-{
-    return _imp->viewer->isClippingImageToProjectWindow();
-}
-
-std::string
-ViewerTab::getColorSpace() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    ViewerColorSpaceEnum lut = (ViewerColorSpaceEnum)viewerNode->getLutType();
-
-    switch (lut) {
-    case eViewerColorSpaceLinear:
-
-        return "Linear(None)";
-        break;
-    case eViewerColorSpaceSRGB:
-
-        return "sRGB";
-        break;
-    case eViewerColorSpaceRec709:
-
-        return "Rec.709";
-        break;
-    default:
-
-        return "";
-        break;
-    }
-}
-
-void
-ViewerTab::setUserRoIEnabled(bool b)
-{
-    onEnableViewerRoIButtonToggle(b);
-}
-
-bool
-ViewerTab::isAutoContrastEnabled() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-
-    return viewerNode->isAutoContrastEnabled();
-}
-
-void
-ViewerTab::setAutoContrastEnabled(bool b)
-{
-    _imp->autoContrast->setChecked(b);
-    _imp->gainSlider->setEnabled(!b);
-    _imp->gainBox->setEnabled(!b);
-    _imp->toggleGainButton->setEnabled(!b);
-    _imp->gammaSlider->setEnabled(!b);
-    _imp->gammaBox->setEnabled(!b);
-    _imp->toggleGammaButton->setEnabled(!b);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->onAutoContrastChanged(b, true);
-}
-
-void
-ViewerTab::setUserRoI(const RectD & r)
-{
-    _imp->viewer->setUserRoI(r);
-}
-
-void
-ViewerTab::setClipToProject(bool b)
-{
-    onClipToProjectButtonToggle(b);
-}
-
-void
-ViewerTab::setFullFrameProcessing(bool fullFrame)
-{
-    onFullFrameButtonToggle(fullFrame);
-}
-
-bool
-ViewerTab::isFullFrameProcessingEnabled() const
-{
-    return _imp->viewerNode.lock()->isFullFrameProcessingEnabled();
-}
-
-void
-ViewerTab::setColorSpace(const std::string & colorSpaceName)
-{
-    int index = _imp->viewerColorSpace->itemIndex( QString::fromUtf8( colorSpaceName.c_str() ) );
-
-    if (index != -1) {
-        _imp->viewerColorSpace->setCurrentIndex(index);
-    }
-}
-
-void
-ViewerTab::setGain(double d)
-{
-    double fstop = std::log(d) / M_LN2;
-
-    _imp->gainBox->setValue(fstop);
-    _imp->gainSlider->seekScalePosition(fstop);
-    _imp->viewer->setGain(d);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->onGainChanged(d);
-    _imp->toggleGainButton->setDown(d != 1.);
-    _imp->toggleGainButton->setChecked(d != 1.);
-    _imp->lastFstopValue = fstop;
-}
-
-double
-ViewerTab::getGain() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    return viewerNode->getGain();
-}
-
-void
-ViewerTab::setGamma(double gamma)
-{
-    _imp->gammaBox->setValue(gamma);
-    _imp->gammaSlider->seekScalePosition(gamma);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->onGammaChanged(gamma);
-    _imp->viewer->setGamma(gamma);
-    _imp->toggleGammaButton->setDown(gamma != 1.);
-    _imp->toggleGammaButton->setChecked(gamma != 1.);
-    _imp->lastGammaValue = gamma;
-}
-
-double
-ViewerTab::getGamma() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    return viewerNode->getGamma();
-}
-
-void
-ViewerTab::setMipMapLevel(int level)
-{
-    if (level > 0) {
-        _imp->renderScaleCombo->setCurrentIndex(level - 1);
-    }
-
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->onMipMapLevelChanged(level);
-    _imp->viewer->checkIfViewPortRoIValidOrRender();
-}
-
-int
-ViewerTab::getMipMapLevel() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    return viewerNode->getMipMapLevel();
-}
-
-void
-ViewerTab::setRenderScaleActivated(bool act)
-{
-    onRenderScaleButtonClicked(act);
-}
-
-bool
-ViewerTab::getRenderScaleActivated() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    return viewerNode->getMipMapLevel() != 0;
-}
 
 void
 ViewerTab::setZoomOrPannedSinceLastFit(bool enabled)
@@ -241,61 +75,6 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
     return _imp->viewer->getZoomOrPannedSinceLastFit();
 }
 
-DisplayChannelsEnum
-ViewerTab::getChannels() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    return viewerNode->getChannels(0);
-}
-
-std::string
-ViewerTab::getChannelsString(DisplayChannelsEnum c)
-{
-    switch (c) {
-    case eDisplayChannelsRGB:
-
-        return "RGB";
-    case eDisplayChannelsR:
-
-        return "R";
-    case eDisplayChannelsG:
-
-        return "G";
-    case eDisplayChannelsB:
-
-        return "B";
-    case eDisplayChannelsA:
-
-        return "A";
-    case eDisplayChannelsY:
-
-        return "Luminance";
-        break;
-    default:
-
-        return "";
-    }
-}
-
-std::string
-ViewerTab::getChannelsString() const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    DisplayChannelsEnum c = viewerNode->getChannels(0);
-
-    return getChannelsString(c);
-}
-
-void
-ViewerTab::setChannels(const std::string & channelsStr)
-{
-    int index = _imp->viewerChannels->itemIndex( QString::fromUtf8( channelsStr.c_str() ) );
-
-    if (index != -1) {
-        _imp->viewerChannels->setCurrentIndex_no_emit(index);
-        setDisplayChannels(index, true);
-    }
-}
 
 ViewerGL*
 ViewerTab::getViewer() const
@@ -303,62 +82,12 @@ ViewerTab::getViewer() const
     return _imp->viewer;
 }
 
-ViewerInstancePtr
+ViewerNodePtr
 ViewerTab::getInternalNode() const
 {
     return _imp->viewerNode.lock();
 }
 
-void
-ViewerTab::discardInternalNodePointer()
-{
-    _imp->viewerNode.reset();
-}
-
-void
-ViewerTab::onAutoContrastChanged(bool b)
-{
-    _imp->autoContrast->setDown(b);
-    _imp->autoContrast->setChecked(b);
-    _imp->gainSlider->setEnabled(!b);
-    _imp->gainBox->setEnabled(!b);
-    _imp->toggleGainButton->setEnabled(!b);
-    _imp->gammaBox->setEnabled(!b);
-    _imp->gammaSlider->setEnabled(!b);
-    _imp->toggleGammaButton->setEnabled(!b);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if (!b) {
-        viewerNode->onGainChanged( std::pow( 2, _imp->gainBox->value() ) );
-        viewerNode->onGammaChanged( _imp->gammaBox->value() );
-    }
-    viewerNode->onAutoContrastChanged(b, true);
-}
-
-void
-ViewerTab::onRenderScaleComboIndexChanged(int index)
-{
-    int level;
-
-    if (_imp->renderScaleActive) {
-        level = index + 1;
-    } else {
-        level = 0;
-    }
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->onMipMapLevelChanged(level);
-    _imp->viewer->checkIfViewPortRoIValidOrRender();
-}
-
-void
-ViewerTab::onRenderScaleButtonClicked(bool checked)
-{
-    _imp->activateRenderScale->blockSignals(true);
-    _imp->renderScaleActive = checked;
-    _imp->activateRenderScale->setDown(checked);
-    _imp->activateRenderScale->setChecked(checked);
-    _imp->activateRenderScale->blockSignals(false);
-    onRenderScaleComboIndexChanged( _imp->renderScaleCombo->activeIndex() );
-}
 
 void
 ViewerTab::setInfoBarResolution(const Format & f)
@@ -366,155 +95,6 @@ ViewerTab::setInfoBarResolution(const Format & f)
     _imp->infoWidget[0]->setResolution(f);
     _imp->infoWidget[1]->setResolution(f);
 }
-
-#if 0
-void
-ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
-{
-    std::map<NodeGuiWPtr, TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
-
-    if ( found != _imp->trackerNodes.end() ) {
-        return;
-    }
-
-    TrackerGui* tracker = 0;
-    if ( n->getNode()->getEffectInstance()->isBuiltinTrackerNode() ) {
-        TrackerPanel* panel = n->getTrackerPanel();
-        assert(panel);
-        tracker = new TrackerGui(panel, this);
-    } else {
-        assert( n->getNode()->isMultiInstance() );
-        n->ensurePanelCreated();
-        MultiInstancePanelPtr multiPanel = n->getMultiInstancePanel();
-        if (multiPanel) {
-            boost::shared_ptr<TrackerPanelV1> trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
-            assert(trackPanel);
-            tracker = new TrackerGui(trackPanel, this);
-        }
-    }
-
-
-    std::pair<std::map<NodeGui*, TrackerGui*>::iterator, bool> ret = _imp->trackerNodes.insert( std::make_pair(n, tracker) );
-    assert(ret.second);
-    if (!ret.second) {
-        qDebug() << "ViewerTab::createTrackerInterface() failed";
-        delete tracker;
-
-        return;
-    }
-    QObject::connect( n.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
-    if ( n->isSettingsPanelVisible() ) {
-        setTrackerInterface(n);
-    } else if (tracker) {
-        QWidget* buttonsBar = tracker->getButtonsBar();
-        assert(buttonsBar);
-        if (buttonsBar) {
-            buttonsBar->hide();
-        }
-    }
-}
-
-void
-ViewerTab::setTrackerInterface(const NodeGuiPtr& n)
-{
-    assert(n);
-    std::map<NodeGuiWPtr, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
-    if ( it != _imp->trackerNodes.end() ) {
-        if (_imp->currentTracker.first.lock() == n) {
-            return;
-        }
-
-        ///remove any existing tracker gui
-        if ( _imp->currentTracker.first.lock() ) {
-            removeTrackerInterface(_imp->currentTracker.first.lock(), false, true);
-        }
-
-        ///Add the widgets
-
-        ///if there's a current roto add it before it
-        int index;
-        if (_imp->currentRoto.second) {
-            index = _imp->mainLayout->indexOf( _imp->currentRoto.second->getCurrentButtonsBar() );
-            assert(index != -1);
-        } else {
-            index = _imp->mainLayout->indexOf(_imp->viewerContainer);
-        }
-
-        assert(index >= 0);
-        QWidget* buttonsBar = it->second->getButtonsBar();
-        assert(buttonsBar);
-        if (buttonsBar) {
-            _imp->mainLayout->insertWidget(index, buttonsBar);
-            {
-                QMutexLocker l(&_imp->visibleToolbarsMutex);
-                if (_imp->topToolbarVisible) {
-                    buttonsBar->show();
-                }
-            }
-        }
-
-        _imp->currentTracker.first = n;
-        _imp->currentTracker.second = it->second;
-        _imp->viewer->redraw();
-    }
-}
-
-void
-ViewerTab::removeTrackerInterface(const NodeGuiPtr& n,
-                                  bool permanently,
-                                  bool removeAndDontSetAnother)
-{
-    std::map<NodeGuiWPtr, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
-
-    if ( it != _imp->trackerNodes.end() ) {
-        if ( !getGui() ) {
-            if (permanently) {
-                delete it->second;
-            }
-
-            return;
-        }
-
-        if (_imp->currentTracker.first.lock() == n) {
-            ///Remove the widgets of the current tracker node
-
-            int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentTracker.second->getButtonsBar() );
-            assert(buttonsBarIndex >= 0);
-            if (buttonsBarIndex >= 0) {
-                QLayoutItem* buttonsBar = _imp->mainLayout->itemAt(buttonsBarIndex);
-                assert(buttonsBar);
-                if (buttonsBar) {
-                    _imp->mainLayout->removeItem(buttonsBar);
-                    buttonsBar->widget()->hide();
-                }
-            }
-            if (!removeAndDontSetAnother) {
-                ///If theres another tracker node, set it as the current tracker interface
-                std::map<NodeGuiWPtr, TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
-                for (std::map<NodeGuiWPtr, TrackerGui*>::iterator it2 = _imp->trackerNodes.begin(); it2 != _imp->trackerNodes.end(); ++it2) {
-                    if ( (it2->second != it->second) && it2->first.lock()->isSettingsPanelVisible() ) {
-                        newTracker = it2;
-                        break;
-                    }
-                }
-
-                _imp->currentTracker.first.reset();
-                _imp->currentTracker.second = 0;
-
-                if ( newTracker != _imp->trackerNodes.end() ) {
-                    setTrackerInterface( newTracker->first.lock() );
-                }
-            }
-        }
-
-        if (permanently) {
-            delete it->second;
-            _imp->trackerNodes.erase(it);
-        }
-    }
-} // ViewerTab::removeTrackerInterface
-
-#endif // if 0
 
 /**
  * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
@@ -588,16 +168,14 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
         removeNodeViewerInterface(activeNodeForPlugin, false /*permanantly*/, /*setAnother*/ false);
     }
 
+
+    ViewerNodePtr internalNode = getInternalNode();
     // Add the widgets
 
     if (newToolbar) {
         _imp->viewerLayout->insertWidget(0, newToolbar);
-
-        {
-            QMutexLocker l(&_imp->visibleToolbarsMutex);
-            if (_imp->leftToolbarVisible) {
-                newToolbar->show();
-            }
+        if (internalNode->isLeftToolbarVisible()) {
+            newToolbar->show();
         }
     }
 
@@ -626,12 +204,11 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
         assert(newContainer);
         if (newContainer) {
             _imp->mainLayout->insertWidget(index, newContainer);
-            {
-                QMutexLocker l(&_imp->visibleToolbarsMutex);
-                if (_imp->topToolbarVisible) {
-                    newContainer->show();
-                }
+
+            if (internalNode->isTopToolbarVisible()) {
+                newContainer->show();
             }
+
         }
     }
     ViewerTabPrivate::PluginViewerContext p;
@@ -777,349 +354,11 @@ ViewerTab::notifyGuiClosing()
 }
 
 void
-ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,
-                                                ViewerCompositingOperatorEnum newOp)
-{
-    // Do not reset the wipe controls, this makes "toggle wipe" impractical!
-    // instead, teh user should use the "center wipe" shortcut (Shift-F)
-    //if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
-    //    _imp->viewer->resetWipeControls();
-    //}
-    Q_UNUSED(oldOp);
-
-    _imp->secondInputImage->setEnabled_natron(newOp != eViewerCompositingOperatorNone);
-
-    // Do not reset input B, it should only be disabled! Else "toggle wipe" becomes impractical
-    //if (newOp == eViewerCompositingOperatorNone) {
-    //    _imp->secondInputImage->setCurrentIndex_no_emit(0);
-    //    _imp->viewerNode->setInputB(-1);
-    //}
-
-    if ( (newOp == eViewerCompositingOperatorNone) || !_imp->secondInputImage->getEnabled_natron()  || (_imp->secondInputImage->activeIndex() == 0) ) {
-        manageSlotsForInfoWidget(1, false);
-        _imp->infoWidget[1]->hide();
-    } else if (newOp != eViewerCompositingOperatorNone) {
-        manageSlotsForInfoWidget(1, true);
-        _imp->infoWidget[1]->show();
-    }
-
-    _imp->viewer->update();
-}
-
-void
-ViewerTab::onCompositingOperatorIndexChanged(int index)
-{
-    ViewerCompositingOperatorEnum newOp, oldOp;
-    {
-        QMutexLocker l(&_imp->compOperatorMutex);
-        oldOp = _imp->compOperator;
-        switch (index) {
-        case 0:
-            _imp->compOperator = eViewerCompositingOperatorNone;
-            _imp->secondInputImage->setEnabled_natron(false);
-            manageSlotsForInfoWidget(1, false);
-            _imp->infoWidget[1]->hide();
-            break;
-        case 1:
-            _imp->compOperator = eViewerCompositingOperatorWipeUnder;
-            break;
-        case 2:
-            _imp->compOperator = eViewerCompositingOperatorWipeOver;
-            break;
-        case 3:
-            _imp->compOperator = eViewerCompositingOperatorWipeMinus;
-            break;
-        case 4:
-            _imp->compOperator = eViewerCompositingOperatorWipeOnionSkin;
-            break;
-        case 5:
-            _imp->compOperator = eViewerCompositingOperatorStackUnder;
-            break;
-        case 6:
-            _imp->compOperator = eViewerCompositingOperatorStackOver;
-            break;
-        case 7:
-            _imp->compOperator = eViewerCompositingOperatorStackMinus;
-            break;
-        case 8:
-            _imp->compOperator = eViewerCompositingOperatorStackOnionSkin;
-            break;
-
-        default:
-            break;
-        }
-        assert(index == (int)_imp->compOperator);
-        newOp = _imp->compOperator;
-    }
-
-    onCompositingOperatorChangedInternal(oldOp, newOp);
-}
-
-void
-ViewerTab::setCompositingOperator(ViewerCompositingOperatorEnum op)
-{
-    int comboIndex;
-
-    switch (op) {
-    case eViewerCompositingOperatorNone:
-        comboIndex = 0;
-        break;
-    case eViewerCompositingOperatorWipeUnder:
-        comboIndex = 1;
-        break;
-    case eViewerCompositingOperatorWipeOver:
-        comboIndex = 2;
-        break;
-    case eViewerCompositingOperatorWipeMinus:
-        comboIndex = 3;
-        break;
-    case eViewerCompositingOperatorWipeOnionSkin:
-        comboIndex = 4;
-        break;
-    case eViewerCompositingOperatorStackUnder:
-        comboIndex = 5;
-        break;
-    case eViewerCompositingOperatorStackOver:
-        comboIndex = 6;
-        break;
-    case eViewerCompositingOperatorStackMinus:
-        comboIndex = 7;
-        break;
-    case eViewerCompositingOperatorStackOnionSkin:
-        comboIndex = 8;
-        break;
-
-    default:
-        throw std::logic_error("ViewerTab::setCompositingOperator(): unknown operator");
-        break;
-    }
-    assert(comboIndex == (int)op);
-
-    ViewerCompositingOperatorEnum oldOp;
-    {
-        QMutexLocker l(&_imp->compOperatorMutex);
-        oldOp = _imp->compOperator;
-        _imp->compOperator = op;
-        _imp->compOperatorPrevious = oldOp;
-    }
-    _imp->compositingOperator->setCurrentIndex_no_emit(comboIndex);
-    onCompositingOperatorChangedInternal(oldOp, op);
-}
-
-ViewerCompositingOperatorEnum
-ViewerTab::getCompositingOperator() const
-{
-    QMutexLocker l(&_imp->compOperatorMutex);
-
-    return _imp->compOperator;
-}
-
-ViewerCompositingOperatorEnum
-ViewerTab::getCompositingOperatorPrevious() const
-{
-    QMutexLocker l(&_imp->compOperatorMutex);
-
-    return _imp->compOperatorPrevious;
-}
-
-void
-ViewerTab::setInputA(int index)
-{
-    ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
-
-    if ( found == _imp->inputNamesMap.end() ) {
-        return;
-    }
-
-    int comboboxIndex = _imp->firstInputImage->itemIndex(found->second.name);
-    if (comboboxIndex == -1) {
-        return;
-    }
-    _imp->firstInputImage->setCurrentIndex(comboboxIndex);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setInputA(index);
-
-    abortViewersAndRefresh();
-}
-
-void
-ViewerTab::setInputB(int index)
-{
-    ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
-
-    if ( found == _imp->inputNamesMap.end() ) {
-        return;
-    }
-
-    int comboboxIndex = _imp->secondInputImage->itemIndex(found->second.name);
-    if (comboboxIndex == -1) {
-        return;
-    }
-    _imp->secondInputImage->setCurrentIndex(comboboxIndex);
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setInputB(index);
-    abortViewersAndRefresh();
-}
-
-void
-ViewerTab::getActiveInputs(int* a,
-                           int* b) const
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->getActiveInputs(*a, *b);
-}
-
-void
-ViewerTab::switchInputAAndB()
-{
-    QString aIndex = _imp->firstInputImage->getCurrentIndexText();
-    QString bIndex = _imp->secondInputImage->getCurrentIndexText();
-
-    _imp->firstInputImage->setCurrentText_no_emit(bIndex);
-    _imp->secondInputImage->setCurrentText_no_emit(aIndex);
-
-    int inputAIndex = -1, inputBIndex = -1;
-    for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
-        if (it->second.name == aIndex) {
-            inputAIndex = it->first;
-        } else if (it->second.name == bIndex) {
-            inputBIndex = it->first;
-        }
-    }
-    if (inputBIndex == inputAIndex) {
-        return;
-    }
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setInputA(inputBIndex);
-    viewerNode->setInputB(inputAIndex);
-
-    abortViewersAndRefresh();
-}
-
-///Called when the user change the combobox choice
-void
-ViewerTab::onFirstInputNameChanged(const QString & text)
-{
-    int inputIndex = -1;
-
-    for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
-        if (it->second.name == text) {
-            inputIndex = it->first;
-            break;
-        }
-    }
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setInputA(inputIndex);
-
-    abortViewersAndRefresh();
-}
-
-///Called when the user change the combobox choice
-void
-ViewerTab::onSecondInputNameChanged(const QString & text)
-{
-    int inputIndex = -1;
-
-    for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
-        if (it->second.name == text) {
-            inputIndex = it->first;
-            break;
-        }
-    }
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setInputB(inputIndex);
-    if (inputIndex == -1) {
-        manageSlotsForInfoWidget(1, false);
-        //setCompositingOperator(eViewerCompositingOperatorNone);
-        _imp->infoWidget[1]->hide();
-    } else {
-        if ( !_imp->infoWidget[1]->isVisible() ) {
-            _imp->infoWidget[1]->show();
-            manageSlotsForInfoWidget(1, true);
-            _imp->secondInputImage->setEnabled_natron(true);
-            if (_imp->compOperator == eViewerCompositingOperatorNone) {
-                //_imp->viewer->resetWipeControls();
-                setCompositingOperator(eViewerCompositingOperatorWipeUnder);
-            }
-        }
-    }
-    abortViewersAndRefresh();
-}
-
-///This function is called only when the user changed inputs on the node graph
-void
-ViewerTab::onActiveInputsChanged()
-{
-    int activeInputs[2];
-
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    ViewerTabPrivate::InputNamesMap::iterator foundA = _imp->inputNamesMap.find(activeInputs[0]);
-    if ( foundA != _imp->inputNamesMap.end() ) {
-        int indexInA = _imp->firstInputImage->itemIndex(foundA->second.name);
-        assert(indexInA != -1);
-        if (indexInA != -1) {
-            _imp->firstInputImage->setCurrentIndex_no_emit(indexInA);
-        }
-    } else {
-        _imp->firstInputImage->setCurrentIndex_no_emit(0);
-    }
-
-    ViewerCompositingOperatorEnum op = getCompositingOperator();
-    _imp->secondInputImage->setEnabled_natron(op != eViewerCompositingOperatorNone);
-
-    ViewerTabPrivate::InputNamesMap::iterator foundB = _imp->inputNamesMap.find(activeInputs[1]);
-    if ( foundB != _imp->inputNamesMap.end() ) {
-        int indexInB = _imp->secondInputImage->itemIndex(foundB->second.name);
-
-        assert(indexInB != -1);
-        _imp->secondInputImage->setCurrentIndex_no_emit(indexInB);
-    } else {
-        _imp->secondInputImage->setCurrentIndex_no_emit(0);
-    }
-
-    if ( (op == eViewerCompositingOperatorNone) || !_imp->secondInputImage->getEnabled_natron()  || (_imp->secondInputImage->activeIndex() == 0) ) {
-        manageSlotsForInfoWidget(1, false);
-        _imp->infoWidget[1]->hide();
-    } else if (op != eViewerCompositingOperatorNone) {
-        manageSlotsForInfoWidget(1, true);
-        _imp->infoWidget[1]->show();
-    }
-
-    bool autoWipe = getInternalNode()->isInputChangeRequestedFromViewer();
-
-    /*if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
-         && ( op != eViewerCompositingOperatorNone) ) {
-        //setCompositingOperator(eViewerCompositingOperatorNone);
-        _imp->infoWidget[1]->hide();
-        manageSlotsForInfoWidget(1, false);
-        // _imp->secondInputImage->setEnabled_natron(false);
-       }
-       else*/if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-         && (op == eViewerCompositingOperatorNone) ) {
-        //_imp->viewer->resetWipeControls();
-        setCompositingOperator(eViewerCompositingOperatorWipeUnder);
-    }
-}
-
-void
 ViewerTab::connectToInput(int inputNb,
                           bool isASide)
 {
-    InspectorNodePtr node = toInspectorNode( getInternalNode()->getNode() );
-
-    assert(node);
-    if (!node) {
-        return;
-    }
-    bool isAutoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
-    if (isAutoWipeEnabled) {
-        getInternalNode()->setActivateInputChangeRequestedFromViewer(true);
-    }
-    node->setActiveInputAndRefresh(inputNb, isASide);
-    if (isAutoWipeEnabled) {
-        getInternalNode()->setActivateInputChangeRequestedFromViewer(false);
-    }
+    ViewerNodePtr internalNode = getInternalNode();
+    internalNode->connectInputToIndex(inputNb, isASide ? 0 : 1);
 }
 
 void
@@ -1134,26 +373,18 @@ ViewerTab::connectToBInput(int inputNb)
     connectToInput(inputNb, false);
 }
 
-void
-ViewerTab::onAvailableComponentsChanged()
-{
-    refreshLayerAndAlphaChannelComboBox();
-}
 
 void
 ViewerTab::refreshFPSBoxFromClipPreferences()
 {
-    int activeInputs[2];
-
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstancePtr input0 = activeInputs[0] != -1 ? viewerNode->getInput(activeInputs[0]) : EffectInstancePtr();
+    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
+    NodePtr input0 = viewerNode->getCurrentAInput();
+    NodePtr input1 = viewerNode->getCurrentBInput();
     if (input0) {
-        _imp->fpsBox->setValue( input0->getFrameRate() );
+        _imp->fpsBox->setValue( input0->getEffectInstance()->getFrameRate() );
     } else {
-        EffectInstancePtr input1 = activeInputs[1] != -1 ? viewerNode->getInput(activeInputs[1]) : EffectInstancePtr();
         if (input1) {
-            _imp->fpsBox->setValue( input1->getFrameRate() );
+            _imp->fpsBox->setValue( input1->getEffectInstance()->getFrameRate() );
         } else {
             _imp->fpsBox->setValue( getGui()->getApp()->getProjectFrameRate() );
         }

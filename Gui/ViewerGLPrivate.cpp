@@ -37,6 +37,8 @@
 #include "Engine/Lut.h" // Color
 #include "Engine/Settings.h"
 #include "Engine/Texture.h"
+#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // appFont
@@ -77,15 +79,12 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , oldClick()
     , displayingImageLut(eViewerColorSpaceSRGB)
     , ms(eMouseStateUndefined)
-    , hs(eHoverStateNothing)
     , textRenderingColor(200, 200, 200, 255)
     , displayWindowOverlayColor(125, 125, 125, 255)
     , rodOverlayColor(100, 100, 100, 255)
     , textFont(appFont, appFontSize)
-    , overlay(true)
     , updatingTexture(false)
     , clearColor(0, 0, 0, 255)
-    , menu( new Menu(_this) )
     , persistentMessages()
     , persistentMessageType(0)
     , displayPersistentMessage(false)
@@ -100,17 +99,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , currentViewerInfo_resolutionOverlay()
     , pickerState(ePickerStateInactive)
     , lastPickerPos()
-    , userRoIEnabled(false)   // protected by mutex
-    , userRoI()   // protected by mutex
-    , buildUserRoIOnNextPress(false)
-    , draggedUserRoI()
     , zoomCtx()   // protected by mutex
-    , clipToDisplayWindow(false)   // protected by mutex
-    , wipeControlsMutex()
-    , mixAmount(1.)   // protected by mutex
-    , wipeAngle(M_PI_2)   // protected by mutex
-    , wipeCenter()
-    , wipeInitialized(false)
     , selectionRectangle()
     , checkerboardTextureID(0)
     , checkerboardTileSize(0)
@@ -249,11 +238,9 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
 
-    bool clipToDisplayWindow;
-    {
-        QMutexLocker l(&this->clipToDisplayWindowMutex);
-        clipToDisplayWindow = this->clipToDisplayWindow;
-    }
+    ViewerNodePtr internalNode = _this->getViewerTab()->getInternalNode();
+    bool clipToDisplayWindow = internalNode->isClipToProjectEnabled();
+
     RectD rectClippedToRoI(canonicalRoIRoundedToTileSize);
     rectClippedToRoI.intersect(rod, &rectClippedToRoI);
 
@@ -269,11 +256,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
 
     //if user RoI is enabled, clip the rod to that roi
-    bool userRoiEnabled;
-    {
-        QMutexLocker l(&this->userRoIMutex);
-        userRoiEnabled = this->userRoIEnabled;
-    }
+    bool userRoiEnabled = internalNode->isUserRoIEnabled();
+
 
 
     ////The texture real size (r.w,r.h) might be slightly bigger than the actual
@@ -286,13 +270,12 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///doesn't need to be scaled.
 
     if (userRoiEnabled) {
-        {
-            QMutexLocker l(&this->userRoIMutex);
-            //if the userRoI isn't intersecting the rod, just don't render anything
-            if ( !rod.intersect(this->userRoI, &rod) ) {
-                return;
-            }
+        RectD userRoI = internalNode->getInternalViewerNode()->getUserRoI();
+        //if the userRoI isn't intersecting the rod, just don't render anything
+        if ( !rod.intersect(userRoI, &rod) ) {
+            return;
         }
+
         rectClippedToRoI.intersect(rod, &rectClippedToRoI);
         //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
@@ -386,7 +369,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         };
 
 
-        if ( background && this->viewerTab->isCheckerboardEnabled() && (polygonMode != eDrawPolygonModeWipeRight) ) {
+        if ( background && internalNode->isCheckerboardEnabled() && (polygonMode != eDrawPolygonModeWipeRight) ) {
             bool isblend = GL_GPU::glIsEnabled(GL_BLEND);
             if (isblend) {
                 GL_GPU::glDisable(GL_BLEND);
@@ -516,13 +499,10 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
 {
     ///Compute a second point on the plane separator line
     ///we don't really care how far it is from the center point, it just has to be on the line
-    QPointF center;
-    double angle;
-    {
-        QMutexLocker l(&wipeControlsMutex);
-        center = wipeCenter;
-        angle = wipeAngle;
-    }
+    ViewerNodePtr node = _this->getViewerTab()->getInternalNode();
+    QPointF center = node->getWipeCenter();
+    double angle = node->getWipeAngle();
+
 
     ///extrapolate the line to the maximum size of the RoD so we're sure the line
     ///intersection algorithm works
@@ -642,32 +622,7 @@ public:
     }
 };
 
-void
-ViewerGL::Implementation::drawArcOfCircle(const QPointF & center,
-                                          double radiusX,
-                                          double radiusY,
-                                          double startAngle,
-                                          double endAngle)
-{
-    double alpha = startAngle;
-    double x, y;
 
-    {
-        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
-
-        if ( (hs == eHoverStateWipeMix) || (ms == eMouseStateDraggingWipeMixHandle) ) {
-            GL_GPU::glColor3f(0, 1, 0);
-        }
-        GL_GPU::glBegin(GL_POINTS);
-        while (alpha <= endAngle) {
-            x = center.x()  + radiusX * std::cos(alpha);
-            y = center.y()  + radiusY * std::sin(alpha);
-            GL_GPU::glVertex2d(x, y);
-            alpha += 0.01;
-        }
-        GL_GPU::glEnd();
-    } // GLProtectAttrib a(GL_CURRENT_BIT);
-}
 
 void
 ViewerGL::Implementation::bindTextureAndActivateShader(int i,
@@ -875,114 +830,20 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
         qDebug() << "Error when binding shader" << qPrintable( shaderRGB->log() );
     }
 
+    ViewerNodePtr node = _this->getInternalNode();
+
+    double gain = node->getGain();
+    double gamma = node->getGain();
+
     shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("gain", (float)displayTextures[texIndex].gain);
+    shaderRGB->setUniformValue("gain", (float)gain);
     shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    float gamma = (displayTextures[texIndex].gamma == 0.) ? 0.f : 1.f / (float)displayTextures[texIndex].gamma;
-    shaderRGB->setUniformValue("gamma", gamma);
+    float shaderGamma = (gamma == 0.) ? 0.f : 1.f / (float)gamma;
+    shaderRGB->setUniformValue("gamma", shaderGamma);
 }
 
-bool
-ViewerGL::Implementation::isNearbyWipeCenter(const QPointF & pos,
-                                             double zoomScreenPixelWidth,
-                                             double zoomScreenPixelHeight) const
-{
-    double toleranceX = zoomScreenPixelWidth * 8.;
-    double toleranceY = zoomScreenPixelHeight * 8.;
-    QMutexLocker l(&wipeControlsMutex);
 
-    if ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) &&
-         ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) {
-        return true;
-    }
-
-    return false;
-}
-
-bool
-ViewerGL::Implementation::isNearbyWipeRotateBar(const QPointF & pos,
-                                                double zoomScreenPixelWidth,
-                                                double zoomScreenPixelHeight) const
-{
-    double toleranceX = zoomScreenPixelWidth * 8.;
-    double toleranceY = zoomScreenPixelHeight * 8.;
-    double rotateX, rotateY, rotateOffsetX, rotateOffsetY;
-
-    rotateX = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth;
-    rotateY = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelHeight;
-    rotateOffsetX = WIPE_ROTATE_OFFSET * zoomScreenPixelWidth;
-    rotateOffsetY = WIPE_ROTATE_OFFSET * zoomScreenPixelHeight;
-
-    QMutexLocker l(&wipeControlsMutex);
-    QPointF outterPoint;
-
-    outterPoint.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateX - rotateOffsetX) );
-    outterPoint.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateY - rotateOffsetY) );
-    if ( ( ( ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (outterPoint.y() + toleranceY) ) ) ||
-           ( ( pos.y() >= (outterPoint.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) ) &&
-         ( ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (outterPoint.x() + toleranceX) ) ) ||
-           ( ( pos.x() >= (outterPoint.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) ) ) ) {
-        Point a;
-        a.x = ( outterPoint.x() - wipeCenter.x() );
-        a.y = ( outterPoint.y() - wipeCenter.y() );
-        double norm = sqrt(a.x * a.x + a.y * a.y);
-
-        ///The point is in the bounding box of the segment, if it is vertical it must be on the segment anyway
-        if (norm == 0) {
-            return false;
-        }
-
-        a.x /= norm;
-        a.y /= norm;
-        Point b;
-        b.x = ( pos.x() - wipeCenter.x() );
-        b.y = ( pos.y() - wipeCenter.y() );
-        norm = sqrt(b.x * b.x + b.y * b.y);
-
-        ///This vector is not vertical
-        if (norm != 0) {
-            b.x /= norm;
-            b.y /= norm;
-
-            double crossProduct = b.y * a.x - b.x * a.y;
-            if (std::abs(crossProduct) <  0.1) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-} // ViewerGL::Implementation::isNearbyWipeRotateBar
-
-bool
-ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF & pos,
-                                                double zoomScreenPixelWidth,
-                                                double zoomScreenPixelHeight) const
-{
-    double toleranceX = zoomScreenPixelWidth * 8.;
-    double toleranceY = zoomScreenPixelHeight * 8.;
-    QMutexLocker l(&wipeControlsMutex);
-    ///mix 1 is at rotation bar + pi / 8
-    ///mix 0 is at rotation bar + 3pi / 8
-    double alphaMix1, alphaMix0, alphaCurMix;
-
-    alphaMix1 = wipeAngle + M_PI_4 / 2;
-    alphaMix0 = wipeAngle + 3 * M_PI_4 / 2;
-    alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
-    QPointF mixPos;
-    double mixX = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelWidth;
-    double mixY = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelHeight;
-
-    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixX);
-    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixY);
-    if ( ( pos.x() >= (mixPos.x() - toleranceX) ) && ( pos.x() <= (mixPos.x() + toleranceX) ) &&
-         ( pos.y() >= (mixPos.y() - toleranceY) ) && ( pos.y() <= (mixPos.y() + toleranceY) ) ) {
-        return true;
-    }
-
-    return false;
-}
 
 void
 ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)

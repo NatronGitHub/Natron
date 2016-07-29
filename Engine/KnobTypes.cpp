@@ -458,11 +458,24 @@ KnobChoice::KnobChoice(const KnobHolderPtr& holder,
     , _currentEntryLabel()
     , _addNewChoice(false)
     , _isCascading(false)
+    , _showMissingEntryWarning(true)
 {
 }
 
 KnobChoice::~KnobChoice()
 {
+}
+
+void
+KnobChoice::setMissingEntryWarningEnabled(bool enabled)
+{
+    _showMissingEntryWarning = enabled;
+}
+
+bool
+KnobChoice::isMissingEntryWarningEnabled() const
+{
+    return _showMissingEntryWarning;
 }
 
 void
@@ -828,6 +841,16 @@ KnobChoice::getEntriesHelp_mt_safe() const
     QMutexLocker l(&_entriesMutex);
 
     return _mergedEntriesHelp;
+}
+
+void
+KnobChoice::setActiveEntry(const std::string& entry)
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        _currentEntryLabel = entry;
+    }
+    Q_EMIT populated();
 }
 
 std::string

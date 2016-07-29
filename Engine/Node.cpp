@@ -95,6 +95,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/WriteNode.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
@@ -1523,32 +1524,20 @@ Node::computeHashInternal()
         _imp->hash.append(_imp->knobsAge);
 
         ///append all inputs hash
-        {
-            ViewerInstancePtr isViewer = isEffectViewerInstance();
 
-            if (isViewer) {
-                int activeInput[2];
-                isViewer->getActiveInputs(activeInput[0], activeInput[1]);
 
-                for (int i = 0; i < 2; ++i) {
-                    NodePtr input = getInput(activeInput[i]);
-                    if (input) {
-                        _imp->hash.append( input->getHashValue() );
-                    }
-                }
-            } else {
-                for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                    NodePtr input = getInput(i);
-                    if (input) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = getInput(i);
+            if (input) {
 
-                        ///Add the index of the input to its hash.
-                        ///Explanation: if we didn't add this, just switching inputs would produce a similar
-                        ///hash.
-                        _imp->hash.append(input->getHashValue() + i);
-                    }
-                }
+                ///Add the index of the input to its hash.
+                ///Explanation: if we didn't add this, just switching inputs would produce a similar
+                ///hash.
+                _imp->hash.append(input->getHashValue() + i);
             }
         }
+
+
 
         // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
         // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
@@ -6717,6 +6706,12 @@ Node::isRotoPaintingNode() const
     return _imp->effect ? _imp->effect->isRotoPaintNode() : false;
 }
 
+ViewerNodePtr
+Node::isEffectViewerNode() const
+{
+    return toViewerNode(_imp->effect);
+}
+
 ViewerInstancePtr
 Node::isEffectViewerInstance() const
 {
@@ -7718,8 +7713,7 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb,
-                     bool isInputA)
+Node::onInputChanged(int inputNb)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -7733,11 +7727,6 @@ Node::onInputChanged(int inputNb,
 
     refreshMaskEnabledNess(inputNb);
     refreshLayersChoiceSecretness(inputNb);
-
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
-    if (isInspector) {
-        isInspector->refreshActiveInputs(inputNb, isInputA);
-    }
 
     bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() ) ||
                                 _imp->effect->isRotoPaintNode();
@@ -8020,7 +8009,7 @@ Node::getOverlayColor(double* r,
 bool
 Node::shouldDrawOverlay() const
 {
-    if ( !hasOverlay() && !getRotoContext() ) {
+    if ( !hasOverlay() ) {
         return false;
     }
 
@@ -9767,12 +9756,11 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
     } else {
         if (sz == 1) {
             NodeConstPtr output = outputs.front();
-            ViewerInstancePtr isViewer = output->isEffectViewerInstance();
+            ViewerNodePtr isViewer = output->isEffectViewerNode();
             if (isViewer) {
-                int activeInputs[2];
-                isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
-                if ( (output->getInput(activeInputs[0]).get() == this) ||
-                     ( output->getInput(activeInputs[1]).get() == this) ) {
+
+                if (isViewer->getCurrentAInput().get() == this ||
+                    isViewer->getCurrentBInput().get() == this) {
                     ///The node is a direct input of the viewer. Cache it because it is likely the user will make
 
                     ///changes to the viewer that will need this image.
@@ -11448,10 +11436,6 @@ Node::refreshChannelSelectors()
             hasChanged |= channelKnob->populateChoices(choices, std::vector<std::string>(), maskChannelEqualityFunctor, &tmpData);
         }
     }
-
-    //Notify the effect channels have changed (the viewer needs this)
-    _imp->effect->onChannelsSelectorRefreshed();
-
     return hasChanged;
 } // Node::refreshChannelSelectors()
 
@@ -11524,9 +11508,7 @@ InspectorNode::InspectorNode(const AppInstancePtr& app,
                              Plugin* plugin)
     : Node(app, group, plugin)
 {
-    for (int i = 0; i < 2; ++i) {
-        _activeInputs[i] = -1;
-    }
+
 }
 
 InspectorNode::~InspectorNode()
@@ -11583,78 +11565,6 @@ InspectorNode::connectInput(const NodePtr& input,
     }
 
     return true;
-}
-
-void
-InspectorNode::setActiveInputAndRefresh(int inputNb,
-                                        bool isASide)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    int maxInputs = getMaxInputCount();
-    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || ( !getInput(inputNb) ) ) {
-        return;
-    }
-
-    bool creatingNodeTree = getApp()->isCreatingNodeTree();
-    if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
-    }
-
-    Q_EMIT inputChanged(inputNb);
-    onInputChanged(inputNb, isASide);
-
-    runInputChangedCallback(inputNb);
-
-
-    if ( isOutputNode() ) {
-        OutputEffectInstancePtr oei = isEffectOutput();
-        assert(oei);
-        if (oei) {
-            oei->renderCurrentFrame(true);
-        }
-    }
-}
-
-void
-InspectorNode::refreshActiveInputs(int inputNbChanged,
-                                   bool isASide)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    NodePtr inputNode = getRealInput(inputNbChanged);
-    {
-        QMutexLocker l(&_activeInputsMutex);
-        if (!inputNode) {
-            ///check if the input was one of the active ones if so set to -1
-            if (_activeInputs[0] == inputNbChanged) {
-                _activeInputs[0] = -1;
-            } else if (_activeInputs[1] == inputNbChanged) {
-                _activeInputs[1] = -1;
-            }
-        } else {
-            if ( !isASide && (_activeInputs[0] != -1) ) {
-                ViewerInstancePtr isViewer = isEffectViewerInstance();
-                if (isViewer) {
-                    OpenGLViewerI* viewerUI = isViewer->getUiContext();
-                    if (viewerUI) {
-                        ViewerCompositingOperatorEnum op = viewerUI->getCompositingOperator();
-                        if (op == eViewerCompositingOperatorNone) {
-                            viewerUI->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
-                        }
-                    }
-                }
-                _activeInputs[1] = inputNbChanged;
-            } else {
-                _activeInputs[0] = inputNbChanged;
-                if (_activeInputs[1] == -1) {
-                    _activeInputs[1] = inputNbChanged;
-                }
-            }
-        }
-    }
-    Q_EMIT activeInputsChanged();
-    Q_EMIT refreshOptionalState();
 }
 
 int
@@ -11715,37 +11625,6 @@ InspectorNode::getPreferredInputForConnection() const
     return getPreferredInputInternal(false);
 }
 
-void
-InspectorNode::getActiveInputs(int & a,
-                               int &b) const
-{
-    QMutexLocker l(&_activeInputsMutex);
-
-    a = _activeInputs[0];
-    b = _activeInputs[1];
-}
-
-void
-InspectorNode::setInputA(int inputNb)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_activeInputsMutex);
-        _activeInputs[0] = inputNb;
-    }
-    Q_EMIT refreshOptionalState();
-}
-
-void
-InspectorNode::setInputB(int inputNb)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_activeInputsMutex);
-        _activeInputs[1] = inputNb;
-    }
-    Q_EMIT refreshOptionalState();
-}
 
 NATRON_NAMESPACE_EXIT;
 

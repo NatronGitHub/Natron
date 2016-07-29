@@ -963,6 +963,9 @@ void init_NATRON_NAMESPACE(PyObject* module)
         return ;
 
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eDisplayChannelsY", (long) NATRON_NAMESPACE::eDisplayChannelsY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_DISPLAYCHANNELSENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eDisplayChannelsRGB", (long) NATRON_NAMESPACE::eDisplayChannelsRGB))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_DISPLAYCHANNELSENUM_IDX],
@@ -976,9 +979,6 @@ void init_NATRON_NAMESPACE(PyObject* module)
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_DISPLAYCHANNELSENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eDisplayChannelsA", (long) NATRON_NAMESPACE::eDisplayChannelsA))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_DISPLAYCHANNELSENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eDisplayChannelsY", (long) NATRON_NAMESPACE::eDisplayChannelsY))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_DISPLAYCHANNELSENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eDisplayChannelsMatte", (long) NATRON_NAMESPACE::eDisplayChannelsMatte))

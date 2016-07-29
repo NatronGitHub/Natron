@@ -66,6 +66,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/BackdropGui.h"
@@ -1154,16 +1155,18 @@ NodeGui::changePosition(double dx,
 void
 NodeGui::refreshDashedStateOfEdges()
 {
-    ViewerInstancePtr viewer = getNode()->isEffectViewerInstance();
+    ViewerNodePtr viewer = getNode()->isEffectViewerNode();
 
     if (viewer) {
-        int activeInputs[2];
-        viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+
+
+        NodePtr aInput = viewer->getCurrentAInput();
+        NodePtr bInput = viewer->getCurrentBInput();
 
         int nbInputsConnected = 0;
 
         for (U32 i = 0; i < _inputEdges.size(); ++i) {
-            if ( ( (int)i == activeInputs[0] ) || ( (int)i == activeInputs[1] ) ) {
+            if ( ( _inputEdges[i]->getSource()->getNode() == aInput ) || ( _inputEdges[i]->getSource()->getNode() == bInput ) ) {
                 _inputEdges[i]->setDashed(false);
             } else {
                 _inputEdges[i]->setDashed(true);

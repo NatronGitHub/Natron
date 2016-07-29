@@ -126,22 +126,14 @@ public:
 
     ViewerInstancePrivate(const ViewerInstance* parent)
         : instance(parent)
-        , uiContext(NULL)
         , forceRenderMutex()
         , forceRender()
-        , isViewerPausedMutex()
-        , isViewerPaused()
         , viewerParamsMutex()
-        , viewerParamsGain(1.)
-        , viewerParamsGamma(1.)
-        , viewerParamsLut(eViewerColorSpaceSRGB)
-        , viewerParamsAutoContrast(false)
-        , viewerParamsChannels()
         , viewerParamsLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaChannelName("a")
         , viewerMipMapLevel(0)
-        , fullFrameProcessingEnabled(false)
+        , viewerChannelsAutoswitchedToAlpha(false)
         , activateInputChangedFromViewer(false)
         , gammaLookupMutex()
         , gammaLookup()
@@ -159,8 +151,6 @@ public:
             forceRender[i] = false;
             renderAge[i] = 1;
             displayAge[i] = 0;
-            isViewerPaused[i] = false;
-            viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
     }
 
@@ -358,11 +348,8 @@ Q_SIGNALS:
 
 public:
     const ViewerInstance* const instance;
-    OpenGLViewerI* uiContext; // written in the main thread before render thread creation, accessed from render thread
     mutable QMutex forceRenderMutex;
     bool forceRender[2]; /*!< true when we want to by-pass the cache*/
-    mutable QMutex isViewerPausedMutex;
-    bool isViewerPaused[2]; /*!< When true we should no longer refresh the viewer */
 
     // updateViewer: stuff for handling the execution of updateViewer() in the main thread, @see UpdateViewerParams
     //is always called on the main thread, but the thread running renderViewer MUST
@@ -372,17 +359,11 @@ public:
 
     // viewerParams: The viewer parameters that may be accessed from the GUI
     mutable QMutex viewerParamsMutex;   //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
-    double viewerParamsGain;           /*!< Current gain setting in the GUI. Not affected by autoContrast. */
-    double viewerParamsGamma;          /*!< Current gamma setting in the GUI. Not affected by autoContrast. */
-    ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
-                                                 0 = sRGB ,  1 = linear , 2 = Rec 709*/
-    bool viewerParamsAutoContrast;
-    DisplayChannelsEnum viewerParamsChannels[2];
     ImageComponents viewerParamsLayer;
     ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-    bool fullFrameProcessingEnabled;
+    bool viewerChannelsAutoswitchedToAlpha;
 
     ///Only accessed from MT
     bool activateInputChangedFromViewer;

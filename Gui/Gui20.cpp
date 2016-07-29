@@ -49,6 +49,7 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/CurveEditor.h"
 #include "Gui/GuiAppInstance.h"
@@ -332,7 +333,7 @@ Gui::minimize()
 }
 
 ViewerTab*
-Gui::addNewViewerTab(const ViewerInstancePtr& viewer,
+Gui::addNewViewerTab(const ViewerNodePtr& viewer,
                      TabWidget* where)
 {
     if (!viewer) {
@@ -511,7 +512,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             nodes = collection->getNodes();
         }
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            ViewerInstancePtr isViewer = (*it)->isEffectViewerInstance();
+            ViewerNodePtr isViewer = (*it)->isEffectViewerNode();
             if ( !isViewer || ( isViewer == tab->getInternalNode() ) || !(*it)->isActivated() ) {
                 continue;
             }
@@ -530,7 +531,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         }
     }
 
-    ViewerInstancePtr internalViewer = tab->getInternalNode();
+    ViewerInstancePtr internalViewer = tab->getInternalNode()->getInternalViewerNode();
     if (internalViewer) {
         if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
             getApp()->discardLastViewerUsingTimeline();
@@ -1239,7 +1240,8 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, graph->getGroup() );
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() );
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     ignore_result( getApp()->createNode(args) );
 }
 

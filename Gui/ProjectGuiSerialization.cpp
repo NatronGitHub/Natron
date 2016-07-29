@@ -90,34 +90,13 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 ViewerData viewerData;
                 double zoompar;
                 tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &zoompar);
-                viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
-                viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
-                viewerData.isClippedToProject = tab->isClippedToProject();
-                viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
-                viewerData.gain = tab->getGain();
-                viewerData.gamma = tab->getGamma();
-                viewerData.colorSpace = tab->getColorSpace();
-                viewerData.channels = tab->getChannelsString();
-                viewerData.renderScaleActivated = tab->getRenderScaleActivated();
-                viewerData.mipMapLevel = tab->getMipMapLevel();
+
                 viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
-                viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
-                viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();
-                viewerData.rightToolbarVisible = tab->isRightToolbarVisible();
-                viewerData.topToolbarVisible = tab->isTopToolbarVisible();
-                viewerData.infobarVisible = tab->isInfobarVisible();
-                viewerData.playerVisible = tab->isPlayerVisible();
-                viewerData.timelineVisible = tab->isTimelineVisible();
-                viewerData.checkerboardEnabled = tab->isCheckerboardEnabled();
-                viewerData.isFullFrameProcessEnabled = tab->isFullFrameProcessingEnabled();
+
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
-                viewerData.isPauseEnabled[0] = tab->isViewerPaused(0);
-                viewerData.isPauseEnabled[1] = tab->isViewerPaused(1);
-                viewerData.layerName = tab->getCurrentLayerName().toStdString();
-                viewerData.alphaLayerName = tab->getCurrentAlphaLayerName().toStdString();
+
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
-                tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
                 _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(), viewerData) );
             }

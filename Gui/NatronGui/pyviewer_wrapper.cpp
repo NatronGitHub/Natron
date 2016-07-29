@@ -25,58 +25,6 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_PyViewerFunc_getAInput(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getAInput()const
-            int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getAInput();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_getBInput(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getBInput()const
-            int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getBInput();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_PyViewerFunc_getCurrentFrame(PyObject* self)
 {
     ::PyViewer* cppSelf = 0;
@@ -92,32 +40,6 @@ static PyObject* Sbk_PyViewerFunc_getCurrentFrame(PyObject* self)
         if (!PyErr_Occurred()) {
             // getCurrentFrame()
             int cppResult = cppSelf->getCurrentFrame();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_getCurrentView(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getCurrentView()const
-            int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getCurrentView();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -155,58 +77,6 @@ static PyObject* Sbk_PyViewerFunc_getFrameRange(PyObject* self)
             // End of code injection
 
 
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_getProxyIndex(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getProxyIndex()const
-            int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getProxyIndex();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_isProxyModeEnabled(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // isProxyModeEnabled()const
-            bool cppResult = const_cast<const ::PyViewer*>(cppSelf)->isProxyModeEnabled();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 
@@ -373,132 +243,6 @@ static PyObject* Sbk_PyViewerFunc_seek(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_PyViewerFunc_setAInput(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setAInput(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // setAInput(int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setAInput_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setAInput(int)
-            cppSelf->setAInput(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setAInput_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setAInput", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_PyViewerFunc_setBInput(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setBInput(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // setBInput(int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setBInput_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setBInput(int)
-            cppSelf->setBInput(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setBInput_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setBInput", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_PyViewerFunc_setCurrentView(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setCurrentView(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // setCurrentView(int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setCurrentView_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setCurrentView(int)
-            cppSelf->setCurrentView(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setCurrentView_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setCurrentView", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_PyViewerFunc_setFrameRange(PyObject* self, PyObject* args)
 {
     ::PyViewer* cppSelf = 0;
@@ -554,90 +298,6 @@ static PyObject* Sbk_PyViewerFunc_setFrameRange(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_PyViewerFunc_setProxyIndex(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setProxyIndex(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // setProxyIndex(int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setProxyIndex_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setProxyIndex(int)
-            cppSelf->setProxyIndex(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setProxyIndex_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setProxyIndex", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_PyViewerFunc_setProxyModeEnabled(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setProxyModeEnabled(bool)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setProxyModeEnabled(bool)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setProxyModeEnabled_TypeError;
-
-    // Call function/method
-    {
-        bool cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setProxyModeEnabled(bool)
-            cppSelf->setProxyModeEnabled(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setProxyModeEnabled_TypeError:
-        const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setProxyModeEnabled", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_PyViewerFunc_startBackward(PyObject* self)
 {
     ::PyViewer* cppSelf = 0;
@@ -685,23 +345,13 @@ static PyObject* Sbk_PyViewerFunc_startForward(PyObject* self)
 }
 
 static PyMethodDef Sbk_PyViewer_methods[] = {
-    {"getAInput", (PyCFunction)Sbk_PyViewerFunc_getAInput, METH_NOARGS},
-    {"getBInput", (PyCFunction)Sbk_PyViewerFunc_getBInput, METH_NOARGS},
     {"getCurrentFrame", (PyCFunction)Sbk_PyViewerFunc_getCurrentFrame, METH_NOARGS},
-    {"getCurrentView", (PyCFunction)Sbk_PyViewerFunc_getCurrentView, METH_NOARGS},
     {"getFrameRange", (PyCFunction)Sbk_PyViewerFunc_getFrameRange, METH_NOARGS},
-    {"getProxyIndex", (PyCFunction)Sbk_PyViewerFunc_getProxyIndex, METH_NOARGS},
-    {"isProxyModeEnabled", (PyCFunction)Sbk_PyViewerFunc_isProxyModeEnabled, METH_NOARGS},
     {"pause", (PyCFunction)Sbk_PyViewerFunc_pause, METH_NOARGS},
     {"redraw", (PyCFunction)Sbk_PyViewerFunc_redraw, METH_NOARGS},
     {"renderCurrentFrame", (PyCFunction)Sbk_PyViewerFunc_renderCurrentFrame, METH_VARARGS|METH_KEYWORDS},
     {"seek", (PyCFunction)Sbk_PyViewerFunc_seek, METH_O},
-    {"setAInput", (PyCFunction)Sbk_PyViewerFunc_setAInput, METH_O},
-    {"setBInput", (PyCFunction)Sbk_PyViewerFunc_setBInput, METH_O},
-    {"setCurrentView", (PyCFunction)Sbk_PyViewerFunc_setCurrentView, METH_O},
     {"setFrameRange", (PyCFunction)Sbk_PyViewerFunc_setFrameRange, METH_VARARGS},
-    {"setProxyIndex", (PyCFunction)Sbk_PyViewerFunc_setProxyIndex, METH_O},
-    {"setProxyModeEnabled", (PyCFunction)Sbk_PyViewerFunc_setProxyModeEnabled, METH_O},
     {"startBackward", (PyCFunction)Sbk_PyViewerFunc_startBackward, METH_NOARGS},
     {"startForward", (PyCFunction)Sbk_PyViewerFunc_startForward, METH_NOARGS},
 

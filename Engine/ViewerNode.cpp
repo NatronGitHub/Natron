@@ -24,6 +24,9 @@
 
 #include "ViewerNode.h"
 
+#include <QThread>
+#include <QCoreApplication>
+
 #include <ofxNatron.h>
 
 #include "Engine/AppInstance.h"
@@ -31,10 +34,9 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
-#include "Engine/Lut.h"
-#include "Engine/MemoryFile.h"
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
@@ -73,8 +75,8 @@
 // The right click menu
 #define kViewerNodeParamRightClickMenu kNatronOfxParamRightClickMenu
 
-#define kViewerNodeParamRightClickMenuToggleWipe "toggleWipeAction"
-#define kViewerNodeParamRightClickMenuToggleWipeLabel "Toggle Wipe"
+#define kViewerNodeParamRightClickMenuToggleWipe "enableWipeAction"
+#define kViewerNodeParamRightClickMenuToggleWipeLabel "Enable Wipe"
 
 #define kViewerNodeParamRightClickMenuCenterWipe "centerWipeAction"
 #define kViewerNodeParamRightClickMenuCenterWipeLabel "Center Wipe"
@@ -84,6 +86,12 @@
 
 #define kViewerNodeParamRightClickMenuNextLayer "nextLayerAction"
 #define kViewerNodeParamRightClickMenuNextLayerLabel "Next Layer"
+
+#define kViewerNodeParamRightClickMenuPreviousView "previousViewAction"
+#define kViewerNodeParamRightClickMenuPreviousViewLabel "Previous View"
+
+#define kViewerNodeParamRightClickMenuNextView "nextViewAction"
+#define kViewerNodeParamRightClickMenuNextViewLabel "Next View"
 
 #define kViewerNodeParamRightClickMenuSwitchAB "switchABAction"
 #define kViewerNodeParamRightClickMenuSwitchABLabel "Switch Input A and B"
@@ -101,9 +109,6 @@
 
 #define kViewerNodeParamRightClickMenuShowHideTimeline "showHideTimeline"
 #define kViewerNodeParamRightClickMenuShowHideTimelineLabel "Show/Hide Timeline"
-
-#define kViewerNodeParamRightClickMenuShowHideInfoBar "showHideInfoBar"
-#define kViewerNodeParamRightClickMenuShowHideInfoBarLabel "Show/Hide Info-bar"
 
 #define kViewerNodeParamRightClickMenuShowHideLeftToolbar "showHideLeftToolbar"
 #define kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel "Show/Hide Left Toolbar"
@@ -182,7 +187,59 @@
 #define kViewerNodeParamActionCreateNewRoI "createNewRoI"
 #define kViewerNodeParamActionCreateNewRoILabel "Create New Region Of Interest"
 
+// Viewer overlay
+#define kViewerNodeParamWipeCenter "wipeCenter"
+#define kViewerNodeParamWipeAmount "wipeAmount"
+#define kViewerNodeParamWipeAngle "wipeAngle"
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+#ifndef M_PI_2
+#define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
+#endif
+#ifndef M_PI_4
+#define M_PI_4      0.785398163397448309615660845819875721  /* pi/4           */
+#endif
+
+
 #define VIEWER_UI_SECTIONS_SPACING_PX 5
+
+
+#define WIPE_MIX_HANDLE_LENGTH 50.
+#define WIPE_ROTATE_HANDLE_LENGTH 100.
+#define WIPE_ROTATE_OFFSET 30
+
+
+#define USER_ROI_BORDER_TICK_SIZE 15.f
+#define USER_ROI_CROSS_RADIUS 15.f
+#define USER_ROI_SELECTION_POINT_SIZE 8.f
+#define USER_ROI_CLICK_TOLERANCE 8.f
+
+enum ViewerNodeInteractMouseStateEnum
+{
+    eViewerNodeInteractMouseStateIdle,
+    eViewerNodeInteractMouseStateBuildingUserRoI,
+    eViewerNodeInteractMouseStateDraggingRoiLeftEdge,
+    eViewerNodeInteractMouseStateDraggingRoiRightEdge,
+    eViewerNodeInteractMouseStateDraggingRoiTopEdge,
+    eViewerNodeInteractMouseStateDraggingRoiBottomEdge,
+    eViewerNodeInteractMouseStateDraggingRoiTopLeft,
+    eViewerNodeInteractMouseStateDraggingRoiTopRight,
+    eViewerNodeInteractMouseStateDraggingRoiBottomRight,
+    eViewerNodeInteractMouseStateDraggingRoiBottomLeft,
+    eViewerNodeInteractMouseStateDraggingRoiCross,
+    eViewerNodeInteractMouseStateDraggingWipeCenter,
+    eViewerNodeInteractMouseStateDraggingWipeMixHandle,
+    eViewerNodeInteractMouseStateRotatingWipeHandle
+};
+
+enum HoverStateEnum
+{
+    eHoverStateNothing = 0,
+    eHoverStateWipeMix,
+    eHoverStateWipeRotateHandle
+};
 
 NATRON_NAMESPACE_ENTER;
 
@@ -222,12 +279,19 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobChoice> activeViewKnob;
     boost::weak_ptr<KnobButton> enableInfoBarButtonKnob;
 
+    // Overlays
+    boost::weak_ptr<KnobDouble> wipeCenter;
+    boost::weak_ptr<KnobDouble> wipeAmount;
+    boost::weak_ptr<KnobDouble> wipeAngle;
+
     // Right click menu
     boost::weak_ptr<KnobChoice> rightClickMenu;
     boost::weak_ptr<KnobButton> rightClickToggleWipe;
     boost::weak_ptr<KnobButton> rightClickCenterWipe;
     boost::weak_ptr<KnobButton> rightClickPreviousLayer;
     boost::weak_ptr<KnobButton> rightClickNextLayer;
+    boost::weak_ptr<KnobButton> rightClickPreviousView;
+    boost::weak_ptr<KnobButton> rightClickNextView;
     boost::weak_ptr<KnobButton> rightClickSwitchAB;
     boost::weak_ptr<KnobButton> rightClickShowHideOverlays;
     boost::weak_ptr<KnobChoice> rightClickShowHideSubMenu;
@@ -236,7 +300,6 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobButton> rightClickShowHideTimeline;
     boost::weak_ptr<KnobButton> rightClickShowHideLeftToolbar;
     boost::weak_ptr<KnobButton> rightClickShowHideTopToolbar;
-    boost::weak_ptr<KnobButton> rightClickShowHideInfoBar;
 
     // Viewer actions
     boost::weak_ptr<KnobButton> displayLuminanceAction[2];
@@ -257,12 +320,31 @@ struct ViewerNodePrivate
 
     double lastFstopValue;
     double lastGammaValue;
-    
+    int lastWipeIndex;
+    RectD draggedUserRoI;
+    bool buildUserRoIOnNextPress;
+    ViewerNodeInteractMouseStateEnum uiState;
+    HoverStateEnum hoverState;
+    QPointF lastMousePos;
+
+    struct ViewerInput
+    {
+        std::string label;
+        NodeWPtr node;
+    };
+    std::vector<ViewerInput> viewerInputs;
+
     ViewerNodePrivate(ViewerNode* publicInterface)
     : _publicInterface(publicInterface)
     , uiContext(0)
     , lastFstopValue(0)
     , lastGammaValue(1)
+    , lastWipeIndex(0)
+    , draggedUserRoI()
+    , buildUserRoIOnNextPress(false)
+    , uiState(eViewerNodeInteractMouseStateIdle)
+    , hoverState(eHoverStateNothing)
+    , lastMousePos()
     {
 
     }
@@ -271,6 +353,56 @@ struct ViewerNodePrivate
     {
         return internalViewerProcessNode.lock();
     }
+
+    void drawWipeControl();
+
+    void drawUserRoI();
+
+    void drawArcOfCircle(const QPointF & center, double radiusX, double radiusY, double startAngle, double endAngle);
+
+    void showRightClickMenu();
+
+    static bool isNearbyWipeCenter(const QPointF& wipeCenter, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight ) ;
+
+    static bool isNearbyWipeRotateBar(const QPointF& wipeCenter, double wipeAngle, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+
+    static bool isNearbyWipeMixHandle(const QPointF& wipeCenter, double wipeAngle, double mixAmount, const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+
+    static bool isNearByUserRoITopEdge(const RectD & roi,
+                                const QPointF & zoomPos,
+                                double zoomScreenPixelWidth,
+                                double zoomScreenPixelHeight);
+
+    static bool isNearByUserRoIRightEdge(const RectD & roi,
+                                  const QPointF & zoomPos,
+                                  double zoomScreenPixelWidth,
+                                  double zoomScreenPixelHeight);
+
+    static bool isNearByUserRoILeftEdge(const RectD & roi,
+                                 const QPointF & zoomPos,
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight);
+
+
+    static bool isNearByUserRoIBottomEdge(const RectD & roi,
+                                   const QPointF & zoomPos,
+                                   double zoomScreenPixelWidth,
+                                   double zoomScreenPixelHeight);
+
+    static bool isNearByUserRoI(double x,
+                         double y,
+                         const QPointF & zoomPos,
+                         double zoomScreenPixelWidth,
+                         double zoomScreenPixelHeight);
+
+    void refreshInputChoices(bool resetChoiceIfNotFound);
+
+    void scaleZoomFactor(double scale) {
+        double factor = uiContext->getZoomFactor();
+        factor *= scale;
+        uiContext->zoomViewport(factor);
+    }
+
 };
 
 EffectInstancePtr
@@ -293,6 +425,10 @@ ViewerNode::ViewerNode(const NodePtr& node)
 
     QObject::connect( this, SIGNAL(disconnectTextureRequest(int,bool)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int,bool)) );
     QObject::connect( this, SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
+    if (node) {
+        QObject::connect( node.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
+    }
+
 }
 
 ViewerNode::~ViewerNode()
@@ -300,24 +436,135 @@ ViewerNode::~ViewerNode()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-
-    // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
-    // not yet processed. Since we're in the main thread and it is processed in the main thread,
-    // there is no way to wait for it (locking the mutex would cause a deadlock).
-    // We don't care, after all.
-    //{
-    //    QMutexLocker locker(&_imp->updateViewerMutex);
-    //    assert(!_imp->updateViewerRunning);
-    //}
     if (_imp->uiContext) {
         _imp->uiContext->removeGUI();
     }
+}
+
+ViewerInstancePtr
+ViewerNode::getInternalViewerNode() const
+{
+    return toViewerInstance(_imp->getInternalViewerNode()->getEffectInstance());
+}
+
+std::string
+ViewerNode::getPluginLabel() const
+{
+    return tr("Viewer").toStdString();
 }
 
 void
 ViewerNode::getPluginGrouping(std::list<std::string>* grouping) const
 {
     grouping->push_back(PLUGIN_GROUP_IMAGE);
+}
+
+std::string
+ViewerNode::getPluginDescription() const
+{
+    return tr("The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree").toStdString();
+}
+
+void
+ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
+{
+    // Refresh the A and B input choices
+    ViewerInstancePtr internalInstance = toViewerInstance(getInternalViewerNode()->getEffectInstance());
+    KnobChoicePtr aInputKnob = internalInstance->getAInputChoice();
+    KnobChoicePtr bInputKnob = internalInstance->getBInputChoice();
+    std::string aCurChoice = aInputKnob->getActiveEntryText_mt_safe();
+    std::string bCurChoice = bInputKnob->getActiveEntryText_mt_safe();
+
+    if (aCurChoice == "-") {
+        aCurChoice.clear();
+    }
+    if (bCurChoice == "-") {
+        bCurChoice.clear();
+    }
+
+    ViewerCompositingOperatorEnum operation = (ViewerCompositingOperatorEnum)blendingModeChoiceKnob.lock()->getValue();
+    bInputKnob->setAllDimensionsEnabled(operation != eViewerCompositingOperatorNone);
+
+    // If we found the old choice and the old choice it not "-", we set the index
+    int foundCurAChoiceIndex = -1;
+    int foundCurBChoiceIndex = -1;
+
+    std::vector<std::string> entries;
+    entries.push_back("-");
+    int nInputs = _publicInterface->getMaxInputCount();
+    viewerInputs.clear();
+    viewerInputs.resize(nInputs);
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr inputNode = _publicInterface->getNode()->getInput(i);
+        if (!inputNode) {
+            continue;
+        }
+
+        entries.push_back(inputNode->getLabel());
+
+        viewerInputs[i].label = entries.back();
+        viewerInputs[i].node = inputNode;
+
+        if (foundCurAChoiceIndex == -1 && !aCurChoice.empty() && aCurChoice == entries.back()) {
+            foundCurAChoiceIndex = entries.size() - 1;
+        }
+
+        if (foundCurBChoiceIndex == -1 && !bCurChoice.empty()  && bCurChoice == entries.back()) {
+            foundCurBChoiceIndex = entries.size() - 1;
+        }
+    }
+
+    aInputKnob->populateChoices(entries);
+    bInputKnob->populateChoices(entries);
+
+    // Restore old choices
+
+    if (foundCurAChoiceIndex != -1) {
+        /*if (foundCurAChoiceIndex == 0) {
+         aInputKnob->setValue(entries.size() > 1 ? 1 : foundCurAChoiceIndex);
+         } else {*/
+        aInputKnob->setValue(foundCurAChoiceIndex);
+        //}
+
+    } else {
+        if (resetChoiceIfNotFound) {
+            aInputKnob->setValue(0);
+        }
+    }
+    if (foundCurBChoiceIndex != -1) {
+        bInputKnob->setValue(foundCurBChoiceIndex);
+    } else {
+        if (resetChoiceIfNotFound) {
+            bInputKnob->setValue(0);
+        }
+    }
+
+
+    if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled(0)  || bCurChoice.empty() ) {
+        uiContext->setInfoBarVisible(1, false);
+    } else if (operation != eViewerCompositingOperatorNone) {
+        uiContext->setInfoBarVisible(1, true);
+    }
+
+    /*bool autoWipe = getInternalNode()->isInputChangeRequestedFromViewer();
+
+    if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
+        && (operation == eViewerCompositingOperatorNone) ) {
+        blendingModeChoiceKnob.lock()->setValue((int)eViewerCompositingOperatorWipeUnder);
+    }*/
+
+} // refreshInputChoices
+
+void
+ViewerNode::onInputChanged(int /*inputNb*/)
+{
+    _imp->refreshInputChoices(true);
+}
+
+void
+ViewerNode::onInputNameChanged(int,QString)
+{
+    _imp->refreshInputChoices(false);
 }
 
 void
@@ -343,11 +590,12 @@ ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousLayer, kViewerNodeParamRightClickMenuPreviousLayerLabel, Key_Page_Up) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextLayer, kViewerNodeParamRightClickMenuNextLayerLabel, Key_Page_Down) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuSwitchAB, kViewerNodeParamRightClickMenuSwitchABLabel, Key_Return) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousView, kViewerNodeParamRightClickMenuPreviousViewLabel, Key_Page_Up, eKeyboardModifierShift) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextView, kViewerNodeParamRightClickMenuNextViewLabel, Key_Page_Down, eKeyboardModifierShift) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideOverlays, kViewerNodeParamRightClickMenuShowHideOverlaysLabel, Key_O) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHidePlayer, kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTimeline, kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideInfoBar, kViewerNodeParamRightClickMenuShowHideInfoBarLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideLeftToolbar, kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTopToolbar, kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
 
@@ -406,6 +654,7 @@ ViewerNode::initializeKnobs()
         QString nodeName = fixedNamePrefix + QLatin1String("internalViewer");
         CreateNodeArgs args(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
         internalViewerNode = getApp()->createNode(args);
         _imp->internalViewerProcessNode = internalViewerNode;
@@ -438,6 +687,8 @@ ViewerNode::initializeKnobs()
         param->setName(kViewerNodeParamZoom);
         param->setHintToolTip(tr(kViewerNodeParamZoomHint));
         param->setSecretByDefault(true);
+        param->setMissingEntryWarningEnabled(false);
+        param->setIsPersistant(false);
         {
             std::vector<std::string> entries;
             entries.push_back("Fit");
@@ -492,6 +743,7 @@ ViewerNode::initializeKnobs()
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "viewer_roiEnabled.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "viewer_roiDisabled.png", false);
+        addOverlaySlaveParam(param);
         _imp->toggleUserRoIButtonKnob = param;
     }
 
@@ -600,6 +852,7 @@ ViewerNode::initializeKnobs()
         KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kViewerNodeParamView, internalViewerNode, thisShared, page);
         param->setSecretByDefault(true);
         _imp->activeViewKnob = param;
+        refreshViewsKnobVisibility();
     }
 
     {
@@ -608,6 +861,10 @@ ViewerNode::initializeKnobs()
         param->setHintToolTip(tr(kViewerNodeParamRefreshViewportHint));
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
+        // Do not set evaluate on change, trigger the render ourselves in knobChance
+        // We do this so that we can set down/up the button during render to give feedback to the user without triggering a new render
+        param->setEvaluateOnChange(false);
+        param->setIsPersistant(false);
         param->setCheckable(true);
         param->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);
@@ -622,7 +879,6 @@ ViewerNode::initializeKnobs()
         param->setInViewerContextCanHaveShortcut(true);
         param->setSecretByDefault(true);
         param->setCheckable(true);
-        param->setEvaluateOnChange(false);
         param->setIconLabel(NATRON_IMAGES_PATH "locked.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "unlocked.png", false);
         page->addKnob(param);
@@ -745,6 +1001,22 @@ ViewerNode::initializeKnobs()
         _imp->rightClickNextLayer = action;
     }
     {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuPreviousViewLabel) );
+        action->setName(kViewerNodeParamRightClickMenuPreviousView);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickPreviousView = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuNextViewLabel) );
+        action->setName(kViewerNodeParamRightClickMenuNextView);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->rightClickNextView = action;
+    }
+    {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuSwitchABLabel) );
         action->setName(kViewerNodeParamRightClickMenuSwitchAB);
         action->setSecretByDefault(true);
@@ -757,6 +1029,8 @@ ViewerNode::initializeKnobs()
         action->setName(kViewerNodeParamRightClickMenuShowHideOverlays);
         action->setSecretByDefault(true);
         action->setInViewerContextCanHaveShortcut(true);
+        action->setEvaluateOnChange(false);
+        addOverlaySlaveParam(action);
         page->addKnob(action);
         _imp->rightClickShowHideOverlays = action;
     }
@@ -812,15 +1086,6 @@ ViewerNode::initializeKnobs()
         action->setCheckable(true);
         page->addKnob(action);
         _imp->rightClickShowHideTopToolbar = action;
-    }
-    {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideInfoBarLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHideInfoBar);
-        action->setSecretByDefault(true);
-        action->setInViewerContextCanHaveShortcut(true);
-        action->setCheckable(true);
-        page->addKnob(action);
-        _imp->rightClickShowHideInfoBar = action;
     }
 
     // Viewer actions
@@ -1050,7 +1315,98 @@ ViewerNode::initializeKnobs()
         _imp->enableStatsAction = action;
     }
 
+    // Viewer overlays
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamWipeCenter), 2 );
+        param->setName(kViewerNodeParamWipeCenter);
+        param->setSecretByDefault(true);
+        param->setDefaultValue(0.5, 0);
+        param->setDefaultValue(0.5, 1);
+        param->setDefaultValuesAreNormalized(true);
+        addOverlaySlaveParam(param);
+        _imp->wipeCenter = param;
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamWipeAmount), 1 );
+        param->setName(kViewerNodeParamWipeAmount);
+        param->setSecretByDefault(true);
+        param->setDefaultValue(1.);
+        addOverlaySlaveParam(param);
+        _imp->wipeAmount = param;
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamWipeAngle), 1 );
+        param->setName(kViewerNodeParamWipeAngle);
+        param->setSecretByDefault(true);
+        addOverlaySlaveParam(param);
+        _imp->wipeAngle = param;
+    }
 } // initializeKnobs
+
+void
+ViewerNodePrivate::showRightClickMenu()
+{
+    KnobChoicePtr menu = rightClickMenu.lock();
+    std::vector<std::string> entries;
+    entries.push_back(kViewerNodeParamRightClickMenuToggleWipe);
+    entries.push_back(kViewerNodeParamRightClickMenuCenterWipe);
+    entries.push_back(kViewerNodeParamFitViewport);
+    entries.push_back(kViewerNodeParamActionScaleOne);
+    entries.push_back(kViewerNodeParamActionZoomIn);
+    entries.push_back(kViewerNodeParamActionZoomOut);
+    entries.push_back(kViewerNodeParamRightClickMenuPreviousLayer);
+    entries.push_back(kViewerNodeParamRightClickMenuNextLayer);
+    entries.push_back(kViewerNodeParamRightClickMenuPreviousView);
+    entries.push_back(kViewerNodeParamRightClickMenuNextView);
+    entries.push_back(kViewerNodeParamRightClickMenuSwitchAB);
+    entries.push_back(kViewerNodeParamRightClickMenuToggleWipe);
+    entries.push_back(kViewerNodeParamRightClickMenuShowHideOverlays);
+    entries.push_back(kViewerNodeParamRightClickMenuShowHideSubMenu);
+    entries.push_back(kViewerNodeParamActionRefreshWithStats);
+
+    KnobChoicePtr showHideMenu = rightClickShowHideSubMenu.lock();
+    std::vector<std::string> showHideEntries;
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuHideAll);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideTopToolbar);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideLeftToolbar);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHidePlayer);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideTimeline);
+    showHideEntries.push_back(kViewerNodeParamEnableColorPicker);
+
+    showHideMenu->populateChoices(showHideEntries);
+    menu->populateChoices(entries);
+
+}
+
+void
+ViewerNode::refreshViewsKnobVisibility()
+{
+    _imp->activeViewKnob.lock()->setInViewerContextSecret(getApp()->getProject()->getProjectViewsCount() <= 1);
+}
+
+void
+ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
+{
+
+}
+
+void
+ViewerNode::setZoomComboBoxText(const std::string& text)
+{
+    _imp->zoomChoiceKnob.lock()->setActiveEntry(text);
+}
+
+bool
+ViewerNode::isLeftToolbarVisible() const
+{
+    return _imp->rightClickShowHideLeftToolbar.lock()->getValue();
+}
+
+bool
+ViewerNode::isTopToolbarVisible() const
+{
+    return _imp->rightClickShowHideTopToolbar.lock()->getValue();
+}
 
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
@@ -1063,7 +1419,23 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     }
 
     bool caught = true;
-    if (k == _imp->enableGainButtonKnob.lock()) {
+    if (k == _imp->blendingModeChoiceKnob.lock()) {
+        ViewerCompositingOperatorEnum op = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
+        _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
+    } else if (k == _imp->zoomChoiceKnob.lock()) {
+        std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText_mt_safe();
+        if (zoomChoice == "Fit") {
+            _imp->uiContext->fitImageToFormat();
+        } else if (zoomChoice == "+") {
+             _imp->scaleZoomFactor(1.1);
+        } else if (zoomChoice == "-") {
+             _imp->scaleZoomFactor(0.9);
+        } else {
+            QString str = QString::fromUtf8(zoomChoice.substr(0, zoomChoice.size() - 1).c_str());
+            int zoomInteger = str.toInt();
+            _imp->uiContext->zoomViewport(zoomInteger / 100.);
+        }
+    } else if (k == _imp->enableGainButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         double value;
         bool down = _imp->enableGainButtonKnob.lock()->getValue();
         if (down) {
@@ -1079,7 +1451,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             enableKnob->setValue(true);
         }
         _imp->lastFstopValue =  _imp->gainSliderKnob.lock()->getValue();
-    } else if (k == _imp->enableGammaButtonKnob.lock()) {
+    } else if (k == _imp->enableGammaButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         double value;
         bool down = _imp->enableGammaButtonKnob.lock()->getValue();
         if (down) {
@@ -1104,88 +1476,269 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->enableGainButtonKnob.lock()->setAllDimensionsEnabled(!enable);
         _imp->gainSliderKnob.lock()->setAllDimensionsEnabled(!enable);
         
-    } else if (k == _imp->refreshButtonKnob.lock()) {
-
+    } else if (k == _imp->refreshButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
+        getApp()->checkAllReadersModificationDate(false);
+        NodePtr viewerNode = _imp->internalViewerProcessNode.lock();
+        ViewerInstancePtr instance = toViewerInstance(viewerNode->getEffectInstance());
+        assert(instance);
+        instance->forceFullComputationOnNextFrame();
+        instance->renderCurrentFrame(true);
     } else if (k == _imp->syncViewersButtonKnob.lock()) {
 
+        getApp()->setMasterSyncViewer(getNode());
+        NodesList allNodes;
+        getApp()->getProject()->getNodes_recursive(allNodes, true);
+        double left, bottom, factor, par;
+        _imp->uiContext->getProjection(&left, &bottom, &factor, &par);
+        ViewerInstancePtr thisInstance = toViewerInstance(_imp->getInternalViewerNode()->getEffectInstance());
+        for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+            ViewerInstancePtr instance = toViewerInstance((*it)->getEffectInstance());
+            if (instance && instance != thisInstance) {
+                 instance->getUiContext()->setProjection(left, bottom, factor, par);
+                instance->renderCurrentFrame(true);
+            }
+        }
     } else if (k == _imp->centerViewerButtonKnob.lock()) {
-
+        if (!getApp()->isDuringPainting()) {
+            _imp->uiContext->fitImageToFormat();
+        }
     } else if (k == _imp->enableInfoBarButtonKnob.lock()) {
-
+        bool infoBarVisible = _imp->enableInfoBarButtonKnob.lock()->getValue();
+        if (reason == eValueChangedReasonUserEdited) {
+            NodesList allNodes;
+            getApp()->getProject()->getNodes_recursive(allNodes, true);
+            ViewerNodePtr thisInstance = shared_from_this();
+            for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+                ViewerNodePtr instance = toViewerNode((*it)->getEffectInstance());
+                if (instance) {
+                    if (instance != thisInstance) {
+                        instance->_imp->enableInfoBarButtonKnob.lock()->setValue(infoBarVisible);
+                    }
+                    instance->_imp->uiContext->setInfoBarVisible(infoBarVisible);
+                }
+            }
+        } else {
+            _imp->uiContext->setInfoBarVisible(infoBarVisible);
+        }
     } else if (k == _imp->rightClickToggleWipe.lock()) {
-
+        bool wipeEnabled = _imp->rightClickToggleWipe.lock()->getValue();
+        KnobChoicePtr wipeChoice = _imp->blendingModeChoiceKnob.lock();
+        if (!wipeEnabled) {
+            wipeChoice->setValue(0);
+        } else {
+            if (_imp->lastWipeIndex == 0) {
+                _imp->lastWipeIndex = 1;
+            }
+            wipeChoice->setValue(_imp->lastWipeIndex);
+        }
+    } else if (k == _imp->blendingModeChoiceKnob.lock() && reason == eValueChangedReasonUserEdited) {
+        KnobChoicePtr wipeChoice = _imp->blendingModeChoiceKnob.lock();
+        int value = wipeChoice->getValue();
+        if (value != 0) {
+            _imp->lastWipeIndex = value;
+        }
     } else if (k == _imp->rightClickCenterWipe.lock()) {
-
+        KnobDoublePtr knob = _imp->wipeCenter.lock();
+        knob->setDefaultValuesWithoutApplying(0.5, 0.5);
+        knob->resetToDefaultValue(0);
+        knob->resetToDefaultValue(1);
     } else if (k == _imp->rightClickNextLayer.lock()) {
 
     } else if (k == _imp->rightClickPreviousLayer.lock()) {
 
-    } else if (k == _imp->rightClickShowHideOverlays.lock()) {
-
     } else if (k == _imp->rightClickSwitchAB.lock()) {
-
+        NodePtr internalViewer = _imp->getInternalViewerNode();
+        internalViewer->switchInput0And1();
     } else if (k == _imp->rightClickHideAll.lock()) {
-
+        _imp->rightClickShowHideTopToolbar.lock()->setValue(false);
+        _imp->rightClickShowHideLeftToolbar.lock()->setValue(false);
+        _imp->rightClickShowHidePlayer.lock()->setValue(false);
+        _imp->rightClickShowHideTimeline.lock()->setValue(false);
+        _imp->enableInfoBarButtonKnob.lock()->setValue(false);
     } else if (k == _imp->rightClickShowHideTopToolbar.lock()) {
-
+        bool topToolbarVisible = _imp->rightClickShowHideTopToolbar.lock()->getValue();
+        _imp->uiContext->setTopToolBarVisible(topToolbarVisible);
     } else if (k == _imp->rightClickShowHideLeftToolbar.lock()) {
-
+        bool visible = _imp->rightClickShowHideLeftToolbar.lock()->getValue();
+        _imp->uiContext->setLeftToolBarVisible(visible);
     } else if (k == _imp->rightClickShowHidePlayer.lock()) {
-
+        bool visible = _imp->rightClickShowHidePlayer.lock()->getValue();
+        _imp->uiContext->setPlayerVisible(visible);
     } else if (k == _imp->rightClickShowHideTimeline.lock()) {
-
-    } else if (k == _imp->rightClickShowHideInfoBar.lock()) {
-
+        bool visible = _imp->rightClickShowHideTimeline.lock()->getValue();
+        _imp->uiContext->setTimelineVisible(visible);
     } else if (k == _imp->displayRedAction[0].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayRedAction[0].lock()->getValue() == eDisplayChannelsR) {
+            setDisplayChannels((int)eDisplayChannelsR, true);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, true);
+        }
     } else if (k == _imp->displayRedAction[1].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayRedAction[0].lock()->getValue() == eDisplayChannelsR) {
+            setDisplayChannels((int)eDisplayChannelsR, false);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, false);
+        }
     } else if (k == _imp->displayGreenAction[0].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayGreenAction[0].lock()->getValue() == eDisplayChannelsG) {
+            setDisplayChannels((int)eDisplayChannelsG, true);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, true);
+        }
     } else if (k == _imp->displayGreenAction[1].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayGreenAction[0].lock()->getValue() == eDisplayChannelsG) {
+            setDisplayChannels((int)eDisplayChannelsG, false);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, false);
+        }
     } else if (k == _imp->displayBlueAction[0].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayBlueAction[0].lock()->getValue() == eDisplayChannelsB) {
+            setDisplayChannels((int)eDisplayChannelsB, true);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, true);
+        }
     } else if (k == _imp->displayBlueAction[1].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayBlueAction[0].lock()->getValue() == eDisplayChannelsB) {
+            setDisplayChannels((int)eDisplayChannelsB, false);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, false);
+        }
     } else if (k == _imp->displayAlphaAction[0].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayAlphaAction[0].lock()->getValue() == eDisplayChannelsA) {
+            setDisplayChannels((int)eDisplayChannelsA, true);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, true);
+        }
     } else if (k == _imp->displayAlphaAction[1].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayAlphaAction[0].lock()->getValue() == eDisplayChannelsA) {
+            setDisplayChannels((int)eDisplayChannelsA, false);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, false);
+        }
     } else if (k == _imp->displayMatteAction[0].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayMatteAction[0].lock()->getValue() == eDisplayChannelsMatte) {
+            setDisplayChannels((int)eDisplayChannelsMatte, true);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, true);
+        }
     } else if (k == _imp->displayMatteAction[1].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayMatteAction[0].lock()->getValue() == eDisplayChannelsMatte) {
+            setDisplayChannels((int)eDisplayChannelsMatte, false);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, false);
+        }
     } else if (k == _imp->displayLuminanceAction[0].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayLuminanceAction[0].lock()->getValue() == eDisplayChannelsY) {
+            setDisplayChannels((int)eDisplayChannelsY, true);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, true);
+        }
     } else if (k == _imp->displayLuminanceAction[1].lock()) {
-
+        if ((DisplayChannelsEnum)_imp->displayLuminanceAction[0].lock()->getValue() == eDisplayChannelsY) {
+            setDisplayChannels((int)eDisplayChannelsY, false);
+        } else {
+            setDisplayChannels((int)eDisplayChannelsRGB, false);
+        }
     } else if (k == _imp->zoomInAction.lock()) {
-
+        _imp->scaleZoomFactor(1.1);
     } else if (k == _imp->zoomOutAction.lock()) {
-
+         _imp->scaleZoomFactor(0.9);
     } else if (k == _imp->zoomScaleOneAction.lock()) {
-
+        _imp->uiContext->zoomViewport(1.);
     } else if (k == _imp->proxyLevelAction[0].lock()) {
-
+        _imp->proxyChoiceKnob.lock()->setValue(0);
     } else if (k == _imp->proxyLevelAction[1].lock()) {
-
+        _imp->proxyChoiceKnob.lock()->setValue(1);
     } else if (k == _imp->proxyLevelAction[2].lock()) {
-
+        _imp->proxyChoiceKnob.lock()->setValue(2);
     } else if (k == _imp->proxyLevelAction[3].lock()) {
-
+        _imp->proxyChoiceKnob.lock()->setValue(3);
     } else if (k == _imp->proxyLevelAction[4].lock()) {
-
+        _imp->proxyChoiceKnob.lock()->setValue(4);
     } else if (k == _imp->leftViewAction.lock()) {
-
+        _imp->activeViewKnob.lock()->setValue(0);
     } else if (k == _imp->rightViewAction.lock()) {
-
+        const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
+        if (views.size() > 1) {
+            _imp->activeViewKnob.lock()->setValue(1);
+        }
     } else if (k == _imp->pauseABAction.lock()) {
-
+        bool curValue = _imp->pauseButtonKnob.lock()->getValue();
+        _imp->pauseButtonKnob.lock()->setValue(!curValue);
+        KnobIPtr knob = _imp->internalViewerProcessNode.lock()->getKnobByName(kViewerNodeParamPauseRenderB);
+        KnobButtonPtr pauseBKnob = toKnobButton(knob);
+        assert(pauseBKnob);
+        pauseBKnob->setValue(!curValue);
     } else if (k == _imp->createUserRoIAction.lock()) {
+        _imp->buildUserRoIOnNextPress = true;
+        ViewerInstancePtr instance = toViewerInstance(_imp->getInternalViewerNode()->getEffectInstance());
+        assert(instance);
+        _imp->draggedUserRoI = instance->getUserRoI();
+    } else if (k == _imp->toggleUserRoIButtonKnob.lock()) {
+        bool enabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
+        if (!enabled) {
+            _imp->buildUserRoIOnNextPress = false;
+        }
+    } else if (k == _imp->enableStatsAction.lock() && reason == eValueChangedReasonUserEdited) {
+        getApp()->checkAllReadersModificationDate(false);
+        NodePtr viewerNode = _imp->internalViewerProcessNode.lock();
+        ViewerInstancePtr instance = toViewerInstance(viewerNode->getEffectInstance());
+        assert(instance);
+        instance->forceFullComputationOnNextFrame();
+        getApp()->showRenderStatsWindow();
+        instance->renderCurrentFrameWithRenderStats(true);
+    } else if (k == _imp->rightClickPreviousLayer.lock()) {
+        KnobChoicePtr knob = _imp->layersKnob.lock();
+        int currentIndex = knob->getValue();
+        int nChoices = knob->getNumEntries();
 
-    } else if (k == _imp->enableStatsAction.lock()) {
+        if (currentIndex <= 1) {
+            currentIndex = nChoices - 1;
+        } else {
+            --currentIndex;
+        }
+        if (currentIndex >= 0) {
+            // User edited so the handler is executed
+            knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+        }
 
+    } else if (k == _imp->rightClickNextLayer.lock()) {
+
+        KnobChoicePtr knob = _imp->layersKnob.lock();
+        int currentIndex = knob->getValue();
+        int nChoices = knob->getNumEntries();
+
+        currentIndex = (currentIndex + 1) % nChoices;
+        if ( (currentIndex == 0) && (nChoices > 1) ) {
+            currentIndex = 1;
+        }
+        knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+    } else if (k == _imp->rightClickPreviousView.lock()) {
+        KnobChoicePtr knob = _imp->activeViewKnob.lock();
+        int currentIndex = knob->getValue();
+        int nChoices = knob->getNumEntries();
+
+        if (currentIndex == 0) {
+            currentIndex = nChoices - 1;
+        } else {
+            --currentIndex;
+        }
+        if (currentIndex >= 0) {
+            // User edited so the handler is executed
+            knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+        }
+    } else if (k == _imp->rightClickNextView.lock()) {
+        KnobChoicePtr knob = _imp->activeViewKnob.lock();
+        int currentIndex = knob->getValue();
+        int nChoices = knob->getNumEntries();
+
+        if (currentIndex == nChoices - 1) {
+            currentIndex = 0;
+        } else {
+            currentIndex = currentIndex + 1;
+        }
+
+        knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
     } else {
         caught = false;
     }
@@ -1193,20 +1746,976 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
 } // knobChanged
 
+void
+ViewerNode::setDisplayChannels(int index, bool setBoth)
+{
+    _imp->displayChannelsKnob.lock()->setValue(index);
+    if (setBoth) {
+        NodePtr internalNode = _imp->getInternalViewerNode();
+        KnobIPtr displayBKnob = internalNode->getKnobByName(kViewerNodeParamDisplayChannelsB);
+        KnobChoicePtr displayChoice = toKnobChoice(displayBKnob);
+        assert(displayChoice);
+        displayChoice->setValue(index);
+    }
+
+}
+
+
+
+void
+ViewerNodePrivate::drawUserRoI()
+{
+    OverlaySupport* viewport = _publicInterface->getCurrentViewportForOverlays();
+    Point pixelScale;
+    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+
+    {
+        GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+
+        GL_GPU::glDisable(GL_BLEND);
+
+        GL_GPU::glColor4f(0.9, 0.9, 0.9, 1.);
+
+        RectD userRoI;
+        if ( (uiState == eViewerNodeInteractMouseStateBuildingUserRoI) || buildUserRoIOnNextPress ) {
+            userRoI = draggedUserRoI;
+        } else {
+            userRoI = userRoI;
+        }
+
+
+        if (buildUserRoIOnNextPress) {
+            GL_GPU::glLineStipple(2, 0xAAAA);
+            GL_GPU::glEnable(GL_LINE_STIPPLE);
+        }
+
+        ///base rect
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2f(userRoI.x1, userRoI.y1); //bottom left
+        GL_GPU::glVertex2f(userRoI.x1, userRoI.y2); //top left
+        GL_GPU::glVertex2f(userRoI.x2, userRoI.y2); //top right
+        GL_GPU::glVertex2f(userRoI.x2, userRoI.y1); //bottom right
+        GL_GPU::glEnd();
+
+
+        GL_GPU::glBegin(GL_LINES);
+        ///border ticks
+        double borderTickWidth = USER_ROI_BORDER_TICK_SIZE * pixelScale.x;
+        double borderTickHeight = USER_ROI_BORDER_TICK_SIZE * pixelScale.y;
+        GL_GPU::glVertex2f(userRoI.x1, (userRoI.y1 + userRoI.y2) / 2);
+        GL_GPU::glVertex2f(userRoI.x1 - borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
+
+        GL_GPU::glVertex2f(userRoI.x2, (userRoI.y1 + userRoI.y2) / 2);
+        GL_GPU::glVertex2f(userRoI.x2 + borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
+
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 + borderTickHeight );
+
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 - borderTickHeight );
+
+        ///middle cross
+        double crossWidth = USER_ROI_CROSS_RADIUS * pixelScale.x;
+        double crossHeight = USER_ROI_CROSS_RADIUS * pixelScale.y;
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 - crossHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 + crossHeight );
+
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  - crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  + crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
+        GL_GPU::glEnd();
+
+
+        ///draw handles hint for the user
+        GL_GPU::glBegin(GL_QUADS);
+
+        double rectHalfWidth = (USER_ROI_SELECTION_POINT_SIZE * pixelScale.x) / 2.;
+        double rectHalfHeight = (USER_ROI_SELECTION_POINT_SIZE * pixelScale.y) / 2.;
+        //left
+        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+
+        //top
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 - rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 + rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 + rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 - rectHalfHeight );
+
+        //right
+        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+
+        //bottom
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 - rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 + rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 + rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 - rectHalfHeight );
+
+        //middle
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
+        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
+
+
+        //top left
+        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+
+        //top right
+        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+
+        //bottom right
+        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+
+
+        //bottom left
+        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+
+        GL_GPU::glEnd();
+
+        if (buildUserRoIOnNextPress) {
+            GL_GPU::glDisable(GL_LINE_STIPPLE);
+        }
+    } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+} // drawUserRoI
+
+void
+ViewerNodePrivate::drawArcOfCircle(const QPointF & center,
+                                   double radiusX,
+                                   double radiusY,
+                                   double startAngle,
+                                   double endAngle)
+{
+    double alpha = startAngle;
+    double x, y;
+
+    {
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
+
+        if ( (hoverState == eHoverStateWipeMix) || (uiState == eViewerNodeInteractMouseStateDraggingWipeMixHandle) ) {
+            GL_GPU::glColor3f(0, 1, 0);
+        }
+        GL_GPU::glBegin(GL_POINTS);
+        while (alpha <= endAngle) {
+            x = center.x()  + radiusX * std::cos(alpha);
+            y = center.y()  + radiusY * std::sin(alpha);
+            GL_GPU::glVertex2d(x, y);
+            alpha += 0.01;
+        }
+        GL_GPU::glEnd();
+    } // GLProtectAttrib a(GL_CURRENT_BIT);
+}
+
+void
+ViewerNodePrivate::drawWipeControl()
+{
+    OverlaySupport* viewport = _publicInterface->getCurrentViewportForOverlays();
+    Point pixelScale;
+    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+
+    double angle;
+    QPointF center;
+    double mixAmount;
+    {
+        angle = wipeAngle.lock()->getValue();
+        KnobDoublePtr centerKnob = wipeCenter.lock();
+        center.rx() = centerKnob->getValue();
+        center.ry() = centerKnob->getValue(1);
+        mixAmount = wipeAmount.lock()->getValue();
+    }
+    double alphaMix1, alphaMix0, alphaCurMix;
+
+    alphaMix1 = angle + M_PI_4 / 2;
+    alphaMix0 = angle + 3. * M_PI_4 / 2;
+    alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
+    QPointF mix0Pos, mixPos, mix1Pos;
+    double mixX, mixY, rotateW, rotateH, rotateOffsetX, rotateOffsetY;
+
+    mixX = WIPE_MIX_HANDLE_LENGTH * pixelScale.x;
+    mixY = WIPE_MIX_HANDLE_LENGTH * pixelScale.y;
+    rotateW = WIPE_ROTATE_HANDLE_LENGTH * pixelScale.x;
+    rotateH = WIPE_ROTATE_HANDLE_LENGTH * pixelScale.y;
+    rotateOffsetX = WIPE_ROTATE_OFFSET * pixelScale.x;
+    rotateOffsetY = WIPE_ROTATE_OFFSET * pixelScale.y;
+
+
+    mixPos.setX(center.x() + std::cos(alphaCurMix) * mixX);
+    mixPos.setY(center.y() + std::sin(alphaCurMix) * mixY);
+    mix0Pos.setX(center.x() + std::cos(alphaMix0) * mixX);
+    mix0Pos.setY(center.y() + std::sin(alphaMix0) * mixY);
+    mix1Pos.setX(center.x() + std::cos(alphaMix1) * mixX);
+    mix1Pos.setY(center.y() + std::sin(alphaMix1) * mixY);
+
+    QPointF oppositeAxisBottom, oppositeAxisTop, rotateAxisLeft, rotateAxisRight;
+    rotateAxisRight.setX( center.x() + std::cos(angle) * (rotateW - rotateOffsetX) );
+    rotateAxisRight.setY( center.y() + std::sin(angle) * (rotateH - rotateOffsetY) );
+    rotateAxisLeft.setX(center.x() - std::cos(angle) * rotateOffsetX);
+    rotateAxisLeft.setY( center.y() - (std::sin(angle) * rotateOffsetY) );
+
+    oppositeAxisTop.setX( center.x() + std::cos(angle + M_PI_2) * (rotateW / 2.) );
+    oppositeAxisTop.setY( center.y() + std::sin(angle + M_PI_2) * (rotateH / 2.) );
+    oppositeAxisBottom.setX( center.x() - std::cos(angle + M_PI_2) * (rotateW / 2.) );
+    oppositeAxisBottom.setY( center.y() - std::sin(angle + M_PI_2) * (rotateH / 2.) );
+
+    {
+        GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
+
+        // Draw everything twice
+        // l = 0: shadow
+        // l = 1: drawing
+        double baseColor[3];
+        for (int l = 0; l < 2; ++l) {
+            // shadow (uses GL_PROJECTION)
+            GL_GPU::glMatrixMode(GL_PROJECTION);
+            int direction = (l == 0) ? 1 : -1;
+            // translate (1,-1) pixels
+            GL_GPU::glTranslated(direction * pixelScale.x, -direction * pixelScale.y, 0);
+            GL_GPU::glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+
+            if (l == 0) {
+                // Draw a shadow for the cross hair
+                baseColor[0] = baseColor[1] = baseColor[2] = 0.;
+            } else {
+                baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
+            }
+
+            GL_GPU::glEnable(GL_BLEND);
+            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::glEnable(GL_LINE_SMOOTH);
+            GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            GL_GPU::glLineWidth(1.5);
+            GL_GPU::glBegin(GL_LINES);
+            if ( (hoverState == eHoverStateWipeRotateHandle) || (uiState == eViewerNodeInteractMouseStateRotatingWipeHandle) ) {
+                GL_GPU::glColor4f(0., 1. * l, 0., 1.);
+            }
+            GL_GPU::glColor4f(baseColor[0], baseColor[1], baseColor[2], 1.);
+            GL_GPU::glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
+            GL_GPU::glVertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
+            GL_GPU::glVertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
+            GL_GPU::glVertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
+            GL_GPU::glVertex2d( center.x(), center.y() );
+            GL_GPU::glVertex2d( mixPos.x(), mixPos.y() );
+            GL_GPU::glEnd();
+            GL_GPU::glLineWidth(1.);
+
+            ///if hovering the rotate handle or dragging it show a small bended arrow
+            if ( (hoverState == eHoverStateWipeRotateHandle) || (uiState == eViewerNodeInteractMouseStateRotatingWipeHandle) ) {
+                GLProtectMatrix<GL_GPU> p(GL_MODELVIEW);
+
+                GL_GPU::glColor4f(0., 1. * l, 0., 1.);
+                double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH * pixelScale.x / 2;
+                ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
+                OfxPointD arrowRadius;
+                arrowRadius.x = 5. * pixelScale.x;
+                arrowRadius.y = 10. * pixelScale.y;
+
+                GL_GPU::glTranslatef(center.x(), center.y(), 0.);
+                GL_GPU::glRotatef(angle * 180.0 / M_PI, 0, 0, 1);
+                //  center the oval at x_center, y_center
+                GL_GPU::glTranslatef (arrowCenterX, 0., 0);
+                //  draw the oval using line segments
+                GL_GPU::glBegin (GL_LINE_STRIP);
+                GL_GPU::glVertex2f (0, arrowRadius.y);
+                GL_GPU::glVertex2f (arrowRadius.x, 0.);
+                GL_GPU::glVertex2f (0, -arrowRadius.y);
+                GL_GPU::glEnd ();
+
+
+                GL_GPU::glBegin(GL_LINES);
+                ///draw the top head
+                GL_GPU::glVertex2f(0., arrowRadius.y);
+                GL_GPU::glVertex2f(0., arrowRadius.y -  arrowRadius.x );
+
+                GL_GPU::glVertex2f(0., arrowRadius.y);
+                GL_GPU::glVertex2f(4. * pixelScale.x, arrowRadius.y - 3. * pixelScale.y); // 5^2 = 3^2+4^2
+
+                ///draw the bottom head
+                GL_GPU::glVertex2f(0., -arrowRadius.y);
+                GL_GPU::glVertex2f(0., -arrowRadius.y + 5. * pixelScale.y);
+
+                GL_GPU::glVertex2f(0., -arrowRadius.y);
+                GL_GPU::glVertex2f(4. * pixelScale.x, -arrowRadius.y + 3. * pixelScale.y); // 5^2 = 3^2+4^2
+
+                GL_GPU::glEnd();
+
+                GL_GPU::glColor4f(baseColor[0], baseColor[1], baseColor[2], 1.);
+            }
+
+            GL_GPU::glPointSize(5.);
+            GL_GPU::glEnable(GL_POINT_SMOOTH);
+            GL_GPU::glBegin(GL_POINTS);
+            GL_GPU::glVertex2d( center.x(), center.y() );
+            if ( ( (hoverState == eHoverStateWipeMix) &&
+                  (uiState != eViewerNodeInteractMouseStateRotatingWipeHandle) )
+                || (uiState == eViewerNodeInteractMouseStateDraggingWipeMixHandle) ) {
+                GL_GPU::glColor4f(0., 1. * l, 0., 1.);
+            }
+            GL_GPU::glVertex2d( mixPos.x(), mixPos.y() );
+            GL_GPU::glEnd();
+            GL_GPU::glPointSize(1.);
+            
+            drawArcOfCircle(center, mixX, mixY, angle + M_PI_4 / 2, angle + 3. * M_PI_4 / 2);
+        }
+    } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+} // drawWipeControl
+
+void
+ViewerNode::drawOverlay(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+{
+    bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
+    if (userRoIEnabled) {
+        _imp->drawUserRoI();
+    }
+
+    ViewerCompositingOperatorEnum compOperator = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
+    if (compOperator != eViewerCompositingOperatorNone &&
+        compOperator != eViewerCompositingOperatorStackUnder &&
+        compOperator != eViewerCompositingOperatorStackOver &&
+        compOperator != eViewerCompositingOperatorStackMinus &&
+        compOperator != eViewerCompositingOperatorStackOnionSkin) {
+        _imp->drawWipeControl();
+    }
+
+
+} // drawOverlay
+
 
 bool
-ViewerNode::onOverlayPenDown(double time,
+ViewerNodePrivate::isNearbyWipeCenter(const QPointF& wipeCenter,
+                                      const QPointF & pos,
+                                             double zoomScreenPixelWidth,
+                                             double zoomScreenPixelHeight)
+{
+    double toleranceX = zoomScreenPixelWidth * 8.;
+    double toleranceY = zoomScreenPixelHeight * 8.;
+
+    if ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) &&
+        ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) {
+        return true;
+    }
+
+    return false;
+}
+
+bool
+ViewerNodePrivate::isNearbyWipeRotateBar(const QPointF& wipeCenter,
+                                         double wipeAngle,
+                                         const QPointF & pos,
+                                                double zoomScreenPixelWidth,
+                                                double zoomScreenPixelHeight) 
+{
+    double toleranceX = zoomScreenPixelWidth * 8.;
+    double toleranceY = zoomScreenPixelHeight * 8.;
+    double rotateX, rotateY, rotateOffsetX, rotateOffsetY;
+
+    rotateX = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth;
+    rotateY = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelHeight;
+    rotateOffsetX = WIPE_ROTATE_OFFSET * zoomScreenPixelWidth;
+    rotateOffsetY = WIPE_ROTATE_OFFSET * zoomScreenPixelHeight;
+
+    QPointF outterPoint;
+
+    outterPoint.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateX - rotateOffsetX) );
+    outterPoint.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateY - rotateOffsetY) );
+    if ( ( ( ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (outterPoint.y() + toleranceY) ) ) ||
+          ( ( pos.y() >= (outterPoint.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) ) &&
+        ( ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (outterPoint.x() + toleranceX) ) ) ||
+         ( ( pos.x() >= (outterPoint.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) ) ) ) {
+            Point a;
+            a.x = ( outterPoint.x() - wipeCenter.x() );
+            a.y = ( outterPoint.y() - wipeCenter.y() );
+            double norm = sqrt(a.x * a.x + a.y * a.y);
+
+            ///The point is in the bounding box of the segment, if it is vertical it must be on the segment anyway
+            if (norm == 0) {
+                return false;
+            }
+
+            a.x /= norm;
+            a.y /= norm;
+            Point b;
+            b.x = ( pos.x() - wipeCenter.x() );
+            b.y = ( pos.y() - wipeCenter.y() );
+            norm = sqrt(b.x * b.x + b.y * b.y);
+
+            ///This vector is not vertical
+            if (norm != 0) {
+                b.x /= norm;
+                b.y /= norm;
+
+                double crossProduct = b.y * a.x - b.x * a.y;
+                if (std::abs(crossProduct) <  0.1) {
+                    return true;
+                }
+            }
+        }
+
+    return false;
+} // ViewerGL::Implementation::isNearbyWipeRotateBar
+
+bool
+ViewerNodePrivate::isNearbyWipeMixHandle(const QPointF& wipeCenter,
+                                         double wipeAngle,
+                                         double mixAmount,
+                                         const QPointF & pos,
+                                                double zoomScreenPixelWidth,
+                                                double zoomScreenPixelHeight)
+{
+    double toleranceX = zoomScreenPixelWidth * 8.;
+    double toleranceY = zoomScreenPixelHeight * 8.;
+    ///mix 1 is at rotation bar + pi / 8
+    ///mix 0 is at rotation bar + 3pi / 8
+    double alphaMix1, alphaMix0, alphaCurMix;
+
+    alphaMix1 = wipeAngle + M_PI_4 / 2;
+    alphaMix0 = wipeAngle + 3 * M_PI_4 / 2;
+    alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
+    QPointF mixPos;
+    double mixX = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelWidth;
+    double mixY = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelHeight;
+
+    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixX);
+    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixY);
+    if ( ( pos.x() >= (mixPos.x() - toleranceX) ) && ( pos.x() <= (mixPos.x() + toleranceX) ) &&
+        ( pos.y() >= (mixPos.y() - toleranceY) ) && ( pos.y() <= (mixPos.y() + toleranceY) ) ) {
+        return true;
+    }
+    
+    return false;
+}
+
+bool
+ViewerNodePrivate::isNearByUserRoITopEdge(const RectD & roi,
+                                 const QPointF & zoomPos,
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight)
+{
+    double length = std::min(roi.x2 - roi.x1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth) * 2);
+    RectD r(roi.x1 + length / 2,
+            roi.y2 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight,
+            roi.x2 - length / 2,
+            roi.y2 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight);
+
+    return r.contains( zoomPos.x(), zoomPos.y() );
+}
+
+bool
+ViewerNodePrivate::isNearByUserRoIRightEdge(const RectD & roi,
+                                   const QPointF & zoomPos,
+                                   double zoomScreenPixelWidth,
+                                   double zoomScreenPixelHeight)
+{
+    double length = std::min(roi.y2 - roi.y1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight) * 2);
+    RectD r(roi.x2 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
+            roi.y1 + length / 2,
+            roi.x2 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
+            roi.y2 - length / 2);
+
+    return r.contains( zoomPos.x(), zoomPos.y() );
+}
+
+bool
+ViewerNodePrivate::isNearByUserRoILeftEdge(const RectD & roi,
+                                  const QPointF & zoomPos,
+                                  double zoomScreenPixelWidth,
+                                  double zoomScreenPixelHeight)
+{
+    double length = std::min(roi.y2 - roi.y1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight) * 2);
+    RectD r(roi.x1 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
+            roi.y1 + length / 2,
+            roi.x1 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth,
+            roi.y2 - length / 2);
+
+    return r.contains( zoomPos.x(), zoomPos.y() );
+}
+
+bool
+ViewerNodePrivate::isNearByUserRoIBottomEdge(const RectD & roi,
+                                    const QPointF & zoomPos,
+                                    double zoomScreenPixelWidth,
+                                    double zoomScreenPixelHeight)
+{
+    double length = std::min(roi.x2 - roi.x1 - 10, (USER_ROI_CLICK_TOLERANCE * zoomScreenPixelWidth) * 2);
+    RectD r(roi.x1 + length / 2,
+            roi.y1 - USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight,
+            roi.x2 - length / 2,
+            roi.y1 + USER_ROI_CLICK_TOLERANCE * zoomScreenPixelHeight);
+
+    return r.contains( zoomPos.x(), zoomPos.y() );
+}
+
+bool
+ViewerNodePrivate::isNearByUserRoI(double x,
+                          double y,
+                          const QPointF & zoomPos,
+                          double zoomScreenPixelWidth,
+                          double zoomScreenPixelHeight)
+{
+    RectD r(x - USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth,
+            y - USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight,
+            x + USER_ROI_CROSS_RADIUS * zoomScreenPixelWidth,
+            y + USER_ROI_CROSS_RADIUS * zoomScreenPixelHeight);
+
+    return r.contains( zoomPos.x(), zoomPos.y() );
+}
+
+
+bool
+ViewerNode::onOverlayPenDown(double /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             const QPointF & /*viewportPos*/,
                             const QPointF & pos,
-                            double pressure,
-                            double timestamp,
+                            double /*pressure*/,
+                            double /*timestamp*/,
                             PenType pen)
 {
+    OverlaySupport* viewport = getCurrentViewportForOverlays();
+    Point pixelScale;
+    viewport->getPixelScale(pixelScale.x, pixelScale.y);
 
+    bool overlaysCaught = false;
+    if (!overlaysCaught &&
+        pen == ePenTypeLMB &&
+        _imp->buildUserRoIOnNextPress) {
+        _imp->draggedUserRoI.x1 = pos.x();
+        _imp->draggedUserRoI.y1 = pos.y();
+        _imp->draggedUserRoI.x2 = _imp->draggedUserRoI.x1 + 1;
+        _imp->draggedUserRoI.y2 = _imp->draggedUserRoI.y1 + 1;
+        _imp->buildUserRoIOnNextPress = false;
+        _imp->uiState = eViewerNodeInteractMouseStateBuildingUserRoI;
+        overlaysCaught = true;
+    }
+
+    bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
+    RectD userRoI;
+    if (userRoIEnabled) {
+        ViewerInstancePtr instance = toViewerInstance(_imp->getInternalViewerNode()->getEffectInstance());
+        assert(instance);
+        userRoI = instance->getUserRoI();
+    }
+    // Catch wipe
+    bool wipeEnabled = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() != eViewerCompositingOperatorNone;
+    double wipeAmount = getWipeAmount();
+    double wipeAngle = getWipeAngle();
+    QPointF wipeCenter = getWipeCenter();
+
+    if ( !overlaysCaught &&
+        wipeEnabled &&
+        pen == ePenTypeLMB &&
+        _imp->isNearbyWipeCenter(wipeCenter, pos, pixelScale.x, pixelScale.y) ) {
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingWipeCenter;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        wipeEnabled &&
+        pen == ePenTypeLMB &&
+        _imp->isNearbyWipeMixHandle(wipeCenter, wipeAngle, wipeAmount, pos, pixelScale.x, pixelScale.y) ) {
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingWipeMixHandle;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        wipeEnabled &&
+        pen == ePenTypeLMB &&
+        _imp->isNearbyWipeRotateBar(wipeCenter, wipeAngle, pos, pixelScale.x, pixelScale.y) ) {
+        _imp->uiState = eViewerNodeInteractMouseStateRotatingWipeHandle;
+        overlaysCaught = true;
+    }
+
+
+    // Catch User RoI
+
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoIBottomEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the bottom edge of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiBottomEdge;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoILeftEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the left edge of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiLeftEdge;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoIRightEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the right edge of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiRightEdge;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoITopEdge(userRoI, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the top edge of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiTopEdge;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
+                        pos, pixelScale.x, pixelScale.y ) ) {
+            // start dragging the midpoint of the user ROI
+            _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiCross;
+            _imp->draggedUserRoI = userRoI;
+            overlaysCaught = true;
+        }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoI(userRoI.x1, userRoI.y2, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the topleft corner of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiTopLeft;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoI(userRoI.x2, userRoI.y2, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the topright corner of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiTopRight;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoI(userRoI.x1, userRoI.y1, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the bottomleft corner of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiBottomLeft;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+    if ( !overlaysCaught &&
+        pen == ePenTypeLMB &&
+        userRoIEnabled &&
+        _imp->isNearByUserRoI(userRoI.x2, userRoI.y1, pos, pixelScale.x, pixelScale.y) ) {
+        // start dragging the bottomright corner of the user ROI
+        _imp->uiState = eViewerNodeInteractMouseStateDraggingRoiBottomRight;
+        _imp->draggedUserRoI = userRoI;
+        overlaysCaught = true;
+    }
+
+    if ( !overlaysCaught &&
+        pen == ePenTypeRMB ) {
+        _imp->showRightClickMenu();
+        overlaysCaught = true;
+    }
+
+    _imp->lastMousePos = pos;
+
+    return overlaysCaught;
 
 } // onOverlayPenDown
+
+bool
+ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/,
+                                const QPointF & /*viewportPos*/, const QPointF & pos, double /*pressure*/, double /*timestamp*/)
+{
+    OverlaySupport* viewport = getCurrentViewportForOverlays();
+    Point pixelScale;
+    viewport->getPixelScale(pixelScale.x, pixelScale.y);
+
+    bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
+    RectD userRoI;
+    if (userRoIEnabled) {
+        if (_imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
+            _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) {
+            userRoI = _imp->draggedUserRoI;
+        } else {
+            ViewerInstancePtr instance = toViewerInstance(_imp->getInternalViewerNode()->getEffectInstance());
+            assert(instance);
+            userRoI = instance->getUserRoI();
+        }
+    }
+    bool wipeEnabled = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() != eViewerCompositingOperatorNone;
+    double wipeAmount = getWipeAmount();
+    double wipeAngle = getWipeAngle();
+    QPointF wipeCenter = getWipeCenter();
+
+    bool wasHovering = _imp->hoverState != eHoverStateNothing;
+    bool cursorSet = false;
+    bool overlayCaught = false;
+    _imp->hoverState = eHoverStateNothing;
+    if ( wipeEnabled && _imp->isNearbyWipeCenter(wipeCenter, pos, pixelScale.x, pixelScale.y) ) {
+        setCurrentCursor(eCursorSizeAll);
+        cursorSet = true;
+    } else if ( wipeEnabled && _imp->isNearbyWipeMixHandle(wipeCenter, wipeAngle, wipeAmount, pos, pixelScale.x, pixelScale.y) ) {
+        _imp->hoverState = eHoverStateWipeMix;
+        overlayCaught = true;
+    } else if ( wipeEnabled && _imp->isNearbyWipeRotateBar(wipeCenter, wipeAngle, pos, pixelScale.x, pixelScale.y) ) {
+        _imp->hoverState = eHoverStateWipeRotateHandle;
+        overlayCaught = true;
+    } else if (userRoIEnabled) {
+        if ( _imp->isNearByUserRoIBottomEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+            || _imp->isNearByUserRoITopEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+            || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge)
+            || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge) ) {
+            setCurrentCursor(eCursorSizeVer);
+            cursorSet = true;
+        } else if ( _imp->isNearByUserRoILeftEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+                   || _imp->isNearByUserRoIRightEdge(userRoI, pos, pixelScale.x, pixelScale.y)
+                   || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge)
+                   || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge) ) {
+            setCurrentCursor(eCursorSizeHor);
+            cursorSet = true;
+        } else if ( _imp->isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2, pos, pixelScale.x, pixelScale.y )
+                   || ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiCross) ) {
+            setCurrentCursor(eCursorSizeAll);
+            cursorSet = true;
+        } else if ( _imp->isNearByUserRoI(userRoI.x2, userRoI.y1, pos, pixelScale.x, pixelScale.y) ||
+                   _imp->isNearByUserRoI(userRoI.x1, userRoI.y2, pos, pixelScale.x, pixelScale.y) ||
+                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight) ||
+                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft) ) {
+            setCurrentCursor(eCursorFDiag);
+            cursorSet = true;
+        } else if ( _imp->isNearByUserRoI(userRoI.x1, userRoI.y1, pos, pixelScale.x, pixelScale.y) ||
+                   _imp->isNearByUserRoI(userRoI.x2, userRoI.y2, pos, pixelScale.x, pixelScale.y) ||
+                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft) ||
+                   ( _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) ) {
+            setCurrentCursor(eCursorBDiag);
+            cursorSet = true;
+        }
+    }
+
+    if (!cursorSet) {
+        setCurrentCursor(eCursorDefault);
+    }
+
+
+    if ( (_imp->hoverState == eHoverStateNothing) && wasHovering ) {
+        overlayCaught = true;
+    }
+
+    double dx = pos.x() - _imp->lastMousePos.x();
+    double dy = pos.y() - _imp->lastMousePos.y();
+
+    switch (_imp->uiState) {
+        case eViewerNodeInteractMouseStateDraggingRoiBottomEdge: {
+            if ( (_imp->draggedUserRoI.y1 - dy) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 -= dy;
+                overlayCaught = true;
+            }
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiLeftEdge: {
+            if ( (_imp->draggedUserRoI.x1 - dx) < _imp->draggedUserRoI.x2 ) {
+                _imp->draggedUserRoI.x1 -= dx;
+                overlayCaught = true;
+            }
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiRightEdge: {
+            if ( (_imp->draggedUserRoI.x2 - dx) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 -= dx;
+                overlayCaught = true;
+            }
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiTopEdge: {
+            if ( (_imp->draggedUserRoI.y2 - dy) > _imp->draggedUserRoI.y1 ) {
+                _imp->draggedUserRoI.y2 -= dy;
+                overlayCaught = true;
+            }
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiCross: {
+            _imp->draggedUserRoI.translate(-dx, -dy);
+            overlayCaught = true;
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiTopLeft: {
+            if ( (_imp->draggedUserRoI.y2 - dy) > _imp->draggedUserRoI.y1 ) {
+                _imp->draggedUserRoI.y2 -= dy;
+            }
+            if ( (_imp->draggedUserRoI.x1 - dx) < _imp->draggedUserRoI.x2 ) {
+                _imp->draggedUserRoI.x1 -= dx;
+            }
+            overlayCaught = true;
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiTopRight: {
+            if ( (_imp->draggedUserRoI.y2 - dy) > _imp->draggedUserRoI.y1 ) {
+                _imp->draggedUserRoI.y2 -= dy;
+            }
+            if ( (_imp->draggedUserRoI.x2 - dx) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 -= dx;
+            }
+            overlayCaught = true;
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiBottomRight:
+        case eViewerNodeInteractMouseStateBuildingUserRoI:{
+            if ( (_imp->draggedUserRoI.x2 - dx) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 -= dx;
+            }
+            if ( (_imp->draggedUserRoI.y1 - dy) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 -= dy;
+            }
+            overlayCaught = true;
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingRoiBottomLeft: {
+            if ( (_imp->draggedUserRoI.y1 - dy) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 -= dy;
+            }
+            if ( (_imp->draggedUserRoI.x1 - dx) < _imp->draggedUserRoI.x2 ) {
+                _imp->draggedUserRoI.x1 -= dx;
+            }
+            overlayCaught = true;
+
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingWipeCenter: {
+            KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
+            centerKnob->setValue(centerKnob->getValue() - dx);
+            centerKnob->setValue(centerKnob->getValue(1) - dy, ViewSpec::current(), 1);
+            overlayCaught = true;
+            break;
+        }
+        case eViewerNodeInteractMouseStateDraggingWipeMixHandle: {
+            KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
+            Point center;
+            center.x = centerKnob->getValue();
+            center.y = centerKnob->getValue(1);
+            double angle = std::atan2( pos.y() - center.y, pos.x() - center.x );
+            double prevAngle = std::atan2( _imp->lastMousePos.y() - center.y,
+                                          _imp->lastMousePos.x() - center.x );
+            KnobDoublePtr mixKnob = _imp->wipeAmount.lock();
+            double mixAmount = mixKnob->getValue();
+            mixAmount -= (angle - prevAngle);
+            mixAmount = std::max( 0., std::min(mixAmount, 1.) );
+            mixKnob->setValue(mixAmount);
+            overlayCaught = true;
+            break;
+        }
+        case eViewerNodeInteractMouseStateRotatingWipeHandle: {
+            KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
+            Point center;
+            center.x = centerKnob->getValue();
+            center.y = centerKnob->getValue(1);
+            double angle = std::atan2( pos.y() - center.y, pos.x() - center.x );
+
+            KnobDoublePtr angleKnob = _imp->wipeAngle.lock();
+            double closestPI2 = M_PI_2 * std::floor(angle / M_PI_2 + 0.5);
+            if (std::fabs(angle - closestPI2) < 0.1) {
+                // snap to closest multiple of PI / 2.
+                angle = closestPI2;
+            }
+
+            angleKnob->setValue(angle);
+            
+            overlayCaught = true;
+            break;
+        }
+        default:
+            break;
+    }
+    _imp->lastMousePos = pos;
+    return overlayCaught;
+
+} // onOverlayPenMotion
+
+bool
+ViewerNode::onOverlayPenUp(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, const QPointF & /*viewportPos*/, const QPointF & /*pos*/, double /*pressure*/, double /*timestamp*/)
+{
+
+    bool caught = false;
+    if (_imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) {
+        ViewerInstancePtr instance = toViewerInstance(_imp->getInternalViewerNode()->getEffectInstance());
+        assert(instance);
+        instance->setUserRoI(_imp->draggedUserRoI);
+        caught = true;
+    }
+
+    _imp->uiState = eViewerNodeInteractMouseStateIdle;
+
+
+    return caught;
+} // onOverlayPenUp
+
+bool
+ViewerNode::onOverlayPenDoubleClicked(double /*time*/,
+                                       const RenderScale & /*renderScale*/,
+                                       ViewIdx /*view*/,
+                                       const QPointF & /*viewportPos*/,
+                                       const QPointF & /*pos*/)
+{
+    return false;
+} // onOverlayPenDoubleClicked
+
+bool
+ViewerNode::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+{
+    return false;
+} // onOverlayKeyDown
+
+bool
+ViewerNode::onOverlayKeyUp(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+{
+    return false;
+} // onOverlayKeyUp
+
+bool
+ViewerNode::onOverlayKeyRepeat(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+{
+    return false;
+} // onOverlayKeyRepeat
+
+bool
+ViewerNode::onOverlayFocusGained(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+{
+    return false;
+} // onOverlayFocusGained
+
+bool
+ViewerNode::onOverlayFocusLost(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+{
+    return false;
+} // onOverlayFocusLost
 
 OpenGLViewerI*
 ViewerNode::getUiContext() const
@@ -1226,29 +2735,6 @@ ViewerNode::setUiContext(OpenGLViewerI* viewer)
     _imp->uiContext = viewer;
 }
 
-
-void
-ViewerNode::forceFullComputationOnNextFrame()
-{
-    // this is called by the GUI when the user presses the "Refresh" button.
-    // It set the flag forceRender to true, meaning no cache will be used.
-
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-}
-
-void
-ViewerNode::clearLastRenderedImage()
-{
-    NodeGroup::clearLastRenderedImage();
-
-    if (_imp->uiContext) {
-        _imp->uiContext->clearLastRenderedImage();
-    }
-
-}
-
 void
 ViewerNode::invalidateUiContext()
 {
@@ -1258,571 +2744,155 @@ ViewerNode::invalidateUiContext()
 }
 
 
-void
-ViewerNode::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
+NodePtr
+ViewerNode::getCurrentAInput() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->uiContext) {
-        _imp->uiContext->disconnectInputTexture(index, clearRoD);
+    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    if (curLabel == "-") {
+        return NodePtr();
     }
+    for (std::size_t i = 0; i < _imp->viewerInputs.size(); ++i) {
+        if (_imp->viewerInputs[i].label == curLabel) {
+            return _imp->viewerInputs[i].node.lock();
+        }
+    }
+    assert(false);
+    return NodePtr();
 }
-void
-ViewerNode::aboutToUpdateTextures()
+
+NodePtr
+ViewerNode::getCurrentBInput() const
 {
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->uiContext->clearPartialUpdateTextures();
+    std::string curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    if (curLabel == "-") {
+        return NodePtr();
+    }
+    for (std::size_t i = 0; i < _imp->viewerInputs.size(); ++i) {
+        if (_imp->viewerInputs[i].label == curLabel) {
+            return _imp->viewerInputs[i].node.lock();
+        }
+    }
+    assert(false);
+    return NodePtr();
+
+}
+
+ViewerCompositingOperatorEnum
+ViewerNode::getCurrentOperator() const
+{
+    return (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
+}
+
+void
+ViewerNode::setRefreshButtonDown(bool down)
+{
+    _imp->refreshButtonKnob.lock()->setValue(down);
 }
 
 bool
-ViewerNode::isViewerUIVisible() const
+ViewerNode::isViewersSynchroEnabled() const
 {
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _imp->uiContext ? _imp->uiContext->isViewerUIVisible() : false;
+    return _imp->syncViewersButtonKnob.lock()->getValue();
 }
 
 void
-ViewerInstance::onGammaChanged(double value)
+ViewerNode::setViewersSynchroEnabled(bool enabled)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-
-        if (_imp->viewerParamsGamma != value) {
-            _imp->viewerParamsGamma = value;
-            changed = true;
-        }
-    }
-    if (changed) {
-        QWriteLocker k(&_imp->gammaLookupMutex);
-        _imp->fillGammaLut(1. / value);
-    }
-    assert(_imp->uiContext);
-    if (changed) {
-        if ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte)
-             && !getApp()->getProject()->isLoadingProject() ) {
-            renderCurrentFrame(true);
-        } else {
-            _imp->uiContext->redraw();
-        }
-    }
-}
-
-double
-ViewerInstance::getGamma() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsGamma;
+    _imp->syncViewersButtonKnob.lock()->setValue(enabled);
 }
 
 void
-ViewerInstance::onGainChanged(double exp)
+ViewerNode::setPickerEnabled(bool enabled)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsGain != exp) {
-            _imp->viewerParamsGain = exp;
-            changed = true;
-        }
-    }
-    if (changed) {
-        assert(_imp->uiContext);
-        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
-             && !getApp()->getProject()->isLoadingProject() ) {
-            renderCurrentFrame(true);
-        } else {
-            _imp->uiContext->redraw();
-        }
-    }
-}
-
-unsigned int
-ViewerInstance::getViewerMipMapLevel() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipMapLevel;
-}
-
-void
-ViewerInstance::onMipMapLevelChanged(int level)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerMipMapLevel == (unsigned int)level) {
-            return;
-        }
-        _imp->viewerMipMapLevel = level;
-    }
-}
-
-void
-ViewerInstance::onAutoContrastChanged(bool autoContrast,
-                                      bool refresh)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsAutoContrast != autoContrast) {
-            _imp->viewerParamsAutoContrast = autoContrast;
-            changed = true;
-        }
-    }
-    if ( changed && refresh && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-bool
-ViewerInstance::isAutoContrastEnabled() const
-{
-    // MT-safe
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsAutoContrast;
-}
-
-void
-ViewerInstance::onColorSpaceChanged(ViewerColorSpaceEnum colorspace)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsLut == colorspace) {
-            return;
-        }
-        _imp->viewerParamsLut = colorspace;
-    }
-    assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
-         && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    } else {
-        _imp->uiContext->redraw();
-    }
-}
-
-void
-ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels,
-                                   bool bothInputs)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (!bothInputs) {
-            if (_imp->viewerParamsChannels[0] != channels) {
-                _imp->viewerParamsChannels[0] = channels;
-                changed = true;
-            }
-        } else {
-            if (_imp->viewerParamsChannels[0] != channels) {
-                _imp->viewerParamsChannels[0] = channels;
-                changed = true;
-            }
-            if (_imp->viewerParamsChannels[1] != channels) {
-                _imp->viewerParamsChannels[1] = channels;
-                changed = true;
-            }
-        }
-    }
-    if ( changed && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-void
-ViewerInstance::setActiveLayer(const ImageComponents& layer,
-                               bool doRender)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsLayer != layer) {
-            _imp->viewerParamsLayer = layer;
-            changed = true;
-        }
-    }
-    if ( doRender && changed && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-void
-ViewerInstance::setAlphaChannel(const ImageComponents& layer,
-                                const std::string& channelName,
-                                bool doRender)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsAlphaLayer != layer) {
-            _imp->viewerParamsAlphaLayer = layer;
-            changed = true;
-        }
-        if (_imp->viewerParamsAlphaChannelName != channelName) {
-            _imp->viewerParamsAlphaChannelName = channelName;
-            changed = true;
-        }
-    }
-    if ( changed && doRender && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-void
-ViewerInstance::disconnectViewer()
-{
-    // always running in the render thread
-    if (_imp->uiContext) {
-        Q_EMIT viewerDisconnected();
-    }
-}
-
-void
-ViewerInstance::disconnectTexture(int index,bool clearRod)
-{
-    if (_imp->uiContext) {
-        Q_EMIT disconnectTextureRequest(index, clearRod);
-    }
-}
-
-void
-ViewerInstance::redrawViewer()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (!_imp->uiContext) {
-        return;
-    }
-    _imp->uiContext->redraw();
-}
-
-void
-ViewerInstance::redrawViewerNow()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert(_imp->uiContext);
-    _imp->uiContext->redrawNow();
-}
-
-int
-ViewerInstance::getLutType() const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsLut;
-}
-
-double
-ViewerInstance::getGain() const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsGain;
-}
-
-int
-ViewerInstance::getMipMapLevel() const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipMapLevel;
-}
-
-DisplayChannelsEnum
-ViewerInstance::getChannels(int texIndex) const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsChannels[texIndex];
-}
-
-void
-ViewerInstance::setFullFrameProcessingEnabled(bool fullFrame)
-{
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->fullFrameProcessingEnabled == fullFrame) {
-            return;
-        }
-        _imp->fullFrameProcessingEnabled = fullFrame;
-    }
-    if ( !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-bool
-ViewerInstance::isFullFrameProcessingEnabled() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->fullFrameProcessingEnabled;
-}
-
-void
-ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<ImageComponents>* comps)
-{
-    ///Viewer only supports RGBA for now.
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    _imp->enableInfoBarButtonKnob.lock()->setValue(enabled);
 }
 
 ViewIdx
-ViewerInstance::getViewerCurrentView() const
+ViewerNode::getCurrentView() const
 {
-    return _imp->uiContext ? _imp->uiContext->getCurrentView() : ViewIdx(0);
+    return ViewIdx(_imp->activeViewKnob.lock()->getValue());
 }
 
 void
-ViewerInstance::setActivateInputChangeRequestedFromViewer(bool fromViewer)
+ViewerNode::setCurrentView(ViewIdx view)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->activateInputChangedFromViewer = fromViewer;
+    _imp->activeViewKnob.lock()->setValue(view.value());
 }
 
 bool
-ViewerInstance::isInputChangeRequestedFromViewer() const
+ViewerNode::isClipToProjectEnabled() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->activateInputChangedFromViewer;
-}
-
-void
-ViewerInstance::setViewerPaused(bool paused,
-                                bool allInputs)
-{
-    QMutexLocker k(&_imp->isViewerPausedMutex);
-
-    _imp->isViewerPaused[0] = paused;
-    if (allInputs) {
-        _imp->isViewerPaused[1] = paused;
-    }
-}
-
-bool
-ViewerInstance::isViewerPaused(int texIndex) const
-{
-    QMutexLocker k(&_imp->isViewerPausedMutex);
-
-    return _imp->isViewerPaused[texIndex];
-}
-
-void
-ViewerInstance::onInputChanged(int /*inputNb*/)
-{
-    Q_EMIT clipPreferencesChanged();
-}
-
-void
-ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
-{
-    Q_EMIT clipPreferencesChanged();
-}
-
-void
-ViewerInstance::onChannelsSelectorRefreshed()
-{
-    Q_EMIT availableComponentsChanged();
-}
-
-void
-ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthByte);
-}
-
-void
-ViewerInstance::getActiveInputs(int & a,
-                                int &b) const
-{
-    NodePtr n = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(n);
-
-    assert(isInspector);
-    if (isInspector) {
-        isInspector->getActiveInputs(a, b);
-    }
-}
-
-void
-ViewerInstance::setInputA(int inputNb)
-{
-    NodePtr n = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(n);
-
-    assert(isInspector);
-    if (isInspector) {
-        isInspector->setInputA(inputNb);
-    }
-
-    Q_EMIT availableComponentsChanged();
-}
-
-void
-ViewerInstance::setInputB(int inputNb)
-{
-    NodePtr n = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(n);
-
-    assert(isInspector);
-    if (isInspector) {
-        isInspector->setInputB(inputNb);
-    }
-
-    Q_EMIT availableComponentsChanged();
-}
-
-int
-ViewerInstance::getLastRenderedTime() const
-{
-    return _imp->uiContext ? _imp->uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
-}
-
-TimeLinePtr
-ViewerInstance::getTimeline() const
-{
-    return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
-}
-
-void
-ViewerInstance::getTimelineBounds(int* first,
-                                  int* last) const
-{
-    if (_imp->uiContext) {
-        _imp->uiContext->getViewerFrameRange(first, last);
-    } else {
-        *first = 0;
-        *last = 0;
-    }
-}
-
-int
-ViewerInstance::getMipMapLevelFromZoomFactor() const
-{
-    double zoomFactor = _imp->uiContext->getZoomFactor();
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
-
-    return std::log(closestPowerOf2) / M_LN2;
+    return _imp->clipToProjectButtonKnob.lock()->getValue();
 }
 
 double
-ViewerInstance::getCurrentTime() const
+ViewerNode::getWipeAmount() const
 {
-    return getFrameRenderArgsCurrentTime();
+    return _imp->wipeAmount.lock()->getValue();
 }
 
-ViewIdx
-ViewerInstance::getCurrentView() const
+double
+ViewerNode::getWipeAngle() const
 {
-    return getFrameRenderArgsCurrentView();
+    return _imp->wipeAngle.lock()->getValue();
 }
 
-bool
-ViewerInstance::isLatestRender(int textureIndex,
-                               U64 renderAge) const
+QPointF
+ViewerNode::getWipeCenter() const
 {
-    return _imp->isLatestRender(textureIndex, renderAge);
-}
-
-void
-ViewerInstance::setPartialUpdateParams(const std::list<RectD>& rois,
-                                       bool recenterViewer)
-{
-    double viewerCenterX = 0;
-    double viewerCenterY = 0;
-
-    if (recenterViewer) {
-        RectD bbox;
-        bool bboxSet = false;
-        for (std::list<RectD>::const_iterator it = rois.begin(); it != rois.end(); ++it) {
-            if (!bboxSet) {
-                bboxSet = true;
-                bbox = *it;
-            } else {
-                bbox.merge(*it);
-            }
-        }
-        viewerCenterX = (bbox.x1 + bbox.x2) / 2.;
-        viewerCenterY = (bbox.y1 + bbox.y2) / 2.;
-    }
-    QMutexLocker k(&_imp->viewerParamsMutex);
-    _imp->partialUpdateRects = rois;
-    _imp->viewportCenterSet = recenterViewer;
-    _imp->viewportCenter.x = viewerCenterX;
-    _imp->viewportCenter.y = viewerCenterY;
-}
-
-void
-ViewerInstance::clearPartialUpdateParams()
-{
-    QMutexLocker k(&_imp->viewerParamsMutex);
-
-    _imp->partialUpdateRects.clear();
-    _imp->viewportCenterSet = false;
-}
-
-void
-ViewerInstance::setDoingPartialUpdates(bool doing)
-{
-    QMutexLocker k(&_imp->viewerParamsMutex);
-
-    _imp->isDoingPartialUpdates = doing;
+    KnobDoublePtr wipeCenter = _imp->wipeCenter.lock();
+    QPointF r;
+    r.rx() = wipeCenter->getValue();
+    r.ry() = wipeCenter->getValue(1);
+    return r;
 }
 
 bool
-ViewerInstance::isDoingPartialUpdates() const
+ViewerNode::isCheckerboardEnabled() const
 {
-    QMutexLocker k(&_imp->viewerParamsMutex);
+    return _imp->enableCheckerboardButtonKnob.lock()->getValue();
+}
 
-    return _imp->isDoingPartialUpdates;
+bool
+ViewerNode::isUserRoIEnabled() const
+{
+    return _imp->toggleUserRoIButtonKnob.lock()->getValue();
+}
+
+bool
+ViewerNode::isOverlayEnabled() const
+{
+    return _imp->rightClickShowHideOverlays.lock()->getValue();
+}
+
+bool
+ViewerNode::isFullFrameProcessingEnabled() const
+{
+    return _imp->fullFrameButtonKnob.lock()->getValue();
+}
+
+double
+ViewerNode::getGain() const
+{
+    return _imp->gainSliderKnob.lock()->getValue();
+}
+
+double
+ViewerNode::getGamma() const
+{
+    return _imp->gammaSliderKnob.lock()->getValue();
 }
 
 void
-ViewerInstance::reportStats(int time,
-                            ViewIdx view,
-                            double wallTime,
-                            const RenderStatsMap& stats)
+ViewerNode::resetWipe()
 {
-    Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
+    beginChanges();
+    _imp->wipeCenter.lock()->resetToDefaultValue(0);
+    _imp->wipeCenter.lock()->resetToDefaultValue(1);
+    _imp->wipeAngle.lock()->resetToDefaultValue(0);
+    _imp->wipeAmount.lock()->resetToDefaultValue(0);
 }
 
 NATRON_NAMESPACE_EXIT;
-
 NATRON_NAMESPACE_USING;
-#include "moc_ViewerInstance.cpp"
-#include "moc_ViewerInstancePrivate.cpp"
+#include "moc_ViewerNode.cpp"

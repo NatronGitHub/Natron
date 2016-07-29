@@ -52,6 +52,7 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/AboutWindow.h"
 #include "Gui/ActionShortcuts.h"
@@ -210,9 +211,11 @@ Gui::registerNewColorPicker(KnobColorPtr knob)
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ( !(*it)->isPickerEnabled() ) {
-            (*it)->setPickerEnabled(true);
+        ViewerNodePtr internalViewerNode = (*it)->getInternalNode();
+        if (!internalViewerNode) {
+            continue;
         }
+        internalViewerNode->setPickerEnabled(true);
     }
     _imp->_projectGui->registerNewColorPicker(knob);
 }
@@ -240,22 +243,16 @@ Gui::hasPickers() const
 }
 
 void
-Gui::updateViewersViewsMenu(const std::vector<std::string>& viewNames)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->updateViewsMenu(viewNames);
-    }
-}
-
-void
 Gui::setViewersCurrentView(ViewIdx view)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->setCurrentView(view);
+        ViewerNodePtr internalViewerNode = (*it)->getInternalNode();
+        if (!internalViewerNode) {
+            continue;
+        }
+        internalViewerNode->setCurrentView(view);
     }
 }
 
@@ -273,21 +270,6 @@ Gui::getViewersList_mt_safe() const
     return _imp->_viewerTabs;
 }
 
-void
-Gui::setMasterSyncViewer(ViewerTab* master)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    _imp->_masterSyncViewer = master;
-}
-
-ViewerTab*
-Gui::getMasterSyncViewer() const
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    return _imp->_masterSyncViewer;
-}
 
 void
 Gui::activateViewerTab(const ViewerInstancePtr& viewer)
@@ -322,8 +304,8 @@ Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
             }
         }
 
-        if ( v && (v == _imp->_masterSyncViewer) ) {
-            _imp->_masterSyncViewer = 0;
+        if ( v && (viewer->getNode() == getApp()->getMasterSyncViewer()) ) {
+            getApp()->setMasterSyncViewer(NodePtr());
         }
     }
 
@@ -338,7 +320,7 @@ Gui::getViewerTabForInstance(const ViewerInstancePtr& node) const
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        if ( (*it)->getInternalNode() == node ) {
+        if ( (*it)->getInternalNode()->getInternalViewerNode() == node ) {
             return *it;
         }
     }
@@ -934,10 +916,12 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ( ( (*it)->getInternalNode() == leadViewer ) && isPlayback ) {
+        ViewerNodePtr internalNode =  (*it)->getInternalNode() ;
+        ViewerInstancePtr instance = internalNode->getInternalViewerNode();
+        if ( (instance == leadViewer ) && isPlayback ) {
             continue;
         }
-        if ( (*it)->getInternalNode()->isDoingPartialUpdates() ) {
+        if ( instance->isDoingPartialUpdates() ) {
             //When tracking, we handle rendering separatly
             continue;
         }

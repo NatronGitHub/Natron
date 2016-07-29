@@ -171,7 +171,6 @@ struct ViewerArgs
 {
     EffectInstancePtr activeInputToRender;
     bool forceRender;
-    int activeInputIndex;
     U64 activeInputHash;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
@@ -207,10 +206,12 @@ public:
 
     virtual ~ViewerInstance();
 
+    ViewerNodePtr getViewerNodeGroup() const;
+
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
-    ///Called upon node creation and then never changed
-    void setUiContext(OpenGLViewerI* viewer);
+    KnobChoicePtr getAInputChoice() const;
+    KnobChoicePtr getBInputChoice() const;
 
     virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL
     {
@@ -222,11 +223,9 @@ public:
         return true;
     }
 
-    /**
-     * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when
-     * the node is deleted.
-     **/
-    void invalidateUiContext();
+    RectD getUserRoI() const;
+    void setUserRoI(const RectD& rect);
+
     enum ViewerRenderRetCode
     {
         //The render failed and should clear to black the viewer and stop any ongoing playback
@@ -365,19 +364,11 @@ public:
 
     void disconnectTexture(int index, bool clearRod);
 
-    int getLutType() const WARN_UNUSED_RETURN;
-
-    double getGain() const WARN_UNUSED_RETURN;
-
     int getMipMapLevel() const WARN_UNUSED_RETURN;
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
-
-    void setFullFrameProcessingEnabled(bool fullFrame);
-    bool isFullFrameProcessingEnabled() const;
-
 
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -385,38 +376,6 @@ public:
     }
 
     bool isLatestRender(int textureIndex, U64 renderAge) const;
-
-
-    void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
-
-    void setActiveLayer(const ImageComponents& layer, bool doRender);
-
-    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
-
-    bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
-
-    void onAutoContrastChanged(bool autoContrast, bool refresh);
-
-    /**
-     * @brief Returns the current view, MT-safe
-     **/
-    ViewIdx getViewerCurrentView() const;
-
-    void onGainChanged(double exp);
-
-    void onGammaChanged(double value);
-
-    double getGamma() const WARN_UNUSED_RETURN;
-
-    void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
-
-    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-
-    void getActiveInputs(int & a, int &b) const;
-
-    void setInputA(int inputNb);
-
-    void setInputB(int inputNb);
 
     int getLastRenderedTime() const;
 
@@ -428,7 +387,6 @@ public:
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
 
     bool isViewerUIVisible() const;
 
@@ -466,6 +424,8 @@ public:
 
     unsigned int getViewerMipMapLevel() const;
 
+    void getInputsComponentsAvailables(std::set<ImageComponents>* comps) const;
+
 public Q_SLOTS:
 
 
@@ -493,14 +453,19 @@ Q_SIGNALS:
 
     void clipPreferencesChanged();
 
-    void availableComponentsChanged();
-
     void disconnectTextureRequest(int index,bool clearRoD);
 
     void viewerRenderingStarted();
     void viewerRenderingEnded();
 
 private:
+
+
+    NodePtr getInputRecursive(int inputIndex) const;
+
+    void refreshLayerAndAlphaChannelComboBox();
+
+    
     /*******************************************
        *******OVERRIDEN FROM EFFECT INSTANCE******
      *******************************************/
@@ -546,7 +511,6 @@ private:
         return "The Viewer node can display the output of a node graph.";
     }
 
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL
     {
         return QString::number(inputNb + 1).toStdString();

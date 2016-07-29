@@ -757,8 +757,6 @@ public:
      **/
     bool refreshMetaDatas_public(bool recurse);
 
-    virtual void onChannelsSelectorRefreshed() {}
-
     void setDefaultMetadata();
 
 protected:

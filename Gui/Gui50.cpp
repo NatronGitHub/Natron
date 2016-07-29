@@ -75,6 +75,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
@@ -825,7 +826,7 @@ Gui::renderAllViewers(bool canAbort)
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(canAbort);
+            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(canAbort);
         }
     }
 }
@@ -836,7 +837,7 @@ Gui::abortAllViewers()
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getNode()->abortAnyProcessing_non_blocking();
+            (*it)->getInternalNode()->getInternalViewerNode()->getNode()->abortAnyProcessing_non_blocking();
         }
     }
 }

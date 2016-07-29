@@ -199,7 +199,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _leftRightSplitter(0)
     , _viewerTabsMutex()
     , _viewerTabs()
-    , _masterSyncViewer(0)
     , _activeViewer(0)
     , _histogramsMutex()
     , _histograms()

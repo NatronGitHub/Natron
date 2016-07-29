@@ -197,7 +197,13 @@ public:
     void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
     void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
 
-    bool checkAllReadersModificationDate(bool errorAndWarn);
+    virtual bool checkAllReadersModificationDate(bool errorAndWarn) OVERRIDE FINAL;
+
+    virtual void setMasterSyncViewer(const NodePtr& viewerNode) OVERRIDE FINAL;
+
+    virtual NodePtr getMasterSyncViewer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void showRenderStatsWindow() OVERRIDE FINAL;
 
 public Q_SLOTS:
 

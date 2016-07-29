@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/NodeClipBoard.h"
@@ -365,18 +366,18 @@ RemoveMultipleNodesCommand::redo()
                 NodesList::const_iterator found = std::find(outputsToRestore.begin(), outputsToRestore.end(), output);
 
                 if ( found != outputsToRestore.end() ) {
-                    InspectorNodePtr inspector = toInspectorNode(output);
-                    ///if the node is an inspector, when disconnecting the active input just activate another input instead
-                    if (inspector) {
-                        const std::vector<NodeWPtr> & inputs = inspector->getGuiInputs();
+                    ViewerNodePtr isViewer = output->isEffectViewerNode();
+                    ///if the node is an viewer, when disconnecting the active input just activate another input instead
+                    if (isViewer) {
+                        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
                         ///set as active input the first non null input
                         for (std::size_t i = 0; i < inputs.size(); ++i) {
                             NodePtr input = inputs[i].lock();
                             if (input) {
-                                inspector->setActiveInputAndRefresh(i, true);
+                                isViewer->connectInputToIndex(i, 0);
                                 ///make sure we don't refresh it a second time
                                 std::list<ViewerInstancePtr>::iterator foundViewer =
-                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), inspector->isEffectViewerInstance() );
+                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), isViewer->getInternalViewerNode() );
                                 if ( foundViewer != viewersToRefresh.end() ) {
                                     viewersToRefresh.erase(foundViewer);
                                 }

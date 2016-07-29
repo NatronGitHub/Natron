@@ -60,20 +60,15 @@ public:
     explicit ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                        const std::list<NodeGuiPtr>& activePluginsContext,
                        Gui* gui,
-                       const ViewerInstancePtr& node,
+                       const ViewerNodePtr& node,
                        QWidget* parent = 0);
 
     virtual ~ViewerTab() OVERRIDE;
 
 
-    ViewerInstancePtr getInternalNode() const;
-    void discardInternalNodePointer();
+    ViewerNodePtr getInternalNode() const;
 
     ViewerGL* getViewer() const;
-
-    void setCurrentView(ViewIdx view);
-
-    ViewIdx getCurrentView() const;
 
     void seek(SequenceTime time);
 
@@ -119,59 +114,6 @@ private:
 
 public:
 
-
-    ////////
-    /////////////The following functions are used when serializing/deserializing the project gui
-    ///////////// so the viewer can restore the exact same settings to the user.
-    bool isClippedToProject() const;
-
-    std::string getColorSpace() const;
-
-    void setUserRoIEnabled(bool b);
-
-    void setUserRoI(const RectD & r);
-
-    void setClipToProject(bool b);
-
-    void setFullFrameProcessing(bool fullFrame);
-
-    bool isFullFrameProcessingEnabled() const;
-
-    void setColorSpace(const std::string & colorSpaceName);
-
-    void setGain(double d);
-
-    double getGain() const;
-
-    void setGamma(double gamma);
-
-    double getGamma() const;
-
-    static std::string getChannelsString(DisplayChannelsEnum c);
-    std::string getChannelsString() const;
-
-    DisplayChannelsEnum getChannels() const;
-
-    void setChannels(const std::string & channelsStr);
-
-private:
-
-    void setDisplayChannels(int index, bool setBothInputs);
-
-public:
-
-    bool isAutoContrastEnabled() const;
-
-    void setAutoContrastEnabled(bool b);
-
-    void setMipMapLevel(int level);
-
-    int getMipMapLevel() const;
-
-    void setRenderScaleActivated(bool act);
-
-    bool getRenderScaleActivated() const;
-
     void setZoomOrPannedSinceLastFit(bool enabled);
 
     bool getZoomOrPannedSinceLastFit() const;
@@ -208,12 +150,6 @@ public:
      **/
     void updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node);
 
-    ViewerCompositingOperatorEnum getCompositingOperator() const;
-
-    ViewerCompositingOperatorEnum getCompositingOperatorPrevious() const;
-
-    void setCompositingOperator(ViewerCompositingOperatorEnum op);
-
     bool isFPSLocked() const;
 
     void connectToViewerCache();
@@ -235,9 +171,6 @@ public:
 
     void setCustomTimeline(const TimeLinePtr& timeline);
     TimeLinePtr getTimeLine() const;
-
-    bool isCheckerboardEnabled() const;
-    void setCheckerboardEnabled(bool enabled);
 
     double getDesiredFps() const;
     void setDesiredFps(double fps);
@@ -262,57 +195,25 @@ public:
 
     PlaybackModeEnum getPlaybackMode() const;
 
-
-    void refreshLayerAndAlphaChannelComboBox();
-
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
-    bool isViewersSynchroEnabled() const;
-
-    void synchronizeOtherViewersProjection();
-
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
-
-    void zoomIn();
-    void zoomOut();
-
-    void refresh(bool enableRenderStats);
 
     void connectToInput(int inputNb, bool isASide);
     void connectToAInput(int inputNb);
     void connectToBInput(int inputNb);
 
-    bool isPickerEnabled() const;
-    void setPickerEnabled(bool enabled);
 
+    void synchronizeOtherViewersProjection();
+    
     void onMousePressCalledInViewer();
 
-    void updateViewsMenu(const std::vector<std::string>& viewNames);
-
-    void getActiveInputs(int* a, int* b) const;
-
-    void setViewerPaused(bool paused, bool allInputs);
-
-    void toggleViewerPauseMode(bool allInputs);
-
-    bool isViewerPaused(int texIndex) const;
-
-    QString getCurrentLayerName() const;
-
-    QString getCurrentAlphaLayerName() const;
-
-    void setCurrentLayers(const QString& layer, const QString& alphaLayer);
-
 public Q_SLOTS:
-
-    void onPauseViewerButtonClicked(bool clicked);
 
     void onPlaybackInButtonClicked();
     void onPlaybackOutButtonClicked();
     void onPlaybackInSpinboxValueChanged(double value);
     void onPlaybackOutSpinboxValueChanged(double value);
-
-    void onZoomComboboxCurrentIndexChanged(int index);
 
     void toggleStartForward();
     void toggleStartBackward();
@@ -328,50 +229,13 @@ public Q_SLOTS:
     void lastFrame();
     void centerViewer();
     void togglePlaybackMode();
-    void onViewerChannelsChanged(int);
-    void onFullFrameButtonToggle(bool);
-    void onClipToProjectButtonToggle(bool);
     void onTimeLineTimeChanged(SequenceTime time, int);
     void onCurrentTimeSpinBoxChanged(double);
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
 
-    void onRenderScaleComboIndexChanged(int index);
-
     /*makes the viewer black*/
     void disconnectViewer();
-
-    void refresh();
-
-    void onViewsComboboxChanged(int index);
-
-    void onEnableViewerRoIButtonToggle(bool);
-
-    void onCreateNewRoIPressed();
-
-    void onAutoContrastChanged(bool b);
-
-    void onRenderScaleButtonClicked(bool checked);
-
-    void onColorSpaceComboBoxChanged(int v);
-
-    void onCompositingOperatorIndexChanged(int index);
-
-    void onFirstInputNameChanged(const QString & text);
-
-    void onSecondInputNameChanged(const QString & text);
-
-    void switchInputAAndB();
-
-    void setInputA(int index);
-
-    void setInputB(int index);
-
-    void onActiveInputsChanged();
-
-    void onInputNameChanged(int inputNb, const QString & name);
-
-    void onInputChanged(int inputNb);
 
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
@@ -380,26 +244,11 @@ public Q_SLOTS:
     void onTimelineBoundariesChanged(SequenceTime, SequenceTime);
 
     void setLeftToolbarVisible(bool visible);
-    void setRightToolbarVisible(bool visible);
     void setTopToolbarVisible(bool visible);
     void setPlayerVisible(bool visible);
     void setTimelineVisible(bool visible);
     void setInfobarVisible(bool visible);
-
-
-    void toggleInfobarVisbility();
-    void togglePlayerVisibility();
-    void toggleTimelineVisibility();
-    void toggleLeftToolbarVisiblity();
-    void toggleRightToolbarVisibility();
-    void toggleTopToolbarVisibility();
-
-    void showAllToolbars();
-    void hideAllToolbars();
-
-    void onCheckerboardButtonClicked();
-
-    void onPickerButtonClicked(bool);
+    void setInfobarVisible(int index, bool visible);
 
     void onSpinboxFpsChanged(double fps);
 
@@ -414,53 +263,23 @@ public Q_SLOTS:
 
     void onClipPreferencesChanged();
 
-    void onAvailableComponentsChanged();
-
     void onInternalNodeLabelChanged(const QString& name);
+    
     void onInternalNodeScriptNameChanged(const QString& name);
 
-    void onAlphaChannelComboChanged(int index);
-    void onLayerComboChanged(int index);
-
-    void onGammaToggled(bool clicked);
-
-    void onGammaSliderValueChanged(double value);
-
-    void onGammaSpinBoxValueChanged(double value);
-
-    void onGainToggled(bool clicked);
-
-    void onGainSliderChanged(double v);
-
-    void onGainSpinBoxValueChanged(double value);
-
-    void onGammaSliderEditingFinished(bool hasMovedOnce);
-    void onGainSliderEditingFinished(bool hasMovedOnce);
-
-    void onSyncViewersButtonPressed(bool clicked);
-
     void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
-
-    void nextLayer();
-    void previousLayer();
-
-    void previousView();
-    void nextView();
 
     void toggleTripleSync(bool toggled);
 
 private:
+
+    void setInfobarVisibleInternal(bool visible);
 
     void abortViewersAndRefresh();
 
     void refreshFPSBoxFromClipPreferences();
 
     void onSpinboxFpsChangedInternal(double fps);
-
-    void onPickerButtonClickedInternal(ViewerTab* caller, bool);
-
-    void onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp, ViewerCompositingOperatorEnum newOp);
-
 
     void manageTimelineSlot(bool disconnectPrevious, const TimeLinePtr& timeline);
 

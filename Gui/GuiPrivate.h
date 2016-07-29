@@ -154,7 +154,6 @@ public:
     std::list<ViewerTab*> _viewerTabs;
 
     ///Used when all viewers are synchronized to determine which one triggered the sync
-    ViewerTab* _masterSyncViewer;
     ViewerTab* _activeViewer;
 
     ///a list of ptrs to all histograms

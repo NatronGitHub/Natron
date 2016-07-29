@@ -46,6 +46,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -58,6 +59,7 @@
 #include "Gui/KnobGuiFile.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ProgressPanel.h"
+#include "Gui/RenderStatsDialog.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
 #include "Gui/ScriptEditor.h"
@@ -137,6 +139,9 @@ struct GuiAppInstancePrivate
     std::list<SequenceTime> timelineKeyframes, timelineUserKeys;
     KnobDnDData knobDnd;
 
+    // The viewer that's mastering others when all viewports are in sync
+    NodeWPtr masterSyncViewer;
+
     GuiAppInstancePrivate()
         : _gui(NULL)
         , _isClosing(false)
@@ -153,6 +158,7 @@ struct GuiAppInstancePrivate
         , timelineKeyframes()
         , timelineUserKeys()
         , knobDnd()
+        , masterSyncViewer()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -481,7 +487,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
 
-    bool isViewer = node->isEffectViewerInstance() != 0;
+    bool isViewer = node->isEffectViewerNode() != 0;
     if (isViewer) {
         _imp->_gui->createViewerGui(node);
     }
@@ -794,7 +800,7 @@ GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
 void
 GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
 {
-    _imp->_gui->updateViewersViewsMenu(viewNames);
+    _imp->_gui->updateViewsActions(viewNames.size());
 }
 
 void
@@ -1654,6 +1660,24 @@ void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+void
+GuiAppInstance::setMasterSyncViewer(const NodePtr& viewerNode)
+{
+    _imp->masterSyncViewer = viewerNode;
+}
+
+NodePtr
+GuiAppInstance::getMasterSyncViewer() const
+{
+    return _imp->masterSyncViewer.lock();
+}
+
+void
+GuiAppInstance::showRenderStatsWindow()
+{
+    getGui()->getOrCreateRenderStatsDialog()->show();
 }
 
 NATRON_NAMESPACE_EXIT;

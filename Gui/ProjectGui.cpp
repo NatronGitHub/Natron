@@ -376,41 +376,8 @@ loadNodeGuiSerialization(Gui* gui,
         if ( found != viewersProjections.end() ) {
             ViewerTab* tab = gui->getApp()->getGui()->getViewerTabForInstance(viewer);
             tab->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
-            tab->setChannels(found->second.channels);
-            tab->setColorSpace(found->second.colorSpace);
-            tab->setGain(found->second.gain);
-            tab->setGamma(found->second.gamma);
-            tab->setUserRoIEnabled(found->second.userRoIenabled);
-            tab->setAutoContrastEnabled(found->second.autoContrastEnabled);
-            tab->setUserRoI(found->second.userRoI);
-            tab->setClipToProject(found->second.isClippedToProject);
-            tab->setRenderScaleActivated(found->second.renderScaleActivated);
-            tab->setMipMapLevel(found->second.mipMapLevel);
-            tab->setCompositingOperator( (ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
             tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
-            tab->setTopToolbarVisible(found->second.topToolbarVisible);
-            tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
-            tab->setRightToolbarVisible(found->second.rightToolbarVisible);
-            tab->setPlayerVisible(found->second.playerVisible);
-            tab->setInfobarVisible(found->second.infobarVisible);
-            tab->setTimelineVisible(found->second.timelineVisible);
-            tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
-            tab->setFullFrameProcessing(found->second.isFullFrameProcessEnabled);
-            if ( !found->second.layerName.empty() ) {
-                tab->setCurrentLayers( QString::fromUtf8( found->second.layerName.c_str() ), QString::fromUtf8( found->second.alphaLayerName.c_str() ) );
-            }
 
-            if (found->second.isPauseEnabled[0] && found->second.isPauseEnabled[1]) {
-                tab->setViewerPaused(true, true);
-            } else if (found->second.isPauseEnabled[0] && !found->second.isPauseEnabled[1]) {
-                tab->setViewerPaused(true, false);
-            }
-            if (found->second.aChoice >= 0) {
-                tab->setInputA(found->second.aChoice);
-            }
-            if (found->second.bChoice >= 0) {
-                tab->setInputB(found->second.bChoice);
-            }
             if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
                 tab->setFrameRange(found->second.leftBound, found->second.rightBound);
                 tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);

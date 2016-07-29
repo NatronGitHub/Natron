@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/CurveEditor.h"
@@ -121,7 +122,7 @@ struct TimelineGuiPrivate
     TimeLineGui *parent;
 
     // Weakptr because the lifetime of this widget is controlled by the node itself
-    ViewerInstanceWPtr viewer;
+    ViewerNodeWPtr viewer;
     ViewerTab* viewerTab;
     TimeLinePtr timeline; ///< ptr to the internal timeline
     Gui* gui; ///< ptr to the gui
@@ -146,7 +147,7 @@ struct TimelineGuiPrivate
     QTimer keyframeChangesUpdateTimer;
 
     TimelineGuiPrivate(TimeLineGui *qq,
-                       const ViewerInstancePtr& viewer,
+                       const ViewerNodePtr& viewer,
                        Gui* gui,
                        ViewerTab* viewerTab)
         : parent(qq)
@@ -202,7 +203,7 @@ struct TimelineGuiPrivate
     }
 };
 
-TimeLineGui::TimeLineGui(const ViewerInstancePtr& viewer,
+TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
                          const TimeLinePtr& timeline,
                          Gui* gui,
                          ViewerTab* viewerTab)
@@ -827,7 +828,7 @@ void
 TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
-        ViewerInstancePtr viewer = _imp->viewer.lock();
+        ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
         _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
         _imp->seekingTimeline = true;
         _imp->timeline->onFrameChanged(time);
@@ -896,7 +897,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         update();
     } else if ( (_imp->state == eTimelineStateDraggingCursor) && !onEditingFinishedOnly ) {
         if ( tseq != _imp->timeline->currentFrame() ) {
-            ViewerInstancePtr viewer = _imp->viewer.lock();
+            ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
             _imp->seekingTimeline = true;
@@ -1009,7 +1010,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             double t = toTimeLine( e->x() );
             SequenceTime tseq = std::floor(t + 0.5);
             if ( ( tseq != _imp->timeline->currentFrame() ) ) {
-                ViewerInstancePtr viewer = _imp->viewer.lock();
+                ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
                 _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
                 _imp->timeline->onFrameChanged(tseq);
             }

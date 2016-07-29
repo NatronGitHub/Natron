@@ -59,7 +59,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit TimeLineGui(const ViewerInstancePtr& viewer,
+    explicit TimeLineGui(const ViewerNodePtr& viewer,
                          const TimeLinePtr& timeLine,
                          Gui* gui,
                          ViewerTab* viewerTab);

@@ -76,36 +76,6 @@ public:
     void setPlaybackMode(PlaybackModeEnum mode);
 
     PlaybackModeEnum getPlaybackMode() const;
-
-    ViewerCompositingOperatorEnum getCompositingOperator() const;
-
-    void setCompositingOperator(ViewerCompositingOperatorEnum op);
-
-    int getAInput() const;
-
-    void setAInput(int index);
-
-    int getBInput() const;
-
-    void setBInput(int index);
-
-    void setChannels(DisplayChannelsEnum channels);
-
-    DisplayChannelsEnum getChannels() const;
-
-    void setProxyModeEnabled(bool enabled);
-
-    bool isProxyModeEnabled() const;
-
-    void setProxyIndex(int index);
-
-    int getProxyIndex() const;
-
-    /* Python API: do not use ViewIdx */
-    void setCurrentView(int index);
-
-    /* Python API: do not use ViewIdx */
-    int getCurrentView() const;
 };
 
 class GuiApp

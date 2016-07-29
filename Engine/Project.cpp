@@ -235,8 +235,9 @@ Project::loadProject(const QString & path,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
+            CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() );
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             getApp()->createNode(args);
         }
@@ -245,8 +246,9 @@ Project::loadProject(const QString & path,
     } catch (...) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
+            CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() );
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             getApp()->createNode(args);
         }
@@ -2472,8 +2474,9 @@ Project::createViewer()
         return;
     }
 
-    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, shared_from_this() );
+    CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() );
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     getApp()->createNode(args);
 }

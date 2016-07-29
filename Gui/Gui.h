@@ -129,7 +129,7 @@ public:
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(const ViewerInstancePtr& node, TabWidget* where);
+    ViewerTab* addNewViewerTab(const ViewerNodePtr& node, TabWidget* where);
 
     void addViewerTab(ViewerTab* tab, TabWidget* where);
 
@@ -321,15 +321,10 @@ public:
 
     void initProjectGuiKnobs();
 
-    void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
-
     void setViewersCurrentView(ViewIdx view);
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
-
-    void setMasterSyncViewer(ViewerTab* master);
-    ViewerTab* getMasterSyncViewer() const;
 
     void activateViewerTab(const ViewerInstancePtr& viewer);
 

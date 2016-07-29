@@ -43,6 +43,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/GuiMacros.h"
@@ -63,80 +64,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
-
-void
-ViewerTab::onColorSpaceComboBoxChanged(int v)
-{
-    ViewerColorSpaceEnum colorspace = eViewerColorSpaceSRGB;
-
-    if (v == 0) {
-        colorspace = eViewerColorSpaceLinear;
-    } else if (v == 1) {
-        colorspace = eViewerColorSpaceSRGB;
-    } else if (v == 2) {
-        colorspace = eViewerColorSpaceRec709;
-    } else {
-        assert(false);
-        throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
-    }
-    _imp->viewer->setLut( (int)colorspace );
-    _imp->viewerNode.lock()->onColorSpaceChanged(colorspace);
-}
-
-void
-ViewerTab::onEnableViewerRoIButtonToggle(bool b)
-{
-    _imp->enableViewerRoI->setDown(b);
-    _imp->enableViewerRoI->setChecked(b);
-    _imp->viewer->setUserRoIEnabled(b);
-}
-
-void
-ViewerTab::onCreateNewRoIPressed()
-{
-    _imp->enableViewerRoI->setDown(true);
-    _imp->enableViewerRoI->setChecked(true);
-    _imp->viewer->setBuildNewUserRoI(true);
-    _imp->viewer->setUserRoIEnabled(true);
-}
-
-void
-ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
-{
-    int currentIndex = _imp->viewsComboBox->activeIndex();
-
-    _imp->viewsComboBox->clear();
-    for (std::size_t i = 0; i < viewNames.size(); ++i) {
-        _imp->viewsComboBox->addItem( QString::fromUtf8( viewNames[i].c_str() ) );
-    }
-
-
-    if (viewNames.size() == 1) {
-        _imp->viewsComboBox->hide();
-    } else {
-        _imp->viewsComboBox->show();
-    }
-    if ( ( currentIndex < _imp->viewsComboBox->count() ) && (currentIndex != -1) ) {
-        _imp->viewsComboBox->setCurrentIndex(currentIndex);
-    } else {
-        _imp->viewsComboBox->setCurrentIndex(0);
-    }
-    getGui()->updateViewsActions( viewNames.size() );
-}
-
-void
-ViewerTab::setCurrentView(ViewIdx view)
-{
-    _imp->viewsComboBox->setCurrentIndex(view);
-}
-
-ViewIdx
-ViewerTab::getCurrentView() const
-{
-    QMutexLocker l(&_imp->currentViewMutex);
-
-    return _imp->currentViewIndex;
-}
 
 void
 ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
@@ -161,7 +88,7 @@ ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
         _imp->playbackMode = mode;
     }
     _imp->playbackMode_Button->setIcon( QIcon(pix) );
-    _imp->viewerNode.lock()->getRenderEngine()->setPlaybackMode(mode);
+    getInternalNode()->getInternalViewerNode()->getRenderEngine()->setPlaybackMode(mode);
 }
 
 PlaybackModeEnum
@@ -175,8 +102,8 @@ ViewerTab::getPlaybackMode() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    PlaybackModeEnum mode = viewerNode->getRenderEngine()->getPlaybackMode();
+    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
+    PlaybackModeEnum mode = viewerNode->getInternalViewerNode()->getRenderEngine()->getPlaybackMode();
 
     mode = (PlaybackModeEnum)( ( (int)mode + 1 ) % 3 );
     QPixmap pix;
@@ -201,20 +128,6 @@ ViewerTab::togglePlaybackMode()
     viewerNode->getRenderEngine()->setPlaybackMode(mode);
 }
 
-void
-ViewerTab::onFullFrameButtonToggle(bool b)
-{
-    _imp->fullFrameProcessingButton->setDown(b);
-    _imp->viewerNode.lock()->setFullFrameProcessingEnabled(b);
-
-}
-
-void
-ViewerTab::onClipToProjectButtonToggle(bool b)
-{
-    _imp->clipToProjectFormatButton->setDown(b);
-    _imp->viewer->setClipToDisplayWindow(b);
-}
 
 void
 ViewerTab::updateZoomComboBox(int value)
@@ -224,7 +137,7 @@ ViewerTab::updateZoomComboBox(int value)
     str.append( QLatin1Char('%') );
     str.prepend( QString::fromUtf8("  ") );
     str.append( QString::fromUtf8("  ") );
-    _imp->zoomCombobox->setCurrentText_no_emit(str);
+    getInternalNode()->setZoomComboBoxText(str.toStdString());
 }
 
 void
@@ -246,17 +159,15 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        ViewerNodePtr viewerNode = _imp->viewerNode.lock();
+        ViewerInstancePtr instance = viewerNode->getInternalViewerNode();
         if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
-        getGui()->getApp()->setLastViewerUsingTimeline( viewerNode->getNode() );
+        getGui()->getApp()->setLastViewerUsingTimeline( instance->getNode() );
         std::vector<ViewIdx> viewsToRender;
-        {
-            QMutexLocker k(&_imp->currentViewMutex);
-            viewsToRender.push_back(_imp->currentViewIndex);
-        }
-        viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
+        viewsToRender.push_back(viewerNode->getCurrentView());
+        instance->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
     }
 }
 
@@ -279,7 +190,7 @@ ViewerTab::abortRendering()
         const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
 
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            ViewerInstancePtr viewer = (*it)->getInternalNode();
+            ViewerInstancePtr viewer = (*it)->getInternalNode()->getInternalViewerNode();
             if (viewer) {
                 viewer->getRenderEngine()->abortRenderingNoRestart();
             }
@@ -316,8 +227,9 @@ ViewerTab::onEngineStarted(bool forward)
 void
 ViewerTab::onSetDownPlaybackButtonsTimeout()
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    if ( viewerNode && viewerNode->getRenderEngine() && !viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
+    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
+    ViewerInstancePtr instance = viewerNode ? viewerNode->getInternalViewerNode() : ViewerInstancePtr();
+    if ( instance && instance->getRenderEngine() && !instance->getRenderEngine()->isDoingSequentialRender() ) {
         const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ( (*it)->_imp->play_Forward_Button ) {
@@ -343,7 +255,7 @@ ViewerTab::onEngineStopped()
     // Don't set the playback buttons up now, do it a bit later, maybe the user will restart playback  just aftewards
     _imp->mustSetUpPlaybackButtonsTimer.start(200);
 
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
     _imp->currentFrameBox->setValue( viewerNode->getTimeline()->currentFrame() );
 
     if ( getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
@@ -363,12 +275,15 @@ ViewerTab::abortViewersAndRefresh()
     }
     const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstancePtr viewer = (*it)->getInternalNode();
+        ViewerNodePtr viewer = (*it)->getInternalNode();
         if (viewer) {
-            RenderEnginePtr engine = viewer->getRenderEngine();
-            if ( engine ) {
-                engine->abortRenderingAutoRestart();
-                engine->renderCurrentFrame(false, true);
+            ViewerInstancePtr instance = viewer->getInternalViewerNode();
+            if (instance) {
+                RenderEnginePtr engine = instance->getRenderEngine();
+                if ( engine ) {
+                    engine->abortRenderingAutoRestart();
+                    engine->renderCurrentFrame(false, true);
+                }
             }
         }
     }
@@ -379,42 +294,15 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
         if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
         getGui()->getApp()->setLastViewerUsingTimeline( viewerNode->getNode() );
         std::vector<ViewIdx> viewsToRender;
-        {
-            QMutexLocker k(&_imp->currentViewMutex);
-            viewsToRender.push_back(_imp->currentViewIndex);
-        }
+        viewsToRender.push_back(viewerNode->getCurrentView());
         viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
     }
-}
-
-void
-ViewerTab::refresh(bool enableRenderStats)
-{
-    //Check if readers files have changed on disk
-    getGui()->getApp()->checkAllReadersModificationDate(false);
-    abortRendering();
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->forceFullComputationOnNextFrame();
-    if (!enableRenderStats) {
-        viewerNode->renderCurrentFrame(true);
-    } else {
-        getGui()->getOrCreateRenderStatsDialog()->show();
-        viewerNode->renderCurrentFrameWithRenderStats(false);
-    }
-}
-
-void
-ViewerTab::refresh()
-{
-    Qt::KeyboardModifiers m = qApp->keyboardModifiers();
-
-    refresh( m.testFlag(Qt::ShiftModifier) && m.testFlag(Qt::ControlModifier) );
 }
 
 void
@@ -483,7 +371,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     }
 
     if ( _imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine() ) {
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
         viewerNode->renderCurrentFrame(true);
     }
 }
@@ -500,7 +388,7 @@ ViewerTab::centerViewer()
     if (getGui() && !getGui()->getApp()->isDuringPainting()) {
         _imp->viewer->fitImageToFormat();
         if ( _imp->viewer->displayingImage() ) {
-            ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+            ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
             viewerNode->renderCurrentFrame(true);
         } else {
             _imp->viewer->update();
@@ -512,7 +400,9 @@ ViewerTab::~ViewerTab()
 {
     if ( getGui() ) {
         NodeGraph* graph = 0;
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
+        ViewerNodePtr internalNode = getInternalNode();
+
+        ViewerInstancePtr viewerNode = internalNode ? internalNode->getInternalViewerNode() : ViewerInstancePtr();
         if (viewerNode) {
             NodeCollectionPtr collection = viewerNode->getNode()->getGroup();
             if (collection) {
@@ -527,7 +417,7 @@ ViewerTab::~ViewerTab()
                     graph = getGui()->getNodeGraph();
                 }
             }
-            viewerNode->invalidateUiContext();
+            internalNode->invalidateUiContext();
         } else {
             graph = getGui()->getNodeGraph();
         }
@@ -537,35 +427,6 @@ ViewerTab::~ViewerTab()
         }
     }
     _imp->nodesContext.clear();
-}
-
-void
-ViewerTab::nextLayer()
-{
-    int currentIndex = _imp->layerChoice->activeIndex();
-    int nChoices = _imp->layerChoice->count();
-
-    currentIndex = (currentIndex + 1) % nChoices;
-    if ( (currentIndex == 0) && (nChoices > 1) ) {
-        currentIndex = 1;
-    }
-    _imp->layerChoice->setCurrentIndex(currentIndex);
-}
-
-void
-ViewerTab::previousLayer()
-{
-    int currentIndex = _imp->layerChoice->activeIndex();
-    int nChoices = _imp->layerChoice->count();
-
-    if (currentIndex <= 1) {
-        currentIndex = nChoices - 1;
-    } else {
-        --currentIndex;
-    }
-    if (currentIndex >= 0) {
-        _imp->layerChoice->setCurrentIndex(currentIndex);
-    }
 }
 
 void
@@ -602,109 +463,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         update();
     } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
         update();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 0) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, true);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(0);
-            setDisplayChannels(0, true);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRed, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 2) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, true);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(2);
-            setDisplayChannels(2, true);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionGreen, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 3) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, true);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(3);
-            setDisplayChannels(3, true);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionBlue, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 4) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, true);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(4);
-            setDisplayChannels(4, true);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionAlpha, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 5) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, true);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(5);
-            setDisplayChannels(5, true);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminanceA, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 0) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, false);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(0);
-            setDisplayChannels(0, false);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRedA, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 2) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, false);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(2);
-            setDisplayChannels(2, false);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionGreenA, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 3) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, false);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(3);
-            setDisplayChannels(3, false);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionBlueA, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 4) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, false);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(4);
-            setDisplayChannels(4, false);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionAlphaA, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 5) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, false);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(5);
-            setDisplayChannels(5, false);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionMatteOverlay, modifiers, key) ) {
-        int currentIndex = _imp->viewerChannels->activeIndex();
-        if (currentIndex == 6) {
-            _imp->viewerChannels->setCurrentIndex_no_emit(1);
-            setDisplayChannels(1, false);
-        } else {
-            _imp->viewerChannels->setCurrentIndex_no_emit(6);
-            setDisplayChannels(6, false);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewer, modifiers, key) ) {
-        toggleViewerPauseMode(true);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionPauseViewerInputA, modifiers, key) ) {
-        toggleViewerPauseMode(false);
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         previousFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
@@ -737,41 +495,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         //next key
         getGui()->getApp()->goToNextKeyframe();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
-        centerViewer();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {
-        onClipToProjectButtonToggle( !_imp->clipToProjectFormatButton->isDown() );
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, modifiers, key) ) {
-        refresh(false);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRefreshWithStats, modifiers, key) ) {
-        refresh(true);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, modifiers, key) ) {
-        onEnableViewerRoIButtonToggle( !_imp->enableViewerRoI->isDown() );
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, modifiers, key) ) {
-        onCreateNewRoIPressed();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) ) {
-        onRenderScaleButtonClicked(!_imp->renderScaleActive);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, modifiers, key) ) {
-        _imp->renderScaleCombo->setCurrentIndex(0);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, modifiers, key) ) {
-        _imp->renderScaleCombo->setCurrentIndex(1);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, modifiers, key) ) {
-        _imp->renderScaleCombo->setCurrentIndex(2);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, modifiers, key) ) {
-        _imp->renderScaleCombo->setCurrentIndex(3);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, modifiers, key) ) {
-        _imp->renderScaleCombo->setCurrentIndex(4);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
-        _imp->viewer->zoomSlot(100);
-        _imp->zoomCombobox->setCurrentIndex_no_emit(7);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, modifiers, key) ) {
-        zoomIn();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, modifiers, key) ) {
-        zoomOut();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDNextLayer, modifiers, key) ) {
-        nextLayer();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDPrevLayer, modifiers, key) ) {
-        previousLayer();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
         connectToAInput(0);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
@@ -812,46 +535,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         connectToBInput(8);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
         connectToBInput(9);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
-        _imp->viewer->toggleOverlays();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key) ) {
-        _imp->viewer->toggleWipe();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, modifiers, key) ) {
-        _imp->viewer->centerWipe();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
-        hideAllToolbars();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, modifiers, key) ) {
-        showAllToolbars();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, modifiers, key) ) {
-        togglePlayerVisibility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTimeline, modifiers, key) ) {
-        toggleTimelineVisibility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, modifiers, key) ) {
-        toggleInfobarVisbility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideLeft, modifiers, key) ) {
-        toggleLeftToolbarVisiblity();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideRight, modifiers, key) ) {
-        toggleRightToolbarVisibility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
-        toggleTopToolbarVisibility();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
-        wheelEvent(&e);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
-        wheelEvent(&e);
     } else if (key == Qt::Key_Escape) {
         _imp->viewer->s_selectionCleared();
         update();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
-        ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
-        if ( getViewer()->hasFocus() ) {
-            switchInputAAndB();
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDPrevView, modifiers, key) ) {
-        previousView();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDNextView, modifiers, key) ) {
-        nextView();
     } else {
         accept = false;
     }
@@ -881,60 +567,19 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
-void
-ViewerTab::setDisplayChannels(int i,
-                              bool setBothInputs)
-{
-    _imp->viewerChannelsAutoswitchedToAlpha = false;
-    DisplayChannelsEnum channels;
-
-    switch (i) {
-    case 0:
-        channels = eDisplayChannelsY;
-        break;
-    case 1:
-        channels = eDisplayChannelsRGB;
-        break;
-    case 2:
-        channels = eDisplayChannelsR;
-        break;
-    case 3:
-        channels = eDisplayChannelsG;
-        break;
-    case 4:
-        channels = eDisplayChannelsB;
-        break;
-    case 5:
-        channels = eDisplayChannelsA;
-        break;
-    case 6:
-        channels = eDisplayChannelsMatte;
-        break;
-    default:
-        channels = eDisplayChannelsRGB;
-        break;
-    }
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->setDisplayChannels(channels, setBothInputs);
-}
-
-void
-ViewerTab::onViewerChannelsChanged(int i)
-{
-    setDisplayChannels(i, false);
-}
-
 bool
 ViewerTab::eventFilter(QObject *target,
                        QEvent* e)
 {
     if (e->type() == QEvent::MouseButtonPress) {
         if ( getGui() && getGui()->getApp() ) {
-            ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-            NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
-            assert(gui_i);
-            NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            getGui()->selectNode(gui);
+            ViewerNodePtr viewerNode = _imp->viewerNode.lock();
+            if (viewerNode) {
+                NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
+                assert(gui_i);
+                NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                getGui()->selectNode(gui);
+            }
         }
     }
 
@@ -967,66 +612,5 @@ ViewerTab::sizeHint() const
     return QWidget::sizeHint();
 }
 
-void
-ViewerTab::onViewsComboboxChanged(int index)
-{
-    {
-        QMutexLocker l(&_imp->currentViewMutex);
-        _imp->currentViewIndex = ViewIdx(index);
-    }
-    abortRendering();
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->renderCurrentFrame(true);
-}
-
-void
-ViewerTab::previousView()
-{
-    ViewIdx idx;
-    {
-        QMutexLocker k(&_imp->currentViewMutex);
-        idx = _imp->currentViewIndex;
-    }
-    int nbViews = _imp->viewsComboBox->count();
-
-    if (idx.value() == 0) {
-        idx = ViewIdx(nbViews - 1);
-    } else {
-        idx = ViewIdx(idx.value() - 1);
-    }
-    _imp->viewsComboBox->setCurrentIndex_no_emit( idx.value() );
-    {
-        QMutexLocker k(&_imp->currentViewMutex);
-        _imp->currentViewIndex = idx;
-    }
-    abortRendering();
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->renderCurrentFrame(true);
-}
-
-void
-ViewerTab::nextView()
-{
-    ViewIdx idx;
-    {
-        QMutexLocker k(&_imp->currentViewMutex);
-        idx = _imp->currentViewIndex;
-    }
-    int nbViews = _imp->viewsComboBox->count();
-
-    if (idx.value() == nbViews - 1) {
-        idx = ViewIdx(0);
-    } else {
-        idx = ViewIdx(idx.value() + 1);
-    }
-    _imp->viewsComboBox->setCurrentIndex_no_emit( idx.value() );
-    {
-        QMutexLocker k(&_imp->currentViewMutex);
-        _imp->currentViewIndex = idx;
-    }
-    abortRendering();
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock();
-    viewerNode->renderCurrentFrame(true);
-}
 
 NATRON_NAMESPACE_EXIT;

@@ -91,6 +91,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
@@ -2916,7 +2917,7 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, NodeCollectionPtr() );
+    CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP, NodeCollectionPtr() );
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
 
@@ -2949,9 +2950,7 @@ SequenceFileDialog::createViewerPreviewNode()
     ///Set a custom timeline so that it is not in synced with the rest of the viewers of the app
     TimeLinePtr newTimeline( new TimeLine(NULL) );
     _preview->viewerUI->setCustomTimeline(newTimeline);
-    _preview->viewerUI->setClipToProject(false);
     _preview->viewerUI->setLeftToolbarVisible(false);
-    _preview->viewerUI->setRightToolbarVisible(false);
     _preview->viewerUI->setTopToolbarVisible(false);
     _preview->viewerUI->setInfobarVisible(false);
     _preview->viewerUI->setPlayerVisible(false);
@@ -3043,7 +3042,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
         _preview->viewerUI->centerOn(firstFrame, lastFrame);
     }
-    _preview->viewerUI->getInternalNode()->renderCurrentFrame(true);
+    _preview->viewerUI->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(true);
 }
 
 ///Reset everything as it was prior to the dialog being opened, also avoid the nodes being deleted

@@ -83,7 +83,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< NodeSeria
     for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         std::string pluginID = (*it)->getPluginID();
 
-        if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER) || (pluginID == "Viewer") ) ) {
+        if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER_GROUP) || (pluginID == "Viewer") ) ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }

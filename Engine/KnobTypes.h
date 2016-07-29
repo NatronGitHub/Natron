@@ -616,6 +616,7 @@ public:
     const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
     std::string getActiveEntryText_mt_safe();
+    void setActiveEntry(const std::string& entry);
 
     int getNumEntries() const;
 
@@ -658,6 +659,9 @@ public:
     void setDefaultValueFromLabel(const std::string & value, int dimension = 0);
     void setDefaultValueFromLabelWithoutApplying(const std::string & value, int dimension = 0);
 
+    void setMissingEntryWarningEnabled(bool enabled);
+    bool isMissingEntryWarningEnabled() const;
+
 public Q_SLOTS:
 
     void onOriginalKnobPopulated();
@@ -694,6 +698,7 @@ private:
     bool _addNewChoice;
     static const std::string _typeNameStr;
     bool _isCascading;
+    bool _showMissingEntryWarning;
 };
 
 inline KnobChoicePtr

@@ -57,6 +57,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Lut.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/Node.h"
+#include "Engine/GroupInput.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -70,6 +71,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Timer.h"
 #include "Engine/UpdateViewerParams.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 
 
 #ifndef M_LN2
@@ -183,21 +185,18 @@ ViewerInstance::ViewerInstance(const NodePtr& node)
 
 ViewerInstance::~ViewerInstance()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
+}
 
-
-    // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
-    // not yet processed. Since we're in the main thread and it is processed in the main thread,
-    // there is no way to wait for it (locking the mutex would cause a deadlock).
-    // We don't care, after all.
-    //{
-    //    QMutexLocker locker(&_imp->updateViewerMutex);
-    //    assert(!_imp->updateViewerRunning);
-    //}
-    if (_imp->uiContext) {
-        _imp->uiContext->removeGUI();
-    }
+ViewerNodePtr
+ViewerInstance::getViewerNodeGroup() const
+{
+    NodeCollectionPtr collection = getNode()->getGroup();
+    assert(collection);
+    NodeGroupPtr isGroup = toNodeGroup(collection);
+    assert(isGroup);
+    ViewerNodePtr ret = toViewerNode(isGroup);
+    assert(ret);
+    return ret;
 }
 
 RenderEngine*
@@ -220,7 +219,23 @@ ViewerInstance::getUiContext() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _imp->uiContext;
+    ViewerNodePtr group = getViewerNodeGroup();
+    if (!group) {
+        return 0;
+    }
+    return group->getUiContext();
+}
+
+KnobChoicePtr
+ViewerInstance::getAInputChoice() const
+{
+    return _imp->aInputNodeChoiceKnob.lock();
+}
+
+KnobChoicePtr
+ViewerInstance::getBInputChoice() const
+{
+    return _imp->bInputNodeChoiceKnob.lock();
 }
 
 void
@@ -241,8 +256,9 @@ ViewerInstance::clearLastRenderedImage()
 {
     EffectInstance::clearLastRenderedImage();
 
-    if (_imp->uiContext) {
-        _imp->uiContext->clearLastRenderedImage();
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->clearLastRenderedImage();
     }
     {
         QMutexLocker k(&_imp->lastRenderParamsMutex);
@@ -251,58 +267,11 @@ ViewerInstance::clearLastRenderedImage()
     }
 }
 
-void
-ViewerInstance::setUiContext(OpenGLViewerI* viewer)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->uiContext = viewer;
-}
-
-void
-ViewerInstance::invalidateUiContext()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->uiContext = NULL;
-}
 
 int
 ViewerInstance::getMaxInputCount() const
 {
-    return 10;
-}
-
-void
-ViewerInstance::getFrameRange(double *first,
-                              double *last)
-{
-    double inpFirst = 1, inpLast = 1;
-    int activeInputs[2];
-
-    getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstancePtr n1 = getInput(activeInputs[0]);
-    if (n1) {
-        n1->getFrameRange_public(n1->getRenderHash(), &inpFirst, &inpLast);
-    }
-    *first = inpFirst;
-    *last = inpLast;
-
-    inpFirst = 1;
-    inpLast = 1;
-
-    EffectInstancePtr n2 = getInput(activeInputs[1]);
-    if (n2) {
-        n2->getFrameRange_public(n2->getRenderHash(), &inpFirst, &inpLast);
-        if (inpFirst < *first) {
-            *first = inpFirst;
-        }
-
-        if (inpLast > *last) {
-            *last = inpLast;
-        }
-    }
+    return 2;
 }
 
 bool
@@ -311,8 +280,296 @@ ViewerInstance::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                          double /*time*/,
                          bool /*originatedFromMainThread*/)
 {
+    bool caught = true;
+    if (k == _imp->alphaChannelKnob.lock() && reason != eValueChangedReasonPluginEdited) {
+
+        int currentIndex = _imp->alphaChannelKnob.lock()->getValue();
+        std::set<ImageComponents> components;
+        getInputsComponentsAvailables(&components);
+
+        int i = 1; // because of the "-" choice
+        for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
+            const std::vector<std::string>& channels = it->getComponentsNames();
+            if ( currentIndex >= ( (int)channels.size() + i ) ) {
+                i += channels.size();
+            } else {
+                for (U32 j = 0; j < channels.size(); ++j, ++i) {
+                    if (i == currentIndex) {
+
+                        QMutexLocker k(&_imp->viewerParamsMutex);
+                        _imp->viewerParamsAlphaChannelName = channels[j];
+                        _imp->viewerParamsAlphaLayer = *it;
+                        return true;
+                    }
+                }
+            }
+        }
+
+    } else if (k == _imp->layersKnob.lock() && reason != eValueChangedReasonPluginEdited) {
+
+        int currentIndex = _imp->layersKnob.lock()->getValue();
+        std::set<ImageComponents> components;
+        getInputsComponentsAvailables(&components);
+
+        if ( ( currentIndex >= (int)(components.size() + 1) ) || (index < 0) ) {
+            return false;
+        }
+        int i = 1; // because of the "-" choice
+        int chanCount = 1; // because of the "-" choice
+        for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
+            chanCount += it->getComponentsNames().size();
+            if (i == currentIndex) {
+                {
+                    QMutexLocker k(&_imp->viewerParamsMutex);
+                    _imp->viewerParamsLayer = *it;
+                }
+
+                // If it has an alpha channel, set it
+                if (it->getComponentsNames().size() == 4) {
+
+                    // Use setValueFromPlugin so we don't recurse
+                    _imp->alphaChannelKnob.lock()->setValueFromPlugin(chanCount - 1, ViewSpec::current(), 0);
+
+                    QMutexLocker k(&_imp->viewerParamsMutex);
+                    _imp->viewerParamsAlphaChannelName = it->getComponentsNames()[3];
+                    _imp->viewerParamsAlphaLayer = *it;
+                }
+
+                return true;
+            }
+        }
+
+        _imp->alphaChannelKnob.lock()->setValueFromPlugin(0, ViewSpec::current(), 0);
+        {
+            QMutexLocker k(&_imp->viewerParamsMutex);
+            _imp->viewerParamsAlphaChannelName = std::string();
+            _imp->viewerParamsAlphaLayer = ImageComponents::getNoneComponents();
+            _imp->viewerParamsLayer = ImageComponents::getNoneComponents();
+        }
+
+    } else if (k == _imp->aInputNodeChoiceKnob.lock()) {
+        NodePtr input = getViewerNodeGroup()->getCurrentAInput();
+
+        NodePtr basenode = getInputRecursive(0);
+        assert(basenode);
+        basenode->disconnectInput(0);
+        if (input) {
+            basenode->connectInput(input, 0);
+        }
+    } else if (k == _imp->bInputNodeChoiceKnob.lock()) {
+        NodePtr input = getViewerNodeGroup()->getCurrentBInput();
+
+        NodePtr basenode = getInputRecursive(0);
+        assert(basenode);
+        basenode->disconnectInput(1);
+        if (input) {
+            basenode->connectInput(input, 1);
+        }
+    } else {
+        caught = false;
+    }
+    return caught;
+}
+
+/**
+ * @brief Cycles recursively upstream thtough the main input of each node until we reach an Input node, or nothing in the 
+ * sub-graph of the Viewer ndoe
+ **/
+static NodePtr getMainInputRecursiveInternal(const NodePtr& inputParam, const ViewerNodePtr& viewerGroup)
+{
+
+    int prefIndex = inputParam->getPreferredInput();
+    if (prefIndex == -1) {
+        return NodePtr();
+    }
+    NodePtr input = inputParam->getRealInput(prefIndex);
+    if (!input) {
+        return inputParam;
+    }
+    GroupInput* isInput = dynamic_cast<GroupInput*>(input->getEffectInstance().get());
+    if (isInput) {
+        return inputParam;
+    }
+    NodePtr inputRet = getMainInputRecursiveInternal(input, viewerGroup);
+    if (!inputRet) {
+        return inputParam;
+    } else {
+        return inputRet;
+    }
 
 }
+
+/**
+ * @brief Returns the last node connected to a GroupInput node following the main-input branch of the graph
+ **/
+NodePtr
+ViewerInstance::getInputRecursive(int inputIndex) const
+{
+    NodePtr thisNode = getNode();
+    NodePtr input = thisNode->getRealInput(inputIndex);
+    if (!input) {
+        return thisNode;
+    }
+    ViewerNodePtr viewerGroup = getViewerNodeGroup();
+    GroupInput* isInput = dynamic_cast<GroupInput*>(input->getEffectInstance().get());
+    if (isInput) {
+        return thisNode;
+    }
+    NodePtr inputRet = getMainInputRecursiveInternal(input, viewerGroup);
+    if (!inputRet) {
+        return input;
+    } else {
+        return inputRet;
+    }
+}
+
+void
+ViewerInstance::refreshLayerAndAlphaChannelComboBox()
+{
+
+    KnobChoicePtr layerKnob = _imp->layersKnob.lock();
+    KnobChoicePtr alphaChannelKnob = _imp->alphaChannelKnob.lock();
+
+    // Remember the current choices
+    std::string layerCurChoice = layerKnob->getActiveEntryText_mt_safe();
+    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText_mt_safe();
+
+    // Merge components from A and B
+    std::set<ImageComponents> components;
+    getInputsComponentsAvailables(&components);
+
+    std::vector<std::string> layerOptions;
+    std::vector<std::string> channelOptions;
+
+    // Append none chocie
+    layerOptions.push_back("-");
+    channelOptions.push_back("-");
+
+    // For each components, try to find the old user choice, if not found prefer color layer
+    std::set<ImageComponents>::iterator foundColorIt = components.end();
+    std::set<ImageComponents>::iterator foundOtherIt = components.end();
+    std::set<ImageComponents>::iterator foundCurIt = components.end();
+    std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
+
+    // This is the not the full channel name (e.g: Beauty.A), but just the channel name (e.g: A)
+    std::string foundAlphaChannel;
+
+    int foundLayerIndex = -1;
+    int foundColorIndex = -1;
+    int foundOtherIndex = -1;
+    int foundAlphaIndex = -1;
+    int foundFirstColorChannelIndex = -1;
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
+        const std::string& layerName = it->getLayerName();
+        std::string itemName = layerName + '.' + it->getComponentsGlobalName();
+        layerOptions.push_back(itemName);
+
+        if (itemName == layerCurChoice) {
+            // We found the user layer choice in the new layers set
+            foundCurIt = it;
+            foundLayerIndex = layerOptions.size() - 1;
+        }
+
+        bool isColorPlane = it->isColorPlane();
+        if (isColorPlane) {
+            // Ok we found the color plane
+            foundColorIt = it;
+            foundColorIndex = layerOptions.size() - 1;
+            foundFirstColorChannelIndex = channelOptions.size();
+        } else {
+            // This is the first layer we found that is not the color plane
+            // This is our last resort fallback
+            foundOtherIt = it;
+            foundOtherIndex = layerOptions.size() - 1;
+        }
+
+        const std::vector<std::string>& channels = it->getComponentsNames();
+        for (U32 i = 0; i < channels.size(); ++i) {
+            std::string channelName = layerName + '.' + channels[i];
+            channelOptions.push_back(channelName);
+            if (channelName == alphaCurChoice) {
+                foundCurAlphaIt = it;
+                foundAlphaChannel = channels[i];
+                foundAlphaIndex = channelOptions.size() - 1;
+            }
+        }
+
+    }
+
+    // Check if we found the old user choice
+    if ( ( layerCurChoice == "-" ) || layerCurChoice.empty() || ( foundCurIt == components.end() ) ) {
+        // The user did not have a current choice or we could not find it's choice
+        // Try to find color plane, otherwise fallback on any other layer
+        if ( foundColorIt != components.end() ) {
+            layerCurChoice = foundColorIt->getLayerName() + '.' + foundColorIt->getComponentsGlobalName();
+            foundCurIt = foundColorIt;
+            foundLayerIndex = foundColorIndex;
+        } else if ( foundOtherIt != components.end() ) {
+            layerCurChoice = foundOtherIt->getLayerName() + '.' + foundOtherIt->getComponentsGlobalName();
+            foundCurIt = foundOtherIt;
+            foundLayerIndex = foundOtherIndex;
+        } else {
+            layerCurChoice = "-";
+            foundLayerIndex = 0;
+            foundCurIt = components.end();
+        }
+    }
+
+    // Validate current choice on the knob and in the viewer params
+    assert(foundLayerIndex != -1);
+    layerKnob->setValueFromPlugin(foundLayerIndex, ViewSpec::current(), 0);
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsLayer = (foundCurIt == components.end()) ? ImageComponents::getNoneComponents() : *foundCurIt;
+    }
+
+    // Check if we found the old user choice
+    if ( ( alphaCurChoice == "-" ) || alphaCurChoice.empty() || ( foundCurAlphaIt == components.end() ) ) {
+        // Try to find color plane, otherwise fallback on any other layer
+        if ( ( foundColorIt != components.end() ) &&
+            ( ( foundColorIt->getComponentsNames().size() == 4) || ( foundColorIt->getComponentsNames().size() == 1) ) ) {
+            std::size_t lastComp = foundColorIt->getComponentsNames().size() - 1;
+            alphaCurChoice = foundColorIt->getLayerName() + '.' + foundColorIt->getComponentsNames()[lastComp];
+            foundAlphaChannel = foundColorIt->getComponentsNames()[lastComp];
+            foundAlphaIndex = foundFirstColorChannelIndex + foundColorIt->getComponentsNames().size() - 1;
+            foundCurAlphaIt = foundColorIt;
+        } else {
+            alphaCurChoice = "-";
+            foundAlphaIndex = 0;
+            foundCurAlphaIt = components.end();
+        }
+    }
+
+    // Validate current choice on the knob and in the viewer params
+    assert(foundAlphaIndex != -1);
+    alphaChannelKnob->setValueFromPlugin(foundAlphaIndex, ViewSpec::current(), 0);
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsAlphaLayer = (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) ? ImageComponents::getNoneComponents() : *foundCurAlphaIt;
+
+        // This is the not the full channel name (e.g: Beauty.A), but just the channel name (e.g: A)
+        // If we selected "-", set it empty
+        _imp->viewerParamsAlphaChannelName = (foundCurAlphaIt == components.end()) ? std::string() : foundAlphaChannel;
+    }
+
+
+    // Adjust display channels automatically
+    if ( foundCurIt != components.end() ) {
+        ViewerNodePtr viewerGroupNode = getViewerNodeGroup();
+        if (foundCurIt->getNumComponents() == 1) {
+            // Switch auto to alpha if there's only this to view
+            viewerGroupNode->setDisplayChannels((int)eDisplayChannelsA, true);
+            _imp->viewerChannelsAutoswitchedToAlpha = true;
+        } else {
+            // Switch back to RGB if we auto-switched to alpha
+            DisplayChannelsEnum curDisplayChannels = (DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue();
+            if ( _imp->viewerChannelsAutoswitchedToAlpha && (foundCurIt->getNumComponents() > 1) && (curDisplayChannels == eDisplayChannelsA) ) {
+                viewerGroupNode->setDisplayChannels((int)eDisplayChannelsRGB, true);
+            }
+        }
+    }
+
+} // refreshLayerAndAlphaChannelComboBox
 
 
 void
@@ -414,11 +671,15 @@ ViewerInstance::initializeKnobs()
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
+        param->setDefaultValuesAreNormalized(true);
         page->addKnob(param);
         _imp->userRoIBtmLeftKnob = param;
     }
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamUserRoISize), 2 );
+        param->setDefaultValuesAreNormalized(true);
+        param->setDefaultValue(1., 0);
+        param->setDefaultValue(1., 1);
         page->addKnob(param);
         _imp->userRoISizeKnob = param;
     }
@@ -580,6 +841,7 @@ ViewerInstance::initializeKnobs()
             entries.push_back("Rec.709");
             param->populateChoices(entries);
         }
+        param->setDefaultValue(1);
         page->addKnob(param);
         _imp->colorspaceKnob = param;
     }
@@ -599,12 +861,37 @@ ViewerInstance::initializeKnobs()
 
 }
 
+RectD
+ViewerInstance::getUserRoI() const
+{
+    RectD ret;
+    KnobDoublePtr btmLeft = _imp->userRoIBtmLeftKnob.lock();
+    KnobDoublePtr size = _imp->userRoISizeKnob.lock();
+    ret.x1 = btmLeft->getValue(0);
+    ret.y1 = btmLeft->getValue(1);
+    ret.x2 = ret.x1 + size->getValue(0);
+    ret.y2 = ret.y1 + size->getValue(1);
+    return ret;
+}
+
+void
+ViewerInstance::setUserRoI(const RectD& rect)
+{
+    KnobDoublePtr btmLeft = _imp->userRoIBtmLeftKnob.lock();
+    KnobDoublePtr size = _imp->userRoISizeKnob.lock();
+    btmLeft->setValues(rect.x1, rect.y1, ViewSpec::current(), eValueChangedReasonUserEdited);
+    size->setValues(rect.x2 - rect.x1, rect.y2 - rect.y1, ViewSpec::current(), eValueChangedReasonUserEdited);
+}
+
+
+
 void
 ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->uiContext) {
-        _imp->uiContext->disconnectInputTexture(index, clearRoD);
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->disconnectInputTexture(index, clearRoD);
     }
 }
 
@@ -712,7 +999,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerArgs);
-        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
+        if ( (i == 1) && ((ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() == eViewerCompositingOperatorNone) ) {
             break;
         }
 
@@ -898,7 +1185,8 @@ ViewerInstance::renderViewer(ViewIdx view,
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                              const RenderStatsPtr& stats)
 {
-    if (!_imp->uiContext) {
+    OpenGLViewerI* uiContext = getUiContext();
+    if (!uiContext) {
         return eViewerRenderRetCodeFail;
     }
 
@@ -913,7 +1201,7 @@ ViewerInstance::renderViewer(ViewIdx view,
     };
     for (int i = 0; i < 2; ++i) {
         if (args[i] && args[i]->params) {
-            if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
+            if ( (i == 1) && ((ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() == eViewerCompositingOperatorNone) ) {
                 args[i]->params->tiles.clear();
                 break;
             }
@@ -1116,17 +1404,17 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
                                                const bool isSequential,
                                                ViewerArgs* outArgs)
 {
-    assert(_imp->uiContext);
+    OpenGLViewerI* uiContext = getUiContext();
+    assert(uiContext);
 
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         outArgs->mipmapLevelWithoutDraft = (unsigned int)_imp->viewerMipMapLevel;
     }
 
-    assert(_imp->uiContext);
 
     // This is the current zoom factor (1. == 100%) currently set by the user in the viewport
-    double zoomFactor = _imp->uiContext->getZoomFactor();
+    double zoomFactor = uiContext->getZoomFactor();
 
     // We render the image that is the nearest mipmap level higher in quality.
     // For instance, if we were to render at 48% zoom factor, we would render at 50% which is mipmapLevel=1
@@ -1134,7 +1422,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 
     // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
     // and the requested user proxy mipmap level
-    if (isFullFrameProcessingEnabled()) {
+    if (_imp->fullFrameButtonKnob.lock()->getValue()) {
         outArgs->mipmapLevelWithoutDraft = 0;
     } else {
         int zoomMipMapLevel;
@@ -1178,7 +1466,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     }
 
     // Did the user enabled the user roi from the viewer UI?
-    outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
+    outArgs->userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
 
     outArgs->params.reset(new UpdateViewerParams);
 
@@ -1198,7 +1486,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     outArgs->params->srcPremult = outArgs->activeInputToRender->getPremult();
 
     // The user requested bitdepth of the textures
-    outArgs->params->depth = _imp->uiContext->getBitDepth();
+    outArgs->params->depth = uiContext->getBitDepth();
 
     // The frame number
     outArgs->params->time = time;
@@ -1212,11 +1500,11 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // These are the user settings from the viewer UI
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
-        outArgs->autoContrast = _imp->viewerParamsAutoContrast;
-        outArgs->channels = _imp->viewerParamsChannels[textureIndex];
-        outArgs->params->gain = _imp->viewerParamsGain;
-        outArgs->params->gamma = _imp->viewerParamsGamma;
-        outArgs->params->lut = _imp->viewerParamsLut;
+        outArgs->autoContrast = _imp->enableAutoContrastButtonKnob.lock()->getValue();
+        outArgs->channels = (DisplayChannelsEnum)_imp->displayChannelsKnob[textureIndex].lock()->getValue();
+        outArgs->params->gain = std::pow(2, _imp->gainSliderKnob.lock()->getValue());
+        outArgs->params->gamma = _imp->gammaSliderKnob.lock()->getValue();
+        outArgs->params->lut = (ViewerColorSpaceEnum)_imp->colorspaceKnob.lock()->getValue();
         outArgs->params->layer = _imp->viewerParamsLayer;
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
@@ -1250,10 +1538,13 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     // When auto-contrast is enabled or user RoI, we compute exactly the iamge portion displayed in the rectangle and
     // do not round it to Viewer tiles.
 
+    OpenGLViewerI* uiContext = getUiContext();
+    assert(uiContext);
+
     outArgs->params->tiles.clear();
     outArgs->params->nbCachedTile = 0;
     if (!useCache || outArgs->forceRender) {
-        outArgs->params->roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
+        outArgs->params->roi = uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
         outArgs->params->roiNotRoundedToTileSize = outArgs->params->roi;
 
         UpdateViewerParams::CachedTile tile;
@@ -1291,7 +1582,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     } else {
         std::vector<RectI> tiles, tilesRounded;
-        outArgs->params->roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->pixelAspectRatio, mipmapLevel, &tiles, &tilesRounded, &outArgs->params->tileSize, &outArgs->params->roiNotRoundedToTileSize);
+        outArgs->params->roi = uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->pixelAspectRatio, mipmapLevel, &tiles, &tilesRounded, &outArgs->params->tileSize, &outArgs->params->roiNotRoundedToTileSize);
 
         assert(tiles.size() == tilesRounded.size());
 
@@ -1518,22 +1809,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         return eViewerRenderRetCodeRedraw;
     }
 
-    int activeA, activeB;
-    getActiveInputs(activeA, activeB);
-    // Fetch the viewer indexes that we should render from the A or B input depending on the textureIndex parameter
-    if (textureIndex == 0) {
-        outArgs->activeInputIndex =  activeA;
-    } else {
-        if (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) {
-            outArgs->activeInputIndex = -1;
-        } else {
-            outArgs->activeInputIndex =  activeB;
-        }
-    }
-
 
     // The active input providing the image is the first upstream non disabled node
-    EffectInstancePtr upstreamInput = getInput(outArgs->activeInputIndex);
+    EffectInstancePtr upstreamInput = getInput(textureIndex);
     outArgs->activeInputToRender.reset();
     if (upstreamInput) {
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
@@ -1723,7 +2001,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         return eViewerRenderRetCodeBlack;
     }
 
-    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(), inArgs.activeInputIndex);
+    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(), inArgs.params->textureIndex);
     std::vector<RectI> splitRoi;
     if (inArgs.isDoingPartialUpdates) {
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = inArgs.params->tiles.begin(); it != inArgs.params->tiles.end(); ++it) {
@@ -2237,15 +2515,21 @@ void
 ViewerInstance::aboutToUpdateTextures()
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->uiContext->clearPartialUpdateTextures();
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->clearPartialUpdateTextures();
+    }
 }
 
 bool
 ViewerInstance::isViewerUIVisible() const
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _imp->uiContext ? _imp->uiContext->isViewerUIVisible() : false;
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        return uiContext->isViewerUIVisible();
+    }
+    return false;
 }
 
 void
@@ -3148,7 +3432,10 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
 
     // QMutexLocker locker(&updateViewerMutex);
     // if (updateViewerRunning) {
-    uiContext->makeOpenGLcontextCurrent();
+    OpenGLViewerI* uiContext = instance->getUiContext();
+    if (uiContext) {
+        uiContext->makeOpenGLcontextCurrent();
+    }
     if (params->tiles.empty()) {
         return;
     }
@@ -3217,81 +3504,11 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
 } // ViewerInstance::ViewerInstancePrivate::updateViewer
 
 bool
-ViewerInstance::isInputOptional(int n) const
+ViewerInstance::isInputOptional(int /*n*/) const
 {
-    //activeInput() is MT-safe
-    int activeInputs[2];
-
-    getActiveInputs(activeInputs[0], activeInputs[1]);
-
-    if ( (n == 0) && (activeInputs[0] == -1) && (activeInputs[1] == -1) ) {
-        return false;
-    }
-
-    return n != activeInputs[0] && n != activeInputs[1];
+    return true;
 }
 
-void
-ViewerInstance::onGammaChanged(double value)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-
-        if (_imp->viewerParamsGamma != value) {
-            _imp->viewerParamsGamma = value;
-            changed = true;
-        }
-    }
-    if (changed) {
-        QWriteLocker k(&_imp->gammaLookupMutex);
-        _imp->fillGammaLut(1. / value);
-    }
-    assert(_imp->uiContext);
-    if (changed) {
-        if ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte)
-             && !getApp()->getProject()->isLoadingProject() ) {
-            renderCurrentFrame(true);
-        } else {
-            _imp->uiContext->redraw();
-        }
-    }
-}
-
-double
-ViewerInstance::getGamma() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsGamma;
-}
-
-void
-ViewerInstance::onGainChanged(double exp)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsGain != exp) {
-            _imp->viewerParamsGain = exp;
-            changed = true;
-        }
-    }
-    if (changed) {
-        assert(_imp->uiContext);
-        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
-             && !getApp()->getProject()->isLoadingProject() ) {
-            renderCurrentFrame(true);
-        } else {
-            _imp->uiContext->redraw();
-        }
-    }
-}
 
 unsigned int
 ViewerInstance::getViewerMipMapLevel() const
@@ -3315,135 +3532,13 @@ ViewerInstance::onMipMapLevelChanged(int level)
     }
 }
 
-void
-ViewerInstance::onAutoContrastChanged(bool autoContrast,
-                                      bool refresh)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsAutoContrast != autoContrast) {
-            _imp->viewerParamsAutoContrast = autoContrast;
-            changed = true;
-        }
-    }
-    if ( changed && refresh && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-bool
-ViewerInstance::isAutoContrastEnabled() const
-{
-    // MT-safe
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsAutoContrast;
-}
-
-void
-ViewerInstance::onColorSpaceChanged(ViewerColorSpaceEnum colorspace)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsLut == colorspace) {
-            return;
-        }
-        _imp->viewerParamsLut = colorspace;
-    }
-    assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
-         && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    } else {
-        _imp->uiContext->redraw();
-    }
-}
-
-void
-ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels,
-                                   bool bothInputs)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (!bothInputs) {
-            if (_imp->viewerParamsChannels[0] != channels) {
-                _imp->viewerParamsChannels[0] = channels;
-                changed = true;
-            }
-        } else {
-            if (_imp->viewerParamsChannels[0] != channels) {
-                _imp->viewerParamsChannels[0] = channels;
-                changed = true;
-            }
-            if (_imp->viewerParamsChannels[1] != channels) {
-                _imp->viewerParamsChannels[1] = channels;
-                changed = true;
-            }
-        }
-    }
-    if ( changed && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-void
-ViewerInstance::setActiveLayer(const ImageComponents& layer,
-                               bool doRender)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsLayer != layer) {
-            _imp->viewerParamsLayer = layer;
-            changed = true;
-        }
-    }
-    if ( doRender && changed && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-void
-ViewerInstance::setAlphaChannel(const ImageComponents& layer,
-                                const std::string& channelName,
-                                bool doRender)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerParamsAlphaLayer != layer) {
-            _imp->viewerParamsAlphaLayer = layer;
-            changed = true;
-        }
-        if (_imp->viewerParamsAlphaChannelName != channelName) {
-            _imp->viewerParamsAlphaChannelName = channelName;
-            changed = true;
-        }
-    }
-    if ( changed && doRender && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
 
 void
 ViewerInstance::disconnectViewer()
 {
     // always running in the render thread
-    if (_imp->uiContext) {
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
         Q_EMIT viewerDisconnected();
     }
 }
@@ -3451,7 +3546,8 @@ ViewerInstance::disconnectViewer()
 void
 ViewerInstance::disconnectTexture(int index,bool clearRod)
 {
-    if (_imp->uiContext) {
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
         Q_EMIT disconnectTextureRequest(index, clearRod);
     }
 }
@@ -3461,10 +3557,11 @@ ViewerInstance::redrawViewer()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (!_imp->uiContext) {
+    OpenGLViewerI* uiContext = getUiContext();
+    if (!uiContext) {
         return;
     }
-    _imp->uiContext->redraw();
+    uiContext->redraw();
 }
 
 void
@@ -3472,28 +3569,10 @@ ViewerInstance::redrawViewerNow()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert(_imp->uiContext);
-    _imp->uiContext->redrawNow();
-}
-
-int
-ViewerInstance::getLutType() const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsLut;
-}
-
-double
-ViewerInstance::getGain() const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsGain;
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->redrawNow();
+    }
 }
 
 int
@@ -3506,38 +3585,6 @@ ViewerInstance::getMipMapLevel() const
     return _imp->viewerMipMapLevel;
 }
 
-DisplayChannelsEnum
-ViewerInstance::getChannels(int texIndex) const
-{
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerParamsChannels[texIndex];
-}
-
-void
-ViewerInstance::setFullFrameProcessingEnabled(bool fullFrame)
-{
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->fullFrameProcessingEnabled == fullFrame) {
-            return;
-        }
-        _imp->fullFrameProcessingEnabled = fullFrame;
-    }
-    if ( !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
-}
-
-bool
-ViewerInstance::isFullFrameProcessingEnabled() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->fullFrameProcessingEnabled;
-}
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
@@ -3549,11 +3596,6 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
     comps->push_back( ImageComponents::getAlphaComponents() );
 }
 
-ViewIdx
-ViewerInstance::getViewerCurrentView() const
-{
-    return _imp->uiContext ? _imp->uiContext->getCurrentView() : ViewIdx(0);
-}
 
 void
 ViewerInstance::setActivateInputChangeRequestedFromViewer(bool fromViewer)
@@ -3570,43 +3612,40 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
     return _imp->activateInputChangedFromViewer;
 }
 
-void
-ViewerInstance::setViewerPaused(bool paused,
-                                bool allInputs)
-{
-    QMutexLocker k(&_imp->isViewerPausedMutex);
-
-    _imp->isViewerPaused[0] = paused;
-    if (allInputs) {
-        _imp->isViewerPaused[1] = paused;
-    }
-}
 
 bool
 ViewerInstance::isViewerPaused(int texIndex) const
 {
-    QMutexLocker k(&_imp->isViewerPausedMutex);
-
-    return _imp->isViewerPaused[texIndex];
+    return _imp->pauseButtonKnob[texIndex].lock()->getValue();
 }
 
-void
-ViewerInstance::onInputChanged(int /*inputNb*/)
-{
-    Q_EMIT clipPreferencesChanged();
-}
 
 void
 ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
 {
     Q_EMIT clipPreferencesChanged();
+    getViewerNodeGroup()->refreshViewsKnobVisibility();
+    refreshLayerAndAlphaChannelComboBox();
 }
 
 void
-ViewerInstance::onChannelsSelectorRefreshed()
+ViewerInstance::getInputsComponentsAvailables(std::set<ImageComponents>* comps) const
 {
-    Q_EMIT availableComponentsChanged();
+    const int nInputs = getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr input = getNode()->getInput(i);
+        if (input) {
+            EffectInstance::ComponentsAvailableMap compsAvailable;
+            input->getEffectInstance()->getComponentsAvailable(true, true, getCurrentTime(), &compsAvailable);
+            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
+                if ( it->second.lock() ) {
+                    comps->insert(it->first);
+                }
+            }
+        }
+    }
 }
+
 
 void
 ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
@@ -3616,65 +3655,29 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthByte);
 }
 
-void
-ViewerInstance::getActiveInputs(int & a,
-                                int &b) const
-{
-    NodePtr n = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(n);
-
-    assert(isInspector);
-    if (isInspector) {
-        isInspector->getActiveInputs(a, b);
-    }
-}
-
-void
-ViewerInstance::setInputA(int inputNb)
-{
-    NodePtr n = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(n);
-
-    assert(isInspector);
-    if (isInspector) {
-        isInspector->setInputA(inputNb);
-    }
-
-    Q_EMIT availableComponentsChanged();
-}
-
-void
-ViewerInstance::setInputB(int inputNb)
-{
-    NodePtr n = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(n);
-
-    assert(isInspector);
-    if (isInspector) {
-        isInspector->setInputB(inputNb);
-    }
-
-    Q_EMIT availableComponentsChanged();
-}
-
 int
 ViewerInstance::getLastRenderedTime() const
 {
-    return _imp->uiContext ? _imp->uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
+    OpenGLViewerI* uiContext = getUiContext();
+
+    return uiContext ? uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
 }
 
 TimeLinePtr
 ViewerInstance::getTimeline() const
 {
-    return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
+    OpenGLViewerI* uiContext = getUiContext();
+
+    return uiContext ? uiContext->getTimeline() : getApp()->getTimeLine();
 }
 
 void
 ViewerInstance::getTimelineBounds(int* first,
                                   int* last) const
 {
-    if (_imp->uiContext) {
-        _imp->uiContext->getViewerFrameRange(first, last);
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->getViewerFrameRange(first, last);
     } else {
         *first = 0;
         *last = 0;
@@ -3684,7 +3687,8 @@ ViewerInstance::getTimelineBounds(int* first,
 int
 ViewerInstance::getMipMapLevelFromZoomFactor() const
 {
-    double zoomFactor = _imp->uiContext->getZoomFactor();
+    OpenGLViewerI* uiContext = getUiContext();
+    double zoomFactor = uiContext ? uiContext->getZoomFactor() : 1.;
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
 
     return std::log(closestPowerOf2) / M_LN2;
@@ -3699,7 +3703,7 @@ ViewerInstance::getCurrentTime() const
 ViewIdx
 ViewerInstance::getCurrentView() const
 {
-    return getFrameRenderArgsCurrentView();
+    return ViewIdx(_imp->activeViewKnob.lock()->getValue());
 }
 
 bool
