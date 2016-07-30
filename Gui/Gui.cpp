@@ -49,6 +49,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
 #include "Gui/Menu.h"
+#include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ToolButton.h"
@@ -328,7 +329,7 @@ Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
 }
 
 void
-Gui::createViewerGui(const NodePtr& viewer)
+Gui::createViewerGui(const NodeGuiPtr& node)
 {
     TabWidget* where = _imp->_nextViewerTabPlace;
 
@@ -339,12 +340,12 @@ Gui::createViewerGui(const NodePtr& viewer)
     }
     assert(where);
 
-    ViewerNodePtr v = viewer->isEffectViewerNode();
+    ViewerNodePtr v = node->getNode()->isEffectViewerNode();
     assert(v);
 
-    ViewerTab* tab = addNewViewerTab(v, where);
+    ViewerTab* tab = addNewViewerTab(node, where);
     NodeGraph* graph = 0;
-    NodeCollectionPtr collection = viewer->getGroup();
+    NodeCollectionPtr collection = node->getNode()->getGroup();
     if (!collection) {
         return;
     }

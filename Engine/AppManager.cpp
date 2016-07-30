@@ -98,6 +98,7 @@
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
+#include "Engine/ViewerNode.h"
 #include "Engine/WriteNode.h"
 
 #include "sbkversion.h" // shiboken/pyside version
@@ -1405,9 +1406,9 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerBuiltInPlugin<WriteNode>(QString::fromUtf8(NATRON_IMAGES_PATH "writeImage.png"), false, false);
 #endif
 
-    if ( !isBackground() ) {
-        registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
-    }
+    registerBuiltInPlugin<ViewerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
+    registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, true);
+
 }
 
 bool

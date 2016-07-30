@@ -86,12 +86,13 @@ makeFullyQualifiedLabel(const NodePtr& node,
 ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                      const std::list<NodeGuiPtr>& activePluginsContext,
                      Gui* gui,
-                     const ViewerNodePtr& node,
+                     const NodeGuiPtr& node_ui,
                      QWidget* parent)
     : QWidget(parent)
     , PanelWidget(this, gui)
-    , _imp( new ViewerTabPrivate(this, node) )
+    , _imp( new ViewerTabPrivate(this, node_ui) )
 {
+    ViewerNodePtr node = node_ui->getNode()->isEffectViewerNode();
     installEventFilter(this);
 
     std::string nodeName =  node->getNode()->getFullyQualifiedName();
@@ -108,6 +109,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     NodePtr internalNode = node->getNode();
     QObject::connect( internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)) );
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNodeLabelChanged(QString)) );
+    QObject::connect( node.get(), SIGNAL(internalViewerCreated()), this, SLOT(onInternalViewerCreated()));
 
     _imp->mainLayout = new QVBoxLayout(this);
     setLayout(_imp->mainLayout);
@@ -517,12 +519,10 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     manageTimelineSlot(false, timeline);
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToPreviousKeyframe()) );
-    ViewerInstancePtr viewerNode = node->getInternalViewerNode();
 
-    RenderEnginePtr engine = viewerNode->getRenderEngine();
-    QObject::connect( viewerNode.get(), SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
+    QObject::connect( node.get(), SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
-    QObject::connect( viewerNode.get(), SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
+    QObject::connect( node.get(), SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
     QObject::connect( _imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)) );
     QObject::connect( _imp->currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)) );
     QObject::connect( _imp->play_Forward_Button, SIGNAL(clicked(bool)), this, SLOT(startPause(bool)) );
@@ -538,23 +538,32 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->playBackOutputButton, SIGNAL(clicked()), this, SLOT(onPlaybackOutButtonClicked()) );
     QObject::connect( _imp->playBackInputSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onPlaybackInSpinboxValueChanged(double)) );
     QObject::connect( _imp->playBackOutputSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onPlaybackOutSpinboxValueChanged(double)) );
-    QObject::connect( viewerNode.get(), SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
+    QObject::connect( node.get(), SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
     QObject::connect( _imp->fpsBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinboxFpsChanged(double)) );
-    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
-    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
+
 
     _imp->mustSetUpPlaybackButtonsTimer.setSingleShot(true);
     QObject::connect( &_imp->mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), this, SLOT(onSetDownPlaybackButtonsTimeout()) );
-    manageSlotsForInfoWidget(0, true);
 
     connectToViewerCache();
 
     for (std::list<NodeGuiPtr>::const_iterator it = existingNodesContext.begin(); it != existingNodesContext.end(); ++it) {
-        createNodeViewerInterface(*it);
+        ViewerNodePtr isViewerNode = (*it)->getNode()->isEffectViewerNode();
+        // For viewers, create the viewer interface separately
+        if (!isViewerNode) {
+            createNodeViewerInterface(*it);
+        }
     }
     for (std::list<NodeGuiPtr>::const_iterator it = activePluginsContext.begin(); it != activePluginsContext.end(); ++it) {
-        setPluginViewerInterface(*it);
+        ViewerNodePtr isViewerNode = (*it)->getNode()->isEffectViewerNode();
+        // For viewers, create the viewer interface separately
+        if (!isViewerNode) {
+            setPluginViewerInterface(*it);
+        }
     }
+
+    createNodeViewerInterface(node_ui);
+    setPluginViewerInterface(node_ui);
 
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
@@ -574,6 +583,17 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
             node->setViewersSynchroEnabled(true);
         }
     }
+}
+
+void
+ViewerTab::onInternalViewerCreated()
+{
+    ViewerInstancePtr viewerNode = getInternalNode()->getInternalViewerNode();
+    RenderEnginePtr engine = viewerNode->getRenderEngine();
+    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
+    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
+    manageSlotsForInfoWidget(0, true);
+
 }
 
 NATRON_NAMESPACE_EXIT;

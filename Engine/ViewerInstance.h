@@ -186,9 +186,6 @@ struct ViewerArgs
 class ViewerInstance
     : public OutputEffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class ViewerCurrentFrameRequestScheduler;
 
@@ -210,9 +207,6 @@ public:
 
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
-    KnobChoicePtr getAInputChoice() const;
-    KnobChoicePtr getBInputChoice() const;
-
     virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL
     {
         return true;
@@ -222,9 +216,6 @@ public:
     {
         return true;
     }
-
-    RectD getUserRoI() const;
-    void setUserRoI(const RectD& rect);
 
     enum ViewerRenderRetCode
     {
@@ -364,8 +355,6 @@ public:
 
     void disconnectTexture(int index, bool clearRod);
 
-    int getMipMapLevel() const WARN_UNUSED_RETURN;
-
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
@@ -389,8 +378,6 @@ public:
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
 
     bool isViewerUIVisible() const;
-
-    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
 
     struct ViewerInstancePrivate;
 
@@ -418,50 +405,24 @@ public:
 
     bool isInputChangeRequestedFromViewer() const;
 
-    void setViewerPaused(bool paused, bool allInputs);
-
-    bool isViewerPaused(int texIndex) const;
-
-    unsigned int getViewerMipMapLevel() const;
-
     void getInputsComponentsAvailables(std::set<ImageComponents>* comps) const;
 
-public Q_SLOTS:
+    NodePtr getInputRecursive(int inputIndex) const;
 
+    void setCurrentLayer(const ImageComponents& layer);
 
-    void onMipMapLevelChanged(int level);
+    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName);
 
-
-    /**
-     * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
-     **/
     void redrawViewer();
 
     void redrawViewerNow();
 
+    void callRedrawOnMainThread();
 
-    void executeDisconnectTextureRequestOnMainThread(int index, bool clearRoD);
-
-
-Q_SIGNALS:
-
-    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
-
-    void s_callRedrawOnMainThread();
-
-    void viewerDisconnected();
-
-    void clipPreferencesChanged();
-
-    void disconnectTextureRequest(int index,bool clearRoD);
-
-    void viewerRenderingStarted();
-    void viewerRenderingEnded();
 
 private:
 
 
-    NodePtr getInputRecursive(int inputIndex) const;
 
     void refreshLayerAndAlphaChannelComboBox();
 
@@ -470,13 +431,6 @@ private:
        *******OVERRIDEN FROM EFFECT INSTANCE******
      *******************************************/
 
-    virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                             ViewSpec /*view*/,
-                             double /*time*/,
-                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
-
-
-    virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual bool isOutput() const OVERRIDE FINAL
     {
@@ -511,10 +465,7 @@ private:
         return "The Viewer node can display the output of a node graph.";
     }
 
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL
-    {
-        return QString::number(inputNb + 1).toStdString();
-    }
+    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL;
 
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {

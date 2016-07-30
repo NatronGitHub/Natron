@@ -117,6 +117,14 @@
 /**
  * @brief optional x1 bool property
  * Default Value - true
+ * If true, if the node is a group, its sub-graph panel will be visible when created. If the property kCreateNodeArgsPropNodeSerialization is set to a non null
+ * serialization, this property has no effect.
+ **/
+#define kCreateNodeArgsPropSubGraphOpened "CreateNodeArgsPropSubGraphOpened"
+
+/**
+ * @brief optional x1 bool property
+ * Default Value - true
  * If true, Natron will try to automatically connect the node to others depending on the user selection. If the property kCreateNodeArgsPropNodeSerialization is set, this has no effect.
  **/
 #define kCreateNodeArgsPropAutoConnect "CreateNodeArgsPropAutoConnect"
@@ -288,6 +296,7 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
+        createProperty<bool>(kCreateNodeArgsPropSubGraphOpened, true);
         createProperty<bool>(kCreateNodeArgsPropAutoConnect, true);
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);

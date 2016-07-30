@@ -237,6 +237,7 @@ Project::loadProject(const QString & path,
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() );
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             getApp()->createNode(args);
@@ -248,6 +249,7 @@ Project::loadProject(const QString & path,
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() );
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             getApp()->createNode(args);
@@ -2476,6 +2478,7 @@ Project::createViewer()
 
     CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() );
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     getApp()->createNode(args);

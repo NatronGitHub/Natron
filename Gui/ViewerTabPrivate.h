@@ -136,7 +136,7 @@ struct ViewerTabPrivate
     bool hasCaughtPenMotionWhileDragging;
 
     ViewerTabPrivate(ViewerTab* publicInterface,
-                     const ViewerNodePtr& node);
+                     const NodeGuiPtr& node);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates

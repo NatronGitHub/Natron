@@ -1333,6 +1333,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
         }
+        isGrp->onGroupCreated();
     }
 
     return node;

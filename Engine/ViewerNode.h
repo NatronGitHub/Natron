@@ -40,6 +40,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
+typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
+
+
 struct ViewerNodePrivate;
 class ViewerNode
     : public NodeGroup
@@ -81,6 +84,8 @@ public:
 
     NodePtr getCurrentBInput() const;
 
+    void refreshInputFromChoiceMenu(int internalInputIdx);
+
     ViewerCompositingOperatorEnum getCurrentOperator() const;
 
     void connectInputToIndex(int groupInputIndex, int internalInputIndex);
@@ -95,11 +100,19 @@ public:
 
     void setDisplayChannels(int index, bool setBoth);
 
+    DisplayChannelsEnum getDisplayChannels(int index) const;
+
+    bool isAutoContrastEnabled() const;
+
+    ViewerColorSpaceEnum getColorspace() const;
+
     void setRefreshButtonDown(bool down);
 
     bool isViewersSynchroEnabled() const;
 
     void setViewersSynchroEnabled(bool enabled);
+
+    bool isViewerPaused(int index) const;
 
     bool isLeftToolbarVisible() const;
 
@@ -127,6 +140,16 @@ public:
 
     double getGamma() const;
 
+    RectD getUserRoI() const;
+
+    void setUserRoI(const RectD& rect);
+
+    unsigned int getProxyModeKnobMipMapLevel() const;
+
+    KnobChoicePtr getLayerKnob() const;
+
+    KnobChoicePtr getAlphaChannelKnob() const;
+
     virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
 
     virtual int getMajorVersion() const OVERRIDE FINAL
@@ -150,11 +173,58 @@ public:
 
     virtual std::string getPluginDescription() const OVERRIDE FINAL;
 
+    virtual void onGroupCreated() OVERRIDE FINAL;
+
+    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
+
+    void s_renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
+    {
+        Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
+    }
+
+    void s_redrawOnMainThread()
+    {
+        Q_EMIT redrawOnMainThread();
+    }
+
+    void s_viewerDisconnected()
+    {
+        Q_EMIT viewerDisconnected();
+    }
+
+    void s_clipPreferencesChanged()
+    {
+        Q_EMIT clipPreferencesChanged();
+    }
+
+    void s_disconnectTextureRequest(int index,bool clearRoD)
+    {
+        Q_EMIT disconnectTextureRequest(index, clearRoD);
+    }
+
 
 public Q_SLOTS:
 
 
     void onInputNameChanged(int,QString);
+
+    void executeDisconnectTextureRequestOnMainThread(int index, bool clearRoD);
+
+    void redrawViewer();
+
+Q_SIGNALS:
+
+    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
+
+    void redrawOnMainThread();
+
+    void viewerDisconnected();
+
+    void clipPreferencesChanged();
+
+    void disconnectTextureRequest(int index,bool clearRoD);
+
+    void internalViewerCreated();
 
 private:
 

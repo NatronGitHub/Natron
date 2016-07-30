@@ -60,7 +60,7 @@ public:
     explicit ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                        const std::list<NodeGuiPtr>& activePluginsContext,
                        Gui* gui,
-                       const ViewerNodePtr& node,
+                       const NodeGuiPtr& node,
                        QWidget* parent = 0);
 
     virtual ~ViewerTab() OVERRIDE;
@@ -271,6 +271,7 @@ public Q_SLOTS:
 
     void toggleTripleSync(bool toggled);
 
+    void onInternalViewerCreated();
 private:
 
     void setInfobarVisibleInternal(bool visible);

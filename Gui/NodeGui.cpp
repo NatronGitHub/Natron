@@ -1166,7 +1166,12 @@ NodeGui::refreshDashedStateOfEdges()
         int nbInputsConnected = 0;
 
         for (U32 i = 0; i < _inputEdges.size(); ++i) {
-            if ( ( _inputEdges[i]->getSource()->getNode() == aInput ) || ( _inputEdges[i]->getSource()->getNode() == bInput ) ) {
+            NodeGuiPtr sourceGui = _inputEdges[i]->getSource();
+            NodePtr sourceInternal;
+            if (sourceGui) {
+                sourceInternal = sourceGui->getNode();
+            }
+            if ( sourceInternal && (( sourceInternal == aInput ) || ( sourceInternal == bInput )) ) {
                 _inputEdges[i]->setDashed(false);
             } else {
                 _inputEdges[i]->setDashed(true);

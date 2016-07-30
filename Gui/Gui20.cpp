@@ -333,12 +333,14 @@ Gui::minimize()
 }
 
 ViewerTab*
-Gui::addNewViewerTab(const ViewerNodePtr& viewer,
+Gui::addNewViewerTab(const NodeGuiPtr& node,
                      TabWidget* where)
 {
-    if (!viewer) {
+    if (!node) {
         return 0;
     }
+
+    ViewerNodePtr viewer = node->getNode()->isEffectViewerNode();
 
     NodesGuiList activeNodeViewerUi, nodeViewerUi;
 
@@ -370,7 +372,7 @@ Gui::addNewViewerTab(const ViewerNodePtr& viewer,
         }
     }
 
-    ViewerTab* tab = new ViewerTab(nodeViewerUi, activeNodeViewerUi, this, viewer, where);
+    ViewerTab* tab = new ViewerTab(nodeViewerUi, activeNodeViewerUi, this, node, where);
     QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -1242,6 +1244,7 @@ Gui::createNewViewer()
     }
     CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() );
     args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     ignore_result( getApp()->createNode(args) );
 }
 

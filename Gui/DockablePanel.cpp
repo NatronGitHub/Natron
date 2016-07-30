@@ -184,7 +184,7 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
 
             NodeGroupPtr isGroup = toNodeGroup(isEffect);
-            if ( isGroup && (isGroup->getPluginID() == PLUGINID_NATRON_GROUP) ) {
+            if ( isGroup && isGroup->isSubGraphUserVisible() ) {
                 QPixmap enterPix;
                 appPTR->getIcon(NATRON_PIXMAP_ENTER_GROUP, iconSize, &enterPix);
                 _imp->_enterInGroupButton = new Button(QIcon(enterPix), QString(), _imp->_headerWidget);

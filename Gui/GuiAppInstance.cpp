@@ -489,11 +489,13 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     bool isViewer = node->isEffectViewerNode() != 0;
     if (isViewer) {
-        _imp->_gui->createViewerGui(node);
+        _imp->_gui->createViewerGui(nodegui);
     }
 
     // Must be done after the viewer gui has been created
-    _imp->_gui->createNodeViewerInterface(nodegui);
+    if (!isViewer) {
+        _imp->_gui->createNodeViewerInterface(nodegui);
+    }
 
 
     NodeGroupPtr isGroup = node->isEffectNodeGroup();

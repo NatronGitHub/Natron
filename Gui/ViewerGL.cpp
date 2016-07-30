@@ -202,7 +202,9 @@ ViewerGL::resizeGL(int w,
     _imp->ms = eMouseStateUndefined;
     assert(_imp->viewerTab);
     ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode()->getInternalViewerNode();
-    assert(viewer);
+    if (!viewer) {
+        return;
+    }
 
     bool isLoadingProject = _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     bool canResize = _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&  !_imp->viewerTab->getGui()->getApp()->isDuringPainting();
@@ -939,7 +941,7 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
 
     ///to clip against the user roi however clip it against the mipmaplevel of the zoomFactor+proxy
 
-    RectD userRoI = viewerNode->getInternalViewerNode()->getUserRoI();
+    RectD userRoI = viewerNode->getUserRoI();
     bool userRoiEnabled = viewerNode->isUserRoIEnabled();
 
     if (userRoiEnabled) {
@@ -1670,7 +1672,7 @@ ViewerGL::penMotionInternal(int x,
     }
 
     //update the cursor if it is hovering an overlay and we're not dragging the image
-    RectD userRoI = viewerNode->getInternalViewerNode()->getUserRoI();
+    RectD userRoI = viewerNode->getUserRoI();
 
     bool mustRedraw = false;
 
@@ -1985,7 +1987,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 
     ViewerNodePtr viewerNode = getInternalNode();
     ViewerInstancePtr instance = viewerNode->getInternalViewerNode();
-    unsigned int mipMapLevel = (unsigned int)std::max((int)instance->getMipMapLevelFromZoomFactor(), (int)instance->getViewerMipMapLevel());
+    unsigned int mipMapLevel = (unsigned int)std::max((int)instance->getMipMapLevelFromZoomFactor(), (int)viewerNode->getProxyModeKnobMipMapLevel());
     int closestPo2 = 1 << mipMapLevel;
     if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {
         return false;

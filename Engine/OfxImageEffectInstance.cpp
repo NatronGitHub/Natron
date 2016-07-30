@@ -60,6 +60,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
@@ -387,8 +388,8 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
     getOfxEffectInstance()->getNode()->hasViewersConnected(&attachedViewers);
     ///get the render scale of the 1st viewer
     if ( !attachedViewers.empty() ) {
-        ViewerInstancePtr first = attachedViewers.front();
-        int mipMapLevel = first->getMipMapLevel();
+        ViewerNodePtr first = attachedViewers.front()->getViewerNodeGroup();
+        int mipMapLevel = first->getProxyModeKnobMipMapLevel();
         x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
         y = x;
     } else {

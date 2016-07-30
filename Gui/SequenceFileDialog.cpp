@@ -2920,6 +2920,7 @@ SequenceFileDialog::createViewerPreviewNode()
     CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP, NodeCollectionPtr() );
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);

@@ -99,7 +99,7 @@ public:
 
     const NodesGuiList & getSelectedNodes() const;
 
-    void createViewerGui(const NodePtr& viewer);
+    void createViewerGui(const NodeGuiPtr& viewer);
 
     void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);
 
@@ -129,7 +129,7 @@ public:
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(const ViewerNodePtr& node, TabWidget* where);
+    ViewerTab* addNewViewerTab(const NodeGuiPtr& node, TabWidget* where);
 
     void addViewerTab(ViewerTab* tab, TabWidget* where);
 

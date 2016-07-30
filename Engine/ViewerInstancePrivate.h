@@ -118,9 +118,6 @@ struct RenderViewerArgs
 struct ViewerInstance::ViewerInstancePrivate
     : public QObject, public LockManagerI<FrameEntry>
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -132,7 +129,6 @@ public:
         , viewerParamsLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaChannelName("a")
-        , viewerMipMapLevel(0)
         , viewerChannelsAutoswitchedToAlpha(false)
         , activateInputChangedFromViewer(false)
         , gammaLookupMutex()
@@ -152,11 +148,6 @@ public:
             renderAge[i] = 1;
             displayAge[i] = 0;
         }
-    }
-
-    void redrawViewer()
-    {
-        Q_EMIT mustRedrawViewer();
     }
 
 public:
@@ -334,17 +325,9 @@ public:
         }
     }
 
-public Q_SLOTS:
 
-    /**
-     * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
-     * Do not call this yourself.
-     **/
     void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
 
-Q_SIGNALS:
-
-    void mustRedrawViewer();
 
 public:
     const ViewerInstance* const instance;
@@ -362,7 +345,6 @@ public:
     ImageComponents viewerParamsLayer;
     ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
-    unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
     bool viewerChannelsAutoswitchedToAlpha;
 
     ///Only accessed from MT
@@ -399,28 +381,6 @@ public:
     //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
     //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
     OnGoingRenders currentRenderAges[2];
-
-    boost::weak_ptr<KnobChoice> layersKnob;
-    boost::weak_ptr<KnobChoice> alphaChannelKnob;
-    boost::weak_ptr<KnobChoice> displayChannelsKnob[2];
-    boost::weak_ptr<KnobButton> clipToProjectButtonKnob;
-    boost::weak_ptr<KnobButton> fullFrameButtonKnob;
-    boost::weak_ptr<KnobButton> toggleUserRoIButtonKnob;
-    boost::weak_ptr<KnobDouble> userRoIBtmLeftKnob,userRoISizeKnob;
-    boost::weak_ptr<KnobButton> toggleProxyModeButtonKnob;
-    boost::weak_ptr<KnobChoice> proxyChoiceKnob;
-    boost::weak_ptr<KnobButton> pauseButtonKnob[2];
-    boost::weak_ptr<KnobChoice> aInputNodeChoiceKnob;
-    boost::weak_ptr<KnobChoice> blendingModeChoiceKnob;
-    boost::weak_ptr<KnobChoice> bInputNodeChoiceKnob;
-
-    boost::weak_ptr<KnobButton> enableGainButtonKnob;
-    boost::weak_ptr<KnobDouble> gainSliderKnob;
-    boost::weak_ptr<KnobButton> enableAutoContrastButtonKnob;
-    boost::weak_ptr<KnobButton> enableGammaButtonKnob;
-    boost::weak_ptr<KnobDouble> gammaSliderKnob;
-    boost::weak_ptr<KnobChoice> colorspaceKnob;
-    boost::weak_ptr<KnobChoice> activeViewKnob;
 
 };
 

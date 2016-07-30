@@ -270,7 +270,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///doesn't need to be scaled.
 
     if (userRoiEnabled) {
-        RectD userRoI = internalNode->getInternalViewerNode()->getUserRoI();
+        RectD userRoI = internalNode->getUserRoI();
         //if the userRoI isn't intersecting the rod, just don't render anything
         if ( !rod.intersect(userRoI, &rod) ) {
             return;

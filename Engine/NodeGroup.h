@@ -410,6 +410,11 @@ public:
         return true;
     }
 
+    /**
+     * @brief Callback called when the group gui has been created
+     **/
+    virtual void onGroupCreated() {}
+
 Q_SIGNALS:
 
     void graphEditableChanged(bool);

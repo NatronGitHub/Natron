@@ -49,9 +49,9 @@ NATRON_NAMESPACE_ENTER;
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
-                                   const ViewerNodePtr& node)
+                                   const NodeGuiPtr& node_ui)
     : publicInterface(publicInterface)
-    , viewerNode(node)
+    , viewerNode()
     , viewer(NULL)
     , viewerContainer(NULL)
     , viewerLayout(NULL)
@@ -102,6 +102,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , hasPenDown(false)
     , hasCaughtPenMotionWhileDragging(false)
 {
+    viewerNode = node_ui->getNode()->isEffectViewerNode();
     infoWidget[0] = infoWidget[1] = NULL;
 }
 

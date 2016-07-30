@@ -178,9 +178,6 @@ ViewerInstance::ViewerInstance(const NodePtr& node)
 
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 
-    QObject::connect( this, SIGNAL(disconnectTextureRequest(int,bool)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int,bool)) );
-    QObject::connect( _imp.get(), SIGNAL(mustRedrawViewer()), this, SLOT(redrawViewer()) );
-    QObject::connect( this, SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
 }
 
 ViewerInstance::~ViewerInstance()
@@ -226,16 +223,12 @@ ViewerInstance::getUiContext() const
     return group->getUiContext();
 }
 
-KnobChoicePtr
-ViewerInstance::getAInputChoice() const
-{
-    return _imp->aInputNodeChoiceKnob.lock();
-}
 
-KnobChoicePtr
-ViewerInstance::getBInputChoice() const
+std::string
+ViewerInstance::getInputLabel(int inputNb) const
 {
-    return _imp->bInputNodeChoiceKnob.lock();
+    assert(inputNb == 0 || inputNb == 1);
+    return inputNb == 0 ? "A" : "B";
 }
 
 void
@@ -274,102 +267,6 @@ ViewerInstance::getMaxInputCount() const
     return 2;
 }
 
-bool
-ViewerInstance::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                         ViewSpec /*view*/,
-                         double /*time*/,
-                         bool /*originatedFromMainThread*/)
-{
-    bool caught = true;
-    if (k == _imp->alphaChannelKnob.lock() && reason != eValueChangedReasonPluginEdited) {
-
-        int currentIndex = _imp->alphaChannelKnob.lock()->getValue();
-        std::set<ImageComponents> components;
-        getInputsComponentsAvailables(&components);
-
-        int i = 1; // because of the "-" choice
-        for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-            const std::vector<std::string>& channels = it->getComponentsNames();
-            if ( currentIndex >= ( (int)channels.size() + i ) ) {
-                i += channels.size();
-            } else {
-                for (U32 j = 0; j < channels.size(); ++j, ++i) {
-                    if (i == currentIndex) {
-
-                        QMutexLocker k(&_imp->viewerParamsMutex);
-                        _imp->viewerParamsAlphaChannelName = channels[j];
-                        _imp->viewerParamsAlphaLayer = *it;
-                        return true;
-                    }
-                }
-            }
-        }
-
-    } else if (k == _imp->layersKnob.lock() && reason != eValueChangedReasonPluginEdited) {
-
-        int currentIndex = _imp->layersKnob.lock()->getValue();
-        std::set<ImageComponents> components;
-        getInputsComponentsAvailables(&components);
-
-        if ( ( currentIndex >= (int)(components.size() + 1) ) || (index < 0) ) {
-            return false;
-        }
-        int i = 1; // because of the "-" choice
-        int chanCount = 1; // because of the "-" choice
-        for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
-            chanCount += it->getComponentsNames().size();
-            if (i == currentIndex) {
-                {
-                    QMutexLocker k(&_imp->viewerParamsMutex);
-                    _imp->viewerParamsLayer = *it;
-                }
-
-                // If it has an alpha channel, set it
-                if (it->getComponentsNames().size() == 4) {
-
-                    // Use setValueFromPlugin so we don't recurse
-                    _imp->alphaChannelKnob.lock()->setValueFromPlugin(chanCount - 1, ViewSpec::current(), 0);
-
-                    QMutexLocker k(&_imp->viewerParamsMutex);
-                    _imp->viewerParamsAlphaChannelName = it->getComponentsNames()[3];
-                    _imp->viewerParamsAlphaLayer = *it;
-                }
-
-                return true;
-            }
-        }
-
-        _imp->alphaChannelKnob.lock()->setValueFromPlugin(0, ViewSpec::current(), 0);
-        {
-            QMutexLocker k(&_imp->viewerParamsMutex);
-            _imp->viewerParamsAlphaChannelName = std::string();
-            _imp->viewerParamsAlphaLayer = ImageComponents::getNoneComponents();
-            _imp->viewerParamsLayer = ImageComponents::getNoneComponents();
-        }
-
-    } else if (k == _imp->aInputNodeChoiceKnob.lock()) {
-        NodePtr input = getViewerNodeGroup()->getCurrentAInput();
-
-        NodePtr basenode = getInputRecursive(0);
-        assert(basenode);
-        basenode->disconnectInput(0);
-        if (input) {
-            basenode->connectInput(input, 0);
-        }
-    } else if (k == _imp->bInputNodeChoiceKnob.lock()) {
-        NodePtr input = getViewerNodeGroup()->getCurrentBInput();
-
-        NodePtr basenode = getInputRecursive(0);
-        assert(basenode);
-        basenode->disconnectInput(1);
-        if (input) {
-            basenode->connectInput(input, 1);
-        }
-    } else {
-        caught = false;
-    }
-    return caught;
-}
 
 /**
  * @brief Cycles recursively upstream thtough the main input of each node until we reach an Input node, or nothing in the 
@@ -399,6 +296,22 @@ static NodePtr getMainInputRecursiveInternal(const NodePtr& inputParam, const Vi
 
 }
 
+void
+ViewerInstance::setCurrentLayer(const ImageComponents& layer)
+{
+    QMutexLocker k(&_imp->viewerParamsMutex);
+    _imp->viewerParamsLayer = layer;
+}
+
+void
+ViewerInstance::setAlphaChannel(const ImageComponents& layer, const std::string& channelName)
+{
+    QMutexLocker k(&_imp->viewerParamsMutex);
+    _imp->viewerParamsAlphaLayer = layer;
+    _imp->viewerParamsAlphaChannelName = channelName;
+}
+
+
 /**
  * @brief Returns the last node connected to a GroupInput node following the main-input branch of the graph
  **/
@@ -426,9 +339,10 @@ ViewerInstance::getInputRecursive(int inputIndex) const
 void
 ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 {
+    ViewerNodePtr viewerGroup = getViewerNodeGroup();
 
-    KnobChoicePtr layerKnob = _imp->layersKnob.lock();
-    KnobChoicePtr alphaChannelKnob = _imp->alphaChannelKnob.lock();
+    KnobChoicePtr layerKnob = viewerGroup->getLayerKnob();
+    KnobChoicePtr alphaChannelKnob = viewerGroup->getAlphaChannelKnob();
 
     // Remember the current choices
     std::string layerCurChoice = layerKnob->getActiveEntryText_mt_safe();
@@ -555,16 +469,15 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Adjust display channels automatically
     if ( foundCurIt != components.end() ) {
-        ViewerNodePtr viewerGroupNode = getViewerNodeGroup();
         if (foundCurIt->getNumComponents() == 1) {
             // Switch auto to alpha if there's only this to view
-            viewerGroupNode->setDisplayChannels((int)eDisplayChannelsA, true);
+            viewerGroup->setDisplayChannels((int)eDisplayChannelsA, true);
             _imp->viewerChannelsAutoswitchedToAlpha = true;
         } else {
             // Switch back to RGB if we auto-switched to alpha
-            DisplayChannelsEnum curDisplayChannels = (DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue();
+            DisplayChannelsEnum curDisplayChannels = (DisplayChannelsEnum)viewerGroup->getDisplayChannels(0);
             if ( _imp->viewerChannelsAutoswitchedToAlpha && (foundCurIt->getNumComponents() > 1) && (curDisplayChannels == eDisplayChannelsA) ) {
-                viewerGroupNode->setDisplayChannels((int)eDisplayChannelsRGB, true);
+                viewerGroup->setDisplayChannels((int)eDisplayChannelsRGB, true);
             }
         }
     }
@@ -572,328 +485,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 } // refreshLayerAndAlphaChannelComboBox
 
 
-void
-ViewerInstance::initializeKnobs()
-{
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
 
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamLayersLabel) );
-        param->setName(kViewerNodeParamLayers);
-        param->setHintToolTip(tr(kViewerNodeParamLayersHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->layersKnob = param;
-    }
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamAlphaChannelLabel) );
-        param->setName(kViewerNodeParamAlphaChannel);
-        param->setHintToolTip(tr(kViewerNodeParamAlphaChannelHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->alphaChannelKnob = param;
-    }
-
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamDisplayChannelsLabel) );
-        param->setName(kViewerNodeParamDisplayChannels);
-        param->setHintToolTip(tr(kViewerNodeParamDisplayChannelsHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("Luminance");
-            entries.push_back("RGB");
-            entries.push_back("Red");
-            entries.push_back("Green");
-            entries.push_back("Blue");
-            entries.push_back("Alpha");
-            entries.push_back("Matte");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->displayChannelsKnob[0] = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamDisplayChannelsLabel) );
-        param->setName(kViewerNodeParamDisplayChannelsB);
-        {
-            std::vector<std::string> entries;
-            entries.push_back("Luminance");
-            entries.push_back("RGB");
-            entries.push_back("Red");
-            entries.push_back("Green");
-            entries.push_back("Blue");
-            entries.push_back("Alpha");
-            entries.push_back("Matte");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->displayChannelsKnob[1] = param;
-    }
-
-
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamClipToProjectLabel) );
-        param->setName(kViewerNodeParamClipToProject);
-        param->setHintToolTip(tr(kViewerNodeParamClipToProjectHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->clipToProjectButtonKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamFullFrameLabel) );
-        param->setName(kViewerNodeParamFullFrame);
-        param->setHintToolTip(tr(kViewerNodeParamFullFrameHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->fullFrameButtonKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableUserRoILabel) );
-        param->setName(kViewerNodeParamEnableUserRoI);
-        param->setHintToolTip(tr(kViewerNodeParamEnableUserRoIHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->toggleUserRoIButtonKnob = param;
-    }
-
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
-        param->setDefaultValuesAreNormalized(true);
-        page->addKnob(param);
-        _imp->userRoIBtmLeftKnob = param;
-    }
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), std::string(kViewerNodeParamUserRoISize), 2 );
-        param->setDefaultValuesAreNormalized(true);
-        param->setDefaultValue(1., 0);
-        param->setDefaultValue(1., 1);
-        page->addKnob(param);
-        _imp->userRoISizeKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableProxyModeLabel) );
-        param->setName(kViewerNodeParamEnableProxyMode);
-        param->setHintToolTip(tr(kViewerNodeParamEnableProxyMode));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->toggleProxyModeButtonKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamProxyLevelLabel) );
-        param->setName(kViewerNodeParamProxyLevel);
-        param->setHintToolTip(tr(kViewerNodeParamProxyLevelHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("2");
-            entries.push_back("4");
-            entries.push_back("8");
-            entries.push_back("16");
-            entries.push_back("32");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->proxyChoiceKnob = param;
-    }
-
-    
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamPauseRenderLabel) );
-        param->setName(kViewerNodeParamPauseRender);
-        param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->pauseButtonKnob[0] = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamPauseRenderLabel) );
-        param->setName(kViewerNodeParamPauseRenderB);
-        param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->pauseButtonKnob[1] = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamAInputLabel) );
-        param->setName(kViewerNodeParamAInput);
-        param->setHintToolTip(tr(kViewerNodeParamAInputHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->aInputNodeChoiceKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamOperationLabel) );
-        param->setName(kViewerNodeParamOperation);
-        param->setHintToolTip(tr(kViewerNodeParamOperation));
-        {
-            std::vector<std::string> entries, helps;
-            entries.push_back("-");
-            helps.push_back("");
-            entries.push_back(kViewerNodeParamOperationWipeUnder);
-            helps.push_back(kViewerNodeParamOperationWipeUnderHint);
-            entries.push_back(kViewerNodeParamOperationWipeOver);
-            helps.push_back(kViewerNodeParamOperationWipeOverHint);
-            entries.push_back(kViewerNodeParamOperationWipeMinus);
-            helps.push_back(kViewerNodeParamOperationWipeMinusHint);
-            entries.push_back(kViewerNodeParamOperationWipeOnionSkin);
-            helps.push_back(kViewerNodeParamOperationWipeOnionSkinHint);
-
-            entries.push_back(kViewerNodeParamOperationStackUnder);
-            helps.push_back(kViewerNodeParamOperationStackUnderHint);
-            entries.push_back(kViewerNodeParamOperationStackOver);
-            helps.push_back(kViewerNodeParamOperationStackOverHint);
-            entries.push_back(kViewerNodeParamOperationStackMinus);
-            helps.push_back(kViewerNodeParamOperationStackMinusHint);
-            entries.push_back(kViewerNodeParamOperationStackOnionSkin);
-            helps.push_back(kViewerNodeParamOperationStackOnionSkinHint);
-            param->populateChoices(entries, helps);
-        }
-        page->addKnob(param);
-        _imp->blendingModeChoiceKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamBInputLabel) );
-        param->setName(kViewerNodeParamBInput);
-        param->setHintToolTip(tr(kViewerNodeParamBInputHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("-");
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->bInputNodeChoiceKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableGainLabel) );
-        param->setName(kViewerNodeParamEnableGain);
-        param->setHintToolTip(tr(kViewerNodeParamEnableGainHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->enableGainButtonKnob = param;
-    }
-
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kViewerNodeParamGainLabel), 1 );
-        param->setName(kViewerNodeParamGain);
-        param->setHintToolTip(tr(kViewerNodeParamGainHint));
-        page->addKnob(param);
-        _imp->gainSliderKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableAutoContrastLabel) );
-        param->setName(kViewerNodeParamEnableAutoContrast);
-        param->setHintToolTip(tr(kViewerNodeParamEnableAutoContrastHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->enableAutoContrastButtonKnob = param;
-    }
-
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kViewerNodeParamEnableGammaLabel) );
-        param->setName(kViewerNodeParamEnableGamma);
-        param->setHintToolTip(tr(kViewerNodeParamEnableGammaHint));
-        param->setCheckable(true);
-        page->addKnob(param);
-        _imp->enableGammaButtonKnob = param;
-    }
-
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kViewerNodeParamGammaLabel), 1 );
-        param->setName(kViewerNodeParamGamma);
-        param->setHintToolTip(tr(kViewerNodeParamGammaHint));
-        param->setDefaultValue(1.);
-        page->addKnob(param);
-        _imp->gammaSliderKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamColorspaceLabel) );
-        param->setName(kViewerNodeParamColorspace);
-        param->setHintToolTip(tr(kViewerNodeParamColorspaceHint));
-        {
-            std::vector<std::string> entries;
-            entries.push_back("Linear(None)");
-            entries.push_back("sRGB");
-            entries.push_back("Rec.709");
-            param->populateChoices(entries);
-        }
-        param->setDefaultValue(1);
-        page->addKnob(param);
-        _imp->colorspaceKnob = param;
-    }
-
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kViewerNodeParamViewLabel) );
-        param->setName(kViewerNodeParamView);
-        param->setHintToolTip(tr(kViewerNodeParamViewHint));
-        {
-            // Views gets populated in getPreferredMetadata
-            std::vector<std::string> entries;
-            param->populateChoices(entries);
-        }
-        page->addKnob(param);
-        _imp->activeViewKnob = param;
-    }
-
-}
-
-RectD
-ViewerInstance::getUserRoI() const
-{
-    RectD ret;
-    KnobDoublePtr btmLeft = _imp->userRoIBtmLeftKnob.lock();
-    KnobDoublePtr size = _imp->userRoISizeKnob.lock();
-    ret.x1 = btmLeft->getValue(0);
-    ret.y1 = btmLeft->getValue(1);
-    ret.x2 = ret.x1 + size->getValue(0);
-    ret.y2 = ret.y1 + size->getValue(1);
-    return ret;
-}
-
-void
-ViewerInstance::setUserRoI(const RectD& rect)
-{
-    KnobDoublePtr btmLeft = _imp->userRoIBtmLeftKnob.lock();
-    KnobDoublePtr size = _imp->userRoISizeKnob.lock();
-    btmLeft->setValues(rect.x1, rect.y1, ViewSpec::current(), eValueChangedReasonUserEdited);
-    size->setValues(rect.x2 - rect.x1, rect.y2 - rect.y1, ViewSpec::current(), eValueChangedReasonUserEdited);
-}
-
-
-
-void
-ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->disconnectInputTexture(index, clearRoD);
-    }
-}
 
 static bool
 isRotoPaintNodeInputRecursive(const NodePtr& node,
@@ -996,10 +588,11 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         eViewerRenderRetCodeFail, eViewerRenderRetCodeFail
     };
     NodePtr thisNode = getNode();
+    ViewerNodePtr viewerGroup = getViewerNodeGroup();
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerArgs);
-        if ( (i == 1) && ((ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() == eViewerCompositingOperatorNone) ) {
+        if ( (i == 1) && (viewerGroup->getCurrentOperator() == eViewerCompositingOperatorNone) ) {
             break;
         }
 
@@ -1117,7 +710,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 
 
         if ( (status[i] == eViewerRenderRetCodeFail) || (status[i] == eViewerRenderRetCodeBlack) ) {
-            disconnectTextureRequest(i, status[i] == eViewerRenderRetCodeFail);
+            viewerGroup->s_disconnectTextureRequest(i, status[i] == eViewerRenderRetCodeFail);
         } else {
             assert(args[i] && args[i]->params);
             assert(args[i]->params->textureIndex == i);
@@ -1199,9 +792,11 @@ ViewerInstance::renderViewer(ViewIdx view,
     ViewerInstance::ViewerRenderRetCode ret[2] = {
         eViewerRenderRetCodeRedraw, eViewerRenderRetCodeRedraw
     };
+
+    ViewerNodePtr viewerGroup = getViewerNodeGroup();
     for (int i = 0; i < 2; ++i) {
         if (args[i] && args[i]->params) {
-            if ( (i == 1) && ((ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue() == eViewerCompositingOperatorNone) ) {
+            if ( (i == 1) && (viewerGroup->getCurrentOperator() == eViewerCompositingOperatorNone) ) {
                 args[i]->params->tiles.clear();
                 break;
             }
@@ -1406,10 +1001,11 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 {
     OpenGLViewerI* uiContext = getUiContext();
     assert(uiContext);
+    ViewerNodePtr viewerNode = getViewerNodeGroup();
 
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        outArgs->mipmapLevelWithoutDraft = (unsigned int)_imp->viewerMipMapLevel;
+        outArgs->mipmapLevelWithoutDraft = viewerNode->getProxyModeKnobMipMapLevel();
     }
 
 
@@ -1422,7 +1018,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 
     // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
     // and the requested user proxy mipmap level
-    if (_imp->fullFrameButtonKnob.lock()->getValue()) {
+    if (viewerNode->isFullFrameProcessingEnabled()) {
         outArgs->mipmapLevelWithoutDraft = 0;
     } else {
         int zoomMipMapLevel;
@@ -1466,7 +1062,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     }
 
     // Did the user enabled the user roi from the viewer UI?
-    outArgs->userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
+    outArgs->userRoIEnabled = viewerNode->isUserRoIEnabled();
 
     outArgs->params.reset(new UpdateViewerParams);
 
@@ -1500,11 +1096,11 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // These are the user settings from the viewer UI
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
-        outArgs->autoContrast = _imp->enableAutoContrastButtonKnob.lock()->getValue();
-        outArgs->channels = (DisplayChannelsEnum)_imp->displayChannelsKnob[textureIndex].lock()->getValue();
-        outArgs->params->gain = std::pow(2, _imp->gainSliderKnob.lock()->getValue());
-        outArgs->params->gamma = _imp->gammaSliderKnob.lock()->getValue();
-        outArgs->params->lut = (ViewerColorSpaceEnum)_imp->colorspaceKnob.lock()->getValue();
+        outArgs->autoContrast = viewerNode->isAutoContrastEnabled();
+        outArgs->channels = viewerNode->getDisplayChannels(textureIndex);
+        outArgs->params->gain = std::pow(2, viewerNode->getGain());
+        outArgs->params->gamma = viewerNode->getGamma();
+        outArgs->params->lut = viewerNode->getColorspace();
         outArgs->params->layer = _imp->viewerParamsLayer;
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
@@ -1798,7 +1394,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  ViewerArgs* outArgs)
 {
     // Just redraw if the viewer is paused
-    if ( isViewerPaused(textureIndex) ) {
+    if ( getViewerNodeGroup()->isViewerPaused(textureIndex) ) {
         outArgs->params.reset(new UpdateViewerParams);
         outArgs->params->isViewerPaused = true;
         outArgs->params->time = time;
@@ -2541,7 +2137,7 @@ ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
     if (frame->isViewerPaused) {
         return;
     }
-    if ( isViewerPaused(frame->textureIndex) ) {
+    if ( getViewerNodeGroup()->isViewerPaused(frame->textureIndex) ) {
         return;
     }
     _imp->updateViewer( boost::dynamic_pointer_cast<UpdateViewerParams>(frame) );
@@ -3509,37 +3105,14 @@ ViewerInstance::isInputOptional(int /*n*/) const
     return true;
 }
 
-
-unsigned int
-ViewerInstance::getViewerMipMapLevel() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipMapLevel;
-}
-
-void
-ViewerInstance::onMipMapLevelChanged(int level)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerMipMapLevel == (unsigned int)level) {
-            return;
-        }
-        _imp->viewerMipMapLevel = level;
-    }
-}
-
-
 void
 ViewerInstance::disconnectViewer()
 {
     // always running in the render thread
     OpenGLViewerI* uiContext = getUiContext();
+    ViewerNodePtr node = getViewerNodeGroup();
     if (uiContext) {
-        Q_EMIT viewerDisconnected();
+        node->s_viewerDisconnected();
     }
 }
 
@@ -3547,21 +3120,16 @@ void
 ViewerInstance::disconnectTexture(int index,bool clearRod)
 {
     OpenGLViewerI* uiContext = getUiContext();
+    ViewerNodePtr node = getViewerNodeGroup();
     if (uiContext) {
-        Q_EMIT disconnectTextureRequest(index, clearRod);
+        node->s_disconnectTextureRequest(index, clearRod);
     }
 }
 
 void
 ViewerInstance::redrawViewer()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    OpenGLViewerI* uiContext = getUiContext();
-    if (!uiContext) {
-        return;
-    }
-    uiContext->redraw();
+    getViewerNodeGroup()->redrawViewer();
 }
 
 void
@@ -3575,16 +3143,12 @@ ViewerInstance::redrawViewerNow()
     }
 }
 
-int
-ViewerInstance::getMipMapLevel() const
+void
+ViewerInstance::callRedrawOnMainThread()
 {
-    // MT-SAFE: called from main thread and Serialization (pooled) thread
-
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipMapLevel;
+    ViewerNodePtr node = getViewerNodeGroup();
+    node->s_redrawOnMainThread();
 }
-
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
@@ -3613,18 +3177,13 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 }
 
 
-bool
-ViewerInstance::isViewerPaused(int texIndex) const
-{
-    return _imp->pauseButtonKnob[texIndex].lock()->getValue();
-}
-
 
 void
 ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
 {
-    Q_EMIT clipPreferencesChanged();
-    getViewerNodeGroup()->refreshViewsKnobVisibility();
+    ViewerNodePtr node = getViewerNodeGroup();
+    node->s_clipPreferencesChanged();
+    node->refreshViewsKnobVisibility();
     refreshLayerAndAlphaChannelComboBox();
 }
 
@@ -3703,7 +3262,7 @@ ViewerInstance::getCurrentTime() const
 ViewIdx
 ViewerInstance::getCurrentView() const
 {
-    return ViewIdx(_imp->activeViewKnob.lock()->getValue());
+    return getViewerNodeGroup()->getCurrentView();
 }
 
 bool
@@ -3772,11 +3331,7 @@ ViewerInstance::reportStats(int time,
                             double wallTime,
                             const RenderStatsMap& stats)
 {
-    Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
+    getViewerNodeGroup()->reportStats(time, view, wallTime, stats);
 }
 
 NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
-#include "moc_ViewerInstance.cpp"
-#include "moc_ViewerInstancePrivate.cpp"

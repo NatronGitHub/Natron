@@ -346,7 +346,9 @@ ViewerTab::onSpinboxFpsChangedInternal(double fps)
         return;
     }
     ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-
+    if (!viewerNode) {
+        return;
+    }
     _imp->fpsBox->setValue(fps);
     viewerNode->getRenderEngine()->setDesiredFPS(fps);
     {

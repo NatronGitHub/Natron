@@ -293,6 +293,18 @@ Here is an example on how to pass properties to the createNode function::
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
   is set to true, this property has no effet.
 
+- *Name*: **CreateNodeArgsPropSubGraphOpened**
+
+	*Dimension*: 1
+	
+	*Type*: bool
+	
+	*Default*: False
+	
+	*Description*: * If true, if the node is a group, its sub-graph panel will be visible when created. 
+	If the property kCreateNodeArgsPropNodeSerialization is set to a non null
+ serialization, this property has no effect.
+
 
 - *Name*: **CreateNodeArgsPropAutoConnect**
 

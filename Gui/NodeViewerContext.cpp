@@ -40,6 +40,7 @@
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Plugin.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ColoredFrame.h"
@@ -72,7 +73,7 @@ public:
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
-    ColoredFrame* mainContainer;
+    QWidget* mainContainer;
     QHBoxLayout* mainContainerLayout;
     Label* nodeLabel;
     QWidget* widgetsContainer;
@@ -161,20 +162,29 @@ NodeViewerContext::createGui()
     QObject::connect( node.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onNodeSettingsPanelClosed(bool)), Qt::UniqueConnection );
     KnobsVec knobsOrdered = node->getNode()->getEffectInstance()->getViewerUIKnobs();
 
+    ViewerNodePtr isViewerNode = node->getNode()->isEffectViewerNode();
 
     if ( !knobsOrdered.empty() ) {
-        _imp->mainContainer = new ColoredFrame(_imp->viewer);
+        if (!isViewerNode) {
+            _imp->mainContainer = new ColoredFrame(_imp->viewer);
+        } else {
+             _imp->mainContainer = new QWidget(_imp->viewer);
+        }
         _imp->mainContainerLayout = new QHBoxLayout(_imp->mainContainer);
         _imp->mainContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->mainContainerLayout->setSpacing(0);
-        _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
-        QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
+        if (!isViewerNode) {
+            _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
+            QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
+        }
         _imp->widgetsContainer = new QWidget(_imp->mainContainer);
         _imp->widgetsContainerLayout = new QVBoxLayout(_imp->widgetsContainer);
         _imp->widgetsContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->widgetsContainerLayout->setSpacing(0);
         _imp->mainContainerLayout->addWidget(_imp->widgetsContainer);
-        _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
+        if (_imp->nodeLabel) {
+            _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
+        }
         _imp->mainContainerLayout->addStretch();
         onNodeColorChanged( node->getCurrentColor() );
         QObject::connect( node.get(), SIGNAL(colorChanged(QColor)), this, SLOT(onNodeColorChanged(QColor)) );
@@ -248,9 +258,13 @@ void
 NodeViewerContext::onNodeColorChanged(const QColor& color)
 {
     QString labelStyle = QString::fromUtf8("Label { color: rgb(%1, %2, %3); }").arg( color.red() ).arg( color.green() ).arg( color.blue() );
-
-    _imp->nodeLabel->setStyleSheet(labelStyle);
-    _imp->mainContainer->setFrameColor(color);
+    if (_imp->nodeLabel) {
+        _imp->nodeLabel->setStyleSheet(labelStyle);
+    }
+    ColoredFrame* w = dynamic_cast<ColoredFrame*>(_imp->mainContainer);
+    if (w) {
+        w->setFrameColor(color);
+    }
 }
 
 void
