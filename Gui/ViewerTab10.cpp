@@ -88,7 +88,16 @@ ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
         _imp->playbackMode = mode;
     }
     _imp->playbackMode_Button->setIcon( QIcon(pix) );
-    getInternalNode()->getInternalViewerNode()->getRenderEngine()->setPlaybackMode(mode);
+    ViewerNodePtr internalNode = getInternalNode();
+    if (internalNode) {
+        ViewerInstancePtr viewer = internalNode->getInternalViewerNode();
+        if (viewer) {
+            RenderEnginePtr engine = viewer->getRenderEngine();
+            if (engine) {
+                engine->setPlaybackMode(mode);
+            }
+        }
+    }
 }
 
 PlaybackModeEnum
@@ -137,7 +146,10 @@ ViewerTab::updateZoomComboBox(int value)
     str.append( QLatin1Char('%') );
     str.prepend( QString::fromUtf8("  ") );
     str.append( QString::fromUtf8("  ") );
-    getInternalNode()->setZoomComboBoxText(str.toStdString());
+    ViewerNodePtr internalNode = getInternalNode();
+    if (internalNode) {
+        internalNode->setZoomComboBoxText(str.toStdString());
+    }
 }
 
 void
@@ -190,9 +202,12 @@ ViewerTab::abortRendering()
         const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
 
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            ViewerInstancePtr viewer = (*it)->getInternalNode()->getInternalViewerNode();
-            if (viewer) {
-                viewer->getRenderEngine()->abortRenderingNoRestart();
+            ViewerNodePtr n = (*it)->getInternalNode();
+            if (n) {
+                ViewerInstancePtr viewer = n->getInternalViewerNode();
+                if (viewer) {
+                    viewer->getRenderEngine()->abortRenderingNoRestart();
+                }
             }
         }
     }
@@ -446,7 +461,8 @@ ViewerTab::leaveEvent(QEvent* e)
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
-    if (!getInternalNode() || !getInternalNode()->getNode()) {
+    ViewerNodePtr internalNode = getInternalNode();
+    if (!internalNode || !internalNode->getNode()) {
         return;
     }
     //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
