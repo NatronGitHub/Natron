@@ -1722,7 +1722,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         std::set<ImageComponents> components;
         internalViewerNode->getInputsComponentsAvailables(&components);
 
-        if ( ( currentIndex >= (int)(components.size() + 1) ) || (index < 0) ) {
+        if ( ( currentIndex >= (int)(components.size() + 1) ) || (currentIndex < 0) ) {
             return false;
         }
         int i = 1; // because of the "-" choice
