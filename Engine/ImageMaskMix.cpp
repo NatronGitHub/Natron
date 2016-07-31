@@ -285,10 +285,13 @@ Image::applyMaskMix(const RectI& roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
+        int originalTexID = originalImg ? originalImg->getGLTextureID() : 0;
+        int maskTexID = maskImg ? maskImg->getGLTextureID() : 0;
+
         if (glContext->isGPUContext()) {
-            applyMaskMixGL<GL_GPU>(maskImg, originalImg, maskImg, maskInvert, mix, glContext, _bounds, realRoI, getGLTextureTarget(), getGLTextureID(), originalImg->getGLTextureID(), maskImg->getGLTextureID());
+            applyMaskMixGL<GL_GPU>(maskImg, originalImg, maskImg, maskInvert, mix, glContext, _bounds, realRoI, getGLTextureTarget(), getGLTextureID(), originalTexID, maskTexID);
         } else {
-            applyMaskMixGL<GL_CPU>(maskImg, originalImg, maskImg, maskInvert, mix, glContext, _bounds, realRoI, getGLTextureTarget(), getGLTextureID(), originalImg->getGLTextureID(), maskImg->getGLTextureID());
+            applyMaskMixGL<GL_CPU>(maskImg, originalImg, maskImg, maskInvert, mix, glContext, _bounds, realRoI, getGLTextureTarget(), getGLTextureID(), originalTexID, maskTexID);
         }
         return;
     }
