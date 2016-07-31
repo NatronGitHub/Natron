@@ -303,6 +303,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
     QHBoxLayout* lastRowLayout = new QHBoxLayout(lastRowContainer);
     lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
     lastRowLayout->setSpacing(0);
+    lastRowContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     widgetsContainerLayout->addWidget(lastRowContainer);
 
     KnobsVec knobsOnSameLine;
@@ -324,8 +325,10 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         KnobClickableLabel* label = 0;
         std::string inViewerLabel = (*it)->getInViewerContextLabel();
-        if ( !inViewerLabel.empty() ) {
-            label = new KnobClickableLabel(QString::fromUtf8( inViewerLabel.c_str() ) + QLatin1String(":"), ret, widgetsContainer);
+        std::string inViewerLabelIcon = (*it)->getInViewerContextIconFilePath();
+        if ( !inViewerLabel.empty() || !inViewerLabelIcon.empty() ) {
+            label = new KnobClickableLabel(QString(), ret, widgetsContainer);
+            KnobGuiContainerHelper::setLabelFromTextAndIcon(label, QString::fromUtf8(inViewerLabel.c_str()), QString::fromUtf8(inViewerLabelIcon.c_str()), ret->isLabelBold());
             QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
         }
         if (stretchVal == eStretchBefore) {
@@ -338,6 +341,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             lastRowLayout->addStretch();
             lastRowContainer = new QWidget(widgetsContainer);
             lastRowLayout = new QHBoxLayout(lastRowContainer);
+            lastRowContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
             lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
             lastRowLayout->setSpacing(0);
             widgetsContainerLayout->addWidget(lastRowContainer);
@@ -362,7 +366,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             ++next;
         }
     }
-    lastRowLayout->addStretch();
+    lastRowLayout->addStretch(); 
 } // NodeViewerContextPrivate::createKnobs
 
 QAction*

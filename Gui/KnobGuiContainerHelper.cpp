@@ -515,6 +515,45 @@ workAroundGridLayoutBug(QGridLayout* layout)
     layout->addWidget(foundSpacer, layout->rowCount(), 0, 1, 2);
 }
 
+void
+KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold)
+{
+    bool pixmapSet = false;
+    if ( !labelIconFilePath.isEmpty() ) {
+        QPixmap pix;
+
+        QFontMetrics fm(widget->font(), 0);
+        int pixSize = fm.height();
+
+        if (labelIconFilePath == QLatin1String("dialog-warning")) {
+            pix = getStandardIcon(QMessageBox::Warning, pixSize, widget);
+        } else if (labelIconFilePath == QLatin1String("dialog-question")) {
+            pix = getStandardIcon(QMessageBox::Question, pixSize, widget);
+        } else if (labelIconFilePath == QLatin1String("dialog-error")) {
+            pix = getStandardIcon(QMessageBox::Critical, pixSize, widget);
+        } else if (labelIconFilePath == QLatin1String("dialog-information")) {
+            pix = getStandardIcon(QMessageBox::Information, pixSize, widget);
+        } else {
+            pix.load(labelIconFilePath);
+            if (pix.width() != pixSize) {
+                pix = pix.scaled(pixSize, pixSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            }
+        }
+        if ( !pix.isNull() ) {
+            pixmapSet = true;
+            widget->setPixmap(pix);
+        }
+    }
+    if (!pixmapSet) {
+        /*labelStr += ":";*/
+        if ( setBold ) {
+            widget->setBold(true);
+        }
+        widget->setText_overload(labelText );
+    }
+
+}
+
 KnobGuiPtr
 KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                                             bool makeNewLine,
@@ -714,37 +753,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
             stdErrorPix = getStandardIcon(QMessageBox::Critical, pixSize, label);
             warningLabel->setPixmap(stdErrorPix);
 
-            bool pixmapSet = false;
-            if ( !labelIconFilePath.empty() ) {
-                QPixmap pix;
-
-                if (labelIconFilePath == "dialog-warning") {
-                    pix = getStandardIcon(QMessageBox::Warning, pixSize, label);
-                } else if (labelIconFilePath == "dialog-question") {
-                    pix = getStandardIcon(QMessageBox::Question, pixSize, label);
-                } else if (labelIconFilePath == "dialog-error") {
-                    pix = stdErrorPix;
-                } else if (labelIconFilePath == "dialog-information") {
-                    pix = getStandardIcon(QMessageBox::Information, pixSize, label);
-                } else {
-                    pix.load( QString::fromUtf8( labelIconFilePath.c_str() ) );
-                    if (pix.width() != pixSize) {
-                        pix = pix.scaled(pixSize, pixSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-                    }
-                }
-                if ( !pix.isNull() ) {
-                    pixmapSet = true;
-                    label->setPixmap(pix);
-                }
-            }
-            if (!pixmapSet) {
-                QString labelStr( QString::fromUtf8( descriptionLabel.c_str() ) );
-                /*labelStr += ":";*/
-                if ( ret->isLabelBold() ) {
-                    label->setBold(true);
-                }
-                label->setText_overload(labelStr );
-            }
+            setLabelFromTextAndIcon(label, QString::fromUtf8(descriptionLabel.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), ret->isLabelBold());
             QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
 
 

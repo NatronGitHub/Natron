@@ -203,6 +203,53 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
     ComboBox::focusOutEvent(e);
 }
 
+void
+ChannelsComboBox::paintEvent(QPaintEvent* event)
+{
+    ComboBox::paintEvent(event);
+    int idx = activeIndex();
+
+    if (idx != 1) {
+        QColor color;
+        QPainter p(this);
+        QPen pen;
+
+        switch (idx) {
+            case 0:
+                //luminance
+                color.setRgbF(0.5, 0.5, 0.5);
+                break;
+            case 2:
+                //r
+                color.setRgbF(1., 0, 0);
+                break;
+            case 3:
+                //g
+                color.setRgbF(0., 1., 0.);
+                break;
+            case 4:
+                //b
+                color.setRgbF(0., 0., 1.);
+                break;
+            case 5:
+                //a
+                color.setRgbF(1., 1., 1.);
+                break;
+        }
+
+        pen.setColor(color);
+        p.setPen(pen);
+
+
+        QRectF bRect = rect();
+        QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+        double roundPixels = 3;
+        QPainterPath path;
+        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+        p.drawPath(path);
+    }
+}
+
 KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
@@ -229,9 +276,21 @@ KnobGuiChoice::removeSpecificGui()
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
-    _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
+    KnobChoicePtr knob = _knob.lock();
+    if (knob->isDisplayChannelsKnob()) {
+        _comboBox = new ChannelsComboBox( shared_from_this(), 0, layout->parentWidget() );
+    } else {
+        _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
+    }
+
     _comboBox->setCascading( _knob.lock()->isCascading() );
     onEntriesPopulated();
+
+    std::string textToFitHorizontally = knob->getTextToFitHorizontally();
+    if (!textToFitHorizontally.empty()) {
+        QFontMetrics fm = _comboBox->fontMetrics();
+        _comboBox->setFixedWidth(fm.width(QString::fromUtf8(textToFitHorizontally.c_str())) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
+    }
 
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
     QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()) );
@@ -314,8 +373,11 @@ KnobGuiChoice::onEntriesPopulated()
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
-
-        _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+        if (entries[i] == KnobChoice::getSeparatorOption()) {
+            _comboBox->addSeparator();
+        } else {
+            _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+        }
     }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if ( knob->getHostCanAddOptions() &&

@@ -256,6 +256,8 @@ public:
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ///// End override from KnobGuiContainerI
 
+    static void setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold);
+
 protected:
 
     /**

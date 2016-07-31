@@ -6538,12 +6538,15 @@ Node::makePreviewImage(SequenceTime time,
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getEffectInstance();
+        NodePtr outputNode = isGroup->getOutputNode(false);
+        if (outputNode) {
+            effect = outputNode->getEffectInstance();
+        }
     } else {
         effect = _imp->effect;
     }
 
-    if (!_imp->effect) {
+    if (!effect) {
         return false;
     }
 

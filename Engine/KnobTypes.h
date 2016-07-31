@@ -662,6 +662,12 @@ public:
     void setMissingEntryWarningEnabled(bool enabled);
     bool isMissingEntryWarningEnabled() const;
 
+    void setIsDisplayChannelsKnob(bool b);
+    bool isDisplayChannelsKnob() const;
+
+    void setTextToFitHorizontally(const std::string& text);
+    std::string getTextToFitHorizontally() const;
+
 public Q_SLOTS:
 
     void onOriginalKnobPopulated();
@@ -697,8 +703,12 @@ private:
     std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
+    std::string _textToFitHorizontally; // < this is so that the combobox can have a fixed custom width
     bool _isCascading;
     bool _showMissingEntryWarning;
+
+    // This knob gets special display of its entries with a coloured frame border
+    bool _isDisplayChannelKnob;
 };
 
 inline KnobChoicePtr

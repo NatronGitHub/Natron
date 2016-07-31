@@ -713,6 +713,7 @@ ViewerNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamLayersLabel) );
         param->setName(kViewerNodeParamLayers);
         param->setHintToolTip(tr(kViewerNodeParamLayersHint));
+        param->setMissingEntryWarningEnabled(false);
         {
             std::vector<std::string> entries;
             entries.push_back("-");
@@ -720,6 +721,7 @@ ViewerNode::initializeKnobs()
         }
         page->addKnob(param);
         param->setSecretByDefault(true);
+        param->setTextToFitHorizontally("Color.Toto.RGBA");
         _imp->layersKnob = param;
     }
 
@@ -727,6 +729,7 @@ ViewerNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamAlphaChannelLabel) );
         param->setName(kViewerNodeParamAlphaChannel);
         param->setHintToolTip(tr(kViewerNodeParamAlphaChannelHint));
+        param->setMissingEntryWarningEnabled(false);
         {
             std::vector<std::string> entries;
             entries.push_back("-");
@@ -734,6 +737,7 @@ ViewerNode::initializeKnobs()
         }
         page->addKnob(param);
         param->setSecretByDefault(true);
+        param->setTextToFitHorizontally("Color.alpha");
         _imp->alphaChannelKnob = param;
     }
 
@@ -752,7 +756,10 @@ ViewerNode::initializeKnobs()
             entries.push_back("Matte");
             param->populateChoices(entries);
         }
+        param->setTextToFitHorizontally("Luminance");
         page->addKnob(param);
+        param->setDefaultValue(1);
+        param->setIsDisplayChannelsKnob(true);
         param->setSecretByDefault(true);
         _imp->displayChannelsKnob[0] = param;
     }
@@ -770,6 +777,7 @@ ViewerNode::initializeKnobs()
             entries.push_back("Matte");
             param->populateChoices(entries);
         }
+        param->setDefaultValue(1);
         page->addKnob(param);
         param->setSecretByDefault(true);
         _imp->displayChannelsKnob[1] = param;
@@ -805,6 +813,7 @@ ViewerNode::initializeKnobs()
             entries.push_back("6400%");
             param->populateChoices(entries);
         }
+        param->setTextToFitHorizontally("100000%");
         page->addKnob(param);
         _imp->zoomChoiceKnob = param;
     }
@@ -934,6 +943,7 @@ ViewerNode::initializeKnobs()
             param->populateChoices(entries);
         }
         page->addKnob(param);
+        param->setTextToFitHorizontally("ColorCorrect1");
         param->setSecretByDefault(true);
         _imp->aInputNodeChoiceKnob = param;
     }
@@ -967,7 +977,8 @@ ViewerNode::initializeKnobs()
         }
         page->addKnob(param);
         param->setSecretByDefault(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "roto_merge.png");
+        param->setTextToFitHorizontally("Wipe OnionSkin");
+        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "roto_merge.png");
         _imp->blendingModeChoiceKnob = param;
     }
 
@@ -980,6 +991,7 @@ ViewerNode::initializeKnobs()
             entries.push_back("-");
             param->populateChoices(entries);
         }
+        param->setTextToFitHorizontally("ColorCorrect1");
         page->addKnob(param);
         param->setSecretByDefault(true);
         _imp->bInputNodeChoiceKnob = param;
@@ -1641,7 +1653,7 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
         internalNodeToConnect->disconnectInput(internalInputIndex);
         internalNodeToConnect->connectInput(groupInput, internalInputIndex);
     } else {
-        int prefInput = internalNodeToConnect->getPreferredInput();
+        int prefInput = internalNodeToConnect->getPreferredInputForConnection();
         if (prefInput != -1) {
             internalNodeToConnect->disconnectInput(prefInput);
             internalNodeToConnect->connectInput(groupInput, prefInput);
@@ -2933,8 +2945,8 @@ ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScal
         }
         case eViewerNodeInteractMouseStateDraggingWipeCenter: {
             KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
-            centerKnob->setValue(centerKnob->getValue() - dx);
-            centerKnob->setValue(centerKnob->getValue(1) - dy, ViewSpec::current(), 1);
+            centerKnob->setValue(centerKnob->getValue() + dx);
+            centerKnob->setValue(centerKnob->getValue(1) + dy, ViewSpec::current(), 1);
             overlayCaught = true;
             break;
         }
@@ -3048,9 +3060,6 @@ ViewerNode::onOverlayFocusLost(double /*time*/, const RenderScale & /*renderScal
 OpenGLViewerI*
 ViewerNode::getUiContext() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
     return _imp->uiContext;
 }
 
@@ -3084,7 +3093,6 @@ ViewerNode::getCurrentAInput() const
             return _imp->viewerInputs[i].node.lock();
         }
     }
-    assert(false);
     return NodePtr();
 }
 
@@ -3116,18 +3124,6 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
     std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
 
-
-    int groupInputIndex = -1;
-
-    for (std::size_t i = 0; i < _imp->viewerInputs.size(); ++i) {
-        if (_imp->viewerInputs[i].label == curLabel) {
-            groupInputIndex = i;
-            break;
-        }
-    }
-    assert(groupInputIndex != -1);
-    assert(groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0);
-
     NodePtr nodeToConnect = getInternalViewerNode()->getInputRecursive(internalInputIdx);
     if (curLabel == "-") {
         if (nodeToConnect->getEffectInstance().get() == this) {
@@ -3140,11 +3136,23 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
         }
 
     } else {
+        int groupInputIndex = -1;
+
+        for (std::size_t i = 0; i < _imp->viewerInputs.size(); ++i) {
+            if (_imp->viewerInputs[i].label == curLabel) {
+                groupInputIndex = i;
+                break;
+            }
+        }
+        assert(groupInputIndex != -1);
+        assert(groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0);
+
+        
         if (nodeToConnect->getEffectInstance().get() == this) {
             nodeToConnect->disconnectInput(internalInputIdx);
             nodeToConnect->connectInput(groupInputNodes[groupInputIndex], internalInputIdx);
         } else {
-            int prefInput = nodeToConnect->getPreferredInput();
+            int prefInput = nodeToConnect->getPreferredInputForConnection();
             if (prefInput != -1) {
                 nodeToConnect->disconnectInput(prefInput);
                 nodeToConnect->connectInput(groupInputNodes[groupInputIndex], prefInput);

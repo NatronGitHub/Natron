@@ -925,7 +925,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
             //When tracking, we handle rendering separatly
             continue;
         }
-        (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
+        instance->renderCurrentFrame(!isPlayback);
     }
 } // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
 

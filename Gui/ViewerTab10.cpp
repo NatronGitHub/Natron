@@ -48,7 +48,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ActionShortcuts.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/Button.h"
-#include "Gui/ChannelsComboBox.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR

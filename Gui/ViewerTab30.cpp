@@ -42,7 +42,6 @@
 #include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
-#include "Gui/ChannelsComboBox.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/InfoViewerWidget.h"

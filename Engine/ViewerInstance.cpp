@@ -213,9 +213,6 @@ ViewerInstance::getPluginGrouping(std::list<std::string>* grouping) const
 OpenGLViewerI*
 ViewerInstance::getUiContext() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
     ViewerNodePtr group = getViewerNodeGroup();
     if (!group) {
         return 0;
@@ -409,6 +406,9 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
         }
 
     }
+
+    layerKnob->populateChoices(layerOptions);
+    alphaChannelKnob->populateChoices(channelOptions);
 
     // Check if we found the old user choice
     if ( ( layerCurChoice == "-" ) || layerCurChoice.empty() || ( foundCurIt == components.end() ) ) {

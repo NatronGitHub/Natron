@@ -102,7 +102,6 @@ class AnimatedCheckBox;
 class BackdropGui;
 class BoundAction;
 class Button;
-class ChannelsComboBox;
 class ColoredFrame;
 class ComboBox;
 class CurveEditor;

@@ -849,6 +849,12 @@ public:
     virtual void setInViewerContextLabel(const QString& label) = 0;
 
     /**
+     * @brief Set the icon instead of the label for the viewer GUI
+     **/
+    virtual std::string getInViewerContextIconFilePath() const = 0;
+    virtual void setInViewerContextIconFilePath(const std::string& icon) = 0;
+
+    /**
      * @brief Determines whether this knob can be assigned a shortcut or not via the shortcut editor.
      * If true, Natron will look for a shortcut in the shortcuts database with an ID matching the name of this
      * parameter. To set default values for shortcuts, implement EffectInstance::getPluginShortcuts(...)
@@ -1475,6 +1481,8 @@ public:
     virtual int getSpacingBetweenitems() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextLabel(const QString& label) OVERRIDE FINAL;
+    virtual std::string getInViewerContextIconFilePath() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextIconFilePath(const std::string& icon) OVERRIDE FINAL;
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
     virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;

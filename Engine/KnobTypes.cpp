@@ -459,6 +459,7 @@ KnobChoice::KnobChoice(const KnobHolderPtr& holder,
     , _addNewChoice(false)
     , _isCascading(false)
     , _showMissingEntryWarning(true)
+    , _isDisplayChannelKnob(false)
 {
 }
 
@@ -476,6 +477,30 @@ bool
 KnobChoice::isMissingEntryWarningEnabled() const
 {
     return _showMissingEntryWarning;
+}
+
+void
+KnobChoice::setIsDisplayChannelsKnob(bool b)
+{
+    _isDisplayChannelKnob = b;
+}
+
+bool
+KnobChoice::isDisplayChannelsKnob() const
+{
+    return _isDisplayChannelKnob;
+}
+
+void
+KnobChoice::setTextToFitHorizontally(const std::string& text)
+{
+    _textToFitHorizontally = text;
+}
+
+std::string
+KnobChoice::getTextToFitHorizontally() const
+{
+    return _textToFitHorizontally;
 }
 
 void

@@ -251,6 +251,7 @@ struct KnobHelperPrivate
     int inViewerContextAddNewLine;
     StretchEnum inViewerContextStretch;
     std::string inViewerContextLabel;
+    std::string inViewerContextIconFilePath;
     bool inViewerContextHasShortcut;
     KnobIWPtr parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
@@ -339,6 +340,7 @@ struct KnobHelperPrivate
         , inViewerContextAddNewLine(false)
         , inViewerContextStretch(eStretchNone)
         , inViewerContextLabel()
+        , inViewerContextIconFilePath()
         , inViewerContextHasShortcut(false)
         , parentKnob()
         , stateMutex()
@@ -1788,6 +1790,20 @@ KnobHelper::setInViewerContextLabel(const QString& label)
         _imp->inViewerContextLabel = label.toStdString();
     }
     _signalSlotHandler->s_inViewerContextLabelChanged();
+}
+
+std::string
+KnobHelper::getInViewerContextIconFilePath() const
+{
+    QMutexLocker k(&_imp->labelMutex);
+    return _imp->inViewerContextIconFilePath;
+}
+
+void
+KnobHelper::setInViewerContextIconFilePath(const std::string& icon)
+{
+    QMutexLocker k(&_imp->labelMutex);
+    _imp->inViewerContextIconFilePath = icon;
 }
 
 void
