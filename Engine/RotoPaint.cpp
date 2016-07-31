@@ -590,7 +590,7 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(timeOffsetMode);
     addKnobToViewerUI(sourceType);
     addKnobToViewerUI(resetCloneOffset);
-
+    resetCloneOffset->setInViewerContextStretch(eStretchAfter);
 
     KnobPagePtr toolbar = AppManager::createKnob<KnobPage>( shared_from_this(), std::string(kRotoUIParamToolbar) );
     toolbar->setAsToolBar(true);

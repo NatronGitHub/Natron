@@ -411,7 +411,9 @@ TrackerNode::initializeKnobs()
     resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(magWindow);
     addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
-    addKnobToViewerUI(context->getDefaultMarkerSearchWinSizeKnob());
+    KnobIntPtr defMarkerSearchWinKnob = context->getDefaultMarkerSearchWinSizeKnob();
+    addKnobToViewerUI(defMarkerSearchWinKnob);
+    defMarkerSearchWinKnob->setInViewerContextStretch(eStretchAfter);
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );

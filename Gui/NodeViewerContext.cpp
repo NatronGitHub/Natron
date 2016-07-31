@@ -336,7 +336,9 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         if (makeNewLine) {
             knobsOnSameLine.clear();
-            //lastRowLayout->addStretch();
+            if ( stretchVal == eStretchAfter) {
+                lastRowLayout->addStretch();
+            }
             lastRowContainer = new QWidget(widgetsContainer);
             lastRowLayout = new QHBoxLayout(lastRowContainer);
             lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
@@ -356,6 +358,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             }
         } // makeNewLine
 
+
         ret->setEnabledSlot();
         ret->setSecret();
 
@@ -363,7 +366,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             ++next;
         }
     }
-   // lastRowLayout->addStretch();
+
 } // NodeViewerContextPrivate::createKnobs
 
 QAction*
