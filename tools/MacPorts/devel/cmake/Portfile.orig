@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 149466 2016-06-22 15:43:38Z michaelld@macports.org $
+# $Id: Portfile 150715 2016-07-27 15:06:54Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -23,15 +23,15 @@ dist_subdir         cmake
 
 subport cmake-devel {}
 
-set branch          3.5
+set branch          3.6
 
 if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.2
-    checksums       rmd160 9053820870f124dee5845eb5ba4717ac71477231 \
-                    sha256 92d8410d3d981bb881dfff2aed466da55a58d34c7390d50449aa59b32bb5e62a
+    version         ${branch}.1
+    checksums       rmd160 87a0bc724cd853177f5568d488c3b63ab9e46709 \
+                    sha256 28ee98ec40427d41a45673847db7a905b59ce9243bb866eaf59dce0f58aaef11
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -39,8 +39,10 @@ if {${subport} eq ${name}} {
     long_description ${base_long_description} \
         The ${subport} release port is updated roughly every few months.
 
-    # keep this patch until the next version (major or minor)
-    patchfiles-append patch-Modules-Platform-Darwin-Initialize.cmake.diff
+    # release-only patches
+    patchfiles-append \
+        patch-Modules-FindQt4.cmake.release.diff \
+        patch-Modules-FindFreetype.cmake.release.diff
 
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
@@ -50,12 +52,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160621
+    version         20160726
     set dist_branch 3.6
-    set dist_date   20160621
-    set dist_hash   gdbfd5
-    checksums       rmd160 8b536bbda1334cab7954724f8bdc485d1330e5ba \
-                    sha256 ff99a623f1a95313ac4b8a648ca185db8468ad0a5edaa888fcf4564e6c66d5e9
+    set dist_date   20160722
+    set dist_hash   g858f9
+    checksums       rmd160 b68dcd81bb03d4c52daff0cd80b5a7852e89e3a4 \
+                    sha256 efa676d836269851acc8d3b9591091914d176882984d0b7bb40b47be13d1de52
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -63,6 +65,11 @@ if {${subport} eq ${name}} {
 
     long_description ${base_long_description} \
         The ${subport} port is updated roughly every week.
+
+    # devel-only patches
+    patchfiles-append \
+        patch-Modules-FindQt4.cmake.devel.diff \
+        patch-Modules-FindFreetype.cmake.devel.diff
 
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
@@ -83,8 +90,6 @@ depends_lib-append  port:curl \
 # use its internal jsoncpp until a better solution comes about.
 
 patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
-                    patch-Modules-FindFreetype.cmake.diff \
-                    patch-Modules-FindQt4.cmake.diff \
                     patch-Modules-Platform-Darwin.cmake.diff \
                     patch-Modules-noArchCheck.diff
 

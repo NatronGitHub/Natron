@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 148824 2016-05-19 16:22:49Z devans@macports.org $
+# $Id: Portfile 150068 2016-07-11 05:21:46Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -10,7 +10,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.0.2
+version             3.1.1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
@@ -52,8 +52,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_bzip2           yes
 
-checksums           rmd160  7255df119a4efef1b0da58e6e148028edeeed7f2 \
-                    sha256  30e3c77c2f4c358ed087869455a7496cbd7753a5e1b98d20ba49c1004009fd36
+checksums           rmd160  1b2b8e480d7140e43ff6f61ac4b05f2234b5681a \
+                    sha256  a5bca50a90a37b983eaa17c483a387189175f37ca678ae7e51d43e7610b4b3b4
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -86,8 +86,7 @@ depends_lib         port:lame \
                     port:xz \
                     port:zlib
 
-build.cmd           ${prefix}/bin/gmake
-build.env-append    V=1
+patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
 
 #
 # enable auto configure of asm optimizations
@@ -138,21 +137,29 @@ configure.args      --enable-swscale \
                     --disable-outdev=xv \
                     --disable-vda \
                     --disable-xlib \
+                    --disable-audiotoolbox \
                     --disable-videotoolbox \
                     --mandir=${prefix}/share/man \
                     --enable-shared --enable-pthreads \
                     --cc=${configure.cc} \
                     --cxx=${configure.cxx}
 
-# disable asm on Tiger
-# libblueray doesn't build on Tiger so disable for now (#39442)
 
 platform darwin {
+    # disable asm on Tiger
+    # libblueray doesn't build on Tiger so disable for now (#39442)
     if {${os.major} < 9} {
         depends_lib-delete    port:libbluray
         configure.args-delete --enable-libbluray
         configure.args-append --disable-libbluray
         configure.args-append --disable-asm
+    }
+
+    # filters coreimage and coreimagesrc don't build on 10.5
+    # and earlier due to use of bridged casts in Objective C (#51823)
+    if {${os.major} < 10} {
+        configure.args-append --disable-filter=coreimage \
+                              --disable-filter=coreimagesrc
     }
 
     # VDA (video hardware acceleration, mostly H264) is only supported on 10.6.3+ up to (excluding) 10.11.
@@ -162,6 +169,12 @@ platform darwin {
     if {${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)} {
         configure.args-delete --disable-vda
         configure.args-append --enable-vda
+    }
+
+    # AudiotoolBox support requires CoreMedia Framework available on 10.7+
+    if {${os.major} > 10} {
+        configure.args-delete --disable-audiotoolbox
+        configure.args-append --enable-audiotoolbox
     }
 
     # VideotoolBox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
@@ -182,7 +195,12 @@ platform darwin {
     }
 }
 
+build.cmd           ${prefix}/bin/gmake
+build.env-append    V=1
+
 test.run            yes
+
+destroot.env-append V=1
 
 #
 # configure isn't autoconf and they do use a dep cache

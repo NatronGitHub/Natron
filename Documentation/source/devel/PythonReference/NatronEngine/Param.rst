@@ -23,7 +23,7 @@ Functions
 *    def :meth:`getHelp<NatronEngine.Param.getHelp>` ()
 *    def :meth:`getIsAnimationEnabled<NatronEngine.Param.getIsAnimationEnabled>` ()
 *    def :meth:`getIsEnabled<NatronEngine.Param.getIsEnabled>` ([dimension=0])
-*    def :meth:`getIsPersistant<NatronEngine.Param.getIsPersistant>` ()
+*    def :meth:`getIsPersistent<NatronEngine.Param.getIsPersistent>` ()
 *    def :meth:`getIsVisible<NatronEngine.Param.getIsVisible>` ()
 *    def :meth:`getLabel<NatronEngine.Param.getLabel>` ()
 *    def :meth:`getNumDimensions<NatronEngine.Param.getNumDimensions>` ()
@@ -41,7 +41,7 @@ Functions
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
 *    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
-*    def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
+*    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
 *    def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
 *    def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
@@ -80,7 +80,7 @@ A Param can have several functions to control some properties, namely:
 	
 	* visible: Should this parameter be visible in the user interface or not
 	
-	* persistant: If true then the parameter value will be saved in the project
+	* persistent: If true then the parameter value will be saved in the project
 	
 	* dimension: How many dimensions this parameter has. For instance a :doc:`Double3DParam` has 3 dimensions. A :doc:`ParametricParam` has as many dimensions as there are curves.
 
@@ -115,7 +115,7 @@ it has no effect on already declared non-user parameters.
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | addNewLine        | bool         |   no         |         setAddNewLine(*)       | getAddNewLine        | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| persistent        | bool         |   yes        |         setPersistant(*)       | getIsPersistant      | True                  |
+| persistent        | bool         |   yes        |         setPersistent(*)       | getIsPersistent      | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | evaluatesOnChange | bool         |   yes        |         setEvaluateOnChange(*) | getEvaluateOnChange  | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
@@ -291,13 +291,13 @@ Returns whether the given *dimension* is enabled or not.
 
 
 
-.. method:: NatronEngine.Param.getIsPersistant()
+.. method:: NatronEngine.Param.getIsPersistent()
 
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-Returns whether this parameter should be persistant in the project or not.
-Non-persistant parameter will not have their value saved when saving a project.
+Returns whether this parameter should be persistent in the project or not.
+Non-persistent parameter will not have their value saved when saving a project.
 
 
 
@@ -495,14 +495,14 @@ Set the help tooltip of the parameter.
 See :func:`getHelp()<NatronEngine.Param.getHelp>`
 
 
-.. method:: NatronEngine.Param.setPersistant(persistant)
+.. method:: NatronEngine.Param.setPersistent(persistent)
 
 
-    :param persistant: :class:`bool<PySide.QtCore.bool>`
+    :param persistent: :class:`bool<PySide.QtCore.bool>`
 
-Set whether this parameter should be persistant or not.
-Non persistant parameter will not be saved in the project.
-See :func:`getIsPersistant<NatronEngine.Param.getIsPersistant>`
+Set whether this parameter should be persistent or not.
+Non persistent parameter will not be saved in the project.
+See :func:`getIsPersistent<NatronEngine.Param.getIsPersistent>`
 
 
 

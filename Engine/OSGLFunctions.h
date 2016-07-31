@@ -2565,8 +2565,8 @@ public:
         return getInstance()._mglIsEnabled(cap);
     }
 
-    static void glDepthRange(GLdouble near, GLdouble far) {
-        getInstance()._mglDepthRange(near, far);
+    static void glDepthRange(GLdouble nearVal, GLdouble farVal) {
+        getInstance()._mglDepthRange(nearVal, farVal);
     }
 
     static void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {

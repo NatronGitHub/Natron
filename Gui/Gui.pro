@@ -19,6 +19,10 @@
 TARGET = Gui
 TEMPLATE = lib
 CONFIG += staticlib
+# Cairo is still the default renderer for Roto
+!enable-osmesa {
+   CONFIG += enable-cairo
+}
 CONFIG += moc rcc
 CONFIG += boost opengl qt python shiboken pyside
 enable-cairo: CONFIG += cairo

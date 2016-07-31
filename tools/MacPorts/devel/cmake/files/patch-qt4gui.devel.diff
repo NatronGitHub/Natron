@@ -1,6 +1,6 @@
 --- Source/QtDialog/CMakeLists.txt.orig
 +++ Source/QtDialog/CMakeLists.txt
-@@ -15,77 +15,6 @@
+@@ -15,83 +15,6 @@
    cmake_policy(SET CMP0020 NEW) # Drop when CMake >= 2.8.11 required
  endif()
  CMake_OPTIONAL_COMPONENT(cmake-gui)
@@ -24,6 +24,12 @@
 -  add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0)
 -
 -  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+-
+-  if(CMake_QT_STATIC_QXcbIntegrationPlugin_LIBRARIES)
+-    list(APPEND CMake_QT_LIBRARIES ${CMake_QT_STATIC_QXcbIntegrationPlugin_LIBRARIES})
+-    set_property(SOURCE CMakeSetup.cxx
+-      PROPERTY COMPILE_DEFINITIONS USE_QXcbIntegrationPlugin)
+-  endif()
 -
 -  # We need to install platform plugin and add qt.conf for Qt5 on Mac and Windows.
 -  # FIXME: This should be part of Qt5 CMake scripts, but unfortunatelly
@@ -78,7 +84,7 @@
    set(QT_MIN_VERSION "4.4.0")
    find_package(Qt4 REQUIRED)
    if(NOT QT4_FOUND)
-@@ -97,8 +26,6 @@
+@@ -103,8 +26,6 @@
  
    set(CMake_QT_LIBRARIES ${QT_LIBRARIES})
  
@@ -87,7 +93,7 @@
  set(SRCS
    AddCacheEntry.cxx
    AddCacheEntry.h
-@@ -143,7 +70,7 @@
+@@ -149,7 +70,7 @@
  if(WIN32)
    set(SRCS ${SRCS} CMakeSetup.rc)
  endif()
@@ -96,7 +102,7 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -160,10 +87,10 @@
+@@ -166,10 +87,10 @@
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
@@ -109,7 +115,7 @@
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -209,18 +136,18 @@
+@@ -215,18 +136,18 @@
      ${COMPONENT})
  endif()
  
@@ -133,7 +139,7 @@
    install(CODE "
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -592,12 +592,6 @@
+@@ -602,12 +602,6 @@
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")

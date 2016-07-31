@@ -62,6 +62,10 @@ FrameEntry::copy(const FrameEntry& other)
         return;
     }
     const U8* srcPixels = other.data();
+    assert(srcPixels);
+    if (!srcPixels) {
+        return;
+    }
     const TextureRect& srcBounds = other.getKey().getTexRect();
     const TextureRect& dstBounds = _key.getTexRect();
     std::size_t srcRowSize = srcBounds.width();
