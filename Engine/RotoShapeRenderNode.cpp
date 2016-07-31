@@ -237,7 +237,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     if (frameArgs) {
         abortInfo = frameArgs->abortInfo.lock();
     }
-    assert(abortInfo && glContext);
+    assert( abortInfo && (!args.useOpenGL || glContext) );
     if (!glContext || !abortInfo) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
         return eStatusFailed;
@@ -354,9 +354,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 if (isDuringPainting) {
                     getApp()->updateStrokeData(lastCenterOut, distToNextOut);
                 }
-            } else {
+            }
 #endif
-
+            if (args.useOpenGL) {
                 double shapeColor[3];
                 rotoItem->getColor(args.time, shapeColor);
                 double opacity = rotoItem->getOpacity(args.time);
@@ -372,10 +372,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                                                        args.roi,
                                                        isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
                 }
-                
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             }
-#endif
         }   break;
         case eRotoShapeRenderTypeSmear: {
 
@@ -429,15 +426,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
                 renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, strokes, &distToNextOut, &lastCenterOut);
-            } else {
+            }
 #endif
+            if (args.useOpenGL) {
                 double opacity = rotoItem->getOpacity(args.time);
                 ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
                 renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, strokes, distNextIn, lastCenterIn, isStroke, opacity, args.time, mipmapLevel, &distToNextOut, &lastCenterOut);
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             }
-#endif
 
             if (isDuringPainting) {
                 /*if (!renderedDot) {
