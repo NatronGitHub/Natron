@@ -322,7 +322,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // Now we are good to start rendering
 
-    double distToNextOut;
+    double distToNextOut = 0.;
     Point lastCenterOut;
 
     boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
