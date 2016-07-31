@@ -23,8 +23,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 TARGET = NatronRenderer
 CONFIG += console
 CONFIG -= app_bundle
+# Cairo is still the default renderer for Roto
+!enable-osmesa {
+   CONFIG += enable-cairo
+}
 CONFIG += moc
-CONFIG += boost qt cairo python shiboken pyside 
+CONFIG += boost qt python shiboken pyside 
+enable-cairo: CONFIG += cairo
 CONFIG += static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 
 !noexpat: CONFIG += expat
