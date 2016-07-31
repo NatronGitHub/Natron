@@ -878,7 +878,7 @@ ViewerNode::initializeKnobs()
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableProxyModeLabel) );
         param->setName(kViewerNodeParamEnableProxyMode);
-        param->setHintToolTip(tr(kViewerNodeParamEnableProxyMode));
+        param->setHintToolTip(tr(kViewerNodeParamEnableProxyModeHint));
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
@@ -937,6 +937,7 @@ ViewerNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamAInputLabel) );
         param->setName(kViewerNodeParamAInput);
         param->setHintToolTip(tr(kViewerNodeParamAInputHint));
+        param->setInViewerContextLabel(tr(kViewerNodeParamAInputLabel));
         {
             std::vector<std::string> entries;
             entries.push_back("-");
@@ -986,6 +987,7 @@ ViewerNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamBInputLabel) );
         param->setName(kViewerNodeParamBInput);
         param->setHintToolTip(tr(kViewerNodeParamBInputHint));
+        param->setInViewerContextLabel(tr(kViewerNodeParamBInputLabel));
         {
             std::vector<std::string> entries;
             entries.push_back("-");
@@ -1174,17 +1176,24 @@ ViewerNode::initializeKnobs()
     _imp->bInputNodeChoiceKnob.lock()->setInViewerContextStretch(eStretchAfter);
 
     addKnobToViewerUI(_imp->clipToProjectButtonKnob.lock());
+    _imp->clipToProjectButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->toggleProxyModeButtonKnob.lock());
+    _imp->toggleProxyModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->proxyChoiceKnob.lock());
+    _imp->proxyChoiceKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->fullFrameButtonKnob.lock());
+    _imp->fullFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->toggleUserRoIButtonKnob.lock());
     _imp->toggleUserRoIButtonKnob.lock()->setInViewerContextAddSeparator(true);
     addKnobToViewerUI(_imp->refreshButtonKnob.lock());
+    _imp->refreshButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->pauseButtonKnob[0].lock());
     _imp->pauseButtonKnob[0].lock()->setInViewerContextAddSeparator(true);
 
     addKnobToViewerUI(_imp->centerViewerButtonKnob.lock());
+    _imp->centerViewerButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->syncViewersButtonKnob.lock());
+    _imp->syncViewersButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->zoomChoiceKnob.lock());
     _imp->zoomChoiceKnob.lock()->setInViewerContextNewLineActivated(true);
 

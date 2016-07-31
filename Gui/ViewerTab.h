@@ -120,6 +120,8 @@ public:
 
     void setInfoBarResolution(const Format & f);
 
+    QVBoxLayout* getMainLayout() const;
+
     /**
      * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
      **/

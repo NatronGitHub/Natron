@@ -185,7 +185,6 @@ NodeViewerContext::createGui()
         if (_imp->nodeLabel) {
             _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
         }
-        _imp->mainContainerLayout->addStretch();
         onNodeColorChanged( node->getCurrentColor() );
         QObject::connect( node.get(), SIGNAL(colorChanged(QColor)), this, SLOT(onNodeColorChanged(QColor)) );
         setContainerWidget(_imp->mainContainer);
@@ -303,7 +302,6 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
     QHBoxLayout* lastRowLayout = new QHBoxLayout(lastRowContainer);
     lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
     lastRowLayout->setSpacing(0);
-    lastRowContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     widgetsContainerLayout->addWidget(lastRowContainer);
 
     KnobsVec knobsOnSameLine;
@@ -328,7 +326,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         std::string inViewerLabelIcon = (*it)->getInViewerContextIconFilePath();
         if ( !inViewerLabel.empty() || !inViewerLabelIcon.empty() ) {
             label = new KnobClickableLabel(QString(), ret, widgetsContainer);
-            KnobGuiContainerHelper::setLabelFromTextAndIcon(label, QString::fromUtf8(inViewerLabel.c_str()), QString::fromUtf8(inViewerLabelIcon.c_str()), ret->isLabelBold());
+            KnobGuiContainerHelper::setLabelFromTextAndIcon(label, QString::fromUtf8(inViewerLabel.c_str()) + QString::fromUtf8(":"), QString::fromUtf8(inViewerLabelIcon.c_str()), ret->isLabelBold());
             QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
         }
         if (stretchVal == eStretchBefore) {
@@ -338,10 +336,9 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         if (makeNewLine) {
             knobsOnSameLine.clear();
-            lastRowLayout->addStretch();
+            //lastRowLayout->addStretch();
             lastRowContainer = new QWidget(widgetsContainer);
             lastRowLayout = new QHBoxLayout(lastRowContainer);
-            lastRowContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
             lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
             lastRowLayout->setSpacing(0);
             widgetsContainerLayout->addWidget(lastRowContainer);
@@ -366,7 +363,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             ++next;
         }
     }
-    lastRowLayout->addStretch(); 
+   // lastRowLayout->addStretch();
 } // NodeViewerContextPrivate::createKnobs
 
 QAction*

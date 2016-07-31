@@ -120,12 +120,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     /*1st row of buttons*/
     QFontMetrics fm(font(), 0);
 
-    _imp->firstSettingsRow = new QWidget(this);
-    _imp->firstRowLayout = new QHBoxLayout(_imp->firstSettingsRow);
-    _imp->firstSettingsRow->setLayout(_imp->firstRowLayout);
-    _imp->firstRowLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->firstRowLayout->setSpacing(0);
-    _imp->mainLayout->addWidget(_imp->firstSettingsRow);
 
     const int pixmapIconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE);
     const QSize buttonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
@@ -582,6 +576,12 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
             node->setViewersSynchroEnabled(true);
         }
     }
+}
+
+QVBoxLayout*
+ViewerTab::getMainLayout() const
+{
+    return _imp->mainLayout;
 }
 
 void

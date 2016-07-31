@@ -235,8 +235,6 @@ void
 ViewerTab::setTopToolbarVisible(bool visible)
 {
 
-    _imp->firstSettingsRow->setVisible(visible);
-    _imp->secondSettingsRow->setVisible(visible);
     for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
         it->currentContext->getContainerWidget()->setVisible(visible);
     }

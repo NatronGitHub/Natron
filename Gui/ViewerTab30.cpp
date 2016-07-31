@@ -187,8 +187,21 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
         // Remove the oldest opened interface if we reached the maximum
         int maxNodeContextOpened = appPTR->getCurrentSettings()->getMaxOpenedNodesViewerContext();
         if ( (int)_imp->currentNodeContext.size() == maxNodeContextOpened ) {
-            const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
-            removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
+            const ViewerTabPrivate::PluginViewerContext* oldestNodeViewerInterface = 0;
+            for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
+                NodeGuiPtr node = it->currentNode.lock();
+                if (!node) {
+                    continue;
+                }
+                // Do not remove the viewer interface
+                if (node->getNode()->isEffectViewerNode()) {
+                    continue;
+                }
+                oldestNodeViewerInterface = &(*it);
+            }
+            if (oldestNodeViewerInterface) {
+                removeNodeViewerInterface(oldestNodeViewerInterface->currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
+            }
         }
 
         QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();

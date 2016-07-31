@@ -66,10 +66,6 @@ struct ViewerTabPrivate
     QVBoxLayout* viewerSubContainerLayout;
     QVBoxLayout* mainLayout;
 
-    /*Viewer Settings*/
-    QWidget* firstSettingsRow, *secondSettingsRow;
-    QHBoxLayout* firstRowLayout, *secondRowLayout;
-
     InfoViewerWidget* infoWidget[2];
 
     /*TimeLine buttons*/
