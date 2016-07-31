@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 148929 2016-05-23 04:00:05Z devans@macports.org $
+# $Id: Portfile 150664 2016-07-26 04:25:05Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           compiler_blacklist_versions 1.0
@@ -8,7 +8,7 @@ PortGroup           muniversal 1.0
 
 name                poppler
 conflicts           pdf2json xpdf-tools
-version             0.44.0
+version             0.46.0
 license             GPL-2+
 maintainers         devans openmaintainer
 categories          graphics
@@ -22,8 +22,8 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  9037dd395f7e789bae96dfb3b1a5acf8cb9c0814 \
-                    sha256  5b467ed26a55e1824da6bd86f5f562b1b45582069c03898c91f01ad5c6fa0eab
+checksums           rmd160  5c6cb4d4d5b7cfb5badc47243ee78a33db2a35ed \
+                    sha256  967d35d13d61dee2fee656b80efef9e388a9e752bc79b7123f15b49c7769e487
 
 depends_build       port:pkgconfig
 

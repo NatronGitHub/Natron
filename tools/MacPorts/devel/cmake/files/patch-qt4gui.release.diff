@@ -78,7 +78,7 @@
    set(QT_MIN_VERSION "4.4.0")
    find_package(Qt4 REQUIRED)
    if(NOT QT4_FOUND)
-@@ -97,8 +26,6 @@ else()
+@@ -97,8 +26,6 @@
  
    set(CMake_QT_LIBRARIES ${QT_LIBRARIES})
  
@@ -87,7 +87,7 @@
  set(SRCS
    AddCacheEntry.cxx
    AddCacheEntry.h
-@@ -135,7 +62,7 @@ set(SRCS ${SRCS} ${UI_SRCS} ${MOC_SRCS} ${RC_SRCS})
+@@ -143,7 +70,7 @@
  if(WIN32)
    set(SRCS ${SRCS} CMakeSetup.rc)
  endif()
@@ -96,7 +96,7 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -152,10 +79,10 @@ endif()
+@@ -160,10 +87,10 @@
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
@@ -109,7 +109,7 @@
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -200,18 +127,18 @@ if(UNIX AND NOT APPLE)
+@@ -209,18 +136,18 @@
      ${COMPONENT})
  endif()
  
@@ -133,7 +133,7 @@
    install(CODE "
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -563,12 +563,6 @@ if(NOT CMake_TEST_EXTERNAL_CMAKE)
+@@ -592,12 +592,6 @@ if(NOT CMake_TEST_EXTERNAL_CMAKE)
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")

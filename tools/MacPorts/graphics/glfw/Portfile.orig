@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 149391 2016-06-16 13:13:48Z michaelld@macports.org $
+# $Id: Portfile 150789 2016-07-28 18:03:22Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           cmake 1.0
@@ -19,6 +19,7 @@ if {${subport} eq ${name}} {
     # release
 
     github.setup    glfw glfw 3.2
+    revision        1
     # bump the epoch because I moved the version from 20151012 to 3.1.2
     epoch           1
     checksums       rmd160 0b0e400f47b965af9fe6eb3eb7e373cb6efa105f \
@@ -36,10 +37,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    github.setup    glfw glfw f2ba78e04bf8e2cab04388fa8b12c133abb24001
-    version         20160614
-    checksums       rmd160 11360d11e338052aaebf93f3e0dc3a216b9d3a9d \
-                    sha256 1be57641e50c0e5fbc178aa612514e1a6df6067153f699728f0debf172e29ff3
+    github.setup    glfw glfw f7006f64fb12e21f30a99351d7c854ea75b5c3eb
+    version         20160720
+    checksums       rmd160 36f167c8a2a16481f5721468be7bd8512bf8d6db \
+                    sha256 f25475e63ffd4152d3d7c5de58076cc5e33063445f97ce1013754242f9973043
 
     # patch to fix install directory for cmake files and docs
 
