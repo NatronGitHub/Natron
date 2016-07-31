@@ -509,23 +509,28 @@ OSGLContext::setContextCurrentNoRender(int width, int height, int rowWidth, void
 {
 
     if (_imp->useGPUContext) {
-#ifdef __NATRON_WIN32__
+#     ifdef __NATRON_WIN32__
         OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
-#elif defined(__NATRON_OSX__)
+#     elif defined(__NATRON_OSX__)
         OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
-#elif defined(__NATRON_LINUX__)
+#     elif defined(__NATRON_LINUX__)
         OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
-#endif
+#     endif
     } else {
-#ifdef HAVE_OSMESA
-
+#     ifdef HAVE_OSMESA
         if (buffer) {
             OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, width, height, rowWidth, buffer);
         } else {
             // Make the context current with a stub buffer
             OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, 1, 1, 1, &_imp->_osmesaStubBuffer[0]);
         }
-#endif
+#     else
+        assert(false);
+        Q_UNUSED(width);
+        Q_UNUSED(height);
+        Q_UNUSED(rowWidth);
+        Q_UNUSED(buffer);
+#     endif
     }
 }
 
@@ -590,17 +595,20 @@ void
 OSGLContext::unsetCurrentContextNoRenderInternal(bool useGPU, const Natron::OSGLContext* context)
 {
     if (useGPU) {
-#ifdef __NATRON_WIN32__
-        OSGLContext_win::makeContextCurrent( 0 );
-#elif defined(__NATRON_OSX__)
-        OSGLContext_mac::makeContextCurrent( 0 );
-#elif defined(__NATRON_LINUX__)
-        OSGLContext_x11::makeContextCurrent( 0 );
-#endif
+#     ifdef __NATRON_WIN32__
+        OSGLContext_win::makeContextCurrent(0);
+#     elif defined(__NATRON_OSX__)
+        OSGLContext_mac::makeContextCurrent(0);
+#     elif defined(__NATRON_LINUX__)
+        OSGLContext_x11::makeContextCurrent(0);
+#     endif
     } else {
-#ifdef HAVE_OSMESA
+#     ifdef HAVE_OSMESA
         OSGLContext_osmesa::unSetContext(context ? context->_imp->_osmesaContext.get() : 0);
-#endif
+#     else
+        assert(false);
+        Q_UNUSED(context);
+#     endif
     }
 }
 
