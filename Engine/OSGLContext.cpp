@@ -748,7 +748,7 @@ template <typename GL>
 static boost::shared_ptr<GLShader<GL> >
 getOrCreateMaskMixShaderInternal(bool maskEnabled, bool maskInvert)
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
 
     std::string fragmentSource;
     if (maskEnabled) {
@@ -807,7 +807,7 @@ getOrCreateCopyUnprocessedChannelsShaderInternal(bool doR,
         index |= 0x08;
     }
 
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );( new GLShader<GL>() );( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
 
     std::string fragmentSource;
     if (!doR) {
