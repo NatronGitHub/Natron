@@ -238,7 +238,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         abortInfo = frameArgs->abortInfo.lock();
     }
     assert( abortInfo && (!args.useOpenGL || glContext) );
-    if (!glContext || !abortInfo) {
+    if (args.useOpenGL && (!glContext || !abortInfo)) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
         return eStatusFailed;
     }
