@@ -582,7 +582,11 @@ KnobGuiOutputFile::onTextEdited()
 //    }
 //
 //
-    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), _knob.lock()->getValue(), newPattern ) );
+    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), knob->getValue(), newPattern ) );
 }
 
 void
@@ -888,6 +892,9 @@ KnobGuiPath::tableChanged(int row,
 void
 KnobGuiPath::onTextEdited()
 {
+    if (!_lineEdit) {
+        return;
+    }
     std::string dirPath = _lineEdit->text().toStdString();
 
     if ( !dirPath.empty() && (dirPath[dirPath.size() - 1] == '/') ) {
@@ -895,8 +902,11 @@ KnobGuiPath::onTextEdited()
     }
     updateLastOpened( QString::fromUtf8( dirPath.c_str() ) );
 
-
-    std::string oldValue = _knob.lock()->getValue();
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    std::string oldValue = knob->getValue();
 
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), oldValue, dirPath ) );
 }
