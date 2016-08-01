@@ -827,13 +827,13 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 }
 
                 try {
-                    OSGLContext::checkOpenGLVersion();
+                    OSGLContext::checkOpenGLVersion(true);
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     continue;
                 }
 
-                glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+                GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
                 renderers.push_back(info);
                 
                 makeContextCurrent(0);
