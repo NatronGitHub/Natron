@@ -223,6 +223,7 @@
 #define kViewerNodeParamRightClickMenuShowHideOverlaysLabel "Show/Hide Overlays"
 
 #define kViewerNodeParamRightClickMenuShowHideSubMenu "showHideSubMenu"
+#define kViewerNodeParamRightClickMenuShowHideSubMenuLabel "Show/Hide"
 
 #define kViewerNodeParamRightClickMenuHideAll "hideAll"
 #define kViewerNodeParamRightClickMenuHideAllLabel "Hide All"
@@ -652,22 +653,26 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     // Restore old choices
 
     if (foundCurAChoiceIndex != -1) {
-        /*if (foundCurAChoiceIndex == 0) {
-         aInputKnob->setValue(entries.size() > 1 ? 1 : foundCurAChoiceIndex);
-         } else {*/
-        aInputKnob->setValue(foundCurAChoiceIndex);
-        //}
+        if (foundCurAChoiceIndex == 0) {
+            aInputKnob->setValue(entries.size() > 1 ? 1 : foundCurAChoiceIndex);
+        } else {
+            aInputKnob->setValue(foundCurAChoiceIndex);
+        }
 
     } else {
         if (resetChoiceIfNotFound) {
-            aInputKnob->setValue(0);
+            aInputKnob->setValue(entries.size() > 1 ? 1 : 0);
         }
     }
     if (foundCurBChoiceIndex != -1) {
-        bInputKnob->setValue(foundCurBChoiceIndex);
+        if (foundCurBChoiceIndex == 0) {
+            bInputKnob->setValue(entries.size() > 1 ? 1 : foundCurBChoiceIndex);
+        } else {
+            bInputKnob->setValue(foundCurBChoiceIndex);
+        }
     } else {
         if (resetChoiceIfNotFound) {
-            bInputKnob->setValue(0);
+            bInputKnob->setValue(entries.size() > 1 ? 1 : 0);
         }
     }
 
@@ -1435,6 +1440,7 @@ ViewerNode::initializeKnobs()
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideOverlaysLabel) );
         action->setName(kViewerNodeParamRightClickMenuShowHideOverlays);
         action->setSecretByDefault(true);
+        action->setCheckable(true);
         action->setDefaultValue(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setEvaluateOnChange(false);
@@ -1443,7 +1449,8 @@ ViewerNode::initializeKnobs()
         _imp->rightClickShowHideOverlays = action;
     }
 
-    KnobChoicePtr showHideSubMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kViewerNodeParamRightClickMenuShowHideSubMenu) );
+    KnobChoicePtr showHideSubMenu = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideSubMenuLabel) );
+    showHideSubMenu->setName(kViewerNodeParamRightClickMenuShowHideSubMenu);
     showHideSubMenu->setSecretByDefault(true);
     showHideSubMenu->setEvaluateOnChange(false);
     page->addKnob(showHideSubMenu);
@@ -1774,7 +1781,6 @@ ViewerNodePrivate::showRightClickMenu()
     entries.push_back(kViewerNodeParamRightClickMenuPreviousView);
     entries.push_back(kViewerNodeParamRightClickMenuNextView);
     entries.push_back(kViewerNodeParamRightClickMenuSwitchAB);
-    entries.push_back(kViewerNodeParamRightClickMenuToggleWipe);
     entries.push_back(kViewerNodeParamRightClickMenuShowHideOverlays);
     entries.push_back(kViewerNodeParamRightClickMenuShowHideSubMenu);
     entries.push_back(kViewerNodeParamActionRefreshWithStats);
@@ -2042,9 +2048,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickCenterWipe.lock()) {
         KnobDoublePtr knob = _imp->wipeCenter.lock();
-        knob->setDefaultValuesWithoutApplying(0.5, 0.5);
-        knob->resetToDefaultValue(0);
-        knob->resetToDefaultValue(1);
+        knob->setValues(_imp->lastMousePos.x(), _imp->lastMousePos.y(), ViewSpec::current(), eValueChangedReasonPluginEdited);
     } else if (k == _imp->rightClickNextLayer.lock()) {
 
     } else if (k == _imp->rightClickPreviousLayer.lock()) {
@@ -2053,11 +2057,12 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         NodePtr internalViewer = _imp->getInternalViewerNode();
         internalViewer->switchInput0And1();
     } else if (k == _imp->rightClickHideAll.lock()) {
-        _imp->rightClickShowHideTopToolbar.lock()->setValue(false);
-        _imp->rightClickShowHideLeftToolbar.lock()->setValue(false);
-        _imp->rightClickShowHidePlayer.lock()->setValue(false);
-        _imp->rightClickShowHideTimeline.lock()->setValue(false);
-        _imp->enableInfoBarButtonKnob.lock()->setValue(false);
+        bool allHidden = _imp->rightClickHideAll.lock()->getValue();
+        _imp->rightClickShowHideTopToolbar.lock()->setValue(!allHidden);
+        _imp->rightClickShowHideLeftToolbar.lock()->setValue(!allHidden);
+        _imp->rightClickShowHidePlayer.lock()->setValue(!allHidden);
+        _imp->rightClickShowHideTimeline.lock()->setValue(!allHidden);
+        _imp->enableInfoBarButtonKnob.lock()->setValue(!allHidden);
     } else if (k == _imp->rightClickShowHideTopToolbar.lock()) {
         bool topToolbarVisible = _imp->rightClickShowHideTopToolbar.lock()->getValue();
         _imp->uiContext->setTopToolBarVisible(topToolbarVisible);
@@ -3275,7 +3280,6 @@ ViewerNode::getCurrentBInput() const
             return _imp->viewerInputs[i].node.lock();
         }
     }
-    assert(false);
     return NodePtr();
 
 }
