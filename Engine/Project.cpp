@@ -1898,7 +1898,8 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
         return;
     }
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
-
+    Q_UNUSED(taskID);
+    
     std::list<ProjectPrivate::RenderWatcher>::iterator found = _imp->renderWatchers.end();
     for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it != _imp->renderWatchers.end(); ++it) {
         if (it->watcher.get() == watcher) {

@@ -4652,8 +4652,9 @@ KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
 }
 
 KnobHolder::KnobHolder(const KnobHolder& other)
-: QObject()
-, _imp (new KnobHolderPrivate(*other._imp))
+    : QObject()
+    , boost::enable_shared_from_this<KnobHolder>()
+    , _imp (new KnobHolderPrivate(*other._imp))
 {
     QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
     QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,

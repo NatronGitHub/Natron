@@ -107,6 +107,7 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
     wc.lpszClassName = NATRON_WNDCLASSNAME;
     bool ok = (bool)RegisterClassExW(&wc);
     assert(ok);
+    Q_UNUSED(ok);
 }
 
 bool
