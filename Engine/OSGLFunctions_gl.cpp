@@ -1,6 +1,6 @@
-/*THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h, DO NOT EDIT*/
-
-
+/*
+ * THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h by tools/utils/generateGLIncludes, DO NOT EDIT
+ */
 
 #include "OSGLFunctions.h"
 
@@ -3014,3019 +3014,3018 @@ extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArrayAPPLE;
 #endif
 } // extern C
 
-
 namespace Natron {
 
 template <>
 void OSGLFunctions<true>::load_functions() {
 #ifdef DEBUG
-    _mglCullFace = glad_debug_glCullFace;
+    _glCullFace = glad_debug_glCullFace;
 #else
-    _mglCullFace = glad_glCullFace;
+    _glCullFace = glad_glCullFace;
 #endif
 #ifdef DEBUG
-    _mglFrontFace = glad_debug_glFrontFace;
+    _glFrontFace = glad_debug_glFrontFace;
 #else
-    _mglFrontFace = glad_glFrontFace;
+    _glFrontFace = glad_glFrontFace;
 #endif
 #ifdef DEBUG
-    _mglHint = glad_debug_glHint;
+    _glHint = glad_debug_glHint;
 #else
-    _mglHint = glad_glHint;
+    _glHint = glad_glHint;
 #endif
 #ifdef DEBUG
-    _mglLineWidth = glad_debug_glLineWidth;
+    _glLineWidth = glad_debug_glLineWidth;
 #else
-    _mglLineWidth = glad_glLineWidth;
+    _glLineWidth = glad_glLineWidth;
 #endif
 #ifdef DEBUG
-    _mglPointSize = glad_debug_glPointSize;
+    _glPointSize = glad_debug_glPointSize;
 #else
-    _mglPointSize = glad_glPointSize;
+    _glPointSize = glad_glPointSize;
 #endif
 #ifdef DEBUG
-    _mglPolygonMode = glad_debug_glPolygonMode;
+    _glPolygonMode = glad_debug_glPolygonMode;
 #else
-    _mglPolygonMode = glad_glPolygonMode;
+    _glPolygonMode = glad_glPolygonMode;
 #endif
 #ifdef DEBUG
-    _mglScissor = glad_debug_glScissor;
+    _glScissor = glad_debug_glScissor;
 #else
-    _mglScissor = glad_glScissor;
+    _glScissor = glad_glScissor;
 #endif
 #ifdef DEBUG
-    _mglTexParameterf = glad_debug_glTexParameterf;
+    _glTexParameterf = glad_debug_glTexParameterf;
 #else
-    _mglTexParameterf = glad_glTexParameterf;
+    _glTexParameterf = glad_glTexParameterf;
 #endif
 #ifdef DEBUG
-    _mglTexParameterfv = glad_debug_glTexParameterfv;
+    _glTexParameterfv = glad_debug_glTexParameterfv;
 #else
-    _mglTexParameterfv = glad_glTexParameterfv;
+    _glTexParameterfv = glad_glTexParameterfv;
 #endif
 #ifdef DEBUG
-    _mglTexParameteri = glad_debug_glTexParameteri;
+    _glTexParameteri = glad_debug_glTexParameteri;
 #else
-    _mglTexParameteri = glad_glTexParameteri;
+    _glTexParameteri = glad_glTexParameteri;
 #endif
 #ifdef DEBUG
-    _mglTexParameteriv = glad_debug_glTexParameteriv;
+    _glTexParameteriv = glad_debug_glTexParameteriv;
 #else
-    _mglTexParameteriv = glad_glTexParameteriv;
+    _glTexParameteriv = glad_glTexParameteriv;
 #endif
 #ifdef DEBUG
-    _mglTexImage1D = glad_debug_glTexImage1D;
+    _glTexImage1D = glad_debug_glTexImage1D;
 #else
-    _mglTexImage1D = glad_glTexImage1D;
+    _glTexImage1D = glad_glTexImage1D;
 #endif
 #ifdef DEBUG
-    _mglTexImage2D = glad_debug_glTexImage2D;
+    _glTexImage2D = glad_debug_glTexImage2D;
 #else
-    _mglTexImage2D = glad_glTexImage2D;
+    _glTexImage2D = glad_glTexImage2D;
 #endif
 #ifdef DEBUG
-    _mglDrawBuffer = glad_debug_glDrawBuffer;
+    _glDrawBuffer = glad_debug_glDrawBuffer;
 #else
-    _mglDrawBuffer = glad_glDrawBuffer;
+    _glDrawBuffer = glad_glDrawBuffer;
 #endif
 #ifdef DEBUG
-    _mglClear = glad_debug_glClear;
+    _glClear = glad_debug_glClear;
 #else
-    _mglClear = glad_glClear;
+    _glClear = glad_glClear;
 #endif
 #ifdef DEBUG
-    _mglClearColor = glad_debug_glClearColor;
+    _glClearColor = glad_debug_glClearColor;
 #else
-    _mglClearColor = glad_glClearColor;
+    _glClearColor = glad_glClearColor;
 #endif
 #ifdef DEBUG
-    _mglClearStencil = glad_debug_glClearStencil;
+    _glClearStencil = glad_debug_glClearStencil;
 #else
-    _mglClearStencil = glad_glClearStencil;
+    _glClearStencil = glad_glClearStencil;
 #endif
 #ifdef DEBUG
-    _mglClearDepth = glad_debug_glClearDepth;
+    _glClearDepth = glad_debug_glClearDepth;
 #else
-    _mglClearDepth = glad_glClearDepth;
+    _glClearDepth = glad_glClearDepth;
 #endif
 #ifdef DEBUG
-    _mglStencilMask = glad_debug_glStencilMask;
+    _glStencilMask = glad_debug_glStencilMask;
 #else
-    _mglStencilMask = glad_glStencilMask;
+    _glStencilMask = glad_glStencilMask;
 #endif
 #ifdef DEBUG
-    _mglColorMask = glad_debug_glColorMask;
+    _glColorMask = glad_debug_glColorMask;
 #else
-    _mglColorMask = glad_glColorMask;
+    _glColorMask = glad_glColorMask;
 #endif
 #ifdef DEBUG
-    _mglDepthMask = glad_debug_glDepthMask;
+    _glDepthMask = glad_debug_glDepthMask;
 #else
-    _mglDepthMask = glad_glDepthMask;
+    _glDepthMask = glad_glDepthMask;
 #endif
 #ifdef DEBUG
-    _mglDisable = glad_debug_glDisable;
+    _glDisable = glad_debug_glDisable;
 #else
-    _mglDisable = glad_glDisable;
+    _glDisable = glad_glDisable;
 #endif
 #ifdef DEBUG
-    _mglEnable = glad_debug_glEnable;
+    _glEnable = glad_debug_glEnable;
 #else
-    _mglEnable = glad_glEnable;
+    _glEnable = glad_glEnable;
 #endif
 #ifdef DEBUG
-    _mglFinish = glad_debug_glFinish;
+    _glFinish = glad_debug_glFinish;
 #else
-    _mglFinish = glad_glFinish;
+    _glFinish = glad_glFinish;
 #endif
 #ifdef DEBUG
-    _mglFlush = glad_debug_glFlush;
+    _glFlush = glad_debug_glFlush;
 #else
-    _mglFlush = glad_glFlush;
+    _glFlush = glad_glFlush;
 #endif
 #ifdef DEBUG
-    _mglBlendFunc = glad_debug_glBlendFunc;
+    _glBlendFunc = glad_debug_glBlendFunc;
 #else
-    _mglBlendFunc = glad_glBlendFunc;
+    _glBlendFunc = glad_glBlendFunc;
 #endif
 #ifdef DEBUG
-    _mglLogicOp = glad_debug_glLogicOp;
+    _glLogicOp = glad_debug_glLogicOp;
 #else
-    _mglLogicOp = glad_glLogicOp;
+    _glLogicOp = glad_glLogicOp;
 #endif
 #ifdef DEBUG
-    _mglStencilFunc = glad_debug_glStencilFunc;
+    _glStencilFunc = glad_debug_glStencilFunc;
 #else
-    _mglStencilFunc = glad_glStencilFunc;
+    _glStencilFunc = glad_glStencilFunc;
 #endif
 #ifdef DEBUG
-    _mglStencilOp = glad_debug_glStencilOp;
+    _glStencilOp = glad_debug_glStencilOp;
 #else
-    _mglStencilOp = glad_glStencilOp;
+    _glStencilOp = glad_glStencilOp;
 #endif
 #ifdef DEBUG
-    _mglDepthFunc = glad_debug_glDepthFunc;
+    _glDepthFunc = glad_debug_glDepthFunc;
 #else
-    _mglDepthFunc = glad_glDepthFunc;
+    _glDepthFunc = glad_glDepthFunc;
 #endif
 #ifdef DEBUG
-    _mglPixelStoref = glad_debug_glPixelStoref;
+    _glPixelStoref = glad_debug_glPixelStoref;
 #else
-    _mglPixelStoref = glad_glPixelStoref;
+    _glPixelStoref = glad_glPixelStoref;
 #endif
 #ifdef DEBUG
-    _mglPixelStorei = glad_debug_glPixelStorei;
+    _glPixelStorei = glad_debug_glPixelStorei;
 #else
-    _mglPixelStorei = glad_glPixelStorei;
+    _glPixelStorei = glad_glPixelStorei;
 #endif
 #ifdef DEBUG
-    _mglReadBuffer = glad_debug_glReadBuffer;
+    _glReadBuffer = glad_debug_glReadBuffer;
 #else
-    _mglReadBuffer = glad_glReadBuffer;
+    _glReadBuffer = glad_glReadBuffer;
 #endif
 #ifdef DEBUG
-    _mglReadPixels = glad_debug_glReadPixels;
+    _glReadPixels = glad_debug_glReadPixels;
 #else
-    _mglReadPixels = glad_glReadPixels;
+    _glReadPixels = glad_glReadPixels;
 #endif
 #ifdef DEBUG
-    _mglGetBooleanv = glad_debug_glGetBooleanv;
+    _glGetBooleanv = glad_debug_glGetBooleanv;
 #else
-    _mglGetBooleanv = glad_glGetBooleanv;
+    _glGetBooleanv = glad_glGetBooleanv;
 #endif
 #ifdef DEBUG
-    _mglGetDoublev = glad_debug_glGetDoublev;
+    _glGetDoublev = glad_debug_glGetDoublev;
 #else
-    _mglGetDoublev = glad_glGetDoublev;
+    _glGetDoublev = glad_glGetDoublev;
 #endif
 #ifdef DEBUG
-    _mglGetError = glad_debug_glGetError;
+    _glGetError = glad_debug_glGetError;
 #else
-    _mglGetError = glad_glGetError;
+    _glGetError = glad_glGetError;
 #endif
 #ifdef DEBUG
-    _mglGetFloatv = glad_debug_glGetFloatv;
+    _glGetFloatv = glad_debug_glGetFloatv;
 #else
-    _mglGetFloatv = glad_glGetFloatv;
+    _glGetFloatv = glad_glGetFloatv;
 #endif
 #ifdef DEBUG
-    _mglGetIntegerv = glad_debug_glGetIntegerv;
+    _glGetIntegerv = glad_debug_glGetIntegerv;
 #else
-    _mglGetIntegerv = glad_glGetIntegerv;
+    _glGetIntegerv = glad_glGetIntegerv;
 #endif
 #ifdef DEBUG
-    _mglGetString = glad_debug_glGetString;
+    _glGetString = glad_debug_glGetString;
 #else
-    _mglGetString = glad_glGetString;
+    _glGetString = glad_glGetString;
 #endif
 #ifdef DEBUG
-    _mglGetTexImage = glad_debug_glGetTexImage;
+    _glGetTexImage = glad_debug_glGetTexImage;
 #else
-    _mglGetTexImage = glad_glGetTexImage;
+    _glGetTexImage = glad_glGetTexImage;
 #endif
 #ifdef DEBUG
-    _mglGetTexParameterfv = glad_debug_glGetTexParameterfv;
+    _glGetTexParameterfv = glad_debug_glGetTexParameterfv;
 #else
-    _mglGetTexParameterfv = glad_glGetTexParameterfv;
+    _glGetTexParameterfv = glad_glGetTexParameterfv;
 #endif
 #ifdef DEBUG
-    _mglGetTexParameteriv = glad_debug_glGetTexParameteriv;
+    _glGetTexParameteriv = glad_debug_glGetTexParameteriv;
 #else
-    _mglGetTexParameteriv = glad_glGetTexParameteriv;
+    _glGetTexParameteriv = glad_glGetTexParameteriv;
 #endif
 #ifdef DEBUG
-    _mglGetTexLevelParameterfv = glad_debug_glGetTexLevelParameterfv;
+    _glGetTexLevelParameterfv = glad_debug_glGetTexLevelParameterfv;
 #else
-    _mglGetTexLevelParameterfv = glad_glGetTexLevelParameterfv;
+    _glGetTexLevelParameterfv = glad_glGetTexLevelParameterfv;
 #endif
 #ifdef DEBUG
-    _mglGetTexLevelParameteriv = glad_debug_glGetTexLevelParameteriv;
+    _glGetTexLevelParameteriv = glad_debug_glGetTexLevelParameteriv;
 #else
-    _mglGetTexLevelParameteriv = glad_glGetTexLevelParameteriv;
+    _glGetTexLevelParameteriv = glad_glGetTexLevelParameteriv;
 #endif
 #ifdef DEBUG
-    _mglIsEnabled = glad_debug_glIsEnabled;
+    _glIsEnabled = glad_debug_glIsEnabled;
 #else
-    _mglIsEnabled = glad_glIsEnabled;
+    _glIsEnabled = glad_glIsEnabled;
 #endif
 #ifdef DEBUG
-    _mglDepthRange = glad_debug_glDepthRange;
+    _glDepthRange = glad_debug_glDepthRange;
 #else
-    _mglDepthRange = glad_glDepthRange;
+    _glDepthRange = glad_glDepthRange;
 #endif
 #ifdef DEBUG
-    _mglViewport = glad_debug_glViewport;
+    _glViewport = glad_debug_glViewport;
 #else
-    _mglViewport = glad_glViewport;
+    _glViewport = glad_glViewport;
 #endif
 #ifdef DEBUG
-    _mglNewList = glad_debug_glNewList;
+    _glNewList = glad_debug_glNewList;
 #else
-    _mglNewList = glad_glNewList;
+    _glNewList = glad_glNewList;
 #endif
 #ifdef DEBUG
-    _mglEndList = glad_debug_glEndList;
+    _glEndList = glad_debug_glEndList;
 #else
-    _mglEndList = glad_glEndList;
+    _glEndList = glad_glEndList;
 #endif
 #ifdef DEBUG
-    _mglCallList = glad_debug_glCallList;
+    _glCallList = glad_debug_glCallList;
 #else
-    _mglCallList = glad_glCallList;
+    _glCallList = glad_glCallList;
 #endif
 #ifdef DEBUG
-    _mglCallLists = glad_debug_glCallLists;
+    _glCallLists = glad_debug_glCallLists;
 #else
-    _mglCallLists = glad_glCallLists;
+    _glCallLists = glad_glCallLists;
 #endif
 #ifdef DEBUG
-    _mglDeleteLists = glad_debug_glDeleteLists;
+    _glDeleteLists = glad_debug_glDeleteLists;
 #else
-    _mglDeleteLists = glad_glDeleteLists;
+    _glDeleteLists = glad_glDeleteLists;
 #endif
 #ifdef DEBUG
-    _mglGenLists = glad_debug_glGenLists;
+    _glGenLists = glad_debug_glGenLists;
 #else
-    _mglGenLists = glad_glGenLists;
+    _glGenLists = glad_glGenLists;
 #endif
 #ifdef DEBUG
-    _mglListBase = glad_debug_glListBase;
+    _glListBase = glad_debug_glListBase;
 #else
-    _mglListBase = glad_glListBase;
+    _glListBase = glad_glListBase;
 #endif
 #ifdef DEBUG
-    _mglBegin = glad_debug_glBegin;
+    _glBegin = glad_debug_glBegin;
 #else
-    _mglBegin = glad_glBegin;
+    _glBegin = glad_glBegin;
 #endif
 #ifdef DEBUG
-    _mglBitmap = glad_debug_glBitmap;
+    _glBitmap = glad_debug_glBitmap;
 #else
-    _mglBitmap = glad_glBitmap;
+    _glBitmap = glad_glBitmap;
 #endif
 #ifdef DEBUG
-    _mglColor3b = glad_debug_glColor3b;
+    _glColor3b = glad_debug_glColor3b;
 #else
-    _mglColor3b = glad_glColor3b;
+    _glColor3b = glad_glColor3b;
 #endif
 #ifdef DEBUG
-    _mglColor3bv = glad_debug_glColor3bv;
+    _glColor3bv = glad_debug_glColor3bv;
 #else
-    _mglColor3bv = glad_glColor3bv;
+    _glColor3bv = glad_glColor3bv;
 #endif
 #ifdef DEBUG
-    _mglColor3d = glad_debug_glColor3d;
+    _glColor3d = glad_debug_glColor3d;
 #else
-    _mglColor3d = glad_glColor3d;
+    _glColor3d = glad_glColor3d;
 #endif
 #ifdef DEBUG
-    _mglColor3dv = glad_debug_glColor3dv;
+    _glColor3dv = glad_debug_glColor3dv;
 #else
-    _mglColor3dv = glad_glColor3dv;
+    _glColor3dv = glad_glColor3dv;
 #endif
 #ifdef DEBUG
-    _mglColor3f = glad_debug_glColor3f;
+    _glColor3f = glad_debug_glColor3f;
 #else
-    _mglColor3f = glad_glColor3f;
+    _glColor3f = glad_glColor3f;
 #endif
 #ifdef DEBUG
-    _mglColor3fv = glad_debug_glColor3fv;
+    _glColor3fv = glad_debug_glColor3fv;
 #else
-    _mglColor3fv = glad_glColor3fv;
+    _glColor3fv = glad_glColor3fv;
 #endif
 #ifdef DEBUG
-    _mglColor3i = glad_debug_glColor3i;
+    _glColor3i = glad_debug_glColor3i;
 #else
-    _mglColor3i = glad_glColor3i;
+    _glColor3i = glad_glColor3i;
 #endif
 #ifdef DEBUG
-    _mglColor3iv = glad_debug_glColor3iv;
+    _glColor3iv = glad_debug_glColor3iv;
 #else
-    _mglColor3iv = glad_glColor3iv;
+    _glColor3iv = glad_glColor3iv;
 #endif
 #ifdef DEBUG
-    _mglColor3s = glad_debug_glColor3s;
+    _glColor3s = glad_debug_glColor3s;
 #else
-    _mglColor3s = glad_glColor3s;
+    _glColor3s = glad_glColor3s;
 #endif
 #ifdef DEBUG
-    _mglColor3sv = glad_debug_glColor3sv;
+    _glColor3sv = glad_debug_glColor3sv;
 #else
-    _mglColor3sv = glad_glColor3sv;
+    _glColor3sv = glad_glColor3sv;
 #endif
 #ifdef DEBUG
-    _mglColor3ub = glad_debug_glColor3ub;
+    _glColor3ub = glad_debug_glColor3ub;
 #else
-    _mglColor3ub = glad_glColor3ub;
+    _glColor3ub = glad_glColor3ub;
 #endif
 #ifdef DEBUG
-    _mglColor3ubv = glad_debug_glColor3ubv;
+    _glColor3ubv = glad_debug_glColor3ubv;
 #else
-    _mglColor3ubv = glad_glColor3ubv;
+    _glColor3ubv = glad_glColor3ubv;
 #endif
 #ifdef DEBUG
-    _mglColor3ui = glad_debug_glColor3ui;
+    _glColor3ui = glad_debug_glColor3ui;
 #else
-    _mglColor3ui = glad_glColor3ui;
+    _glColor3ui = glad_glColor3ui;
 #endif
 #ifdef DEBUG
-    _mglColor3uiv = glad_debug_glColor3uiv;
+    _glColor3uiv = glad_debug_glColor3uiv;
 #else
-    _mglColor3uiv = glad_glColor3uiv;
+    _glColor3uiv = glad_glColor3uiv;
 #endif
 #ifdef DEBUG
-    _mglColor3us = glad_debug_glColor3us;
+    _glColor3us = glad_debug_glColor3us;
 #else
-    _mglColor3us = glad_glColor3us;
+    _glColor3us = glad_glColor3us;
 #endif
 #ifdef DEBUG
-    _mglColor3usv = glad_debug_glColor3usv;
+    _glColor3usv = glad_debug_glColor3usv;
 #else
-    _mglColor3usv = glad_glColor3usv;
+    _glColor3usv = glad_glColor3usv;
 #endif
 #ifdef DEBUG
-    _mglColor4b = glad_debug_glColor4b;
+    _glColor4b = glad_debug_glColor4b;
 #else
-    _mglColor4b = glad_glColor4b;
+    _glColor4b = glad_glColor4b;
 #endif
 #ifdef DEBUG
-    _mglColor4bv = glad_debug_glColor4bv;
+    _glColor4bv = glad_debug_glColor4bv;
 #else
-    _mglColor4bv = glad_glColor4bv;
+    _glColor4bv = glad_glColor4bv;
 #endif
 #ifdef DEBUG
-    _mglColor4d = glad_debug_glColor4d;
+    _glColor4d = glad_debug_glColor4d;
 #else
-    _mglColor4d = glad_glColor4d;
+    _glColor4d = glad_glColor4d;
 #endif
 #ifdef DEBUG
-    _mglColor4dv = glad_debug_glColor4dv;
+    _glColor4dv = glad_debug_glColor4dv;
 #else
-    _mglColor4dv = glad_glColor4dv;
+    _glColor4dv = glad_glColor4dv;
 #endif
 #ifdef DEBUG
-    _mglColor4f = glad_debug_glColor4f;
+    _glColor4f = glad_debug_glColor4f;
 #else
-    _mglColor4f = glad_glColor4f;
+    _glColor4f = glad_glColor4f;
 #endif
 #ifdef DEBUG
-    _mglColor4fv = glad_debug_glColor4fv;
+    _glColor4fv = glad_debug_glColor4fv;
 #else
-    _mglColor4fv = glad_glColor4fv;
+    _glColor4fv = glad_glColor4fv;
 #endif
 #ifdef DEBUG
-    _mglColor4i = glad_debug_glColor4i;
+    _glColor4i = glad_debug_glColor4i;
 #else
-    _mglColor4i = glad_glColor4i;
+    _glColor4i = glad_glColor4i;
 #endif
 #ifdef DEBUG
-    _mglColor4iv = glad_debug_glColor4iv;
+    _glColor4iv = glad_debug_glColor4iv;
 #else
-    _mglColor4iv = glad_glColor4iv;
+    _glColor4iv = glad_glColor4iv;
 #endif
 #ifdef DEBUG
-    _mglColor4s = glad_debug_glColor4s;
+    _glColor4s = glad_debug_glColor4s;
 #else
-    _mglColor4s = glad_glColor4s;
+    _glColor4s = glad_glColor4s;
 #endif
 #ifdef DEBUG
-    _mglColor4sv = glad_debug_glColor4sv;
+    _glColor4sv = glad_debug_glColor4sv;
 #else
-    _mglColor4sv = glad_glColor4sv;
+    _glColor4sv = glad_glColor4sv;
 #endif
 #ifdef DEBUG
-    _mglColor4ub = glad_debug_glColor4ub;
+    _glColor4ub = glad_debug_glColor4ub;
 #else
-    _mglColor4ub = glad_glColor4ub;
+    _glColor4ub = glad_glColor4ub;
 #endif
 #ifdef DEBUG
-    _mglColor4ubv = glad_debug_glColor4ubv;
+    _glColor4ubv = glad_debug_glColor4ubv;
 #else
-    _mglColor4ubv = glad_glColor4ubv;
+    _glColor4ubv = glad_glColor4ubv;
 #endif
 #ifdef DEBUG
-    _mglColor4ui = glad_debug_glColor4ui;
+    _glColor4ui = glad_debug_glColor4ui;
 #else
-    _mglColor4ui = glad_glColor4ui;
+    _glColor4ui = glad_glColor4ui;
 #endif
 #ifdef DEBUG
-    _mglColor4uiv = glad_debug_glColor4uiv;
+    _glColor4uiv = glad_debug_glColor4uiv;
 #else
-    _mglColor4uiv = glad_glColor4uiv;
+    _glColor4uiv = glad_glColor4uiv;
 #endif
 #ifdef DEBUG
-    _mglColor4us = glad_debug_glColor4us;
+    _glColor4us = glad_debug_glColor4us;
 #else
-    _mglColor4us = glad_glColor4us;
+    _glColor4us = glad_glColor4us;
 #endif
 #ifdef DEBUG
-    _mglColor4usv = glad_debug_glColor4usv;
+    _glColor4usv = glad_debug_glColor4usv;
 #else
-    _mglColor4usv = glad_glColor4usv;
+    _glColor4usv = glad_glColor4usv;
 #endif
 #ifdef DEBUG
-    _mglEdgeFlag = glad_debug_glEdgeFlag;
+    _glEdgeFlag = glad_debug_glEdgeFlag;
 #else
-    _mglEdgeFlag = glad_glEdgeFlag;
+    _glEdgeFlag = glad_glEdgeFlag;
 #endif
 #ifdef DEBUG
-    _mglEdgeFlagv = glad_debug_glEdgeFlagv;
+    _glEdgeFlagv = glad_debug_glEdgeFlagv;
 #else
-    _mglEdgeFlagv = glad_glEdgeFlagv;
+    _glEdgeFlagv = glad_glEdgeFlagv;
 #endif
 #ifdef DEBUG
-    _mglEnd = glad_debug_glEnd;
+    _glEnd = glad_debug_glEnd;
 #else
-    _mglEnd = glad_glEnd;
+    _glEnd = glad_glEnd;
 #endif
 #ifdef DEBUG
-    _mglIndexd = glad_debug_glIndexd;
+    _glIndexd = glad_debug_glIndexd;
 #else
-    _mglIndexd = glad_glIndexd;
+    _glIndexd = glad_glIndexd;
 #endif
 #ifdef DEBUG
-    _mglIndexdv = glad_debug_glIndexdv;
+    _glIndexdv = glad_debug_glIndexdv;
 #else
-    _mglIndexdv = glad_glIndexdv;
+    _glIndexdv = glad_glIndexdv;
 #endif
 #ifdef DEBUG
-    _mglIndexf = glad_debug_glIndexf;
+    _glIndexf = glad_debug_glIndexf;
 #else
-    _mglIndexf = glad_glIndexf;
+    _glIndexf = glad_glIndexf;
 #endif
 #ifdef DEBUG
-    _mglIndexfv = glad_debug_glIndexfv;
+    _glIndexfv = glad_debug_glIndexfv;
 #else
-    _mglIndexfv = glad_glIndexfv;
+    _glIndexfv = glad_glIndexfv;
 #endif
 #ifdef DEBUG
-    _mglIndexi = glad_debug_glIndexi;
+    _glIndexi = glad_debug_glIndexi;
 #else
-    _mglIndexi = glad_glIndexi;
+    _glIndexi = glad_glIndexi;
 #endif
 #ifdef DEBUG
-    _mglIndexiv = glad_debug_glIndexiv;
+    _glIndexiv = glad_debug_glIndexiv;
 #else
-    _mglIndexiv = glad_glIndexiv;
+    _glIndexiv = glad_glIndexiv;
 #endif
 #ifdef DEBUG
-    _mglIndexs = glad_debug_glIndexs;
+    _glIndexs = glad_debug_glIndexs;
 #else
-    _mglIndexs = glad_glIndexs;
+    _glIndexs = glad_glIndexs;
 #endif
 #ifdef DEBUG
-    _mglIndexsv = glad_debug_glIndexsv;
+    _glIndexsv = glad_debug_glIndexsv;
 #else
-    _mglIndexsv = glad_glIndexsv;
+    _glIndexsv = glad_glIndexsv;
 #endif
 #ifdef DEBUG
-    _mglNormal3b = glad_debug_glNormal3b;
+    _glNormal3b = glad_debug_glNormal3b;
 #else
-    _mglNormal3b = glad_glNormal3b;
+    _glNormal3b = glad_glNormal3b;
 #endif
 #ifdef DEBUG
-    _mglNormal3bv = glad_debug_glNormal3bv;
+    _glNormal3bv = glad_debug_glNormal3bv;
 #else
-    _mglNormal3bv = glad_glNormal3bv;
+    _glNormal3bv = glad_glNormal3bv;
 #endif
 #ifdef DEBUG
-    _mglNormal3d = glad_debug_glNormal3d;
+    _glNormal3d = glad_debug_glNormal3d;
 #else
-    _mglNormal3d = glad_glNormal3d;
+    _glNormal3d = glad_glNormal3d;
 #endif
 #ifdef DEBUG
-    _mglNormal3dv = glad_debug_glNormal3dv;
+    _glNormal3dv = glad_debug_glNormal3dv;
 #else
-    _mglNormal3dv = glad_glNormal3dv;
+    _glNormal3dv = glad_glNormal3dv;
 #endif
 #ifdef DEBUG
-    _mglNormal3f = glad_debug_glNormal3f;
+    _glNormal3f = glad_debug_glNormal3f;
 #else
-    _mglNormal3f = glad_glNormal3f;
+    _glNormal3f = glad_glNormal3f;
 #endif
 #ifdef DEBUG
-    _mglNormal3fv = glad_debug_glNormal3fv;
+    _glNormal3fv = glad_debug_glNormal3fv;
 #else
-    _mglNormal3fv = glad_glNormal3fv;
+    _glNormal3fv = glad_glNormal3fv;
 #endif
 #ifdef DEBUG
-    _mglNormal3i = glad_debug_glNormal3i;
+    _glNormal3i = glad_debug_glNormal3i;
 #else
-    _mglNormal3i = glad_glNormal3i;
+    _glNormal3i = glad_glNormal3i;
 #endif
 #ifdef DEBUG
-    _mglNormal3iv = glad_debug_glNormal3iv;
+    _glNormal3iv = glad_debug_glNormal3iv;
 #else
-    _mglNormal3iv = glad_glNormal3iv;
+    _glNormal3iv = glad_glNormal3iv;
 #endif
 #ifdef DEBUG
-    _mglNormal3s = glad_debug_glNormal3s;
+    _glNormal3s = glad_debug_glNormal3s;
 #else
-    _mglNormal3s = glad_glNormal3s;
+    _glNormal3s = glad_glNormal3s;
 #endif
 #ifdef DEBUG
-    _mglNormal3sv = glad_debug_glNormal3sv;
+    _glNormal3sv = glad_debug_glNormal3sv;
 #else
-    _mglNormal3sv = glad_glNormal3sv;
+    _glNormal3sv = glad_glNormal3sv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2d = glad_debug_glRasterPos2d;
+    _glRasterPos2d = glad_debug_glRasterPos2d;
 #else
-    _mglRasterPos2d = glad_glRasterPos2d;
+    _glRasterPos2d = glad_glRasterPos2d;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2dv = glad_debug_glRasterPos2dv;
+    _glRasterPos2dv = glad_debug_glRasterPos2dv;
 #else
-    _mglRasterPos2dv = glad_glRasterPos2dv;
+    _glRasterPos2dv = glad_glRasterPos2dv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2f = glad_debug_glRasterPos2f;
+    _glRasterPos2f = glad_debug_glRasterPos2f;
 #else
-    _mglRasterPos2f = glad_glRasterPos2f;
+    _glRasterPos2f = glad_glRasterPos2f;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2fv = glad_debug_glRasterPos2fv;
+    _glRasterPos2fv = glad_debug_glRasterPos2fv;
 #else
-    _mglRasterPos2fv = glad_glRasterPos2fv;
+    _glRasterPos2fv = glad_glRasterPos2fv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2i = glad_debug_glRasterPos2i;
+    _glRasterPos2i = glad_debug_glRasterPos2i;
 #else
-    _mglRasterPos2i = glad_glRasterPos2i;
+    _glRasterPos2i = glad_glRasterPos2i;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2iv = glad_debug_glRasterPos2iv;
+    _glRasterPos2iv = glad_debug_glRasterPos2iv;
 #else
-    _mglRasterPos2iv = glad_glRasterPos2iv;
+    _glRasterPos2iv = glad_glRasterPos2iv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2s = glad_debug_glRasterPos2s;
+    _glRasterPos2s = glad_debug_glRasterPos2s;
 #else
-    _mglRasterPos2s = glad_glRasterPos2s;
+    _glRasterPos2s = glad_glRasterPos2s;
 #endif
 #ifdef DEBUG
-    _mglRasterPos2sv = glad_debug_glRasterPos2sv;
+    _glRasterPos2sv = glad_debug_glRasterPos2sv;
 #else
-    _mglRasterPos2sv = glad_glRasterPos2sv;
+    _glRasterPos2sv = glad_glRasterPos2sv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3d = glad_debug_glRasterPos3d;
+    _glRasterPos3d = glad_debug_glRasterPos3d;
 #else
-    _mglRasterPos3d = glad_glRasterPos3d;
+    _glRasterPos3d = glad_glRasterPos3d;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3dv = glad_debug_glRasterPos3dv;
+    _glRasterPos3dv = glad_debug_glRasterPos3dv;
 #else
-    _mglRasterPos3dv = glad_glRasterPos3dv;
+    _glRasterPos3dv = glad_glRasterPos3dv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3f = glad_debug_glRasterPos3f;
+    _glRasterPos3f = glad_debug_glRasterPos3f;
 #else
-    _mglRasterPos3f = glad_glRasterPos3f;
+    _glRasterPos3f = glad_glRasterPos3f;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3fv = glad_debug_glRasterPos3fv;
+    _glRasterPos3fv = glad_debug_glRasterPos3fv;
 #else
-    _mglRasterPos3fv = glad_glRasterPos3fv;
+    _glRasterPos3fv = glad_glRasterPos3fv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3i = glad_debug_glRasterPos3i;
+    _glRasterPos3i = glad_debug_glRasterPos3i;
 #else
-    _mglRasterPos3i = glad_glRasterPos3i;
+    _glRasterPos3i = glad_glRasterPos3i;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3iv = glad_debug_glRasterPos3iv;
+    _glRasterPos3iv = glad_debug_glRasterPos3iv;
 #else
-    _mglRasterPos3iv = glad_glRasterPos3iv;
+    _glRasterPos3iv = glad_glRasterPos3iv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3s = glad_debug_glRasterPos3s;
+    _glRasterPos3s = glad_debug_glRasterPos3s;
 #else
-    _mglRasterPos3s = glad_glRasterPos3s;
+    _glRasterPos3s = glad_glRasterPos3s;
 #endif
 #ifdef DEBUG
-    _mglRasterPos3sv = glad_debug_glRasterPos3sv;
+    _glRasterPos3sv = glad_debug_glRasterPos3sv;
 #else
-    _mglRasterPos3sv = glad_glRasterPos3sv;
+    _glRasterPos3sv = glad_glRasterPos3sv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4d = glad_debug_glRasterPos4d;
+    _glRasterPos4d = glad_debug_glRasterPos4d;
 #else
-    _mglRasterPos4d = glad_glRasterPos4d;
+    _glRasterPos4d = glad_glRasterPos4d;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4dv = glad_debug_glRasterPos4dv;
+    _glRasterPos4dv = glad_debug_glRasterPos4dv;
 #else
-    _mglRasterPos4dv = glad_glRasterPos4dv;
+    _glRasterPos4dv = glad_glRasterPos4dv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4f = glad_debug_glRasterPos4f;
+    _glRasterPos4f = glad_debug_glRasterPos4f;
 #else
-    _mglRasterPos4f = glad_glRasterPos4f;
+    _glRasterPos4f = glad_glRasterPos4f;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4fv = glad_debug_glRasterPos4fv;
+    _glRasterPos4fv = glad_debug_glRasterPos4fv;
 #else
-    _mglRasterPos4fv = glad_glRasterPos4fv;
+    _glRasterPos4fv = glad_glRasterPos4fv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4i = glad_debug_glRasterPos4i;
+    _glRasterPos4i = glad_debug_glRasterPos4i;
 #else
-    _mglRasterPos4i = glad_glRasterPos4i;
+    _glRasterPos4i = glad_glRasterPos4i;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4iv = glad_debug_glRasterPos4iv;
+    _glRasterPos4iv = glad_debug_glRasterPos4iv;
 #else
-    _mglRasterPos4iv = glad_glRasterPos4iv;
+    _glRasterPos4iv = glad_glRasterPos4iv;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4s = glad_debug_glRasterPos4s;
+    _glRasterPos4s = glad_debug_glRasterPos4s;
 #else
-    _mglRasterPos4s = glad_glRasterPos4s;
+    _glRasterPos4s = glad_glRasterPos4s;
 #endif
 #ifdef DEBUG
-    _mglRasterPos4sv = glad_debug_glRasterPos4sv;
+    _glRasterPos4sv = glad_debug_glRasterPos4sv;
 #else
-    _mglRasterPos4sv = glad_glRasterPos4sv;
+    _glRasterPos4sv = glad_glRasterPos4sv;
 #endif
 #ifdef DEBUG
-    _mglRectd = glad_debug_glRectd;
+    _glRectd = glad_debug_glRectd;
 #else
-    _mglRectd = glad_glRectd;
+    _glRectd = glad_glRectd;
 #endif
 #ifdef DEBUG
-    _mglRectdv = glad_debug_glRectdv;
+    _glRectdv = glad_debug_glRectdv;
 #else
-    _mglRectdv = glad_glRectdv;
+    _glRectdv = glad_glRectdv;
 #endif
 #ifdef DEBUG
-    _mglRectf = glad_debug_glRectf;
+    _glRectf = glad_debug_glRectf;
 #else
-    _mglRectf = glad_glRectf;
+    _glRectf = glad_glRectf;
 #endif
 #ifdef DEBUG
-    _mglRectfv = glad_debug_glRectfv;
+    _glRectfv = glad_debug_glRectfv;
 #else
-    _mglRectfv = glad_glRectfv;
+    _glRectfv = glad_glRectfv;
 #endif
 #ifdef DEBUG
-    _mglRecti = glad_debug_glRecti;
+    _glRecti = glad_debug_glRecti;
 #else
-    _mglRecti = glad_glRecti;
+    _glRecti = glad_glRecti;
 #endif
 #ifdef DEBUG
-    _mglRectiv = glad_debug_glRectiv;
+    _glRectiv = glad_debug_glRectiv;
 #else
-    _mglRectiv = glad_glRectiv;
+    _glRectiv = glad_glRectiv;
 #endif
 #ifdef DEBUG
-    _mglRects = glad_debug_glRects;
+    _glRects = glad_debug_glRects;
 #else
-    _mglRects = glad_glRects;
+    _glRects = glad_glRects;
 #endif
 #ifdef DEBUG
-    _mglRectsv = glad_debug_glRectsv;
+    _glRectsv = glad_debug_glRectsv;
 #else
-    _mglRectsv = glad_glRectsv;
+    _glRectsv = glad_glRectsv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1d = glad_debug_glTexCoord1d;
+    _glTexCoord1d = glad_debug_glTexCoord1d;
 #else
-    _mglTexCoord1d = glad_glTexCoord1d;
+    _glTexCoord1d = glad_glTexCoord1d;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1dv = glad_debug_glTexCoord1dv;
+    _glTexCoord1dv = glad_debug_glTexCoord1dv;
 #else
-    _mglTexCoord1dv = glad_glTexCoord1dv;
+    _glTexCoord1dv = glad_glTexCoord1dv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1f = glad_debug_glTexCoord1f;
+    _glTexCoord1f = glad_debug_glTexCoord1f;
 #else
-    _mglTexCoord1f = glad_glTexCoord1f;
+    _glTexCoord1f = glad_glTexCoord1f;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1fv = glad_debug_glTexCoord1fv;
+    _glTexCoord1fv = glad_debug_glTexCoord1fv;
 #else
-    _mglTexCoord1fv = glad_glTexCoord1fv;
+    _glTexCoord1fv = glad_glTexCoord1fv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1i = glad_debug_glTexCoord1i;
+    _glTexCoord1i = glad_debug_glTexCoord1i;
 #else
-    _mglTexCoord1i = glad_glTexCoord1i;
+    _glTexCoord1i = glad_glTexCoord1i;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1iv = glad_debug_glTexCoord1iv;
+    _glTexCoord1iv = glad_debug_glTexCoord1iv;
 #else
-    _mglTexCoord1iv = glad_glTexCoord1iv;
+    _glTexCoord1iv = glad_glTexCoord1iv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1s = glad_debug_glTexCoord1s;
+    _glTexCoord1s = glad_debug_glTexCoord1s;
 #else
-    _mglTexCoord1s = glad_glTexCoord1s;
+    _glTexCoord1s = glad_glTexCoord1s;
 #endif
 #ifdef DEBUG
-    _mglTexCoord1sv = glad_debug_glTexCoord1sv;
+    _glTexCoord1sv = glad_debug_glTexCoord1sv;
 #else
-    _mglTexCoord1sv = glad_glTexCoord1sv;
+    _glTexCoord1sv = glad_glTexCoord1sv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2d = glad_debug_glTexCoord2d;
+    _glTexCoord2d = glad_debug_glTexCoord2d;
 #else
-    _mglTexCoord2d = glad_glTexCoord2d;
+    _glTexCoord2d = glad_glTexCoord2d;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2dv = glad_debug_glTexCoord2dv;
+    _glTexCoord2dv = glad_debug_glTexCoord2dv;
 #else
-    _mglTexCoord2dv = glad_glTexCoord2dv;
+    _glTexCoord2dv = glad_glTexCoord2dv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2f = glad_debug_glTexCoord2f;
+    _glTexCoord2f = glad_debug_glTexCoord2f;
 #else
-    _mglTexCoord2f = glad_glTexCoord2f;
+    _glTexCoord2f = glad_glTexCoord2f;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2fv = glad_debug_glTexCoord2fv;
+    _glTexCoord2fv = glad_debug_glTexCoord2fv;
 #else
-    _mglTexCoord2fv = glad_glTexCoord2fv;
+    _glTexCoord2fv = glad_glTexCoord2fv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2i = glad_debug_glTexCoord2i;
+    _glTexCoord2i = glad_debug_glTexCoord2i;
 #else
-    _mglTexCoord2i = glad_glTexCoord2i;
+    _glTexCoord2i = glad_glTexCoord2i;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2iv = glad_debug_glTexCoord2iv;
+    _glTexCoord2iv = glad_debug_glTexCoord2iv;
 #else
-    _mglTexCoord2iv = glad_glTexCoord2iv;
+    _glTexCoord2iv = glad_glTexCoord2iv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2s = glad_debug_glTexCoord2s;
+    _glTexCoord2s = glad_debug_glTexCoord2s;
 #else
-    _mglTexCoord2s = glad_glTexCoord2s;
+    _glTexCoord2s = glad_glTexCoord2s;
 #endif
 #ifdef DEBUG
-    _mglTexCoord2sv = glad_debug_glTexCoord2sv;
+    _glTexCoord2sv = glad_debug_glTexCoord2sv;
 #else
-    _mglTexCoord2sv = glad_glTexCoord2sv;
+    _glTexCoord2sv = glad_glTexCoord2sv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3d = glad_debug_glTexCoord3d;
+    _glTexCoord3d = glad_debug_glTexCoord3d;
 #else
-    _mglTexCoord3d = glad_glTexCoord3d;
+    _glTexCoord3d = glad_glTexCoord3d;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3dv = glad_debug_glTexCoord3dv;
+    _glTexCoord3dv = glad_debug_glTexCoord3dv;
 #else
-    _mglTexCoord3dv = glad_glTexCoord3dv;
+    _glTexCoord3dv = glad_glTexCoord3dv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3f = glad_debug_glTexCoord3f;
+    _glTexCoord3f = glad_debug_glTexCoord3f;
 #else
-    _mglTexCoord3f = glad_glTexCoord3f;
+    _glTexCoord3f = glad_glTexCoord3f;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3fv = glad_debug_glTexCoord3fv;
+    _glTexCoord3fv = glad_debug_glTexCoord3fv;
 #else
-    _mglTexCoord3fv = glad_glTexCoord3fv;
+    _glTexCoord3fv = glad_glTexCoord3fv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3i = glad_debug_glTexCoord3i;
+    _glTexCoord3i = glad_debug_glTexCoord3i;
 #else
-    _mglTexCoord3i = glad_glTexCoord3i;
+    _glTexCoord3i = glad_glTexCoord3i;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3iv = glad_debug_glTexCoord3iv;
+    _glTexCoord3iv = glad_debug_glTexCoord3iv;
 #else
-    _mglTexCoord3iv = glad_glTexCoord3iv;
+    _glTexCoord3iv = glad_glTexCoord3iv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3s = glad_debug_glTexCoord3s;
+    _glTexCoord3s = glad_debug_glTexCoord3s;
 #else
-    _mglTexCoord3s = glad_glTexCoord3s;
+    _glTexCoord3s = glad_glTexCoord3s;
 #endif
 #ifdef DEBUG
-    _mglTexCoord3sv = glad_debug_glTexCoord3sv;
+    _glTexCoord3sv = glad_debug_glTexCoord3sv;
 #else
-    _mglTexCoord3sv = glad_glTexCoord3sv;
+    _glTexCoord3sv = glad_glTexCoord3sv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4d = glad_debug_glTexCoord4d;
+    _glTexCoord4d = glad_debug_glTexCoord4d;
 #else
-    _mglTexCoord4d = glad_glTexCoord4d;
+    _glTexCoord4d = glad_glTexCoord4d;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4dv = glad_debug_glTexCoord4dv;
+    _glTexCoord4dv = glad_debug_glTexCoord4dv;
 #else
-    _mglTexCoord4dv = glad_glTexCoord4dv;
+    _glTexCoord4dv = glad_glTexCoord4dv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4f = glad_debug_glTexCoord4f;
+    _glTexCoord4f = glad_debug_glTexCoord4f;
 #else
-    _mglTexCoord4f = glad_glTexCoord4f;
+    _glTexCoord4f = glad_glTexCoord4f;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4fv = glad_debug_glTexCoord4fv;
+    _glTexCoord4fv = glad_debug_glTexCoord4fv;
 #else
-    _mglTexCoord4fv = glad_glTexCoord4fv;
+    _glTexCoord4fv = glad_glTexCoord4fv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4i = glad_debug_glTexCoord4i;
+    _glTexCoord4i = glad_debug_glTexCoord4i;
 #else
-    _mglTexCoord4i = glad_glTexCoord4i;
+    _glTexCoord4i = glad_glTexCoord4i;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4iv = glad_debug_glTexCoord4iv;
+    _glTexCoord4iv = glad_debug_glTexCoord4iv;
 #else
-    _mglTexCoord4iv = glad_glTexCoord4iv;
+    _glTexCoord4iv = glad_glTexCoord4iv;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4s = glad_debug_glTexCoord4s;
+    _glTexCoord4s = glad_debug_glTexCoord4s;
 #else
-    _mglTexCoord4s = glad_glTexCoord4s;
+    _glTexCoord4s = glad_glTexCoord4s;
 #endif
 #ifdef DEBUG
-    _mglTexCoord4sv = glad_debug_glTexCoord4sv;
+    _glTexCoord4sv = glad_debug_glTexCoord4sv;
 #else
-    _mglTexCoord4sv = glad_glTexCoord4sv;
+    _glTexCoord4sv = glad_glTexCoord4sv;
 #endif
 #ifdef DEBUG
-    _mglVertex2d = glad_debug_glVertex2d;
+    _glVertex2d = glad_debug_glVertex2d;
 #else
-    _mglVertex2d = glad_glVertex2d;
+    _glVertex2d = glad_glVertex2d;
 #endif
 #ifdef DEBUG
-    _mglVertex2dv = glad_debug_glVertex2dv;
+    _glVertex2dv = glad_debug_glVertex2dv;
 #else
-    _mglVertex2dv = glad_glVertex2dv;
+    _glVertex2dv = glad_glVertex2dv;
 #endif
 #ifdef DEBUG
-    _mglVertex2f = glad_debug_glVertex2f;
+    _glVertex2f = glad_debug_glVertex2f;
 #else
-    _mglVertex2f = glad_glVertex2f;
+    _glVertex2f = glad_glVertex2f;
 #endif
 #ifdef DEBUG
-    _mglVertex2fv = glad_debug_glVertex2fv;
+    _glVertex2fv = glad_debug_glVertex2fv;
 #else
-    _mglVertex2fv = glad_glVertex2fv;
+    _glVertex2fv = glad_glVertex2fv;
 #endif
 #ifdef DEBUG
-    _mglVertex2i = glad_debug_glVertex2i;
+    _glVertex2i = glad_debug_glVertex2i;
 #else
-    _mglVertex2i = glad_glVertex2i;
+    _glVertex2i = glad_glVertex2i;
 #endif
 #ifdef DEBUG
-    _mglVertex2iv = glad_debug_glVertex2iv;
+    _glVertex2iv = glad_debug_glVertex2iv;
 #else
-    _mglVertex2iv = glad_glVertex2iv;
+    _glVertex2iv = glad_glVertex2iv;
 #endif
 #ifdef DEBUG
-    _mglVertex2s = glad_debug_glVertex2s;
+    _glVertex2s = glad_debug_glVertex2s;
 #else
-    _mglVertex2s = glad_glVertex2s;
+    _glVertex2s = glad_glVertex2s;
 #endif
 #ifdef DEBUG
-    _mglVertex2sv = glad_debug_glVertex2sv;
+    _glVertex2sv = glad_debug_glVertex2sv;
 #else
-    _mglVertex2sv = glad_glVertex2sv;
+    _glVertex2sv = glad_glVertex2sv;
 #endif
 #ifdef DEBUG
-    _mglVertex3d = glad_debug_glVertex3d;
+    _glVertex3d = glad_debug_glVertex3d;
 #else
-    _mglVertex3d = glad_glVertex3d;
+    _glVertex3d = glad_glVertex3d;
 #endif
 #ifdef DEBUG
-    _mglVertex3dv = glad_debug_glVertex3dv;
+    _glVertex3dv = glad_debug_glVertex3dv;
 #else
-    _mglVertex3dv = glad_glVertex3dv;
+    _glVertex3dv = glad_glVertex3dv;
 #endif
 #ifdef DEBUG
-    _mglVertex3f = glad_debug_glVertex3f;
+    _glVertex3f = glad_debug_glVertex3f;
 #else
-    _mglVertex3f = glad_glVertex3f;
+    _glVertex3f = glad_glVertex3f;
 #endif
 #ifdef DEBUG
-    _mglVertex3fv = glad_debug_glVertex3fv;
+    _glVertex3fv = glad_debug_glVertex3fv;
 #else
-    _mglVertex3fv = glad_glVertex3fv;
+    _glVertex3fv = glad_glVertex3fv;
 #endif
 #ifdef DEBUG
-    _mglVertex3i = glad_debug_glVertex3i;
+    _glVertex3i = glad_debug_glVertex3i;
 #else
-    _mglVertex3i = glad_glVertex3i;
+    _glVertex3i = glad_glVertex3i;
 #endif
 #ifdef DEBUG
-    _mglVertex3iv = glad_debug_glVertex3iv;
+    _glVertex3iv = glad_debug_glVertex3iv;
 #else
-    _mglVertex3iv = glad_glVertex3iv;
+    _glVertex3iv = glad_glVertex3iv;
 #endif
 #ifdef DEBUG
-    _mglVertex3s = glad_debug_glVertex3s;
+    _glVertex3s = glad_debug_glVertex3s;
 #else
-    _mglVertex3s = glad_glVertex3s;
+    _glVertex3s = glad_glVertex3s;
 #endif
 #ifdef DEBUG
-    _mglVertex3sv = glad_debug_glVertex3sv;
+    _glVertex3sv = glad_debug_glVertex3sv;
 #else
-    _mglVertex3sv = glad_glVertex3sv;
+    _glVertex3sv = glad_glVertex3sv;
 #endif
 #ifdef DEBUG
-    _mglVertex4d = glad_debug_glVertex4d;
+    _glVertex4d = glad_debug_glVertex4d;
 #else
-    _mglVertex4d = glad_glVertex4d;
+    _glVertex4d = glad_glVertex4d;
 #endif
 #ifdef DEBUG
-    _mglVertex4dv = glad_debug_glVertex4dv;
+    _glVertex4dv = glad_debug_glVertex4dv;
 #else
-    _mglVertex4dv = glad_glVertex4dv;
+    _glVertex4dv = glad_glVertex4dv;
 #endif
 #ifdef DEBUG
-    _mglVertex4f = glad_debug_glVertex4f;
+    _glVertex4f = glad_debug_glVertex4f;
 #else
-    _mglVertex4f = glad_glVertex4f;
+    _glVertex4f = glad_glVertex4f;
 #endif
 #ifdef DEBUG
-    _mglVertex4fv = glad_debug_glVertex4fv;
+    _glVertex4fv = glad_debug_glVertex4fv;
 #else
-    _mglVertex4fv = glad_glVertex4fv;
+    _glVertex4fv = glad_glVertex4fv;
 #endif
 #ifdef DEBUG
-    _mglVertex4i = glad_debug_glVertex4i;
+    _glVertex4i = glad_debug_glVertex4i;
 #else
-    _mglVertex4i = glad_glVertex4i;
+    _glVertex4i = glad_glVertex4i;
 #endif
 #ifdef DEBUG
-    _mglVertex4iv = glad_debug_glVertex4iv;
+    _glVertex4iv = glad_debug_glVertex4iv;
 #else
-    _mglVertex4iv = glad_glVertex4iv;
+    _glVertex4iv = glad_glVertex4iv;
 #endif
 #ifdef DEBUG
-    _mglVertex4s = glad_debug_glVertex4s;
+    _glVertex4s = glad_debug_glVertex4s;
 #else
-    _mglVertex4s = glad_glVertex4s;
+    _glVertex4s = glad_glVertex4s;
 #endif
 #ifdef DEBUG
-    _mglVertex4sv = glad_debug_glVertex4sv;
+    _glVertex4sv = glad_debug_glVertex4sv;
 #else
-    _mglVertex4sv = glad_glVertex4sv;
+    _glVertex4sv = glad_glVertex4sv;
 #endif
 #ifdef DEBUG
-    _mglClipPlane = glad_debug_glClipPlane;
+    _glClipPlane = glad_debug_glClipPlane;
 #else
-    _mglClipPlane = glad_glClipPlane;
+    _glClipPlane = glad_glClipPlane;
 #endif
 #ifdef DEBUG
-    _mglColorMaterial = glad_debug_glColorMaterial;
+    _glColorMaterial = glad_debug_glColorMaterial;
 #else
-    _mglColorMaterial = glad_glColorMaterial;
+    _glColorMaterial = glad_glColorMaterial;
 #endif
 #ifdef DEBUG
-    _mglFogf = glad_debug_glFogf;
+    _glFogf = glad_debug_glFogf;
 #else
-    _mglFogf = glad_glFogf;
+    _glFogf = glad_glFogf;
 #endif
 #ifdef DEBUG
-    _mglFogfv = glad_debug_glFogfv;
+    _glFogfv = glad_debug_glFogfv;
 #else
-    _mglFogfv = glad_glFogfv;
+    _glFogfv = glad_glFogfv;
 #endif
 #ifdef DEBUG
-    _mglFogi = glad_debug_glFogi;
+    _glFogi = glad_debug_glFogi;
 #else
-    _mglFogi = glad_glFogi;
+    _glFogi = glad_glFogi;
 #endif
 #ifdef DEBUG
-    _mglFogiv = glad_debug_glFogiv;
+    _glFogiv = glad_debug_glFogiv;
 #else
-    _mglFogiv = glad_glFogiv;
+    _glFogiv = glad_glFogiv;
 #endif
 #ifdef DEBUG
-    _mglLightf = glad_debug_glLightf;
+    _glLightf = glad_debug_glLightf;
 #else
-    _mglLightf = glad_glLightf;
+    _glLightf = glad_glLightf;
 #endif
 #ifdef DEBUG
-    _mglLightfv = glad_debug_glLightfv;
+    _glLightfv = glad_debug_glLightfv;
 #else
-    _mglLightfv = glad_glLightfv;
+    _glLightfv = glad_glLightfv;
 #endif
 #ifdef DEBUG
-    _mglLighti = glad_debug_glLighti;
+    _glLighti = glad_debug_glLighti;
 #else
-    _mglLighti = glad_glLighti;
+    _glLighti = glad_glLighti;
 #endif
 #ifdef DEBUG
-    _mglLightiv = glad_debug_glLightiv;
+    _glLightiv = glad_debug_glLightiv;
 #else
-    _mglLightiv = glad_glLightiv;
+    _glLightiv = glad_glLightiv;
 #endif
 #ifdef DEBUG
-    _mglLightModelf = glad_debug_glLightModelf;
+    _glLightModelf = glad_debug_glLightModelf;
 #else
-    _mglLightModelf = glad_glLightModelf;
+    _glLightModelf = glad_glLightModelf;
 #endif
 #ifdef DEBUG
-    _mglLightModelfv = glad_debug_glLightModelfv;
+    _glLightModelfv = glad_debug_glLightModelfv;
 #else
-    _mglLightModelfv = glad_glLightModelfv;
+    _glLightModelfv = glad_glLightModelfv;
 #endif
 #ifdef DEBUG
-    _mglLightModeli = glad_debug_glLightModeli;
+    _glLightModeli = glad_debug_glLightModeli;
 #else
-    _mglLightModeli = glad_glLightModeli;
+    _glLightModeli = glad_glLightModeli;
 #endif
 #ifdef DEBUG
-    _mglLightModeliv = glad_debug_glLightModeliv;
+    _glLightModeliv = glad_debug_glLightModeliv;
 #else
-    _mglLightModeliv = glad_glLightModeliv;
+    _glLightModeliv = glad_glLightModeliv;
 #endif
 #ifdef DEBUG
-    _mglLineStipple = glad_debug_glLineStipple;
+    _glLineStipple = glad_debug_glLineStipple;
 #else
-    _mglLineStipple = glad_glLineStipple;
+    _glLineStipple = glad_glLineStipple;
 #endif
 #ifdef DEBUG
-    _mglMaterialf = glad_debug_glMaterialf;
+    _glMaterialf = glad_debug_glMaterialf;
 #else
-    _mglMaterialf = glad_glMaterialf;
+    _glMaterialf = glad_glMaterialf;
 #endif
 #ifdef DEBUG
-    _mglMaterialfv = glad_debug_glMaterialfv;
+    _glMaterialfv = glad_debug_glMaterialfv;
 #else
-    _mglMaterialfv = glad_glMaterialfv;
+    _glMaterialfv = glad_glMaterialfv;
 #endif
 #ifdef DEBUG
-    _mglMateriali = glad_debug_glMateriali;
+    _glMateriali = glad_debug_glMateriali;
 #else
-    _mglMateriali = glad_glMateriali;
+    _glMateriali = glad_glMateriali;
 #endif
 #ifdef DEBUG
-    _mglMaterialiv = glad_debug_glMaterialiv;
+    _glMaterialiv = glad_debug_glMaterialiv;
 #else
-    _mglMaterialiv = glad_glMaterialiv;
+    _glMaterialiv = glad_glMaterialiv;
 #endif
 #ifdef DEBUG
-    _mglPolygonStipple = glad_debug_glPolygonStipple;
+    _glPolygonStipple = glad_debug_glPolygonStipple;
 #else
-    _mglPolygonStipple = glad_glPolygonStipple;
+    _glPolygonStipple = glad_glPolygonStipple;
 #endif
 #ifdef DEBUG
-    _mglShadeModel = glad_debug_glShadeModel;
+    _glShadeModel = glad_debug_glShadeModel;
 #else
-    _mglShadeModel = glad_glShadeModel;
+    _glShadeModel = glad_glShadeModel;
 #endif
 #ifdef DEBUG
-    _mglTexEnvf = glad_debug_glTexEnvf;
+    _glTexEnvf = glad_debug_glTexEnvf;
 #else
-    _mglTexEnvf = glad_glTexEnvf;
+    _glTexEnvf = glad_glTexEnvf;
 #endif
 #ifdef DEBUG
-    _mglTexEnvfv = glad_debug_glTexEnvfv;
+    _glTexEnvfv = glad_debug_glTexEnvfv;
 #else
-    _mglTexEnvfv = glad_glTexEnvfv;
+    _glTexEnvfv = glad_glTexEnvfv;
 #endif
 #ifdef DEBUG
-    _mglTexEnvi = glad_debug_glTexEnvi;
+    _glTexEnvi = glad_debug_glTexEnvi;
 #else
-    _mglTexEnvi = glad_glTexEnvi;
+    _glTexEnvi = glad_glTexEnvi;
 #endif
 #ifdef DEBUG
-    _mglTexEnviv = glad_debug_glTexEnviv;
+    _glTexEnviv = glad_debug_glTexEnviv;
 #else
-    _mglTexEnviv = glad_glTexEnviv;
+    _glTexEnviv = glad_glTexEnviv;
 #endif
 #ifdef DEBUG
-    _mglTexGend = glad_debug_glTexGend;
+    _glTexGend = glad_debug_glTexGend;
 #else
-    _mglTexGend = glad_glTexGend;
+    _glTexGend = glad_glTexGend;
 #endif
 #ifdef DEBUG
-    _mglTexGendv = glad_debug_glTexGendv;
+    _glTexGendv = glad_debug_glTexGendv;
 #else
-    _mglTexGendv = glad_glTexGendv;
+    _glTexGendv = glad_glTexGendv;
 #endif
 #ifdef DEBUG
-    _mglTexGenf = glad_debug_glTexGenf;
+    _glTexGenf = glad_debug_glTexGenf;
 #else
-    _mglTexGenf = glad_glTexGenf;
+    _glTexGenf = glad_glTexGenf;
 #endif
 #ifdef DEBUG
-    _mglTexGenfv = glad_debug_glTexGenfv;
+    _glTexGenfv = glad_debug_glTexGenfv;
 #else
-    _mglTexGenfv = glad_glTexGenfv;
+    _glTexGenfv = glad_glTexGenfv;
 #endif
 #ifdef DEBUG
-    _mglTexGeni = glad_debug_glTexGeni;
+    _glTexGeni = glad_debug_glTexGeni;
 #else
-    _mglTexGeni = glad_glTexGeni;
+    _glTexGeni = glad_glTexGeni;
 #endif
 #ifdef DEBUG
-    _mglTexGeniv = glad_debug_glTexGeniv;
+    _glTexGeniv = glad_debug_glTexGeniv;
 #else
-    _mglTexGeniv = glad_glTexGeniv;
+    _glTexGeniv = glad_glTexGeniv;
 #endif
 #ifdef DEBUG
-    _mglFeedbackBuffer = glad_debug_glFeedbackBuffer;
+    _glFeedbackBuffer = glad_debug_glFeedbackBuffer;
 #else
-    _mglFeedbackBuffer = glad_glFeedbackBuffer;
+    _glFeedbackBuffer = glad_glFeedbackBuffer;
 #endif
 #ifdef DEBUG
-    _mglSelectBuffer = glad_debug_glSelectBuffer;
+    _glSelectBuffer = glad_debug_glSelectBuffer;
 #else
-    _mglSelectBuffer = glad_glSelectBuffer;
+    _glSelectBuffer = glad_glSelectBuffer;
 #endif
 #ifdef DEBUG
-    _mglRenderMode = glad_debug_glRenderMode;
+    _glRenderMode = glad_debug_glRenderMode;
 #else
-    _mglRenderMode = glad_glRenderMode;
+    _glRenderMode = glad_glRenderMode;
 #endif
 #ifdef DEBUG
-    _mglInitNames = glad_debug_glInitNames;
+    _glInitNames = glad_debug_glInitNames;
 #else
-    _mglInitNames = glad_glInitNames;
+    _glInitNames = glad_glInitNames;
 #endif
 #ifdef DEBUG
-    _mglLoadName = glad_debug_glLoadName;
+    _glLoadName = glad_debug_glLoadName;
 #else
-    _mglLoadName = glad_glLoadName;
+    _glLoadName = glad_glLoadName;
 #endif
 #ifdef DEBUG
-    _mglPassThrough = glad_debug_glPassThrough;
+    _glPassThrough = glad_debug_glPassThrough;
 #else
-    _mglPassThrough = glad_glPassThrough;
+    _glPassThrough = glad_glPassThrough;
 #endif
 #ifdef DEBUG
-    _mglPopName = glad_debug_glPopName;
+    _glPopName = glad_debug_glPopName;
 #else
-    _mglPopName = glad_glPopName;
+    _glPopName = glad_glPopName;
 #endif
 #ifdef DEBUG
-    _mglPushName = glad_debug_glPushName;
+    _glPushName = glad_debug_glPushName;
 #else
-    _mglPushName = glad_glPushName;
+    _glPushName = glad_glPushName;
 #endif
 #ifdef DEBUG
-    _mglClearAccum = glad_debug_glClearAccum;
+    _glClearAccum = glad_debug_glClearAccum;
 #else
-    _mglClearAccum = glad_glClearAccum;
+    _glClearAccum = glad_glClearAccum;
 #endif
 #ifdef DEBUG
-    _mglClearIndex = glad_debug_glClearIndex;
+    _glClearIndex = glad_debug_glClearIndex;
 #else
-    _mglClearIndex = glad_glClearIndex;
+    _glClearIndex = glad_glClearIndex;
 #endif
 #ifdef DEBUG
-    _mglIndexMask = glad_debug_glIndexMask;
+    _glIndexMask = glad_debug_glIndexMask;
 #else
-    _mglIndexMask = glad_glIndexMask;
+    _glIndexMask = glad_glIndexMask;
 #endif
 #ifdef DEBUG
-    _mglAccum = glad_debug_glAccum;
+    _glAccum = glad_debug_glAccum;
 #else
-    _mglAccum = glad_glAccum;
+    _glAccum = glad_glAccum;
 #endif
 #ifdef DEBUG
-    _mglPopAttrib = glad_debug_glPopAttrib;
+    _glPopAttrib = glad_debug_glPopAttrib;
 #else
-    _mglPopAttrib = glad_glPopAttrib;
+    _glPopAttrib = glad_glPopAttrib;
 #endif
 #ifdef DEBUG
-    _mglPushAttrib = glad_debug_glPushAttrib;
+    _glPushAttrib = glad_debug_glPushAttrib;
 #else
-    _mglPushAttrib = glad_glPushAttrib;
+    _glPushAttrib = glad_glPushAttrib;
 #endif
 #ifdef DEBUG
-    _mglMap1d = glad_debug_glMap1d;
+    _glMap1d = glad_debug_glMap1d;
 #else
-    _mglMap1d = glad_glMap1d;
+    _glMap1d = glad_glMap1d;
 #endif
 #ifdef DEBUG
-    _mglMap1f = glad_debug_glMap1f;
+    _glMap1f = glad_debug_glMap1f;
 #else
-    _mglMap1f = glad_glMap1f;
+    _glMap1f = glad_glMap1f;
 #endif
 #ifdef DEBUG
-    _mglMap2d = glad_debug_glMap2d;
+    _glMap2d = glad_debug_glMap2d;
 #else
-    _mglMap2d = glad_glMap2d;
+    _glMap2d = glad_glMap2d;
 #endif
 #ifdef DEBUG
-    _mglMap2f = glad_debug_glMap2f;
+    _glMap2f = glad_debug_glMap2f;
 #else
-    _mglMap2f = glad_glMap2f;
+    _glMap2f = glad_glMap2f;
 #endif
 #ifdef DEBUG
-    _mglMapGrid1d = glad_debug_glMapGrid1d;
+    _glMapGrid1d = glad_debug_glMapGrid1d;
 #else
-    _mglMapGrid1d = glad_glMapGrid1d;
+    _glMapGrid1d = glad_glMapGrid1d;
 #endif
 #ifdef DEBUG
-    _mglMapGrid1f = glad_debug_glMapGrid1f;
+    _glMapGrid1f = glad_debug_glMapGrid1f;
 #else
-    _mglMapGrid1f = glad_glMapGrid1f;
+    _glMapGrid1f = glad_glMapGrid1f;
 #endif
 #ifdef DEBUG
-    _mglMapGrid2d = glad_debug_glMapGrid2d;
+    _glMapGrid2d = glad_debug_glMapGrid2d;
 #else
-    _mglMapGrid2d = glad_glMapGrid2d;
+    _glMapGrid2d = glad_glMapGrid2d;
 #endif
 #ifdef DEBUG
-    _mglMapGrid2f = glad_debug_glMapGrid2f;
+    _glMapGrid2f = glad_debug_glMapGrid2f;
 #else
-    _mglMapGrid2f = glad_glMapGrid2f;
+    _glMapGrid2f = glad_glMapGrid2f;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord1d = glad_debug_glEvalCoord1d;
+    _glEvalCoord1d = glad_debug_glEvalCoord1d;
 #else
-    _mglEvalCoord1d = glad_glEvalCoord1d;
+    _glEvalCoord1d = glad_glEvalCoord1d;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord1dv = glad_debug_glEvalCoord1dv;
+    _glEvalCoord1dv = glad_debug_glEvalCoord1dv;
 #else
-    _mglEvalCoord1dv = glad_glEvalCoord1dv;
+    _glEvalCoord1dv = glad_glEvalCoord1dv;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord1f = glad_debug_glEvalCoord1f;
+    _glEvalCoord1f = glad_debug_glEvalCoord1f;
 #else
-    _mglEvalCoord1f = glad_glEvalCoord1f;
+    _glEvalCoord1f = glad_glEvalCoord1f;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord1fv = glad_debug_glEvalCoord1fv;
+    _glEvalCoord1fv = glad_debug_glEvalCoord1fv;
 #else
-    _mglEvalCoord1fv = glad_glEvalCoord1fv;
+    _glEvalCoord1fv = glad_glEvalCoord1fv;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord2d = glad_debug_glEvalCoord2d;
+    _glEvalCoord2d = glad_debug_glEvalCoord2d;
 #else
-    _mglEvalCoord2d = glad_glEvalCoord2d;
+    _glEvalCoord2d = glad_glEvalCoord2d;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord2dv = glad_debug_glEvalCoord2dv;
+    _glEvalCoord2dv = glad_debug_glEvalCoord2dv;
 #else
-    _mglEvalCoord2dv = glad_glEvalCoord2dv;
+    _glEvalCoord2dv = glad_glEvalCoord2dv;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord2f = glad_debug_glEvalCoord2f;
+    _glEvalCoord2f = glad_debug_glEvalCoord2f;
 #else
-    _mglEvalCoord2f = glad_glEvalCoord2f;
+    _glEvalCoord2f = glad_glEvalCoord2f;
 #endif
 #ifdef DEBUG
-    _mglEvalCoord2fv = glad_debug_glEvalCoord2fv;
+    _glEvalCoord2fv = glad_debug_glEvalCoord2fv;
 #else
-    _mglEvalCoord2fv = glad_glEvalCoord2fv;
+    _glEvalCoord2fv = glad_glEvalCoord2fv;
 #endif
 #ifdef DEBUG
-    _mglEvalMesh1 = glad_debug_glEvalMesh1;
+    _glEvalMesh1 = glad_debug_glEvalMesh1;
 #else
-    _mglEvalMesh1 = glad_glEvalMesh1;
+    _glEvalMesh1 = glad_glEvalMesh1;
 #endif
 #ifdef DEBUG
-    _mglEvalPoint1 = glad_debug_glEvalPoint1;
+    _glEvalPoint1 = glad_debug_glEvalPoint1;
 #else
-    _mglEvalPoint1 = glad_glEvalPoint1;
+    _glEvalPoint1 = glad_glEvalPoint1;
 #endif
 #ifdef DEBUG
-    _mglEvalMesh2 = glad_debug_glEvalMesh2;
+    _glEvalMesh2 = glad_debug_glEvalMesh2;
 #else
-    _mglEvalMesh2 = glad_glEvalMesh2;
+    _glEvalMesh2 = glad_glEvalMesh2;
 #endif
 #ifdef DEBUG
-    _mglEvalPoint2 = glad_debug_glEvalPoint2;
+    _glEvalPoint2 = glad_debug_glEvalPoint2;
 #else
-    _mglEvalPoint2 = glad_glEvalPoint2;
+    _glEvalPoint2 = glad_glEvalPoint2;
 #endif
 #ifdef DEBUG
-    _mglAlphaFunc = glad_debug_glAlphaFunc;
+    _glAlphaFunc = glad_debug_glAlphaFunc;
 #else
-    _mglAlphaFunc = glad_glAlphaFunc;
+    _glAlphaFunc = glad_glAlphaFunc;
 #endif
 #ifdef DEBUG
-    _mglPixelZoom = glad_debug_glPixelZoom;
+    _glPixelZoom = glad_debug_glPixelZoom;
 #else
-    _mglPixelZoom = glad_glPixelZoom;
+    _glPixelZoom = glad_glPixelZoom;
 #endif
 #ifdef DEBUG
-    _mglPixelTransferf = glad_debug_glPixelTransferf;
+    _glPixelTransferf = glad_debug_glPixelTransferf;
 #else
-    _mglPixelTransferf = glad_glPixelTransferf;
+    _glPixelTransferf = glad_glPixelTransferf;
 #endif
 #ifdef DEBUG
-    _mglPixelTransferi = glad_debug_glPixelTransferi;
+    _glPixelTransferi = glad_debug_glPixelTransferi;
 #else
-    _mglPixelTransferi = glad_glPixelTransferi;
+    _glPixelTransferi = glad_glPixelTransferi;
 #endif
 #ifdef DEBUG
-    _mglPixelMapfv = glad_debug_glPixelMapfv;
+    _glPixelMapfv = glad_debug_glPixelMapfv;
 #else
-    _mglPixelMapfv = glad_glPixelMapfv;
+    _glPixelMapfv = glad_glPixelMapfv;
 #endif
 #ifdef DEBUG
-    _mglPixelMapuiv = glad_debug_glPixelMapuiv;
+    _glPixelMapuiv = glad_debug_glPixelMapuiv;
 #else
-    _mglPixelMapuiv = glad_glPixelMapuiv;
+    _glPixelMapuiv = glad_glPixelMapuiv;
 #endif
 #ifdef DEBUG
-    _mglPixelMapusv = glad_debug_glPixelMapusv;
+    _glPixelMapusv = glad_debug_glPixelMapusv;
 #else
-    _mglPixelMapusv = glad_glPixelMapusv;
+    _glPixelMapusv = glad_glPixelMapusv;
 #endif
 #ifdef DEBUG
-    _mglCopyPixels = glad_debug_glCopyPixels;
+    _glCopyPixels = glad_debug_glCopyPixels;
 #else
-    _mglCopyPixels = glad_glCopyPixels;
+    _glCopyPixels = glad_glCopyPixels;
 #endif
 #ifdef DEBUG
-    _mglDrawPixels = glad_debug_glDrawPixels;
+    _glDrawPixels = glad_debug_glDrawPixels;
 #else
-    _mglDrawPixels = glad_glDrawPixels;
+    _glDrawPixels = glad_glDrawPixels;
 #endif
 #ifdef DEBUG
-    _mglGetClipPlane = glad_debug_glGetClipPlane;
+    _glGetClipPlane = glad_debug_glGetClipPlane;
 #else
-    _mglGetClipPlane = glad_glGetClipPlane;
+    _glGetClipPlane = glad_glGetClipPlane;
 #endif
 #ifdef DEBUG
-    _mglGetLightfv = glad_debug_glGetLightfv;
+    _glGetLightfv = glad_debug_glGetLightfv;
 #else
-    _mglGetLightfv = glad_glGetLightfv;
+    _glGetLightfv = glad_glGetLightfv;
 #endif
 #ifdef DEBUG
-    _mglGetLightiv = glad_debug_glGetLightiv;
+    _glGetLightiv = glad_debug_glGetLightiv;
 #else
-    _mglGetLightiv = glad_glGetLightiv;
+    _glGetLightiv = glad_glGetLightiv;
 #endif
 #ifdef DEBUG
-    _mglGetMapdv = glad_debug_glGetMapdv;
+    _glGetMapdv = glad_debug_glGetMapdv;
 #else
-    _mglGetMapdv = glad_glGetMapdv;
+    _glGetMapdv = glad_glGetMapdv;
 #endif
 #ifdef DEBUG
-    _mglGetMapfv = glad_debug_glGetMapfv;
+    _glGetMapfv = glad_debug_glGetMapfv;
 #else
-    _mglGetMapfv = glad_glGetMapfv;
+    _glGetMapfv = glad_glGetMapfv;
 #endif
 #ifdef DEBUG
-    _mglGetMapiv = glad_debug_glGetMapiv;
+    _glGetMapiv = glad_debug_glGetMapiv;
 #else
-    _mglGetMapiv = glad_glGetMapiv;
+    _glGetMapiv = glad_glGetMapiv;
 #endif
 #ifdef DEBUG
-    _mglGetMaterialfv = glad_debug_glGetMaterialfv;
+    _glGetMaterialfv = glad_debug_glGetMaterialfv;
 #else
-    _mglGetMaterialfv = glad_glGetMaterialfv;
+    _glGetMaterialfv = glad_glGetMaterialfv;
 #endif
 #ifdef DEBUG
-    _mglGetMaterialiv = glad_debug_glGetMaterialiv;
+    _glGetMaterialiv = glad_debug_glGetMaterialiv;
 #else
-    _mglGetMaterialiv = glad_glGetMaterialiv;
+    _glGetMaterialiv = glad_glGetMaterialiv;
 #endif
 #ifdef DEBUG
-    _mglGetPixelMapfv = glad_debug_glGetPixelMapfv;
+    _glGetPixelMapfv = glad_debug_glGetPixelMapfv;
 #else
-    _mglGetPixelMapfv = glad_glGetPixelMapfv;
+    _glGetPixelMapfv = glad_glGetPixelMapfv;
 #endif
 #ifdef DEBUG
-    _mglGetPixelMapuiv = glad_debug_glGetPixelMapuiv;
+    _glGetPixelMapuiv = glad_debug_glGetPixelMapuiv;
 #else
-    _mglGetPixelMapuiv = glad_glGetPixelMapuiv;
+    _glGetPixelMapuiv = glad_glGetPixelMapuiv;
 #endif
 #ifdef DEBUG
-    _mglGetPixelMapusv = glad_debug_glGetPixelMapusv;
+    _glGetPixelMapusv = glad_debug_glGetPixelMapusv;
 #else
-    _mglGetPixelMapusv = glad_glGetPixelMapusv;
+    _glGetPixelMapusv = glad_glGetPixelMapusv;
 #endif
 #ifdef DEBUG
-    _mglGetPolygonStipple = glad_debug_glGetPolygonStipple;
+    _glGetPolygonStipple = glad_debug_glGetPolygonStipple;
 #else
-    _mglGetPolygonStipple = glad_glGetPolygonStipple;
+    _glGetPolygonStipple = glad_glGetPolygonStipple;
 #endif
 #ifdef DEBUG
-    _mglGetTexEnvfv = glad_debug_glGetTexEnvfv;
+    _glGetTexEnvfv = glad_debug_glGetTexEnvfv;
 #else
-    _mglGetTexEnvfv = glad_glGetTexEnvfv;
+    _glGetTexEnvfv = glad_glGetTexEnvfv;
 #endif
 #ifdef DEBUG
-    _mglGetTexEnviv = glad_debug_glGetTexEnviv;
+    _glGetTexEnviv = glad_debug_glGetTexEnviv;
 #else
-    _mglGetTexEnviv = glad_glGetTexEnviv;
+    _glGetTexEnviv = glad_glGetTexEnviv;
 #endif
 #ifdef DEBUG
-    _mglGetTexGendv = glad_debug_glGetTexGendv;
+    _glGetTexGendv = glad_debug_glGetTexGendv;
 #else
-    _mglGetTexGendv = glad_glGetTexGendv;
+    _glGetTexGendv = glad_glGetTexGendv;
 #endif
 #ifdef DEBUG
-    _mglGetTexGenfv = glad_debug_glGetTexGenfv;
+    _glGetTexGenfv = glad_debug_glGetTexGenfv;
 #else
-    _mglGetTexGenfv = glad_glGetTexGenfv;
+    _glGetTexGenfv = glad_glGetTexGenfv;
 #endif
 #ifdef DEBUG
-    _mglGetTexGeniv = glad_debug_glGetTexGeniv;
+    _glGetTexGeniv = glad_debug_glGetTexGeniv;
 #else
-    _mglGetTexGeniv = glad_glGetTexGeniv;
+    _glGetTexGeniv = glad_glGetTexGeniv;
 #endif
 #ifdef DEBUG
-    _mglIsList = glad_debug_glIsList;
+    _glIsList = glad_debug_glIsList;
 #else
-    _mglIsList = glad_glIsList;
+    _glIsList = glad_glIsList;
 #endif
 #ifdef DEBUG
-    _mglFrustum = glad_debug_glFrustum;
+    _glFrustum = glad_debug_glFrustum;
 #else
-    _mglFrustum = glad_glFrustum;
+    _glFrustum = glad_glFrustum;
 #endif
 #ifdef DEBUG
-    _mglLoadIdentity = glad_debug_glLoadIdentity;
+    _glLoadIdentity = glad_debug_glLoadIdentity;
 #else
-    _mglLoadIdentity = glad_glLoadIdentity;
+    _glLoadIdentity = glad_glLoadIdentity;
 #endif
 #ifdef DEBUG
-    _mglLoadMatrixf = glad_debug_glLoadMatrixf;
+    _glLoadMatrixf = glad_debug_glLoadMatrixf;
 #else
-    _mglLoadMatrixf = glad_glLoadMatrixf;
+    _glLoadMatrixf = glad_glLoadMatrixf;
 #endif
 #ifdef DEBUG
-    _mglLoadMatrixd = glad_debug_glLoadMatrixd;
+    _glLoadMatrixd = glad_debug_glLoadMatrixd;
 #else
-    _mglLoadMatrixd = glad_glLoadMatrixd;
+    _glLoadMatrixd = glad_glLoadMatrixd;
 #endif
 #ifdef DEBUG
-    _mglMatrixMode = glad_debug_glMatrixMode;
+    _glMatrixMode = glad_debug_glMatrixMode;
 #else
-    _mglMatrixMode = glad_glMatrixMode;
+    _glMatrixMode = glad_glMatrixMode;
 #endif
 #ifdef DEBUG
-    _mglMultMatrixf = glad_debug_glMultMatrixf;
+    _glMultMatrixf = glad_debug_glMultMatrixf;
 #else
-    _mglMultMatrixf = glad_glMultMatrixf;
+    _glMultMatrixf = glad_glMultMatrixf;
 #endif
 #ifdef DEBUG
-    _mglMultMatrixd = glad_debug_glMultMatrixd;
+    _glMultMatrixd = glad_debug_glMultMatrixd;
 #else
-    _mglMultMatrixd = glad_glMultMatrixd;
+    _glMultMatrixd = glad_glMultMatrixd;
 #endif
 #ifdef DEBUG
-    _mglOrtho = glad_debug_glOrtho;
+    _glOrtho = glad_debug_glOrtho;
 #else
-    _mglOrtho = glad_glOrtho;
+    _glOrtho = glad_glOrtho;
 #endif
 #ifdef DEBUG
-    _mglPopMatrix = glad_debug_glPopMatrix;
+    _glPopMatrix = glad_debug_glPopMatrix;
 #else
-    _mglPopMatrix = glad_glPopMatrix;
+    _glPopMatrix = glad_glPopMatrix;
 #endif
 #ifdef DEBUG
-    _mglPushMatrix = glad_debug_glPushMatrix;
+    _glPushMatrix = glad_debug_glPushMatrix;
 #else
-    _mglPushMatrix = glad_glPushMatrix;
+    _glPushMatrix = glad_glPushMatrix;
 #endif
 #ifdef DEBUG
-    _mglRotated = glad_debug_glRotated;
+    _glRotated = glad_debug_glRotated;
 #else
-    _mglRotated = glad_glRotated;
+    _glRotated = glad_glRotated;
 #endif
 #ifdef DEBUG
-    _mglRotatef = glad_debug_glRotatef;
+    _glRotatef = glad_debug_glRotatef;
 #else
-    _mglRotatef = glad_glRotatef;
+    _glRotatef = glad_glRotatef;
 #endif
 #ifdef DEBUG
-    _mglScaled = glad_debug_glScaled;
+    _glScaled = glad_debug_glScaled;
 #else
-    _mglScaled = glad_glScaled;
+    _glScaled = glad_glScaled;
 #endif
 #ifdef DEBUG
-    _mglScalef = glad_debug_glScalef;
+    _glScalef = glad_debug_glScalef;
 #else
-    _mglScalef = glad_glScalef;
+    _glScalef = glad_glScalef;
 #endif
 #ifdef DEBUG
-    _mglTranslated = glad_debug_glTranslated;
+    _glTranslated = glad_debug_glTranslated;
 #else
-    _mglTranslated = glad_glTranslated;
+    _glTranslated = glad_glTranslated;
 #endif
 #ifdef DEBUG
-    _mglTranslatef = glad_debug_glTranslatef;
+    _glTranslatef = glad_debug_glTranslatef;
 #else
-    _mglTranslatef = glad_glTranslatef;
+    _glTranslatef = glad_glTranslatef;
 #endif
 #ifdef DEBUG
-    _mglDrawArrays = glad_debug_glDrawArrays;
+    _glDrawArrays = glad_debug_glDrawArrays;
 #else
-    _mglDrawArrays = glad_glDrawArrays;
+    _glDrawArrays = glad_glDrawArrays;
 #endif
 #ifdef DEBUG
-    _mglDrawElements = glad_debug_glDrawElements;
+    _glDrawElements = glad_debug_glDrawElements;
 #else
-    _mglDrawElements = glad_glDrawElements;
+    _glDrawElements = glad_glDrawElements;
 #endif
 #ifdef DEBUG
-    _mglGetPointerv = glad_debug_glGetPointerv;
+    _glGetPointerv = glad_debug_glGetPointerv;
 #else
-    _mglGetPointerv = glad_glGetPointerv;
+    _glGetPointerv = glad_glGetPointerv;
 #endif
 #ifdef DEBUG
-    _mglPolygonOffset = glad_debug_glPolygonOffset;
+    _glPolygonOffset = glad_debug_glPolygonOffset;
 #else
-    _mglPolygonOffset = glad_glPolygonOffset;
+    _glPolygonOffset = glad_glPolygonOffset;
 #endif
 #ifdef DEBUG
-    _mglCopyTexImage1D = glad_debug_glCopyTexImage1D;
+    _glCopyTexImage1D = glad_debug_glCopyTexImage1D;
 #else
-    _mglCopyTexImage1D = glad_glCopyTexImage1D;
+    _glCopyTexImage1D = glad_glCopyTexImage1D;
 #endif
 #ifdef DEBUG
-    _mglCopyTexImage2D = glad_debug_glCopyTexImage2D;
+    _glCopyTexImage2D = glad_debug_glCopyTexImage2D;
 #else
-    _mglCopyTexImage2D = glad_glCopyTexImage2D;
+    _glCopyTexImage2D = glad_glCopyTexImage2D;
 #endif
 #ifdef DEBUG
-    _mglCopyTexSubImage1D = glad_debug_glCopyTexSubImage1D;
+    _glCopyTexSubImage1D = glad_debug_glCopyTexSubImage1D;
 #else
-    _mglCopyTexSubImage1D = glad_glCopyTexSubImage1D;
+    _glCopyTexSubImage1D = glad_glCopyTexSubImage1D;
 #endif
 #ifdef DEBUG
-    _mglCopyTexSubImage2D = glad_debug_glCopyTexSubImage2D;
+    _glCopyTexSubImage2D = glad_debug_glCopyTexSubImage2D;
 #else
-    _mglCopyTexSubImage2D = glad_glCopyTexSubImage2D;
+    _glCopyTexSubImage2D = glad_glCopyTexSubImage2D;
 #endif
 #ifdef DEBUG
-    _mglTexSubImage1D = glad_debug_glTexSubImage1D;
+    _glTexSubImage1D = glad_debug_glTexSubImage1D;
 #else
-    _mglTexSubImage1D = glad_glTexSubImage1D;
+    _glTexSubImage1D = glad_glTexSubImage1D;
 #endif
 #ifdef DEBUG
-    _mglTexSubImage2D = glad_debug_glTexSubImage2D;
+    _glTexSubImage2D = glad_debug_glTexSubImage2D;
 #else
-    _mglTexSubImage2D = glad_glTexSubImage2D;
+    _glTexSubImage2D = glad_glTexSubImage2D;
 #endif
 #ifdef DEBUG
-    _mglBindTexture = glad_debug_glBindTexture;
+    _glBindTexture = glad_debug_glBindTexture;
 #else
-    _mglBindTexture = glad_glBindTexture;
+    _glBindTexture = glad_glBindTexture;
 #endif
 #ifdef DEBUG
-    _mglDeleteTextures = glad_debug_glDeleteTextures;
+    _glDeleteTextures = glad_debug_glDeleteTextures;
 #else
-    _mglDeleteTextures = glad_glDeleteTextures;
+    _glDeleteTextures = glad_glDeleteTextures;
 #endif
 #ifdef DEBUG
-    _mglGenTextures = glad_debug_glGenTextures;
+    _glGenTextures = glad_debug_glGenTextures;
 #else
-    _mglGenTextures = glad_glGenTextures;
+    _glGenTextures = glad_glGenTextures;
 #endif
 #ifdef DEBUG
-    _mglIsTexture = glad_debug_glIsTexture;
+    _glIsTexture = glad_debug_glIsTexture;
 #else
-    _mglIsTexture = glad_glIsTexture;
+    _glIsTexture = glad_glIsTexture;
 #endif
 #ifdef DEBUG
-    _mglArrayElement = glad_debug_glArrayElement;
+    _glArrayElement = glad_debug_glArrayElement;
 #else
-    _mglArrayElement = glad_glArrayElement;
+    _glArrayElement = glad_glArrayElement;
 #endif
 #ifdef DEBUG
-    _mglColorPointer = glad_debug_glColorPointer;
+    _glColorPointer = glad_debug_glColorPointer;
 #else
-    _mglColorPointer = glad_glColorPointer;
+    _glColorPointer = glad_glColorPointer;
 #endif
 #ifdef DEBUG
-    _mglDisableClientState = glad_debug_glDisableClientState;
+    _glDisableClientState = glad_debug_glDisableClientState;
 #else
-    _mglDisableClientState = glad_glDisableClientState;
+    _glDisableClientState = glad_glDisableClientState;
 #endif
 #ifdef DEBUG
-    _mglEdgeFlagPointer = glad_debug_glEdgeFlagPointer;
+    _glEdgeFlagPointer = glad_debug_glEdgeFlagPointer;
 #else
-    _mglEdgeFlagPointer = glad_glEdgeFlagPointer;
+    _glEdgeFlagPointer = glad_glEdgeFlagPointer;
 #endif
 #ifdef DEBUG
-    _mglEnableClientState = glad_debug_glEnableClientState;
+    _glEnableClientState = glad_debug_glEnableClientState;
 #else
-    _mglEnableClientState = glad_glEnableClientState;
+    _glEnableClientState = glad_glEnableClientState;
 #endif
 #ifdef DEBUG
-    _mglIndexPointer = glad_debug_glIndexPointer;
+    _glIndexPointer = glad_debug_glIndexPointer;
 #else
-    _mglIndexPointer = glad_glIndexPointer;
+    _glIndexPointer = glad_glIndexPointer;
 #endif
 #ifdef DEBUG
-    _mglInterleavedArrays = glad_debug_glInterleavedArrays;
+    _glInterleavedArrays = glad_debug_glInterleavedArrays;
 #else
-    _mglInterleavedArrays = glad_glInterleavedArrays;
+    _glInterleavedArrays = glad_glInterleavedArrays;
 #endif
 #ifdef DEBUG
-    _mglNormalPointer = glad_debug_glNormalPointer;
+    _glNormalPointer = glad_debug_glNormalPointer;
 #else
-    _mglNormalPointer = glad_glNormalPointer;
+    _glNormalPointer = glad_glNormalPointer;
 #endif
 #ifdef DEBUG
-    _mglTexCoordPointer = glad_debug_glTexCoordPointer;
+    _glTexCoordPointer = glad_debug_glTexCoordPointer;
 #else
-    _mglTexCoordPointer = glad_glTexCoordPointer;
+    _glTexCoordPointer = glad_glTexCoordPointer;
 #endif
 #ifdef DEBUG
-    _mglVertexPointer = glad_debug_glVertexPointer;
+    _glVertexPointer = glad_debug_glVertexPointer;
 #else
-    _mglVertexPointer = glad_glVertexPointer;
+    _glVertexPointer = glad_glVertexPointer;
 #endif
 #ifdef DEBUG
-    _mglAreTexturesResident = glad_debug_glAreTexturesResident;
+    _glAreTexturesResident = glad_debug_glAreTexturesResident;
 #else
-    _mglAreTexturesResident = glad_glAreTexturesResident;
+    _glAreTexturesResident = glad_glAreTexturesResident;
 #endif
 #ifdef DEBUG
-    _mglPrioritizeTextures = glad_debug_glPrioritizeTextures;
+    _glPrioritizeTextures = glad_debug_glPrioritizeTextures;
 #else
-    _mglPrioritizeTextures = glad_glPrioritizeTextures;
+    _glPrioritizeTextures = glad_glPrioritizeTextures;
 #endif
 #ifdef DEBUG
-    _mglIndexub = glad_debug_glIndexub;
+    _glIndexub = glad_debug_glIndexub;
 #else
-    _mglIndexub = glad_glIndexub;
+    _glIndexub = glad_glIndexub;
 #endif
 #ifdef DEBUG
-    _mglIndexubv = glad_debug_glIndexubv;
+    _glIndexubv = glad_debug_glIndexubv;
 #else
-    _mglIndexubv = glad_glIndexubv;
+    _glIndexubv = glad_glIndexubv;
 #endif
 #ifdef DEBUG
-    _mglPopClientAttrib = glad_debug_glPopClientAttrib;
+    _glPopClientAttrib = glad_debug_glPopClientAttrib;
 #else
-    _mglPopClientAttrib = glad_glPopClientAttrib;
+    _glPopClientAttrib = glad_glPopClientAttrib;
 #endif
 #ifdef DEBUG
-    _mglPushClientAttrib = glad_debug_glPushClientAttrib;
+    _glPushClientAttrib = glad_debug_glPushClientAttrib;
 #else
-    _mglPushClientAttrib = glad_glPushClientAttrib;
+    _glPushClientAttrib = glad_glPushClientAttrib;
 #endif
 #ifdef DEBUG
-    _mglDrawRangeElements = glad_debug_glDrawRangeElements;
+    _glDrawRangeElements = glad_debug_glDrawRangeElements;
 #else
-    _mglDrawRangeElements = glad_glDrawRangeElements;
+    _glDrawRangeElements = glad_glDrawRangeElements;
 #endif
 #ifdef DEBUG
-    _mglTexImage3D = glad_debug_glTexImage3D;
+    _glTexImage3D = glad_debug_glTexImage3D;
 #else
-    _mglTexImage3D = glad_glTexImage3D;
+    _glTexImage3D = glad_glTexImage3D;
 #endif
 #ifdef DEBUG
-    _mglTexSubImage3D = glad_debug_glTexSubImage3D;
+    _glTexSubImage3D = glad_debug_glTexSubImage3D;
 #else
-    _mglTexSubImage3D = glad_glTexSubImage3D;
+    _glTexSubImage3D = glad_glTexSubImage3D;
 #endif
 #ifdef DEBUG
-    _mglCopyTexSubImage3D = glad_debug_glCopyTexSubImage3D;
+    _glCopyTexSubImage3D = glad_debug_glCopyTexSubImage3D;
 #else
-    _mglCopyTexSubImage3D = glad_glCopyTexSubImage3D;
+    _glCopyTexSubImage3D = glad_glCopyTexSubImage3D;
 #endif
 #ifdef DEBUG
-    _mglActiveTexture = glad_debug_glActiveTexture;
+    _glActiveTexture = glad_debug_glActiveTexture;
 #else
-    _mglActiveTexture = glad_glActiveTexture;
+    _glActiveTexture = glad_glActiveTexture;
 #endif
 #ifdef DEBUG
-    _mglSampleCoverage = glad_debug_glSampleCoverage;
+    _glSampleCoverage = glad_debug_glSampleCoverage;
 #else
-    _mglSampleCoverage = glad_glSampleCoverage;
+    _glSampleCoverage = glad_glSampleCoverage;
 #endif
 #ifdef DEBUG
-    _mglCompressedTexImage3D = glad_debug_glCompressedTexImage3D;
+    _glCompressedTexImage3D = glad_debug_glCompressedTexImage3D;
 #else
-    _mglCompressedTexImage3D = glad_glCompressedTexImage3D;
+    _glCompressedTexImage3D = glad_glCompressedTexImage3D;
 #endif
 #ifdef DEBUG
-    _mglCompressedTexImage2D = glad_debug_glCompressedTexImage2D;
+    _glCompressedTexImage2D = glad_debug_glCompressedTexImage2D;
 #else
-    _mglCompressedTexImage2D = glad_glCompressedTexImage2D;
+    _glCompressedTexImage2D = glad_glCompressedTexImage2D;
 #endif
 #ifdef DEBUG
-    _mglCompressedTexImage1D = glad_debug_glCompressedTexImage1D;
+    _glCompressedTexImage1D = glad_debug_glCompressedTexImage1D;
 #else
-    _mglCompressedTexImage1D = glad_glCompressedTexImage1D;
+    _glCompressedTexImage1D = glad_glCompressedTexImage1D;
 #endif
 #ifdef DEBUG
-    _mglCompressedTexSubImage3D = glad_debug_glCompressedTexSubImage3D;
+    _glCompressedTexSubImage3D = glad_debug_glCompressedTexSubImage3D;
 #else
-    _mglCompressedTexSubImage3D = glad_glCompressedTexSubImage3D;
+    _glCompressedTexSubImage3D = glad_glCompressedTexSubImage3D;
 #endif
 #ifdef DEBUG
-    _mglCompressedTexSubImage2D = glad_debug_glCompressedTexSubImage2D;
+    _glCompressedTexSubImage2D = glad_debug_glCompressedTexSubImage2D;
 #else
-    _mglCompressedTexSubImage2D = glad_glCompressedTexSubImage2D;
+    _glCompressedTexSubImage2D = glad_glCompressedTexSubImage2D;
 #endif
 #ifdef DEBUG
-    _mglCompressedTexSubImage1D = glad_debug_glCompressedTexSubImage1D;
+    _glCompressedTexSubImage1D = glad_debug_glCompressedTexSubImage1D;
 #else
-    _mglCompressedTexSubImage1D = glad_glCompressedTexSubImage1D;
+    _glCompressedTexSubImage1D = glad_glCompressedTexSubImage1D;
 #endif
 #ifdef DEBUG
-    _mglGetCompressedTexImage = glad_debug_glGetCompressedTexImage;
+    _glGetCompressedTexImage = glad_debug_glGetCompressedTexImage;
 #else
-    _mglGetCompressedTexImage = glad_glGetCompressedTexImage;
+    _glGetCompressedTexImage = glad_glGetCompressedTexImage;
 #endif
 #ifdef DEBUG
-    _mglClientActiveTexture = glad_debug_glClientActiveTexture;
+    _glClientActiveTexture = glad_debug_glClientActiveTexture;
 #else
-    _mglClientActiveTexture = glad_glClientActiveTexture;
+    _glClientActiveTexture = glad_glClientActiveTexture;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1d = glad_debug_glMultiTexCoord1d;
+    _glMultiTexCoord1d = glad_debug_glMultiTexCoord1d;
 #else
-    _mglMultiTexCoord1d = glad_glMultiTexCoord1d;
+    _glMultiTexCoord1d = glad_glMultiTexCoord1d;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1dv = glad_debug_glMultiTexCoord1dv;
+    _glMultiTexCoord1dv = glad_debug_glMultiTexCoord1dv;
 #else
-    _mglMultiTexCoord1dv = glad_glMultiTexCoord1dv;
+    _glMultiTexCoord1dv = glad_glMultiTexCoord1dv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1f = glad_debug_glMultiTexCoord1f;
+    _glMultiTexCoord1f = glad_debug_glMultiTexCoord1f;
 #else
-    _mglMultiTexCoord1f = glad_glMultiTexCoord1f;
+    _glMultiTexCoord1f = glad_glMultiTexCoord1f;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1fv = glad_debug_glMultiTexCoord1fv;
+    _glMultiTexCoord1fv = glad_debug_glMultiTexCoord1fv;
 #else
-    _mglMultiTexCoord1fv = glad_glMultiTexCoord1fv;
+    _glMultiTexCoord1fv = glad_glMultiTexCoord1fv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1i = glad_debug_glMultiTexCoord1i;
+    _glMultiTexCoord1i = glad_debug_glMultiTexCoord1i;
 #else
-    _mglMultiTexCoord1i = glad_glMultiTexCoord1i;
+    _glMultiTexCoord1i = glad_glMultiTexCoord1i;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1iv = glad_debug_glMultiTexCoord1iv;
+    _glMultiTexCoord1iv = glad_debug_glMultiTexCoord1iv;
 #else
-    _mglMultiTexCoord1iv = glad_glMultiTexCoord1iv;
+    _glMultiTexCoord1iv = glad_glMultiTexCoord1iv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1s = glad_debug_glMultiTexCoord1s;
+    _glMultiTexCoord1s = glad_debug_glMultiTexCoord1s;
 #else
-    _mglMultiTexCoord1s = glad_glMultiTexCoord1s;
+    _glMultiTexCoord1s = glad_glMultiTexCoord1s;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord1sv = glad_debug_glMultiTexCoord1sv;
+    _glMultiTexCoord1sv = glad_debug_glMultiTexCoord1sv;
 #else
-    _mglMultiTexCoord1sv = glad_glMultiTexCoord1sv;
+    _glMultiTexCoord1sv = glad_glMultiTexCoord1sv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2d = glad_debug_glMultiTexCoord2d;
+    _glMultiTexCoord2d = glad_debug_glMultiTexCoord2d;
 #else
-    _mglMultiTexCoord2d = glad_glMultiTexCoord2d;
+    _glMultiTexCoord2d = glad_glMultiTexCoord2d;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2dv = glad_debug_glMultiTexCoord2dv;
+    _glMultiTexCoord2dv = glad_debug_glMultiTexCoord2dv;
 #else
-    _mglMultiTexCoord2dv = glad_glMultiTexCoord2dv;
+    _glMultiTexCoord2dv = glad_glMultiTexCoord2dv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2f = glad_debug_glMultiTexCoord2f;
+    _glMultiTexCoord2f = glad_debug_glMultiTexCoord2f;
 #else
-    _mglMultiTexCoord2f = glad_glMultiTexCoord2f;
+    _glMultiTexCoord2f = glad_glMultiTexCoord2f;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2fv = glad_debug_glMultiTexCoord2fv;
+    _glMultiTexCoord2fv = glad_debug_glMultiTexCoord2fv;
 #else
-    _mglMultiTexCoord2fv = glad_glMultiTexCoord2fv;
+    _glMultiTexCoord2fv = glad_glMultiTexCoord2fv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2i = glad_debug_glMultiTexCoord2i;
+    _glMultiTexCoord2i = glad_debug_glMultiTexCoord2i;
 #else
-    _mglMultiTexCoord2i = glad_glMultiTexCoord2i;
+    _glMultiTexCoord2i = glad_glMultiTexCoord2i;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2iv = glad_debug_glMultiTexCoord2iv;
+    _glMultiTexCoord2iv = glad_debug_glMultiTexCoord2iv;
 #else
-    _mglMultiTexCoord2iv = glad_glMultiTexCoord2iv;
+    _glMultiTexCoord2iv = glad_glMultiTexCoord2iv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2s = glad_debug_glMultiTexCoord2s;
+    _glMultiTexCoord2s = glad_debug_glMultiTexCoord2s;
 #else
-    _mglMultiTexCoord2s = glad_glMultiTexCoord2s;
+    _glMultiTexCoord2s = glad_glMultiTexCoord2s;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord2sv = glad_debug_glMultiTexCoord2sv;
+    _glMultiTexCoord2sv = glad_debug_glMultiTexCoord2sv;
 #else
-    _mglMultiTexCoord2sv = glad_glMultiTexCoord2sv;
+    _glMultiTexCoord2sv = glad_glMultiTexCoord2sv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3d = glad_debug_glMultiTexCoord3d;
+    _glMultiTexCoord3d = glad_debug_glMultiTexCoord3d;
 #else
-    _mglMultiTexCoord3d = glad_glMultiTexCoord3d;
+    _glMultiTexCoord3d = glad_glMultiTexCoord3d;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3dv = glad_debug_glMultiTexCoord3dv;
+    _glMultiTexCoord3dv = glad_debug_glMultiTexCoord3dv;
 #else
-    _mglMultiTexCoord3dv = glad_glMultiTexCoord3dv;
+    _glMultiTexCoord3dv = glad_glMultiTexCoord3dv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3f = glad_debug_glMultiTexCoord3f;
+    _glMultiTexCoord3f = glad_debug_glMultiTexCoord3f;
 #else
-    _mglMultiTexCoord3f = glad_glMultiTexCoord3f;
+    _glMultiTexCoord3f = glad_glMultiTexCoord3f;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3fv = glad_debug_glMultiTexCoord3fv;
+    _glMultiTexCoord3fv = glad_debug_glMultiTexCoord3fv;
 #else
-    _mglMultiTexCoord3fv = glad_glMultiTexCoord3fv;
+    _glMultiTexCoord3fv = glad_glMultiTexCoord3fv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3i = glad_debug_glMultiTexCoord3i;
+    _glMultiTexCoord3i = glad_debug_glMultiTexCoord3i;
 #else
-    _mglMultiTexCoord3i = glad_glMultiTexCoord3i;
+    _glMultiTexCoord3i = glad_glMultiTexCoord3i;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3iv = glad_debug_glMultiTexCoord3iv;
+    _glMultiTexCoord3iv = glad_debug_glMultiTexCoord3iv;
 #else
-    _mglMultiTexCoord3iv = glad_glMultiTexCoord3iv;
+    _glMultiTexCoord3iv = glad_glMultiTexCoord3iv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3s = glad_debug_glMultiTexCoord3s;
+    _glMultiTexCoord3s = glad_debug_glMultiTexCoord3s;
 #else
-    _mglMultiTexCoord3s = glad_glMultiTexCoord3s;
+    _glMultiTexCoord3s = glad_glMultiTexCoord3s;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord3sv = glad_debug_glMultiTexCoord3sv;
+    _glMultiTexCoord3sv = glad_debug_glMultiTexCoord3sv;
 #else
-    _mglMultiTexCoord3sv = glad_glMultiTexCoord3sv;
+    _glMultiTexCoord3sv = glad_glMultiTexCoord3sv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4d = glad_debug_glMultiTexCoord4d;
+    _glMultiTexCoord4d = glad_debug_glMultiTexCoord4d;
 #else
-    _mglMultiTexCoord4d = glad_glMultiTexCoord4d;
+    _glMultiTexCoord4d = glad_glMultiTexCoord4d;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4dv = glad_debug_glMultiTexCoord4dv;
+    _glMultiTexCoord4dv = glad_debug_glMultiTexCoord4dv;
 #else
-    _mglMultiTexCoord4dv = glad_glMultiTexCoord4dv;
+    _glMultiTexCoord4dv = glad_glMultiTexCoord4dv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4f = glad_debug_glMultiTexCoord4f;
+    _glMultiTexCoord4f = glad_debug_glMultiTexCoord4f;
 #else
-    _mglMultiTexCoord4f = glad_glMultiTexCoord4f;
+    _glMultiTexCoord4f = glad_glMultiTexCoord4f;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4fv = glad_debug_glMultiTexCoord4fv;
+    _glMultiTexCoord4fv = glad_debug_glMultiTexCoord4fv;
 #else
-    _mglMultiTexCoord4fv = glad_glMultiTexCoord4fv;
+    _glMultiTexCoord4fv = glad_glMultiTexCoord4fv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4i = glad_debug_glMultiTexCoord4i;
+    _glMultiTexCoord4i = glad_debug_glMultiTexCoord4i;
 #else
-    _mglMultiTexCoord4i = glad_glMultiTexCoord4i;
+    _glMultiTexCoord4i = glad_glMultiTexCoord4i;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4iv = glad_debug_glMultiTexCoord4iv;
+    _glMultiTexCoord4iv = glad_debug_glMultiTexCoord4iv;
 #else
-    _mglMultiTexCoord4iv = glad_glMultiTexCoord4iv;
+    _glMultiTexCoord4iv = glad_glMultiTexCoord4iv;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4s = glad_debug_glMultiTexCoord4s;
+    _glMultiTexCoord4s = glad_debug_glMultiTexCoord4s;
 #else
-    _mglMultiTexCoord4s = glad_glMultiTexCoord4s;
+    _glMultiTexCoord4s = glad_glMultiTexCoord4s;
 #endif
 #ifdef DEBUG
-    _mglMultiTexCoord4sv = glad_debug_glMultiTexCoord4sv;
+    _glMultiTexCoord4sv = glad_debug_glMultiTexCoord4sv;
 #else
-    _mglMultiTexCoord4sv = glad_glMultiTexCoord4sv;
+    _glMultiTexCoord4sv = glad_glMultiTexCoord4sv;
 #endif
 #ifdef DEBUG
-    _mglLoadTransposeMatrixf = glad_debug_glLoadTransposeMatrixf;
+    _glLoadTransposeMatrixf = glad_debug_glLoadTransposeMatrixf;
 #else
-    _mglLoadTransposeMatrixf = glad_glLoadTransposeMatrixf;
+    _glLoadTransposeMatrixf = glad_glLoadTransposeMatrixf;
 #endif
 #ifdef DEBUG
-    _mglLoadTransposeMatrixd = glad_debug_glLoadTransposeMatrixd;
+    _glLoadTransposeMatrixd = glad_debug_glLoadTransposeMatrixd;
 #else
-    _mglLoadTransposeMatrixd = glad_glLoadTransposeMatrixd;
+    _glLoadTransposeMatrixd = glad_glLoadTransposeMatrixd;
 #endif
 #ifdef DEBUG
-    _mglMultTransposeMatrixf = glad_debug_glMultTransposeMatrixf;
+    _glMultTransposeMatrixf = glad_debug_glMultTransposeMatrixf;
 #else
-    _mglMultTransposeMatrixf = glad_glMultTransposeMatrixf;
+    _glMultTransposeMatrixf = glad_glMultTransposeMatrixf;
 #endif
 #ifdef DEBUG
-    _mglMultTransposeMatrixd = glad_debug_glMultTransposeMatrixd;
+    _glMultTransposeMatrixd = glad_debug_glMultTransposeMatrixd;
 #else
-    _mglMultTransposeMatrixd = glad_glMultTransposeMatrixd;
+    _glMultTransposeMatrixd = glad_glMultTransposeMatrixd;
 #endif
 #ifdef DEBUG
-    _mglBlendFuncSeparate = glad_debug_glBlendFuncSeparate;
+    _glBlendFuncSeparate = glad_debug_glBlendFuncSeparate;
 #else
-    _mglBlendFuncSeparate = glad_glBlendFuncSeparate;
+    _glBlendFuncSeparate = glad_glBlendFuncSeparate;
 #endif
 #ifdef DEBUG
-    _mglMultiDrawArrays = glad_debug_glMultiDrawArrays;
+    _glMultiDrawArrays = glad_debug_glMultiDrawArrays;
 #else
-    _mglMultiDrawArrays = glad_glMultiDrawArrays;
+    _glMultiDrawArrays = glad_glMultiDrawArrays;
 #endif
 #ifdef DEBUG
-    _mglMultiDrawElements = glad_debug_glMultiDrawElements;
+    _glMultiDrawElements = glad_debug_glMultiDrawElements;
 #else
-    _mglMultiDrawElements = glad_glMultiDrawElements;
+    _glMultiDrawElements = glad_glMultiDrawElements;
 #endif
 #ifdef DEBUG
-    _mglPointParameterf = glad_debug_glPointParameterf;
+    _glPointParameterf = glad_debug_glPointParameterf;
 #else
-    _mglPointParameterf = glad_glPointParameterf;
+    _glPointParameterf = glad_glPointParameterf;
 #endif
 #ifdef DEBUG
-    _mglPointParameterfv = glad_debug_glPointParameterfv;
+    _glPointParameterfv = glad_debug_glPointParameterfv;
 #else
-    _mglPointParameterfv = glad_glPointParameterfv;
+    _glPointParameterfv = glad_glPointParameterfv;
 #endif
 #ifdef DEBUG
-    _mglPointParameteri = glad_debug_glPointParameteri;
+    _glPointParameteri = glad_debug_glPointParameteri;
 #else
-    _mglPointParameteri = glad_glPointParameteri;
+    _glPointParameteri = glad_glPointParameteri;
 #endif
 #ifdef DEBUG
-    _mglPointParameteriv = glad_debug_glPointParameteriv;
+    _glPointParameteriv = glad_debug_glPointParameteriv;
 #else
-    _mglPointParameteriv = glad_glPointParameteriv;
+    _glPointParameteriv = glad_glPointParameteriv;
 #endif
 #ifdef DEBUG
-    _mglFogCoordf = glad_debug_glFogCoordf;
+    _glFogCoordf = glad_debug_glFogCoordf;
 #else
-    _mglFogCoordf = glad_glFogCoordf;
+    _glFogCoordf = glad_glFogCoordf;
 #endif
 #ifdef DEBUG
-    _mglFogCoordfv = glad_debug_glFogCoordfv;
+    _glFogCoordfv = glad_debug_glFogCoordfv;
 #else
-    _mglFogCoordfv = glad_glFogCoordfv;
+    _glFogCoordfv = glad_glFogCoordfv;
 #endif
 #ifdef DEBUG
-    _mglFogCoordd = glad_debug_glFogCoordd;
+    _glFogCoordd = glad_debug_glFogCoordd;
 #else
-    _mglFogCoordd = glad_glFogCoordd;
+    _glFogCoordd = glad_glFogCoordd;
 #endif
 #ifdef DEBUG
-    _mglFogCoorddv = glad_debug_glFogCoorddv;
+    _glFogCoorddv = glad_debug_glFogCoorddv;
 #else
-    _mglFogCoorddv = glad_glFogCoorddv;
+    _glFogCoorddv = glad_glFogCoorddv;
 #endif
 #ifdef DEBUG
-    _mglFogCoordPointer = glad_debug_glFogCoordPointer;
+    _glFogCoordPointer = glad_debug_glFogCoordPointer;
 #else
-    _mglFogCoordPointer = glad_glFogCoordPointer;
+    _glFogCoordPointer = glad_glFogCoordPointer;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3b = glad_debug_glSecondaryColor3b;
+    _glSecondaryColor3b = glad_debug_glSecondaryColor3b;
 #else
-    _mglSecondaryColor3b = glad_glSecondaryColor3b;
+    _glSecondaryColor3b = glad_glSecondaryColor3b;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3bv = glad_debug_glSecondaryColor3bv;
+    _glSecondaryColor3bv = glad_debug_glSecondaryColor3bv;
 #else
-    _mglSecondaryColor3bv = glad_glSecondaryColor3bv;
+    _glSecondaryColor3bv = glad_glSecondaryColor3bv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3d = glad_debug_glSecondaryColor3d;
+    _glSecondaryColor3d = glad_debug_glSecondaryColor3d;
 #else
-    _mglSecondaryColor3d = glad_glSecondaryColor3d;
+    _glSecondaryColor3d = glad_glSecondaryColor3d;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3dv = glad_debug_glSecondaryColor3dv;
+    _glSecondaryColor3dv = glad_debug_glSecondaryColor3dv;
 #else
-    _mglSecondaryColor3dv = glad_glSecondaryColor3dv;
+    _glSecondaryColor3dv = glad_glSecondaryColor3dv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3f = glad_debug_glSecondaryColor3f;
+    _glSecondaryColor3f = glad_debug_glSecondaryColor3f;
 #else
-    _mglSecondaryColor3f = glad_glSecondaryColor3f;
+    _glSecondaryColor3f = glad_glSecondaryColor3f;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3fv = glad_debug_glSecondaryColor3fv;
+    _glSecondaryColor3fv = glad_debug_glSecondaryColor3fv;
 #else
-    _mglSecondaryColor3fv = glad_glSecondaryColor3fv;
+    _glSecondaryColor3fv = glad_glSecondaryColor3fv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3i = glad_debug_glSecondaryColor3i;
+    _glSecondaryColor3i = glad_debug_glSecondaryColor3i;
 #else
-    _mglSecondaryColor3i = glad_glSecondaryColor3i;
+    _glSecondaryColor3i = glad_glSecondaryColor3i;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3iv = glad_debug_glSecondaryColor3iv;
+    _glSecondaryColor3iv = glad_debug_glSecondaryColor3iv;
 #else
-    _mglSecondaryColor3iv = glad_glSecondaryColor3iv;
+    _glSecondaryColor3iv = glad_glSecondaryColor3iv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3s = glad_debug_glSecondaryColor3s;
+    _glSecondaryColor3s = glad_debug_glSecondaryColor3s;
 #else
-    _mglSecondaryColor3s = glad_glSecondaryColor3s;
+    _glSecondaryColor3s = glad_glSecondaryColor3s;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3sv = glad_debug_glSecondaryColor3sv;
+    _glSecondaryColor3sv = glad_debug_glSecondaryColor3sv;
 #else
-    _mglSecondaryColor3sv = glad_glSecondaryColor3sv;
+    _glSecondaryColor3sv = glad_glSecondaryColor3sv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3ub = glad_debug_glSecondaryColor3ub;
+    _glSecondaryColor3ub = glad_debug_glSecondaryColor3ub;
 #else
-    _mglSecondaryColor3ub = glad_glSecondaryColor3ub;
+    _glSecondaryColor3ub = glad_glSecondaryColor3ub;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3ubv = glad_debug_glSecondaryColor3ubv;
+    _glSecondaryColor3ubv = glad_debug_glSecondaryColor3ubv;
 #else
-    _mglSecondaryColor3ubv = glad_glSecondaryColor3ubv;
+    _glSecondaryColor3ubv = glad_glSecondaryColor3ubv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3ui = glad_debug_glSecondaryColor3ui;
+    _glSecondaryColor3ui = glad_debug_glSecondaryColor3ui;
 #else
-    _mglSecondaryColor3ui = glad_glSecondaryColor3ui;
+    _glSecondaryColor3ui = glad_glSecondaryColor3ui;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3uiv = glad_debug_glSecondaryColor3uiv;
+    _glSecondaryColor3uiv = glad_debug_glSecondaryColor3uiv;
 #else
-    _mglSecondaryColor3uiv = glad_glSecondaryColor3uiv;
+    _glSecondaryColor3uiv = glad_glSecondaryColor3uiv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3us = glad_debug_glSecondaryColor3us;
+    _glSecondaryColor3us = glad_debug_glSecondaryColor3us;
 #else
-    _mglSecondaryColor3us = glad_glSecondaryColor3us;
+    _glSecondaryColor3us = glad_glSecondaryColor3us;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColor3usv = glad_debug_glSecondaryColor3usv;
+    _glSecondaryColor3usv = glad_debug_glSecondaryColor3usv;
 #else
-    _mglSecondaryColor3usv = glad_glSecondaryColor3usv;
+    _glSecondaryColor3usv = glad_glSecondaryColor3usv;
 #endif
 #ifdef DEBUG
-    _mglSecondaryColorPointer = glad_debug_glSecondaryColorPointer;
+    _glSecondaryColorPointer = glad_debug_glSecondaryColorPointer;
 #else
-    _mglSecondaryColorPointer = glad_glSecondaryColorPointer;
+    _glSecondaryColorPointer = glad_glSecondaryColorPointer;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2d = glad_debug_glWindowPos2d;
+    _glWindowPos2d = glad_debug_glWindowPos2d;
 #else
-    _mglWindowPos2d = glad_glWindowPos2d;
+    _glWindowPos2d = glad_glWindowPos2d;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2dv = glad_debug_glWindowPos2dv;
+    _glWindowPos2dv = glad_debug_glWindowPos2dv;
 #else
-    _mglWindowPos2dv = glad_glWindowPos2dv;
+    _glWindowPos2dv = glad_glWindowPos2dv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2f = glad_debug_glWindowPos2f;
+    _glWindowPos2f = glad_debug_glWindowPos2f;
 #else
-    _mglWindowPos2f = glad_glWindowPos2f;
+    _glWindowPos2f = glad_glWindowPos2f;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2fv = glad_debug_glWindowPos2fv;
+    _glWindowPos2fv = glad_debug_glWindowPos2fv;
 #else
-    _mglWindowPos2fv = glad_glWindowPos2fv;
+    _glWindowPos2fv = glad_glWindowPos2fv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2i = glad_debug_glWindowPos2i;
+    _glWindowPos2i = glad_debug_glWindowPos2i;
 #else
-    _mglWindowPos2i = glad_glWindowPos2i;
+    _glWindowPos2i = glad_glWindowPos2i;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2iv = glad_debug_glWindowPos2iv;
+    _glWindowPos2iv = glad_debug_glWindowPos2iv;
 #else
-    _mglWindowPos2iv = glad_glWindowPos2iv;
+    _glWindowPos2iv = glad_glWindowPos2iv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2s = glad_debug_glWindowPos2s;
+    _glWindowPos2s = glad_debug_glWindowPos2s;
 #else
-    _mglWindowPos2s = glad_glWindowPos2s;
+    _glWindowPos2s = glad_glWindowPos2s;
 #endif
 #ifdef DEBUG
-    _mglWindowPos2sv = glad_debug_glWindowPos2sv;
+    _glWindowPos2sv = glad_debug_glWindowPos2sv;
 #else
-    _mglWindowPos2sv = glad_glWindowPos2sv;
+    _glWindowPos2sv = glad_glWindowPos2sv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3d = glad_debug_glWindowPos3d;
+    _glWindowPos3d = glad_debug_glWindowPos3d;
 #else
-    _mglWindowPos3d = glad_glWindowPos3d;
+    _glWindowPos3d = glad_glWindowPos3d;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3dv = glad_debug_glWindowPos3dv;
+    _glWindowPos3dv = glad_debug_glWindowPos3dv;
 #else
-    _mglWindowPos3dv = glad_glWindowPos3dv;
+    _glWindowPos3dv = glad_glWindowPos3dv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3f = glad_debug_glWindowPos3f;
+    _glWindowPos3f = glad_debug_glWindowPos3f;
 #else
-    _mglWindowPos3f = glad_glWindowPos3f;
+    _glWindowPos3f = glad_glWindowPos3f;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3fv = glad_debug_glWindowPos3fv;
+    _glWindowPos3fv = glad_debug_glWindowPos3fv;
 #else
-    _mglWindowPos3fv = glad_glWindowPos3fv;
+    _glWindowPos3fv = glad_glWindowPos3fv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3i = glad_debug_glWindowPos3i;
+    _glWindowPos3i = glad_debug_glWindowPos3i;
 #else
-    _mglWindowPos3i = glad_glWindowPos3i;
+    _glWindowPos3i = glad_glWindowPos3i;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3iv = glad_debug_glWindowPos3iv;
+    _glWindowPos3iv = glad_debug_glWindowPos3iv;
 #else
-    _mglWindowPos3iv = glad_glWindowPos3iv;
+    _glWindowPos3iv = glad_glWindowPos3iv;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3s = glad_debug_glWindowPos3s;
+    _glWindowPos3s = glad_debug_glWindowPos3s;
 #else
-    _mglWindowPos3s = glad_glWindowPos3s;
+    _glWindowPos3s = glad_glWindowPos3s;
 #endif
 #ifdef DEBUG
-    _mglWindowPos3sv = glad_debug_glWindowPos3sv;
+    _glWindowPos3sv = glad_debug_glWindowPos3sv;
 #else
-    _mglWindowPos3sv = glad_glWindowPos3sv;
+    _glWindowPos3sv = glad_glWindowPos3sv;
 #endif
 #ifdef DEBUG
-    _mglBlendColor = glad_debug_glBlendColor;
+    _glBlendColor = glad_debug_glBlendColor;
 #else
-    _mglBlendColor = glad_glBlendColor;
+    _glBlendColor = glad_glBlendColor;
 #endif
 #ifdef DEBUG
-    _mglBlendEquation = glad_debug_glBlendEquation;
+    _glBlendEquation = glad_debug_glBlendEquation;
 #else
-    _mglBlendEquation = glad_glBlendEquation;
+    _glBlendEquation = glad_glBlendEquation;
 #endif
 #ifdef DEBUG
-    _mglGenQueries = glad_debug_glGenQueries;
+    _glGenQueries = glad_debug_glGenQueries;
 #else
-    _mglGenQueries = glad_glGenQueries;
+    _glGenQueries = glad_glGenQueries;
 #endif
 #ifdef DEBUG
-    _mglDeleteQueries = glad_debug_glDeleteQueries;
+    _glDeleteQueries = glad_debug_glDeleteQueries;
 #else
-    _mglDeleteQueries = glad_glDeleteQueries;
+    _glDeleteQueries = glad_glDeleteQueries;
 #endif
 #ifdef DEBUG
-    _mglIsQuery = glad_debug_glIsQuery;
+    _glIsQuery = glad_debug_glIsQuery;
 #else
-    _mglIsQuery = glad_glIsQuery;
+    _glIsQuery = glad_glIsQuery;
 #endif
 #ifdef DEBUG
-    _mglBeginQuery = glad_debug_glBeginQuery;
+    _glBeginQuery = glad_debug_glBeginQuery;
 #else
-    _mglBeginQuery = glad_glBeginQuery;
+    _glBeginQuery = glad_glBeginQuery;
 #endif
 #ifdef DEBUG
-    _mglEndQuery = glad_debug_glEndQuery;
+    _glEndQuery = glad_debug_glEndQuery;
 #else
-    _mglEndQuery = glad_glEndQuery;
+    _glEndQuery = glad_glEndQuery;
 #endif
 #ifdef DEBUG
-    _mglGetQueryiv = glad_debug_glGetQueryiv;
+    _glGetQueryiv = glad_debug_glGetQueryiv;
 #else
-    _mglGetQueryiv = glad_glGetQueryiv;
+    _glGetQueryiv = glad_glGetQueryiv;
 #endif
 #ifdef DEBUG
-    _mglGetQueryObjectiv = glad_debug_glGetQueryObjectiv;
+    _glGetQueryObjectiv = glad_debug_glGetQueryObjectiv;
 #else
-    _mglGetQueryObjectiv = glad_glGetQueryObjectiv;
+    _glGetQueryObjectiv = glad_glGetQueryObjectiv;
 #endif
 #ifdef DEBUG
-    _mglGetQueryObjectuiv = glad_debug_glGetQueryObjectuiv;
+    _glGetQueryObjectuiv = glad_debug_glGetQueryObjectuiv;
 #else
-    _mglGetQueryObjectuiv = glad_glGetQueryObjectuiv;
+    _glGetQueryObjectuiv = glad_glGetQueryObjectuiv;
 #endif
 #ifdef DEBUG
-    _mglBindBuffer = glad_debug_glBindBuffer;
+    _glBindBuffer = glad_debug_glBindBuffer;
 #else
-    _mglBindBuffer = glad_glBindBuffer;
+    _glBindBuffer = glad_glBindBuffer;
 #endif
 #ifdef DEBUG
-    _mglDeleteBuffers = glad_debug_glDeleteBuffers;
+    _glDeleteBuffers = glad_debug_glDeleteBuffers;
 #else
-    _mglDeleteBuffers = glad_glDeleteBuffers;
+    _glDeleteBuffers = glad_glDeleteBuffers;
 #endif
 #ifdef DEBUG
-    _mglGenBuffers = glad_debug_glGenBuffers;
+    _glGenBuffers = glad_debug_glGenBuffers;
 #else
-    _mglGenBuffers = glad_glGenBuffers;
+    _glGenBuffers = glad_glGenBuffers;
 #endif
 #ifdef DEBUG
-    _mglIsBuffer = glad_debug_glIsBuffer;
+    _glIsBuffer = glad_debug_glIsBuffer;
 #else
-    _mglIsBuffer = glad_glIsBuffer;
+    _glIsBuffer = glad_glIsBuffer;
 #endif
 #ifdef DEBUG
-    _mglBufferData = glad_debug_glBufferData;
+    _glBufferData = glad_debug_glBufferData;
 #else
-    _mglBufferData = glad_glBufferData;
+    _glBufferData = glad_glBufferData;
 #endif
 #ifdef DEBUG
-    _mglBufferSubData = glad_debug_glBufferSubData;
+    _glBufferSubData = glad_debug_glBufferSubData;
 #else
-    _mglBufferSubData = glad_glBufferSubData;
+    _glBufferSubData = glad_glBufferSubData;
 #endif
 #ifdef DEBUG
-    _mglGetBufferSubData = glad_debug_glGetBufferSubData;
+    _glGetBufferSubData = glad_debug_glGetBufferSubData;
 #else
-    _mglGetBufferSubData = glad_glGetBufferSubData;
+    _glGetBufferSubData = glad_glGetBufferSubData;
 #endif
 #ifdef DEBUG
-    _mglMapBuffer = glad_debug_glMapBuffer;
+    _glMapBuffer = glad_debug_glMapBuffer;
 #else
-    _mglMapBuffer = glad_glMapBuffer;
+    _glMapBuffer = glad_glMapBuffer;
 #endif
 #ifdef DEBUG
-    _mglUnmapBuffer = glad_debug_glUnmapBuffer;
+    _glUnmapBuffer = glad_debug_glUnmapBuffer;
 #else
-    _mglUnmapBuffer = glad_glUnmapBuffer;
+    _glUnmapBuffer = glad_glUnmapBuffer;
 #endif
 #ifdef DEBUG
-    _mglGetBufferParameteriv = glad_debug_glGetBufferParameteriv;
+    _glGetBufferParameteriv = glad_debug_glGetBufferParameteriv;
 #else
-    _mglGetBufferParameteriv = glad_glGetBufferParameteriv;
+    _glGetBufferParameteriv = glad_glGetBufferParameteriv;
 #endif
 #ifdef DEBUG
-    _mglGetBufferPointerv = glad_debug_glGetBufferPointerv;
+    _glGetBufferPointerv = glad_debug_glGetBufferPointerv;
 #else
-    _mglGetBufferPointerv = glad_glGetBufferPointerv;
+    _glGetBufferPointerv = glad_glGetBufferPointerv;
 #endif
 #ifdef DEBUG
-    _mglBlendEquationSeparate = glad_debug_glBlendEquationSeparate;
+    _glBlendEquationSeparate = glad_debug_glBlendEquationSeparate;
 #else
-    _mglBlendEquationSeparate = glad_glBlendEquationSeparate;
+    _glBlendEquationSeparate = glad_glBlendEquationSeparate;
 #endif
 #ifdef DEBUG
-    _mglDrawBuffers = glad_debug_glDrawBuffers;
+    _glDrawBuffers = glad_debug_glDrawBuffers;
 #else
-    _mglDrawBuffers = glad_glDrawBuffers;
+    _glDrawBuffers = glad_glDrawBuffers;
 #endif
 #ifdef DEBUG
-    _mglStencilOpSeparate = glad_debug_glStencilOpSeparate;
+    _glStencilOpSeparate = glad_debug_glStencilOpSeparate;
 #else
-    _mglStencilOpSeparate = glad_glStencilOpSeparate;
+    _glStencilOpSeparate = glad_glStencilOpSeparate;
 #endif
 #ifdef DEBUG
-    _mglStencilFuncSeparate = glad_debug_glStencilFuncSeparate;
+    _glStencilFuncSeparate = glad_debug_glStencilFuncSeparate;
 #else
-    _mglStencilFuncSeparate = glad_glStencilFuncSeparate;
+    _glStencilFuncSeparate = glad_glStencilFuncSeparate;
 #endif
 #ifdef DEBUG
-    _mglStencilMaskSeparate = glad_debug_glStencilMaskSeparate;
+    _glStencilMaskSeparate = glad_debug_glStencilMaskSeparate;
 #else
-    _mglStencilMaskSeparate = glad_glStencilMaskSeparate;
+    _glStencilMaskSeparate = glad_glStencilMaskSeparate;
 #endif
 #ifdef DEBUG
-    _mglAttachShader = glad_debug_glAttachShader;
+    _glAttachShader = glad_debug_glAttachShader;
 #else
-    _mglAttachShader = glad_glAttachShader;
+    _glAttachShader = glad_glAttachShader;
 #endif
 #ifdef DEBUG
-    _mglBindAttribLocation = glad_debug_glBindAttribLocation;
+    _glBindAttribLocation = glad_debug_glBindAttribLocation;
 #else
-    _mglBindAttribLocation = glad_glBindAttribLocation;
+    _glBindAttribLocation = glad_glBindAttribLocation;
 #endif
 #ifdef DEBUG
-    _mglCompileShader = glad_debug_glCompileShader;
+    _glCompileShader = glad_debug_glCompileShader;
 #else
-    _mglCompileShader = glad_glCompileShader;
+    _glCompileShader = glad_glCompileShader;
 #endif
 #ifdef DEBUG
-    _mglCreateProgram = glad_debug_glCreateProgram;
+    _glCreateProgram = glad_debug_glCreateProgram;
 #else
-    _mglCreateProgram = glad_glCreateProgram;
+    _glCreateProgram = glad_glCreateProgram;
 #endif
 #ifdef DEBUG
-    _mglCreateShader = glad_debug_glCreateShader;
+    _glCreateShader = glad_debug_glCreateShader;
 #else
-    _mglCreateShader = glad_glCreateShader;
+    _glCreateShader = glad_glCreateShader;
 #endif
 #ifdef DEBUG
-    _mglDeleteProgram = glad_debug_glDeleteProgram;
+    _glDeleteProgram = glad_debug_glDeleteProgram;
 #else
-    _mglDeleteProgram = glad_glDeleteProgram;
+    _glDeleteProgram = glad_glDeleteProgram;
 #endif
 #ifdef DEBUG
-    _mglDeleteShader = glad_debug_glDeleteShader;
+    _glDeleteShader = glad_debug_glDeleteShader;
 #else
-    _mglDeleteShader = glad_glDeleteShader;
+    _glDeleteShader = glad_glDeleteShader;
 #endif
 #ifdef DEBUG
-    _mglDetachShader = glad_debug_glDetachShader;
+    _glDetachShader = glad_debug_glDetachShader;
 #else
-    _mglDetachShader = glad_glDetachShader;
+    _glDetachShader = glad_glDetachShader;
 #endif
 #ifdef DEBUG
-    _mglDisableVertexAttribArray = glad_debug_glDisableVertexAttribArray;
+    _glDisableVertexAttribArray = glad_debug_glDisableVertexAttribArray;
 #else
-    _mglDisableVertexAttribArray = glad_glDisableVertexAttribArray;
+    _glDisableVertexAttribArray = glad_glDisableVertexAttribArray;
 #endif
 #ifdef DEBUG
-    _mglEnableVertexAttribArray = glad_debug_glEnableVertexAttribArray;
+    _glEnableVertexAttribArray = glad_debug_glEnableVertexAttribArray;
 #else
-    _mglEnableVertexAttribArray = glad_glEnableVertexAttribArray;
+    _glEnableVertexAttribArray = glad_glEnableVertexAttribArray;
 #endif
 #ifdef DEBUG
-    _mglGetActiveAttrib = glad_debug_glGetActiveAttrib;
+    _glGetActiveAttrib = glad_debug_glGetActiveAttrib;
 #else
-    _mglGetActiveAttrib = glad_glGetActiveAttrib;
+    _glGetActiveAttrib = glad_glGetActiveAttrib;
 #endif
 #ifdef DEBUG
-    _mglGetActiveUniform = glad_debug_glGetActiveUniform;
+    _glGetActiveUniform = glad_debug_glGetActiveUniform;
 #else
-    _mglGetActiveUniform = glad_glGetActiveUniform;
+    _glGetActiveUniform = glad_glGetActiveUniform;
 #endif
 #ifdef DEBUG
-    _mglGetAttachedShaders = glad_debug_glGetAttachedShaders;
+    _glGetAttachedShaders = glad_debug_glGetAttachedShaders;
 #else
-    _mglGetAttachedShaders = glad_glGetAttachedShaders;
+    _glGetAttachedShaders = glad_glGetAttachedShaders;
 #endif
 #ifdef DEBUG
-    _mglGetAttribLocation = glad_debug_glGetAttribLocation;
+    _glGetAttribLocation = glad_debug_glGetAttribLocation;
 #else
-    _mglGetAttribLocation = glad_glGetAttribLocation;
+    _glGetAttribLocation = glad_glGetAttribLocation;
 #endif
 #ifdef DEBUG
-    _mglGetProgramiv = glad_debug_glGetProgramiv;
+    _glGetProgramiv = glad_debug_glGetProgramiv;
 #else
-    _mglGetProgramiv = glad_glGetProgramiv;
+    _glGetProgramiv = glad_glGetProgramiv;
 #endif
 #ifdef DEBUG
-    _mglGetProgramInfoLog = glad_debug_glGetProgramInfoLog;
+    _glGetProgramInfoLog = glad_debug_glGetProgramInfoLog;
 #else
-    _mglGetProgramInfoLog = glad_glGetProgramInfoLog;
+    _glGetProgramInfoLog = glad_glGetProgramInfoLog;
 #endif
 #ifdef DEBUG
-    _mglGetShaderiv = glad_debug_glGetShaderiv;
+    _glGetShaderiv = glad_debug_glGetShaderiv;
 #else
-    _mglGetShaderiv = glad_glGetShaderiv;
+    _glGetShaderiv = glad_glGetShaderiv;
 #endif
 #ifdef DEBUG
-    _mglGetShaderInfoLog = glad_debug_glGetShaderInfoLog;
+    _glGetShaderInfoLog = glad_debug_glGetShaderInfoLog;
 #else
-    _mglGetShaderInfoLog = glad_glGetShaderInfoLog;
+    _glGetShaderInfoLog = glad_glGetShaderInfoLog;
 #endif
 #ifdef DEBUG
-    _mglGetShaderSource = glad_debug_glGetShaderSource;
+    _glGetShaderSource = glad_debug_glGetShaderSource;
 #else
-    _mglGetShaderSource = glad_glGetShaderSource;
+    _glGetShaderSource = glad_glGetShaderSource;
 #endif
 #ifdef DEBUG
-    _mglGetUniformLocation = glad_debug_glGetUniformLocation;
+    _glGetUniformLocation = glad_debug_glGetUniformLocation;
 #else
-    _mglGetUniformLocation = glad_glGetUniformLocation;
+    _glGetUniformLocation = glad_glGetUniformLocation;
 #endif
 #ifdef DEBUG
-    _mglGetUniformfv = glad_debug_glGetUniformfv;
+    _glGetUniformfv = glad_debug_glGetUniformfv;
 #else
-    _mglGetUniformfv = glad_glGetUniformfv;
+    _glGetUniformfv = glad_glGetUniformfv;
 #endif
 #ifdef DEBUG
-    _mglGetUniformiv = glad_debug_glGetUniformiv;
+    _glGetUniformiv = glad_debug_glGetUniformiv;
 #else
-    _mglGetUniformiv = glad_glGetUniformiv;
+    _glGetUniformiv = glad_glGetUniformiv;
 #endif
 #ifdef DEBUG
-    _mglGetVertexAttribdv = glad_debug_glGetVertexAttribdv;
+    _glGetVertexAttribdv = glad_debug_glGetVertexAttribdv;
 #else
-    _mglGetVertexAttribdv = glad_glGetVertexAttribdv;
+    _glGetVertexAttribdv = glad_glGetVertexAttribdv;
 #endif
 #ifdef DEBUG
-    _mglGetVertexAttribfv = glad_debug_glGetVertexAttribfv;
+    _glGetVertexAttribfv = glad_debug_glGetVertexAttribfv;
 #else
-    _mglGetVertexAttribfv = glad_glGetVertexAttribfv;
+    _glGetVertexAttribfv = glad_glGetVertexAttribfv;
 #endif
 #ifdef DEBUG
-    _mglGetVertexAttribiv = glad_debug_glGetVertexAttribiv;
+    _glGetVertexAttribiv = glad_debug_glGetVertexAttribiv;
 #else
-    _mglGetVertexAttribiv = glad_glGetVertexAttribiv;
+    _glGetVertexAttribiv = glad_glGetVertexAttribiv;
 #endif
 #ifdef DEBUG
-    _mglGetVertexAttribPointerv = glad_debug_glGetVertexAttribPointerv;
+    _glGetVertexAttribPointerv = glad_debug_glGetVertexAttribPointerv;
 #else
-    _mglGetVertexAttribPointerv = glad_glGetVertexAttribPointerv;
+    _glGetVertexAttribPointerv = glad_glGetVertexAttribPointerv;
 #endif
 #ifdef DEBUG
-    _mglIsProgram = glad_debug_glIsProgram;
+    _glIsProgram = glad_debug_glIsProgram;
 #else
-    _mglIsProgram = glad_glIsProgram;
+    _glIsProgram = glad_glIsProgram;
 #endif
 #ifdef DEBUG
-    _mglIsShader = glad_debug_glIsShader;
+    _glIsShader = glad_debug_glIsShader;
 #else
-    _mglIsShader = glad_glIsShader;
+    _glIsShader = glad_glIsShader;
 #endif
 #ifdef DEBUG
-    _mglLinkProgram = glad_debug_glLinkProgram;
+    _glLinkProgram = glad_debug_glLinkProgram;
 #else
-    _mglLinkProgram = glad_glLinkProgram;
+    _glLinkProgram = glad_glLinkProgram;
 #endif
 #ifdef DEBUG
-    _mglShaderSource = glad_debug_glShaderSource;
+    _glShaderSource = glad_debug_glShaderSource;
 #else
-    _mglShaderSource = glad_glShaderSource;
+    _glShaderSource = glad_glShaderSource;
 #endif
 #ifdef DEBUG
-    _mglUseProgram = glad_debug_glUseProgram;
+    _glUseProgram = glad_debug_glUseProgram;
 #else
-    _mglUseProgram = glad_glUseProgram;
+    _glUseProgram = glad_glUseProgram;
 #endif
 #ifdef DEBUG
-    _mglUniform1f = glad_debug_glUniform1f;
+    _glUniform1f = glad_debug_glUniform1f;
 #else
-    _mglUniform1f = glad_glUniform1f;
+    _glUniform1f = glad_glUniform1f;
 #endif
 #ifdef DEBUG
-    _mglUniform2f = glad_debug_glUniform2f;
+    _glUniform2f = glad_debug_glUniform2f;
 #else
-    _mglUniform2f = glad_glUniform2f;
+    _glUniform2f = glad_glUniform2f;
 #endif
 #ifdef DEBUG
-    _mglUniform3f = glad_debug_glUniform3f;
+    _glUniform3f = glad_debug_glUniform3f;
 #else
-    _mglUniform3f = glad_glUniform3f;
+    _glUniform3f = glad_glUniform3f;
 #endif
 #ifdef DEBUG
-    _mglUniform4f = glad_debug_glUniform4f;
+    _glUniform4f = glad_debug_glUniform4f;
 #else
-    _mglUniform4f = glad_glUniform4f;
+    _glUniform4f = glad_glUniform4f;
 #endif
 #ifdef DEBUG
-    _mglUniform1i = glad_debug_glUniform1i;
+    _glUniform1i = glad_debug_glUniform1i;
 #else
-    _mglUniform1i = glad_glUniform1i;
+    _glUniform1i = glad_glUniform1i;
 #endif
 #ifdef DEBUG
-    _mglUniform2i = glad_debug_glUniform2i;
+    _glUniform2i = glad_debug_glUniform2i;
 #else
-    _mglUniform2i = glad_glUniform2i;
+    _glUniform2i = glad_glUniform2i;
 #endif
 #ifdef DEBUG
-    _mglUniform3i = glad_debug_glUniform3i;
+    _glUniform3i = glad_debug_glUniform3i;
 #else
-    _mglUniform3i = glad_glUniform3i;
+    _glUniform3i = glad_glUniform3i;
 #endif
 #ifdef DEBUG
-    _mglUniform4i = glad_debug_glUniform4i;
+    _glUniform4i = glad_debug_glUniform4i;
 #else
-    _mglUniform4i = glad_glUniform4i;
+    _glUniform4i = glad_glUniform4i;
 #endif
 #ifdef DEBUG
-    _mglUniform1fv = glad_debug_glUniform1fv;
+    _glUniform1fv = glad_debug_glUniform1fv;
 #else
-    _mglUniform1fv = glad_glUniform1fv;
+    _glUniform1fv = glad_glUniform1fv;
 #endif
 #ifdef DEBUG
-    _mglUniform2fv = glad_debug_glUniform2fv;
+    _glUniform2fv = glad_debug_glUniform2fv;
 #else
-    _mglUniform2fv = glad_glUniform2fv;
+    _glUniform2fv = glad_glUniform2fv;
 #endif
 #ifdef DEBUG
-    _mglUniform3fv = glad_debug_glUniform3fv;
+    _glUniform3fv = glad_debug_glUniform3fv;
 #else
-    _mglUniform3fv = glad_glUniform3fv;
+    _glUniform3fv = glad_glUniform3fv;
 #endif
 #ifdef DEBUG
-    _mglUniform4fv = glad_debug_glUniform4fv;
+    _glUniform4fv = glad_debug_glUniform4fv;
 #else
-    _mglUniform4fv = glad_glUniform4fv;
+    _glUniform4fv = glad_glUniform4fv;
 #endif
 #ifdef DEBUG
-    _mglUniform1iv = glad_debug_glUniform1iv;
+    _glUniform1iv = glad_debug_glUniform1iv;
 #else
-    _mglUniform1iv = glad_glUniform1iv;
+    _glUniform1iv = glad_glUniform1iv;
 #endif
 #ifdef DEBUG
-    _mglUniform2iv = glad_debug_glUniform2iv;
+    _glUniform2iv = glad_debug_glUniform2iv;
 #else
-    _mglUniform2iv = glad_glUniform2iv;
+    _glUniform2iv = glad_glUniform2iv;
 #endif
 #ifdef DEBUG
-    _mglUniform3iv = glad_debug_glUniform3iv;
+    _glUniform3iv = glad_debug_glUniform3iv;
 #else
-    _mglUniform3iv = glad_glUniform3iv;
+    _glUniform3iv = glad_glUniform3iv;
 #endif
 #ifdef DEBUG
-    _mglUniform4iv = glad_debug_glUniform4iv;
+    _glUniform4iv = glad_debug_glUniform4iv;
 #else
-    _mglUniform4iv = glad_glUniform4iv;
+    _glUniform4iv = glad_glUniform4iv;
 #endif
 #ifdef DEBUG
-    _mglUniformMatrix2fv = glad_debug_glUniformMatrix2fv;
+    _glUniformMatrix2fv = glad_debug_glUniformMatrix2fv;
 #else
-    _mglUniformMatrix2fv = glad_glUniformMatrix2fv;
+    _glUniformMatrix2fv = glad_glUniformMatrix2fv;
 #endif
 #ifdef DEBUG
-    _mglUniformMatrix3fv = glad_debug_glUniformMatrix3fv;
+    _glUniformMatrix3fv = glad_debug_glUniformMatrix3fv;
 #else
-    _mglUniformMatrix3fv = glad_glUniformMatrix3fv;
+    _glUniformMatrix3fv = glad_glUniformMatrix3fv;
 #endif
 #ifdef DEBUG
-    _mglUniformMatrix4fv = glad_debug_glUniformMatrix4fv;
+    _glUniformMatrix4fv = glad_debug_glUniformMatrix4fv;
 #else
-    _mglUniformMatrix4fv = glad_glUniformMatrix4fv;
+    _glUniformMatrix4fv = glad_glUniformMatrix4fv;
 #endif
 #ifdef DEBUG
-    _mglValidateProgram = glad_debug_glValidateProgram;
+    _glValidateProgram = glad_debug_glValidateProgram;
 #else
-    _mglValidateProgram = glad_glValidateProgram;
+    _glValidateProgram = glad_glValidateProgram;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib1d = glad_debug_glVertexAttrib1d;
+    _glVertexAttrib1d = glad_debug_glVertexAttrib1d;
 #else
-    _mglVertexAttrib1d = glad_glVertexAttrib1d;
+    _glVertexAttrib1d = glad_glVertexAttrib1d;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib1dv = glad_debug_glVertexAttrib1dv;
+    _glVertexAttrib1dv = glad_debug_glVertexAttrib1dv;
 #else
-    _mglVertexAttrib1dv = glad_glVertexAttrib1dv;
+    _glVertexAttrib1dv = glad_glVertexAttrib1dv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib1f = glad_debug_glVertexAttrib1f;
+    _glVertexAttrib1f = glad_debug_glVertexAttrib1f;
 #else
-    _mglVertexAttrib1f = glad_glVertexAttrib1f;
+    _glVertexAttrib1f = glad_glVertexAttrib1f;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib1fv = glad_debug_glVertexAttrib1fv;
+    _glVertexAttrib1fv = glad_debug_glVertexAttrib1fv;
 #else
-    _mglVertexAttrib1fv = glad_glVertexAttrib1fv;
+    _glVertexAttrib1fv = glad_glVertexAttrib1fv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib1s = glad_debug_glVertexAttrib1s;
+    _glVertexAttrib1s = glad_debug_glVertexAttrib1s;
 #else
-    _mglVertexAttrib1s = glad_glVertexAttrib1s;
+    _glVertexAttrib1s = glad_glVertexAttrib1s;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib1sv = glad_debug_glVertexAttrib1sv;
+    _glVertexAttrib1sv = glad_debug_glVertexAttrib1sv;
 #else
-    _mglVertexAttrib1sv = glad_glVertexAttrib1sv;
+    _glVertexAttrib1sv = glad_glVertexAttrib1sv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib2d = glad_debug_glVertexAttrib2d;
+    _glVertexAttrib2d = glad_debug_glVertexAttrib2d;
 #else
-    _mglVertexAttrib2d = glad_glVertexAttrib2d;
+    _glVertexAttrib2d = glad_glVertexAttrib2d;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib2dv = glad_debug_glVertexAttrib2dv;
+    _glVertexAttrib2dv = glad_debug_glVertexAttrib2dv;
 #else
-    _mglVertexAttrib2dv = glad_glVertexAttrib2dv;
+    _glVertexAttrib2dv = glad_glVertexAttrib2dv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib2f = glad_debug_glVertexAttrib2f;
+    _glVertexAttrib2f = glad_debug_glVertexAttrib2f;
 #else
-    _mglVertexAttrib2f = glad_glVertexAttrib2f;
+    _glVertexAttrib2f = glad_glVertexAttrib2f;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib2fv = glad_debug_glVertexAttrib2fv;
+    _glVertexAttrib2fv = glad_debug_glVertexAttrib2fv;
 #else
-    _mglVertexAttrib2fv = glad_glVertexAttrib2fv;
+    _glVertexAttrib2fv = glad_glVertexAttrib2fv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib2s = glad_debug_glVertexAttrib2s;
+    _glVertexAttrib2s = glad_debug_glVertexAttrib2s;
 #else
-    _mglVertexAttrib2s = glad_glVertexAttrib2s;
+    _glVertexAttrib2s = glad_glVertexAttrib2s;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib2sv = glad_debug_glVertexAttrib2sv;
+    _glVertexAttrib2sv = glad_debug_glVertexAttrib2sv;
 #else
-    _mglVertexAttrib2sv = glad_glVertexAttrib2sv;
+    _glVertexAttrib2sv = glad_glVertexAttrib2sv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib3d = glad_debug_glVertexAttrib3d;
+    _glVertexAttrib3d = glad_debug_glVertexAttrib3d;
 #else
-    _mglVertexAttrib3d = glad_glVertexAttrib3d;
+    _glVertexAttrib3d = glad_glVertexAttrib3d;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib3dv = glad_debug_glVertexAttrib3dv;
+    _glVertexAttrib3dv = glad_debug_glVertexAttrib3dv;
 #else
-    _mglVertexAttrib3dv = glad_glVertexAttrib3dv;
+    _glVertexAttrib3dv = glad_glVertexAttrib3dv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib3f = glad_debug_glVertexAttrib3f;
+    _glVertexAttrib3f = glad_debug_glVertexAttrib3f;
 #else
-    _mglVertexAttrib3f = glad_glVertexAttrib3f;
+    _glVertexAttrib3f = glad_glVertexAttrib3f;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib3fv = glad_debug_glVertexAttrib3fv;
+    _glVertexAttrib3fv = glad_debug_glVertexAttrib3fv;
 #else
-    _mglVertexAttrib3fv = glad_glVertexAttrib3fv;
+    _glVertexAttrib3fv = glad_glVertexAttrib3fv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib3s = glad_debug_glVertexAttrib3s;
+    _glVertexAttrib3s = glad_debug_glVertexAttrib3s;
 #else
-    _mglVertexAttrib3s = glad_glVertexAttrib3s;
+    _glVertexAttrib3s = glad_glVertexAttrib3s;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib3sv = glad_debug_glVertexAttrib3sv;
+    _glVertexAttrib3sv = glad_debug_glVertexAttrib3sv;
 #else
-    _mglVertexAttrib3sv = glad_glVertexAttrib3sv;
+    _glVertexAttrib3sv = glad_glVertexAttrib3sv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Nbv = glad_debug_glVertexAttrib4Nbv;
+    _glVertexAttrib4Nbv = glad_debug_glVertexAttrib4Nbv;
 #else
-    _mglVertexAttrib4Nbv = glad_glVertexAttrib4Nbv;
+    _glVertexAttrib4Nbv = glad_glVertexAttrib4Nbv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Niv = glad_debug_glVertexAttrib4Niv;
+    _glVertexAttrib4Niv = glad_debug_glVertexAttrib4Niv;
 #else
-    _mglVertexAttrib4Niv = glad_glVertexAttrib4Niv;
+    _glVertexAttrib4Niv = glad_glVertexAttrib4Niv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Nsv = glad_debug_glVertexAttrib4Nsv;
+    _glVertexAttrib4Nsv = glad_debug_glVertexAttrib4Nsv;
 #else
-    _mglVertexAttrib4Nsv = glad_glVertexAttrib4Nsv;
+    _glVertexAttrib4Nsv = glad_glVertexAttrib4Nsv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Nub = glad_debug_glVertexAttrib4Nub;
+    _glVertexAttrib4Nub = glad_debug_glVertexAttrib4Nub;
 #else
-    _mglVertexAttrib4Nub = glad_glVertexAttrib4Nub;
+    _glVertexAttrib4Nub = glad_glVertexAttrib4Nub;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Nubv = glad_debug_glVertexAttrib4Nubv;
+    _glVertexAttrib4Nubv = glad_debug_glVertexAttrib4Nubv;
 #else
-    _mglVertexAttrib4Nubv = glad_glVertexAttrib4Nubv;
+    _glVertexAttrib4Nubv = glad_glVertexAttrib4Nubv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Nuiv = glad_debug_glVertexAttrib4Nuiv;
+    _glVertexAttrib4Nuiv = glad_debug_glVertexAttrib4Nuiv;
 #else
-    _mglVertexAttrib4Nuiv = glad_glVertexAttrib4Nuiv;
+    _glVertexAttrib4Nuiv = glad_glVertexAttrib4Nuiv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4Nusv = glad_debug_glVertexAttrib4Nusv;
+    _glVertexAttrib4Nusv = glad_debug_glVertexAttrib4Nusv;
 #else
-    _mglVertexAttrib4Nusv = glad_glVertexAttrib4Nusv;
+    _glVertexAttrib4Nusv = glad_glVertexAttrib4Nusv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4bv = glad_debug_glVertexAttrib4bv;
+    _glVertexAttrib4bv = glad_debug_glVertexAttrib4bv;
 #else
-    _mglVertexAttrib4bv = glad_glVertexAttrib4bv;
+    _glVertexAttrib4bv = glad_glVertexAttrib4bv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4d = glad_debug_glVertexAttrib4d;
+    _glVertexAttrib4d = glad_debug_glVertexAttrib4d;
 #else
-    _mglVertexAttrib4d = glad_glVertexAttrib4d;
+    _glVertexAttrib4d = glad_glVertexAttrib4d;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4dv = glad_debug_glVertexAttrib4dv;
+    _glVertexAttrib4dv = glad_debug_glVertexAttrib4dv;
 #else
-    _mglVertexAttrib4dv = glad_glVertexAttrib4dv;
+    _glVertexAttrib4dv = glad_glVertexAttrib4dv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4f = glad_debug_glVertexAttrib4f;
+    _glVertexAttrib4f = glad_debug_glVertexAttrib4f;
 #else
-    _mglVertexAttrib4f = glad_glVertexAttrib4f;
+    _glVertexAttrib4f = glad_glVertexAttrib4f;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4fv = glad_debug_glVertexAttrib4fv;
+    _glVertexAttrib4fv = glad_debug_glVertexAttrib4fv;
 #else
-    _mglVertexAttrib4fv = glad_glVertexAttrib4fv;
+    _glVertexAttrib4fv = glad_glVertexAttrib4fv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4iv = glad_debug_glVertexAttrib4iv;
+    _glVertexAttrib4iv = glad_debug_glVertexAttrib4iv;
 #else
-    _mglVertexAttrib4iv = glad_glVertexAttrib4iv;
+    _glVertexAttrib4iv = glad_glVertexAttrib4iv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4s = glad_debug_glVertexAttrib4s;
+    _glVertexAttrib4s = glad_debug_glVertexAttrib4s;
 #else
-    _mglVertexAttrib4s = glad_glVertexAttrib4s;
+    _glVertexAttrib4s = glad_glVertexAttrib4s;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4sv = glad_debug_glVertexAttrib4sv;
+    _glVertexAttrib4sv = glad_debug_glVertexAttrib4sv;
 #else
-    _mglVertexAttrib4sv = glad_glVertexAttrib4sv;
+    _glVertexAttrib4sv = glad_glVertexAttrib4sv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4ubv = glad_debug_glVertexAttrib4ubv;
+    _glVertexAttrib4ubv = glad_debug_glVertexAttrib4ubv;
 #else
-    _mglVertexAttrib4ubv = glad_glVertexAttrib4ubv;
+    _glVertexAttrib4ubv = glad_glVertexAttrib4ubv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4uiv = glad_debug_glVertexAttrib4uiv;
+    _glVertexAttrib4uiv = glad_debug_glVertexAttrib4uiv;
 #else
-    _mglVertexAttrib4uiv = glad_glVertexAttrib4uiv;
+    _glVertexAttrib4uiv = glad_glVertexAttrib4uiv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttrib4usv = glad_debug_glVertexAttrib4usv;
+    _glVertexAttrib4usv = glad_debug_glVertexAttrib4usv;
 #else
-    _mglVertexAttrib4usv = glad_glVertexAttrib4usv;
+    _glVertexAttrib4usv = glad_glVertexAttrib4usv;
 #endif
 #ifdef DEBUG
-    _mglVertexAttribPointer = glad_debug_glVertexAttribPointer;
+    _glVertexAttribPointer = glad_debug_glVertexAttribPointer;
 #else
-    _mglVertexAttribPointer = glad_glVertexAttribPointer;
+    _glVertexAttribPointer = glad_glVertexAttribPointer;
 #endif
 #ifdef DEBUG
-    _mglBindBufferARB = glad_debug_glBindBufferARB;
+    _glBindBufferARB = glad_debug_glBindBufferARB;
 #else
-    _mglBindBufferARB = glad_glBindBufferARB;
+    _glBindBufferARB = glad_glBindBufferARB;
 #endif
 #ifdef DEBUG
-    _mglDeleteBuffersARB = glad_debug_glDeleteBuffersARB;
+    _glDeleteBuffersARB = glad_debug_glDeleteBuffersARB;
 #else
-    _mglDeleteBuffersARB = glad_glDeleteBuffersARB;
+    _glDeleteBuffersARB = glad_glDeleteBuffersARB;
 #endif
 #ifdef DEBUG
-    _mglGenBuffersARB = glad_debug_glGenBuffersARB;
+    _glGenBuffersARB = glad_debug_glGenBuffersARB;
 #else
-    _mglGenBuffersARB = glad_glGenBuffersARB;
+    _glGenBuffersARB = glad_glGenBuffersARB;
 #endif
 #ifdef DEBUG
-    _mglIsBufferARB = glad_debug_glIsBufferARB;
+    _glIsBufferARB = glad_debug_glIsBufferARB;
 #else
-    _mglIsBufferARB = glad_glIsBufferARB;
+    _glIsBufferARB = glad_glIsBufferARB;
 #endif
 #ifdef DEBUG
-    _mglBufferDataARB = glad_debug_glBufferDataARB;
+    _glBufferDataARB = glad_debug_glBufferDataARB;
 #else
-    _mglBufferDataARB = glad_glBufferDataARB;
+    _glBufferDataARB = glad_glBufferDataARB;
 #endif
 #ifdef DEBUG
-    _mglBufferSubDataARB = glad_debug_glBufferSubDataARB;
+    _glBufferSubDataARB = glad_debug_glBufferSubDataARB;
 #else
-    _mglBufferSubDataARB = glad_glBufferSubDataARB;
+    _glBufferSubDataARB = glad_glBufferSubDataARB;
 #endif
 #ifdef DEBUG
-    _mglGetBufferSubDataARB = glad_debug_glGetBufferSubDataARB;
+    _glGetBufferSubDataARB = glad_debug_glGetBufferSubDataARB;
 #else
-    _mglGetBufferSubDataARB = glad_glGetBufferSubDataARB;
+    _glGetBufferSubDataARB = glad_glGetBufferSubDataARB;
 #endif
 #ifdef DEBUG
-    _mglMapBufferARB = glad_debug_glMapBufferARB;
+    _glMapBufferARB = glad_debug_glMapBufferARB;
 #else
-    _mglMapBufferARB = glad_glMapBufferARB;
+    _glMapBufferARB = glad_glMapBufferARB;
 #endif
 #ifdef DEBUG
-    _mglUnmapBufferARB = glad_debug_glUnmapBufferARB;
+    _glUnmapBufferARB = glad_debug_glUnmapBufferARB;
 #else
-    _mglUnmapBufferARB = glad_glUnmapBufferARB;
+    _glUnmapBufferARB = glad_glUnmapBufferARB;
 #endif
 #ifdef DEBUG
-    _mglGetBufferParameterivARB = glad_debug_glGetBufferParameterivARB;
+    _glGetBufferParameterivARB = glad_debug_glGetBufferParameterivARB;
 #else
-    _mglGetBufferParameterivARB = glad_glGetBufferParameterivARB;
+    _glGetBufferParameterivARB = glad_glGetBufferParameterivARB;
 #endif
 #ifdef DEBUG
-    _mglGetBufferPointervARB = glad_debug_glGetBufferPointervARB;
+    _glGetBufferPointervARB = glad_debug_glGetBufferPointervARB;
 #else
-    _mglGetBufferPointervARB = glad_glGetBufferPointervARB;
+    _glGetBufferPointervARB = glad_glGetBufferPointervARB;
 #endif
 #ifdef DEBUG
-    _mglBindVertexArray = glad_debug_glBindVertexArray;
+    _glBindVertexArray = glad_debug_glBindVertexArray;
 #else
-    _mglBindVertexArray = glad_glBindVertexArray;
+    _glBindVertexArray = glad_glBindVertexArray;
 #endif
 #ifdef DEBUG
-    _mglDeleteVertexArrays = glad_debug_glDeleteVertexArrays;
+    _glDeleteVertexArrays = glad_debug_glDeleteVertexArrays;
 #else
-    _mglDeleteVertexArrays = glad_glDeleteVertexArrays;
+    _glDeleteVertexArrays = glad_glDeleteVertexArrays;
 #endif
 #ifdef DEBUG
-    _mglGenVertexArrays = glad_debug_glGenVertexArrays;
+    _glGenVertexArrays = glad_debug_glGenVertexArrays;
 #else
-    _mglGenVertexArrays = glad_glGenVertexArrays;
+    _glGenVertexArrays = glad_glGenVertexArrays;
 #endif
 #ifdef DEBUG
-    _mglIsVertexArray = glad_debug_glIsVertexArray;
+    _glIsVertexArray = glad_debug_glIsVertexArray;
 #else
-    _mglIsVertexArray = glad_glIsVertexArray;
+    _glIsVertexArray = glad_glIsVertexArray;
 #endif
 #ifdef DEBUG
-    _mglIsRenderbuffer = glad_debug_glIsRenderbuffer;
+    _glIsRenderbuffer = glad_debug_glIsRenderbuffer;
 #else
-    _mglIsRenderbuffer = glad_glIsRenderbuffer;
+    _glIsRenderbuffer = glad_glIsRenderbuffer;
 #endif
 #ifdef DEBUG
-    _mglBindRenderbuffer = glad_debug_glBindRenderbuffer;
+    _glBindRenderbuffer = glad_debug_glBindRenderbuffer;
 #else
-    _mglBindRenderbuffer = glad_glBindRenderbuffer;
+    _glBindRenderbuffer = glad_glBindRenderbuffer;
 #endif
 #ifdef DEBUG
-    _mglDeleteRenderbuffers = glad_debug_glDeleteRenderbuffers;
+    _glDeleteRenderbuffers = glad_debug_glDeleteRenderbuffers;
 #else
-    _mglDeleteRenderbuffers = glad_glDeleteRenderbuffers;
+    _glDeleteRenderbuffers = glad_glDeleteRenderbuffers;
 #endif
 #ifdef DEBUG
-    _mglGenRenderbuffers = glad_debug_glGenRenderbuffers;
+    _glGenRenderbuffers = glad_debug_glGenRenderbuffers;
 #else
-    _mglGenRenderbuffers = glad_glGenRenderbuffers;
+    _glGenRenderbuffers = glad_glGenRenderbuffers;
 #endif
 #ifdef DEBUG
-    _mglRenderbufferStorage = glad_debug_glRenderbufferStorage;
+    _glRenderbufferStorage = glad_debug_glRenderbufferStorage;
 #else
-    _mglRenderbufferStorage = glad_glRenderbufferStorage;
+    _glRenderbufferStorage = glad_glRenderbufferStorage;
 #endif
 #ifdef DEBUG
-    _mglGetRenderbufferParameteriv = glad_debug_glGetRenderbufferParameteriv;
+    _glGetRenderbufferParameteriv = glad_debug_glGetRenderbufferParameteriv;
 #else
-    _mglGetRenderbufferParameteriv = glad_glGetRenderbufferParameteriv;
+    _glGetRenderbufferParameteriv = glad_glGetRenderbufferParameteriv;
 #endif
 #ifdef DEBUG
-    _mglIsFramebuffer = glad_debug_glIsFramebuffer;
+    _glIsFramebuffer = glad_debug_glIsFramebuffer;
 #else
-    _mglIsFramebuffer = glad_glIsFramebuffer;
+    _glIsFramebuffer = glad_glIsFramebuffer;
 #endif
 #ifdef DEBUG
-    _mglBindFramebuffer = glad_debug_glBindFramebuffer;
+    _glBindFramebuffer = glad_debug_glBindFramebuffer;
 #else
-    _mglBindFramebuffer = glad_glBindFramebuffer;
+    _glBindFramebuffer = glad_glBindFramebuffer;
 #endif
 #ifdef DEBUG
-    _mglDeleteFramebuffers = glad_debug_glDeleteFramebuffers;
+    _glDeleteFramebuffers = glad_debug_glDeleteFramebuffers;
 #else
-    _mglDeleteFramebuffers = glad_glDeleteFramebuffers;
+    _glDeleteFramebuffers = glad_glDeleteFramebuffers;
 #endif
 #ifdef DEBUG
-    _mglGenFramebuffers = glad_debug_glGenFramebuffers;
+    _glGenFramebuffers = glad_debug_glGenFramebuffers;
 #else
-    _mglGenFramebuffers = glad_glGenFramebuffers;
+    _glGenFramebuffers = glad_glGenFramebuffers;
 #endif
 #ifdef DEBUG
-    _mglCheckFramebufferStatus = glad_debug_glCheckFramebufferStatus;
+    _glCheckFramebufferStatus = glad_debug_glCheckFramebufferStatus;
 #else
-    _mglCheckFramebufferStatus = glad_glCheckFramebufferStatus;
+    _glCheckFramebufferStatus = glad_glCheckFramebufferStatus;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTexture1D = glad_debug_glFramebufferTexture1D;
+    _glFramebufferTexture1D = glad_debug_glFramebufferTexture1D;
 #else
-    _mglFramebufferTexture1D = glad_glFramebufferTexture1D;
+    _glFramebufferTexture1D = glad_glFramebufferTexture1D;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTexture2D = glad_debug_glFramebufferTexture2D;
+    _glFramebufferTexture2D = glad_debug_glFramebufferTexture2D;
 #else
-    _mglFramebufferTexture2D = glad_glFramebufferTexture2D;
+    _glFramebufferTexture2D = glad_glFramebufferTexture2D;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTexture3D = glad_debug_glFramebufferTexture3D;
+    _glFramebufferTexture3D = glad_debug_glFramebufferTexture3D;
 #else
-    _mglFramebufferTexture3D = glad_glFramebufferTexture3D;
+    _glFramebufferTexture3D = glad_glFramebufferTexture3D;
 #endif
 #ifdef DEBUG
-    _mglFramebufferRenderbuffer = glad_debug_glFramebufferRenderbuffer;
+    _glFramebufferRenderbuffer = glad_debug_glFramebufferRenderbuffer;
 #else
-    _mglFramebufferRenderbuffer = glad_glFramebufferRenderbuffer;
+    _glFramebufferRenderbuffer = glad_glFramebufferRenderbuffer;
 #endif
 #ifdef DEBUG
-    _mglGetFramebufferAttachmentParameteriv = glad_debug_glGetFramebufferAttachmentParameteriv;
+    _glGetFramebufferAttachmentParameteriv = glad_debug_glGetFramebufferAttachmentParameteriv;
 #else
-    _mglGetFramebufferAttachmentParameteriv = glad_glGetFramebufferAttachmentParameteriv;
+    _glGetFramebufferAttachmentParameteriv = glad_glGetFramebufferAttachmentParameteriv;
 #endif
 #ifdef DEBUG
-    _mglGenerateMipmap = glad_debug_glGenerateMipmap;
+    _glGenerateMipmap = glad_debug_glGenerateMipmap;
 #else
-    _mglGenerateMipmap = glad_glGenerateMipmap;
+    _glGenerateMipmap = glad_glGenerateMipmap;
 #endif
 #ifdef DEBUG
-    _mglBlitFramebuffer = glad_debug_glBlitFramebuffer;
+    _glBlitFramebuffer = glad_debug_glBlitFramebuffer;
 #else
-    _mglBlitFramebuffer = glad_glBlitFramebuffer;
+    _glBlitFramebuffer = glad_glBlitFramebuffer;
 #endif
 #ifdef DEBUG
-    _mglRenderbufferStorageMultisample = glad_debug_glRenderbufferStorageMultisample;
+    _glRenderbufferStorageMultisample = glad_debug_glRenderbufferStorageMultisample;
 #else
-    _mglRenderbufferStorageMultisample = glad_glRenderbufferStorageMultisample;
+    _glRenderbufferStorageMultisample = glad_glRenderbufferStorageMultisample;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTextureLayer = glad_debug_glFramebufferTextureLayer;
+    _glFramebufferTextureLayer = glad_debug_glFramebufferTextureLayer;
 #else
-    _mglFramebufferTextureLayer = glad_glFramebufferTextureLayer;
+    _glFramebufferTextureLayer = glad_glFramebufferTextureLayer;
 #endif
 #ifdef DEBUG
-    _mglIsRenderbufferEXT = glad_debug_glIsRenderbufferEXT;
+    _glIsRenderbufferEXT = glad_debug_glIsRenderbufferEXT;
 #else
-    _mglIsRenderbufferEXT = glad_glIsRenderbufferEXT;
+    _glIsRenderbufferEXT = glad_glIsRenderbufferEXT;
 #endif
 #ifdef DEBUG
-    _mglBindRenderbufferEXT = glad_debug_glBindRenderbufferEXT;
+    _glBindRenderbufferEXT = glad_debug_glBindRenderbufferEXT;
 #else
-    _mglBindRenderbufferEXT = glad_glBindRenderbufferEXT;
+    _glBindRenderbufferEXT = glad_glBindRenderbufferEXT;
 #endif
 #ifdef DEBUG
-    _mglDeleteRenderbuffersEXT = glad_debug_glDeleteRenderbuffersEXT;
+    _glDeleteRenderbuffersEXT = glad_debug_glDeleteRenderbuffersEXT;
 #else
-    _mglDeleteRenderbuffersEXT = glad_glDeleteRenderbuffersEXT;
+    _glDeleteRenderbuffersEXT = glad_glDeleteRenderbuffersEXT;
 #endif
 #ifdef DEBUG
-    _mglGenRenderbuffersEXT = glad_debug_glGenRenderbuffersEXT;
+    _glGenRenderbuffersEXT = glad_debug_glGenRenderbuffersEXT;
 #else
-    _mglGenRenderbuffersEXT = glad_glGenRenderbuffersEXT;
+    _glGenRenderbuffersEXT = glad_glGenRenderbuffersEXT;
 #endif
 #ifdef DEBUG
-    _mglRenderbufferStorageEXT = glad_debug_glRenderbufferStorageEXT;
+    _glRenderbufferStorageEXT = glad_debug_glRenderbufferStorageEXT;
 #else
-    _mglRenderbufferStorageEXT = glad_glRenderbufferStorageEXT;
+    _glRenderbufferStorageEXT = glad_glRenderbufferStorageEXT;
 #endif
 #ifdef DEBUG
-    _mglGetRenderbufferParameterivEXT = glad_debug_glGetRenderbufferParameterivEXT;
+    _glGetRenderbufferParameterivEXT = glad_debug_glGetRenderbufferParameterivEXT;
 #else
-    _mglGetRenderbufferParameterivEXT = glad_glGetRenderbufferParameterivEXT;
+    _glGetRenderbufferParameterivEXT = glad_glGetRenderbufferParameterivEXT;
 #endif
 #ifdef DEBUG
-    _mglIsFramebufferEXT = glad_debug_glIsFramebufferEXT;
+    _glIsFramebufferEXT = glad_debug_glIsFramebufferEXT;
 #else
-    _mglIsFramebufferEXT = glad_glIsFramebufferEXT;
+    _glIsFramebufferEXT = glad_glIsFramebufferEXT;
 #endif
 #ifdef DEBUG
-    _mglBindFramebufferEXT = glad_debug_glBindFramebufferEXT;
+    _glBindFramebufferEXT = glad_debug_glBindFramebufferEXT;
 #else
-    _mglBindFramebufferEXT = glad_glBindFramebufferEXT;
+    _glBindFramebufferEXT = glad_glBindFramebufferEXT;
 #endif
 #ifdef DEBUG
-    _mglDeleteFramebuffersEXT = glad_debug_glDeleteFramebuffersEXT;
+    _glDeleteFramebuffersEXT = glad_debug_glDeleteFramebuffersEXT;
 #else
-    _mglDeleteFramebuffersEXT = glad_glDeleteFramebuffersEXT;
+    _glDeleteFramebuffersEXT = glad_glDeleteFramebuffersEXT;
 #endif
 #ifdef DEBUG
-    _mglGenFramebuffersEXT = glad_debug_glGenFramebuffersEXT;
+    _glGenFramebuffersEXT = glad_debug_glGenFramebuffersEXT;
 #else
-    _mglGenFramebuffersEXT = glad_glGenFramebuffersEXT;
+    _glGenFramebuffersEXT = glad_glGenFramebuffersEXT;
 #endif
 #ifdef DEBUG
-    _mglCheckFramebufferStatusEXT = glad_debug_glCheckFramebufferStatusEXT;
+    _glCheckFramebufferStatusEXT = glad_debug_glCheckFramebufferStatusEXT;
 #else
-    _mglCheckFramebufferStatusEXT = glad_glCheckFramebufferStatusEXT;
+    _glCheckFramebufferStatusEXT = glad_glCheckFramebufferStatusEXT;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTexture1DEXT = glad_debug_glFramebufferTexture1DEXT;
+    _glFramebufferTexture1DEXT = glad_debug_glFramebufferTexture1DEXT;
 #else
-    _mglFramebufferTexture1DEXT = glad_glFramebufferTexture1DEXT;
+    _glFramebufferTexture1DEXT = glad_glFramebufferTexture1DEXT;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTexture2DEXT = glad_debug_glFramebufferTexture2DEXT;
+    _glFramebufferTexture2DEXT = glad_debug_glFramebufferTexture2DEXT;
 #else
-    _mglFramebufferTexture2DEXT = glad_glFramebufferTexture2DEXT;
+    _glFramebufferTexture2DEXT = glad_glFramebufferTexture2DEXT;
 #endif
 #ifdef DEBUG
-    _mglFramebufferTexture3DEXT = glad_debug_glFramebufferTexture3DEXT;
+    _glFramebufferTexture3DEXT = glad_debug_glFramebufferTexture3DEXT;
 #else
-    _mglFramebufferTexture3DEXT = glad_glFramebufferTexture3DEXT;
+    _glFramebufferTexture3DEXT = glad_glFramebufferTexture3DEXT;
 #endif
 #ifdef DEBUG
-    _mglFramebufferRenderbufferEXT = glad_debug_glFramebufferRenderbufferEXT;
+    _glFramebufferRenderbufferEXT = glad_debug_glFramebufferRenderbufferEXT;
 #else
-    _mglFramebufferRenderbufferEXT = glad_glFramebufferRenderbufferEXT;
+    _glFramebufferRenderbufferEXT = glad_glFramebufferRenderbufferEXT;
 #endif
 #ifdef DEBUG
-    _mglGetFramebufferAttachmentParameterivEXT = glad_debug_glGetFramebufferAttachmentParameterivEXT;
+    _glGetFramebufferAttachmentParameterivEXT = glad_debug_glGetFramebufferAttachmentParameterivEXT;
 #else
-    _mglGetFramebufferAttachmentParameterivEXT = glad_glGetFramebufferAttachmentParameterivEXT;
+    _glGetFramebufferAttachmentParameterivEXT = glad_glGetFramebufferAttachmentParameterivEXT;
 #endif
 #ifdef DEBUG
-    _mglGenerateMipmapEXT = glad_debug_glGenerateMipmapEXT;
+    _glGenerateMipmapEXT = glad_debug_glGenerateMipmapEXT;
 #else
-    _mglGenerateMipmapEXT = glad_glGenerateMipmapEXT;
+    _glGenerateMipmapEXT = glad_glGenerateMipmapEXT;
 #endif
 #ifdef DEBUG
-    _mglBindVertexArrayAPPLE = glad_debug_glBindVertexArrayAPPLE;
+    _glBindVertexArrayAPPLE = glad_debug_glBindVertexArrayAPPLE;
 #else
-    _mglBindVertexArrayAPPLE = glad_glBindVertexArrayAPPLE;
+    _glBindVertexArrayAPPLE = glad_glBindVertexArrayAPPLE;
 #endif
 #ifdef DEBUG
-    _mglDeleteVertexArraysAPPLE = glad_debug_glDeleteVertexArraysAPPLE;
+    _glDeleteVertexArraysAPPLE = glad_debug_glDeleteVertexArraysAPPLE;
 #else
-    _mglDeleteVertexArraysAPPLE = glad_glDeleteVertexArraysAPPLE;
+    _glDeleteVertexArraysAPPLE = glad_glDeleteVertexArraysAPPLE;
 #endif
 #ifdef DEBUG
-    _mglGenVertexArraysAPPLE = glad_debug_glGenVertexArraysAPPLE;
+    _glGenVertexArraysAPPLE = glad_debug_glGenVertexArraysAPPLE;
 #else
-    _mglGenVertexArraysAPPLE = glad_glGenVertexArraysAPPLE;
+    _glGenVertexArraysAPPLE = glad_glGenVertexArraysAPPLE;
 #endif
 #ifdef DEBUG
-    _mglIsVertexArrayAPPLE = glad_debug_glIsVertexArrayAPPLE;
+    _glIsVertexArrayAPPLE = glad_debug_glIsVertexArrayAPPLE;
 #else
-    _mglIsVertexArrayAPPLE = glad_glIsVertexArrayAPPLE;
+    _glIsVertexArrayAPPLE = glad_glIsVertexArrayAPPLE;
 #endif
-} // load_functions 
+} // load_functions
 
 template class OSGLFunctions<true>;
 
-} // namespace Natron 
+} // namespace Natron
 
