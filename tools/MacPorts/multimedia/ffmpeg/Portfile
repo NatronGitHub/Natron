@@ -157,7 +157,8 @@ platform darwin {
 
     # filters coreimage and coreimagesrc don't build on 10.5
     # and earlier due to use of bridged casts in Objective C (#51823)
-    if {${os.major} < 10} {
+    # and don't build on 10.6 because CFBridgingRetain appeared in 10.7
+    if {${os.major} < 11} {
         configure.args-append --disable-filter=coreimage \
                               --disable-filter=coreimagesrc
     }
