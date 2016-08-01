@@ -86,12 +86,22 @@ typedef unsigned int GLhandleARB;
 typedef unsigned short GLhalfARB;
 typedef unsigned short GLhalf;
 typedef GLint GLfixed;
+#ifdef __APPLE__
+typedef long GLintptr;
+typedef long GLsizeiptr;
+#else
 typedef ptrdiff_t GLintptr;
 typedef ptrdiff_t GLsizeiptr;
+#endif
 typedef int64_t GLint64;
 typedef uint64_t GLuint64;
+#ifdef __APPLE__
+typedef long GLintptrARB;
+typedef long GLsizeiptrARB;
+#else
 typedef ptrdiff_t GLintptrARB;
 typedef ptrdiff_t GLsizeiptrARB;
+#endif
 typedef int64_t GLint64EXT;
 typedef uint64_t GLuint64EXT;
 
