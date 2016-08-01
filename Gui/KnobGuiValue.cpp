@@ -227,7 +227,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(3);
 
-    if (getKnobsCountOnSameLine() > 1) {
+    if (getKnobsCountOnSameLine() > 1 && !isViewerUIKnob()) {
         disableSlider();
     }
 
@@ -428,7 +428,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
         _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
-            _imp->slider->setToolTip( toolTip() );
+            toolTip(_imp->slider);
         }
         QObject::connect( _imp->slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
         QObject::connect( _imp->slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
@@ -1136,12 +1136,11 @@ void
 KnobGuiValue::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-            _imp->spinBoxes[i].first->setToolTip( tt );
+            toolTip(_imp->spinBoxes[i].first);
         }
         if (_imp->slider) {
-            _imp->slider->setToolTip(tt);
+            toolTip(_imp->slider);
         }
     }
 }

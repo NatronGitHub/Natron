@@ -8032,7 +8032,7 @@ Node::shouldDrawOverlay() const
         return false;
     }
 
-    if ( !isSettingsPanelVisible() ) {
+    if ( !isEffectViewerNode() && !isSettingsPanelVisible() ) {
         return false;
     }
 

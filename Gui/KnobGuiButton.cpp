@@ -153,7 +153,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
     }
     QObject::connect( _button, SIGNAL(clicked(bool)), this, SLOT(emitValueChanged(bool)) );
     if ( hasToolTip() ) {
-        _button->setToolTip( toolTip() );
+        toolTip(_button);
     }
     layout->addWidget(_button);
 } // KnobGuiButton::createWidget

@@ -474,7 +474,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _label = new Label( layout->parentWidget() );
 
             if ( hasToolTip() ) {
-                _label->setToolTip( toolTip() );
+                toolTip(_label);
             }
             layout->addWidget(_label);
         }
@@ -482,7 +482,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _lineEdit = new KnobLineEdit( shared_from_this(), 0, layout->parentWidget() );
 
         if ( hasToolTip() ) {
-            _lineEdit->setToolTip( toolTip() );
+            toolTip(_lineEdit);
         }
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -1307,9 +1307,10 @@ void
 KnobGuiString::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
+
         if (_textEdit) {
             bool useRichText = _knob.lock()->usesRichText();
+            QString tt = toolTip(0);
             if (useRichText) {
                 tt += tr("This text area supports html encoding. "
                          "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info.");
@@ -1318,9 +1319,9 @@ KnobGuiString::updateToolTip()
             tt += tr("Use %1 to validate changes made to the text.").arg( seq.toString(QKeySequence::NativeText) );
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
-            _lineEdit->setToolTip(tt);
+            toolTip(_lineEdit);
         } else if (_label) {
-            _label->setToolTip(tt);
+            toolTip(_label);
         }
     }
 }

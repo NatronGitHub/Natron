@@ -863,6 +863,18 @@ public:
     virtual bool getInViewerContextHasShortcut() const = 0;
 
     /**
+     * @brief If this knob has a viewer UI and it has an associated shortcut, the tooltip
+     * will indicate to the viewer the shortcuts. The plug-in may also want to reference
+     * other action shorcuts via this tooltip, and can add them here.
+     * e.g: The Refresh button of the viewer shortcut is SHIFT+U but SHIFT+CTRL+U can also
+     * be used to refresh but also enable in-depth render statistics
+     * In the hint text, each additional shortcut must be reference with a %2, %3, %4, starting
+     * from 2 since 1 is reserved for this knob's own shortcut.
+     **/
+    virtual void addInViewerContextShortcutsReference(const std::string& actionID) = 0;
+    virtual const std::list<std::string>& getInViewerContextAdditionalShortcuts() const = 0;
+
+    /**
      * @brief Returns whether this type of knob can be instantiated in the viewer UI
      **/
     virtual bool supportsInViewerContext() const
@@ -1485,6 +1497,8 @@ public:
     virtual void setInViewerContextIconFilePath(const std::string& icon) OVERRIDE FINAL;
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
     virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void addInViewerContextShortcutsReference(const std::string& actionID) OVERRIDE FINAL;
+    virtual const std::list<std::string>& getInViewerContextAdditionalShortcuts() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
     virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextStretch(StretchEnum stretch) OVERRIDE FINAL;

@@ -894,7 +894,7 @@ void
 KnobGui::onHelpChanged()
 {
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setToolTip( toolTip() );
+        toolTip(_imp->descriptionLabel);
     }
     updateToolTip();
 }

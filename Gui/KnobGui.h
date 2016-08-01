@@ -152,7 +152,8 @@ public:
 
     QString getScriptNameHtml() const;
 
-    QString toolTip() const;
+    // Apply the tooltip on the widget if non-null, otherwise return it
+    QString toolTip(QWidget* w) const;
 
     bool hasToolTip() const;
 

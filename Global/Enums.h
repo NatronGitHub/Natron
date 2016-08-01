@@ -447,8 +447,8 @@ enum ViewerCompositingOperatorEnum
 
 enum ViewerColorSpaceEnum
 {
-    eViewerColorSpaceSRGB = 0,
-    eViewerColorSpaceLinear,
+    eViewerColorSpaceLinear = 0,
+    eViewerColorSpaceSRGB,
     eViewerColorSpaceRec709
 };
 

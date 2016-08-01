@@ -55,11 +55,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Plugin.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
@@ -289,6 +292,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
     std::string textToFitHorizontally = knob->getTextToFitHorizontally();
     if (!textToFitHorizontally.empty()) {
         QFontMetrics fm = _comboBox->fontMetrics();
+        _comboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
         _comboBox->setFixedWidth(fm.width(QString::fromUtf8(textToFitHorizontally.c_str())) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
     }
 
@@ -381,17 +385,53 @@ KnobGuiChoice::onEntriesPopulated()
     const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
     std::string activeEntry = knob->getActiveEntryText_mt_safe();
 
+    QString pluginShortcutGroup;
+    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+    if (isEffect) {
+        const Plugin* plugin = isEffect->getNode()->getPlugin();
+        if (plugin) {
+            pluginShortcutGroup = plugin->getPluginShortcutGroup();
+        }
+    }
+
+
+    const std::map<int, std::string>& shortcutsMap = knob->getShortcuts();
+
     for (U32 i = 0; i < entries.size(); ++i) {
         std::string helpStr;
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
-        if (entries[i] == KnobChoice::getSeparatorOption()) {
-            _comboBox->addSeparator();
+
+        std::string shortcutID;
+        if (!pluginShortcutGroup.isEmpty()) {
+            std::map<int, std::string>::const_iterator foundShortcut = shortcutsMap.find(i);
+            if (foundShortcut != shortcutsMap.end()) {
+                shortcutID = foundShortcut->second;
+            }
+        }
+
+
+        if (!shortcutID.empty() && !pluginShortcutGroup.isEmpty() && !_comboBox->isCascading()) {
+            QAction* action = new ActionWithShortcut(pluginShortcutGroup.toStdString(),
+                                                     shortcutID,
+                                                     entries[i],
+                                                     _comboBox);
+            _comboBox->addAction(action);
+
         } else {
             _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+            
         }
+        
+        
     }
+
+    const std::vector<int>& separators = knob->getSeparators();
+    for (std::size_t i = 0; i < separators.size(); ++i) {
+        _comboBox->insertSeparator(separators[i]);
+    }
+
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if ( knob->getHostCanAddOptions() &&
          ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
@@ -455,9 +495,8 @@ KnobGuiChoice::reflectExpressionState(int /*dimension*/,
 void
 KnobGuiChoice::updateToolTip()
 {
-    QString tt = toolTip();
+    toolTip(_comboBox);
 
-    _comboBox->setToolTip( tt );
 }
 
 void

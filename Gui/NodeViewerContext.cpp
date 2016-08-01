@@ -478,7 +478,11 @@ void
 NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 {
     NodeSettingsPanel* panel = _imp->getNode()->getSettingPanel();
-
+    if (!panel) {
+        _imp->getNode()->ensurePanelCreated();
+        panel = _imp->getNode()->getSettingPanel();
+        panel->setClosed(true);
+    }
     if (panel) {
         panel->pushUndoCommand(cmd);
     }

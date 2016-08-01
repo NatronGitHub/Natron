@@ -253,6 +253,7 @@ struct KnobHelperPrivate
     std::string inViewerContextLabel;
     std::string inViewerContextIconFilePath;
     bool inViewerContextHasShortcut;
+    std::list<std::string> additionalShortcutsInTooltip;
     KnobIWPtr parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
@@ -1816,6 +1817,18 @@ bool
 KnobHelper::getInViewerContextHasShortcut() const
 {
     return _imp->inViewerContextHasShortcut;
+}
+
+void
+KnobHelper::addInViewerContextShortcutsReference(const std::string& actionID)
+{
+    _imp->additionalShortcutsInTooltip.push_back(actionID);
+}
+
+const std::list<std::string>&
+KnobHelper::getInViewerContextAdditionalShortcuts() const
+{
+    return _imp->additionalShortcutsInTooltip;
 }
 
 void

@@ -792,6 +792,7 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
         panels = _imp->openedPanels;
     }
 
+    std::set<ViewerNodePtr> viewerAddedSet;
     for (std::list<DockablePanel*>::const_iterator it = panels.begin();
          it != panels.end(); ++it) {
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
@@ -803,7 +804,25 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
         if (node && internalNode) {
             if ( internalNode->shouldDrawOverlay() ) {
                 nodes.push_back( node->getNode() );
+                ViewerNodePtr isViewer = internalNode->isEffectViewerNode();
+                if (isViewer) {
+                    viewerAddedSet.insert(isViewer);
+                }
             }
+        }
+    }
+
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    // Also consider viewer nodes for overlays, even if their panel is closed
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it!= viewers.end(); ++it) {
+        ViewerNodePtr viewer = (*it)->getInternalNode();
+        std::set<ViewerNodePtr>::const_iterator found = viewerAddedSet.find(viewer);
+        if (found == viewerAddedSet.end()) {
+            nodes.push_back(viewer->getNode());
         }
     }
 }

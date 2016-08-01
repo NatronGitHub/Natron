@@ -146,7 +146,7 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
 {
     _button = new GroupBoxLabel( layout->parentWidget() );
     if ( hasToolTip() ) {
-        _button->setToolTip( toolTip() );
+        toolTip(_button);
     }
     _checked = _knob.lock()->getValue();
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);

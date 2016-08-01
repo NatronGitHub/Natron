@@ -128,7 +128,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     _tree->setColumnCount(1);
     _tree->header()->close();
     if ( hasToolTip() ) {
-        _tree->setToolTip( toolTip() );
+        toolTip(_tree);
     }
     treeColumnLayout->addWidget(_tree);
 
@@ -145,7 +145,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
         _curveWidget->setCustomInteract(interact);
     }
     if ( hasToolTip() ) {
-        _curveWidget->setToolTip( toolTip() );
+        toolTip(_curveWidget);
     }
     layout->addWidget(_curveWidget);
 

@@ -529,6 +529,10 @@ ComboBox::insertItem(int index,
 void
 ComboBox::addAction(QAction* action)
 {
+    if (_cascading) {
+        qDebug() << "ComboBox::addAction is not supported in cascaded mode";
+        return;
+    }
     action->setData( QVariant( (int)_rootNode->children.size() ) );
     addActionPrivate(action);
 }

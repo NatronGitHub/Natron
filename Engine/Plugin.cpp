@@ -72,7 +72,16 @@ Plugin::isWriter() const
 QString
 Plugin::getPluginShortcutGroup() const
 {
-    return getPluginLabel() + QLatin1String(" Viewer Interface");
+    QString ret = getPluginLabel();
+    bool isViewer = ret == QLatin1String("Viewer");
+    ret += QLatin1Char(' ');
+    if (!isViewer) {
+        ret +=  QLatin1String("Viewer");
+        ret += QLatin1Char(' ');
+    }
+
+    ret += QLatin1String("Interface");
+    return ret;
 }
 
 void

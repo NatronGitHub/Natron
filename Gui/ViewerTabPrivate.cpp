@@ -35,6 +35,7 @@
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ClickableLabel.h"
@@ -309,6 +310,9 @@ ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
 bool
 ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node)
 {
+    if (node->isEffectViewerNode()) {
+        return false;
+    }
     std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin( node->getPluginID() );
 
     if ( found == currentNodeContext.end() ) {

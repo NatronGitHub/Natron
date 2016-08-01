@@ -587,8 +587,6 @@ public:
         return true;
     }
 
-    static const std::string& getSeparatorOption();
-
     /**
      * @brief Fills-up the menu with the given entries and optionnally their tooltip.
      * @param entriesHelp Can either be empty, meaning no-tooltip or must be of the size of the entries.
@@ -603,6 +601,23 @@ public:
                          MergeMenuEqualityFunctor mergingFunctor = 0,
                          KnobChoiceMergeEntriesData* mergingData = 0,
                          bool restoreOldChoice = true);
+
+    /**
+     * @brief Set optional shortcuts visible for menu entries. All items in the menu don't need a shortcut
+     * so they are mapped against their index. The string corresponds to a shortcut ID that was registered
+     * on the node during the getPluginShortcuts function on the same node.
+     **/
+    void setShortcuts(const std::map<int, std::string>& shortcuts);
+
+    const std::map<int, std::string>& getShortcuts() const;
+
+    /**
+     * @brief Set a list of separators. Each item in the list will add a separator after the index
+     * specified by the integer.
+     **/
+    void setSeparators(const std::vector<int>& separators);
+
+    const std::vector<int>& getSeparators() const;
 
     void resetChoices();
 
@@ -700,6 +715,8 @@ private:
     mutable QMutex _entriesMutex;
     std::vector<std::string> _newEntries, _mergedEntries;
     std::vector<std::string> _newEntriesHelp, _mergedEntriesHelp;
+    std::vector<int> _separators;
+    std::map<int, std::string> _shortcuts;
     std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;

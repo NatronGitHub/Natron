@@ -49,6 +49,129 @@
 /*
  Below are knobs definitions that are not used by the internal ViewerInstance and just used by the Gui
  */
+
+#define kViewerNodeParamLayers "layer"
+#define kViewerNodeParamLayersLabel "Layer"
+#define kViewerNodeParamLayersHint "The layer that the Viewer node will fetch upstream in the tree. " \
+"The channels of the layer will be mapped to the RGBA channels of the viewer according to " \
+"its number of channels. (e.g: UV would be mapped to RG)"
+
+#define kViewerNodeParamAlphaChannel "alphaChannel"
+#define kViewerNodeParamAlphaChannelLabel "Alpha Channel"
+#define kViewerNodeParamAlphaChannelHint "Select here a channel of any layer that will be used when displaying the " \
+"alpha channel with the Channels choice on the right"
+
+#define kViewerNodeParamDisplayChannels "displayChannels"
+#define kViewerNodeParamDisplayChannelsB "displayChannelsB"
+#define kViewerNodeParamDisplayChannelsLabel "Display Channels"
+#define kViewerNodeParamDisplayChannelsHint "The channels to display on the viewer from the selected layer"
+
+#define kViewerNodeParamClipToProject "clipToProject"
+#define kViewerNodeParamClipToProjectLabel "Clip To Project"
+#define kViewerNodeParamClipToProjectHint "Clips the portion of the image displayed " \
+"on the viewer to the project format. " \
+"When off, everything in the union of all nodes " \
+"region of definition is displayed"
+
+#define kViewerNodeParamFullFrame "fullFrame"
+#define kViewerNodeParamFullFrameLabel "Full Frame"
+#define kViewerNodeParamFullFrameHint "When checked, the viewer will render the image in its entirety (at full resolution) not just the visible portion. This may be useful when panning/zooming during playback"
+
+#define kViewerNodeParamEnableUserRoI "enableRegionOfInterest"
+#define kViewerNodeParamEnableUserRoILabel "Region Of Interest"
+#define kViewerNodeParamEnableUserRoIHint "When active, enables the region of interest that limits " \
+"the portion of the viewer that is kept updated. Press %2 to create and drag a new region."
+
+#define kViewerNodeParamUserRoIBottomLeft "userRoIBtmLeft"
+#define kViewerNodeParamUserRoISize "userRoISize"
+
+#define kViewerNodeParamEnableProxyMode "proxyMode"
+#define kViewerNodeParamEnableProxyModeLabel "Proxy Mode"
+#define kViewerNodeParamEnableProxyModeHint "Activates the downscaling by the amount indicated by the value on the right. " \
+"The rendered images are degraded and as a result of this the whole rendering pipeline is much faster"
+
+#define kViewerNodeParamProxyLevel "proxyLevel"
+#define kViewerNodeParamProxyLevelLabel "Proxy Level"
+#define kViewerNodeParamProxyLevelHint "When proxy mode is activated, it scales down the rendered image by this factor " \
+"to accelerate the rendering"
+
+#define kViewerNodeParamRefreshViewport "refreshViewport"
+#define kViewerNodeParamRefreshViewportLabel "Refresh Viewport"
+#define kViewerNodeParamRefreshViewportHint "Forces a new render of the current frame. Press %2 to activate in-depth render statistics useful " \
+"for debugging the composition"
+
+#define kViewerNodeParamPauseRender "pauseUpdates"
+#define kViewerNodeParamPauseRenderB "pauseUpdatesB"
+#define kViewerNodeParamPauseRenderLabel "Pause Updates"
+#define kViewerNodeParamPauseRenderHint "When activated the viewer will not update after any change that would modify the image " \
+"displayed in the viewport. Use %2 to pause both input A and B"
+
+#define kViewerNodeParamAInput "aInput"
+#define kViewerNodeParamAInputLabel "A"
+#define kViewerNodeParamAInputHint "What node to display in the viewer input A"
+
+#define kViewerNodeParamBInput "bInput"
+#define kViewerNodeParamBInputLabel "B"
+#define kViewerNodeParamBInputHint "What node to display in the viewer input B"
+
+#define kViewerNodeParamOperation "operation"
+#define kViewerNodeParamOperationLabel "Operation"
+#define kViewerNodeParamOperationHint "Operation applied between viewer inputs A and B. a and b are the alpha components of each input. d is the wipe dissolve factor, controlled by the arc handle"
+
+#define kViewerNodeParamOperationWipeUnder "Wipe Under"
+#define kViewerNodeParamOperationWipeUnderHint "A(1 - d) + Bd"
+
+#define kViewerNodeParamOperationWipeOver "Wipe Over"
+#define kViewerNodeParamOperationWipeOverHint "A + B(1 - a)d"
+
+#define kViewerNodeParamOperationWipeMinus "Wipe Minus"
+#define kViewerNodeParamOperationWipeMinusHint "A - B"
+
+#define kViewerNodeParamOperationWipeOnionSkin "Wipe Onion skin"
+#define kViewerNodeParamOperationWipeOnionSkinHint "A + B"
+
+#define kViewerNodeParamOperationStackUnder "Stack Under"
+#define kViewerNodeParamOperationStackUnderHint "B"
+
+#define kViewerNodeParamOperationStackOver "Stack Over"
+#define kViewerNodeParamOperationStackOverHint "A + B(1 - a)"
+
+#define kViewerNodeParamOperationStackMinus "Stack Minus"
+#define kViewerNodeParamOperationStackMinusHint "A - B"
+
+#define kViewerNodeParamOperationStackOnionSkin "Stack Onion skin"
+#define kViewerNodeParamOperationStackOnionSkinHint "A + B"
+
+#define kViewerNodeParamEnableGain "enableGain"
+#define kViewerNodeParamEnableGainLabel "Enable Gain"
+#define kViewerNodeParamEnableGainHint "Switch between \"neutral\" 1.0 gain f-stop and the previous setting"
+
+#define kViewerNodeParamGain "gain"
+#define kViewerNodeParamGainLabel "Gain"
+#define kViewerNodeParamGainHint "Gain is shown as f-stops. The image is multipled by pow(2,value) before display"
+
+#define kViewerNodeParamEnableAutoContrast "autoContrast"
+#define kViewerNodeParamEnableAutoContrastLabel "Auto Contrast"
+#define kViewerNodeParamEnableAutoContrastHint "Automatically adjusts the gain and the offset applied " \
+"to the colors of the visible image portion on the viewer"
+
+#define kViewerNodeParamEnableGamma "enableGamma"
+#define kViewerNodeParamEnableGammaLabel "Enable Gamma"
+#define kViewerNodeParamEnableGammaHint "Gamma correction: Switch between gamma=1.0 and user setting"
+
+#define kViewerNodeParamGamma "gamma"
+#define kViewerNodeParamGammaLabel "Gamma"
+#define kViewerNodeParamGammaHint "Viewer gamma correction level (applied after gain and before colorspace correction)"
+
+#define kViewerNodeParamColorspace "deviceColorspace"
+#define kViewerNodeParamColorspaceLabel "Device Colorspace"
+#define kViewerNodeParamColorspaceHint "The operation applied to the image before it is displayed " \
+"on screen. The image is converted to this colorspace before being displayed on the monitor"
+
+#define kViewerNodeParamView "activeView"
+#define kViewerNodeParamViewLabel "Active View"
+#define kViewerNodeParamViewHint "The view displayed on the viewer"
+
 #define kViewerNodeParamZoom "zoom"
 #define kViewerNodeParamZoomLabel "Zoom"
 #define kViewerNodeParamZoomHint "The zoom applied to the image on the viewer"
@@ -756,6 +879,16 @@ ViewerNode::initializeKnobs()
             entries.push_back("Matte");
             param->populateChoices(entries);
         }
+        {
+            std::map<int, std::string> shortcuts;
+            shortcuts[0] = kViewerNodeParamActionLuminance;
+            shortcuts[2] = kViewerNodeParamActionRed;
+            shortcuts[3] = kViewerNodeParamActionGreen;
+            shortcuts[4] = kViewerNodeParamActionBlue;
+            shortcuts[5] = kViewerNodeParamActionAlpha;
+            shortcuts[6] = kViewerNodeParamActionMatte;
+            param->setShortcuts(shortcuts);
+        }
         param->setTextToFitHorizontally("Luminance");
         page->addKnob(param);
         param->setDefaultValue(1);
@@ -796,7 +929,6 @@ ViewerNode::initializeKnobs()
             entries.push_back("Fit");
             entries.push_back("+");
             entries.push_back("-");
-            entries.push_back(KnobChoice::getSeparatorOption());
             entries.push_back("10%");
             entries.push_back("25%");
             entries.push_back("50%");
@@ -812,6 +944,19 @@ ViewerNode::initializeKnobs()
             entries.push_back("3200%");
             entries.push_back("6400%");
             param->populateChoices(entries);
+        }
+        {
+            std::map<int, std::string> shortcuts;
+            shortcuts[0] = kViewerNodeParamFitViewport;
+            shortcuts[1] = kViewerNodeParamActionZoomIn;
+            shortcuts[2] = kViewerNodeParamActionZoomOut;
+            shortcuts[7] = kViewerNodeParamActionScaleOne;
+            param->setShortcuts(shortcuts);
+        }
+        {
+            std::vector<int> separators;
+            separators.push_back(2);
+            param->setSeparators(separators);
         }
         param->setTextToFitHorizontally("100000%");
         page->addKnob(param);
@@ -849,6 +994,7 @@ ViewerNode::initializeKnobs()
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableUserRoILabel) );
         param->setName(kViewerNodeParamEnableUserRoI);
         param->setHintToolTip(tr(kViewerNodeParamEnableUserRoIHint));
+        param->addInViewerContextShortcutsReference(kViewerNodeParamActionCreateNewRoI);
         param->setCheckable(true);
         page->addKnob(param);
         param->setSecretByDefault(true);
@@ -911,10 +1057,12 @@ ViewerNode::initializeKnobs()
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPauseRenderLabel) );
         param->setName(kViewerNodeParamPauseRender);
         param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
+        param->addInViewerContextShortcutsReference(kViewerNodeParamActionPauseAB);
         page->addKnob(param);
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
+        param->setDefaultValue(false);
         param->setIconLabel(NATRON_IMAGES_PATH "pauseEnabled.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png", false);
         _imp->pauseButtonKnob[0] = param;
@@ -928,6 +1076,7 @@ ViewerNode::initializeKnobs()
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
+        param->setDefaultValue(false);
         param->setIconLabel(NATRON_IMAGES_PATH "pauseEnabled.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png", false);
         _imp->pauseButtonKnob[1] = param;
@@ -976,10 +1125,20 @@ ViewerNode::initializeKnobs()
             helps.push_back(kViewerNodeParamOperationStackOnionSkinHint);
             param->populateChoices(entries, helps);
         }
+        {
+            std::map<int, std::string> shortcuts;
+            shortcuts[1] = kViewerNodeParamRightClickMenuToggleWipe;
+            param->setShortcuts(shortcuts);
+        }
+        {
+            std::vector<int> separators;
+            separators.push_back(4);
+            param->setSeparators(separators);
+        }
         page->addKnob(param);
         param->setSecretByDefault(true);
         param->setTextToFitHorizontally("Wipe OnionSkin");
-        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "roto_merge.png");
+        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "GroupingIcons/Set3/merge_grouping_3.png");
         _imp->blendingModeChoiceKnob = param;
     }
 
@@ -1058,7 +1217,6 @@ ViewerNode::initializeKnobs()
         param->setSecretByDefault(true);
         param->setDisplayMinimum(0.);
         param->setDisplayMaximum(4.);
-        param->setDefaultValue(1.);
         _imp->gammaSliderKnob = param;
     }
 
@@ -1099,6 +1257,7 @@ ViewerNode::initializeKnobs()
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRefreshViewportLabel) );
         param->setName(kViewerNodeParamRefreshViewport);
         param->setHintToolTip(tr(kViewerNodeParamRefreshViewportHint));
+        param->addInViewerContextShortcutsReference(kViewerNodeParamActionRefreshWithStats);
         param->setSecretByDefault(true);
         param->setInViewerContextCanHaveShortcut(true);
         // Do not set evaluate on change, trigger the render ourselves in knobChance
@@ -1160,6 +1319,7 @@ ViewerNode::initializeKnobs()
         param->setEvaluateOnChange(false);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
+        param->setDefaultValue(true);
         param->setIconLabel(NATRON_IMAGES_PATH "color_picker.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "color_picker.png", false);
         page->addKnob(param);
@@ -1791,28 +1951,26 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->gainSliderKnob.lock()->setValue(value);
     } else if (k == _imp->gainSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGainButtonKnob.lock();
-        bool down = enableKnob->getValue();
-        if (!down) {
+        if (reason == eValueChangedReasonUserEdited) {
             enableKnob->setValue(true);
+            _imp->lastFstopValue =  _imp->gainSliderKnob.lock()->getValue();
         }
-        _imp->lastFstopValue =  _imp->gainSliderKnob.lock()->getValue();
     } else if (k == _imp->enableGammaButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         double value;
         bool down = _imp->enableGammaButtonKnob.lock()->getValue();
         if (down) {
             value = _imp->lastGammaValue;
         } else {
-            value = 0;
+            value = 1;
         }
         _imp->gammaSliderKnob.lock()->setValue(value);
 
     } else if (k == _imp->gammaSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGammaButtonKnob.lock();
-        bool down = enableKnob->getValue();
-        if (!down) {
+        if (reason == eValueChangedReasonUserEdited) {
             enableKnob->setValue(true);
+            _imp->lastGammaValue =  _imp->gammaSliderKnob.lock()->getValue();
         }
-        _imp->lastGammaValue =  _imp->gammaSliderKnob.lock()->getValue();
 
     } else if (k == _imp->enableAutoContrastButtonKnob.lock()) {
         bool enable = _imp->enableAutoContrastButtonKnob.lock()->getValue();
@@ -1866,15 +2024,15 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             _imp->uiContext->setInfoBarVisible(infoBarVisible);
         }
     } else if (k == _imp->rightClickToggleWipe.lock()) {
-        bool wipeEnabled = _imp->rightClickToggleWipe.lock()->getValue();
-        KnobChoicePtr wipeChoice = _imp->blendingModeChoiceKnob.lock();
-        if (!wipeEnabled) {
-            wipeChoice->setValue(0);
+        KnobChoicePtr wipeChoiceKnob = _imp->blendingModeChoiceKnob.lock();
+        int value = wipeChoiceKnob->getValue();
+        if (value != 0) {
+            wipeChoiceKnob->setValue(0);
         } else {
             if (_imp->lastWipeIndex == 0) {
                 _imp->lastWipeIndex = 1;
             }
-            wipeChoice->setValue(_imp->lastWipeIndex);
+            wipeChoiceKnob->setValue(_imp->lastWipeIndex);
         }
     } else if (k == _imp->blendingModeChoiceKnob.lock() && reason == eValueChangedReasonUserEdited) {
         KnobChoicePtr wipeChoice = _imp->blendingModeChoiceKnob.lock();
@@ -1913,73 +2071,73 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         bool visible = _imp->rightClickShowHideTimeline.lock()->getValue();
         _imp->uiContext->setTimelineVisible(visible);
     } else if (k == _imp->displayRedAction[0].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayRedAction[0].lock()->getValue() == eDisplayChannelsR) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsR) {
             setDisplayChannels((int)eDisplayChannelsR, true);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, true);
         }
     } else if (k == _imp->displayRedAction[1].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayRedAction[0].lock()->getValue() == eDisplayChannelsR) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[1].lock()->getValue() != eDisplayChannelsR) {
             setDisplayChannels((int)eDisplayChannelsR, false);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, false);
         }
     } else if (k == _imp->displayGreenAction[0].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayGreenAction[0].lock()->getValue() == eDisplayChannelsG) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsG) {
             setDisplayChannels((int)eDisplayChannelsG, true);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, true);
         }
     } else if (k == _imp->displayGreenAction[1].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayGreenAction[0].lock()->getValue() == eDisplayChannelsG) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[1].lock()->getValue() != eDisplayChannelsG) {
             setDisplayChannels((int)eDisplayChannelsG, false);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, false);
         }
     } else if (k == _imp->displayBlueAction[0].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayBlueAction[0].lock()->getValue() == eDisplayChannelsB) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsB) {
             setDisplayChannels((int)eDisplayChannelsB, true);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, true);
         }
     } else if (k == _imp->displayBlueAction[1].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayBlueAction[0].lock()->getValue() == eDisplayChannelsB) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[1].lock()->getValue() != eDisplayChannelsB) {
             setDisplayChannels((int)eDisplayChannelsB, false);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, false);
         }
     } else if (k == _imp->displayAlphaAction[0].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayAlphaAction[0].lock()->getValue() == eDisplayChannelsA) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsA) {
             setDisplayChannels((int)eDisplayChannelsA, true);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, true);
         }
     } else if (k == _imp->displayAlphaAction[1].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayAlphaAction[0].lock()->getValue() == eDisplayChannelsA) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[1].lock()->getValue() != eDisplayChannelsA) {
             setDisplayChannels((int)eDisplayChannelsA, false);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, false);
         }
     } else if (k == _imp->displayMatteAction[0].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayMatteAction[0].lock()->getValue() == eDisplayChannelsMatte) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsMatte) {
             setDisplayChannels((int)eDisplayChannelsMatte, true);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, true);
         }
     } else if (k == _imp->displayMatteAction[1].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayMatteAction[0].lock()->getValue() == eDisplayChannelsMatte) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[1].lock()->getValue() != eDisplayChannelsMatte) {
             setDisplayChannels((int)eDisplayChannelsMatte, false);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, false);
         }
     } else if (k == _imp->displayLuminanceAction[0].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayLuminanceAction[0].lock()->getValue() == eDisplayChannelsY) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsY) {
             setDisplayChannels((int)eDisplayChannelsY, true);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, true);
         }
     } else if (k == _imp->displayLuminanceAction[1].lock()) {
-        if ((DisplayChannelsEnum)_imp->displayLuminanceAction[0].lock()->getValue() == eDisplayChannelsY) {
+        if ((DisplayChannelsEnum)_imp->displayChannelsKnob[1].lock()->getValue() != eDisplayChannelsY) {
             setDisplayChannels((int)eDisplayChannelsY, false);
         } else {
             setDisplayChannels((int)eDisplayChannelsRGB, false);
@@ -3301,7 +3459,7 @@ ViewerNode::getAlphaChannelKnob() const
 bool
 ViewerNode::isViewerPaused(int index) const
 {
-    return _imp->pauseButtonKnob[index].lock();
+    return _imp->pauseButtonKnob[index].lock()->getValue();
 }
 
 RectD

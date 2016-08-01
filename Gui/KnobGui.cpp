@@ -226,7 +226,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
 
 
     if (label) {
-        label->setToolTip( toolTip() );
+        toolTip(label);
     }
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
