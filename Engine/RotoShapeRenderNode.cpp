@@ -383,7 +383,11 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 Image::WriteAccess outputWriteAccess(outputPlane.second.get());
                 unsigned char* data = outputWriteAccess.pixelAt(bounds.x1, bounds.y1);
                 assert(data);
-                contextLocker.reset(new OSGLContextAttacher(glContext, frameArgs->abortInfo.lock(), args.time, bounds.width(), bounds.height(), bounds.width(), data));
+                contextLocker.reset(new OSGLContextAttacher(glContext, frameArgs->abortInfo.lock(),
+#ifdef DEBUG
+                                                            args.time,
+#endif
+                                                            bounds.width(), bounds.height(), bounds.width(), data));
                 contextLocker->attach();
             }
 
