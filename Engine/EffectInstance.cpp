@@ -2582,6 +2582,9 @@ static void setupGLForRender(const ImagePtr& image,
                              bool callGLFinish,
                              boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher)
 {
+#ifndef DEBUG
+    Q_UNUSED(time);
+#endif
     RectI imageBounds = image->getBounds();
 
     RectI viewportBounds;

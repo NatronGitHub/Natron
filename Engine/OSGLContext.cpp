@@ -542,7 +542,11 @@ OSGLContext::setContextCurrent_GPU(const AbortableRenderInfoPtr& abortInfo
 #endif
                                )
 {
-    setContextCurrentInternal(abortInfo, frameTime, 0, 0, 0, 0);
+    setContextCurrentInternal(abortInfo,
+#ifdef DEBUG
+                              frameTime,
+#endif
+                              0, 0, 0, 0);
 }
 
 void
@@ -555,7 +559,11 @@ OSGLContext::setContextCurrent_CPU(const AbortableRenderInfoPtr& abortInfo
                                    , int rowWidth
                                    , void* buffer)
 {
-    setContextCurrentInternal(abortInfo, frameTime, width, height, rowWidth, buffer);
+    setContextCurrentInternal(abortInfo,
+#ifdef DEBUG
+                              frameTime,
+#endif
+                              width, height, rowWidth, buffer);
 }
 
 void

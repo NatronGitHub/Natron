@@ -973,6 +973,7 @@ renderSmearBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
 
     bool ok = RotoShapeRenderCairo::allocateAndRenderSingleDotStroke_cairo(brushSizePixel, brushHardness, opacity, myData->imgWrapper);
     assert(ok);
+    Q_UNUSED(ok);
     myData->maskWidth = cairo_image_surface_get_width(myData->imgWrapper.cairoImg);
     myData->maskHeight = cairo_image_surface_get_height(myData->imgWrapper.cairoImg);
     myData->maskStride = cairo_image_surface_get_stride(myData->imgWrapper.cairoImg);

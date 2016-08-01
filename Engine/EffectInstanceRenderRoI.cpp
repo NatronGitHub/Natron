@@ -1912,6 +1912,11 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
             }
         }
     }
+#else
+    Q_UNUSED(rod);
+    Q_UNUSED(roi);
+    Q_UNUSED(par);
+    Q_UNUSED(renderAborted);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

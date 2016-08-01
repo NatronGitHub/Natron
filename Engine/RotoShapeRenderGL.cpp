@@ -637,7 +637,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    unsigned int mipmapLevel,
                                    int target)
 {
-
+    Q_UNUSED(roi);
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
     int vboColorsID = glData->getOrCreateVBOColorsID();
     int iboID = glData->getOrCreateIBOID();
@@ -682,7 +682,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
 
 
         rampShader->bind();
-        OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity};
+        OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)shapeOpacity};
         rampShader->setUniform("fillColor", fillColor);
         rampShader->setUniform("fallOff", (float)fallOff);
 
@@ -1157,6 +1157,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     {
         bool ok = strokeShader->getAttribLocation("inHardness", &hardnessLoc);
         assert(ok);
+        Q_UNUSED(ok);
     }
 #if 1
     GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
@@ -1274,7 +1275,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
         perDrawCount[i] = myData->indicesBuf[i]->size();
     }
 
-    OfxRGBAColourF fillColor = {myData->shapeColor[0], myData->shapeColor[1], myData->shapeColor[2], myData->opacity};
+    OfxRGBAColourF fillColor = {(float)myData->shapeColor[0], (float)myData->shapeColor[1], (float)myData->shapeColor[2], (float)myData->opacity};
 
 
 
@@ -1535,7 +1536,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         GL::glBindTexture( target, dstImage->getGLTextureID() );
 
 
-        OfxRGBAColourF fillColor = {shapeColor[0], shapeColor[1], shapeColor[2], opacity};
+        OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)opacity};
 
         GLShaderBasePtr smearShader = myData->glData->getOrCreateSmearShader();
         unsigned int iboID = myData->glData->getOrCreateIBOID();
@@ -1551,6 +1552,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         {
             bool ok = smearShader->getAttribLocation("inHardness", &hardnessLoc);
             assert(ok);
+            Q_UNUSED(ok);
         }
         GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
         GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesVertices.getData(), GL_DYNAMIC_DRAW);
