@@ -76,16 +76,33 @@ typedef float GLfloat;
 typedef float GLclampf;
 typedef double GLdouble;
 typedef double GLclampd;
+
+#if !defined(GL_VERSION_2_0)
 typedef char GLchar;
+#endif
+
+#if !defined(GL_ARB_shader_objects)
 typedef char GLcharARB;
 #ifdef __APPLE__
 typedef void *GLhandleARB;
 #else
 typedef unsigned int GLhandleARB;
 #endif
+#endif
+
+#if !defined(GL_ARB_half_float_pixel)
 typedef unsigned short GLhalfARB;
+#endif
+
+#if !defined(GL_ARB_half_float_vertex) && !defined(GL_VERSION_3_0)
 typedef unsigned short GLhalf;
+#endif
+
+#if !defined(ARB_ES2_compatibility) && !defined(GL_VERSION_4_1)
 typedef GLint GLfixed;
+#endif
+
+#if !defined(GL_VERSION_1_5)
 #ifdef __APPLE__
 typedef long GLintptr;
 typedef long GLsizeiptr;
@@ -93,8 +110,15 @@ typedef long GLsizeiptr;
 typedef ptrdiff_t GLintptr;
 typedef ptrdiff_t GLsizeiptr;
 #endif
+#endif
+
+#if !defined(GL_ARB_sync) && !defined(GL_VERSION_3_2)
 typedef int64_t GLint64;
+//typedef struct __GLsync *GLsync;
 typedef uint64_t GLuint64;
+#endif
+
+#if !defined(GL_ARB_vertex_buffer_object)
 #ifdef __APPLE__
 typedef long GLintptrARB;
 typedef long GLsizeiptrARB;
@@ -102,9 +126,12 @@ typedef long GLsizeiptrARB;
 typedef ptrdiff_t GLintptrARB;
 typedef ptrdiff_t GLsizeiptrARB;
 #endif
+#endif
+
+#if !defined(GL_EXT_timer_query)
 typedef int64_t GLint64EXT;
 typedef uint64_t GLuint64EXT;
-
+#endif
 
 
 
