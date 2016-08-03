@@ -14,7 +14,7 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.6.14 tags/Release-
+github.setup     OpenImageIO oiio 1.6.16 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -130,7 +130,7 @@ variant ffmpeg description {Add FFmpeg support.} {
 }
 
 variant openjpeg description {Add OpenJPEG support.} {
-    depends_lib-append  port:openjpeg15
+    depends_lib-append  port:openjpeg
     configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
     configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_INCLUDE_DIR=${prefix}/include/openjpeg-1.5
 }
