@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 150789 2016-07-28 18:03:22Z michaelld@macports.org $
+# $Id: Portfile 150937 2016-08-02 16:43:53Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           cmake 1.0
@@ -37,10 +37,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    github.setup    glfw glfw f7006f64fb12e21f30a99351d7c854ea75b5c3eb
-    version         20160720
-    checksums       rmd160 36f167c8a2a16481f5721468be7bd8512bf8d6db \
-                    sha256 f25475e63ffd4152d3d7c5de58076cc5e33063445f97ce1013754242f9973043
+    github.setup    glfw glfw 7be62631aebfb9dae515e95b9c92b3979e65988c
+    version         20160801
+    checksums       rmd160 893dd8de1cfe79d31df5f8d6b213154b05ab847d \
+                    sha256 539afeaf9599159b7b5b03970de55780edc1e283fa679c9ad1061fa0c685ce6f
 
     # patch to fix install directory for cmake files and docs
 

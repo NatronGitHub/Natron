@@ -28,6 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QDebug>
+
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
@@ -541,7 +543,7 @@ KnobGui::toolTip(QWidget* w) const
             if (isMarkdown) {
                 exprTt = QString::fromUtf8("ret = **%1**\n\n").arg( QString::fromUtf8( expressions[0].c_str() ) );
             } else {
-                exprTt = QString::fromUtf8("ret = <b>%1</b><br />").arg( QString::fromUtf8( expressions[0].c_str() ) );
+                exprTt = QString::fromUtf8("<br />ret = <b>%1</b>").arg( QString::fromUtf8( expressions[0].c_str() ) );
             }
         }
     } else {
@@ -551,7 +553,7 @@ KnobGui::toolTip(QWidget* w) const
             if (isMarkdown) {
                 toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
             } else {
-                toAppend = QString::fromUtf8("%1 = <b>%2</b><br />").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+                toAppend = QString::fromUtf8("<br />%1 = <b>%2</b>").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
             }
             exprTt.append(toAppend);
         }
@@ -559,9 +561,6 @@ KnobGui::toolTip(QWidget* w) const
 
     if ( !exprTt.isEmpty() ) {
         tt.append(exprTt);
-        if (!isMarkdown) {
-            tt += QLatin1String("<br/>");
-        }
     }
 
     if ( !realTt.isEmpty() ) {

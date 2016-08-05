@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 150715 2016-07-27 15:06:54Z michaelld@macports.org $
+# $Id: Portfile 150938 2016-08-02 18:24:20Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -42,7 +42,9 @@ if {${subport} eq ${name}} {
     # release-only patches
     patchfiles-append \
         patch-Modules-FindQt4.cmake.release.diff \
-        patch-Modules-FindFreetype.cmake.release.diff
+        patch-Modules-FindFreetype.cmake.release.diff \
+        patch-Modules-noArchCheck.release.diff
+
 
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
@@ -52,12 +54,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160726
+    version         20160801
     set dist_branch 3.6
-    set dist_date   20160722
-    set dist_hash   g858f9
-    checksums       rmd160 b68dcd81bb03d4c52daff0cd80b5a7852e89e3a4 \
-                    sha256 efa676d836269851acc8d3b9591091914d176882984d0b7bb40b47be13d1de52
+    set dist_date   20160801
+    set dist_hash   g62452
+    checksums       rmd160 f56ce4926d0082255b52615c238c2db3dd8e13fe \
+                    sha256 caad99c3864bd019ffc2d9a7e8cf76aae99588f71dd4e65b56f046c023e4c61f
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -69,7 +71,8 @@ if {${subport} eq ${name}} {
     # devel-only patches
     patchfiles-append \
         patch-Modules-FindQt4.cmake.devel.diff \
-        patch-Modules-FindFreetype.cmake.devel.diff
+        patch-Modules-FindFreetype.cmake.devel.diff \
+        patch-Modules-noArchCheck.devel.diff
 
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
@@ -90,8 +93,7 @@ depends_lib-append  port:curl \
 # use its internal jsoncpp until a better solution comes about.
 
 patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
-                    patch-Modules-Platform-Darwin.cmake.diff \
-                    patch-Modules-noArchCheck.diff
+                    patch-Modules-Platform-Darwin.cmake.diff
 
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
