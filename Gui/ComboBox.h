@@ -37,6 +37,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
+#include <QPixmap>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
 CLANG_DIAG_ON(deprecated)
@@ -80,6 +81,7 @@ private:
     int _cascadingIndex;
     int _currentIndex;
     QString _currentText;
+    QPixmap _currentPixmap;
     std::vector<int> _separators;
     boost::shared_ptr<ComboBoxMenuNode> _rootNode;
     mutable QSize _sh; ///size hint

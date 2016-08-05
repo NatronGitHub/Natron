@@ -26,6 +26,7 @@
 
 #include <QThread>
 #include <QCoreApplication>
+#include <QTimer>
 
 #include <ofxNatron.h>
 
@@ -311,10 +312,103 @@
 #define kViewerNodeParamActionCreateNewRoI "createNewRoI"
 #define kViewerNodeParamActionCreateNewRoILabel "Create New Region Of Interest"
 
+#define kViewerNodeParamActionAbortRender "aboortRender"
+#define kViewerNodeParamActionAbortRenderLabel "Abort Rendering"
+
 // Viewer overlay
 #define kViewerNodeParamWipeCenter "wipeCenter"
 #define kViewerNodeParamWipeAmount "wipeAmount"
 #define kViewerNodeParamWipeAngle "wipeAngle"
+
+// Player buttons
+
+
+#define kViewerNodeParamSetInPoint "setInPoint"
+#define kViewerNodeParamSetInPointLabel "Set In Point"
+#define kViewerNodeParamSetInPointHint "Set the playback in point at the current frame"
+
+#define kViewerNodeParamInPoint "inPoint"
+#define kViewerNodeParamInPointLabel "In Point"
+#define kViewerNodeParamInPointHint "The playback in point"
+
+#define kViewerNodeParamSetOutPoint "setOutPoint"
+#define kViewerNodeParamSetOutPointLabel "Set Out Point"
+#define kViewerNodeParamSetOutPointHint "Set the playback out point at the current frame"
+
+#define kViewerNodeParamOutPoint "outPoint"
+#define kViewerNodeParamOutPointLabel "Out Point"
+#define kViewerNodeParamOutPointHint "The playback out point"
+
+#define kViewerNodeParamEnableFps "enableFps"
+#define kViewerNodeParamEnableFpsLabel "Enable FPS"
+#define kViewerNodeParamEnableFpsHint "When unchecked, the playback frame rate is automatically set from " \
+"the Viewer A input. When checked, the user setting is used"
+
+#define kViewerNodeParamFps "desiredFps"
+#define kViewerNodeParamFpsLabel "Fps"
+#define kViewerNodeParamFpsHint "Viewer playback framerate, in frames per second"
+
+#define kViewerNodeParamEnableTurboMode "enableTurboMode"
+#define kViewerNodeParamEnableTurboModeLabel "Turbo Mode"
+#define kViewerNodeParamEnableTurboModeHint "When checked, only the viewer is redrawn during playback, " \
+"for maximum efficiency"
+
+#define kViewerNodeParamPlaybackMode "playbackMode"
+#define kViewerNodeParamPlaybackModeLabel "Playback Mode"
+#define kViewerNodeParamPlaybackModeHint "Behavior to adopt when the playback hit the end of the range: loop,bounce or stop"
+
+#define kViewerNodeParamSyncTimelines "syncTimelines"
+#define kViewerNodeParamSyncTimelinesLabel "Sync Timelines"
+#define kViewerNodeParamSyncTimelinesHint "When activated, the timeline frame-range is synchronized with the Dope Sheet and the Curve Editor"
+
+#define kViewerNodeParamFirstFrame "goToFirstFrame"
+#define kViewerNodeParamFirstFrameLabel "First Frame"
+#define kViewerNodeParamFirstFrameHint "Moves the timeline cursor to the playback in point"
+
+#define kViewerNodeParamPlayBackward "playBackward"
+#define kViewerNodeParamPlayBackwardLabel "Play Backward"
+#define kViewerNodeParamPlayBackwardHint "Starts playback backward"
+
+#define kViewerNodeParamCurrentFrame "currentFrame"
+#define kViewerNodeParamCurrentFrameLabel "Current Frame"
+#define kViewerNodeParamCurrentFrameHint "The current frame displayed in the Viewer"
+
+#define kViewerNodeParamPlayForward "playForward"
+#define kViewerNodeParamPlayForwardLabel "Play Forward"
+#define kViewerNodeParamPlayForwardHint "Starts playback forward"
+
+#define kViewerNodeParamLastFrame "goToLastFrame"
+#define kViewerNodeParamLastFrameLabel "Last Frame"
+#define kViewerNodeParamLastFrameHint "Moves the timeline cursor to the playback out point"
+
+#define kViewerNodeParamPreviousFrame "goToPreviousFrame"
+#define kViewerNodeParamPreviousFrameLabel "Previous Frame"
+#define kViewerNodeParamPreviousFrameHint "Moves the timeline cursor to the previous frame"
+
+#define kViewerNodeParamNextFrame "goToNextFrame"
+#define kViewerNodeParamNextFrameLabel "Next Frame"
+#define kViewerNodeParamNextFrameHint "Moves the timeline cursor to the next frame"
+
+#define kViewerNodeParamPreviousKeyFrame "goToPreviousKeyFrame"
+#define kViewerNodeParamPreviousKeyFrameLabel "Previous KeyFrame"
+#define kViewerNodeParamPreviousKeyFrameHint "Moves the timeline cursor to the previous keyframe"
+
+#define kViewerNodeParamNextKeyFrame "goToNextKeyFrame"
+#define kViewerNodeParamNextKeyFrameLabel "Next KeyFrame"
+#define kViewerNodeParamNextKeyFrameHint "Moves the timeline cursor to the next keyframe"
+
+#define kViewerNodeParamPreviousIncr "goToPreviousIncrement"
+#define kViewerNodeParamPreviousIncrLabel "Previous Increment"
+#define kViewerNodeParamPreviousIncrHint "Moves the timeline cursor backward by the number of frames indicated by the Frame Increment parameter"
+
+#define kViewerNodeParamFrameIncrement "frameIncrement"
+#define kViewerNodeParamFrameIncrementLabel "frameIncrement"
+#define kViewerNodeParamFrameIncrementHint "This is the number of frame the timeline will step backward/forward when clicking on the Previous/Next "\
+"Increment buttons"
+
+#define kViewerNodeParamNextIncr "goToNextIncrement"
+#define kViewerNodeParamNextIncrLabel "Next Increment"
+#define kViewerNodeParamNextIncrHint "Moves the timeline cursor forward by the number of frames indicated by the Frame Increment parameter"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -407,6 +501,30 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobChoice> activeViewKnob;
     boost::weak_ptr<KnobButton> enableInfoBarButtonKnob;
 
+    // Player
+    boost::weak_ptr<KnobButton> setInPointButtonKnob;
+    boost::weak_ptr<KnobButton> setOutPointButtonKnob;
+    boost::weak_ptr<KnobInt> inPointKnob;
+    boost::weak_ptr<KnobInt> outPointKnob;
+    boost::weak_ptr<KnobInt> curFrameKnob;
+    boost::weak_ptr<KnobBool> enableFpsKnob;
+    boost::weak_ptr<KnobDouble> fpsKnob;
+    boost::weak_ptr<KnobButton> enableTurboModeButtonKnob;
+    boost::weak_ptr<KnobChoice> playbackModeKnob;
+    boost::weak_ptr<KnobButton> syncTimelinesButtonKnob;
+    boost::weak_ptr<KnobButton> firstFrameButtonKnob;
+    boost::weak_ptr<KnobButton> playBackwardButtonKnob;
+    boost::weak_ptr<KnobButton> playForwardButtonKnob;
+    boost::weak_ptr<KnobButton> lastFrameButtonKnob;
+    boost::weak_ptr<KnobButton> prevFrameButtonKnob;
+    boost::weak_ptr<KnobButton> nextFrameButtonKnob;
+    boost::weak_ptr<KnobButton> prevKeyFrameButtonKnob;
+    boost::weak_ptr<KnobButton> nextKeyFrameButtonKnob;
+    boost::weak_ptr<KnobButton> prevIncrButtonKnob;
+    boost::weak_ptr<KnobInt> incrFrameKnob;
+    boost::weak_ptr<KnobButton> nextIncrButtonKnob;
+
+
     // Overlays
     boost::weak_ptr<KnobDouble> wipeCenter;
     boost::weak_ptr<KnobDouble> wipeAmount;
@@ -445,6 +563,7 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobButton> pauseABAction;
     boost::weak_ptr<KnobButton> enableStatsAction;
     boost::weak_ptr<KnobButton> createUserRoIAction;
+    boost::weak_ptr<KnobButton> abortRenderingAction;
 
     double lastFstopValue;
     double lastGammaValue;
@@ -461,6 +580,9 @@ struct ViewerNodePrivate
         NodeWPtr node;
     };
     std::vector<ViewerInput> viewerInputs;
+
+    QTimer mustSetUpPlaybackButtonsTimer;
+
 
     ViewerNodePrivate(ViewerNode* publicInterface)
     : _publicInterface(publicInterface)
@@ -530,6 +652,14 @@ struct ViewerNodePrivate
         factor *= scale;
         uiContext->zoomViewport(factor);
     }
+
+    void getAllViewerNodes(bool inGroupOnly, std::list<ViewerNodePtr>& viewerNodes) const;
+
+    void abortAllViewersRendering();
+
+    void startPlayback(RenderDirectionEnum direction);
+
+    void timelineGoTo(double time);
 
 };
 
@@ -761,6 +891,23 @@ ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionCreateNewRoI, kViewerNodeParamActionCreateNewRoILabel, Key_W, eKeyboardModifierAlt) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionPauseAB, kViewerNodeParamActionPauseABLabel, Key_P, eKeyboardModifierShift) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRefreshWithStats, kViewerNodeParamActionRefreshWithStatsLabel, Key_U, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)) );
+
+
+    // Player
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPreviousFrame, kViewerNodeParamPreviousFrameLabel, Key_Left, eKeyboardModifierNone));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamNextFrame, kViewerNodeParamNextFrameLabel, Key_Right, eKeyboardModifierNone));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPlayBackward, kViewerNodeParamPlayBackwardLabel, Key_J, eKeyboardModifierNone));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPlayForward, kViewerNodeParamPlayForwardLabel, Key_L, eKeyboardModifierNone));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionAbortRender, kViewerNodeParamActionAbortRenderLabel, Key_K, eKeyboardModifierNone));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPreviousIncr, kViewerNodeParamPreviousIncrLabel, Key_Left, eKeyboardModifierShift));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamNextIncr, kViewerNodeParamNextIncrLabel, Key_Right, eKeyboardModifierShift));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPreviousKeyFrame, kViewerNodeParamPreviousKeyFrameLabel, Key_Left, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamNextKeyFrame, kViewerNodeParamNextKeyFrameLabel, Key_Right, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamFirstFrame, kViewerNodeParamFirstFrameLabel, Key_Left, eKeyboardModifierControl));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamLastFrame, kViewerNodeParamLastFrameLabel, Key_Right, eKeyboardModifierControl));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamSetInPoint, kViewerNodeParamSetInPointLabel, Key_I, eKeyboardModifierAlt));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamSetOutPoint, kViewerNodeParamSetOutPointLabel, Key_O, eKeyboardModifierAlt));
+
 }
 
 void
@@ -796,7 +943,7 @@ ViewerNode::onGroupCreated()
         std::vector<NodePtr> inputNodes(VIEWER_INITIAL_N_INPUTS);
         // Create input nodes
         for (int i = 0; i < VIEWER_INITIAL_N_INPUTS; ++i) {
-            QString inputName = QString::fromUtf8("Input%1").arg(i);
+            QString inputName = QString::fromUtf8("Input%1").arg(i + 1);
             CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
             args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -809,6 +956,26 @@ ViewerNode::onGroupCreated()
         }
         
     }
+
+
+    ViewerInstancePtr viewerNode = getInternalViewerNode();
+    RenderEnginePtr engine = viewerNode->getRenderEngine();
+    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
+    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
+
+    // Refresh visibility & enabledness
+    _imp->fpsKnob.lock()->setAllDimensionsEnabled(_imp->enableFpsKnob.lock()->getValue());
+
+    // Refresh playback mode
+    PlaybackModeEnum mode = (PlaybackModeEnum)_imp->playbackModeKnob.lock()->getValue();
+    engine->setPlaybackMode(mode);
+
+    // Refresh fps
+    engine->setDesiredFPS(_imp->fpsKnob.lock()->getValue());
+
+    _imp->mustSetUpPlaybackButtonsTimer.setSingleShot(true);
+    QObject::connect( &_imp->mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), this, SLOT(onSetDownPlaybackButtonsTimeout()) );
+
 }
 
 /**
@@ -1331,6 +1498,255 @@ ViewerNode::initializeKnobs()
         _imp->enableInfoBarButtonKnob = param;
     }
 
+    // Player toolbar
+    double projectFirst, projectLast;
+    getApp()->getProject()->getFrameRange(&projectFirst, &projectLast);
+    double projectFps = getApp()->getProject()->getProjectFrameRate();
+    int currentFrame = getApp()->getTimeLine()->currentFrame();
+
+
+
+    KnobPagePtr playerToolbarPage = AppManager::createKnob<KnobPage>( thisShared, tr("Player") );
+    playerToolbarPage->setName(kViewerNodeParamPlayerToolBarPage);
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSetInPointLabel) );
+        param->setName(kViewerNodeParamSetInPoint);
+        param->setHintToolTip(tr(kViewerNodeParamSetInPointHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "timelineIn.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "timelineIn.png", false);
+        _imp->setInPointButtonKnob = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamInPointLabel) );
+        param->setName(kViewerNodeParamInPoint);
+        param->setHintToolTip(tr(kViewerNodeParamInPointHint));
+        param->setSecretByDefault(true);
+        param->setDefaultValue(projectFirst);
+        param->setValueCenteredInSpinBox(true);
+        param->setEvaluateOnChange(false);
+        _imp->inPointKnob = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>( thisShared, tr(kViewerNodeParamEnableFpsLabel) );
+        param->setName(kViewerNodeParamEnableFps);
+        param->setHintToolTip(tr(kViewerNodeParamEnableFpsHint));
+        param->setInViewerContextLabel(tr("FPS"));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        _imp->enableFpsKnob = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerNodeParamFpsLabel) );
+        param->setName(kViewerNodeParamFps);
+        param->setHintToolTip(tr(kViewerNodeParamFpsHint));
+        param->setSecretByDefault(true);
+        param->setDefaultValue(projectFps);
+        param->setEvaluateOnChange(false);
+        param->setAllDimensionsEnabled(false);
+        param->setMinimum(0.);
+        param->disableSlider();
+        _imp->fpsKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableTurboModeLabel) );
+        param->setName(kViewerNodeParamEnableTurboMode);
+        param->setHintToolTip(tr(kViewerNodeParamEnableTurboModeHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "turbo_on.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "turbo_off.png", false);
+        _imp->enableTurboModeButtonKnob = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamPlaybackModeLabel) );
+        param->setName(kViewerNodeParamPlaybackMode);
+        param->setHintToolTip(tr(kViewerNodeParamPlaybackModeHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        {
+            std::vector<std::string> entries, helps;
+            std::map<int ,std::string> icons;
+            entries.push_back("Repeat");
+            helps.push_back("Playback will loop over the timeline in/out points");
+            icons[0] = NATRON_IMAGES_PATH "loopmode.png";
+            entries.push_back("Bounce");
+            helps.push_back("Playback will bounce between the timeline in/out points");
+            icons[1] = NATRON_IMAGES_PATH "bounce.png";
+            entries.push_back("Stop");
+            helps.push_back("Playback will play once until reaches either the timeline's in or out point");
+            icons[2] = NATRON_IMAGES_PATH "playOnce.png";
+            param->populateChoices(entries, helps);
+            param->setIcons(icons);
+        }
+        _imp->playbackModeKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSyncTimelinesLabel) );
+        param->setName(kViewerNodeParamSyncTimelines);
+        param->setHintToolTip(tr(kViewerNodeParamSyncTimelinesHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "locked.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "unlocked.png", false);
+        _imp->syncTimelinesButtonKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamFirstFrameLabel) );
+        param->setName(kViewerNodeParamFirstFrame);
+        param->setHintToolTip(tr(kViewerNodeParamFirstFrameHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "firstFrame.png", true);
+        _imp->firstFrameButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPlayBackwardLabel) );
+        param->setName(kViewerNodeParamPlayBackward);
+        param->setHintToolTip(tr(kViewerNodeParamPlayBackwardHint));
+        param->setSecretByDefault(true);
+        param->setCheckable(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "rewind_enabled.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "rewind.png", false);
+        _imp->playBackwardButtonKnob = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamCurrentFrameLabel) );
+        param->setName(kViewerNodeParamCurrentFrame);
+        param->setHintToolTip(tr(kViewerNodeParamCurrentFrameHint));
+        param->setSecretByDefault(true);
+        param->setDefaultValue(currentFrame);
+        param->setEvaluateOnChange(false);
+        param->setValueCenteredInSpinBox(true);
+        param->disableSlider();
+        _imp->curFrameKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPlayForwardLabel) );
+        param->setName(kViewerNodeParamPlayForward);
+        param->setHintToolTip(tr(kViewerNodeParamPlayForwardHint));
+        param->setSecretByDefault(true);
+        param->setCheckable(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "play_enabled.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "play.png", false);
+        _imp->playForwardButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamLastFrameLabel) );
+        param->setName(kViewerNodeParamLastFrame);
+        param->setHintToolTip(tr(kViewerNodeParamLastFrameHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "lastFrame.png", true);
+        _imp->lastFrameButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPreviousFrameLabel) );
+        param->setName(kViewerNodeParamPreviousFrame);
+        param->setHintToolTip(tr(kViewerNodeParamPreviousFrameHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "back1.png", true);
+        _imp->prevFrameButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamNextFrameLabel) );
+        param->setName(kViewerNodeParamNextFrame);
+        param->setHintToolTip(tr(kViewerNodeParamNextFrameHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "forward1.png", true);
+        _imp->nextFrameButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPreviousKeyFrameLabel) );
+        param->setName(kViewerNodeParamPreviousKeyFrame);
+        param->setHintToolTip(tr(kViewerNodeParamPreviousKeyFrameHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "prevKF.png", true);
+        _imp->prevKeyFrameButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamNextKeyFrameLabel) );
+        param->setName(kViewerNodeParamNextKeyFrame);
+        param->setHintToolTip(tr(kViewerNodeParamNextKeyFrameHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "nextKF.png", true);
+        _imp->nextKeyFrameButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPreviousIncrLabel) );
+        param->setName(kViewerNodeParamPreviousIncr);
+        param->setHintToolTip(tr(kViewerNodeParamPreviousIncrHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "previousIncr.png", true);
+        _imp->prevIncrButtonKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamNextIncrLabel) );
+        param->setName(kViewerNodeParamNextIncr);
+        param->setHintToolTip(tr(kViewerNodeParamNextIncrHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "nextIncr.png", true);
+        _imp->nextIncrButtonKnob = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamFrameIncrementLabel) );
+        param->setName(kViewerNodeParamFrameIncrement);
+        param->setHintToolTip(tr(kViewerNodeParamFrameIncrementHint));
+        param->setSecretByDefault(true);
+        param->setDefaultValue(10);
+        param->setValueCenteredInSpinBox(true);
+        param->setEvaluateOnChange(false);
+        param->disableSlider();
+        _imp->incrFrameKnob = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSetOutPointLabel) );
+        param->setName(kViewerNodeParamSetOutPoint);
+        param->setHintToolTip(tr(kViewerNodeParamSetOutPointHint));
+        param->setSecretByDefault(true);
+        param->setEvaluateOnChange(false);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "timelineOut.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "timelineOut.png", false);
+        _imp->setOutPointButtonKnob = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamOutPointLabel) );
+        param->setName(kViewerNodeParamOutPoint);
+        param->setHintToolTip(tr(kViewerNodeParamOutPointHint));
+        param->setSecretByDefault(true);
+        param->setValueCenteredInSpinBox(true);
+        param->setDefaultValue(projectLast);
+        param->setEvaluateOnChange(false);
+        _imp->outPointKnob = param;
+    }
+
     addKnobToViewerUI(_imp->layersKnob.lock());
     addKnobToViewerUI(_imp->alphaChannelKnob.lock());
     addKnobToViewerUI(_imp->displayChannelsKnob[0].lock());
@@ -1373,6 +1789,51 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->activeViewKnob.lock());
     _imp->activeViewKnob.lock()->setInViewerContextStretch(eStretchAfter);
     addKnobToViewerUI(_imp->enableInfoBarButtonKnob.lock());
+
+
+    // Setup player buttons layout but don't add them to the viewer UI, since it's kind of a specific case, we want the toolbar below
+    // the viewer
+    playerToolbarPage->addKnob(_imp->setInPointButtonKnob.lock());
+    _imp->setInPointButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->inPointKnob.lock());
+    _imp->inPointKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    playerToolbarPage->addKnob(_imp->enableFpsKnob.lock());
+    _imp->enableFpsKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->fpsKnob.lock());
+    _imp->fpsKnob.lock()->setInViewerContextAddSeparator(true);
+    playerToolbarPage->addKnob(_imp->enableTurboModeButtonKnob.lock());
+    _imp->enableTurboModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->playbackModeKnob.lock());
+    _imp->playbackModeKnob.lock()->setInViewerContextItemSpacing(VIEWER_UI_SECTIONS_SPACING_PX);
+    playerToolbarPage->addKnob(_imp->syncTimelinesButtonKnob.lock());
+    _imp->syncTimelinesButtonKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    playerToolbarPage->addKnob(_imp->firstFrameButtonKnob.lock());
+    _imp->firstFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->playBackwardButtonKnob.lock());
+    _imp->playBackwardButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->curFrameKnob.lock());
+    _imp->curFrameKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->playForwardButtonKnob.lock());
+    _imp->playForwardButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->lastFrameButtonKnob.lock());
+    _imp->lastFrameButtonKnob.lock()->setInViewerContextItemSpacing(VIEWER_UI_SECTIONS_SPACING_PX);
+    playerToolbarPage->addKnob(_imp->prevFrameButtonKnob.lock());
+    _imp->prevFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->nextFrameButtonKnob.lock());
+    _imp->nextFrameButtonKnob.lock()->setInViewerContextItemSpacing(VIEWER_UI_SECTIONS_SPACING_PX);
+    playerToolbarPage->addKnob(_imp->prevKeyFrameButtonKnob.lock());
+    _imp->prevKeyFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->nextKeyFrameButtonKnob.lock());
+    _imp->nextKeyFrameButtonKnob.lock()->setInViewerContextItemSpacing(VIEWER_UI_SECTIONS_SPACING_PX);
+    playerToolbarPage->addKnob(_imp->prevIncrButtonKnob.lock());
+    _imp->prevIncrButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->incrFrameKnob.lock());
+    _imp->incrFrameKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->nextIncrButtonKnob.lock());
+    _imp->nextIncrButtonKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    playerToolbarPage->addKnob(_imp->outPointKnob.lock());
+    _imp->outPointKnob.lock()->setInViewerContextItemSpacing(0);
+    playerToolbarPage->addKnob(_imp->setOutPointButtonKnob.lock());
 
     // Right click menu
     KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kViewerNodeParamRightClickMenu) );
@@ -1732,6 +2193,15 @@ ViewerNode::initializeKnobs()
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->enableStatsAction = action;
+    }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionAbortRenderLabel) );
+        action->setName(kViewerNodeParamActionAbortRender);
+        action->setSecretByDefault(true);
+        action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
+        page->addKnob(action);
+        _imp->abortRenderingAction = action;
     }
 
     // Viewer overlays
@@ -2242,6 +2712,85 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
 
         knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+    } else if (k == _imp->enableFpsKnob.lock()) {
+        _imp->fpsKnob.lock()->setAllDimensionsEnabled(_imp->enableFpsKnob.lock()->getValue());
+        refreshFps();
+    } else if (k == _imp->playForwardButtonKnob.lock()) {
+        if (reason != eValueChangedReasonPluginEdited) {
+            if (_imp->playForwardButtonKnob.lock()->getValue()) {
+                _imp->startPlayback(eRenderDirectionForward);
+            } else {
+                _imp->abortAllViewersRendering();
+            }
+        }
+    } else if (k == _imp->playBackwardButtonKnob.lock()) {
+        if (reason != eValueChangedReasonPluginEdited) {
+            if (_imp->playBackwardButtonKnob.lock()->getValue()) {
+                _imp->startPlayback(eRenderDirectionBackward);
+            } else {
+                _imp->abortAllViewersRendering();
+            }
+        }
+    } else if (k == _imp->curFrameKnob.lock()) {
+        if (reason != eValueChangedReasonPluginEdited) {
+            _imp->timelineGoTo(_imp->curFrameKnob.lock()->getValue());
+        }
+    } else if (k == _imp->prevFrameButtonKnob.lock()) {
+        int prevFrame = getInternalViewerNode()->getTimeline()->currentFrame() - 1;
+
+        if ( prevFrame  < _imp->inPointKnob.lock()->getValue() ) {
+            prevFrame = _imp->outPointKnob.lock()->getValue();
+        }
+        _imp->timelineGoTo(prevFrame);
+    } else if (k == _imp->nextFrameButtonKnob.lock()) {
+        int nextFrame = getInternalViewerNode()->getTimeline()->currentFrame() + 1;
+
+        if ( nextFrame > _imp->outPointKnob.lock()->getValue()) {
+            nextFrame = _imp->inPointKnob.lock()->getValue();
+        }
+        _imp->timelineGoTo(nextFrame);
+    } else if (k == _imp->prevKeyFrameButtonKnob.lock()) {
+        getApp()->goToPreviousKeyframe();
+    } else if (k == _imp->nextKeyFrameButtonKnob.lock()) {
+        getApp()->goToNextKeyframe();
+    } else if (k == _imp->prevIncrButtonKnob.lock()) {
+        int time = getInternalViewerNode()->getTimeline()->currentFrame();
+        time -= _imp->incrFrameKnob.lock()->getValue();
+        _imp->timelineGoTo(time);
+    } else if (k == _imp->nextIncrButtonKnob.lock()) {
+        int time = getInternalViewerNode()->getTimeline()->currentFrame();
+        time += _imp->incrFrameKnob.lock()->getValue();
+        _imp->timelineGoTo(time);
+    } else if (k == _imp->firstFrameButtonKnob.lock()) {
+        int time = _imp->inPointKnob.lock()->getValue();
+        _imp->timelineGoTo(time);
+    } else if (k == _imp->lastFrameButtonKnob.lock()) {
+        int time = _imp->outPointKnob.lock()->getValue();
+        _imp->timelineGoTo(time);
+    } else if (k == _imp->playbackModeKnob.lock()) {
+        PlaybackModeEnum mode = (PlaybackModeEnum)_imp->playbackModeKnob.lock()->getValue();
+        RenderEnginePtr engine = getInternalViewerNode()->getRenderEngine();
+        if (engine) {
+            engine->setPlaybackMode(mode);
+        }
+    } else if (k == _imp->syncTimelinesButtonKnob.lock()) {
+        if (reason != eValueChangedReasonPluginEdited) {
+            getUiContext()->setTripleSyncEnabled(_imp->syncTimelinesButtonKnob.lock()->getValue());
+        }
+    } else if (k == _imp->enableTurboModeButtonKnob.lock()) {
+        if (reason != eValueChangedReasonPluginEdited) {
+            getApp()->setGuiFrozen(_imp->enableTurboModeButtonKnob.lock()->getValue());
+        }
+    } else if (k == _imp->abortRenderingAction.lock()) {
+        _imp->abortAllViewersRendering();
+    } else if (k == _imp->setInPointButtonKnob.lock()) {
+        _imp->inPointKnob.lock()->setValueFromPlugin(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSpec::current(), 0);
+    } else if (k == _imp->setOutPointButtonKnob.lock()) {
+        _imp->outPointKnob.lock()->setValueFromPlugin(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSpec::current(), 0);
+    } else if (k == _imp->inPointKnob.lock()) {
+        _imp->uiContext->setTimelineBounds(_imp->inPointKnob.lock()->getValue(), _imp->outPointKnob.lock()->getValue());
+    } else if (k == _imp->outPointKnob.lock()) {
+        _imp->uiContext->setTimelineBounds(_imp->inPointKnob.lock()->getValue(), _imp->outPointKnob.lock()->getValue());
     } else {
         caught = false;
     }
@@ -3460,6 +4009,30 @@ ViewerNode::getAlphaChannelKnob() const
     return _imp->alphaChannelKnob.lock();
 }
 
+KnobIntPtr
+ViewerNode::getPlaybackInPointKnob() const
+{
+    return _imp->inPointKnob.lock();
+}
+
+KnobIntPtr
+ViewerNode::getPlaybackOutPointKnob() const
+{
+    return _imp->outPointKnob.lock();
+}
+
+KnobIntPtr
+ViewerNode::getCurrentFrameKnob() const
+{
+    return _imp->curFrameKnob.lock();
+}
+
+KnobButtonPtr
+ViewerNode::getTurboModeButtonKnob() const
+{
+    return _imp->enableTurboModeButtonKnob.lock();
+}
+
 bool
 ViewerNode::isViewerPaused(int index) const
 {
@@ -3522,6 +4095,163 @@ ViewerNode::redrawViewer()
         return;
     }
     uiContext->redraw();
+}
+
+void
+ViewerNodePrivate::getAllViewerNodes(bool inGroupOnly, std::list<ViewerNodePtr>& viewerNodes) const
+{
+    NodeCollectionPtr collection;
+    if (inGroupOnly) {
+        collection = _publicInterface->getNode()->getGroup();
+    } else {
+        collection = _publicInterface->getApp()->getProject();
+    }
+    NodesList nodes;
+    if (inGroupOnly) {
+        nodes = collection->getNodes();
+    } else {
+        collection->getNodes_recursive(nodes, false);
+    }
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (!(*it)->isActivated()) {
+            continue;
+        }
+        ViewerNodePtr isViewer = (*it)->isEffectViewerNode();
+        if (isViewer) {
+            viewerNodes.push_back(isViewer);
+        }
+    }
+}
+
+void
+ViewerNodePrivate::abortAllViewersRendering()
+{
+    std::list<ViewerNodePtr> viewers;
+    getAllViewerNodes(false, viewers);
+
+    playForwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
+    playBackwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
+
+
+    if ( _publicInterface->getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        _publicInterface->getApp()->setGuiFrozen(false);
+    }
+
+    // Abort all viewers because they are all synchronised.
+
+    for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        ViewerInstancePtr viewer = (*it)->getInternalViewerNode();
+        if (viewer) {
+            viewer->getRenderEngine()->abortRenderingNoRestart();
+        }
+    }
+}
+
+void
+ViewerNodePrivate::startPlayback(RenderDirectionEnum direction)
+{
+    abortAllViewersRendering();
+
+    if ( _publicInterface->getApp()->checkAllReadersModificationDate(true) ) {
+        return;
+    }
+    _publicInterface->getApp()->setLastViewerUsingTimeline( getInternalViewerNode() );
+    std::vector<ViewIdx> viewsToRender;
+    viewsToRender.push_back(_publicInterface->getCurrentView());
+    ViewerInstancePtr instance = _publicInterface->getInternalViewerNode();
+    if (instance) {
+        instance->getRenderEngine()->renderFromCurrentFrame(_publicInterface->getApp()->isRenderStatsActionChecked(), viewsToRender, direction);
+    }
+
+}
+
+void
+ViewerNode::refreshFps()
+{
+    bool fpsEnabled = _imp->enableFpsKnob.lock()->getValue();
+    double fps;
+    if (fpsEnabled) {
+        fps = _imp->fpsKnob.lock()->getValue();
+    } else {
+        NodePtr input0 = getCurrentAInput();
+        NodePtr input1 = getCurrentBInput();
+
+        if (input0) {
+            fps = input0->getEffectInstance()->getFrameRate();
+        } else {
+            if (input1) {
+                fps = input1->getEffectInstance()->getFrameRate();
+            } else {
+                fps = getApp()->getProjectFrameRate();
+            }
+        }
+        _imp->fpsKnob.lock()->setValue(fps);
+    }
+    ViewerInstancePtr viewerNode = getInternalViewerNode();
+    if (!viewerNode) {
+        return;
+    }
+    viewerNode->getRenderEngine()->setDesiredFPS(fps);
+
+}
+
+void
+ViewerNodePrivate::timelineGoTo(double time)
+{
+    ViewerInstancePtr viewer = _publicInterface->getInternalViewerNode();
+    viewer->getTimeline()->seekFrame(time, true, viewer, eTimelineChangeReasonOtherSeek);
+}
+
+void
+ViewerNode::onEngineStarted(bool forward)
+{
+
+    std::list<ViewerNodePtr> viewers;
+    _imp->getAllViewerNodes(false, viewers);
+    for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->_imp->playForwardButtonKnob.lock()->setValueFromPlugin(forward, ViewSpec::current(), 0);
+        (*it)->_imp->playBackwardButtonKnob.lock()->setValueFromPlugin(!forward, ViewSpec::current(), 0);
+    }
+
+    if (!getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        getApp()->setGuiFrozen(true);
+    }
+}
+
+
+void
+ViewerNode::onEngineStopped()
+{
+ 
+
+    // Don't set the playback buttons up now, do it a bit later, maybe the user will restart playback  just aftewards
+    _imp->mustSetUpPlaybackButtonsTimer.start(200);
+
+    std::list<ViewerNodePtr> viewers;
+    _imp->getAllViewerNodes(false, viewers);
+
+    _imp->curFrameKnob.lock()->setValueFromPlugin( getInternalViewerNode()->getTimeline()->currentFrame(), ViewSpec::current(), 0 );
+
+    if (!getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        getApp()->setGuiFrozen(false);
+    } else {
+        getApp()->refreshAllTimeEvaluationParams(true);
+    }
+}
+
+
+void
+ViewerNode::onSetDownPlaybackButtonsTimeout()
+{
+    ViewerInstancePtr instance = getInternalViewerNode();
+    if ( instance && instance->getRenderEngine() && !instance->getRenderEngine()->isDoingSequentialRender() ) {
+        std::list<ViewerNodePtr> viewers;
+        _imp->getAllViewerNodes(false, viewers);
+        for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->_imp->playForwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
+            (*it)->_imp->playBackwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

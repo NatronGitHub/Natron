@@ -254,7 +254,15 @@ public:
      **/
     virtual void setTimelineVisible(bool visible) = 0;
 
+    /**
+     * @brief Set the timeline bounds on the GUI
+     **/
+    virtual void setTimelineBounds(double first, double last) = 0;
 
+    /**
+     * @brief Set triple sync enabled
+     **/
+    virtual void setTripleSyncEnabled(bool toggled) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

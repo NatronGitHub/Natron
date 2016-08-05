@@ -81,7 +81,7 @@ DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,
 void
 DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
 {
-    Qt::Key key = (Qt::Key)event->key();
+    /*Qt::Key key = (Qt::Key)event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();
 
     if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
@@ -92,9 +92,9 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
         if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
             _gui->getNodeGraph()->getLastSelectedViewer()->nextFrame();
         }
-    } else {
+    } else {*/
         QTabWidget::keyPressEvent(event);
-    }
+   // }
 }
 
 QSize

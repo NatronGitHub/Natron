@@ -1860,10 +1860,10 @@ void init_NATRON_NAMESPACE(PyObject* module)
         return ;
 
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOLORSPACEENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerColorSpaceSRGB", (long) NATRON_NAMESPACE::eViewerColorSpaceSRGB))
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerColorSpaceLinear", (long) NATRON_NAMESPACE::eViewerColorSpaceLinear))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOLORSPACEENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerColorSpaceLinear", (long) NATRON_NAMESPACE::eViewerColorSpaceLinear))
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerColorSpaceSRGB", (long) NATRON_NAMESPACE::eViewerColorSpaceSRGB))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOLORSPACEENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eViewerColorSpaceRec709", (long) NATRON_NAMESPACE::eViewerColorSpaceRec709))

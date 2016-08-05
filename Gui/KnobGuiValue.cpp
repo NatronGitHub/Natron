@@ -334,6 +334,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         }
 
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), type, thisShared, i);
+        box->setAlignment(getSpinboxAlignment());
         NumericKnobValidator* validator = new NumericKnobValidator(box, thisShared);
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
@@ -1288,6 +1289,18 @@ KnobGuiInt::getIncrements(std::vector<double>* increments) const
         (*increments)[i] = (double)incr[i];
     }
 }
+
+Qt::Alignment
+KnobGuiInt::getSpinboxAlignment() const 
+{
+    KnobIntPtr knob = _knob.lock();
+    if (knob->isValueCenteredInSpinBox()) {
+        return Qt::AlignVCenter | Qt::AlignHCenter;
+    } else {
+        return KnobGuiValue::getSpinboxAlignment();
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

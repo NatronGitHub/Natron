@@ -40,6 +40,7 @@
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
@@ -53,6 +54,7 @@
 #include "Gui/LineEdit.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
@@ -90,63 +92,9 @@ ViewerTab::setImageFormat(int textureIndex,
 }
 
 void
-ViewerTab::onPlaybackInButtonClicked()
+ViewerTab::setTimelineBounds(double first, double last)
 {
-    SequenceTime curIn, curOut;
-
-    _imp->timeLineGui->getBounds(&curIn, &curOut);
-    curIn = (SequenceTime)_imp->timeLineGui->getTimeline()->currentFrame();
-    curIn = std::min(curIn, curOut);
-    setTimelineBounds(curIn, curOut);
-    _imp->timeLineGui->recenterOnBounds();
-    onTimelineBoundariesChanged(curIn, curOut);
-}
-
-void
-ViewerTab::onPlaybackOutButtonClicked()
-{
-    SequenceTime curIn, curOut;
-
-    _imp->timeLineGui->getBounds(&curIn, &curOut);
-    curOut = (SequenceTime)_imp->timeLineGui->getTimeline()->currentFrame();
-    curOut = std::max(curIn, curOut);
-    setTimelineBounds(curIn, curOut);
-    _imp->timeLineGui->recenterOnBounds();
-    onTimelineBoundariesChanged(curIn, curOut);
-}
-
-void
-ViewerTab::onPlaybackInSpinboxValueChanged(double value)
-{
-    SequenceTime curIn, curOut;
-
-    _imp->timeLineGui->getBounds(&curIn, &curOut);
-    curIn = (SequenceTime)value;
-    curIn = std::min(curIn, curOut);
-    setTimelineBounds(curIn, curOut);
-    _imp->timeLineGui->recenterOnBounds();
-    onTimelineBoundariesChanged(curIn, curOut);
-}
-
-void
-ViewerTab::onPlaybackOutSpinboxValueChanged(double value)
-{
-    SequenceTime curIn, curOut;
-
-    _imp->timeLineGui->getBounds(&curIn, &curOut);
-    curOut = (SequenceTime)value;
-    curOut = std::max(curIn, curOut);
-    setTimelineBounds(curIn, curOut);
-    _imp->timeLineGui->recenterOnBounds();
-    onTimelineBoundariesChanged(curIn, curOut);
-}
-
-void
-ViewerTab::setFrameRange(int left,
-                         int right)
-{
-    setTimelineBounds(left, right);
-    onTimelineBoundariesChanged(left, right);
+    _imp->timeLineGui->setBoundaries(first, last);
     _imp->timeLineGui->recenterOnBounds();
 }
 
@@ -154,49 +102,16 @@ void
 ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
                                        SequenceTime second)
 {
-    _imp->playBackInputSpinbox->setValue(first);
-    _imp->playBackOutputSpinbox->setValue(second);
-
+    ViewerNodePtr viewer = getInternalNode();
+    if (!viewer) {
+        return;
+    }
+    KnobIntPtr inPoint = viewer->getPlaybackInPointKnob();
+    KnobIntPtr outPoint = viewer->getPlaybackOutPointKnob();
+    inPoint->setValueFromPlugin(first, ViewSpec::current(), 0);
+    outPoint->setValueFromPlugin(second, ViewSpec::current(), 0);
 
     abortViewersAndRefresh();
-}
-
-void
-ViewerTab::onCanSetFPSLabelClicked(bool toggled)
-{
-    _imp->canEditFpsBox->setChecked(toggled);
-    onCanSetFPSClicked(toggled);
-}
-
-void
-ViewerTab::onCanSetFPSClicked(bool toggled)
-{
-    _imp->fpsBox->setEnabled(toggled);
-    {
-        QMutexLocker l(&_imp->fpsLockedMutex);
-        _imp->fpsLocked = !toggled;
-    }
-
-    if (toggled) {
-        onSpinboxFpsChangedInternal(_imp->userFps);
-    } else {
-        refreshFPSBoxFromClipPreferences();
-    }
-}
-
-void
-ViewerTab::setFPSLocked(bool fpsLocked)
-{
-    _imp->canEditFpsBox->setChecked(!fpsLocked);
-    onCanSetFPSClicked(!fpsLocked);
-}
-
-bool
-ViewerTab::isFPSLocked() const
-{
-    QMutexLocker k(&_imp->fpsLockedMutex);
-
-    return _imp->fpsLocked;
 }
 
 void
@@ -243,7 +158,18 @@ ViewerTab::setTopToolbarVisible(bool visible)
 void
 ViewerTab::setPlayerVisible(bool visible)
 {
-    _imp->playerButtonsContainer->setVisible(visible);
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
+        NodeGuiPtr curNode = it->currentNode.lock();
+        if (!curNode) {
+            continue;
+        }
+        ViewerNodePtr isViewer = curNode->getNode()->isEffectViewerNode();
+        if (!isViewer) {
+            continue;
+        }
+        it->currentContext->getPlayerToolbar()->setVisible(visible);
+        it->currentContext->getContainerWidget()->setVisible(visible);
+    }
 }
 
 void
@@ -336,56 +262,6 @@ ViewerTab::onMousePressCalledInViewer()
 }
 
 void
-ViewerTab::onSpinboxFpsChangedInternal(double fps)
-{
-    if ( !getGui() ) {
-        //might be caled from a focus out event when leaving gui
-        return;
-    }
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-    if (!viewerNode) {
-        return;
-    }
-    _imp->fpsBox->setValue(fps);
-    viewerNode->getRenderEngine()->setDesiredFPS(fps);
-    {
-        QMutexLocker k(&_imp->fpsMutex);
-        _imp->fps = fps;
-    }
-}
-
-void
-ViewerTab::onSpinboxFpsChanged(double fps)
-{
-    {
-        QMutexLocker k(&_imp->fpsMutex);
-        _imp->userFps = fps;
-    }
-    onSpinboxFpsChangedInternal(fps);
-}
-
-double
-ViewerTab::getDesiredFps() const
-{
-    QMutexLocker l(&_imp->fpsMutex);
-
-    return _imp->fps;
-}
-
-void
-ViewerTab::setDesiredFps(double fps)
-{
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-    {
-        QMutexLocker l(&_imp->fpsMutex);
-        _imp->fps = fps;
-        _imp->userFps = fps;
-    }
-    _imp->fpsBox->setValue(fps);
-    viewerNode->getRenderEngine()->setDesiredFPS(fps);
-}
-
-void
 ViewerTab::setProjection(double zoomLeft,
                          double zoomBottom,
                          double zoomFactor,
@@ -415,32 +291,12 @@ ViewerTab::refreshViewerRenderingState()
 }
 
 void
-ViewerTab::setTurboButtonDown(bool down)
-{
-    _imp->turboButton->setDown(down);
-    _imp->turboButton->setChecked(down);
-}
-
-void
 ViewerTab::redrawGLWidgets()
 {
     _imp->viewer->update();
     _imp->timeLineGui->update();
 }
 
-void
-ViewerTab::getTimelineBounds(int* left,
-                             int* right) const
-{
-    return _imp->timeLineGui->getBounds(left, right);
-}
-
-void
-ViewerTab::setTimelineBounds(int left,
-                             int right)
-{
-    _imp->timeLineGui->setBoundaries(left, right);
-}
 
 void
 ViewerTab::centerOn(SequenceTime left,
@@ -528,9 +384,8 @@ ViewerTab::synchronizeOtherViewersProjection()
 }
 
 void
-ViewerTab::toggleTripleSync(bool toggled)
+ViewerTab::setTripleSyncEnabled(bool toggled)
 {
-    _imp->tripleSyncButton->setDown(toggled);
     getGui()->setTripleSyncEnabled(toggled);
     if (toggled) {
         DopeSheetEditor* deditor = getGui()->getDopeSheetEditor();

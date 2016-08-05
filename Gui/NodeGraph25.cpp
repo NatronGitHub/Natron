@@ -335,34 +335,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 } // firstOutput
             }
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->firstFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->lastFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->previousIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->nextIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->nextFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->previousFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        getGui()->getApp()->goToPreviousKeyframe();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        getGui()->getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, modifiers, key) ) {
         if ( !_imp->rearrangeSelectedNodes() ) {
             accept = false;

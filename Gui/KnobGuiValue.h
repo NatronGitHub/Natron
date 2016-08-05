@@ -136,6 +136,11 @@ protected:
     {
     }
 
+    virtual Qt::Alignment getSpinboxAlignment() const
+    {
+        return Qt::AlignLeft | Qt::AlignVCenter;
+    }
+
 private:
 
     /**
@@ -237,6 +242,9 @@ private:
     virtual void connectKnobSignalSlots() OVERRIDE FINAL;
     virtual void disableSlider() OVERRIDE FINAL;
     virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;
+
+    virtual Qt::Alignment getSpinboxAlignment() const OVERRIDE FINAL;
+
 };
 
 inline KnobGuiDoublePtr

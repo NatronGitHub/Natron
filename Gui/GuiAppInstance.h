@@ -159,8 +159,10 @@ public:
 
     bool isClosing() const;
 
+    virtual void setGuiFrozen(bool frozen) OVERRIDE FINAL;
     virtual bool isGuiFrozen() const OVERRIDE FINAL;
     virtual bool isShowingDialog() const OVERRIDE FINAL;
+    virtual void refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs) OVERRIDE FINAL;
     virtual void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true) OVERRIDE FINAL;
     virtual void progressEnd(const NodePtr& node) OVERRIDE FINAL;
     virtual bool progressUpdate(const NodePtr& node, double t) OVERRIDE FINAL;

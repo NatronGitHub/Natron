@@ -3182,7 +3182,7 @@ void
 ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
 {
     ViewerNodePtr node = getViewerNodeGroup();
-    node->s_clipPreferencesChanged();
+    node->refreshFps();
     node->refreshViewsKnobVisibility();
     refreshLayerAndAlphaChannelComboBox();
 }

@@ -339,7 +339,8 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                           Color::floatToInt<256>(g),
                           Color::floatToInt<256>(b) );
     }
-    {
+
+    if (_currentPixmap.isNull()) {
         Qt::Alignment align = QStyle::visualAlignment( Qt::LeftToRight, QFlag(_align) );
         int flags = align | Qt::TextForceLeftToRight;
 
@@ -355,6 +356,21 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
 
         QRectF lr = layoutRect().toAlignedRect();
         p.drawText(lr.toRect(), flags, _currentText);
+    } else {
+        double maxPixWidth = width() * 0.6;
+        double maxPixHeight = height() * 0.8;
+        double maxSize = std::min(maxPixWidth, maxPixHeight);
+        if (_currentPixmap.width() >= maxSize || _currentPixmap.height() >= maxSize) {
+            _currentPixmap = _currentPixmap.scaled(maxSize, maxSize);
+        }
+        QRectF lr = layoutRect().toAlignedRect();
+        QRect pixRect = _currentPixmap.rect();
+        QPointF center = lr.center();
+        center.rx() -= pixRect.width() / 2.;
+        center.ry() -= pixRect.height() / 2.;
+
+        QRect targetRect(center.x(), center.y(), pixRect.width(), pixRect.height());
+        p.drawPixmap(targetRect, _currentPixmap, pixRect);
     }
 
     {
@@ -719,6 +735,11 @@ ComboBox::setCurrentText_internal(const QString & text)
     int ret = -1;
     if (_currentIndex != index) {
         _currentIndex = index;
+        if (index != -1) {
+            if (_rootNode->children[index]->isLeaf) {
+                _currentPixmap = _rootNode->children[index]->isLeaf->icon().pixmap(TO_DPIX(32), TO_DPIY(32));
+            }
+        }
         ret = index;
     }
     updateLabel();
@@ -840,6 +861,9 @@ ComboBox::setCurrentIndex_internal(int index)
     if ( ( (index != -1) && (index != _currentIndex) ) || (_currentText != str) ) {
         _currentIndex = index;
         _currentText = str;
+        if (node->isLeaf) {
+            _currentPixmap = node->isLeaf->icon().pixmap(TO_DPIX(32), TO_DPIY(32));
+        }
         ret =  true;
     } else {
         ret = false;

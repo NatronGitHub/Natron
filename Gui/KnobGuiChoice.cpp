@@ -67,6 +67,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
@@ -375,6 +376,34 @@ KnobGuiChoice::onRefreshMenuActionTriggered()
     }
 }
 
+QPixmap
+KnobGuiChoice::getPixmapFromFilePath(const QString &filePath) const
+{
+    QString customFilePath = filePath;
+
+    if ( !QFile::exists(filePath) ) {
+        KnobHolderPtr holder = _knob.lock()->getHolder();
+        EffectInstancePtr instance = toEffectInstance(holder);
+        if (instance) {
+            QString resourcesPath = QString::fromUtf8( instance->getNode()->getPluginResourcesPath().c_str() );
+            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+                resourcesPath += QLatin1Char('/');
+            }
+            customFilePath.prepend(resourcesPath);
+        }
+    }
+
+    if ( !QFile::exists(customFilePath) ) {
+        return false;
+    }
+    
+    QPixmap pix(customFilePath);
+    if ( pix.isNull() ) {
+        return false;
+    }
+    return pix;
+}
+
 void
 KnobGuiChoice::onEntriesPopulated()
 {
@@ -396,6 +425,7 @@ KnobGuiChoice::onEntriesPopulated()
 
 
     const std::map<int, std::string>& shortcutsMap = knob->getShortcuts();
+    const std::map<int, std::string>& iconsMap = knob->getIcons();
 
     for (U32 i = 0; i < entries.size(); ++i) {
         std::string helpStr;
@@ -404,6 +434,7 @@ KnobGuiChoice::onEntriesPopulated()
         }
 
         std::string shortcutID;
+        std::string iconFilePath;
         if (!pluginShortcutGroup.isEmpty()) {
             std::map<int, std::string>::const_iterator foundShortcut = shortcutsMap.find(i);
             if (foundShortcut != shortcutsMap.end()) {
@@ -411,16 +442,33 @@ KnobGuiChoice::onEntriesPopulated()
             }
         }
 
+        std::map<int, std::string>::const_iterator foundIcon = iconsMap.find(i);
+        if (foundIcon != iconsMap.end()) {
+            iconFilePath = foundIcon->second;
+        }
+
+        
+        QIcon icon;
+        if (!iconFilePath.empty()) {
+            QPixmap pix = getPixmapFromFilePath(QString::fromUtf8(iconFilePath.c_str()));
+            if (!pix.isNull()) {
+                pix = pix.scaled(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+                icon.addPixmap(pix);
+            }
+        }
 
         if (!shortcutID.empty() && !pluginShortcutGroup.isEmpty() && !_comboBox->isCascading()) {
             QAction* action = new ActionWithShortcut(pluginShortcutGroup.toStdString(),
                                                      shortcutID,
                                                      entries[i],
                                                      _comboBox);
+            if (!icon.isNull()) {
+                action->setIcon(icon);
+            }
             _comboBox->addAction(action);
 
         } else {
-            _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+            _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), icon, QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
             
         }
         

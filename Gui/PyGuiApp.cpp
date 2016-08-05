@@ -590,33 +590,6 @@ PyViewer::getCurrentFrame()
 }
 
 void
-PyViewer::startForward()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->startPause(true);
-}
-
-void
-PyViewer::startBackward()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->startBackward(true);
-}
-
-void
-PyViewer::pause()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->abortRendering();
-}
-
-void
 PyViewer::redraw()
 {
     if ( !getInternalNode()->isActivated() ) {
@@ -638,46 +611,6 @@ PyViewer::renderCurrentFrame(bool useCache)
         _viewer->getInternalNode()->renderCurrentFrame(false);
     }
 }
-
-void
-PyViewer::setFrameRange(int firstFrame,
-                        int lastFrame)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setFrameRange(firstFrame, lastFrame);
-}
-
-void
-PyViewer::getFrameRange(int* firstFrame,
-                        int* lastFrame) const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->getTimelineBounds(firstFrame, lastFrame);
-}
-
-void
-PyViewer::setPlaybackMode(PlaybackModeEnum mode)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setPlaybackMode(mode);
-}
-
-PlaybackModeEnum
-PyViewer::getPlaybackMode() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return ePlaybackModeLoop;
-    }
-
-    return _viewer->getPlaybackMode();
-}
-
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

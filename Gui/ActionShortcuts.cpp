@@ -84,19 +84,6 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     (void)QT_TR_NOOP(kShortcutDescActionNextTab);
     (void)QT_TR_NOOP(kShortcutDescActionPrevTab);
     (void)QT_TR_NOOP(kShortcutDescActionCloseTab);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerPrevious);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerNext);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerBackward);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerForward);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerStop);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerPrevIncr);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerNextIncr);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerPrevKF);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerNextKF);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerFirst);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerLast);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerPlaybackIn);
-    (void)QT_TR_NOOP(kShortcutDescActionPlayerPlaybackOut);
 #ifndef NATRON_ENABLE_IO_META_NODES
     (void)QT_TR_NOOP(kShortcutDescActionGraphCreateReader);
     (void)QT_TR_NOOP(kShortcutDescActionGraphCreateWriter);

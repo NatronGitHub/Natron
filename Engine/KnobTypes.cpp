@@ -73,6 +73,7 @@ KnobInt::KnobInt(const KnobHolderPtr& holder,
     , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
+    , _isValueCenteredInSpinbox(false)
 {
 }
 
@@ -757,6 +758,17 @@ KnobChoice::getShortcuts() const
     return _shortcuts;
 }
 
+void
+KnobChoice::setIcons(const std::map<int, std::string>& icons)
+{
+    _menuIcons = icons;
+}
+
+const std::map<int, std::string>&
+KnobChoice::getIcons() const
+{
+    return _menuIcons;
+}
 
 void
 KnobChoice::setSeparators(const std::vector<int>& separators)

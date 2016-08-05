@@ -3652,6 +3652,18 @@ ViewerGL::setTimelineVisible(bool visible)
 }
 
 
+void
+ViewerGL::setTimelineBounds(double first, double last)
+{
+    getViewerTab()->setTimelineBounds(first, last);
+}
+
+void
+ViewerGL::setTripleSyncEnabled(bool toggled)
+{
+    getViewerTab()->setTripleSyncEnabled(toggled);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

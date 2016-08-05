@@ -103,9 +103,6 @@ struct ViewerData
     double zoomBottom;
     double zoomFactor;
     bool zoomOrPanSinceLastFit;
-    double fps;
-    bool fpsLocked;
-    int leftBound, rightBound;
     unsigned int version;
 
     friend class ::boost::serialization::access;
@@ -168,12 +165,15 @@ struct ViewerData
             bool frameRangeLocked;
             ar & ::boost::serialization::make_nvp("FrameRangeLocked", frameRangeLocked);
         }
-        if (version >=  VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
-            ar & ::boost::serialization::make_nvp("LeftBound", leftBound);
-            ar & ::boost::serialization::make_nvp("RightBound", rightBound);
-        } else {
-            leftBound = rightBound = 1;
+        if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+            if (version >=  VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                int leftBound, rightBound;
+                ar & ::boost::serialization::make_nvp("LeftBound", leftBound);
+                ar & ::boost::serialization::make_nvp("RightBound", rightBound);
+            }
         }
+
+
 
         if (version >= VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY) {
             if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
@@ -202,19 +202,18 @@ struct ViewerData
                 ar & ::boost::serialization::make_nvp("CheckerboardEnabled", checkerboardEnabled);
             }
         }
-        
-        if (version >= VIEWER_DATA_INTRODUCES_FPS) {
-            ar & ::boost::serialization::make_nvp("Fps", fps);
-        } else {
-            fps = 24.;
-        }
 
-        if (version >= VIEWER_DATA_INTRODUCES_FPS_LOCK) {
-            ar & ::boost::serialization::make_nvp("FpsLocked", fpsLocked);
-        } else {
-            fpsLocked = true;
-        }
+        if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
+            if (version >= VIEWER_DATA_INTRODUCES_FPS) {
+                double fps;
+                ar & ::boost::serialization::make_nvp("Fps", fps);
+            }
 
+            if (version >= VIEWER_DATA_INTRODUCES_FPS_LOCK) {
+                bool fpsLocked;
+                ar & ::boost::serialization::make_nvp("FpsLocked", fpsLocked);
+            }
+        }
         if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
             if (version >= VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS) {
                 int aChoice, bChoice;

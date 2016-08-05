@@ -58,24 +58,10 @@ public:
     void seek(int frame);
 
     int getCurrentFrame();
-
-    void startForward();
-
-    void startBackward();
-
-    void pause();
-
+    
     void redraw();
 
     void renderCurrentFrame(bool useCache = true);
-
-    void setFrameRange(int firstFrame, int lastFrame);
-
-    void getFrameRange(int* firstFrame, int* lastFrame) const;
-
-    void setPlaybackMode(PlaybackModeEnum mode);
-
-    PlaybackModeEnum getPlaybackMode() const;
 };
 
 class GuiApp

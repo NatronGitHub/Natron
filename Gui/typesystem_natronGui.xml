@@ -121,25 +121,6 @@
     </object-type>
     
     <object-type name="PyViewer">
-        <modify-function signature="getFrameRange(int*,int*)const">
-            <modify-argument index="return">
-                <replace-type modified-type="PyObject"/>
-            </modify-argument>
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="2">
-                <remove-argument/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                int x,y;
-                %CPPSELF.%FUNCTION_NAME(&amp;x,&amp;y);
-                %PYARG_0 = PyTuple_New(2);
-                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[int](x));
-                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](y));
-                return %PYARG_0;
-            </inject-code>
-        </modify-function>
     </object-type>
 
     <object-type name="PyGuiApplication">

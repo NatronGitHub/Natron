@@ -223,6 +223,14 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
 
         }
     }
+
+    if (n->getNode()->isEffectViewerNode()) {
+        // Add the player toolbar
+        int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
+        ++viewerIndex;
+        _imp->mainLayout->insertWidget(viewerIndex, it->second->getPlayerToolbar());
+    }
+
     ViewerTabPrivate::PluginViewerContext p;
     p.pluginID = pluginID;
     p.currentNode = n;
@@ -369,51 +377,22 @@ ViewerTab::notifyGuiClosing()
     }
 }
 
-void
-ViewerTab::connectToInput(int inputNb,
-                          bool isASide)
-{
-    ViewerNodePtr internalNode = getInternalNode();
-    internalNode->connectInputToIndex(inputNb, isASide ? 0 : 1);
-}
 
 void
 ViewerTab::connectToAInput(int inputNb)
 {
-    connectToInput(inputNb, true);
+    ViewerNodePtr internalNode = getInternalNode();
+    if (internalNode) {
+        internalNode->connectInputToIndex(inputNb, 0);
+    }
 }
 
 void
 ViewerTab::connectToBInput(int inputNb)
 {
-    connectToInput(inputNb, false);
-}
-
-
-void
-ViewerTab::refreshFPSBoxFromClipPreferences()
-{
-    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
-    NodePtr input0 = viewerNode->getCurrentAInput();
-    NodePtr input1 = viewerNode->getCurrentBInput();
-    if (input0) {
-        _imp->fpsBox->setValue( input0->getEffectInstance()->getFrameRate() );
-    } else {
-        if (input1) {
-            _imp->fpsBox->setValue( input1->getEffectInstance()->getFrameRate() );
-        } else {
-            _imp->fpsBox->setValue( getGui()->getApp()->getProjectFrameRate() );
-        }
-    }
-    onSpinboxFpsChangedInternal( _imp->fpsBox->value() );
-}
-
-void
-ViewerTab::onClipPreferencesChanged()
-{
-    //Try to set auto-fps if it is enabled
-    if (_imp->fpsLocked) {
-        refreshFPSBoxFromClipPreferences();
+    ViewerNodePtr internalNode = getInternalNode();
+    if (internalNode) {
+        internalNode->connectInputToIndex(inputNb, 1);
     }
 }
 

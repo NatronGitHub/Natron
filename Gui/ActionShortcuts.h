@@ -209,48 +209,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionCloseTab "closeTab"
 #define kShortcutDescActionCloseTab "Close Tab"
 
-///////////PLAYER SHORTCUTS
-
-#define kShortcutIDActionPlayerPrevious "prev"
-#define kShortcutDescActionPlayerPrevious "Previous Frame"
-
-#define kShortcutIDActionPlayerNext "next"
-#define kShortcutDescActionPlayerNext "Next Frame"
-
-#define kShortcutIDActionPlayerBackward "backward"
-#define kShortcutDescActionPlayerBackward "Play Backward"
-
-#define kShortcutIDActionPlayerForward "forward"
-#define kShortcutDescActionPlayerForward "Play Forward"
-
-#define kShortcutIDActionPlayerStop "stop"
-#define kShortcutDescActionPlayerStop "Stop"
-
-#define kShortcutIDActionPlayerPrevIncr "prevIncr"
-#define kShortcutDescActionPlayerPrevIncr "Go to Current Frame Minus Increment"
-
-#define kShortcutIDActionPlayerNextIncr "nextIncr"
-#define kShortcutDescActionPlayerNextIncr "Go to Current Frame Plus Increment"
-
-#define kShortcutIDActionPlayerPrevKF "prevKF"
-#define kShortcutDescActionPlayerPrevKF "Go to Previous Keyframe"
-
-#define kShortcutIDActionPlayerNextKF "nextKF"
-#define kShortcutDescActionPlayerNextKF "Go to Next Keyframe"
-
-#define kShortcutIDActionPlayerFirst "first"
-#define kShortcutDescActionPlayerFirst "Go to First Frame"
-
-#define kShortcutIDActionPlayerLast "last"
-#define kShortcutDescActionPlayerLast "Go to Last Frame"
-
-#define kShortcutIDActionPlayerPlaybackIn "pbIn"
-#define kShortcutDescActionPlayerPlaybackIn "Set Playback \"In\" Point"
-
-#define kShortcutIDActionPlayerPlaybackOut "pbOut"
-#define kShortcutDescActionPlayerPlaybackOut "Set Playback \"Out\" Point"
-
-
 ///////////NODEGRAPH SHORTCUTS
 #ifndef NATRON_ENABLE_IO_META_NODES
 

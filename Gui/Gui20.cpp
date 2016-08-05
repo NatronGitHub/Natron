@@ -483,7 +483,6 @@ Gui::removeViewerTab(ViewerTab* tab,
     if (tab == _imp->_activeViewer) {
         _imp->_activeViewer = 0;
     }
-    tab->abortRendering();
     NodeGraph* graph = 0;
     NodeGroupPtr isGrp;
     NodeCollectionPtr collection;
@@ -535,6 +534,7 @@ Gui::removeViewerTab(ViewerTab* tab,
 
     ViewerInstancePtr internalViewer = tab->getInternalNode()->getInternalViewerNode();
     if (internalViewer) {
+        internalViewer->abortAnyEvaluation();
         if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
             getApp()->discardLastViewerUsingTimeline();
         }

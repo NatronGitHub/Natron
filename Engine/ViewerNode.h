@@ -38,6 +38,8 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#define kViewerNodeParamPlayerToolBarPage "playerToolBar"
+
 NATRON_NAMESPACE_ENTER;
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
@@ -150,6 +152,14 @@ public:
 
     KnobChoicePtr getAlphaChannelKnob() const;
 
+    KnobIntPtr getPlaybackInPointKnob() const;
+
+    KnobIntPtr getPlaybackOutPointKnob() const;
+
+    KnobIntPtr getCurrentFrameKnob() const;
+
+    KnobButtonPtr getTurboModeButtonKnob() const;
+
     virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
 
     virtual int getMajorVersion() const OVERRIDE FINAL
@@ -177,6 +187,8 @@ public:
 
     virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
 
+    void refreshFps();
+
     void s_renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
     {
         Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
@@ -190,11 +202,6 @@ public:
     void s_viewerDisconnected()
     {
         Q_EMIT viewerDisconnected();
-    }
-
-    void s_clipPreferencesChanged()
-    {
-        Q_EMIT clipPreferencesChanged();
     }
 
     void s_disconnectTextureRequest(int index,bool clearRoD)
@@ -212,6 +219,12 @@ public Q_SLOTS:
 
     void redrawViewer();
 
+    void onEngineStopped();
+    
+    void onEngineStarted(bool forward);
+
+    void onSetDownPlaybackButtonsTimeout();
+
 Q_SIGNALS:
 
     void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
@@ -219,8 +232,6 @@ Q_SIGNALS:
     void redrawOnMainThread();
 
     void viewerDisconnected();
-
-    void clipPreferencesChanged();
 
     void disconnectTextureRequest(int index,bool clearRoD);
 

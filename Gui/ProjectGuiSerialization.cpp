@@ -92,11 +92,6 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &zoompar);
 
                 viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
-
-                viewerData.fps = tab->getDesiredFps();
-                viewerData.fpsLocked = tab->isFPSLocked();
-
-                tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
                 _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(), viewerData) );
             }

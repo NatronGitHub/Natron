@@ -538,46 +538,6 @@ Gui::keyPressEvent(QKeyEvent* e)
             QList<QUrl> urls = mimedata->urls();
             handleOpenFilesFromUrls( urls, QCursor::pos() );
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->previousFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->toggleStartForward();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->toggleStartBackward();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->abortRendering();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->nextFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->firstFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->lastFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->previousIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->nextIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        getApp()->goToPreviousKeyframe();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
@@ -758,7 +718,11 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     {
         QMutexLocker k(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-            (*it)->setTurboButtonDown(clicked);
+            ViewerNodePtr viewer = (*it)->getInternalNode();
+            if (!viewer) {
+                continue;
+            }
+            viewer->getTurboModeButtonKnob()->setValue(clicked);
             if (!clicked) {
                 (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
             }

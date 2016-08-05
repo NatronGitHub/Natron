@@ -378,17 +378,6 @@ loadNodeGuiSerialization(Gui* gui,
             tab->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
             tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
 
-            if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
-                tab->setFrameRange(found->second.leftBound, found->second.rightBound);
-                tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
-            } else {
-                tab->setFrameRange(leftBound, rightBound);
-                tab->setFrameRangeEdited(false);
-            }
-            if (!found->second.fpsLocked) {
-                tab->setDesiredFps(found->second.fps);
-            }
-            tab->setFPSLocked(found->second.fpsLocked);
         }
     }
 

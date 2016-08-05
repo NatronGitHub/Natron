@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -64,78 +65,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER;
 
 
-void
-ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
-{
-    QPixmap pix;
-
-    switch (mode) {
-    case ePlaybackModeLoop:
-        appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
-        break;
-    case ePlaybackModeBounce:
-        appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
-        break;
-    case ePlaybackModeOnce:
-        appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
-        break;
-    default:
-        break;
-    }
-    {
-        QMutexLocker k(&_imp->playbackModeMutex);
-        _imp->playbackMode = mode;
-    }
-    _imp->playbackMode_Button->setIcon( QIcon(pix) );
-    ViewerNodePtr internalNode = getInternalNode();
-    if (internalNode) {
-        ViewerInstancePtr viewer = internalNode->getInternalViewerNode();
-        if (viewer) {
-            RenderEnginePtr engine = viewer->getRenderEngine();
-            if (engine) {
-                engine->setPlaybackMode(mode);
-            }
-        }
-    }
-}
-
-PlaybackModeEnum
-ViewerTab::getPlaybackMode() const
-{
-    QMutexLocker k(&_imp->playbackModeMutex);
-
-    return _imp->playbackMode;
-}
-
-void
-ViewerTab::togglePlaybackMode()
-{
-    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
-    PlaybackModeEnum mode = viewerNode->getInternalViewerNode()->getRenderEngine()->getPlaybackMode();
-
-    mode = (PlaybackModeEnum)( ( (int)mode + 1 ) % 3 );
-    QPixmap pix;
-    switch (mode) {
-    case ePlaybackModeLoop:
-        appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
-        break;
-    case ePlaybackModeBounce:
-        appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
-        break;
-    case ePlaybackModeOnce:
-        appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
-        break;
-    default:
-        break;
-    }
-    {
-        QMutexLocker k(&_imp->playbackModeMutex);
-        _imp->playbackMode = mode;
-    }
-    _imp->playbackMode_Button->setIcon( QIcon(pix) );
-    viewerNode->getRenderEngine()->setPlaybackMode(mode);
-}
-
 
 void
 ViewerTab::updateZoomComboBox(int value)
@@ -151,135 +80,8 @@ ViewerTab::updateZoomComboBox(int value)
     }
 }
 
-void
-ViewerTab::toggleStartForward()
-{
-    startPause( !_imp->play_Forward_Button->isDown() );
-}
-
-void
-ViewerTab::toggleStartBackward()
-{
-    startBackward( !_imp->play_Backward_Button->isDown() );
-}
-
-/*In case they're several viewer around, we need to reset the dag and tell it
-   explicitly we want to use this viewer and not another one.*/
-void
-ViewerTab::startPause(bool b)
-{
-    abortRendering();
-    if (b) {
-        ViewerNodePtr viewerNode = _imp->viewerNode.lock();
-        ViewerInstancePtr instance = viewerNode->getInternalViewerNode();
-        if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
-            return;
-        }
-        getGui()->getApp()->setLastViewerUsingTimeline( instance->getNode() );
-        std::vector<ViewIdx> viewsToRender;
-        viewsToRender.push_back(viewerNode->getCurrentView());
-        instance->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
-    }
-}
-
-void
-ViewerTab::abortRendering()
-{
-    if (_imp->play_Forward_Button) {
-        _imp->play_Forward_Button->setDown(false);
-        _imp->play_Forward_Button->setChecked(false);
-    }
-    if (_imp->play_Backward_Button) {
-        _imp->play_Backward_Button->setDown(false);
-        _imp->play_Backward_Button->setChecked(false);
-    }
-    if ( getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-        getGui()->onFreezeUIButtonClicked(false);
-    }
-    if ( getGui() ) {
-        ///Abort all viewers because they are all synchronised.
-        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-
-        for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            ViewerNodePtr n = (*it)->getInternalNode();
-            if (n) {
-                ViewerInstancePtr viewer = n->getInternalViewerNode();
-                if (viewer) {
-                    viewer->getRenderEngine()->abortRenderingNoRestart();
-                }
-            }
-        }
-    }
-}
-
-void
-ViewerTab::onEngineStarted(bool forward)
-{
-    if ( !getGui() ) {
-        return;
-    }
 
 
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ( (*it)->_imp->play_Forward_Button ) {
-            (*it)->_imp->play_Forward_Button->setDown(forward);
-            (*it)->_imp->play_Forward_Button->setChecked(forward);
-        }
-
-        if ( (*it)->_imp->play_Backward_Button ) {
-            (*it)->_imp->play_Backward_Button->setDown(!forward);
-            (*it)->_imp->play_Backward_Button->setChecked(!forward);
-        }
-    }
-
-    if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-        getGui()->onFreezeUIButtonClicked(true);
-    }
-}
-
-void
-ViewerTab::onSetDownPlaybackButtonsTimeout()
-{
-    ViewerNodePtr viewerNode = _imp->viewerNode.lock();
-    ViewerInstancePtr instance = viewerNode ? viewerNode->getInternalViewerNode() : ViewerInstancePtr();
-    if ( instance && instance->getRenderEngine() && !instance->getRenderEngine()->isDoingSequentialRender() ) {
-        const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            if ( (*it)->_imp->play_Forward_Button ) {
-                (*it)->_imp->play_Forward_Button->setDown(false);
-                (*it)->_imp->play_Forward_Button->setChecked(false);
-            }
-
-            if ( (*it)->_imp->play_Backward_Button ) {
-                (*it)->_imp->play_Backward_Button->setDown(false);
-                (*it)->_imp->play_Backward_Button->setChecked(false);
-            }
-        }
-    }
-}
-
-void
-ViewerTab::onEngineStopped()
-{
-    if ( !getGui() ) {
-        return;
-    }
-
-    // Don't set the playback buttons up now, do it a bit later, maybe the user will restart playback  just aftewards
-    _imp->mustSetUpPlaybackButtonsTimer.start(200);
-
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-    _imp->currentFrameBox->setValue( viewerNode->getTimeline()->currentFrame() );
-
-    if ( getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-        getGui()->onFreezeUIButtonClicked(false);
-    } else {
-        if ( getGui() ) {
-            getGui()->refreshAllTimeEvaluationParams(true);
-        }
-    }
-}
 
 void
 ViewerTab::abortViewersAndRefresh()
@@ -304,25 +106,8 @@ ViewerTab::abortViewersAndRefresh()
 }
 
 void
-ViewerTab::startBackward(bool b)
-{
-    abortRendering();
-    if (b) {
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-        if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
-            return;
-        }
-        getGui()->getApp()->setLastViewerUsingTimeline( viewerNode->getNode() );
-        std::vector<ViewIdx> viewsToRender;
-        viewsToRender.push_back(viewerNode->getCurrentView());
-        viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
-    }
-}
-
-void
 ViewerTab::seek(SequenceTime time)
 {
-    _imp->currentFrameBox->setValue(time);
     _imp->timeLineGui->seek(time);
 }
 
@@ -349,28 +134,11 @@ ViewerTab::nextFrame()
 }
 
 void
-ViewerTab::previousIncrement()
+ViewerTab::getTimelineBounds(int* first, int* last) const
 {
-    seek( _imp->timeLineGui->currentFrame() - _imp->incrementSpinBox->value() );
+    return _imp->timeLineGui->getBounds(first, last);
 }
 
-void
-ViewerTab::nextIncrement()
-{
-    seek( _imp->timeLineGui->currentFrame() + _imp->incrementSpinBox->value() );
-}
-
-void
-ViewerTab::firstFrame()
-{
-    seek( _imp->timeLineGui->leftBound() );
-}
-
-void
-ViewerTab::lastFrame()
-{
-    seek( _imp->timeLineGui->rightBound() );
-}
 
 void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
@@ -379,36 +147,18 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     if ( !getGui() ) {
         return;
     }
-    TimelineChangeReasonEnum r = (TimelineChangeReasonEnum)reason;
-    if (r != eTimelineChangeReasonPlaybackSeek) {
-        _imp->currentFrameBox->setValue(time);
+
+    ViewerNodePtr node = _imp->viewerNode.lock();
+    ViewerInstancePtr viewerNode = node->getInternalViewerNode();
+    if ((TimelineChangeReasonEnum)reason != eTimelineChangeReasonPlaybackSeek) {
+        node->getCurrentFrameKnob()->setValueFromPlugin(time, ViewSpec::current(), 0);
     }
 
     if ( _imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine() ) {
-        ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
         viewerNode->renderCurrentFrame(true);
     }
 }
 
-void
-ViewerTab::onCurrentTimeSpinBoxChanged(double time)
-{
-    _imp->timeLineGui->seek(time);
-}
-
-void
-ViewerTab::centerViewer()
-{
-    if (getGui() && !getGui()->getApp()->isDuringPainting()) {
-        _imp->viewer->fitImageToFormat();
-        if ( _imp->viewer->displayingImage() ) {
-            ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-            viewerNode->renderCurrentFrame(true);
-        } else {
-            _imp->viewer->update();
-        }
-    }
-}
 
 ViewerTab::~ViewerTab()
 {
@@ -478,38 +228,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         update();
     } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
         update();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        previousFrame();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
-        toggleStartBackward();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key) ) {
-        abortRendering();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key) ) {
-        toggleStartForward();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        nextFrame();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        //prev incr
-        previousIncrement();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        //next incr
-        nextIncrement();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        //first frame
-        firstFrame();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        //last frame
-        lastFrame();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, modifiers, key) ) {
-        onPlaybackInButtonClicked();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, modifiers, key) ) {
-        onPlaybackOutButtonClicked();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        //prev key
-        getGui()->getApp()->goToPreviousKeyframe();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        //next key
-        getGui()->getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
         connectToAInput(0);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
@@ -610,9 +328,9 @@ ViewerTab::disconnectViewer()
 QSize
 ViewerTab::minimumSizeHint() const
 {
-    if ( !_imp->playerButtonsContainer->isVisible() ) {
+    /*if ( !_imp->playerButtonsContainer->isVisible() ) {
         return QSize(500, 200);
-    }
+    }*/
 
     return QWidget::minimumSizeHint();
 }
@@ -620,9 +338,9 @@ ViewerTab::minimumSizeHint() const
 QSize
 ViewerTab::sizeHint() const
 {
-    if ( !_imp->playerButtonsContainer->isVisible() ) {
+    /*if ( !_imp->playerButtonsContainer->isVisible() ) {
         return QSize(500, 200);
-    }
+    }*/
 
     return QWidget::sizeHint();
 }

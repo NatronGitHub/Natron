@@ -141,6 +141,8 @@ public Q_SLOTS:
 
 private:
 
+    QPixmap getPixmapFromFilePath(const QString& filePath) const;
+
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;

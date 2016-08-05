@@ -68,37 +68,6 @@ struct ViewerTabPrivate
 
     InfoViewerWidget* infoWidget[2];
 
-    /*TimeLine buttons*/
-    QWidget* playerButtonsContainer;
-    QHBoxLayout* playerLayout;
-    SpinBox* currentFrameBox;
-    Button* firstFrame_Button;
-    Button* previousKeyFrame_Button;
-    Button* play_Backward_Button;
-    Button* previousFrame_Button;
-    Button* nextFrame_Button;
-    Button* play_Forward_Button;
-    Button* nextKeyFrame_Button;
-    Button* lastFrame_Button;
-    Button* previousIncrement_Button;
-    SpinBox* incrementSpinBox;
-    Button* nextIncrement_Button;
-    Button* playbackMode_Button;
-    Button* playBackInputButton;
-    SpinBox* playBackInputSpinbox;
-    Button* playBackOutputButton;
-    SpinBox* playBackOutputSpinbox;
-    mutable QMutex playbackModeMutex;
-    PlaybackModeEnum playbackMode;
-    Button* tripleSyncButton;
-    QCheckBox* canEditFpsBox;
-    ClickableLabel* canEditFpsLabel;
-    mutable QMutex fpsLockedMutex;
-    bool fpsLocked;
-    SpinBox* fpsBox;
-    double userFps;
-    Button* turboButton;
-    QTimer mustSetUpPlaybackButtonsTimer;
 
     /*frame seeker*/
     TimeLineGui* timeLineGui;
@@ -123,8 +92,6 @@ struct ViewerTabPrivate
 
     // Weak_ptr because the viewer node  itself controls the lifetime of this widget
     bool isFileDialogViewer;
-    mutable QMutex fpsMutex;
-    double fps;
 
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
     NodeWPtr lastOverlayNode;

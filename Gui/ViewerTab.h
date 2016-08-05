@@ -72,13 +72,18 @@ public:
 
     void seek(SequenceTime time);
 
+    void previousFrame();
+
+    void nextFrame();
+
+    void getTimelineBounds(int* first, int* last) const;
+
     virtual void notifyGuiClosing() OVERRIDE FINAL;
     virtual void onPanelMadeCurrent() OVERRIDE FINAL;
 
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
-    /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double time, const RenderScale & renderScale) const;
 
     bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
@@ -152,8 +157,6 @@ public:
      **/
     void updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node);
 
-    bool isFPSLocked() const;
-
     void connectToViewerCache();
 
     void disconnectFromViewerCache();
@@ -173,35 +176,20 @@ public:
 
     void setCustomTimeline(const TimeLinePtr& timeline);
     TimeLinePtr getTimeLine() const;
-
-    double getDesiredFps() const;
-    void setDesiredFps(double fps);
-
+    
     ///Called by ViewerGL when the image changes to refresh the info bar
     void setImageFormat(int textureIndex, const ImageComponents& components, ImageBitDepthEnum depth);
 
     void redrawGLWidgets();
 
-    void getTimelineBounds(int* left, int* right) const;
-
-    void setTimelineBounds(int left, int right);
-
     void centerOn(SequenceTime left, SequenceTime right);
 
-    ///Calls setTimelineBounds + set the frame range line edit
-    void setFrameRange(int left, int right);
-
     void setFrameRangeEdited(bool edited);
-
-    void setPlaybackMode(PlaybackModeEnum mode);
-
-    PlaybackModeEnum getPlaybackMode() const;
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
 
-    void connectToInput(int inputNb, bool isASide);
     void connectToAInput(int inputNb);
     void connectToBInput(int inputNb);
 
@@ -210,38 +198,16 @@ public:
     
     void onMousePressCalledInViewer();
 
+    void setTimelineBounds(double first, double last);
+
 public Q_SLOTS:
 
-    void onPlaybackInButtonClicked();
-    void onPlaybackOutButtonClicked();
-    void onPlaybackInSpinboxValueChanged(double value);
-    void onPlaybackOutSpinboxValueChanged(double value);
-
-    void toggleStartForward();
-    void toggleStartBackward();
-
-    void startPause(bool);
-    void abortRendering();
-    void startBackward(bool);
-    void previousFrame();
-    void nextFrame();
-    void previousIncrement();
-    void nextIncrement();
-    void firstFrame();
-    void lastFrame();
-    void centerViewer();
-    void togglePlaybackMode();
     void onTimeLineTimeChanged(SequenceTime time, int);
-    void onCurrentTimeSpinBoxChanged(double);
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
 
     /*makes the viewer black*/
     void disconnectViewer();
-
-    void onCanSetFPSClicked(bool toggled);
-    void onCanSetFPSLabelClicked(bool toggled);
-    void setFPSLocked(bool fpsLocked);
 
     void onTimelineBoundariesChanged(SequenceTime, SequenceTime);
 
@@ -252,18 +218,9 @@ public Q_SLOTS:
     void setInfobarVisible(bool visible);
     void setInfobarVisible(int index, bool visible);
 
-    void onSpinboxFpsChanged(double fps);
-
-    void onEngineStopped();
-    void onEngineStarted(bool forward);
-
     void onSetDownPlaybackButtonsTimeout();
 
     void refreshViewerRenderingState();
-
-    void setTurboButtonDown(bool down);
-
-    void onClipPreferencesChanged();
 
     void onInternalNodeLabelChanged(const QString& name);
     
@@ -271,7 +228,7 @@ public Q_SLOTS:
 
     void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
 
-    void toggleTripleSync(bool toggled);
+    void setTripleSyncEnabled(bool toggled);
 
     void onInternalViewerCreated();
 private:
@@ -279,10 +236,6 @@ private:
     void setInfobarVisibleInternal(bool visible);
 
     void abortViewersAndRefresh();
-
-    void refreshFPSBoxFromClipPreferences();
-
-    void onSpinboxFpsChangedInternal(double fps);
 
     void manageTimelineSlot(bool disconnectPrevious, const TimeLinePtr& timeline);
 

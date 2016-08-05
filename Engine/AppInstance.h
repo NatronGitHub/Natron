@@ -242,7 +242,11 @@ public:
         return false;
     }
 
+    virtual void setGuiFrozen(bool frozen) { Q_UNUSED(frozen); }
+
     virtual bool isGuiFrozen() const { return false; }
+
+    virtual void refreshAllTimeEvaluationParams(bool /*onlyTimeEvaluationKnobs*/) {}
 
     virtual void progressStart(const NodePtr& node,
                                const std::string &message,

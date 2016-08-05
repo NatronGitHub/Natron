@@ -1659,6 +1659,12 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
 }
 
 void
+GuiAppInstance::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
+{
+    _imp->_gui->refreshAllTimeEvaluationParams(onlyTimeEvaluationKnobs);
+}
+
+void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
@@ -1680,6 +1686,12 @@ void
 GuiAppInstance::showRenderStatsWindow()
 {
     getGui()->getOrCreateRenderStatsDialog()->show();
+}
+
+void
+GuiAppInstance::setGuiFrozen(bool frozen)
+{
+    getGui()->onFreezeUIButtonClicked(frozen);
 }
 
 NATRON_NAMESPACE_EXIT;

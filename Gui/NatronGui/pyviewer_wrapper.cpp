@@ -51,65 +51,6 @@ static PyObject* Sbk_PyViewerFunc_getCurrentFrame(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_PyViewerFunc_getFrameRange(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getFrameRange(int*,int*)const
-            // Begin code injection
-
-            int x,y;
-            cppSelf->getFrameRange(&x,&y);
-            pyResult = PyTuple_New(2);
-            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &x));
-            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &y));
-            return pyResult;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_pause(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // pause()
-            cppSelf->pause();
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-}
-
 static PyObject* Sbk_PyViewerFunc_redraw(PyObject* self)
 {
     ::PyViewer* cppSelf = 0;
@@ -243,117 +184,11 @@ static PyObject* Sbk_PyViewerFunc_seek(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_PyViewerFunc_setFrameRange(PyObject* self, PyObject* args)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "setFrameRange", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setFrameRange(int,int)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // setFrameRange(int,int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setFrameRange_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // setFrameRange(int,int)
-            cppSelf->setFrameRange(cppArg0, cppArg1);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setFrameRange_TypeError:
-        const char* overloads[] = {"int, int", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyViewer.setFrameRange", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_PyViewerFunc_startBackward(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // startBackward()
-            cppSelf->startBackward();
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-}
-
-static PyObject* Sbk_PyViewerFunc_startForward(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // startForward()
-            cppSelf->startForward();
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-}
-
 static PyMethodDef Sbk_PyViewer_methods[] = {
     {"getCurrentFrame", (PyCFunction)Sbk_PyViewerFunc_getCurrentFrame, METH_NOARGS},
-    {"getFrameRange", (PyCFunction)Sbk_PyViewerFunc_getFrameRange, METH_NOARGS},
-    {"pause", (PyCFunction)Sbk_PyViewerFunc_pause, METH_NOARGS},
     {"redraw", (PyCFunction)Sbk_PyViewerFunc_redraw, METH_NOARGS},
     {"renderCurrentFrame", (PyCFunction)Sbk_PyViewerFunc_renderCurrentFrame, METH_VARARGS|METH_KEYWORDS},
     {"seek", (PyCFunction)Sbk_PyViewerFunc_seek, METH_O},
-    {"setFrameRange", (PyCFunction)Sbk_PyViewerFunc_setFrameRange, METH_VARARGS},
-    {"startBackward", (PyCFunction)Sbk_PyViewerFunc_startBackward, METH_NOARGS},
-    {"startForward", (PyCFunction)Sbk_PyViewerFunc_startForward, METH_NOARGS},
 
     {0} // Sentinel
 };

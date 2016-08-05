@@ -133,6 +133,9 @@ public:
         return _isRectangle;
     }
 
+    void setValueCenteredInSpinBox(bool enabled) { _isValueCenteredInSpinbox = enabled; }
+
+    bool isValueCenteredInSpinBox() const { return _isValueCenteredInSpinbox; }
 public:
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -163,6 +166,7 @@ private:
     std::vector<int> _increments;
     bool _disableSlider;
     bool _isRectangle;
+    bool _isValueCenteredInSpinbox;
     static const std::string _typeNameStr;
 };
 
@@ -609,6 +613,14 @@ public:
      **/
     void setShortcuts(const std::map<int, std::string>& shortcuts);
 
+    /**
+     * @brief Set optional icons for menu entries. All items in the menu don't need an icon
+     * so they are mapped against their index.
+     **/
+    void setIcons(const std::map<int, std::string>& icons);
+
+    const std::map<int, std::string>& getIcons() const;
+
     const std::map<int, std::string>& getShortcuts() const;
 
     /**
@@ -717,6 +729,7 @@ private:
     std::vector<std::string> _newEntriesHelp, _mergedEntriesHelp;
     std::vector<int> _separators;
     std::map<int, std::string> _shortcuts;
+    std::map<int, std::string> _menuIcons;
     std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;

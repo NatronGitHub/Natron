@@ -2727,7 +2727,7 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
 void
 ViewerDisplayScheduler::timelineStepOne(RenderDirectionEnum direction)
 {
-    boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
+    ViewerInstancePtr  viewer = _viewer.lock();
 
     if (direction == eRenderDirectionForward) {
         viewer->getTimeline()->incrementCurrentFrame();
@@ -2739,9 +2739,9 @@ ViewerDisplayScheduler::timelineStepOne(RenderDirectionEnum direction)
 void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
-    boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
+    ViewerInstancePtr viewer = _viewer.lock();
 
-    viewer->getTimeline()->seekFrame(time, false, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+    viewer->getTimeline()->seekFrame(time, true, viewer, eTimelineChangeReasonPlaybackSeek);
 }
 
 int
