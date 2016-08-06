@@ -949,6 +949,7 @@ ViewerNode::onGroupCreated()
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
+            //args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
             inputNodes[i] = getApp()->createNode(args);
             assert(inputNodes[i]);
             inputNodes[i]->setPosition(inputX + startOffset, inputY - inputHeight * 2);
@@ -1181,14 +1182,16 @@ ViewerNode::initializeKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
         param->setDefaultValuesAreNormalized(true);
         param->setSecretByDefault(true);
+        param->setDefaultValue(0.2, 0);
+        param->setDefaultValue(0.2, 1);
         page->addKnob(param);
         _imp->userRoIBtmLeftKnob = param;
     }
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamUserRoISize), 2 );
         param->setDefaultValuesAreNormalized(true);
-        param->setDefaultValue(1., 0);
-        param->setDefaultValue(1., 1);
+        param->setDefaultValue(.6, 0);
+        param->setDefaultValue(.6, 1);
         param->setSecretByDefault(true);
         page->addKnob(param);
         _imp->userRoISizeKnob = param;
@@ -1218,6 +1221,15 @@ ViewerNode::initializeKnobs()
             entries.push_back("16");
             entries.push_back("32");
             param->populateChoices(entries);
+        }
+        {
+            std::map<int, std::string> shortcuts;
+            shortcuts[0] = kViewerNodeParamActionProxy2;
+            shortcuts[1] = kViewerNodeParamActionProxy4;
+            shortcuts[2] = kViewerNodeParamActionProxy8;
+            shortcuts[3] = kViewerNodeParamActionProxy16;
+            shortcuts[4] = kViewerNodeParamActionProxy32;
+            param->setShortcuts(shortcuts);
         }
         page->addKnob(param);
         param->setSecretByDefault(true);
@@ -2282,7 +2294,8 @@ void
 ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
 {
 
-
+    // We want to connect the node upstream of the internal viewer process node (or this node if there's nothing else upstream)
+    // to the appropriate GroupInput node inside the group
     ViewerInstancePtr internalViewer = getInternalViewerNode();
     NodePtr internalNodeToConnect = internalViewer->getInputRecursive(internalInputIndex);
     assert(internalNodeToConnect);
@@ -2290,10 +2303,39 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
     std::vector<NodePtr> inputNodes;
     getInputs(&inputNodes, false);
     if (groupInputIndex >= (int)inputNodes.size() || groupInputIndex < 0) {
+        // Invalid input index
         return;
     }
+
+    // This is the GroupInput node inside the group to connect to
     NodePtr groupInput = inputNodes[groupInputIndex];
 
+    // Update the input choice
+    KnobChoicePtr inputChoiceKnob = internalInputIndex == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
+    {
+
+        NodePtr realNodeGroupInput = getNode()->getInput(groupInputIndex);
+        int index = -1;
+        if (realNodeGroupInput) {
+            // THe group effectively has an input, find it in the menu entries of the choice
+            std::vector<std::string> entries = inputChoiceKnob->getEntries_mt_safe();
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                if (entries[i] == realNodeGroupInput->getLabel()) {
+                    index = i;
+                    break;
+                }
+            }
+        } else {
+            // The group doesn't have any input, set the choice menu to "-"
+            index = -1;
+        }
+        if (index == -1) {
+            index = 0;
+        }
+        inputChoiceKnob->setValueFromPlugin(index, ViewSpec::current(), 0);
+    }
+
+    // Connect the node recursive upstream of the internal viewer process to the corresponding GroupInput node
     if (internalNodeToConnect == internalViewer->getNode()) {
         internalNodeToConnect->disconnectInput(internalInputIndex);
         internalNodeToConnect->connectInput(groupInput, internalInputIndex);
@@ -2397,12 +2439,17 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         internalViewerNode->setCurrentLayer(ImageComponents::getNoneComponents());
 
     } else if (k == _imp->aInputNodeChoiceKnob.lock()) {
-        refreshInputFromChoiceMenu(0);
+        if (reason != eValueChangedReasonPluginEdited) {
+            refreshInputFromChoiceMenu(0);
+        }
     } else if (k == _imp->bInputNodeChoiceKnob.lock()) {
-        refreshInputFromChoiceMenu(1);
+        if (reason != eValueChangedReasonPluginEdited) {
+            refreshInputFromChoiceMenu(1);
+        }
     } else if (k == _imp->blendingModeChoiceKnob.lock()) {
         ViewerCompositingOperatorEnum op = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
+        _imp->bInputNodeChoiceKnob.lock()->setAllDimensionsEnabled(op != eViewerCompositingOperatorNone);
     } else if (k == _imp->zoomChoiceKnob.lock()) {
         std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText_mt_safe();
         if (zoomChoice == "Fit") {
@@ -2447,6 +2494,8 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             enableKnob->setValue(true);
             _imp->lastGammaValue =  _imp->gammaSliderKnob.lock()->getValue();
         }
+
+        getInternalViewerNode()->fillGammaLut(_imp->lastGammaValue);
 
     } else if (k == _imp->enableAutoContrastButtonKnob.lock()) {
         bool enable = _imp->enableAutoContrastButtonKnob.lock()->getValue();
@@ -2646,6 +2695,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->pauseButtonKnob[1].lock()->setValue(!curValue);
     } else if (k == _imp->createUserRoIAction.lock()) {
         _imp->buildUserRoIOnNextPress = true;
+        _imp->toggleUserRoIButtonKnob.lock()->setValue(true);
         _imp->draggedUserRoI = getUserRoI();
     } else if (k == _imp->toggleUserRoIButtonKnob.lock()) {
         bool enabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
@@ -2820,7 +2870,7 @@ ViewerNode::getDisplayChannels(int index) const
 bool
 ViewerNode::isAutoContrastEnabled() const
 {
-    return _imp->enableAutoContrastButtonKnob.lock();
+    return _imp->enableAutoContrastButtonKnob.lock()->getValue();
 }
 
 ViewerColorSpaceEnum
@@ -2844,13 +2894,23 @@ ViewerNodePrivate::drawUserRoI()
         GL_GPU::glColor4f(0.9, 0.9, 0.9, 1.);
 
         RectD userRoI;
-        if ( (uiState == eViewerNodeInteractMouseStateBuildingUserRoI) || buildUserRoIOnNextPress ) {
+        if ( uiState == eViewerNodeInteractMouseStateBuildingUserRoI ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiBottomEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiRightEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiTopEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiLeftEdge ||
+            uiState == eViewerNodeInteractMouseStateDraggingRoiCross ||
+            buildUserRoIOnNextPress ) {
             userRoI = draggedUserRoI;
         } else {
-            userRoI = userRoI;
+            userRoI = _publicInterface->getUserRoI();
         }
-
-
+        
+        
         if (buildUserRoIOnNextPress) {
             GL_GPU::glLineStipple(2, 0xAAAA);
             GL_GPU::glEnable(GL_LINE_STIPPLE);
@@ -3363,8 +3423,8 @@ ViewerNode::onOverlayPenDown(double /*time*/,
         _imp->buildUserRoIOnNextPress) {
         _imp->draggedUserRoI.x1 = pos.x();
         _imp->draggedUserRoI.y1 = pos.y();
-        _imp->draggedUserRoI.x2 = _imp->draggedUserRoI.x1 + 1;
-        _imp->draggedUserRoI.y2 = _imp->draggedUserRoI.y1 + 1;
+        _imp->draggedUserRoI.x2 = pos.x();
+        _imp->draggedUserRoI.y2 = pos.y();
         _imp->buildUserRoIOnNextPress = false;
         _imp->uiState = eViewerNodeInteractMouseStateBuildingUserRoI;
         overlaysCaught = true;
@@ -3590,75 +3650,75 @@ ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScal
 
     switch (_imp->uiState) {
         case eViewerNodeInteractMouseStateDraggingRoiBottomEdge: {
-            if ( (_imp->draggedUserRoI.y1 - dy) < _imp->draggedUserRoI.y2 ) {
-                _imp->draggedUserRoI.y1 -= dy;
+            if ( (_imp->draggedUserRoI.y1 + dy) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 += dy;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiLeftEdge: {
-            if ( (_imp->draggedUserRoI.x1 - dx) < _imp->draggedUserRoI.x2 ) {
-                _imp->draggedUserRoI.x1 -= dx;
+            if ( (_imp->draggedUserRoI.x1 + dx) < _imp->draggedUserRoI.x2 ) {
+                _imp->draggedUserRoI.x1 += dx;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiRightEdge: {
-            if ( (_imp->draggedUserRoI.x2 - dx) > _imp->draggedUserRoI.x1 ) {
-                _imp->draggedUserRoI.x2 -= dx;
+            if ( (_imp->draggedUserRoI.x2 + dx) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 += dx;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiTopEdge: {
-            if ( (_imp->draggedUserRoI.y2 - dy) > _imp->draggedUserRoI.y1 ) {
-                _imp->draggedUserRoI.y2 -= dy;
+            if ( (_imp->draggedUserRoI.y2 + dy) > _imp->draggedUserRoI.y1 ) {
+                _imp->draggedUserRoI.y2 += dy;
                 overlayCaught = true;
             }
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiCross: {
-            _imp->draggedUserRoI.translate(-dx, -dy);
+            _imp->draggedUserRoI.translate(dx, dy);
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiTopLeft: {
-            if ( (_imp->draggedUserRoI.y2 - dy) > _imp->draggedUserRoI.y1 ) {
-                _imp->draggedUserRoI.y2 -= dy;
+            if ( (_imp->draggedUserRoI.y2 + dy) > _imp->draggedUserRoI.y1 ) {
+                _imp->draggedUserRoI.y2 += dy;
             }
-            if ( (_imp->draggedUserRoI.x1 - dx) < _imp->draggedUserRoI.x2 ) {
-                _imp->draggedUserRoI.x1 -= dx;
+            if ( (_imp->draggedUserRoI.x1 + dx) < _imp->draggedUserRoI.x2 ) {
+                _imp->draggedUserRoI.x1 += dx;
             }
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiTopRight: {
-            if ( (_imp->draggedUserRoI.y2 - dy) > _imp->draggedUserRoI.y1 ) {
-                _imp->draggedUserRoI.y2 -= dy;
+            if ( (_imp->draggedUserRoI.y2 + dy) > _imp->draggedUserRoI.y1 ) {
+                _imp->draggedUserRoI.y2 += dy;
             }
-            if ( (_imp->draggedUserRoI.x2 - dx) > _imp->draggedUserRoI.x1 ) {
-                _imp->draggedUserRoI.x2 -= dx;
+            if ( (_imp->draggedUserRoI.x2 + dx) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 += dx;
             }
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiBottomRight:
         case eViewerNodeInteractMouseStateBuildingUserRoI:{
-            if ( (_imp->draggedUserRoI.x2 - dx) > _imp->draggedUserRoI.x1 ) {
-                _imp->draggedUserRoI.x2 -= dx;
+            if ( (_imp->draggedUserRoI.x2 + dx) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 += dx;
             }
-            if ( (_imp->draggedUserRoI.y1 - dy) < _imp->draggedUserRoI.y2 ) {
-                _imp->draggedUserRoI.y1 -= dy;
+            if ( (_imp->draggedUserRoI.y1 + dy) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 += dy;
             }
             overlayCaught = true;
             break;
         }
         case eViewerNodeInteractMouseStateDraggingRoiBottomLeft: {
-            if ( (_imp->draggedUserRoI.y1 - dy) < _imp->draggedUserRoI.y2 ) {
-                _imp->draggedUserRoI.y1 -= dy;
+            if ( (_imp->draggedUserRoI.y1 + dy) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 += dy;
             }
-            if ( (_imp->draggedUserRoI.x1 - dx) < _imp->draggedUserRoI.x2 ) {
-                _imp->draggedUserRoI.x1 -= dx;
+            if ( (_imp->draggedUserRoI.x1 + dx) < _imp->draggedUserRoI.x2 ) {
+                _imp->draggedUserRoI.x1 += dx;
             }
             overlayCaught = true;
 
@@ -3727,7 +3787,8 @@ ViewerNode::onOverlayPenUp(double /*time*/, const RenderScale & /*renderScale*/,
         _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomLeft ||
         _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiBottomRight ||
         _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopLeft ||
-        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight) {
+        _imp->uiState == eViewerNodeInteractMouseStateDraggingRoiTopRight ||
+        _imp->uiState == eViewerNodeInteractMouseStateBuildingUserRoI) {
         setUserRoI(_imp->draggedUserRoI);
         caught = true;
     }
@@ -3868,7 +3929,7 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
         assert(groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0);
 
         
-        if (nodeToConnect->getEffectInstance().get() == this) {
+        if (nodeToConnect == _imp->internalViewerProcessNode.lock()) {
             nodeToConnect->disconnectInput(internalInputIdx);
             nodeToConnect->connectInput(groupInputNodes[groupInputIndex], internalInputIdx);
         } else {

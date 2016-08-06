@@ -298,6 +298,7 @@ public:
 
     void callRedrawOnMainThread();
 
+    void fillGammaLut(double gamma);
 
 private:
 

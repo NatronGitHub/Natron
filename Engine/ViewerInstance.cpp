@@ -1119,6 +1119,13 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
+void
+ViewerInstance::fillGammaLut(double gamma)
+{
+    QWriteLocker k(&_imp->gammaLookupMutex);
+    _imp->fillGammaLut(1. / gamma);
+}
+
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                                        const U64 viewerHash,

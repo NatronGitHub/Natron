@@ -1359,7 +1359,7 @@ NodeGui::initializeInputsForInspector()
     ///If the node is a viewer, display 1 input and another one aside and hide all others.
     ///If the node is something else (switch, merge) show 2 inputs and another one aside an hide all others.
 
-    bool isViewer = node->isEffectViewerInstance() != 0;
+    bool isViewer = node->isEffectViewerNode() != 0;
     int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
     double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
     double angle =  piDividedbyX;
