@@ -954,7 +954,7 @@ ViewerNode::onGroupCreated()
             //args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
             inputNodes[i] = getApp()->createNode(args);
             assert(inputNodes[i]);
-            inputNodes[i]->setPosition(inputX + startOffset, inputY - inputHeight * 2);
+            inputNodes[i]->setPosition(inputX + startOffset, inputY - inputHeight * 10);
             startOffset += inputWidth * 1.5;
         }
         
@@ -2781,6 +2781,8 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
     } else if (k == _imp->enableFpsKnob.lock()) {
         _imp->fpsKnob.lock()->setAllDimensionsEnabled(_imp->enableFpsKnob.lock()->getValue());
+        refreshFps();
+    } else if (k == _imp->fpsKnob.lock()) {
         refreshFps();
     } else if (k == _imp->playForwardButtonKnob.lock()) {
         if (reason != eValueChangedReasonPluginEdited) {

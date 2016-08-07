@@ -133,7 +133,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     assert(foundInput);
 
     ///and push a connect command to the selected node.
-    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected) );
+    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected, isASide ? 0 : 1) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
     selectNode(gui, false);
@@ -219,6 +219,10 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const NodeGuiPtr & node)
 {
+    if (node->getNode()->isEffectViewerInstance()) {
+        Dialogs::errorDialog( tr("Delete").toStdString(), tr("Removing the internal viewer process node is not a valid action").toStdString());
+        return;
+    }
     NodeGroupPtr isGrp = node->getNode()->isEffectNodeGroup();
     const KnobsVec & knobs = node->getNode()->getKnobs();
 
@@ -288,6 +292,11 @@ NodeGraph::deleteSelection()
 
 
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+
+            if ((*it)->getNode()->isEffectViewerInstance()) {
+                Dialogs::errorDialog( tr("Delete").toStdString(), tr("Removing the internal viewer process node is not a valid action").toStdString());
+                return;
+            }
             const KnobsVec & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
             NodeGroupPtr isGrp = (*it)->getNode()->isEffectNodeGroup();

@@ -154,6 +154,7 @@ public:
                    Edge* edge,
                    const NodeGuiPtr &oldSrc,
                    const NodeGuiPtr & newSrc,
+                   int viewerInternalIndex,
                    QUndoCommand *parent = 0);
 
     virtual void undo();
@@ -164,11 +165,13 @@ protected:
     static void doConnect(const NodeGuiPtr &oldSrc,
                           const NodeGuiPtr & newSrc,
                           const NodeGuiPtr& dst,
-                          int inputNb);
+                          int inputNb,
+                          int viewerInternalIndex);
     boost::weak_ptr<NodeGui> _oldSrc, _newSrc;
     boost::weak_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
+    int _viewerInternalIndex;
 };
 
 /*

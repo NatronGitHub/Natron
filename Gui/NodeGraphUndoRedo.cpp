@@ -414,13 +414,15 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
                                Edge* edge,
                                const NodeGuiPtr & oldSrc,
                                const NodeGuiPtr & newSrc,
+                               int viewerInternalIndex,
                                QUndoCommand *parent)
     : QUndoCommand(parent),
     _oldSrc(oldSrc),
     _newSrc(newSrc),
     _dst( edge->getDest() ),
     _graph(graph),
-    _inputNb( edge->getInputNumber() )
+    _inputNb( edge->getInputNumber() ),
+    _viewerInternalIndex(viewerInternalIndex)
 {
     assert( _dst.lock() );
 }
@@ -435,7 +437,8 @@ ConnectCommand::undo()
     doConnect(newSrc,
               oldSrc,
               dst,
-              _inputNb);
+              _inputNb,
+              _viewerInternalIndex);
 
     if (newSrc) {
         setText( tr("Connect %1 to %2")
@@ -463,7 +466,8 @@ ConnectCommand::redo()
     doConnect(oldSrc,
               newSrc,
               dst,
-              _inputNb);
+              _inputNb,
+              _viewerInternalIndex);
 
     if (newSrc) {
         setText( tr("Connect %1 to %2")
@@ -474,7 +478,7 @@ ConnectCommand::redo()
     }
 
 
-    ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
+    ViewerNodePtr isDstAViewer = dst->getNode()->isEffectViewerNode();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -485,12 +489,13 @@ void
 ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
                           const NodeGuiPtr &newSrc,
                           const NodeGuiPtr& dst,
-                          int inputNb)
+                          int inputNb,
+                          int viewerInternalIndex)
 {
     NodePtr internalDst =  dst->getNode();
     NodePtr internalNewSrc = newSrc ? newSrc->getNode() : NodePtr();
     NodePtr internalOldSrc = oldSrc ? oldSrc->getNode() : NodePtr();
-    ViewerInstancePtr isViewer = internalDst->isEffectViewerInstance();
+    ViewerNodePtr isViewer = internalDst->isEffectViewerNode();
 
 
     if (isViewer) {
@@ -529,6 +534,12 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
         }
     }
 
+    if (isViewer) {
+        if (viewerInternalIndex == 0 || viewerInternalIndex == 1) {
+            isViewer->connectInputToIndex(inputNb, viewerInternalIndex);
+        }
+    }
+
     dst->refreshEdges();
     dst->refreshEdgesVisility();
 
@@ -544,7 +555,7 @@ InsertNodeCommand::InsertNodeCommand(NodeGraph* graph,
                                      Edge* edge,
                                      const NodeGuiPtr & newSrc,
                                      QUndoCommand *parent)
-    : ConnectCommand(graph, edge, edge->getSource(), newSrc, parent)
+    : ConnectCommand(graph, edge, edge->getSource(), newSrc, -1, parent)
     , _inputEdge(0)
 {
     assert(newSrc);
@@ -565,10 +576,10 @@ InsertNodeCommand::undo()
     NodePtr dstInternal = dst->getNode();
     assert(newSrcInternal && dstInternal);
 
-    doConnect(newSrc, oldSrc, dst, _inputNb);
+    doConnect(newSrc, oldSrc, dst, _inputNb, -1);
 
     if (_inputEdge) {
-        doConnect( _inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber() );
+        doConnect( _inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber(), -1);
     }
 
     ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
@@ -595,7 +606,7 @@ InsertNodeCommand::redo()
     newSrcInternal->beginInputEdition();
     dstInternal->beginInputEdition();
 
-    doConnect(oldSrc, newSrc, dst, _inputNb);
+    doConnect(oldSrc, newSrc, dst, _inputNb, -1);
 
 
     ///find out if the node is already connected to what the edge is connected
@@ -617,7 +628,7 @@ InsertNodeCommand::redo()
         if (prefInput != -1) {
             _inputEdge = newSrc->getInputArrow(prefInput);
             assert(_inputEdge);
-            doConnect( _inputEdge->getSource(), oldSrc, _inputEdge->getDest(), _inputEdge->getInputNumber() );
+            doConnect( _inputEdge->getSource(), oldSrc, _inputEdge->getDest(), _inputEdge->getInputNumber(), -1 );
         }
     }
 

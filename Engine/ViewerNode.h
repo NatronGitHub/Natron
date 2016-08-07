@@ -185,6 +185,11 @@ public:
 
     virtual void onGroupCreated() OVERRIDE FINAL;
 
+    virtual bool isOutput() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
 
     void refreshFps();

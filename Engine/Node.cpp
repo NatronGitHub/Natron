@@ -11526,7 +11526,7 @@ InspectorNode::connectInput(const NodePtr& input,
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( !isEffectViewerInstance() ) {
+    if ( !isEffectViewerNode() ) {
         return connectInputBase(input, inputNumber);
     }
 
