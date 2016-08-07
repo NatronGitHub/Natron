@@ -29,6 +29,8 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QDateTime>
+#include <QtCore/QLocale>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 #include <QScrollBar>
@@ -94,10 +96,11 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
         int g = Color::floatToInt<256>(it->color.g);
         int b = Color::floatToInt<256>(it->color.b);
         QColor c(r,g,b);
-        content.append(QString::fromUtf8("<font color=%1><b>").arg(c.name()));
-        content.append(it->context);
-        content.append(QLatin1String(": "));
-        content.append(QString::fromUtf8("</b></font>"));
+        // only print time - QTime.toString() uses the system locale, that's not what we want
+        content.append( QString::fromUtf8("[%3] <font color=%1><b>%2</b></font>: ")
+                        .arg( c.name() )
+                        .arg(it->context)
+                       .arg( QLocale().toString( it->date.time(), QString::fromUtf8("HH:mm:ss.zzz") ) ) );
         if (it->isHtml) {
             content.append(it->message);
         } else {
@@ -106,8 +109,7 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
             content.append(m);
         }
         if (next != log.end()) {
-            content.append(QString::fromUtf8("<br />"));
-            content.append(QString::fromUtf8("<br />"));
+            content.append(QString::fromUtf8("<br /><br />"));
             ++next;
         }
     }

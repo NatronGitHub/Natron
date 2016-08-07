@@ -28,6 +28,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 
 #include "Engine/Knob.h"
@@ -285,7 +286,7 @@ KnobSerialization::restoreExpressions(const KnobIPtr & knob,
         }
     } catch (const std::exception& e) {
         QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
-        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ),err);
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
     }
 }
 

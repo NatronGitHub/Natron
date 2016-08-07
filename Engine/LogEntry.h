@@ -26,7 +26,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QString>
+#include <QtCore/QString>
+#include <QtCore/QDateTime>
 
 #include "Engine/EngineFwd.h"
 
@@ -47,6 +48,8 @@ public:
     };
     // A String identifying the context of the message, e.g: the name of a node or when loading a project, etc..
     QString context;
+
+    QDateTime date; //!< The date at which the message was issued
 
     // The actual message
     QString message;

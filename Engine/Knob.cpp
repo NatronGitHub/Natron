@@ -30,6 +30,7 @@
 #include <stdexcept>
 
 #include <QtCore/QDataStream>
+#include <QtCore/QDateTime>
 #include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
@@ -2970,7 +2971,7 @@ KnobHelper::setName(const std::string & name,
                 if (throwExceptions) {
                     throw std::runtime_error( message.toStdString() );
                 } else {
-                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getName().c_str()), message );
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getName().c_str()), QDateTime::currentDateTime(), message );
                     std::cerr << message.toStdString() << std::endl;
 
                     return;
