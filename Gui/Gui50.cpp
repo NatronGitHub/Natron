@@ -123,7 +123,10 @@ Gui::onShowLogOnMainThreadReceived()
 
     if (!_imp->_errorLog->isVisible()) {
         _imp->_errorLog->show();
-        _imp->_errorLog->raise();
+        // no need to raise(), because:
+        // - the log window is Qt::WindowStaysOnTopHint
+        // - raising a window does not work in general:
+        // https://forum.qt.io/topic/6032/bring-window-to-front-raise-show-activatewindow-don-t-work-on-windows/12
     }
 }
 
