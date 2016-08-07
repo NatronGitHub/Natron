@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QFileInfo>
 
 #include "Engine/AppManager.h"
@@ -234,7 +235,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                              " exist in the loaded plug-ins.")
                           .arg( QString::fromUtf8( pluginID.c_str() ) )
                           .arg(majorVersion).arg(minorVersion) );
-            appPTR->writeToErrorLog_mt_safe(tr("Project"),text);
+            appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
             mustShowErrorsLog = true;
             continue;
         } else {
@@ -251,7 +252,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                               .arg(minorVersion)
                               .arg( n->getPlugin()->getMajorVersion() )
                               .arg( n->getPlugin()->getMinorVersion() ) );
-                appPTR->writeToErrorLog_mt_safe(tr("Project"),text);
+                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
                 mustShowErrorsLog = true;
             }
         }
@@ -308,7 +309,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
 
             if (!masterNode) {
-                appPTR->writeToErrorLog_mt_safe( tr("Project"), tr("Cannot restore the link between %1 and %2.")
+                appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
+                                                 tr("Cannot restore the link between %1 and %2.")
                                                  .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
                                                  .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
                 mustShowErrorsLog = true;
@@ -332,8 +334,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             for (U32 j = 0; j < oldInputs.size(); ++j) {
                 if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j], it->first) ) {
                     if (createNodes) {
-                        qDebug() << "Failed to connect node" << it->second->getNodeScriptName().c_str() << "to" << oldInputs[j].c_str()
-                                 << "[This is normal if loading a PyPlug]";
+                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
+                                    .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
+                                    .arg( QString::fromUtf8( oldInputs[j].c_str() ) );
                     }
                 }
             }
@@ -345,13 +348,16 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( tr("Project"),QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
+                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
+                                                     tr("Could not find input named %1")
+                                                     .arg( QString::fromUtf8( it2->first.c_str() ) ) );
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
                     if (createNodes) {
-                        qDebug() << "Failed to connect node" << it->second->getNodeScriptName().c_str() << "to" << it2->second.c_str()
-                                 << "[This is normal if loading a PyPlug]";
+                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
+                                    .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
+                                    .arg( QString::fromUtf8( it2->second.c_str() ) );
                     }
                 }
             }
@@ -388,8 +394,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             for (U32 j = 0; j < oldInputs.size(); ++j) {
                 if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j], it->first) ) {
                     if (createNodes) {
-                        qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << oldInputs[j].c_str()
-                                 << "[This is normal if loading a PyPlug]";
+                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
+                                    .arg( QString::fromUtf8( it->first->getPluginLabel().c_str() ) )
+                                    .arg( QString::fromUtf8( oldInputs[j].c_str() ) );
                     }
                 }
             }
@@ -401,13 +408,15 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
+                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
+                                                     tr("Could not find input named %1").arg( QString::fromUtf8( it2->first.c_str() ) ) );
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
                     if (createNodes) {
-                        qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << it2->second.c_str()
-                                 << "[This is normal if loading a PyPlug]";
+                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
+                                    .arg( QString::fromUtf8( it->first->getPluginLabel().c_str() ) )
+                                    .arg( QString::fromUtf8( it2->second.c_str() ) );
                     }
                 }
             }

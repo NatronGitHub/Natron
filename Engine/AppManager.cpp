@@ -54,6 +54,7 @@
 #include <cairo/cairo.h>
 #include <boost/version.hpp>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
 #include <QtCore/QTextCodec>
@@ -1454,7 +1455,7 @@ AppManager::findAndRunScriptFile(const QString& path,
 
                 if ( !error.empty() ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
-                    appPTR->writeToErrorLog_mt_safe(tr("Python Script"), message, false);
+                    appPTR->writeToErrorLog_mt_safe(tr("Python Script"), QDateTime::currentDateTime(), message, false);
                     std::cerr << message.toStdString() << std::endl;
 
                     return false;
@@ -1652,7 +1653,7 @@ AppManager::loadPythonGroups()
                                      "Note that Natron disables usage "
                                  "of site-packages).");
             std::cerr << message.toStdString() << std::endl;
-            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtCore"),message);
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtCore"), QDateTime::currentDateTime(), message);
         }
     }
 
@@ -1667,7 +1668,7 @@ AppManager::loadPythonGroups()
         if (!ok) {
             QString message = tr("Failed to import PySide.QtGui");
             std::cerr << message.toStdString() << std::endl;
-            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtGui"),message);
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtGui"), QDateTime::currentDateTime(), message);
         }
     }
 
@@ -2348,11 +2349,16 @@ AppManager::getErrorLog_mt_safe(std::list<LogEntry>* entries) const
 }
 
 void
-AppManager::writeToErrorLog_mt_safe(const QString& context, const QString & str, bool isHtml, const LogEntry::LogEntryColor& color)
+AppManager::writeToErrorLog_mt_safe(const QString& context,
+                                    const QDateTime& date,
+                                    const QString & str,
+                                    bool isHtml,
+                                    const LogEntry::LogEntryColor& color)
 {
     QMutexLocker l(&_imp->errorLogMutex);
     LogEntry e;
     e.context = context;
+    e.date = date;
     e.message = str;
     e.isHtml = isHtml;
     e.color = color;
@@ -2365,7 +2371,11 @@ AppManager::showErrorLog()
     std::list<LogEntry> log;
     getErrorLog_mt_safe(&log);
     for (std::list<LogEntry>::iterator it = log.begin(); it != log.end(); ++it) {
-        std::cout << it->context.toStdString() << ": " << it->message.toStdString() <<  std::endl;
+        // only print time - QTime.toString() uses the system locale, that's not what we want
+        std::cout << QString::fromUtf8("[%2] %1: %3")
+                     .arg(it->context)
+                     .arg( QLocale().toString( it->date.time(), QString::fromUtf8("HH:mm:ss.zzz")) )
+                     .arg(it->message).toStdString() << std::endl;
     }
 }
 
@@ -3083,7 +3093,7 @@ AppManager::onCrashReporterNoLongerResponding()
                        "communication between the 2 processes is failing.")
                     .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
     std::cerr << error.toStdString() << std::endl;
-    writeToErrorLog_mt_safe(tr("Crash-Reporter"), error );
+    writeToErrorLog_mt_safe(tr("Crash-Reporter"), QDateTime::currentDateTime(), error );
 #endif
 }
 
@@ -3710,7 +3720,7 @@ getGroupInfosInternal(const std::string& modulePath,
     std::string err;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(toRun, &err, 0) ) {
         QString logStr = QCoreApplication::translate("AppManager", "Was not recognized as a PyPlug: %1").arg( QString::fromUtf8( err.c_str() ) );
-        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(pythonModule.c_str()), logStr);
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(pythonModule.c_str()), QDateTime::currentDateTime(), logStr);
 
         return false;
     }

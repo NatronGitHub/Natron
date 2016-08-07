@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+#include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
@@ -1962,7 +1963,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
                 }
 
                 QString err = tr("Could not find a parameter named %1").arg( QString::fromUtf8( (*it)->getName().c_str() ) );
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ),err, false, c);
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), err, false, c);
                 continue;
             }
             isRegular->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
@@ -1990,7 +1991,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
             }
 
             QString err = tr("Could not find a parameter named %1").arg( QString::fromUtf8( (*it)->getName().c_str() ) );
-            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getScriptName_mt_safe().c_str() ),err, false, c);
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), err, false, c);
             continue;
         }
         (*it)->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
@@ -3061,7 +3062,7 @@ Node::setNameInternal(const std::string& name,
             if (getColor(&c.r, &c.g, &c.b)) {
                 c.colorSet = true;
             }
-            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()),err, false, c);
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), QDateTime::currentDateTime(), err, false, c);
             std::cerr << err.toStdString() << std::endl;
 
             return;
@@ -3078,7 +3079,7 @@ Node::setNameInternal(const std::string& name,
                 if (getColor(&c.r, &c.g, &c.b)) {
                     c.colorSet = true;
                 }
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()) ,QString::fromUtf8( e.what() ), false, c );
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), QDateTime::currentDateTime(), QString::fromUtf8( e.what() ), false, c );
                 std::cerr << e.what() << std::endl;
 
                 return;
@@ -3110,7 +3111,7 @@ Node::setNameInternal(const std::string& name,
                 if (getColor(&c.r, &c.g, &c.b)) {
                     c.colorSet = true;
                 }
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(oldName.c_str()), QString::fromUtf8( err.c_str() ), false, c );
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(oldName.c_str()), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ), false, c );
                 std::cerr << err << std::endl;
 
                 return;
@@ -6972,7 +6973,7 @@ Node::message(MessageTypeEnum type,
         if (getColor(&c.r, &c.g, &c.b)) {
             c.colorSet = true;
         }
-        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getLabel_mt_safe().c_str() ), QString::fromUtf8( content.c_str() ), false, c);
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( content.c_str() ), false, c);
         if (type == eMessageTypeError) {
             appPTR->showErrorLog();
         }

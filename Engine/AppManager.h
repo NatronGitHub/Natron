@@ -306,7 +306,7 @@ public:
 
     void getErrorLog_mt_safe(std::list<LogEntry>* entries) const;
 
-    void writeToErrorLog_mt_safe(const QString& context, const QString & str, bool isHtml = false, const LogEntry::LogEntryColor& color = LogEntry::LogEntryColor());
+    void writeToErrorLog_mt_safe(const QString& context, const QDateTime& date, const QString & str, bool isHtml = false, const LogEntry::LogEntryColor& color = LogEntry::LogEntryColor());
 
     void clearErrorLog_mt_safe();
 
