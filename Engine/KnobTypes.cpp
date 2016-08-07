@@ -559,7 +559,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _renderButton(false)
 {
-    //setIsPersistant(false);
+    //setIsPersistent(false);
 }
 
 KnobButton::KnobButton(KnobHolder*  holder,
@@ -569,7 +569,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _renderButton(false)
 {
-    //setIsPersistant(false);
+    //setIsPersistent(false);
 }
 
 bool
@@ -1605,7 +1605,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
-    setIsPersistant(false);
+    setIsPersistent(false);
 }
 
 KnobPage::KnobPage(KnobHolder* holder,
@@ -1614,7 +1614,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
 {
-    setIsPersistant(false);
+    setIsPersistent(false);
 }
 
 bool

@@ -1366,7 +1366,7 @@ public:
         opacityKnob->setDisplayMaximum(1.);
         opacityKnob->setDefaultValue(ROTO_DEFAULT_OPACITY);
         opacityKnob->setDefaultAllDimensionsEnabled(false);
-        opacityKnob->setIsPersistant(false);
+        opacityKnob->setIsPersistent(false);
         generalPage->addKnob(opacityKnob);
         knobs.push_back(opacityKnob);
         opacity = opacityKnob;
@@ -1379,7 +1379,7 @@ public:
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         ck->setDefaultAllDimensionsEnabled(false);
         generalPage->addKnob(ck);
-        ck->setIsPersistant(false);
+        ck->setIsPersistent(false);
         knobs.push_back(ck);
         colorKnob = ck;
 
@@ -1387,7 +1387,7 @@ public:
         lifeTimeKnob->setHintToolTip( tr(kRotoDrawableItemLifeTimeParamHint) );
         lifeTimeKnob->setName(kRotoDrawableItemLifeTimeParam);
         lifeTimeKnob->setAddNewLine(false);
-        lifeTimeKnob->setIsPersistant(false);
+        lifeTimeKnob->setIsPersistent(false);
         lifeTimeKnob->setDefaultAllDimensionsEnabled(false);
         lifeTimeKnob->setAnimationEnabled(false);
         {
@@ -1426,7 +1426,7 @@ public:
         activatedKnob->setDefaultValue(true);
         activatedKnob->setDefaultAllDimensionsEnabled(false);
         generalPage->addKnob(activatedKnob);
-        activatedKnob->setIsPersistant(false);
+        activatedKnob->setIsPersistent(false);
         knobs.push_back(activatedKnob);
         activated = activatedKnob;
 
@@ -1436,7 +1436,7 @@ public:
         invertedKnob->setName(kRotoInvertedParam);
         invertedKnob->setDefaultValue(false);
         invertedKnob->setDefaultAllDimensionsEnabled(false);
-        invertedKnob->setIsPersistant(false);
+        invertedKnob->setIsPersistent(false);
         generalPage->addKnob(invertedKnob);
         knobs.push_back(invertedKnob);
         inverted = invertedKnob;
@@ -1450,7 +1450,7 @@ public:
         featherKnob->setDisplayMaximum(500);
         featherKnob->setDefaultValue(ROTO_DEFAULT_FEATHER);
         featherKnob->setDefaultAllDimensionsEnabled(false);
-        featherKnob->setIsPersistant(false);
+        featherKnob->setIsPersistent(false);
         shapePage->addKnob(featherKnob);
         knobs.push_back(featherKnob);
         shapeKnobs.push_back(featherKnob);
@@ -1465,7 +1465,7 @@ public:
         featherFallOffKnob->setDisplayMaximum(5.);
         featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOffKnob->setDefaultAllDimensionsEnabled(false);
-        featherFallOffKnob->setIsPersistant(false);
+        featherFallOffKnob->setIsPersistent(false);
         shapePage->addKnob(featherFallOffKnob);
         knobs.push_back(featherFallOffKnob);
         shapeKnobs.push_back(featherFallOffKnob);
@@ -1663,7 +1663,7 @@ public:
             timeOffset->setDisplayMinimum(-100);
             timeOffset->setDisplayMaximum(100);
             timeOffset->setDefaultAllDimensionsEnabled(false);
-            timeOffset->setIsPersistant(false);
+            timeOffset->setIsPersistent(false);
             timeOffset->setAddNewLine(false);
             clonePage->addKnob(timeOffset);
             cloneKnobs.push_back(timeOffset);
@@ -1680,7 +1680,7 @@ public:
                 timeOffsetMode->populateChoices(modes);
             }
             timeOffsetMode->setDefaultAllDimensionsEnabled(false);
-            timeOffsetMode->setIsPersistant(false);
+            timeOffsetMode->setIsPersistent(false);
             clonePage->addKnob(timeOffsetMode);
             knobs.push_back(timeOffsetMode);
             cloneKnobs.push_back(timeOffsetMode);
@@ -1693,7 +1693,7 @@ public:
             brushSize->setMinimum(1.);
             brushSize->setMaximum(1000);
             brushSize->setDefaultAllDimensionsEnabled(false);
-            brushSize->setIsPersistant(false);
+            brushSize->setIsPersistent(false);
             strokePage->addKnob(brushSize);
             knobs.push_back(brushSize);
             strokeKnobs.push_back(brushSize);
@@ -1706,7 +1706,7 @@ public:
             brushSpacing->setMinimum(0.);
             brushSpacing->setMaximum(1.);
             brushSpacing->setDefaultAllDimensionsEnabled(false);
-            brushSpacing->setIsPersistant(false);
+            brushSpacing->setIsPersistent(false);
             strokePage->addKnob(brushSpacing);
             knobs.push_back(brushSpacing);
             strokeKnobs.push_back(brushSpacing);
@@ -1719,7 +1719,7 @@ public:
             brushHardness->setMinimum(0.);
             brushHardness->setMaximum(1.);
             brushHardness->setDefaultAllDimensionsEnabled(false);
-            brushHardness->setIsPersistant(false);
+            brushHardness->setIsPersistent(false);
             strokePage->addKnob(brushHardness);
             knobs.push_back(brushHardness);
             strokeKnobs.push_back(brushHardness);
@@ -1732,7 +1732,7 @@ public:
             effectStrength->setMinimum(0.);
             effectStrength->setMaximum(100.);
             effectStrength->setDefaultAllDimensionsEnabled(false);
-            effectStrength->setIsPersistant(false);
+            effectStrength->setIsPersistent(false);
             strokePage->addKnob(effectStrength);
             knobs.push_back(effectStrength);
             strokeKnobs.push_back(effectStrength);
@@ -1753,7 +1753,7 @@ public:
             pressureOpacity->setDefaultValue(true);
             pressureOpacity->setAddNewLine(false);
             pressureOpacity->setDefaultAllDimensionsEnabled(false);
-            pressureOpacity->setIsPersistant(false);
+            pressureOpacity->setIsPersistent(false);
             strokePage->addKnob(pressureOpacity);
             knobs.push_back(pressureOpacity);
             strokeKnobs.push_back(pressureOpacity);
@@ -1766,7 +1766,7 @@ public:
             pressureSize->setDefaultValue(false);
             pressureSize->setAddNewLine(false);
             pressureSize->setDefaultAllDimensionsEnabled(false);
-            pressureSize->setIsPersistant(false);
+            pressureSize->setIsPersistent(false);
             knobs.push_back(pressureSize);
             strokeKnobs.push_back(pressureSize);
             strokePage->addKnob(pressureSize);
@@ -1779,7 +1779,7 @@ public:
             pressureHardness->setDefaultValue(false);
             pressureHardness->setAddNewLine(true);
             pressureHardness->setDefaultAllDimensionsEnabled(false);
-            pressureHardness->setIsPersistant(false);
+            pressureHardness->setIsPersistent(false);
             knobs.push_back(pressureHardness);
             strokeKnobs.push_back(pressureHardness);
             strokePage->addKnob(pressureHardness);
@@ -1792,7 +1792,7 @@ public:
             buildUp->setDefaultValue(false);
             buildUp->setAddNewLine(true);
             buildUp->setDefaultAllDimensionsEnabled(false);
-            buildUp->setIsPersistant(false);
+            buildUp->setIsPersistent(false);
             knobs.push_back(buildUp);
             strokeKnobs.push_back(buildUp);
             strokePage->addKnob(buildUp);
@@ -1810,7 +1810,7 @@ public:
             maxs.push_back(1);
             visiblePortion->setMinimumsAndMaximums(mins, maxs);
             visiblePortion->setDefaultAllDimensionsEnabled(false);
-            visiblePortion->setIsPersistant(false);
+            visiblePortion->setIsPersistent(false);
             strokePage->addKnob(visiblePortion);
             visiblePortion->setDimensionName(0, "start");
             visiblePortion->setDimensionName(1, "end");
@@ -1956,7 +1956,7 @@ public:
         motionBlur->setDisplayMinimum(0);
         motionBlur->setDisplayMaximum(4);
         motionBlur->setAllDimensionsEnabled(false);
-        motionBlur->setIsPersistant(false);
+        motionBlur->setIsPersistent(false);
         motionBlur->setMaximum(4);
         shapeKnobs.push_back(motionBlur);
         mbPage->addKnob(motionBlur);
@@ -1972,7 +1972,7 @@ public:
         shutter->setDisplayMaximum(2);
         shutter->setMaximum(2);
         shutter->setAllDimensionsEnabled(false);
-        shutter->setIsPersistant(false);
+        shutter->setIsPersistent(false);
         shapeKnobs.push_back(shutter);
         mbPage->addKnob(shutter);
         shutterKnob = shutter;
@@ -1996,7 +1996,7 @@ public:
         }
         shutterType->setAllDimensionsEnabled(false);
         shutterType->setAddNewLine(false);
-        shutterType->setIsPersistant(false);
+        shutterType->setIsPersistent(false);
         mbPage->addKnob(shutterType);
         shutterTypeKnob = shutterType;
         shapeKnobs.push_back(shutterType);
@@ -2007,7 +2007,7 @@ public:
         customOffset->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         customOffset->setDefaultValue(0);
         customOffset->setAllDimensionsEnabled(false);
-        customOffset->setIsPersistant(false);
+        customOffset->setIsPersistent(false);
         mbPage->addKnob(customOffset);
         customOffsetKnob = customOffset;
         shapeKnobs.push_back(customOffset);

@@ -1174,7 +1174,7 @@ Settings::initializeKnobsCaching()
 
     _maxRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
     _maxRAMLabel->setName("maxRamLabel");
-    _maxRAMLabel->setIsPersistant(false);
+    _maxRAMLabel->setIsPersistent(false);
     _maxRAMLabel->setAsLabel();
     _maxRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxRAMLabel);
@@ -1191,7 +1191,7 @@ Settings::initializeKnobsCaching()
 
     _maxPlaybackLabel = AppManager::createKnob<KnobString>( this, std::string() );
     _maxPlaybackLabel->setName("maxPlaybackLabel");
-    _maxPlaybackLabel->setIsPersistant(false);
+    _maxPlaybackLabel->setIsPersistent(false);
     _maxPlaybackLabel->setAsLabel();
     _maxPlaybackLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxPlaybackLabel);
@@ -1214,7 +1214,7 @@ Settings::initializeKnobsCaching()
     _cachingTab->addKnob(_unreachableRAMPercent);
     _unreachableRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
     _unreachableRAMLabel->setName("unreachableRAMLabel");
-    _unreachableRAMLabel->setIsPersistant(false);
+    _unreachableRAMLabel->setIsPersistent(false);
     _unreachableRAMLabel->setAsLabel();
     _unreachableRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_unreachableRAMLabel);
@@ -2493,7 +2493,7 @@ Settings::populatePluginsTab()
             pluginLabel->setAnimationEnabled(false);
             pluginLabel->setDefaultValue(pluginName);
             pluginLabel->setAddNewLine(false);
-            pluginLabel->setIsPersistant(false);
+            pluginLabel->setIsPersistent(false);
             if (group) {
                 group->addKnob(pluginLabel);
             }

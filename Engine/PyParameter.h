@@ -114,14 +114,14 @@ public:
     void setEnabledByDefault(bool enabled = 0);
 
     /**
-     * @brief Returns whether this parameter is persistant or not. A persistant parameter will be saved into the project.
+     * @brief Returns whether this parameter is persistent or not. A persistent parameter will be saved into the project.
      **/
-    bool getIsPersistant() const;
+    bool getIsPersistent() const;
 
     /**
      * @brief Set the parameter persistancy.
      **/
-    void setPersistant(bool persistant);
+    void setPersistent(bool persistent);
 
     /**
      * @brief Returns whether the parameter forces a new evaluation when its value changes. An evaluation is typically

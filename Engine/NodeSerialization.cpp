@@ -82,7 +82,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             }
 
             if ( !knobs[i]->isUserKnob() &&
-                 knobs[i]->getIsPersistant() &&
+                 knobs[i]->getIsPersistent() &&
                  !isGroup && !isPage
                  && knobs[i]->hasModificationsForSerialization() ) {
                 ///For choice do a deepclone because we need entries

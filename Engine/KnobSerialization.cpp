@@ -163,7 +163,7 @@ findMaster(const KnobPtr & knob,
     const std::vector< KnobPtr > & otherKnobs = masterNode->getKnobs();
     int found = -1;
     for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-        if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
+        if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistent() ) {
             found = (int)j;
             break;
         }

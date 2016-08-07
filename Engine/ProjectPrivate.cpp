@@ -137,7 +137,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
                 if ( (*it)->getName() == projectKnobs[i]->getName() ) {
                     ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
-                    //if ( projectKnobs[i]->getIsPersistant() ) {
+                    //if ( projectKnobs[i]->getIsPersistent() ) {
 
                     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( projectKnobs[i].get() );
                     if (isChoice) {

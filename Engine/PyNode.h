@@ -128,7 +128,7 @@ public:
     //////////// label              string          no                  None                    getLabel              ""
     //////////// help               string          yes                 setHelp(*)              getHelp               ""
     //////////// addNewLine         bool            no                  setAddNewLine(*)        getAddNewLine         True
-    //////////// persistent         bool            yes                 setPersistant(*)        getIsPersistant       True
+    //////////// persistent         bool            yes                 setPersistent(*)        getIsPersistent       True
     //////////// evaluatesOnChange  bool            yes                 setEvaluateOnChange(*)  getEvaluateOnChange   True
     //////////// animates           bool            no                  setAnimationEnabled(*)  getIsAnimationEnabled (1)
     //////////// visible            bool            yes                 setVisible              getIsVisible          True

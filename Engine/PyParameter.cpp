@@ -132,18 +132,18 @@ Param::setEnabledByDefault(bool enabled)
 }
 
 bool
-Param::getIsPersistant() const
+Param::getIsPersistent() const
 {
-    return getInternalKnob()->getIsPersistant();
+    return getInternalKnob()->getIsPersistent();
 }
 
 void
-Param::setPersistant(bool persistant)
+Param::setPersistent(bool persistent)
 {
     if ( !getInternalKnob()->isUserKnob() ) {
         return;
     }
-    getInternalKnob()->setIsPersistant(persistant);
+    getInternalKnob()->setIsPersistent(persistent);
 }
 
 bool

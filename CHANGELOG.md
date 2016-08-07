@@ -17,8 +17,8 @@
 
 ## Version 2.0.2
 
-- Expressions are now persistant: it can become invalid if a condition is not met currently to successfully run the expression, but can become valid again automatically.
-- Layers/Channels are now persistant: when copy pasting small "graphlets" or even creating PyPlugs, they will be remembered for convenience. An error may occur next to the corresponding parameter if the channel/layer does not exist any longer. You may right click the drop-down parameter to synchronize the menu to the actual state of the node to see the layers available.
+- Expressions are now persistent: it can become invalid if a condition is not met currently to successfully run the expression, but can become valid again automatically.
+- Layers/Channels are now persistent: when copy pasting small "graphlets" or even creating PyPlugs, they will be remembered for convenience. An error may occur next to the corresponding parameter if the channel/layer does not exist any longer. You may right click the drop-down parameter to synchronize the menu to the actual state of the node to see the layers available.
 - Fix a bug where expressions would not be evaluated at the correct time for nodes outside of the tree currently being rendered
 - Fix a bug where the Format parameter would be reseted automatically for the Reformat node
 - Fix a bug with QGroupBox stylesheet for PySide 
