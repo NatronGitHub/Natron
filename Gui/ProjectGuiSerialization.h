@@ -136,14 +136,14 @@ struct ViewerData
                 ar & ::boost::serialization::make_nvp("Gain", gamma);
             }
 
-            int colorSpace;
+            std::string colorSpace;
             ar & ::boost::serialization::make_nvp("ColorSpace", colorSpace);
             if (version >= VIEWER_DATA_INTRODUCES_LAYER) {
                 std::string layerName,alphaLayerName;
                 ar & ::boost::serialization::make_nvp("Layer", layerName);
                 ar & ::boost::serialization::make_nvp("AlphaLayer", alphaLayerName);
             }
-            int channels;
+            std::string channels;
             ar & ::boost::serialization::make_nvp("Channels", channels);
             bool renderScaleActivated;
             ar & ::boost::serialization::make_nvp("RenderScaleActivated", renderScaleActivated);

@@ -532,7 +532,11 @@ Gui::removeViewerTab(ViewerTab* tab,
         }
     }
 
-    ViewerInstancePtr internalViewer = tab->getInternalNode()->getInternalViewerNode();
+    ViewerNodePtr viewerNode = tab->getInternalNode();
+    ViewerInstancePtr internalViewer;
+    if (viewerNode) {
+        internalViewer = viewerNode->getInternalViewerNode();
+    }
     if (internalViewer) {
         internalViewer->abortAnyEvaluation();
         if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
