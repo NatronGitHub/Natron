@@ -33,6 +33,7 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
+#include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 
 //ofx extension
@@ -237,7 +238,8 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
         if (effect->getNode()->getColor(&c.r, &c.g, &c.b)) {
             c.colorSet = true;
         }
-        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(effect->getNode()->getLabel().c_str()), QString::fromUtf8( message.c_str() ), false, c);
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( effect->getNode()->getLabel().c_str() ), QDateTime::currentDateTime(),
+                                        QString::fromUtf8( message.c_str() ), false, c);
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         effect->message(eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {

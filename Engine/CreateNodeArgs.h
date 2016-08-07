@@ -183,18 +183,14 @@ class CreateNodeArgs
     class PropertyBase
     {
     public:
-
-
         PropertyBase()
         {
-
         }
 
         virtual int getDimension() const = 0;
 
         virtual ~PropertyBase()
         {
-
         }
     };
 
@@ -202,42 +198,48 @@ class CreateNodeArgs
     class Property : public PropertyBase
     {
     public:
-
         std::vector<T> value;
 
         Property()
         : PropertyBase()
         , value()
-        {}
+        {
+        }
 
         virtual int getDimension() const OVERRIDE FINAL
         {
             return (int)value.size();
         }
 
-        virtual ~Property() {
-
+        virtual ~Property()
+        {
         }
     };
     
     template <typename T>
-    boost::shared_ptr<Property<T> > getProp(const std::string& name) const
+    boost::shared_ptr<Property<T> > getProp(const std::string& name, bool failIfNotExisting = true) const
     {
         const boost::shared_ptr<PropertyBase>* propPtr = 0;
+        boost::shared_ptr<Property<T> > propTemplate;
 
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
         if (found == _properties.end()) {
-            throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
+            if (failIfNotExisting) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
+            }
+            return propTemplate;
         }
         propPtr = &(found->second);
-        boost::shared_ptr<Property<T> > propTemplate;
         propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
         assert(propPtr);
         if (!propTemplate) {
-            throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
+            if (failIfNotExisting) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
+            }
+            return propTemplate;
         }
-
         assert(propTemplate);
+
         return propTemplate;
     }
 
@@ -256,6 +258,7 @@ class CreateNodeArgs
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
         }
         assert(propTemplate);
+
         return propTemplate;
     }
 
@@ -264,6 +267,7 @@ class CreateNodeArgs
     {
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue);
+
         return p;
     }
 
@@ -273,6 +277,7 @@ class CreateNodeArgs
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue1);
         p->value.push_back(defaultValue2);
+
         return p;
     }
 
@@ -281,6 +286,7 @@ class CreateNodeArgs
     {
         boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value = defaultValue;
+
         return p;
     }
 
@@ -304,8 +310,6 @@ class CreateNodeArgs
         createProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
         createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
         createProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());
-
-
     }
 
 public:
@@ -323,33 +327,23 @@ public:
     template <typename T>
     void setProperty(const std::string& name, const T& value, int index = 0, bool failIfNotExisting = true)
     {
-        boost::shared_ptr<Property<T> > propTemplate;
-        try {
-            propTemplate = getProp<T>(name);
-        } catch(const std::exception& e) {
-            if (failIfNotExisting) {
-                throw;
-            }
+        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, failIfNotExisting);
+        if (!propTemplate) {
             propTemplate = createProperty<T>(name, value);
         }
         if (index >= (int)propTemplate->value.size()) {
             propTemplate->value.resize(index + 1);
         }
         propTemplate->value[index] = value;
-
     }
 
     template <typename T>
     void setPropertyN(const std::string& name, const std::vector<T>& values, bool failIfNotExisting = true)
     {
-        boost::shared_ptr<Property<T> > propTemplate;
-        try {
-            propTemplate = getProp<T>(name);
+        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, failIfNotExisting);
+        if (propTemplate) {
             propTemplate->value = values;
-        } catch(const std::exception& e) {
-            if (failIfNotExisting) {
-                throw;
-            }
+        } else {
             propTemplate = createProperty<T>(name, values);
         }
     }
@@ -364,6 +358,7 @@ public:
                 return 0;
             }
         }
+
         return found->second->getDimension();
     }
 
@@ -399,19 +394,19 @@ public:
         if (index < 0 || index >= (int)propTemplate->value.size()) {
             throw std::invalid_argument("CreateNodeArgs::getProperty(): index out of range for " + name);
         }
-        return propTemplate->value[index];
 
+        return propTemplate->value[index];
     }
 
     template<typename T>
     std::vector<T> getPropertyN(const std::string& name) const
     {
         boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
+
         return propTemplate->value;
-
     }
-private:
 
+private:
     std::map<std::string, boost::shared_ptr<PropertyBase> > _properties;
 };
 

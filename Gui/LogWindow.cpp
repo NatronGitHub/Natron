@@ -29,6 +29,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QDateTime>
+#include <QtCore/QLocale>
+#include <QDialogButtonBox>
 #include <QVBoxLayout>
 #include <QScrollBar>
 #include <QTextBrowser>
@@ -37,16 +40,17 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Image.h"
+#include "Engine/Lut.h" // floatToInt
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 
 NATRON_NAMESPACE_ENTER;
 
 LogWindow::LogWindow(QWidget* parent)
-    : QWidget(parent)
+    : QWidget(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
     setWindowTitle( tr("Error Log") );
-    
+
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -54,19 +58,21 @@ LogWindow::LogWindow(QWidget* parent)
     textBrowser->setOpenExternalLinks(true);
     mainLayout->addWidget(textBrowser);
 
-    QWidget* buttonsContainer = new QWidget(this);
-    QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
+    // we could use QDialogButtonBox::CancelButton,
+    // but that would add a QPushButton instead of a Button
+    QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::NoButton), Qt::Horizontal, this);
 
-    clearButton = new Button(tr("Clear"), buttonsContainer);
+    clearButton = new Button( tr("&Clear") );
     clearButton->setFocusPolicy(Qt::TabFocus);
-    buttonsLayout->addWidget(clearButton);
+    buttonBox->addButton(clearButton, QDialogButtonBox::ResetRole);
     QObject::connect( clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()) );
-    buttonsLayout->addStretch();
-    okButton = new Button(tr("Ok"), buttonsContainer);
+
+    okButton = new Button( tr("Cancel") );
     okButton->setFocusPolicy(Qt::TabFocus);
-    buttonsLayout->addWidget(okButton);
-    QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
-    mainLayout->addWidget(buttonsContainer);
+    buttonBox->addButton(okButton, QDialogButtonBox::RejectRole);
+    //QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
+    QObject::connect(buttonBox, SIGNAL(rejected()), this, SLOT(onOkButtonClicked()));
+    mainLayout->addWidget(buttonBox);
 }
 static void
 replaceLineBreaksWithHtmlParagraph(QString &txt)
@@ -86,14 +92,15 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
     ++next;
 
     for (std::list<LogEntry>::const_iterator it = log.begin(); it!=log.end(); ++it) {
-        int r = Image::clamp(it->color.r * 255., 0., 1.);
-        int g = Image::clamp(it->color.g * 255., 0., 1.);
-        int b = Image::clamp(it->color.b * 255., 0., 1.);
+        int r = Color::floatToInt<256>(it->color.r);
+        int g = Color::floatToInt<256>(it->color.g);
+        int b = Color::floatToInt<256>(it->color.b);
         QColor c(r,g,b);
-        content.append(QString::fromUtf8("<font color=%1><b>").arg(c.name()));
-        content.append(it->context);
-        content.append(QLatin1String(": "));
-        content.append(QString::fromUtf8("</b></font>"));
+        // only print time - QTime.toString() uses the system locale, that's not what we want
+        content.append( QString::fromUtf8("[%3] <font color=%1><b>%2</b></font>: ")
+                        .arg( c.name() )
+                        .arg(it->context)
+                       .arg( QLocale().toString( it->date.time(), QString::fromUtf8("HH:mm:ss.zzz") ) ) );
         if (it->isHtml) {
             content.append(it->message);
         } else {
@@ -102,8 +109,7 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
             content.append(m);
         }
         if (next != log.end()) {
-            content.append(QString::fromUtf8("<br />"));
-            content.append(QString::fromUtf8("<br />"));
+            content.append(QString::fromUtf8("<br /><br />"));
             ++next;
         }
     }
