@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/PyParameter.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/FloatingWidget.h"
@@ -83,7 +84,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 nodegui->serialize(&state);
                 _serializedNodes.push_back(state);
             }
-            ViewerInstancePtr viewer = (*it)->isEffectViewerInstance();
+            ViewerNodePtr viewer = (*it)->isEffectViewerNode();
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);

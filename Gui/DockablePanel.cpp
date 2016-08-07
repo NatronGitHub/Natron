@@ -406,7 +406,7 @@ DockablePanel::DockablePanel(Gui* gui,
         _imp->_tabWidget = new QTabWidget(_imp->_horizContainer);
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     } else {
-        DockablePanelTabWidget* tabWidget = new DockablePanelTabWidget(gui, this);
+        DockablePanelTabWidget* tabWidget = new DockablePanelTabWidget(this);
         _imp->_tabWidget = tabWidget;
         tabWidget->getTabBar()->setObjectName( QString::fromUtf8("DockablePanelTabWidget") );
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);

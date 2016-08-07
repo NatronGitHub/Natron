@@ -51,11 +51,6 @@
                 return ret;
             </inject-code>
         </modify-function>
-        <modify-function signature="getViewer(QString)const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
         <modify-function signature="getActiveViewer()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -118,9 +113,6 @@
                 %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
             </inject-code>
         </modify-function>
-    </object-type>
-    
-    <object-type name="PyViewer">
     </object-type>
 
     <object-type name="PyGuiApplication">

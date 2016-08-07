@@ -1669,6 +1669,25 @@ ButtonParam::~ButtonParam()
 {
 }
 
+bool
+ButtonParam::isCheckable() const
+{
+    return _buttonKnob.lock()->getIsCheckable();
+}
+
+void
+ButtonParam::setDown(bool down)
+{
+    _buttonKnob.lock()->setValue(down);
+}
+
+
+bool
+ButtonParam::isDown() const
+{
+    return _buttonKnob.lock()->getValue();
+}
+
 void
 ButtonParam::trigger()
 {

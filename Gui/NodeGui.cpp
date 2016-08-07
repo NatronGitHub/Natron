@@ -1538,7 +1538,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     NodePtr node = getNode();
     InspectorNodePtr isInspector = toInspectorNode(node);
     if (isInspector) {
-        bool isViewer = node->isEffectViewerInstance() != 0;
+        bool isViewer = node->isEffectViewerNode() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
         bool inputAsideDisplayed = false;
 
@@ -1843,7 +1843,7 @@ NodeGui::showGui()
             output->doRefreshEdgesGUI();
         }
     }
-    ViewerInstancePtr viewer = node->isEffectViewerInstance();
+    ViewerNodePtr viewer = node->isEffectViewerNode();
     if (viewer) {
         _graph->getGui()->activateViewerTab(viewer);
     } else {
@@ -1928,7 +1928,7 @@ NodeGui::hideGui()
         it->second.arrow->hide();
     }
     NodePtr node = getNode();
-    ViewerInstancePtr isViewer = node->isEffectViewerInstance();
+    ViewerNodePtr isViewer = node->isEffectViewerNode();
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (viewerGui) {
@@ -2219,7 +2219,7 @@ NodeGui::refreshRenderingIndicator()
             _inputEdges[i]->turnOffRenderingColor();
         }
     }
-    ViewerInstancePtr isViewer = toViewerInstance(effect);
+    ViewerNodePtr isViewer = toViewerNode(effect);
     if (isViewer) {
         ViewerGL* hasUI = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (hasUI) {

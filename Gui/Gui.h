@@ -326,11 +326,11 @@ public:
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
 
-    void activateViewerTab(const ViewerInstancePtr& viewer);
+    void activateViewerTab(const ViewerNodePtr& viewer);
 
-    void deactivateViewerTab(const ViewerInstancePtr& viewer);
+    void deactivateViewerTab(const ViewerNodePtr& viewer);
 
-    ViewerTab* getViewerTabForInstance(const ViewerInstancePtr& node) const;
+    ViewerTab* getViewerTabForInstance(const ViewerNodePtr& node) const;
     const NodesGuiList & getVisibleNodes() const;
     NodesGuiList getVisibleNodes_mt_safe() const;
 

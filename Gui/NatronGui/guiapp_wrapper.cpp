@@ -20,7 +20,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyAppInstance.h>
-#include <PyGuiApp.h>
 #include <PyNode.h>
 #include <PyNodeGroup.h>
 #include <PyParameter.h>
@@ -227,8 +226,8 @@ static PyObject* Sbk_GuiAppFunc_getActiveViewer(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getActiveViewer()const
-            PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getActiveViewer();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
+            Effect * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getActiveViewer();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -672,54 +671,6 @@ static PyObject* Sbk_GuiAppFunc_getUserPanel(PyObject* self, PyObject* pyArg)
     Sbk_GuiAppFunc_getUserPanel_TypeError:
         const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getUserPanel", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
-{
-    ::GuiApp* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getViewer(QString)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // getViewer(QString)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_GuiAppFunc_getViewer_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getViewer(QString)const
-            PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getViewer(cppArg0);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_GuiAppFunc_getViewer_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getViewer", overloads);
         return 0;
 }
 
@@ -1373,7 +1324,6 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"getSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_getSequenceDialog, METH_VARARGS|METH_KEYWORDS},
     {"getTabWidget", (PyCFunction)Sbk_GuiAppFunc_getTabWidget, METH_O},
     {"getUserPanel", (PyCFunction)Sbk_GuiAppFunc_getUserPanel, METH_O},
-    {"getViewer", (PyCFunction)Sbk_GuiAppFunc_getViewer, METH_O},
     {"moveTab", (PyCFunction)Sbk_GuiAppFunc_moveTab, METH_VARARGS},
     {"registerPythonPanel", (PyCFunction)Sbk_GuiAppFunc_registerPythonPanel, METH_VARARGS},
     {"renderBlocking", (PyCFunction)Sbk_GuiAppFunc_renderBlocking, METH_VARARGS|METH_KEYWORDS},

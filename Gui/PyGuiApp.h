@@ -38,31 +38,6 @@
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-class PyViewer
-{
-    NodeWPtr _node;
-    ViewerTab* _viewer;
-
-public:
-
-    PyViewer(const NodePtr& node);
-
-    ~PyViewer();
-
-
-    NodePtr getInternalNode() const
-    {
-        return _node.lock();
-    }
-
-    void seek(int frame);
-
-    int getCurrentFrame();
-    
-    void redraw();
-
-    void renderCurrentFrame(bool useCache = true);
-};
 
 class GuiApp
     : public App
@@ -113,8 +88,7 @@ public:
     void deselectNode(Effect* effect);
     void clearSelection(Group* group = 0);
 
-    PyViewer* getViewer(const QString& scriptName) const;
-    PyViewer* getActiveViewer() const;
+    Effect* getActiveViewer() const;
     PyPanel* getUserPanel(const QString& scriptName) const;
 
     void renderBlocking(Effect* writeNode, int firstFrame, int lastFrame, int frameStep = 1);

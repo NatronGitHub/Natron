@@ -661,6 +661,8 @@ struct ViewerNodePrivate
 
     void timelineGoTo(double time);
 
+    void refreshInputChoiceMenu(int internalIndex, int groupInputIndex);
+
 };
 
 EffectInstancePtr
@@ -2291,6 +2293,34 @@ ViewerNode::refreshViewsKnobVisibility()
 }
 
 void
+ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex)
+{
+    KnobChoicePtr inputChoiceKnob = internalIndex == 0 ? aInputNodeChoiceKnob.lock() : bInputNodeChoiceKnob.lock();
+
+    assert(groupInputIndex >= 0 && groupInputIndex < (int)viewerInputs.size());
+    NodePtr realNodeGroupInput = viewerInputs[groupInputIndex].node.lock();
+    int index = -1;
+    if (realNodeGroupInput) {
+        // THe group effectively has an input, find it in the menu entries of the choice
+        std::vector<std::string> entries = inputChoiceKnob->getEntries_mt_safe();
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if (entries[i] == realNodeGroupInput->getLabel()) {
+                index = i;
+                break;
+            }
+        }
+    } else {
+        // The group doesn't have any input, set the choice menu to "-"
+        index = -1;
+    }
+    if (index == -1) {
+        index = 0;
+    }
+    inputChoiceKnob->setValueFromPlugin(index, ViewSpec::current(), 0);
+
+}
+
+void
 ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
 {
 
@@ -2311,29 +2341,8 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
     NodePtr groupInput = inputNodes[groupInputIndex];
 
     // Update the input choice
-    KnobChoicePtr inputChoiceKnob = internalInputIndex == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
-    {
+    _imp->refreshInputChoiceMenu(internalInputIndex, groupInputIndex);
 
-        NodePtr realNodeGroupInput = getNode()->getInput(groupInputIndex);
-        int index = -1;
-        if (realNodeGroupInput) {
-            // THe group effectively has an input, find it in the menu entries of the choice
-            std::vector<std::string> entries = inputChoiceKnob->getEntries_mt_safe();
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                if (entries[i] == realNodeGroupInput->getLabel()) {
-                    index = i;
-                    break;
-                }
-            }
-        } else {
-            // The group doesn't have any input, set the choice menu to "-"
-            index = -1;
-        }
-        if (index == -1) {
-            index = 0;
-        }
-        inputChoiceKnob->setValueFromPlugin(index, ViewSpec::current(), 0);
-    }
 
     // Connect the node recursive upstream of the internal viewer process to the corresponding GroupInput node
     if (internalNodeToConnect == internalViewer->getNode()) {
@@ -2574,7 +2583,15 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     } else if (k == _imp->rightClickSwitchAB.lock()) {
         NodePtr internalViewer = _imp->getInternalViewerNode();
+        std::string aChoice = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+        std::string bChoice = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
         internalViewer->switchInput0And1();
+        _imp->aInputNodeChoiceKnob.lock()->blockValueChanges();
+        _imp->aInputNodeChoiceKnob.lock()->setValueFromLabel(bChoice, 0);
+        _imp->aInputNodeChoiceKnob.lock()->unblockValueChanges();
+        _imp->bInputNodeChoiceKnob.lock()->blockValueChanges();
+        _imp->bInputNodeChoiceKnob.lock()->setValueFromLabel(aChoice, 0);
+        _imp->bInputNodeChoiceKnob.lock()->unblockValueChanges();
     } else if (k == _imp->rightClickHideAll.lock()) {
         bool allHidden = _imp->rightClickHideAll.lock()->getValue();
         _imp->rightClickShowHideTopToolbar.lock()->setValue(!allHidden);

@@ -1078,6 +1078,11 @@ public:
 
     virtual ~ButtonParam();
 
+    bool isCheckable() const;
+
+    void setDown(bool down);
+
+    bool isDown() const;
 
     void trigger();
 };

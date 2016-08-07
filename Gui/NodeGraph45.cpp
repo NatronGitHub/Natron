@@ -629,10 +629,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
     getGui()->unregisterTab(this);
     setScriptName(newName);
     getGui()->registerTab(this, this);
-    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
-    if (parent) {
-        parent->onTabScriptNameChanged(this, oldName, newName);
-    }
+  
 }
 
 void

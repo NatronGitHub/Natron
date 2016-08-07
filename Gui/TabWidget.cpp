@@ -2091,42 +2091,14 @@ TabWidget::onTabBarMouseLeft()
     }
 }
 
-void
-TabWidget::onTabScriptNameChanged(PanelWidget* tab,
-                                  const std::string& oldName,
-                                  const std::string& newName)
-{
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
-
-    if (!isViewer) {
-        return;
-    }
-
-    std::string paneName = objectName_mt_safe().toStdString();
-    std::string appID = _imp->gui->getApp()->getAppIDString();
-    std::stringstream ss;
-    ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
-    ss << "    del " << appID << "." << paneName << "." << oldName << "\n";
-    ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer(\"" << newName << "\")\n";
-
-    std::string err;
-    std::string script = ss.str();
-    _imp->gui->printAutoDeclaredVariable(script);
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("TabWidget::onTabScriptNameChanged: " + err);
-    }
-}
 
 void
 TabWidgetPrivate::declareTabToPython(PanelWidget* widget,
                                      const std::string& tabName)
 {
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
     NATRON_PYTHON_NAMESPACE::PyPanel* isPanel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(widget);
 
-    if (!isViewer && !isPanel) {
+    if (!isPanel) {
         return;
     }
 
@@ -2134,11 +2106,7 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,
     std::string appID = gui->getApp()->getAppIDString();
     std::stringstream ss;
     ss << appID << "." << paneName << "." << tabName << " = " << appID << ".";
-    if (isViewer) {
-        ss << "getViewer('";
-    } else {
-        ss << "getUserPanel('";
-    }
+    ss << "getUserPanel('";
     ss << tabName << "')\n";
 
     std::string script = ss.str();
@@ -2158,10 +2126,9 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,
     if (!gui) {
         return;
     }
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
     NATRON_PYTHON_NAMESPACE::PyPanel* isPanel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(widget);
 
-    if (!isViewer && !isPanel) {
+    if (!isPanel) {
         return;
     }
 

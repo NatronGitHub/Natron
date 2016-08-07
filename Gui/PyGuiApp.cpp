@@ -485,27 +485,8 @@ GuiApp::clearSelection(Group* group)
     graph->clearSelection();
 }
 
-PyViewer*
-GuiApp::getViewer(const QString& scriptName) const
-{
-    NodePtr ptr = getInternalGuiApp()->getNodeByFullySpecifiedName( scriptName.toStdString() );
 
-    if ( !ptr || !ptr->isActivated() ) {
-        return 0;
-    }
-    ViewerNodePtr isViewerNode = ptr->isEffectViewerNode();
-    if (!isViewerNode) {
-        return 0;
-    }
-    ViewerInstancePtr viewer = isViewerNode->getInternalViewerNode();
-    if (!viewer) {
-        return 0;
-    }
-
-    return new PyViewer(ptr);
-}
-
-PyViewer*
+Effect*
 GuiApp::getActiveViewer() const
 {
     ViewerTab* tab = getInternalGuiApp()->getGui()->getActiveViewer();
@@ -517,12 +498,12 @@ GuiApp::getActiveViewer() const
     if (!instance) {
         return 0;
     }
-    NodePtr node = instance->getInternalViewerNode()->getNode();
+    NodePtr node = instance->getNode();
     if (!node) {
         return 0;
     }
 
-    return new PyViewer(node);
+    return new Effect(node);
 }
 
 PyPanel*
@@ -555,62 +536,6 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,
     renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
-PyViewer::PyViewer(const NodePtr& node)
-    : _node(node)
-{
-    ViewerInstancePtr viewer = node->isEffectViewerInstance();
-
-    assert(viewer);
-    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewer->getUiContext() );
-    _viewer = viewerGL ? viewerGL->getViewerTab() : NULL;
-    assert(_viewer);
-}
-
-PyViewer::~PyViewer()
-{
-}
-
-void
-PyViewer::seek(int frame)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->seek(frame);
-}
-
-int
-PyViewer::getCurrentFrame()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return 0;
-    }
-
-    return getInternalNode()->getApp()->getTimeLine()->currentFrame();
-}
-
-void
-PyViewer::redraw()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->redrawGLWidgets();
-}
-
-void
-PyViewer::renderCurrentFrame(bool useCache)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    if (useCache) {
-        _viewer->getInternalNode()->renderCurrentFrame(false);
-    } else {
-        _viewer->getInternalNode()->getInternalViewerNode()->forceFullComputationOnNextFrame();
-        _viewer->getInternalNode()->renderCurrentFrame(false);
-    }
-}
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

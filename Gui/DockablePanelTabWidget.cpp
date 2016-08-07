@@ -65,10 +65,8 @@ private:
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,
-                                               QWidget* parent)
+DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
     : QTabWidget(parent)
-    , _gui(gui)
 {
     setFocusPolicy(Qt::ClickFocus);
     QTabBar* tabbar = new NoWheelTabBar(this);

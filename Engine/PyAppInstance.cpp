@@ -36,6 +36,8 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -236,6 +238,12 @@ App::timelineGetRightBound() const
     return right;
 }
 
+void
+App::timelineGoTo(int frame)
+{
+    getInternalApp()->getTimeLine()->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+}
+
 AppSettings::AppSettings(const SettingsPtr& settings)
     : _settings(settings)
 {
@@ -377,6 +385,46 @@ App::renderInternal(bool forceBlocking,
         l.push_back(w);
     }
     getInternalApp()->startWritersRendering(forceBlocking, l);
+}
+
+void
+App::redrawViewer(Effect* viewerNode)
+{
+    if (!viewerNode) {
+        return;
+    }
+    NodePtr internalNode = viewerNode->getInternalNode();
+    if (!internalNode || !internalNode->isActivated()) {
+        return;
+    }
+    ViewerNodePtr viewer = internalNode->isEffectViewerNode();
+    if (!viewer) {
+        return;
+    }
+    viewer->redrawViewer();
+}
+
+void
+App::refreshViewer(Effect* viewerNode, bool useCache)
+{
+    if (!viewerNode) {
+        return;
+    }
+    NodePtr internalNode = viewerNode->getInternalNode();
+    if (!internalNode || !internalNode->isActivated()) {
+        return;
+    }
+    ViewerNodePtr viewer = internalNode->isEffectViewerNode();
+    if (!viewer) {
+        return;
+    }
+    ViewerInstancePtr instance = viewer->getInternalViewerNode();
+    if (useCache) {
+        instance->renderCurrentFrame(false);
+    } else {
+        instance->forceFullComputationOnNextFrame();
+        instance->renderCurrentFrame(false);
+    }
 }
 
 Param*

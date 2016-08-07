@@ -245,7 +245,7 @@ AddFormatDialog::onCopyFromViewer()
 
     for (std::list<ViewerInstancePtr>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
         if ( (*it)->getNode()->getLabel() == activeText.toStdString() ) {
-            ViewerTab* tab = _gui->getViewerTabForInstance(*it);
+            ViewerTab* tab = _gui->getViewerTabForInstance((*it)->getViewerNodeGroup());
             RectD f = tab->getViewer()->getRoD(0);
             Format format = tab->getViewer()->getDisplayWindow();
             _widthSpinBox->setValue( f.width() );
@@ -370,7 +370,7 @@ loadNodeGuiSerialization(Gui* gui,
         }
     }
 
-    ViewerInstancePtr viewer = nGui->getNode()->isEffectViewerInstance();
+    ViewerNodePtr viewer = nGui->getNode()->isEffectViewerNode();
     if (viewer) {
         std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
         if ( found != viewersProjections.end() ) {

@@ -273,8 +273,6 @@ public:
 
     void discardGuiPointer();
 
-    void onTabScriptNameChanged(PanelWidget* tab, const std::string& oldName, const std::string& newName);
-
 public Q_SLOTS:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/

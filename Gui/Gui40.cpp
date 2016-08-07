@@ -272,7 +272,7 @@ Gui::getViewersList_mt_safe() const
 
 
 void
-Gui::activateViewerTab(const ViewerInstancePtr& viewer)
+Gui::activateViewerTab(const ViewerNodePtr& viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
 
@@ -291,7 +291,7 @@ Gui::activateViewerTab(const ViewerInstancePtr& viewer)
 }
 
 void
-Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
+Gui::deactivateViewerTab(const ViewerNodePtr& viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
     ViewerTab* v = 0;
@@ -315,12 +315,12 @@ Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
 }
 
 ViewerTab*
-Gui::getViewerTabForInstance(const ViewerInstancePtr& node) const
+Gui::getViewerTabForInstance(const ViewerNodePtr& node) const
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        if ( (*it)->getInternalNode()->getInternalViewerNode() == node ) {
+        if ( (*it)->getInternalNode() == node ) {
             return *it;
         }
     }
