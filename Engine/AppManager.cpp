@@ -511,6 +511,7 @@ AppManager::loadInternal(const CLArgs& cl)
         qDebug() << "Could not set C locale!";
     }
     std::setlocale(LC_NUMERIC, "C"); // set the locale for LC_NUMERIC only
+    QLocale::setDefault( QLocale(QLocale::English, QLocale::UnitedStates) );
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
