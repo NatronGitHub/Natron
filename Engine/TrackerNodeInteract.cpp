@@ -531,6 +531,9 @@ TrackerNodeInteract::computeTextureCanonicalRect(const Texture& tex,
                                                  RectD* rect) const
 {
     ///Preserve width
+    if (tex.h() == 0 || tex.w() == 0) {
+        return;
+    }
     double par = tex.w() / (double)tex.h();
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
 

@@ -6359,7 +6359,9 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
        }*/
 
     ///Kill the effect
-    _imp->effect->clearPluginMemoryChunks();
+    if (_imp->effect) {
+        _imp->effect->clearPluginMemoryChunks();
+    }
     _imp->effect.reset();
 
     ///If inside the group, remove it from the group
