@@ -3047,13 +3047,13 @@ RenderEngine::onCurrentFrameRenderRequestPosted()
             rSet = true;
         } else {
             if ( (queueBegin.enableAbort == r.enableAbort) && (queueBegin.enableStats == r.enableStats) ) {
-                _imp->refreshQueue.erase( _imp->refreshQueue.begin() );
+                _imp->refreshQueue.pop_front();
                 continue;
             }
         }
         r = queueBegin;
         renderCurrentFrameInternal(r.enableStats, r.enableAbort);
-        _imp->refreshQueue.erase( _imp->refreshQueue.begin() );
+        _imp->refreshQueue.pop_front();
     }
 }
 
