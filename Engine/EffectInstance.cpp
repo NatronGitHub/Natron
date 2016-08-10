@@ -152,30 +152,17 @@ EffectInstance::unlock(const ImagePtr & entry)
 void
 EffectInstance::clearPluginMemoryChunks()
 {
+    // This will remove the mem from the pluginMemoryChunks list
     PluginMemoryPtr mem;
-    {
-        QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-        if ( !_imp->pluginMemoryChunks.empty() ) {
-            mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-            while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
-                _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
-                mem.reset();
-                if ( !_imp->pluginMemoryChunks.empty() ) {
-                    mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-                }
-            }
-        }
-    }
-
-    while (mem) {
-        // This will remove the mem from the pluginMemoryChunks list
+    do {
         mem.reset();
         {
             QMutexLocker l(&_imp->pluginMemoryChunksMutex);
             if ( !_imp->pluginMemoryChunks.empty() ) {
                 mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+#pragma message WARN("BUG: if mem is not NULL, it is never removed from the list and this goes into an infinite loop!!! should the following condition (!mem) be reversed?")
                 while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
-                    _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
+                    _imp->pluginMemoryChunks.pop_front();
                     mem.reset();
                     if ( !_imp->pluginMemoryChunks.empty() ) {
                         mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
@@ -183,7 +170,7 @@ EffectInstance::clearPluginMemoryChunks()
                 }
             }
         }
-    }
+    } while (mem);
 }
 
 #ifdef DEBUG
