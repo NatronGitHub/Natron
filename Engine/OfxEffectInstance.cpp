@@ -238,8 +238,8 @@ struct OfxEffectInstancePrivate
        case
      */
     bool overlaysCanHandleRenderScale;
-    bool supportsMultipleClipsPar;
-    bool supportsMultipleClipsBitdepth;
+    bool supportsMultipleClipPARs;
+    bool supportsMultipleClipDepths;
     bool doesTemporalAccess;
     bool multiplanar;
 
@@ -267,8 +267,8 @@ struct OfxEffectInstancePrivate
         , created(false)
         , initialized(false)
         , overlaysCanHandleRenderScale(true)
-        , supportsMultipleClipsPar(false)
-        , supportsMultipleClipsBitdepth(false)
+        , supportsMultipleClipPARs(false)
+        , supportsMultipleClipDepths(false)
         , doesTemporalAccess(false)
         , multiplanar(false)
     {
@@ -294,8 +294,8 @@ struct OfxEffectInstancePrivate
         , created(other.created)
         , initialized(other.initialized)
         , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
-        , supportsMultipleClipsPar(other.supportsMultipleClipsPar)
-        , supportsMultipleClipsBitdepth(other.supportsMultipleClipsBitdepth)
+        , supportsMultipleClipPARs(other.supportsMultipleClipPARs)
+        , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
         , doesTemporalAccess(other.doesTemporalAccess)
         , multiplanar(other.multiplanar)
     {
@@ -412,8 +412,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
 
         getNode()->refreshAcceptedBitDepths();
-        _imp->supportsMultipleClipsPar = _imp->effect->supportsMultipleClipPARs();
-        _imp->supportsMultipleClipsBitdepth = _imp->effect->supportsMultipleClipDepths();
+        _imp->supportsMultipleClipPARs = _imp->effect->supportsMultipleClipPARs();
+        _imp->supportsMultipleClipDepths = _imp->effect->supportsMultipleClipDepths();
         _imp->doesTemporalAccess = _imp->effect->temporalAccess();
         _imp->multiplanar = _imp->effect->isMultiPlanar();
         int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
@@ -2097,15 +2097,15 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 } // render
 
 bool
-OfxEffectInstance::supportsMultipleClipsPAR() const
+OfxEffectInstance::supportsMultipleClipPARs() const
 {
-    return _imp->supportsMultipleClipsPar;
+    return _imp->supportsMultipleClipPARs;
 }
 
 bool
-OfxEffectInstance::supportsMultipleClipsBitDepth() const
+OfxEffectInstance::supportsMultipleClipDepths() const
 {
-    return _imp->supportsMultipleClipsBitdepth;
+    return _imp->supportsMultipleClipDepths;
 }
 
 RenderSafetyEnum

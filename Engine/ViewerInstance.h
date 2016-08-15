@@ -89,12 +89,12 @@ public:
     ///Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
 
-    virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL
+    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL
     {
         return true;
     }
 
-    virtual bool supportsMultipleClipsFPS() const OVERRIDE FINAL
+    virtual bool supportsMultipleClipFPSs() const OVERRIDE FINAL
     {
         return true;
     }
@@ -256,7 +256,7 @@ public:
     bool isFullFrameProcessingEnabled() const;
 
 
-    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
