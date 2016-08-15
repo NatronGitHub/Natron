@@ -5336,7 +5336,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         return eStatusFailed;
     }
 
-    const bool multiBitDepth = supportsMultipleClipsBitDepth();
+    const bool multiBitDepth = supportsMultipleClipDepths();
     int nInputs = getMaxInputCount();
     metadata.clearAndResize(nInputs);
 
@@ -5424,7 +5424,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // now find the best depth that the plugin supports
     deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
 
-    bool multipleClipsPAR = supportsMultipleClipsPAR();
+    bool multipleClipsPAR = supportsMultipleClipPARs();
     double projectPAR;
     {
         Format f;
@@ -5739,9 +5739,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
                                  "a result of this process, the quality of the images is degraded. The following conversions are done:");
     bitDepthWarning.append( QChar::fromLatin1('\n') );
     bool setBitDepthWarning = false;
-    const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
-    const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
-    const bool supportsMultipleFPS = _publicInterface->supportsMultipleClipsFPS();
+    const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
+    const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
+    const bool supportsMultipleClipFPSs = _publicInterface->supportsMultipleClipFPSs();
     std::vector<EffectInstPtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = _publicInterface->getInput(i);
@@ -5759,7 +5759,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
     for (int i = 0; i < nInputs; ++i) {
         //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
-        if ( !supportsMultipleDepth && (md.getBitDepth(i) != outputDepth) ) {
+        if ( !supportsMultipleClipDepths && (md.getBitDepth(i) != outputDepth) ) {
             md.setBitDepth(i, outputDepth);
         }
 
@@ -5770,7 +5770,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         const double pixelAspect = md.getPixelAspectRatio(i);
         const double fps = inputs[i]->getFrameRate();
 
-        if (!supportsMultiplePARS) {
+        if (!supportsMultipleClipPARs) {
             if (!inputParSet) {
                 inputPar = pixelAspect;
                 inputParSet = true;
@@ -5780,7 +5780,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
 
-        if (!supportsMultipleFPS) {
+        if (!supportsMultipleClipFPSs) {
             if (!outputFrameRateSet) {
                 outputFrameRate = fps;
                 outputFrameRateSet = true;
@@ -5805,7 +5805,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         }
 
 
-        if ( !supportsMultiplePARS && (pixelAspect != outputPAR) ) {
+        if ( !supportsMultipleClipPARs && (pixelAspect != outputPAR) ) {
             qDebug() << node->getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getNode()->getScriptName_mt_safe().c_str()
                      << ") has a pixel aspect ratio (" << md.getPixelAspectRatio(i)
                      << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "

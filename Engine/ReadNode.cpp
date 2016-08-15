@@ -868,10 +868,10 @@ ReadNode::supportsMultiResolution() const
 }
 
 bool
-ReadNode::supportsMultipleClipsBitDepth() const
+ReadNode::supportsMultipleClipDepths() const
 {
     NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->supportsMultipleClipsBitDepth() : EffectInstance::supportsMultipleClipsBitDepth();
+    return p ? p->getEffectInstance()->supportsMultipleClipDepths() : EffectInstance::supportsMultipleClipDepths();
 }
 
 RenderSafetyEnum
