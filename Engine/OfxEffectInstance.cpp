@@ -2702,7 +2702,10 @@ OfxEffectInstance::supportsTiles() const
     if (!effectInstance()) {
         return false;
     }
-    if ( !effectInstance()->getDescriptor().supportsTiles() || !effectInstance()->supportsTiles() ) {
+    // This is a dynamic property since OFX 1.4, so get the prop from the instance, not the descriptor.
+    // The descriptor may have it set to false for backward compatibility with hosts that do not support
+    // this dynamic property.
+    if ( !effectInstance()->supportsTiles() ) {
         return false;
     }
 
