@@ -3225,16 +3225,16 @@ Node::makeInfoForInput(int inputNumber) const
     double time = getApp()->getTimeLine()->currentFrame();
     std::stringstream ss;
     { // input name
-        std::string inputName;
+        QString inputName;
         if (inputNumber != -1) {
-            inputName = getInputLabel(inputNumber);
+            inputName = QString::fromUtf8( getInputLabel(inputNumber).c_str() );
         } else {
-            inputName = "Output";
+            inputName = tr("Output");
         }
-        ss << "<b><font color=\"orange\">" << inputName << ":" << "</font></b><br />";
+        ss << "<b><font color=\"orange\">" << tr("%1:").arg(inputName).toStdString() << "</font></b><br />";
     }
     { // image format
-        ss << "<b>Image planes: </b><font color=#c8c8c8>";
+        ss << "<b>" << tr("Image planes:").toStdString() << "</b> <font color=#c8c8c8>";
         EffectInstance::ComponentsAvailableMap availableComps;
         input->getComponentsAvailable(true, true, time, &availableComps);
         EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
@@ -3247,7 +3247,7 @@ Node::makeInfoForInput(int inputNumber) const
                 if (origin) {
                     ss << Image::getFormatString(it->first, depth);
                     if (inputNumber != -1) {
-                        ss << " (from " << origin->getLabel_mt_safe() << ")";
+                        ss << " " << tr("(from %1)").arg( QString::fromUtf8( origin->getLabel_mt_safe().c_str() ) ).toStdString();
                     }
                 }
             }
@@ -3264,32 +3264,32 @@ Node::makeInfoForInput(int inputNumber) const
     }
     { // premult
         ImagePremultiplicationEnum premult = input->getPremult();
-        const char* premultStr = "unknown";
+        QString premultStr = tr("unknown");
         switch (premult) {
         case eImagePremultiplicationOpaque:
-            premultStr = "opaque";
+            premultStr = tr("opaque");
             break;
         case eImagePremultiplicationPremultiplied:
-            premultStr = "premultiplied";
+            premultStr = tr("premultiplied");
             break;
         case eImagePremultiplicationUnPremultiplied:
-            premultStr = "unpremultiplied";
+            premultStr = tr("unpremultiplied");
             break;
         }
-        ss << "<b>Alpha premultiplication: </b><font color=#c8c8c8>" << premultStr << "</font><br />";
+        ss << "<b>" << tr("Alpha premultiplication:").toStdString() << "</b> <font color=#c8c8c8>" << premultStr.toStdString() << "</font><br />";
     }
     { // par
         double par = input->getAspectRatio(-1);
-        ss << "<b>Pixel aspect ratio: </b><font color=#c8c8c8>" << par << "</font><br />";
+        ss << "<b>" << tr("Pixel aspect ratio:").toStdString() << "</b> <font color=#c8c8c8>" << par << "</font><br />";
     }
     { // fps
         double fps = input->getFrameRate();
-        ss << "<b>Frame rate:</b> <font color=#c8c8c8>" << fps << "fps</font><br />";
+        ss << "<b>" << tr("Frame rate:").toStdString() << "</b> <font color=#c8c8c8>" << tr("%1fps").arg(fps).toStdString() << "</font><br />";
     }
     {
         double first = 1., last = 1.;
         input->getFrameRange_public(getHashValue(), &first, &last);
-        ss << "<b>Frame range:</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
+        ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
         RenderScale scale(1.);
@@ -3299,8 +3299,8 @@ Node::makeInfoForInput(int inputNumber) const
                                                               time,
                                                               scale, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
-            ss << "<b>Region of Definition (at t=" << time << "):</b> <font color=#c8c8c8>";
-            ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "</font><br />";
+            ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
+            ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
         }
     }
 
@@ -5347,7 +5347,7 @@ Node::canConnectInput(const NodePtr& input,
         for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
             NodePtr node = it->lock();
             if (node) {
-                if ( !_imp->effect->supportsMultipleClipsPAR() ) {
+                if ( !_imp->effect->supportsMultipleClipPARs() ) {
                     if (node->getEffectInstance()->getAspectRatio(-1) != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
@@ -8718,8 +8718,8 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
         refreshCreatedViews(what);
     } else if ( what == _imp->refreshInfoButton.lock() ) {
-        int maxinputs = getMaxInputCount();
         std::stringstream ssinfo;
+        int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputInfo = makeInfoForInput(i);
             if ( !inputInfo.empty() ) {
@@ -8730,17 +8730,61 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         ssinfo << outputInfo << "<br />";
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo << "<br />";
-        ssinfo << "<b>OpenGL Rendering Support:</b>: <font color=#c8c8c8>";
+        ssinfo << "<b>" << tr("Supports tiles:").toStdString() << "</b> <font color=#c8c8c8>";
+        ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        if (_imp->effect) {
+            ssinfo << "<b>" << tr("Supports multiresolution:").toStdString() << "</b> <font color=#c8c8c8>";
+            ssinfo << ( _imp->effect->supportsMultiResolution() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+            ssinfo << "<b>" << tr("Supports renderscale:").toStdString() << "</b> <font color=#c8c8c8>";
+            switch ( _imp->effect->supportsRenderScaleMaybe() ) {
+                case EffectInstance::eSupportsMaybe:
+                    ssinfo << tr("Maybe").toStdString();
+                    break;
+
+                case EffectInstance::eSupportsNo:
+                    ssinfo << tr("No").toStdString();
+                    break;
+
+                case EffectInstance::eSupportsYes:
+                    ssinfo << tr("Yes").toStdString();
+                    break;
+            }
+            ssinfo << "</font><br />";
+            ssinfo << "<b>" << tr("Supports multiple clip PARs:").toStdString() << "</b> <font color=#c8c8c8>";
+            ssinfo << ( _imp->effect->supportsMultipleClipPARs() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+            ssinfo << "<b>" << tr("Supports multiple clip depths:").toStdString() << "</b> <font color=#c8c8c8>";
+            ssinfo << ( _imp->effect->supportsMultipleClipDepths() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        }
+        ssinfo << "<b>" << tr("Render thread safety:").toStdString() << "</b> <font color=#c8c8c8>";
+        switch ( getCurrentRenderThreadSafety() ) {
+            case eRenderSafetyUnsafe:
+                ssinfo << tr("Unsafe").toStdString();
+                break;
+
+            case eRenderSafetyInstanceSafe:
+                ssinfo << tr("Safe").toStdString();
+                break;
+
+            case eRenderSafetyFullySafe:
+                ssinfo << tr("Fully safe").toStdString();
+                break;
+
+            case eRenderSafetyFullySafeFrame:
+                ssinfo << tr("Fully safe frame").toStdString();
+                break;
+        }
+        ssinfo << "</font><br />";
+        ssinfo << "<b>" << tr("OpenGL Rendering Support:").toStdString() << "</b>: <font color=#c8c8c8>";
         PluginOpenGLRenderSupport glSupport = getCurrentOpenGLRenderSupport();
         switch (glSupport) {
             case ePluginOpenGLRenderSupportNone:
-                ssinfo << "No";
+                ssinfo << tr("No").toStdString();
                 break;
             case ePluginOpenGLRenderSupportNeeded:
-                ssinfo << "Yes but CPU rendering is not supported";
+                ssinfo << tr("Yes but CPU rendering is not supported").toStdString();
                 break;
             case ePluginOpenGLRenderSupportYes:
-                ssinfo << "Yes";
+                ssinfo << tr("Yes").toStdString();
                 break;
             default:
                 break;
