@@ -44,7 +44,14 @@ public:
 
     ~TextRenderer();
 
-    void renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const;
+    void renderText(float x,
+                    float y,
+                    float scalex,
+                    float scaley,
+                    const QString &text,
+                    const QColor &color,
+                    const QFont &font,
+                    int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
 private:
     struct Implementation;

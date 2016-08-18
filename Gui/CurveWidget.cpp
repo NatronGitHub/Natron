@@ -583,12 +583,13 @@ CurveWidget::renderText(double x,
                         const std::string &string,
                         double r,
                         double g,
-                        double b)
+                        double b,
+                        int flags)
 {
     QColor c;
 
     c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
-    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font() );
+    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font(), flags );
 
     return true;
 }
@@ -598,7 +599,8 @@ CurveWidget::renderText(double x,
                         double y,
                         const QString & text,
                         const QColor & color,
-                        const QFont & font) const
+                        const QFont & font,
+                        int flags) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

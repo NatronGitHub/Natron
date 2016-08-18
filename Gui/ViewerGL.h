@@ -287,10 +287,21 @@ public:
 
 public:
 
-    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) OVERRIDE FINAL;
+    virtual bool renderText(double x,
+                            double y,
+                            const std::string &string,
+                            double r,
+                            double g,
+                            double b,
+                            int flags = 0) OVERRIDE FINAL; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
 
-    void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
+    void renderText(double x,
+                    double y,
+                    const QString &string,
+                    const QColor & color,
+                    const QFont & font,
+                    int flags = 0); //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 

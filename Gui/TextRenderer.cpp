@@ -265,7 +265,8 @@ TextRenderer::renderText(float x,
                          float scaley,
                          const QString &text,
                          const QColor &color,
-                         const QFont &font) const
+                         const QFont &font,
+                         int flags) const
 {
     glCheckError(GL_GPU);
     boost::shared_ptr<TextRendererPrivate> p;
@@ -277,6 +278,29 @@ TextRenderer::renderText(float x,
         _imp->renderers[font] = p;
     }
     assert(p);
+
+    if (flags & Qt::AlignHCenter || flags & Qt::AlignRight) {
+        int width = 0;
+        for (int i = 0; i < text.length(); ++i) {
+            width += p->_fontMetrics.width(text[i]);
+        }
+        if (flags & Qt::AlignHCenter) {
+            x -= width/2. * scalex;
+        }
+        if (flags & Qt::AlignRight) {
+            x -= width * scalex;
+        }
+    }
+
+    if (flags & Qt::AlignVCenter || flags & Qt::AlignBottom) {
+        int height = p->_fontMetrics.height();
+        if (flags & Qt::AlignVCenter) {
+            y += height/2. * scaley;
+        }
+        if (flags & Qt::AlignTop) {
+            y += height * scaley;
+        }
+    }
 
     GLuint savedTexture;
     GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
