@@ -114,7 +114,7 @@ struct ScaleSliderQWidgetPrivate
         , lineColor(Qt::black)
         , allowDraftModeSetting(allowDraftModeSetting)
     {
-        font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12 );
+        font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_10) / NATRON_FONT_SIZE_12 );
         assert( boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos) );
     }
 };
@@ -485,8 +485,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
     double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0, height() - 1 - fontM.height() ).y();
     double tickTop = _imp->zoomCtx.toZoomCoordinates( 0, height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) ).y();
-    const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
-    const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
+    const double smallestTickSizePixel = std::min(60., width()/3.); // tick size (in pixels) for alpha = 0.
+    const double largestTickSizePixel = 120.; // tick size (in pixels) for alpha = 1.
     const double rangePixel =  width();
     const double range_min = btmLeft.x();
     const double range_max =  topRight.x();
@@ -542,6 +542,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
+                alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
                 QColor c = _imp->readOnly || !isEnabled() ? Qt::black : textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(_imp->font);
@@ -549,11 +550,20 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
                 QPointF textPos = _imp->zoomCtx.toWidgetCoordinates( value, btmLeft.y() );
 
-                p.drawText(textPos, s);
+                int textWidth = fontM.width(s);
+                int textX = std::floor(textPos.x() + 0.5);
+                int textY = std::floor(textPos.y() + 0.5);
+                // center the text, and make sure it fits
+                textX = std::min(std::max(0, textX - textWidth / 2), width() - textWidth);
+                //p.drawText(textPos, s);
+                p.drawText(textX, textY, s);
+                //p.drawText(textPos.x()-1000, textPos.y(), 2*1000, 1000, Qt::AlignHCenter|Qt::AlignTop, s);
+                //p.drawText(textPos.x(), textPos.y(), 2*20, 20, Qt::TextDontClip|Qt::AlignLeft|Qt::AlignTop, s);
             }
         }
     }
     double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value, 0).x();
+#ifdef SLIDER_RECTANGLE
     QPointF sliderBottomLeft(positionValue - TO_DPIX(SLIDER_WIDTH) / 2, height() - 1 - fontM.height() / 2);
     QPointF sliderTopRight( positionValue + TO_DPIX(SLIDER_WIDTH) / 2, height() - 1 - fontM.height() / 2 - TO_DPIY(SLIDER_HEIGHT) );
 
@@ -579,6 +589,28 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     p.drawLine( sliderBottomLeft.x(), sliderTopRight.y(), sliderTopRight.x(), sliderTopRight.y() );
     p.drawLine( sliderTopRight.x(), sliderTopRight.y(), sliderTopRight.x(), sliderBottomLeft.y() );
     p.drawLine( sliderTopRight.x(), sliderBottomLeft.y(), sliderBottomLeft.x(), sliderBottomLeft.y() );
+#else
+    QPainter::RenderHints rh = p.renderHints();
+    p.setRenderHints(QPainter::Antialiasing);
+   /*draw the slider*/
+    p.setBrush(QBrush(_imp->sliderColor));
+    /*draw a black rect around the slider for contrast or orange when focused*/
+    if ( !hasFocus() ) {
+        p.setPen(Qt::black);
+    } else {
+        QPen pen = p.pen();
+        pen.setColor( QColor(243, 137, 0) ); // alpha could be set too, if required
+        //QVector<qreal> dashStyle;
+        //qreal space = 2;
+        //dashStyle << 1 << space;
+        //pen.setDashPattern(dashStyle);
+        //p.setOpacity(0.8); // also sets opacity of the brush/fill!
+        p.setPen(pen);
+    }
+    // the magic 2.8 factor is here so that the full antialiased circle is not clipped
+    p.drawEllipse(QPointF(positionValue, lineYpos), TO_DPIX(SLIDER_HEIGHT/2.8), TO_DPIX(SLIDER_HEIGHT/2.8));
+    p.setRenderHints(rh);
+#endif
 } // paintEvent
 
 void
