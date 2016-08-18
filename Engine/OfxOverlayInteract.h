@@ -34,7 +34,6 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/EngineFwd.h"
-#include "Engine/OverlaySupport.h"
 
 NATRON_NAMESPACE_ENTER;
 

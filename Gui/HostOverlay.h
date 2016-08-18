@@ -36,7 +36,6 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
-#include "Engine/HostOverlaySupport.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;

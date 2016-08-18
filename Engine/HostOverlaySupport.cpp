@@ -156,7 +156,7 @@ HostOverlayKnobs::checkHostOverlayValid()
 }
 
 void
-TransformOverlayKnobs::describeOverlayKnobs()
+HostOverlayKnobsTransform::describeOverlayKnobs()
 {
     describeKnob(eKnobsEnumerationTranslate, KnobDouble::typeNameStatic(), 2);
     describeKnob(eKnobsEnumerationScale, KnobDouble::typeNameStatic(), 2);
@@ -171,7 +171,7 @@ TransformOverlayKnobs::describeOverlayKnobs()
 }
 
 void
-CornerPinOverlayKnobs::describeOverlayKnobs()
+HostOverlayKnobsCornerPin::describeOverlayKnobs()
 {
     describeKnob(eKnobsEnumerationFrom1, KnobDouble::typeNameStatic(), 2);
     describeKnob(eKnobsEnumerationFrom2, KnobDouble::typeNameStatic(), 2);
@@ -191,7 +191,7 @@ CornerPinOverlayKnobs::describeOverlayKnobs()
 }
 
 void
-PositionOverlayKnobs::describeOverlayKnobs()
+HostOverlayKnobsPosition::describeOverlayKnobs()
 {
     describeKnob(eKnobsEnumerationPosition, KnobDouble::typeNameStatic(), 2);
     describeKnob(eKnobsEnumerationInteractive, KnobBool::typeNameStatic(), 1, true);
