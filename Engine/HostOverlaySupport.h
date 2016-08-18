@@ -86,7 +86,7 @@ private:
     boost::scoped_ptr<HostOverlayKnobsPrivate> _imp;
 };
 
-class TransformOverlayKnobs
+class HostOverlayKnobsTransform
     : public HostOverlayKnobs
 {
 public:
@@ -105,17 +105,17 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    TransformOverlayKnobs()
+    HostOverlayKnobsTransform()
         : HostOverlayKnobs() {}
 
-    virtual ~TransformOverlayKnobs() {}
+    virtual ~HostOverlayKnobsTransform() {}
 
 private:
 
     virtual void describeOverlayKnobs() OVERRIDE FINAL;
 };
 
-class CornerPinOverlayKnobs
+class HostOverlayKnobsCornerPin
     : public HostOverlayKnobs
 {
 public:
@@ -139,10 +139,10 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    CornerPinOverlayKnobs()
+    HostOverlayKnobsCornerPin()
         : HostOverlayKnobs() {}
 
-    virtual ~CornerPinOverlayKnobs() {}
+    virtual ~HostOverlayKnobsCornerPin() {}
 
 private:
 
@@ -150,7 +150,7 @@ private:
 };
 
 
-class PositionOverlayKnobs
+class HostOverlayKnobsPosition
     : public HostOverlayKnobs
 {
 public:
@@ -161,10 +161,10 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    PositionOverlayKnobs()
+    HostOverlayKnobsPosition()
         : HostOverlayKnobs() {}
 
-    virtual ~PositionOverlayKnobs() {}
+    virtual ~HostOverlayKnobsPosition() {}
 
 private:
 

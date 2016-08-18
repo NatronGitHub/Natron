@@ -8229,10 +8229,10 @@ Node::addPositionInteract(const KnobDoublePtr& position,
         return;
     }
 
-    boost::shared_ptr<PositionOverlayKnobs> knobs( new PositionOverlayKnobs() );
-    knobs->addKnob(position, PositionOverlayKnobs::eKnobsEnumerationPosition);
+    boost::shared_ptr<HostOverlayKnobsPosition> knobs( new HostOverlayKnobsPosition() );
+    knobs->addKnob(position, HostOverlayKnobsPosition::eKnobsEnumerationPosition);
     if (interactive) {
-        knobs->addKnob(interactive, PositionOverlayKnobs::eKnobsEnumerationInteractive);
+        knobs->addKnob(interactive, HostOverlayKnobsPosition::eKnobsEnumerationInteractive);
     }
     NodeGuiIPtr nodeGui = getNodeGui();
     if (!nodeGui) {
@@ -8259,20 +8259,20 @@ Node::addTransformInteract(const KnobDoublePtr& translate,
         return;
     }
 
-    boost::shared_ptr<TransformOverlayKnobs> knobs( new TransformOverlayKnobs() );
-    knobs->addKnob(translate, TransformOverlayKnobs::eKnobsEnumerationTranslate);
-    knobs->addKnob(scale, TransformOverlayKnobs::eKnobsEnumerationScale);
-    knobs->addKnob(scaleUniform, TransformOverlayKnobs::eKnobsEnumerationUniform);
-    knobs->addKnob(rotate, TransformOverlayKnobs::eKnobsEnumerationRotate);
-    knobs->addKnob(center, TransformOverlayKnobs::eKnobsEnumerationCenter);
-    knobs->addKnob(skewX, TransformOverlayKnobs::eKnobsEnumerationSkewx);
-    knobs->addKnob(skewY, TransformOverlayKnobs::eKnobsEnumerationSkewy);
-    knobs->addKnob(skewOrder, TransformOverlayKnobs::eKnobsEnumerationSkewOrder);
+    boost::shared_ptr<HostOverlayKnobsTransform> knobs( new HostOverlayKnobsTransform() );
+    knobs->addKnob(translate, HostOverlayKnobsTransform::eKnobsEnumerationTranslate);
+    knobs->addKnob(scale, HostOverlayKnobsTransform::eKnobsEnumerationScale);
+    knobs->addKnob(scaleUniform, HostOverlayKnobsTransform::eKnobsEnumerationUniform);
+    knobs->addKnob(rotate, HostOverlayKnobsTransform::eKnobsEnumerationRotate);
+    knobs->addKnob(center, HostOverlayKnobsTransform::eKnobsEnumerationCenter);
+    knobs->addKnob(skewX, HostOverlayKnobsTransform::eKnobsEnumerationSkewx);
+    knobs->addKnob(skewY, HostOverlayKnobsTransform::eKnobsEnumerationSkewy);
+    knobs->addKnob(skewOrder, HostOverlayKnobsTransform::eKnobsEnumerationSkewOrder);
     if (invert) {
-        knobs->addKnob(invert, TransformOverlayKnobs::eKnobsEnumerationInvert);
+        knobs->addKnob(invert, HostOverlayKnobsTransform::eKnobsEnumerationInvert);
     }
     if (interactive) {
-        knobs->addKnob(interactive, TransformOverlayKnobs::eKnobsEnumerationInteractive);
+        knobs->addKnob(interactive, HostOverlayKnobsTransform::eKnobsEnumerationInteractive);
     }
     NodeGuiIPtr nodeGui = getNodeGui();
     if (!nodeGui) {
@@ -8303,29 +8303,29 @@ Node::addCornerPinInteract(const KnobDoublePtr& from1,
     if ( appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<CornerPinOverlayKnobs> knobs( new CornerPinOverlayKnobs() );
-    knobs->addKnob(from1, CornerPinOverlayKnobs::eKnobsEnumerationFrom1);
-    knobs->addKnob(from2, CornerPinOverlayKnobs::eKnobsEnumerationFrom2);
-    knobs->addKnob(from3, CornerPinOverlayKnobs::eKnobsEnumerationFrom3);
-    knobs->addKnob(from4, CornerPinOverlayKnobs::eKnobsEnumerationFrom4);
+    boost::shared_ptr<HostOverlayKnobsCornerPin> knobs( new HostOverlayKnobsCornerPin() );
+    knobs->addKnob(from1, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom1);
+    knobs->addKnob(from2, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom2);
+    knobs->addKnob(from3, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom3);
+    knobs->addKnob(from4, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom4);
 
-    knobs->addKnob(to1, CornerPinOverlayKnobs::eKnobsEnumerationTo1);
-    knobs->addKnob(to2, CornerPinOverlayKnobs::eKnobsEnumerationTo2);
-    knobs->addKnob(to3, CornerPinOverlayKnobs::eKnobsEnumerationTo3);
-    knobs->addKnob(to4, CornerPinOverlayKnobs::eKnobsEnumerationTo4);
+    knobs->addKnob(to1, HostOverlayKnobsCornerPin::eKnobsEnumerationTo1);
+    knobs->addKnob(to2, HostOverlayKnobsCornerPin::eKnobsEnumerationTo2);
+    knobs->addKnob(to3, HostOverlayKnobsCornerPin::eKnobsEnumerationTo3);
+    knobs->addKnob(to4, HostOverlayKnobsCornerPin::eKnobsEnumerationTo4);
 
-    knobs->addKnob(enable1, CornerPinOverlayKnobs::eKnobsEnumerationEnable1);
-    knobs->addKnob(enable2, CornerPinOverlayKnobs::eKnobsEnumerationEnable2);
-    knobs->addKnob(enable3, CornerPinOverlayKnobs::eKnobsEnumerationEnable3);
-    knobs->addKnob(enable4, CornerPinOverlayKnobs::eKnobsEnumerationEnable4);
+    knobs->addKnob(enable1, HostOverlayKnobsCornerPin::eKnobsEnumerationEnable1);
+    knobs->addKnob(enable2, HostOverlayKnobsCornerPin::eKnobsEnumerationEnable2);
+    knobs->addKnob(enable3, HostOverlayKnobsCornerPin::eKnobsEnumerationEnable3);
+    knobs->addKnob(enable4, HostOverlayKnobsCornerPin::eKnobsEnumerationEnable4);
 
-    knobs->addKnob(overlayPoints, CornerPinOverlayKnobs::eKnobsEnumerationOverlayPoints);
+    knobs->addKnob(overlayPoints, HostOverlayKnobsCornerPin::eKnobsEnumerationOverlayPoints);
 
     if (invert) {
-        knobs->addKnob(invert, CornerPinOverlayKnobs::eKnobsEnumerationInvert);
+        knobs->addKnob(invert, HostOverlayKnobsCornerPin::eKnobsEnumerationInvert);
     }
     if (interactive) {
-        knobs->addKnob(interactive, CornerPinOverlayKnobs::eKnobsEnumerationInteractive);
+        knobs->addKnob(interactive, HostOverlayKnobsCornerPin::eKnobsEnumerationInteractive);
     }
     NodeGuiIPtr nodeGui = getNodeGui();
     if (!nodeGui) {
