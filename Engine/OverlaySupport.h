@@ -157,7 +157,8 @@ public:
                             const std::string &string,
                             double r,
                             double g,
-                            double b)
+                            double b,
+                            int flags = 0) //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
     {
         Q_UNUSED(x);
         Q_UNUSED(y);
@@ -165,6 +166,7 @@ public:
         Q_UNUSED(r);
         Q_UNUSED(g);
         Q_UNUSED(b);
+        Q_UNUSED(flags);
 
         return false;
     }

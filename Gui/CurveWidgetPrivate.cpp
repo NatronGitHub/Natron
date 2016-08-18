@@ -443,8 +443,8 @@ CurveWidgetPrivate::drawScale()
     }
 
     QFontMetrics fontM(*_font);
-    const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
-    const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
+    const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
+    const double largestTickSizePixel = 500.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
     boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
     sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
@@ -514,12 +514,13 @@ CurveWidgetPrivate::drawScale()
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
+                        alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
                         QColor c = scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
-                            _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
+                            _widget->renderText(value, btmLeft.y(), s, c, *_font, Qt::AlignHCenter); // AXIS-SPECIFIC
                         } else {
-                            _widget->renderText(btmLeft.x(), value, s, c, *_font); // AXIS-SPECIFIC
+                            _widget->renderText(btmLeft.x(), value, s, c, *_font, Qt::AlignVCenter); // AXIS-SPECIFIC
                         }
                     }
                 }

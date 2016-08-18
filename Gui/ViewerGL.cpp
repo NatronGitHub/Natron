@@ -3306,12 +3306,13 @@ ViewerGL::renderText(double x,
                      const std::string &string,
                      double r,
                      double g,
-                     double b)
+                     double b,
+                     int flags)
 {
     QColor c;
 
     c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
-    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font() );
+    renderText(x, y, QString::fromUtf8( string.c_str() ), c, font(), flags);
 
     return true;
 }
@@ -3321,7 +3322,8 @@ ViewerGL::renderText(double x,
                      double y,
                      const QString &text,
                      const QColor &color,
-                     const QFont &font)
+                     const QFont &font,
+                     int flags)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3348,7 +3350,7 @@ ViewerGL::renderText(double x,
     }
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
 

@@ -461,8 +461,8 @@ TimeLineGui::paintGL()
 
         double tickBottom = toTimeLineCoordinates( 0, height() - 1 - fontM.height() ).y();
         double tickTop = toTimeLineCoordinates( 0, height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) ).y();
-        const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
-        const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
+        const double smallestTickSizePixel = 30.; // tick size (in pixels) for alpha = 0.
+        const double largestTickSizePixel = 200.; // tick size (in pixels) for alpha = 1.
         const double rangePixel =  width();
         const double range_min = btmLeft.x();
         const double range_max =  topRight.x();
@@ -482,7 +482,7 @@ TimeLineGui::paintGL()
         ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = fontM.width( QLatin1String("00") ); // AXIS-SPECIFIC
+        const double minTickSizeTextPixel = fontM.width( QLatin1String("00000") ); // AXIS-SPECIFIC
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
@@ -515,13 +515,14 @@ TimeLineGui::paintGL()
                         // draw it with a lower alpha
                         alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                     }
+                    alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
                     QColor c;
                     c.setRgbF( Image::clamp<qreal>(txtR, 0., 1.),
                                Image::clamp<qreal>(txtG, 0., 1.),
                                Image::clamp<qreal>(txtB, 0., 1.) );
                     c.setAlpha(255 * alphaText);
                     glCheckError();
-                    renderText(value, btmLeft.y(), s, c, _imp->font);
+                    renderText(value, btmLeft.y(), s, c, _imp->font, Qt::AlignHCenter);
                 }
             }
         }
@@ -583,8 +584,8 @@ TimeLineGui::paintGL()
                                                                currentPosBtmWidgetCoordY - cursorHeight);
             int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
             QString mouseNumber( QString::number(hoveredTime) );
-            QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
-                                          currentPosBtmWidgetCoordY - cursorHeight - 2);
+            QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX,
+                                          currentPosBtmWidgetCoordY - cursorHeight);
             QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(), mouseNumberWidgetCoord.y() );
             TimeLineKeysSet::iterator foundHoveredAsKeyframe = keyframes.find( TimeLineKey(hoveredTime) );
             QColor currentColor;
@@ -616,7 +617,7 @@ TimeLineGui::paintGL()
             glEnd();
             glCheckErrorIgnoreOSXBug();
 
-            renderText(mouseNumberPos.x(), mouseNumberPos.y(), mouseNumber, currentColor, _imp->font);
+            renderText(mouseNumberPos.x(), mouseNumberPos.y(), mouseNumber, currentColor, _imp->font, Qt::AlignHCenter);
         }
 
         //draw the bounds and the current time cursor
@@ -642,16 +643,15 @@ TimeLineGui::paintGL()
         }
 
         QString currentFrameStr = QString::number(currentTime);
-        double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2.;
+        double cursorTextXposWidget = cursorBtmWidgetCoord.x();
         double cursorTextPos = toTimeLine(cursorTextXposWidget);
-        renderText(cursorTextPos, cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font);
+        renderText(cursorTextPos, cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font, Qt::AlignHCenter);
         glBegin(GL_POLYGON);
         glVertex2f( cursorBtm.x(), cursorBtm.y() );
         glVertex2f( cursorTopLeft.x(), cursorTopLeft.y() );
         glVertex2f( cursorTopRight.x(), cursorTopRight.y() );
         glEnd();
         glCheckErrorIgnoreOSXBug();
-
 
         QColor boundsColor;
         boundsColor.setRgbF( Image::clamp<qreal>(boundsR, 0., 1.),
@@ -663,10 +663,10 @@ TimeLineGui::paintGL()
             if ( ( leftBoundBtm.x() >= btmLeft.x() ) && ( leftBoundBtmRight.x() <= topRight.x() ) ) {
                 if (leftBound != currentTime) {
                     QString leftBoundStr( QString::number(leftBound) );
-                    double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2., 0 ).x() - fontM.width(leftBoundStr) / 2.;
+                    double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2., 0 ).x();
                     double leftBoundTextPos = toTimeLine(leftBoundTextXposWidget);
                     renderText(leftBoundTextPos, leftBoundTop.y(),
-                               leftBoundStr, boundsColor, _imp->font);
+                               leftBoundStr, boundsColor, _imp->font, Qt::AlignHCenter);
                 }
                 glColor4f(boundsR, boundsG, boundsB, 1.);
                 glBegin(GL_POLYGON);
@@ -680,10 +680,10 @@ TimeLineGui::paintGL()
             if ( ( rightBoundBtmLeft.x() >= btmLeft.x() ) && ( rightBoundBtm.x() <= topRight.x() ) ) {
                 if ( (rightBound != currentTime) && (rightBound != leftBound) ) {
                     QString rightBoundStr( QString::number( rightBound ) );
-                    double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2., 0 ).x() - fontM.width(rightBoundStr) / 2.;
+                    double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2., 0 ).x();
                     double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);
                     renderText(rightBoundTextPos, rightBoundTop.y(),
-                               rightBoundStr, boundsColor, _imp->font);
+                               rightBoundStr, boundsColor, _imp->font, Qt::AlignHCenter);
                 }
                 glColor4f(boundsR, boundsG, boundsB, 1.);
                 glCheckError();
@@ -771,7 +771,7 @@ TimeLineGui::paintGL()
             /*QString kfStr = QString::number(*it);
                double kfXposWidget = kfBtmWidgetCoord.x() - fontM.width(kfStr) / 2.;
                double kfTextPos = toTimeLine(kfXposWidget);
-               renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, _imp->font);*/
+               renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, _imp->font, Qt::AlignHCenter);*/
         }
         glCheckErrorIgnoreOSXBug();
         glDisable(GL_POLYGON_SMOOTH);
@@ -785,7 +785,8 @@ TimeLineGui::renderText(double x,
                         double y,
                         const QString & text,
                         const QColor & color,
-                        const QFont & font) const
+                        const QFont & font,
+                        int flags) const
 {
     assert( QGLContext::currentContext() == context() );
 
@@ -805,7 +806,7 @@ TimeLineGui::renderText(double x,
     }
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
 

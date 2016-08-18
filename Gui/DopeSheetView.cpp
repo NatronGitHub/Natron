@@ -234,7 +234,8 @@ public:
     void renderText(double x, double y,
                     const QString &text,
                     const QColor &color,
-                    const QFont &font) const;
+                    const QFont &font,
+                    int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
     // After or during an user interaction
     void computeTimelinePositions();
@@ -953,7 +954,7 @@ DopeSheetViewPrivate::drawScale() const
                     QColor c = scaleColor;
                     c.setAlpha(255 * alphaText);
 
-                    renderText(value, bottomLeft.y(), s, c, *font);
+                    renderText(value, bottomLeft.y(), s, c, *font, Qt::AlignHCenter);
 
                     // Uncomment the line below to draw the indicator on top too
                     // parent->renderText(value, topRight.y() - 20, s, c, *font);
@@ -1679,7 +1680,8 @@ DopeSheetViewPrivate::renderText(double x,
                                  double y,
                                  const QString &text,
                                  const QColor &color,
-                                 const QFont &font) const
+                                 const QFont &font,
+                                 int flags) const
 {
     running_in_main_thread_and_context(q_ptr);
 
@@ -1701,7 +1703,7 @@ DopeSheetViewPrivate::renderText(double x,
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
 
-    textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
 
     glCheckError();
 }

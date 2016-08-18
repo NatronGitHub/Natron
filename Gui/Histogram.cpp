@@ -1612,13 +1612,14 @@ HistogramPrivate::drawScale()
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
+                        alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
                         QColor c = _scaleColor;
                         c.setAlpha(255 * alphaText);
                         glCheckError();
                         if (axis == 0) {
-                            widget->renderText(value, btmLeft.y(), s, c, _font); // AXIS-SPECIFIC
+                            widget->renderText(value, btmLeft.y(), s, c, _font, Qt::AlignHCenter); // AXIS-SPECIFIC
                         } else {
-                            widget->renderText(btmLeft.x(), value, s, c, _font); // AXIS-SPECIFIC
+                            widget->renderText(btmLeft.x(), value, s, c, _font, Qt::AlignVCenter); // AXIS-SPECIFIC
                         }
                     }
                 }
@@ -1985,7 +1986,8 @@ Histogram::renderText(double x,
                       double y,
                       const QString & text,
                       const QColor & color,
-                      const QFont & font) const
+                      const QFont & font,
+                      int flags) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -2006,7 +2008,7 @@ Histogram::renderText(double x,
     }
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
 

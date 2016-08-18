@@ -79,9 +79,10 @@ DefaultInteractI::renderText(float x,
                              float scaley,
                              const QString &text,
                              const QColor &color,
-                             const QFont &font) const
+                             const QFont &font,
+                             int flags) const
 {
-    _overlay->renderText(x, y, scalex, scaley, text, color, font);
+    _overlay->renderText(x, y, scalex, scaley, text, color, font, flags);
 }
 
 void
@@ -842,9 +843,10 @@ HostOverlay::renderText(float x,
                         float scaley,
                         const QString &text,
                         const QColor &color,
-                        const QFont &font) const
+                        const QFont &font,
+                        int flags) const
 {
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
 }
 
 void

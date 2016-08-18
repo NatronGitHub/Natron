@@ -74,7 +74,7 @@ public:
 
     virtual ~Histogram();
 
-    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
+    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font, int flags = 0) const;
 
     void setViewerCursor(const std::vector<double>& pickerColor);
     void hideViewerCursor();
