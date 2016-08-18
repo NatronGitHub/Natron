@@ -1,5 +1,18 @@
 # History
 
+## Bugs
+
+- Viewer is not refreshing when the reader's paths contain unicode characters https://github.com/MrKepzie/Natron/issues/1416
+- Natron sometimes hangs in EffectInstance::clearPluginMemoryChunks() on exit 3d1b9c3
+
+## Version 2.1.3
+
+- Gui: sliders have a cleaner look with less ticks and a round handle 231c7f7
+- fix bug where the OFX plugin cache could be wrong if OpenGL was disabled 32c1532
+- fix dynamic kOfxSupportsTiles handling
+- add more properties to the "Info" node panel
+- the log window now becomes visible whenever a message is sent
+
 ## Version 2.1.2
 
 - Viewer: A new button can now force full-frame rendering instead of the visible portion. This may be useful to remove borders artifacts when panning/zooming during playback

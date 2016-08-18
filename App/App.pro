@@ -17,7 +17,7 @@
 # ***** END LICENSE BLOCK *****
 
 TARGET = Natron
-VERSION = 2.1.0
+VERSION = 2.1.3
 TEMPLATE = app
 win32 {
 	CONFIG += console
