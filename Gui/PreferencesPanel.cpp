@@ -1150,6 +1150,7 @@ PreferencesPanel::saveChangesAndClose()
     ///signal is emitted.
     _imp->okB->setFocus();
     appPTR->getCurrentSettings()->saveSettings(_imp->changedKnobs, true, _imp->pluginSettingsChanged);
+    appPTR->saveShortcuts();
     _imp->closeIsOK = true;
     close();
 }

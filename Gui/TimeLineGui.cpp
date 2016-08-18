@@ -655,7 +655,6 @@ TimeLineGui::paintGL()
         GL_GPU::glEnd();
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
-
         QColor boundsColor;
         boundsColor.setRgbF( Image::clamp<qreal>(boundsR, 0., 1.),
                              Image::clamp<qreal>(boundsG, 0., 1.),
