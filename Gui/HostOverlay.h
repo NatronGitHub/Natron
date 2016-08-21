@@ -36,7 +36,6 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
-#include "Engine/HostOverlaySupport.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -121,7 +120,14 @@ public:
 
 protected:
 
-    void renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const;
+    void renderText(float x,
+                    float y,
+                    float scalex,
+                    float scaley,
+                    const QString &text,
+                    const QColor &color,
+                    const QFont &font,
+                    int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
     void requestRedraw();
 
@@ -222,7 +228,14 @@ public:
 private:
 
     friend class DefaultInteractI;
-    void renderText(float x, float y, float scalex, float scaley, const QString &text, const QColor &color, const QFont &font) const;
+    void renderText(float x,
+                    float y,
+                    float scalex,
+                    float scaley,
+                    const QString &text,
+                    const QColor &color,
+                    const QFont &font,
+                    int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
     void requestRedraw();
 

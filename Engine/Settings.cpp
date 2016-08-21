@@ -710,7 +710,13 @@ Settings::initializeKnobsColorManagement()
 
     _customOcioConfigFile = AppManager::createKnob<KnobFile>( shared_from_this(), tr("Custom OpenColorIO config file") );
     _customOcioConfigFile->setName("ocioCustomConfigFile");
-    _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
+
+    if (_ocioConfigKnob->getNumEntries() == 1) {
+        _customOcioConfigFile->setDefaultAllDimensionsEnabled(true);
+    } else {
+        _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
+    }
+
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
                                               "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
     _ocioTab->addKnob(_customOcioConfigFile);

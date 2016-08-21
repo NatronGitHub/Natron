@@ -230,9 +230,9 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) OVERRIDE FINAL;
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, int flags = 0) OVERRIDE FINAL;
 
-    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
+    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font, int flags = 0) const;
 
     /**
      *@brief See toZoomCoordinates in ViewerGL.h

@@ -86,12 +86,12 @@ public:
 
     OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
-    virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL
+    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL
     {
         return true;
     }
 
-    virtual bool supportsMultipleClipsFPS() const OVERRIDE FINAL
+    virtual bool supportsMultipleClipFPSs() const OVERRIDE FINAL
     {
         return true;
     }
@@ -238,7 +238,7 @@ public:
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
-    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }

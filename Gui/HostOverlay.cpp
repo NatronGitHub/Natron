@@ -79,9 +79,10 @@ DefaultInteractI::renderText(float x,
                              float scaley,
                              const QString &text,
                              const QColor &color,
-                             const QFont &font) const
+                             const QFont &font,
+                             int flags) const
 {
-    _overlay->renderText(x, y, scalex, scaley, text, color, font);
+    _overlay->renderText(x, y, scalex, scaley, text, color, font, flags);
 }
 
 void
@@ -228,7 +229,7 @@ class PositionInteract
 
 public:
 
-    PositionInteract(const PositionOverlayKnobs* knobs,
+    PositionInteract(const HostOverlayKnobsPosition* knobs,
                      HostOverlay* overlay)
         : DefaultInteractI(overlay)
         , _param()
@@ -237,8 +238,8 @@ public:
         , _interactiveDrag(false)
         , _state(ePositionInteractStateInactive)
     {
-        _param = knobs->getKnob<KnobDouble>(PositionOverlayKnobs::eKnobsEnumerationPosition);
-        _interactive = knobs->getKnob<KnobBool>(PositionOverlayKnobs::eKnobsEnumerationInteractive);
+        _param = knobs->getKnob<KnobDouble>(HostOverlayKnobsPosition::eKnobsEnumerationPosition);
+        _interactive = knobs->getKnob<KnobBool>(HostOverlayKnobsPosition::eKnobsEnumerationInteractive);
     }
 
     virtual ~PositionInteract()
@@ -376,7 +377,7 @@ class TransformInteract
 
 public:
 
-    TransformInteract(const TransformOverlayKnobs* knobs,
+    TransformInteract(const HostOverlayKnobsTransform* knobs,
                       HostOverlay* overlay)
         : DefaultInteractI(overlay)
         , _translate()
@@ -405,16 +406,16 @@ public:
         , _invertedDrag(false)
         , _interactiveDrag(false)
     {
-        _translate = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationTranslate);
-        _scale = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationScale);
-        _scaleUniform = knobs->getKnob<KnobBool>(TransformOverlayKnobs::eKnobsEnumerationUniform);
-        _rotate = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationRotate);
-        _center = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationCenter);
-        _skewX = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationSkewx);
-        _skewY = knobs->getKnob<KnobDouble>(TransformOverlayKnobs::eKnobsEnumerationSkewy);
-        _skewOrder = knobs->getKnob<KnobChoice>(TransformOverlayKnobs::eKnobsEnumerationSkewOrder);
-        _invert = knobs->getKnob<KnobBool>(TransformOverlayKnobs::eKnobsEnumerationInvert);
-        _interactive = knobs->getKnob<KnobBool>(TransformOverlayKnobs::eKnobsEnumerationInteractive);
+        _translate = knobs->getKnob<KnobDouble>(HostOverlayKnobsTransform::eKnobsEnumerationTranslate);
+        _scale = knobs->getKnob<KnobDouble>(HostOverlayKnobsTransform::eKnobsEnumerationScale);
+        _scaleUniform = knobs->getKnob<KnobBool>(HostOverlayKnobsTransform::eKnobsEnumerationUniform);
+        _rotate = knobs->getKnob<KnobDouble>(HostOverlayKnobsTransform::eKnobsEnumerationRotate);
+        _center = knobs->getKnob<KnobDouble>(HostOverlayKnobsTransform::eKnobsEnumerationCenter);
+        _skewX = knobs->getKnob<KnobDouble>(HostOverlayKnobsTransform::eKnobsEnumerationSkewx);
+        _skewY = knobs->getKnob<KnobDouble>(HostOverlayKnobsTransform::eKnobsEnumerationSkewy);
+        _skewOrder = knobs->getKnob<KnobChoice>(HostOverlayKnobsTransform::eKnobsEnumerationSkewOrder);
+        _invert = knobs->getKnob<KnobBool>(HostOverlayKnobsTransform::eKnobsEnumerationInvert);
+        _interactive = knobs->getKnob<KnobBool>(HostOverlayKnobsTransform::eKnobsEnumerationInteractive);
     }
 
     virtual ~TransformInteract()
@@ -610,7 +611,7 @@ class CornerPinInteract
 
 public:
 
-    CornerPinInteract(const CornerPinOverlayKnobs* knobs,
+    CornerPinInteract(const HostOverlayKnobsCornerPin* knobs,
                       HostOverlay* overlay)
         : DefaultInteractI(overlay)
         , _invert()
@@ -624,25 +625,25 @@ public:
         _to.resize(4);
         _enable.resize(4);
 
-        _from[0] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom1);
-        _from[1] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom2);
-        _from[2] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom3);
-        _from[3] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationFrom4);
+        _from[0] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationFrom1);
+        _from[1] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationFrom2);
+        _from[2] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationFrom3);
+        _from[3] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationFrom4);
 
-        _to[0] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo1);
-        _to[1] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo2);
-        _to[2] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo3);
-        _to[3] = knobs->getKnob<KnobDouble>(CornerPinOverlayKnobs::eKnobsEnumerationTo4);
+        _to[0] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationTo1);
+        _to[1] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationTo2);
+        _to[2] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationTo3);
+        _to[3] = knobs->getKnob<KnobDouble>(HostOverlayKnobsCornerPin::eKnobsEnumerationTo4);
 
 
-        _enable[0] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable1);
-        _enable[1] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable2);
-        _enable[2] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable3);
-        _enable[3] = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationEnable4);
+        _enable[0] = knobs->getKnob<KnobBool>(HostOverlayKnobsCornerPin::eKnobsEnumerationEnable1);
+        _enable[1] = knobs->getKnob<KnobBool>(HostOverlayKnobsCornerPin::eKnobsEnumerationEnable2);
+        _enable[2] = knobs->getKnob<KnobBool>(HostOverlayKnobsCornerPin::eKnobsEnumerationEnable3);
+        _enable[3] = knobs->getKnob<KnobBool>(HostOverlayKnobsCornerPin::eKnobsEnumerationEnable4);
 
-        _overlayPoints = knobs->getKnob<KnobChoice>(CornerPinOverlayKnobs::eKnobsEnumerationOverlayPoints);
-        _invert = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationInvert);
-        _interactive = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationInteractive);
+        _overlayPoints = knobs->getKnob<KnobChoice>(HostOverlayKnobsCornerPin::eKnobsEnumerationOverlayPoints);
+        _invert = knobs->getKnob<KnobBool>(HostOverlayKnobsCornerPin::eKnobsEnumerationInvert);
+        _interactive = knobs->getKnob<KnobBool>(HostOverlayKnobsCornerPin::eKnobsEnumerationInteractive);
         for (unsigned i = 0; i < 4; ++i) {
             _toDrag[i].x = _toDrag[i].y = _fromDrag[i].x = _fromDrag[i].y = 0.;
         }
@@ -842,9 +843,10 @@ HostOverlay::renderText(float x,
                         float scaley,
                         const QString &text,
                         const QColor &color,
-                        const QFont &font) const
+                        const QFont &font,
+                        int flags) const
 {
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
 }
 
 void
@@ -887,9 +889,9 @@ HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
         return false;
     }
 
-    PositionOverlayKnobs* isPosition = dynamic_cast<PositionOverlayKnobs*>( knobs.get() );
-    TransformOverlayKnobs* isTransform = dynamic_cast<TransformOverlayKnobs*>( knobs.get() );
-    CornerPinOverlayKnobs* isCornerPin = dynamic_cast<CornerPinOverlayKnobs*>( knobs.get() );
+    HostOverlayKnobsPosition* isPosition = dynamic_cast<HostOverlayKnobsPosition*>( knobs.get() );
+    HostOverlayKnobsTransform* isTransform = dynamic_cast<HostOverlayKnobsTransform*>( knobs.get() );
+    HostOverlayKnobsCornerPin* isCornerPin = dynamic_cast<HostOverlayKnobsCornerPin*>( knobs.get() );
     boost::shared_ptr<DefaultInteractI> overlay;
     if (isPosition) {
         boost::shared_ptr<PositionInteract> p( new PositionInteract(isPosition, this) );

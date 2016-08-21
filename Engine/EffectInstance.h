@@ -1265,17 +1265,17 @@ public:
      * If a plugin does not accept clips of differing PARs, then the host must resample all images fed to that effect to agree with the output's PAR.
      * If a plugin does accept clips of differing PARs, it will need to specify the output clip's PAR in the kOfxImageEffectActionGetClipPreferences action.
      **/
-    virtual bool supportsMultipleClipsPAR() const
+    virtual bool supportsMultipleClipPARs() const
     {
         return false;
     }
 
-    virtual bool supportsMultipleClipsBitDepth() const
+    virtual bool supportsMultipleClipDepths() const
     {
         return false;
     }
 
-    virtual bool supportsMultipleClipsFPS() const
+    virtual bool supportsMultipleClipFPSs() const
     {
         return false;
     }

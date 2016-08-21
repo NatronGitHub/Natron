@@ -152,30 +152,17 @@ EffectInstance::unlock(const ImagePtr & entry)
 void
 EffectInstance::clearPluginMemoryChunks()
 {
+    // This will remove the mem from the pluginMemoryChunks list
     PluginMemoryPtr mem;
-    {
-        QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-        if ( !_imp->pluginMemoryChunks.empty() ) {
-            mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-            while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
-                _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
-                mem.reset();
-                if ( !_imp->pluginMemoryChunks.empty() ) {
-                    mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-                }
-            }
-        }
-    }
-
-    while (mem) {
-        // This will remove the mem from the pluginMemoryChunks list
+    do {
         mem.reset();
         {
             QMutexLocker l(&_imp->pluginMemoryChunksMutex);
             if ( !_imp->pluginMemoryChunks.empty() ) {
                 mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+#pragma message WARN("BUG: if mem is not NULL, it is never removed from the list and this goes into an infinite loop!!! should the following condition (!mem) be reversed?")
                 while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
-                    _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
+                    _imp->pluginMemoryChunks.pop_front();
                     mem.reset();
                     if ( !_imp->pluginMemoryChunks.empty() ) {
                         mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
@@ -183,7 +170,7 @@ EffectInstance::clearPluginMemoryChunks()
                 }
             }
         }
-    }
+    } while (mem);
 }
 
 #ifdef DEBUG
@@ -5481,7 +5468,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         return eStatusFailed;
     }
 
-    const bool multiBitDepth = supportsMultipleClipsBitDepth();
+    const bool multiBitDepth = supportsMultipleClipDepths();
     int nInputs = getMaxInputCount();
     metadata.clearAndResize(nInputs);
 
@@ -5569,7 +5556,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // now find the best depth that the plugin supports
     deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
 
-    bool multipleClipsPAR = supportsMultipleClipsPAR();
+    bool multipleClipsPAR = supportsMultipleClipPARs();
     double projectPAR;
     {
         Format f;
@@ -5884,9 +5871,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
                                  "a result of this process, the quality of the images is degraded. The following conversions are done:");
     bitDepthWarning.append( QChar::fromLatin1('\n') );
     bool setBitDepthWarning = false;
-    const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
-    const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
-    const bool supportsMultipleFPS = _publicInterface->supportsMultipleClipsFPS();
+    const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
+    const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
+    const bool supportsMultipleClipFPSs = _publicInterface->supportsMultipleClipFPSs();
     std::vector<EffectInstancePtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = _publicInterface->getInput(i);
@@ -5904,7 +5891,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
     for (int i = 0; i < nInputs; ++i) {
         //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
-        if ( !supportsMultipleDepth && (md.getBitDepth(i) != outputDepth) ) {
+        if ( !supportsMultipleClipDepths && (md.getBitDepth(i) != outputDepth) ) {
             md.setBitDepth(i, outputDepth);
         }
 
@@ -5915,7 +5902,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         const double pixelAspect = md.getPixelAspectRatio(i);
         const double fps = inputs[i]->getFrameRate();
 
-        if (!supportsMultiplePARS) {
+        if (!supportsMultipleClipPARs) {
             if (!inputParSet) {
                 inputPar = pixelAspect;
                 inputParSet = true;
@@ -5925,7 +5912,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
 
-        if (!supportsMultipleFPS) {
+        if (!supportsMultipleClipFPSs) {
             if (!outputFrameRateSet) {
                 outputFrameRate = fps;
                 outputFrameRateSet = true;
@@ -5950,7 +5937,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         }
 
 
-        if ( !supportsMultiplePARS && (pixelAspect != outputPAR) ) {
+        if ( !supportsMultipleClipPARs && (pixelAspect != outputPAR) ) {
             qDebug() << node->getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getNode()->getScriptName_mt_safe().c_str()
                      << ") has a pixel aspect ratio (" << md.getPixelAspectRatio(i)
                      << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "

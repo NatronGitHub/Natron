@@ -90,7 +90,12 @@ public:
 
     void seek(SequenceTime time);
 
-    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
+    void renderText(double x,
+                    double y,
+                    const QString & text,
+                    const QColor & color,
+                    const QFont & font,
+                    int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
 
     /**
