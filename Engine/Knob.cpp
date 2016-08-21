@@ -247,14 +247,13 @@ struct KnobHelperPrivate
     int itemSpacing;
 
     // If this knob is supposed to be visible in the Viewer UI, this is the index at which it should be positioned
-    int inViewerContextAddSeparator;
     int inViewerContextItemSpacing;
-    int inViewerContextAddNewLine;
-    StretchEnum inViewerContextStretch;
+    ViewerContextLayoutTypeEnum inViewerContextLayoutType;
     std::string inViewerContextLabel;
-    std::string inViewerContextIconFilePath;
+    std::string inViewerContextIconFilePath[2];
     bool inViewerContextHasShortcut;
     std::list<std::string> additionalShortcutsInTooltip;
+
     KnobIWPtr parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
@@ -337,10 +336,8 @@ struct KnobHelperPrivate
         , newLine(true)
         , addSeparator(false)
         , itemSpacing(0)
-        , inViewerContextAddSeparator(false)
         , inViewerContextItemSpacing(5)
-        , inViewerContextAddNewLine(false)
-        , inViewerContextStretch(eStretchNone)
+        , inViewerContextLayoutType(eViewerContextLayoutTypeSpacing)
         , inViewerContextLabel()
         , inViewerContextIconFilePath()
         , inViewerContextHasShortcut(false)
@@ -1795,17 +1792,26 @@ KnobHelper::setInViewerContextLabel(const QString& label)
 }
 
 std::string
-KnobHelper::getInViewerContextIconFilePath() const
+KnobHelper::getInViewerContextIconFilePath(bool checked) const
 {
     QMutexLocker k(&_imp->labelMutex);
-    return _imp->inViewerContextIconFilePath;
+    int idx = !checked ? 0 : 1;
+
+    if ( !_imp->inViewerContextIconFilePath[idx].empty() ) {
+        return _imp->inViewerContextIconFilePath[idx];
+    }
+    int otherIdx = !checked ? 1 : 0;
+
+    return _imp->inViewerContextIconFilePath[otherIdx];
 }
 
 void
-KnobHelper::setInViewerContextIconFilePath(const std::string& icon)
+KnobHelper::setInViewerContextIconFilePath(const std::string& icon, bool checked)
 {
     QMutexLocker k(&_imp->labelMutex);
-    _imp->inViewerContextIconFilePath = icon;
+    int idx = !checked ? 0 : 1;
+
+    _imp->inViewerContextIconFilePath[idx] = icon;
 }
 
 void
@@ -1845,39 +1851,15 @@ KnobHelper::getInViewerContextItemSpacing() const
 }
 
 void
-KnobHelper::setInViewerContextStretch(StretchEnum stretch)
+KnobHelper::setInViewerContextLayoutType(ViewerContextLayoutTypeEnum layoutType)
 {
-    _imp->inViewerContextStretch = stretch;
+    _imp->inViewerContextLayoutType = layoutType;
 }
 
-StretchEnum
-KnobHelper::getInViewerContextStretch() const
+ViewerContextLayoutTypeEnum
+KnobHelper::getInViewerContextLayoutType() const
 {
-    return _imp->inViewerContextStretch;
-}
-
-void
-KnobHelper::setInViewerContextAddSeparator(bool addSeparator)
-{
-    _imp->inViewerContextAddSeparator = addSeparator;
-}
-
-bool
-KnobHelper::getInViewerContextAddSeparator() const
-{
-    return _imp->inViewerContextAddSeparator;
-}
-
-void
-KnobHelper::setInViewerContextNewLineActivated(bool activated)
-{
-    _imp->inViewerContextAddNewLine = activated;
-}
-
-bool
-KnobHelper::getInViewerContextNewLineActivated() const
-{
-    return _imp->inViewerContextAddNewLine;
+    return _imp->inViewerContextLayoutType;
 }
 
 void
@@ -2023,12 +2005,18 @@ KnobHelper::setLabel(const std::string& label)
 
 void
 KnobHelper::setIconLabel(const std::string& iconFilePath,
-                         bool checked)
+                         bool checked,
+                         bool alsoSetViewerUIIcon)
 {
-    QMutexLocker k(&_imp->labelMutex);
-    int idx = !checked ? 0 : 1;
+    {
+        QMutexLocker k(&_imp->labelMutex);
+        int idx = !checked ? 0 : 1;
 
-    _imp->iconFilePath[idx] = iconFilePath;
+        _imp->iconFilePath[idx] = iconFilePath;
+    }
+    if (alsoSetViewerUIIcon) {
+        setInViewerContextIconFilePath(iconFilePath, checked);
+    }
 }
 
 const std::string&
@@ -3432,6 +3420,9 @@ KnobHelper::slaveToInternal(int dimension,
                             bool ignoreMasterPersistence)
 {
     assert(other.get() != this);
+    if (dimension < 0 || dimension >= (int)_imp->masters.size()) {
+        return false;
+    }
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
 
     if (other->getMaster(otherDimension).second.get() == this) {
@@ -4719,28 +4710,68 @@ KnobHolder::~KnobHolder()
 }
 
 void
+KnobHolder::setViewerUIKnobs(const KnobsVec& knobs)
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    _imp->knobsWithViewerUI.clear();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        _imp->knobsWithViewerUI.push_back(*it);
+    }
+
+}
+
+void
 KnobHolder::addKnobToViewerUI(const KnobIPtr& knob)
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    QMutexLocker k(&_imp->knobsMutex);
     _imp->knobsWithViewerUI.push_back(knob);
 }
 
-bool
-KnobHolder::isInViewerUIKnob(const KnobIPtr& knob) const
+void
+KnobHolder::insertKnobToViewerUI(const KnobIPtr& knob, int index)
 {
-    for (std::vector<KnobIWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
+    QMutexLocker k(&_imp->knobsMutex);
+    if (index < 0 || index >= (int)_imp->knobsWithViewerUI.size()) {
+        _imp->knobsWithViewerUI.push_back(knob);
+    } else {
+        std::vector<KnobIWPtr>::iterator it = _imp->knobsWithViewerUI.begin();
+        std::advance(it, index);
+        _imp->knobsWithViewerUI.insert(it, knob);
+    }
+}
+
+void
+KnobHolder::removeKnobViewerUI(const KnobIPtr& knob)
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    for (std::vector<KnobIWPtr>::iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
         KnobIPtr p = it->lock();
         if (p == knob) {
-            return true;
+            _imp->knobsWithViewerUI.erase(it);
+            return;
         }
     }
-    return false;
+
+}
+
+int
+KnobHolder::getInViewerContextKnobIndex(const KnobIConstPtr& knob) const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    int i = 0;
+    for (std::vector<KnobIWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it, ++i) {
+        KnobIPtr p = it->lock();
+        if (p == knob) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 KnobsVec
 KnobHolder::getViewerUIKnobs() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    QMutexLocker k(&_imp->knobsMutex);
     KnobsVec ret;
     for (std::vector<KnobIWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it != _imp->knobsWithViewerUI.end(); ++it) {
         KnobIPtr k = it->lock();
@@ -4890,6 +4921,38 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
     if (alsoDeleteGui && _imp->settingsPanel) {
         _imp->settingsPanel->deleteKnobGui(sharedKnob);
     }
+}
+
+bool
+KnobHolder::moveViewerUIKnobOneStepUp(const KnobIPtr& knob)
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    for (std::size_t i = 0; i < _imp->knobsWithViewerUI.size(); ++i) {
+        if (_imp->knobsWithViewerUI[i].lock() == knob) {
+            if (i == 0) {
+                return false;
+            }
+            std::swap(_imp->knobsWithViewerUI[i - 1], _imp->knobsWithViewerUI[i]);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+KnobHolder::moveViewerUIOneStepDown(const KnobIPtr& knob)
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    for (std::size_t i = 0; i < _imp->knobsWithViewerUI.size(); ++i) {
+        if (_imp->knobsWithViewerUI[i].lock() == knob) {
+            if (i == _imp->knobsWithViewerUI.size() - 1) {
+                return false;
+            }
+            std::swap(_imp->knobsWithViewerUI[i + 1], _imp->knobsWithViewerUI[i]);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool

@@ -48,6 +48,30 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER;
 
+struct FormatSerialization
+{
+    int x1, y1, x2, y2;
+    double par;
+    std::string name;
+
+
+    template<class Archive>
+    void
+    serialize(Archive & ar,
+                      const unsigned int /*version*/)
+    {
+        ar & ::boost::serialization::make_nvp("x1", x1);
+        ar & ::boost::serialization::make_nvp("y1", y1);
+        ar & ::boost::serialization::make_nvp("x2", x2);
+        ar & ::boost::serialization::make_nvp("y2", y2);
+        ar & ::boost::serialization::make_nvp("par", par);
+        ar & ::boost::serialization::make_nvp("Name", name);
+    }
+};
+
+/**
+ * @brief Deprecated, just used for backward compat.
+ **/
 template<class Archive>
 void
 Format::serialize(Archive & ar,

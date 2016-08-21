@@ -37,7 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/PyNode.h"
 #include "Engine/ViewIdx.h"
-
+#include "Engine/ProjectSerialization.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/GuiAppInstance.h"
@@ -334,7 +334,7 @@ struct PyPanelPrivate
     QVBoxLayout* centerLayout;
     mutable QMutex serializationMutex;
     QString serialization;
-
+    QString pythonFunction;
 
     PyPanelPrivate()
         : holder()
@@ -344,6 +344,7 @@ struct PyPanelPrivate
         , centerLayout(0)
         , serializationMutex()
         , serialization()
+        , pythonFunction()
     {
     }
 };
@@ -407,7 +408,21 @@ PyPanel::PyPanel(const QString& scriptName,
 
 PyPanel::~PyPanel()
 {
-    getGui()->unregisterPyPanel(this);
+    getGui()->getApp()->unregisterPyPanel(this);
+}
+
+void
+PyPanel::setPythonFunction(const QString& function)
+{
+    QMutexLocker k(&_imp->serializationMutex);
+    _imp->pythonFunction = function;
+}
+
+QString
+PyPanel::getPythonFunction() const
+{
+    QMutexLocker k(&_imp->serializationMutex);
+    return _imp->pythonFunction;
 }
 
 QString
@@ -535,6 +550,13 @@ PyPanel::keyPressEvent(QKeyEvent* e)
     QWidget::keyPressEvent(e);
 }
 
+KnobsVec
+PyPanel::getKnobs() const
+{
+    return _imp->holder->getKnobs_mt_safe();
+}
+
+
 PyTabWidget::PyTabWidget(TabWidget* pane)
     : _tab(pane)
 {
@@ -607,7 +629,7 @@ PyTabWidget::currentWidget()
 void
 PyTabWidget::setCurrentIndex(int index)
 {
-    _tab->makeCurrentTab(index);
+    _tab->setCurrentIndex(index);
 }
 
 int
@@ -643,7 +665,7 @@ PyTabWidget::splitVertically()
 void
 PyTabWidget::closePane()
 {
-    if (_tab->getGui()->getPanes().size() == 1) {
+    if (_tab->getGui()->getApp()->getTabWidgetsSerialization().size() == 1) {
         _tab->getGui()->getApp()->appendToScriptEditor( tr("Cannot close pane when this is the last one remaining.").toStdString() );
 
         return;
@@ -679,7 +701,7 @@ PyTabWidget::closeCurrentTab()
 QString
 PyTabWidget::getScriptName() const
 {
-    return _tab->objectName_mt_safe();
+    return QString::fromUtf8(_tab->getScriptName().c_str());
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

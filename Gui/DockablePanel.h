@@ -115,10 +115,6 @@ public:
 
     void setOverlayColor(const QColor& c);
 
-    QColor getOverlayColor() const;
-
-    bool hasOverlayColor() const;
-
     void resetHostOverlayColor();
 
     virtual MultiInstancePanelPtr getMultiInstancePanel() const
@@ -136,6 +132,9 @@ public:
 
 
     FloatingWidget* getFloatingWindow() const;
+
+    void floatPanelInWindow(FloatingWidget* window);
+
 public:
 
 
@@ -155,7 +154,7 @@ public:
     virtual bool isPagingEnabled() const OVERRIDE FINAL;
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
     virtual void onKnobsInitialized() OVERRIDE FINAL;
-
+    virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL;
 private:
 
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;

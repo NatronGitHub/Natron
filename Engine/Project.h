@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/SerializationBase.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -64,6 +65,7 @@ class Project
     , public NodeCollection
     , public AfterQuitProcessingI
     , public boost::noncopyable
+    , public SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -352,6 +354,11 @@ public:
      **/
     void reset(bool aboutToQuit, bool blocking);
 
+
+    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
@@ -385,8 +392,7 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
-    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
-                             bool isUntitledAutosave, bool* mustSave);
+    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave, bool isUntitledAutosave);
 
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
 
@@ -425,9 +431,7 @@ private:
                                     ViewSpec view,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
-    void save(ProjectSerialization* serializationObject) const;
-
-    bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
+    bool load(const ProjectSerialization & obj, const QString& name, const QString& path);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

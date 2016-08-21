@@ -40,6 +40,7 @@
 #include <QtCore/QMutex>
 #include <QFont>
 #include <QScrollBar>
+#include <QSettings>
 #include <QKeyEvent>
 
 #include "Gui/GuiApplicationManager.h"
@@ -53,6 +54,8 @@
 #include "Gui/ActionShortcuts.h"
 
 #include "Engine/Settings.h"
+
+#define kScriptEditorInputSerializationKey "ScriptEditorInputSerializationKey"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -75,8 +78,6 @@ struct ScriptEditorPrivate
     InputScriptTextEdit* inputEdit;
     QUndoStack history;
     QTimer autoSaveTimer;
-    QMutex autoSavedScriptMutex;
-    QString autoSavedScript;
 
     ///Indicate whether we should auto-scroll as results are printed or not
     bool outputAtBottom;
@@ -98,8 +99,6 @@ struct ScriptEditorPrivate
         , outputEdit(0)
         , inputEdit(0)
         , autoSaveTimer()
-        , autoSavedScriptMutex()
-        , autoSavedScript()
         , outputAtBottom(true)
     {
     }
@@ -261,6 +260,16 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->autoSaveTimer.setSingleShot(true);
 
     reloadFont();
+
+    // Restore input script input from settings
+    {
+        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        QString key = QString::fromUtf8(kScriptEditorInputSerializationKey);
+        if (settings.contains(key)) {
+            QString script = settings.value(key).toString();
+            setInputScript(script);
+        }
+    }
 }
 
 ScriptEditor::~ScriptEditor()
@@ -506,14 +515,6 @@ ScriptEditor::setInputScript(const QString& script)
     _imp->inputEdit->setPlainText(script);
 }
 
-QString
-ScriptEditor::getInputScript() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->inputEdit->toPlainText();
-}
-
 void
 ScriptEditor::mousePressEvent(QMouseEvent* e)
 {
@@ -563,24 +564,16 @@ void
 ScriptEditor::onInputScriptTextChanged()
 {
     if ( !_imp->autoSaveTimer.isActive() ) {
-        _imp->autoSaveTimer.singleShot( 5000, this, SLOT(onAutoSaveTimerTimedOut()) );
+        _imp->autoSaveTimer.singleShot( 2000, this, SLOT(onAutoSaveTimerTimedOut()) );
     }
 }
 
 void
 ScriptEditor::onAutoSaveTimerTimedOut()
 {
-    QMutexLocker k(&_imp->autoSavedScriptMutex);
-
-    _imp->autoSavedScript = _imp->inputEdit->toPlainText();
-}
-
-QString
-ScriptEditor::getAutoSavedScript() const
-{
-    QMutexLocker k(&_imp->autoSavedScriptMutex);
-
-    return _imp->autoSavedScript;
+    QString script = _imp->inputEdit->toPlainText();
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    settings.setValue(QString::fromUtf8(kScriptEditorInputSerializationKey), script);
 }
 
 void

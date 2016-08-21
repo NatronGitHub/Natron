@@ -322,7 +322,7 @@ TrackMarker::load(const TrackSerialization& serialization)
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
                 (*it2)->blockValueChanges();
-                (*it2)->clone( (*it)->getKnob() );
+                (*it2)->fromSerialization(**it);
                 (*it2)->unblockValueChanges();
                 break;
             }

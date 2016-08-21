@@ -225,6 +225,11 @@ public:
      * @brief Scan for any change on all knobs and recreate them
      **/
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
+
+    /**
+     * @brief Removes a specific knob from the gui
+     **/
+    virtual void recreateViewerUIKnobs() OVERRIDE FINAL;
     ///// End override from DockablePanelI
 
     //// Overriden from KnobGuiContainerI

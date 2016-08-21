@@ -53,21 +53,13 @@ public:
     ViewerTab* viewerUI;
     NodePtr viewerNodeInternal;
     NodeGuiPtr viewerNode;
-#ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, NodePtr > readerNodes;
-#else
     NodePtr readerNode;
-#endif
 
     FileDialogPreviewProvider()
         : viewerUI(0)
         , viewerNodeInternal()
         , viewerNode()
-#ifndef NATRON_ENABLE_IO_META_NODES
-        , readerNodes()
-#else
         , readerNode()
-#endif
     {}
 };
 
@@ -142,8 +134,7 @@ public:
                                               StandardButtons buttons,
                                               StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void loadProjectGui(bool isAutosave,  boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
-    virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
+    virtual void loadProjectGui(bool isAutosave,  const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive>& archive) const OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
@@ -206,6 +197,10 @@ public:
     virtual NodePtr getMasterSyncViewer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void showRenderStatsWindow() OVERRIDE FINAL;
+
+    virtual void getHistogramScriptNames(std::list<std::string>* histograms) const OVERRIDE FINAL;
+
+    virtual void getViewportsProjection(std::map<std::string,ViewportData>* projections) const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -292,6 +287,12 @@ public:
     ///////////////// END OVERRIDEN FROM TIMELINEKEYFRAMES
 
 private:
+
+    virtual void onTabWidgetRegistered(TabWidgetI* tabWidget) OVERRIDE FINAL;
+
+    virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) OVERRIDE FINAL;
+
+    virtual void createMainWindow() OVERRIDE FINAL;
 
     virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,

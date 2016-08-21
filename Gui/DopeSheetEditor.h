@@ -127,6 +127,11 @@ public:
 
     void onInputEventCalled();
 
+    virtual bool saveProjection(ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const ViewportData& data) OVERRIDE FINAL;
+
+
 private:
 
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;

@@ -240,10 +240,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
 
-//Use this to have all readers inside the same Read meta-node and all the writers
-//into the same Write meta-node
-#define NATRON_ENABLE_IO_META_NODES 1
-
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x
 #define STRINGISE(x) STRINGISE_IMPL(x)

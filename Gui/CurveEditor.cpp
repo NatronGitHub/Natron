@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
@@ -1696,6 +1697,21 @@ void
 CurveEditor::onExprLineEditFinished()
 {
     setSelectedCurveExpression( _imp->knobLineEdit->text() );
+}
+
+bool
+CurveEditor::saveProjection(ViewportData* data)
+{
+    _imp->curveWidget->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+    return true;
+
+}
+
+bool
+CurveEditor::loadProjection(const ViewportData& data)
+{
+    _imp->curveWidget->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

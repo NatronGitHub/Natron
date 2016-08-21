@@ -41,6 +41,7 @@
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
@@ -58,6 +59,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiFile.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/Histogram.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/ViewerTab.h"
@@ -193,19 +195,11 @@ GuiAppInstance::deletePreviewProvider()
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-        for (std::map<std::string, NodePtr>::iterator it =
-                 _imp->_previewProvider->readerNodes.begin();
-             it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second->destroyNode(false);
-        }
-        _imp->_previewProvider->readerNodes.clear();
-#else
+
         if (_imp->_previewProvider->readerNode) {
             _imp->_previewProvider->readerNode->destroyNode(false);
             _imp->_previewProvider->readerNode.reset();
         }
-#endif
 
         _imp->_previewProvider.reset();
     }
@@ -250,6 +244,16 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const PluginGroupNodePtr&
 }
 
 void
+GuiAppInstance::createMainWindow()
+{
+    boost::shared_ptr<GuiAppInstance> thisShared = toGuiAppInstance( shared_from_this() );
+    assert(thisShared);
+    _imp->_gui = new Gui(thisShared);
+    _imp->_gui->createGui();
+    setMainWindowPointer(_imp->_gui);
+}
+
+void
 GuiAppInstance::loadInternal(const CLArgs& cl,
                              bool makeEmptyInstance)
 {
@@ -263,10 +267,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = toGuiAppInstance( shared_from_this() );
-    assert(thisShared);
-    _imp->_gui = new Gui(thisShared);
-    _imp->_gui->createGui();
+    createMainWindow();
 
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 
@@ -786,18 +787,11 @@ GuiAppInstance::isShowingDialog() const
 }
 
 void
-GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, const ProjectSerializationPtr& serialization,const boost::shared_ptr<boost::archive::xml_iarchive> & archive) const
 {
-    _imp->_gui->loadProjectGui(isAutosave, archive);
+    _imp->_gui->loadProjectGui(isAutosave, serialization, archive);
 }
 
-void
-GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
-{
-    if (_imp->_gui) {
-        _imp->_gui->saveProjectGui(archive);
-    }
-}
 
 void
 GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
@@ -1692,6 +1686,39 @@ void
 GuiAppInstance::setGuiFrozen(bool frozen)
 {
     getGui()->onFreezeUIButtonClicked(frozen);
+}
+
+void
+GuiAppInstance::onTabWidgetRegistered(TabWidgetI* tabWidget)
+{
+    getGui()->onPaneRegistered(tabWidget);
+}
+
+void
+GuiAppInstance::onTabWidgetUnregistered(TabWidgetI* tabWidget)
+{
+    getGui()->onPaneUnRegistered(tabWidget);
+}
+
+void
+GuiAppInstance::getHistogramScriptNames(std::list<std::string>* histograms) const
+{
+    const std::list<Histogram*>& histos = getGui()->getHistograms();
+    for (std::list<Histogram*>::const_iterator it = histos.begin(); it!=histos.end(); ++it) {
+        histograms->push_back((*it)->getScriptName());
+    }
+}
+
+void
+GuiAppInstance::getViewportsProjection(std::map<std::string,ViewportData>* projections) const
+{
+    RegisteredTabs tabs = getGui()->getRegisteredTabs();
+    for (RegisteredTabs::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+        ViewportData data;
+        if (it->second.first->saveProjection(&data)) {
+            (*projections)[it->first] = data;
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

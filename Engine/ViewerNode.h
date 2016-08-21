@@ -214,6 +214,10 @@ public:
         Q_EMIT disconnectTextureRequest(index, clearRoD);
     }
 
+    // Called when the group containing this viewer node has been fully restored, including graph links
+    void onContainerGroupLoaded();
+
+    virtual void onKnobsLoaded() OVERRIDE FINAL;
 
 public Q_SLOTS:
 

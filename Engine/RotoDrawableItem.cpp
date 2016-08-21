@@ -988,14 +988,14 @@ RotoDrawableItem::clone(const RotoItem* other)
 
 static void
 serializeRotoKnob(const KnobIPtr & knob,
-                  const KnobSerializationPtr& serialization)
+                 KnobSerializationPtr* serialization)
 {
     std::pair<int, KnobIPtr > master = knob->getMaster(0);
 
     if (master.second) {
-        serialization->initialize(master.second);
+        serialization->reset(new KnobSerialization(master.second));
     } else {
-        serialization->initialize(knob);
+        serialization->reset(new KnobSerialization(knob));
     }
 }
 
@@ -1009,8 +1009,8 @@ RotoDrawableItem::save(const RotoItemSerializationPtr& obj) const
         throw std::logic_error("RotoDrawableItem::save()");
     }
     for (std::list<KnobIPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        KnobSerializationPtr k( new KnobSerialization() );
-        serializeRotoKnob( *it, k );
+        KnobSerializationPtr k;
+        serializeRotoKnob( *it, &k );
         s->_knobs.push_back(k);
     }
     {
@@ -1031,7 +1031,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
             if ( (*it2)->getName() == (*it)->getName() ) {
                 boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
                 s->blockSignals(true);
-                (*it2)->clone( (*it)->getKnob() );
+                (*it2)->fromSerialization(**it);
                 s->blockSignals(false);
                 break;
             }

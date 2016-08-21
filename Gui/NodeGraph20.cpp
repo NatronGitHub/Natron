@@ -329,13 +329,13 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     for (std::set<NodeGuiPtr>::iterator it = nodesToMove.begin();
          it != nodesToMove.end(); ++it) {
         //The current position
-        QPointF pos = (*it)->getPos_mt_safe();
+        QPointF pos = (*it)->pos();
 
         //if ignoreMagnet == true, we do not snap nodes to horizontal/vertical positions
         (*it)->refreshPosition(pos.x() + dxScene, pos.y() + dyScene, ignoreMagnet, newPos);
 
         //The new position
-        QPointF newNodePos = (*it)->getPos_mt_safe();
+        QPointF newNodePos = (*it)->pos();
         if (!ignoreMagnet) {
             //Magnet only works when selection is only for a single node
             //Adjust the delta since mouse press by the new position after snapping

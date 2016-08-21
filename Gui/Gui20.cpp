@@ -42,7 +42,7 @@
 
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/KnobSerialization.h" // createDefaultValueForParam
+#include "Engine/KnobSerialization.h" 
 #include "Engine/Lut.h" // Color, floatToInt
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodeGroup, NodeCollection, NodesList
@@ -287,15 +287,19 @@ Gui::maximize(TabWidget* what)
         return;
     }
 
-    QMutexLocker l(&_imp->_panesMutex);
-    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+    std::list<TabWidgetI*> panes = getApp()->getTabWidgetsSerialization();
+    for (std::list<TabWidgetI*>::iterator it = panes.begin(); it != panes.end(); ++it) {
+        TabWidget* pane = dynamic_cast<TabWidget*>(*it);
+        if (!pane) {
+            continue;
+        }
         //if the widget is not what we want to maximize and it is not floating , hide it
-        if ( (*it != what) && !(*it)->isFloatingWindowChild() ) {
+        if ( (pane != what) && !pane->isFloatingWindowChild() ) {
             // also if we want to maximize the workshop pane, don't hide the properties pane
 
             bool hasProperties = false;
-            for (int i = 0; i < (*it)->count(); ++i) {
-                QString tabName = (*it)->tabAt(i)->getWidget()->objectName();
+            for (int i = 0; i < pane->count(); ++i) {
+                QString tabName = pane->tabAt(i)->getWidget()->objectName();
                 if ( tabName == QString::fromUtf8(kPropertiesBinName) ) {
                     hasProperties = true;
                     break;
@@ -317,7 +321,7 @@ Gui::maximize(TabWidget* what)
             if (hasProperties && hasNodeGraphOrCurveEditor) {
                 continue;
             }
-            (*it)->hide();
+            pane->hide();
         }
     }
 }
@@ -325,10 +329,13 @@ Gui::maximize(TabWidget* what)
 void
 Gui::minimize()
 {
-    QMutexLocker l(&_imp->_panesMutex);
-
-    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-        (*it)->show();
+    std::list<TabWidgetI*> panes = getApp()->getTabWidgetsSerialization();
+    for (std::list<TabWidgetI*>::iterator it = panes.begin(); it != panes.end(); ++it) {
+        TabWidget* pane = dynamic_cast<TabWidget*>(*it);
+        if (!pane) {
+            continue;
+        }
+        pane->show();
     }
 }
 
@@ -442,35 +449,6 @@ Gui::unregisterTab(PanelWidget* tab)
     }
 }
 
-void
-Gui::registerFloatingWindow(FloatingWidget* window)
-{
-    QMutexLocker k(&_imp->_floatingWindowMutex);
-    std::list<FloatingWidget*>::iterator found = std::find(_imp->_floatingWindows.begin(), _imp->_floatingWindows.end(), window);
-
-    if ( found == _imp->_floatingWindows.end() ) {
-        _imp->_floatingWindows.push_back(window);
-    }
-}
-
-void
-Gui::unregisterFloatingWindow(FloatingWidget* window)
-{
-    QMutexLocker k(&_imp->_floatingWindowMutex);
-    std::list<FloatingWidget*>::iterator found = std::find(_imp->_floatingWindows.begin(), _imp->_floatingWindows.end(), window);
-
-    if ( found != _imp->_floatingWindows.end() ) {
-        _imp->_floatingWindows.erase(found);
-    }
-}
-
-std::list<FloatingWidget*>
-Gui::getFloatingWindows() const
-{
-    QMutexLocker l(&_imp->_floatingWindowMutex);
-
-    return _imp->_floatingWindows;
-}
 
 void
 Gui::removeViewerTab(ViewerTab* tab,
@@ -626,30 +604,8 @@ Gui::getHistograms_mt_safe() const
 }
 
 void
-Gui::unregisterPane(TabWidget* pane)
-{
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
-
-        if ( found != _imp->_panes.end() ) {
-            if (_imp->_lastEnteredTabWidget == pane) {
-                _imp->_lastEnteredTabWidget = 0;
-            }
-            _imp->_panes.erase(found);
-        }
-
-        if ( ( pane->isAnchor() ) && !_imp->_panes.empty() ) {
-            _imp->_panes.front()->setAsAnchor(true);
-        }
-    }
-    checkNumberOfNonFloatingPanes();
-}
-
-void
 Gui::checkNumberOfNonFloatingPanes()
 {
-    QMutexLocker l(&_imp->_panesMutex);
     ///If dropping to 1 non floating pane, make it non closable:floatable
     int nbNonFloatingPanes;
     TabWidget* nonFloatingPane = _imp->getOnly1NonFloatingPane(nbNonFloatingPanes);
@@ -659,93 +615,31 @@ Gui::checkNumberOfNonFloatingPanes()
         assert(nonFloatingPane);
         nonFloatingPane->setClosable(false);
     } else {
-        for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+        std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
+        for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
             (*it)->setClosable(true);
         }
     }
 }
 
+
 void
-Gui::registerPane(TabWidget* pane)
+Gui::onPaneUnRegistered(TabWidgetI* pane)
 {
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        bool hasAnchor = false;
-
-        for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-            if ( (*it)->isAnchor() ) {
-                hasAnchor = true;
-                break;
-            }
-        }
-        std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
-
-        if ( found == _imp->_panes.end() ) {
-            if ( _imp->_panes.empty() ) {
-                _imp->_leftRightSplitter->addWidget(pane);
-                pane->setClosable(false);
-            }
-            _imp->_panes.push_back(pane);
-
-            if (!hasAnchor) {
-                pane->setAsAnchor(true);
-            }
-        }
+    if (_imp->_lastEnteredTabWidget == pane) {
+        _imp->_lastEnteredTabWidget = 0;
     }
     checkNumberOfNonFloatingPanes();
 }
 
 void
-Gui::registerSplitter(Splitter* s)
+Gui::onPaneRegistered(TabWidgetI* pane)
 {
-    QMutexLocker l(&_imp->_splittersMutex);
-    std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
-
-    if ( found == _imp->_splitters.end() ) {
-        _imp->_splitters.push_back(s);
+    std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
+    if (tabs.empty()) {
+        _imp->_leftRightSplitter->addWidget(dynamic_cast<TabWidget*>(pane));
     }
-}
-
-void
-Gui::unregisterSplitter(Splitter* s)
-{
-    QMutexLocker l(&_imp->_splittersMutex);
-    std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
-
-    if ( found != _imp->_splitters.end() ) {
-        _imp->_splitters.erase(found);
-    }
-}
-
-void
-Gui::registerPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel,
-                     const std::string & pythonFunction)
-{
-    QMutexLocker l(&_imp->_pyPanelsMutex);
-    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator found = _imp->_userPanels.find(panel);
-
-    if ( found == _imp->_userPanels.end() ) {
-        _imp->_userPanels.insert( std::make_pair(panel, pythonFunction) );
-    }
-}
-
-void
-Gui::unregisterPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel)
-{
-    QMutexLocker l(&_imp->_pyPanelsMutex);
-    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator found = _imp->_userPanels.find(panel);
-
-    if ( found != _imp->_userPanels.end() ) {
-        _imp->_userPanels.erase(found);
-    }
-}
-
-std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>
-Gui::getPythonPanels() const
-{
-    QMutexLocker l(&_imp->_pyPanelsMutex);
-
-    return _imp->_userPanels;
+    checkNumberOfNonFloatingPanes();
 }
 
 PanelWidget*
@@ -888,36 +782,6 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & plugin)
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
     }
-
-#ifndef NATRON_ENABLE_IO_META_NODES
-    if ( !plugin->getParent() && ( pluginsToolButton->getLabel() == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) ) {
-        ///create 2 special actions to create a reader and a writer so the user doesn't have to guess what
-        ///plugin to choose for reading/writing images, let Natron deal with it. THe user can still change
-        ///the behavior of Natron via the Preferences Readers/Writers tabs.
-        QMenu* imageMenu = pluginsToolButton->getMenu();
-        assert(imageMenu);
-        QAction* createReaderAction = new QAction(this);
-        QObject::connect( createReaderAction, SIGNAL(triggered()), this, SLOT(createReader()) );
-        createReaderAction->setText( tr("Read") );
-        QPixmap readImagePix;
-        appPTR->getIcon(NATRON_PIXMAP_READ_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &readImagePix);
-        createReaderAction->setIcon( QIcon(readImagePix) );
-        createReaderAction->setShortcutContext(Qt::WidgetShortcut);
-        createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
-        imageMenu->addAction(createReaderAction);
-
-        QAction* createWriterAction = new QAction(this);
-        QObject::connect( createWriterAction, SIGNAL(triggered()), this, SLOT(createWriter()) );
-        createWriterAction->setText( tr("Write") );
-        QPixmap writeImagePix;
-        appPTR->getIcon(NATRON_PIXMAP_WRITE_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &writeImagePix);
-        createWriterAction->setIcon( QIcon(writeImagePix) );
-        createWriterAction->setShortcutContext(Qt::WidgetShortcut);
-        createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
-        imageMenu->addAction(createWriterAction);
-    }
-#endif
-
 
     //if it has a parent, add the new tool button as a child
     if (parentToolButton) {
@@ -1271,38 +1135,8 @@ Gui::createReader()
         NodeCollectionPtr group = graph->getGroup();
         assert(group);
 
-#ifdef NATRON_ENABLE_IO_META_NODES
         CreateNodeArgs args(PLUGINID_NATRON_READ, group);
         ret = getApp()->createReader(pattern, args);
-#else
-
-        QString qpattern = QString::fromUtf8( pattern.c_str() );
-        std::string patternCpy = pattern;
-        std::string path = SequenceParsing::removePath(patternCpy);
-        _imp->_lastLoadSequenceOpenedDir = QString::fromUtf8( path.c_str() );
-
-        QString ext_qs = QtCompat::removeFileExtension(qpattern).toLower();
-        std::string ext = ext_qs.toStdString();
-        std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
-        if ( found == readersForFormat.end() ) {
-            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding \"%1\" files was found.").arg(ext_qs).toStdString(), false);
-        } else {
-            CreateNodeArgs args(found->second.c_str(), group);
-            args.addParamDefaultValue(kOfxImageEffectFileParamName, pattern);
-            std::string canonicalFilename = pattern;
-            getApp()->getProject()->canonicalizePath(canonicalFilename);
-            int firstFrame, lastFrame;
-            Node::getOriginalFrameRangeForReader(found->second, canonicalFilename, &firstFrame, &lastFrame);
-            args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
-
-
-            ret = getApp()->createNode(args);
-
-            if (!ret) {
-                return ret;
-            }
-        }
-#endif
     }
 
     return ret;
@@ -1317,11 +1151,7 @@ Gui::createWriter()
     appPTR->getSupportedWriterFileFormats(&filters);
 
     std::string file;
-#ifdef NATRON_ENABLE_IO_META_NODES
     bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
-#else
-    bool useDialogForWriters = true;
-#endif
     if (useDialogForWriters) {
         file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
         if ( file.empty() ) {
@@ -1439,19 +1269,13 @@ Gui::saveWarning()
 }
 
 void
-Gui::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const
+Gui::loadProjectGui(bool isAutosave, const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive>& obj) const
 {
     if (_imp->_projectGui) {
-        _imp->_projectGui->load(isAutosave, obj);
+        _imp->_projectGui->load(isAutosave, serialization, obj);
     }
 }
 
-void
-Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
-{
-    assert(_imp->_projectGui);
-    _imp->_projectGui->save(archive);
-}
 
 bool
 Gui::isAboutToClose() const

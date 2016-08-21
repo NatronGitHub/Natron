@@ -67,6 +67,30 @@ serialize(Archive & ar,
 
 NATRON_NAMESPACE_ENTER;
 
+struct ImageComponentsSerialization
+{
+    // The layer name, e.g: Beauty
+    std::string layerName;
+
+    // The components global label, e.g: "RGBA" or "MotionPass"
+    // If not provided, this is just the concatenation of all channel names
+    std::string globalCompsName;
+
+    // Each individual channel names, e.g: "R", "G", "B", "A"
+    std::vector<std::string> channelNames;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+        ar &  boost::serialization::make_nvp("Layer", layerName);
+        ar &  boost::serialization::make_nvp("Components", channelNames);
+        ar &  boost::serialization::make_nvp("CompName", globalCompsName);
+    }
+};
+
+/**
+ * @brief Deprecated, just used for backward compatibility in NodeSerialization
+ **/
 template<class Archive>
 void
 ImageComponents::serialize(Archive & ar,

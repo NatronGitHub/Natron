@@ -132,7 +132,7 @@ private:
         KnobHolderPtr holder = knob->getHolder();
 
         // If the knob has several UI (one in the viewer and one in the settings panel) refreshUI
-        bool refreshUI = holder ? holder->isInViewerUIKnob(knob) : false;
+        bool refreshUI = holder ? holder->getInViewerContextKnobIndex(knob) != -1 : false;
 
         knob->beginChanges();
 
@@ -200,7 +200,7 @@ private:
         KnobHolderPtr holder = knob->getHolder();
 
         // If the knob has several UI (one in the viewer and one in the settings panel) refreshUI
-        bool refreshUI = holder ? holder->isInViewerUIKnob(knob) : false;
+        bool refreshUI = holder ? holder->getInViewerContextKnobIndex(knob) != -1 : false;
 
         if ( holder && holder->getApp() ) {
             time = holder->getApp()->getTimeLine()->currentFrame();
@@ -379,7 +379,7 @@ public:
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 
-    void copyFrom(const KnobIPtr& fromKnob, bool isRedo);
+    void copyFrom(const KnobSerializationPtr& fromKnobSerialization, const KnobIPtr& fromKnob, bool isRedo);
 };
 
 

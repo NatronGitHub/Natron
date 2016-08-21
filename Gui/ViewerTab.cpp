@@ -40,6 +40,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Project.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerNode.h"
@@ -231,6 +232,22 @@ ViewerTab::onInternalViewerCreated()
 {
     manageSlotsForInfoWidget(0, true);
 
+}
+
+bool
+ViewerTab::saveProjection(ViewportData* data)
+{
+    _imp->viewer->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+    data->zoomOrPanSinceLastFit = _imp->viewer->getZoomOrPannedSinceLastFit();
+    return true;
+}
+
+bool
+ViewerTab::loadProjection(const ViewportData& data)
+{
+    _imp->viewer->setProjection(data.left, data.bottom, data.zoomFactor, 1.);
+    _imp->viewer->setZoomOrPannedSinceLastFit(data.zoomOrPanSinceLastFit);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

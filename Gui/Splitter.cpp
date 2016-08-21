@@ -24,22 +24,30 @@
 
 #include "Splitter.h"
 
+#include "Engine/ProjectSerialization.h"
+
+#include "Gui/GuiAppInstance.h"
+#include "Gui/TabWidget.h"
+#include "Gui/Gui.h"
 #include <cassert>
 #include <stdexcept>
 
 NATRON_NAMESPACE_ENTER;
 
-Splitter::Splitter(QWidget* parent)
+Splitter::Splitter(Gui* gui, QWidget* parent)
     : QSplitter(parent)
     , _lock()
+    , _gui(gui)
 {
     setMouseTracking(true);
 }
 
 Splitter::Splitter(Qt::Orientation orientation,
+                   Gui* gui,
                    QWidget * parent)
     : QSplitter(orientation, parent)
     , _lock()
+    , _gui(gui)
 {
     setMouseTracking(true);
 }
@@ -146,6 +154,127 @@ bool
 Splitter::event(QEvent* e)
 {
     return QSplitter::event(e);
+}
+
+OrientationEnum
+Splitter::getNatronOrientation() const
+{
+    Qt::Orientation qor = orientation();
+    switch (qor) {
+        case Qt::Horizontal:
+            return eOrientationHorizontal;
+            break;
+        case Qt::Vertical:
+            return eOrientationVertical;
+    }
+    return eOrientationVertical;
+}
+
+
+int
+Splitter::getLeftChildrenSize() const
+{
+    QList<int> list = sizes();
+    assert(list.size() == 2);
+    return list.front();
+}
+
+int
+Splitter::getRightChildrenSize() const
+{
+    QList<int> list = sizes();
+    assert(list.size() == 2);
+    return list.back();
+}
+
+SplitterI*
+Splitter::isLeftChildSplitter() const
+{
+    return dynamic_cast<Splitter*>(widget(0));
+}
+
+TabWidgetI*
+Splitter::isLeftChildTabWidget() const
+{
+    return dynamic_cast<TabWidget*>(widget(0));
+}
+
+SplitterI*
+Splitter::isRightChildSplitter() const
+{
+    return dynamic_cast<Splitter*>(widget(1));
+}
+
+TabWidgetI*
+Splitter::isRightChildTabWidget() const
+{
+    return dynamic_cast<TabWidget*>(widget(1));
+}
+
+void
+Splitter::setNatronOrientation(OrientationEnum orientation)
+{
+    switch (orientation) {
+        case eOrientationHorizontal:
+            setOrientation(Qt::Horizontal);
+            break;
+        case eOrientationVertical:
+            setOrientation(Qt::Vertical);
+    }
+}
+
+void
+Splitter::setChildrenSize(int left, int right)
+{
+    QList<int> sizes;
+    sizes.push_back(left);
+    sizes.push_back(right);
+    setSizes_mt_safe(sizes);
+}
+
+void
+Splitter::restoreChildrenFromSerialization(const ProjectWindowSplitterSerialization& serialization)
+{
+    {
+        if (serialization.leftChild->type == eProjectWorkspaceWidgetTypeSplitter) {
+            Qt::Orientation orientation;
+            switch ((OrientationEnum)serialization.orientation) {
+                case eOrientationHorizontal:
+                    orientation = Qt::Horizontal;
+                    break;
+                case eOrientationVertical:
+                    orientation = Qt::Vertical;
+                    break;
+            }
+            Splitter* splitter = new Splitter(orientation, _gui, this);
+            splitter->fromSerialization(*serialization.leftChild->childIsSplitter);
+            addWidget_mt_safe(splitter);
+        } else if (serialization.leftChild->type == eProjectWorkspaceWidgetTypeTabWidget) {
+            TabWidget* tab = new TabWidget(_gui, this);
+            tab->fromSerialization(*serialization.leftChild->childIsTabWidget);
+            addWidget_mt_safe(tab);
+        }
+    }
+    {
+        if (serialization.rightChild->type == eProjectWorkspaceWidgetTypeSplitter) {
+            Qt::Orientation orientation;
+            switch ((OrientationEnum)serialization.orientation) {
+                case eOrientationHorizontal:
+                    orientation = Qt::Horizontal;
+                    break;
+                case eOrientationVertical:
+                    orientation = Qt::Vertical;
+                    break;
+            }
+            Splitter* splitter = new Splitter(orientation, _gui, this);
+            splitter->fromSerialization(*serialization.rightChild->childIsSplitter);
+            addWidget_mt_safe(splitter);
+        } else if (serialization.rightChild->type == eProjectWorkspaceWidgetTypeTabWidget) {
+            TabWidget* tab = new TabWidget(_gui, this);
+            tab->fromSerialization(*serialization.rightChild->childIsTabWidget);
+            addWidget_mt_safe(tab);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

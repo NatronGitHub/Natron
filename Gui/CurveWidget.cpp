@@ -323,6 +323,7 @@ CurveWidget::centerOn(double xmin,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
+        QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
     }
     _imp->zoomOrPannedSinceLastFit = false;
@@ -483,6 +484,7 @@ CurveWidget::resizeGL(int width,
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
     if ( (width > 0) && (height > 0) ) {
+        QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.setScreenSize(width, height);
     }
 
@@ -1135,7 +1137,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     switch (_imp->_state) {
     case eEventStateDraggingView:
         _imp->zoomOrPannedSinceLastFit = true;
-        _imp->zoomCtx.translate(dx, dy);
+
+        {
+            QMutexLocker k(&_imp->zoomCtxMutex);
+            _imp->zoomCtx.translate(dx, dy);
+        }
 
         // Synchronize the dope sheet editor and opened viewers
         if ( _imp->_gui->isTripleSyncEnabled() ) {
@@ -1220,7 +1226,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
                 par = par_max;
                 scaleFactorY = par / _imp->zoomCtx.factor();
             }
-            _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+
+            {
+                QMutexLocker k(&_imp->zoomCtxMutex);
+                _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+            }
 
             // Alt + Wheel: zoom time only, keep point under mouse
             par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
@@ -1231,7 +1241,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
                 par = par_max;
                 scaleFactorX = par / _imp->zoomCtx.factor();
             }
-            _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+
+            {
+                QMutexLocker k(&_imp->zoomCtxMutex);
+                _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+            }
 
             if (_imp->_drawSelectedKeyFramesBbox) {
                 refreshSelectedKeysBbox();
@@ -1354,6 +1368,8 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         _imp->zoomOrPannedSinceLastFit = true;
@@ -1366,6 +1382,8 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
         _imp->zoomOrPannedSinceLastFit = true;
@@ -1378,6 +1396,8 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
 
@@ -1965,6 +1985,7 @@ CurveWidget::centerOn(double xmin,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
+        QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.fill( xmin, xmax, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
     }
 
@@ -1977,8 +1998,7 @@ CurveWidget::getProjection(double *zoomLeft,
                            double *zoomFactor,
                            double *zoomAspectRatio) const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
+    QMutexLocker k(&_imp->zoomCtxMutex);
 
     *zoomLeft = _imp->zoomCtx.left();
     *zoomBottom = _imp->zoomCtx.bottom();
@@ -1993,7 +2013,7 @@ CurveWidget::setProjection(double zoomLeft,
                            double zoomAspectRatio)
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
+    QMutexLocker k(&_imp->zoomCtxMutex);
 
     _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }

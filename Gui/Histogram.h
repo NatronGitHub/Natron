@@ -81,6 +81,10 @@ public:
 
     int getViewerTextureInputDisplayed() const;
 
+    virtual bool saveProjection(ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const ViewportData& data) OVERRIDE FINAL;
+
 public Q_SLOTS:
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL

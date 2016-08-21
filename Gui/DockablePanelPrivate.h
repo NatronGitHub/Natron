@@ -83,9 +83,6 @@ struct DockablePanelPrivate
     Button* _hideUnmodifiedButton;
     Button* _floatButton;
     Button* _cross;
-    mutable QMutex _currentColorMutex;
-    QColor _overlayColor;
-    bool _hasOverlayColor;
     Button* _colorButton;
     Button* _overlayButton;
     Button* _undoButton;

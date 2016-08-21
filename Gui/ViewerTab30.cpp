@@ -95,6 +95,17 @@ ViewerTab::setInfoBarResolution(const Format & f)
     _imp->infoWidget[1]->setResolution(f);
 }
 
+NodeGuiPtr
+ViewerTab::getCurrentNodeViewerInterface(const std::string& pluginID) const
+{
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin(); it!=_imp->currentNodeContext.end(); ++it) {
+        if (it->pluginID == pluginID) {
+            return it->currentNode.lock();
+        }
+    }
+    return NodeGuiPtr();
+}
+
 /**
  * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
  **/
@@ -240,16 +251,21 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     _imp->viewer->redraw();
 } // ViewerTab::setPluginViewerInterface
 
-/**
- * @brief Removes the interface associated to the given node.
- * @param permanently The interface is destroyed instead of being hidden
- * @param setAnotherFromSamePlugin If true, if another node of the same plug-in is a candidate for a viewer interface, it will replace the existing
- * viewer interface for this plug-in
- **/
 void
-ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
-                                     bool permanently,
-                                     bool setAnotherFromSamePlugin)
+ViewerTab::removeViewerInterface(const NodeGuiPtr& n,
+                           bool permanently)
+{
+    if (n != _imp->viewerNode.lock()->getNode()->getNodeGui()) {
+        return;
+    }
+    removeNodeViewerInterfaceInternal(n, permanently, false);
+}
+
+
+void
+ViewerTab::removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
+                                       bool permanently,
+                                       bool setAnotherFromSamePlugin)
 {
     std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
 
@@ -257,15 +273,13 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
         return;
     }
 
-    if (n->getNode()->isEffectViewerNode()) {
-        return;
-    }
+
 
     std::string pluginID = n->getNode()->getPluginID();
     NodeGuiPtr activeNodeForPlugin;
     QToolBar* activeItemToolBar = 0;
     QWidget* activeItemContainer = 0;
-
+    QWidget* activePlayer = 0;
     {
         // Keep the iterator under this scope since we erase it
         std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
@@ -275,6 +289,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
             if (activeNodeForPlugin == n) {
                 activeItemToolBar = foundActive->currentContext->getToolBar();
                 activeItemContainer = foundActive->currentContext->getContainerWidget();
+                activePlayer = foundActive->currentContext->getPlayerToolbar();
                 _imp->currentNodeContext.erase(foundActive);
             }
         }
@@ -288,6 +303,9 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
             if (item->widget() == activeItemToolBar) {
                 activeItemToolBar->hide();
                 _imp->viewerLayout->removeItem(item);
+                if (permanently) {
+                    activeItemToolBar->deleteLater();
+                }
                 break;
             }
         }
@@ -299,6 +317,21 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
             _imp->mainLayout->removeWidget(activeItemContainer);
         }
         activeItemContainer->hide();
+        if (permanently) {
+            activeItemContainer->deleteLater();
+        }
+    }
+
+    if (activePlayer) {
+        int playerIndex = _imp->mainLayout->indexOf(activePlayer);
+        assert(playerIndex >= 0);
+        if (playerIndex >= 0) {
+            _imp->mainLayout->removeWidget(activePlayer);
+        }
+        activePlayer->hide();
+        if (permanently) {
+            activePlayer->deleteLater();
+        }
     }
 
     if (setAnotherFromSamePlugin && activeNodeForPlugin == n) {
@@ -326,11 +359,29 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
         }
     }
 
-
     if (permanently) {
         found->second.reset();
         _imp->nodesContext.erase(found);
     }
+
+} // ViewerTab::removeNodeViewerInterfaceInternal
+
+/**
+ * @brief Removes the interface associated to the given node.
+ * @param permanently The interface is destroyed instead of being hidden
+ * @param setAnotherFromSamePlugin If true, if another node of the same plug-in is a candidate for a viewer interface, it will replace the existing
+ * viewer interface for this plug-in
+ **/
+void
+ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
+                                     bool permanently,
+                                     bool setAnotherFromSamePlugin)
+{
+    if (n->getNode()->isEffectViewerNode()) {
+        return;
+    }
+    removeNodeViewerInterfaceInternal(n, permanently, setAnotherFromSamePlugin);
+    
 } // ViewerTab::removeNodeViewerInterface
 
 /**

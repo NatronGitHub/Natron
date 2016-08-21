@@ -413,7 +413,7 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
     KnobIntPtr defMarkerSearchWinKnob = context->getDefaultMarkerSearchWinSizeKnob();
     addKnobToViewerUI(defMarkerSearchWinKnob);
-    defMarkerSearchWinKnob->setInViewerContextStretch(eStretchAfter);
+    defMarkerSearchWinKnob->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );

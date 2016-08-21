@@ -83,10 +83,6 @@ public:
         w = width; h = height;
     }
 
-    KnobIPtr getLabelSerialization() const
-    {
-        return label->getKnob();
-    }
 
     void getColor(float & red,
                   float &green,
@@ -105,6 +101,10 @@ public:
         return _isNull;
     }
 
+    const KnobSerializationPtr& getLabelSerialization() const
+    {
+        return label;
+    }
 private:
 
     double posX;

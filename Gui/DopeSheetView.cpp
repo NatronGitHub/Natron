@@ -284,6 +284,7 @@ public:
     GLuint kfTexturesIDs[KF_TEXTURES_COUNT];
 
     // for navigating
+    mutable QMutex zoomContextMutex;
     ZoomContext zoomContext;
     bool zoomOrPannedSinceLastFit;
 
@@ -3179,7 +3180,10 @@ DopeSheetView::resizeGL(int w,
 
     GL_GPU::glViewport(0, 0, w, h);
 
-    _imp->zoomContext.setScreenSize(w, h);
+    {
+        QMutexLocker k(&_imp->zoomContextMutex);
+        _imp->zoomContext.setScreenSize(w, h);
+    }
 
     // Don't do the following when the height of the widget is irrelevant
     if (h == 1) {
@@ -3501,6 +3505,7 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
     } else if ( buttonDownIsMiddle(e) ) {
         double dx = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMouseMove.x(),
                                                          _imp->lastPosOnMouseMove.y() ).x() - mouseZoomCoords.x();
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomContext.translate(dx, 0);
 
         redraw();
@@ -3642,8 +3647,10 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     }
 
 
-    _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-
+    {
+        QMutexLocker k(&_imp->zoomContextMutex);
+        _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+    }
     _imp->computeSelectedKeysBRect();
 
     redraw();
@@ -3660,6 +3667,30 @@ DopeSheetView::focusInEvent(QFocusEvent *e)
 {
     QGLWidget::focusInEvent(e);
 }
+
+/**
+ * @brief Get the current orthographic projection
+ **/
+void
+DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    *zoomLeft = _imp->zoomContext.left();
+    *zoomBottom = _imp->zoomContext.bottom();
+    *zoomFactor = _imp->zoomContext.factor();
+    *zoomAspectRatio = _imp->zoomContext.aspectRatio();
+}
+
+/**
+ * @brief Set the current orthographic projection
+ **/
+void
+DopeSheetView::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    _imp->zoomContext.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

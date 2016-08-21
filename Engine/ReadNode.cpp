@@ -33,20 +33,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
@@ -62,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
 #include "Engine/NodeSerialization.h"
-#include "Engine/KnobSerialization.h" // createDefaultValueForParam
+#include "Engine/KnobSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/Settings.h"
 
@@ -393,27 +379,9 @@ ReadNodePrivate::cloneGenericKnobs()
     const KnobsVec& knobs = _publicInterface->getKnobs();
 
     for (std::list<KnobSerializationPtr>::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
-        KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = toKnobChoice(*it2);
-                KnobChoicePtr serializedIsChoice = toKnobChoice(serializedKnob);;
-                if (isChoice && serializedIsChoice) {
-                    const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
-                    assert(extraData);
-                    if (extraData) {
-                        isChoice->choiceRestoration(serializedIsChoice, extraData);
-                    }
-                } else {
-                    (*it2)->clone(serializedKnob);
-                }
-                (*it2)->setSecret( serializedKnob->getIsSecret() );
-                if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
-                    for (int i = 0; i < (*it2)->getDimension(); ++i) {
-                        (*it2)->setEnabled( i, serializedKnob->isEnabled(i) );
-                    }
-                }
-
+            if ( (*it2)->getName() == (*it)->getName() ) {
+                (*it2)->fromSerialization(**it);
                 break;
             }
         }
@@ -431,12 +399,7 @@ ReadNodePrivate::destroyReadNode()
 
     genericKnobsSerialization.clear();
 
-    std::string serializationString;
     try {
-        std::ostringstream ss;
-        boost::archive::xml_oarchive oArchive(ss);
-        std::list<KnobSerializationPtr> serialized;
-
 
         for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
             if ( !(*it)->isDeclaredByPlugin() ) {
@@ -475,7 +438,7 @@ ReadNodePrivate::destroyReadNode()
                 }
 
                 KnobSerializationPtr s( new KnobSerialization(*it) );
-                serialized.push_back(s);
+                genericKnobsSerialization.push_back(s);
             }
             if (!isGeneric) {
                 try {
@@ -485,33 +448,9 @@ ReadNodePrivate::destroyReadNode()
                 }
             }
         }
-
-        int n = (int)serialized.size();
-        oArchive << boost::serialization::make_nvp("numItems", n);
-        for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
-            oArchive << boost::serialization::make_nvp("item", **it);
-
-        }
-        serializationString = ss.str();
     } catch (...) {
         assert(false);
     }
-
-    try {
-        std::stringstream ss(serializationString);
-        boost::archive::xml_iarchive iArchive(ss);
-        int n ;
-        iArchive >> boost::serialization::make_nvp("numItems", n);
-        for (int i = 0; i < n; ++i) {
-            KnobSerializationPtr s(new KnobSerialization);
-            iArchive >> boost::serialization::make_nvp("item", *s);
-            genericKnobsSerialization.push_back(s);
-
-        }
-    } catch (...) {
-        assert(false);
-    }
-
     
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
@@ -587,12 +526,8 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
     std::string filePattern;
 
     for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
-        if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = toKnobStringBase( (*it)->getKnob() );
-            assert(isString);
-            if (isString) {
-                filePattern = isString->getValue();
-            }
+        if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
+            filePattern = (*it)->_values[0]->_value.value.isString;
             break;
         }
     }

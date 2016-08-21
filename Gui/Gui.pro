@@ -104,6 +104,7 @@ SOURCES += \
     DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
+    EditNodeViewerContextDialog.cpp \
     EditScriptDialog.cpp \
     ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
@@ -172,7 +173,6 @@ SOURCES += \
     NodeGraphTextItem.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
-    NodeGuiSerialization.cpp \
     NodeSettingsPanel.cpp \
     NodeViewerContext.cpp \
     PanelWidget.cpp \
@@ -195,7 +195,6 @@ SOURCES += \
     ScriptTextEdit.cpp \
     SequenceFileDialog.cpp \
     Shaders.cpp \
-    SerializableWindow.cpp \
     SpinBox.cpp \
     SpinBoxValidator.cpp \
     SplashScreen.cpp \
@@ -257,6 +256,7 @@ HEADERS += \
     DotGui.h \
     Edge.h \
     EditExpressionDialog.h \
+    EditNodeViewerContextDialog.h \
     EditScriptDialog.h \
     ExportGroupTemplateDialog.h \
     FileTypeMainWindow_win.h \
@@ -334,7 +334,6 @@ HEADERS += \
     ScriptTextEdit.h \
     SequenceFileDialog.h \
     Shaders.h \
-    SerializableWindow.h \
     SpinBox.h \
     SpinBoxValidator.h \
     SplashScreen.h \
@@ -382,7 +381,7 @@ HEADERS += \
     NatronGui/guiapp_wrapper.h \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
-    NatronGui/pytabwidget_wrapper.h 
+    NatronGui/pytabwidget_wrapper.h
 
 RESOURCES += \
     GuiResources.qrc

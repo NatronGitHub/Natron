@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#include <QMutex>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -153,6 +155,7 @@ public:
 
     boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+    mutable QMutex zoomCtxMutex;
     ZoomContext zoomCtx;
     EventStateEnum _state;
     Menu* _rightClickMenu;

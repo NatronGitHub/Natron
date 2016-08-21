@@ -2965,33 +2965,7 @@ SequenceFileDialog::createViewerPreviewNode()
 NodePtr
 SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
 {
-#ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    if ( !filetype.empty() ) {
-        std::map<std::string, std::string>::iterator found = readersForFormat.find(filetype);
-        if ( found == readersForFormat.end() ) {
-            return NodePtr();
-        }
-        std::map<std::string, NodePtr>::iterator foundReader = _preview->readerNodes.find(found->second);
-        if ( foundReader == _preview->readerNodes.end() ) {
-            CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonInternal, NodeCollectionPtr() );
-            args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString::fromUtf8( found->first.c_str() );
-            args.createGui = false;
-            args.addToProject = false;
-            NodePtr reader = _gui->getApp()->createNode(args);
-            if (reader) {
-                _preview->readerNodes.insert( std::make_pair(found->second, reader) );
-            }
 
-            return reader;
-        } else {
-            return foundReader->second;
-        }
-    }
-
-    return NodePtr();
-#else
     if (_preview->readerNode) {
         return _preview->readerNode;
     }
@@ -3007,7 +2981,6 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
     }
 
     return _preview->readerNode;
-#endif
 }
 
 void

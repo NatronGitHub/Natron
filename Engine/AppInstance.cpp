@@ -65,7 +65,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ProcessHandler.h"
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/SerializableWindow.h"
 #include "Engine/Settings.h"
+#include "Engine/PyPanelI.h"
+#include "Engine/TabWidgetI.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
 
@@ -165,6 +168,15 @@ public:
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
+    mutable QMutex uiInfoMutex;
+
+    SerializableWindow* mainWindow;
+    std::list<SerializableWindow*> floatingWindows;
+    std::list<TabWidgetI*> tabWidgets;
+    std::list<SplitterI*> splitters;
+    std::list<PyPanelI*> pythonPanels;
+    std::list<DockablePanelI*> openedSettingsPanels;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -183,6 +195,10 @@ public:
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , projectBeingLoaded()
+        , mainWindow(0)
+        , floatingWindows()
+        , tabWidgets()
+        , pythonPanels()
     {
     }
 
@@ -199,6 +215,9 @@ public:
     void getSequenceNameFromWriter(const OutputEffectInstancePtr& writer, QString* sequenceName);
 
     void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
+
+    void checkNumberOfNonFloatingPanes();
+
 };
 
 AppInstance::AppInstance(int appID)
@@ -914,12 +933,12 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         }
 
         if ( !moduleName.isEmpty() ) {
-            setGroupLabelIDAndVersion(node, modulePath, moduleName);
+            setGroupLabelIDAndVersion(node, moduleName, false);
         }
 
         // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
         if (serialization) {
-            containerNode->loadKnobs(*serialization);
+            containerNode->fromSerialization(*serialization);
         }
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
 
@@ -932,14 +951,28 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
 void
 AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
-                                       const QString& pythonModulePath,
-                                       const QString &pythonModule)
+                                       const QString &pythonModule,
+                                       bool pythonModuleIsAbsoluteScriptFilePath)
 {
-    std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
+    std::string pythonModuleName;
+    if (!pythonModuleIsAbsoluteScriptFilePath) {
+        pythonModuleName = pythonModule.toStdString();
+    } else {
+        // In Previous versions of Natron, the pythonModule was the absolute file path of the python script in which the module was
+        // defined. Now this is only the module name
+        QString str = pythonModule;
+        QtCompat::removeFileExtension(str);
+        int foundLastSlash = str.lastIndexOf( QChar::fromLatin1('/') );
+        if (foundLastSlash != -1) {
+            pythonModuleName = str.mid(0, foundLastSlash).toStdString();
+        }
+    }
+
+    std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description, pluginPath;
     unsigned int version;
     bool istoolset;
 
-    if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModulePath.toStdString(), pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version) ) {
+    if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
         QString groupingStr = QString::fromUtf8( pluginGrouping.c_str() );
         QStringList groupingSplits = groupingStr.split( QLatin1Char('/') );
         std::list<std::string> stdGrouping;
@@ -948,7 +981,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
         }
 
         node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, version);
-        node->setPluginPythonModule( QString( pythonModulePath + pythonModule + QString::fromUtf8(".py") ).toStdString() );
+        node->setPluginPythonModule(pythonModuleName);
     }
 }
 
@@ -957,24 +990,6 @@ AppInstance::createReader(const std::string& filename,
                           CreateNodeArgs& args)
 {
     std::string pluginID;
-
-#ifndef NATRON_ENABLE_IO_META_NODES
-
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    QString fileCpy = QString::fromUtf8( filename.c_str() );
-    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
-    std::string ext = extq.toStdString();
-    std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
-    if ( found == readersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Reader").toStdString(),
-                              tr("No plugin capable of decoding %1 was found").arg(extq).toStdString(), false );
-
-        return NodePtr();
-    }
-    pluginID = found->second;
-    CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, group);
-#endif
 
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     std::string canonicalFilename = filename;
@@ -996,24 +1011,7 @@ AppInstance::createWriter(const std::string& filename,
                           int firstFrame,
                           int lastFrame)
 {
-#ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
 
-    QString fileCpy = QString::fromUtf8( filename.c_str() );
-    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
-    std::string ext = extq.toStdString();
-    std::map<std::string, std::string>::iterator found = writersForFormat.find(ext);
-    if ( found == writersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Writer").toStdString(),
-                              tr("No plugin capable of encoding %1 was found.").arg(extq).toStdString(), false );
-
-        return NodePtr();
-    }
-
-
-    CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, collection);
-#endif
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     if ( (firstFrame != INT_MIN) && (lastFrame != INT_MAX) ) {
         args.addParamDefaultValue<int>("frameRange", 2);
@@ -1080,7 +1078,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     QString findId = argsPluginID;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     //If it is a reader or writer, create a ReadNode or WriteNode
     if (!argsIOContainer) {
@@ -1092,7 +1089,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
-#endif
 
     try {
         plugin = appPTR->getPluginBinary(findId, versionMajor, versionMinor, _imp->_projectCreatedWithLowerCaseIDs && serialization);
@@ -1284,16 +1280,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
         if (serialization) {
             if ( serialization && !serialization->getPythonModule().empty() ) {
-                QString pythonModulePath = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
-                QString moduleName;
-                QString modulePath;
-                int foundLastSlash = pythonModulePath.lastIndexOf( QChar::fromLatin1('/') );
-                if (foundLastSlash != -1) {
-                    modulePath = pythonModulePath.mid(0, foundLastSlash + 1);
-                    moduleName = pythonModulePath.remove(0, foundLastSlash + 1);
-                }
-                QtCompat::removeFileExtension(moduleName);
-                setGroupLabelIDAndVersion(node, modulePath, moduleName);
+                QString moduleName = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
+                setGroupLabelIDAndVersion(node, moduleName, serialization->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME);
             }
             onGroupCreationFinished(node, serialization, autoConnect);
         } else if ( !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
@@ -2217,6 +2205,291 @@ AppInstance::recheckInvalidExpressions()
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
         _imp->invalidExprKnobs = newInvalidKnobs;
     }
+}
+
+void
+AppInstance::setMainWindowPointer(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->mainWindow = window;
+}
+
+SerializableWindow*
+AppInstance::getMainWindowSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->mainWindow;
+}
+
+std::list<SerializableWindow*>
+AppInstance::getFloatingWindowsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->floatingWindows;
+}
+
+std::list<SplitterI*>
+AppInstance::getSplittersSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->splitters;
+}
+
+std::list<TabWidgetI*>
+AppInstance::getTabWidgetsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->tabWidgets;
+}
+
+std::list<PyPanelI*>
+AppInstance::getPyPanelsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->pythonPanels;
+}
+
+void
+AppInstance::registerFloatingWindow(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SerializableWindow*>::iterator found = std::find(_imp->floatingWindows.begin(), _imp->floatingWindows.end(), window);
+
+    if ( found == _imp->floatingWindows.end() ) {
+        _imp->floatingWindows.push_back(window);
+    }
+}
+
+void
+AppInstance::unregisterFloatingWindow(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SerializableWindow*>::iterator found = std::find(_imp->floatingWindows.begin(), _imp->floatingWindows.end(), window);
+
+    if ( found != _imp->floatingWindows.end() ) {
+        _imp->floatingWindows.erase(found);
+    }
+}
+
+void
+AppInstance::registerSplitter(SplitterI* splitter)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SplitterI*>::iterator found = std::find(_imp->splitters.begin(), _imp->splitters.end(), splitter);
+
+    if ( found == _imp->splitters.end() ) {
+        _imp->splitters.push_back(splitter);
+    }
+}
+
+void
+AppInstance::unregisterSplitter(SplitterI* splitter)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SplitterI*>::iterator found = std::find(_imp->splitters.begin(), _imp->splitters.end(), splitter);
+
+    if ( found != _imp->splitters.end() ) {
+        _imp->splitters.erase(found);
+    }
+}
+
+void
+AppInstance::registerTabWidget(TabWidgetI* tabWidget)
+{
+
+    onTabWidgetRegistered(tabWidget);
+    {
+        QMutexLocker k(&_imp->uiInfoMutex);
+        bool hasAnchor = false;
+
+        for (std::list<TabWidgetI*>::iterator it = _imp->tabWidgets.begin(); it != _imp->tabWidgets.end(); ++it) {
+            if ( (*it)->isAnchor() ) {
+                hasAnchor = true;
+                break;
+            }
+        }
+        std::list<TabWidgetI*>::iterator found = std::find(_imp->tabWidgets.begin(), _imp->tabWidgets.end(), tabWidget);
+
+        if ( found == _imp->tabWidgets.end() ) {
+            if ( _imp->tabWidgets.empty() ) {
+                tabWidget->setClosable(false);
+            }
+            _imp->tabWidgets.push_back(tabWidget);
+
+            if (!hasAnchor) {
+                tabWidget->setAsAnchor(true);
+            }
+        }
+    }
+
+}
+
+void
+AppInstance::unregisterTabWidget(TabWidgetI* tabWidget)
+{
+    {
+        QMutexLocker k(&_imp->uiInfoMutex);
+        std::list<TabWidgetI*>::iterator found = std::find(_imp->tabWidgets.begin(), _imp->tabWidgets.end(), tabWidget);
+
+        if ( found != _imp->tabWidgets.end() ) {
+            _imp->tabWidgets.erase(found);
+        }
+        if ( ( tabWidget->isAnchor() ) && !_imp->tabWidgets.empty() ) {
+            _imp->tabWidgets.front()->setAsAnchor(true);
+        }
+    }
+    onTabWidgetUnregistered(tabWidget);
+}
+
+void
+AppInstance::clearTabWidgets()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->tabWidgets.clear();
+}
+
+void
+AppInstance::clearFloatingWindows()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->floatingWindows.clear();
+}
+
+void
+AppInstance::clearSplitters()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->splitters.clear();
+}
+
+void
+AppInstance::registerPyPanel(PyPanelI* panel, const std::string& pythonFunction)
+{
+    panel->setPythonFunction(QString::fromUtf8(pythonFunction.c_str()));
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<PyPanelI*>::iterator found = std::find(_imp->pythonPanels.begin(), _imp->pythonPanels.end(), panel);
+
+    if ( found == _imp->pythonPanels.end() ) {
+        _imp->pythonPanels.push_back(panel);
+    }
+}
+
+void
+AppInstance::unregisterPyPanel(PyPanelI* panel)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<PyPanelI*>::iterator found = std::find(_imp->pythonPanels.begin(), _imp->pythonPanels.end(), panel);
+
+    if ( found != _imp->pythonPanels.end() ) {
+        _imp->pythonPanels.erase(found);
+    }
+
+}
+
+void
+AppInstance::registerSettingsPanel(DockablePanelI* panel, int index)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<DockablePanelI*>::iterator found = std::find(_imp->openedSettingsPanels.begin(), _imp->openedSettingsPanels.end(), panel);
+
+    if ( found == _imp->openedSettingsPanels.end() ) {
+        if (index == -1 || index >= (int)_imp->openedSettingsPanels.size()) {
+            _imp->openedSettingsPanels.push_back(panel);
+        } else {
+            std::list<DockablePanelI*>::iterator it = _imp->openedSettingsPanels.begin();
+            std::advance(it, index);
+            _imp->openedSettingsPanels.insert(it, panel);
+        }
+    }
+}
+
+void
+AppInstance::unregisterSettingsPanel(DockablePanelI* panel)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<DockablePanelI*>::iterator found = std::find(_imp->openedSettingsPanels.begin(), _imp->openedSettingsPanels.end(), panel);
+
+    if ( found != _imp->openedSettingsPanels.end() ) {
+        _imp->openedSettingsPanels.erase(found);
+    }
+}
+
+void
+AppInstance::clearSettingsPanels()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->openedSettingsPanels.clear();
+}
+
+std::list<DockablePanelI*>
+AppInstance::getOpenedSettingsPanels() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->openedSettingsPanels;
+}
+
+QString
+AppInstance::getAvailablePaneName(const QString & baseName) const
+{
+    std::string name = baseName.toStdString();
+    QMutexLocker l(&_imp->uiInfoMutex);
+    int baseNumber = _imp->tabWidgets.size();
+
+    if ( name.empty() ) {
+        name.append("pane");
+        name.append( QString::number(baseNumber).toStdString() );
+    }
+
+    for (;;) {
+        bool foundName = false;
+        for (std::list<TabWidgetI*>::const_iterator it = _imp->tabWidgets.begin(); it != _imp->tabWidgets.end(); ++it) {
+            if ( (*it)->getScriptName() == name ) {
+                foundName = true;
+                break;
+            }
+        }
+        if (foundName) {
+            ++baseNumber;
+            name = QString::fromUtf8("pane%1").arg(baseNumber).toStdString();
+        } else {
+            break;
+        }
+    }
+
+    return QString::fromUtf8(name.c_str());
+}
+
+void
+AppInstance::saveApplicationWorkspace(ProjectWorkspaceSerialization* serialization)
+{
+
+    // Main window
+    SerializableWindow* mainWindow = getMainWindowSerialization();
+    if (mainWindow) {
+        serialization->_mainWindowSerialization.reset(new ProjectWindowSerialization);
+        mainWindow->toSerialization(serialization->_mainWindowSerialization.get());
+    }
+
+    // Floating windows
+    std::list<SerializableWindow*> floatingWindows = getFloatingWindowsSerialization();
+    for (std::list<SerializableWindow*>::iterator it = floatingWindows.begin(); it!=floatingWindows.end(); ++it) {
+        boost::shared_ptr<ProjectWindowSerialization> s(new ProjectWindowSerialization);
+        (*it)->toSerialization(s.get());
+        serialization->_floatingWindowsSerialization.push_back(s);
+
+    }
+
+    // Save active python panels
+    std::list<PyPanelI*> pythonPanels = getPyPanelsSerialization();
+    for (std::list<PyPanelI*>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+        (*it)->toSerialization(s.get());
+        serialization->_pythonPanels.push_back(s);
+    }
+
+    // Save opened histograms
+    getHistogramScriptNames(&serialization->_histograms);
+
 }
 
 NATRON_NAMESPACE_EXIT;

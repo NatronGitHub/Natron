@@ -196,7 +196,6 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
 {
     ///Clear clipboard
     clipboard.nodes.clear();
-    clipboard.nodesUI.clear();
 
     NodesGuiList nodesToCopy = selection;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
@@ -213,10 +212,7 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->isVisible() ) {
             NodeSerializationPtr ns( new NodeSerialization( (*it)->getNode(), true ) );
-            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-            (*it)->serialize( nGuiS.get() );
             clipboard.nodes.push_back(ns);
-            clipboard.nodesUI.push_back(nGuiS);
         }
     }
 }

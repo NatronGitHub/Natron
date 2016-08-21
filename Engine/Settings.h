@@ -469,9 +469,8 @@ private:
     KnobPagePtr _uiPage;
     KnobBoolPtr _notifyOnFileChange;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     KnobBoolPtr _filedialogForWriters;
-#endif
+
     KnobBoolPtr _renderOnEditingFinished;
     KnobBoolPtr _linearPickers;
     KnobIntPtr _maxPanelsOpened;

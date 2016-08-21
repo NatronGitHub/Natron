@@ -40,7 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
-#include "Engine/KnobSerialization.h" // createDefaultValueForParam
+#include "Engine/KnobSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"

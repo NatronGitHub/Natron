@@ -219,6 +219,7 @@ typedef boost::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
 typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
+typedef boost::shared_ptr<NodeGuiSerialization> NodeGuiSerializationPtr;
 typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
 typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
 typedef boost::shared_ptr<TrackerPanelV1> TrackerPanelV1Ptr;

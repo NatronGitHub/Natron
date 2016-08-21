@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
+#include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/GroupInput.h"
@@ -152,7 +153,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , QGraphicsItem(parent)
     , _graph(NULL)
     , _internalNode()
-    , _selected(false)
     , _settingNameFromGui(false)
     , _panelOpenedBeforeDeactivate(false)
     , _pluginIcon(NULL)
@@ -179,11 +179,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _settingsPanel(NULL)
     , _mainInstancePanel(NULL)
     , _panelCreated(false)
-    , _currentColorMutex()
-    , _currentColor()
     , _clonedColor()
     , _wasBeginEditCalled(false)
-    , positionMutex()
     , _slaveMasterLink(NULL)
     , _masterNodeGui()
     , _knobsLinks()
@@ -195,9 +192,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _magnecStartingPos()
     , _nodeLabel()
     , _parentMultiInstance()
-    , _mtSafeSizeMutex()
-    , _mtSafeWidth(0)
-    , _mtSafeHeight(0)
     , _hostOverlay()
     , _undoStack( new QUndoStack() )
     , _overlayLocked(false)
@@ -653,10 +647,8 @@ NodeGui::createGui()
 void
 NodeGui::onSettingsPanelColorChanged(const QColor & color)
 {
-    {
-        QMutexLocker k(&_currentColorMutex);
-        _currentColor = color;
-    }
+    getNode()->onNodeUIColorChanged(color.redF(), color.greenF(), color.blueF());
+
     Q_EMIT colorChanged(color);
 
     refreshCurrentBrush();
@@ -886,12 +878,8 @@ NodeGui::resize(int width,
     const int iconWidth = getPluginIconWidth();
     adjustSizeToContent(&width, &height, adjustToTextSize);
 
+    getNode()->onNodeUISizeChanged(width, height);
 
-    {
-        QMutexLocker k(&_mtSafeSizeMutex);
-        _mtSafeWidth = width;
-        _mtSafeHeight = height;
-    }
     const QPointF bottomRight(topLeft.x() + width, topLeft.y() + height);
     QRectF bbox(topLeft.x(), topLeft.y(), width, height);
 
@@ -975,6 +963,7 @@ NodeGui::refreshPositionEnd(double x,
     refreshEdges();
     NodePtr node = getNode();
     if (node) {
+        node->onNodeUIPositionChanged(x, y);
         const NodesWList & outputs = node->getGuiOutputs();
 
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
@@ -1299,12 +1288,8 @@ NodeGui::onPreviewImageComputed()
         _previewPixmap->setPixmap(pix);
     }
     const QPointF topLeft = mapFromParent( pos() );
-    int width, height;
-    {
-        QMutexLocker k(&_mtSafeSizeMutex);
-        height = _mtSafeHeight;
-        width = _mtSafeWidth;
-    }
+    double width, height;
+    getNode()->getSize(&width, &height);
     QRectF bbox(topLeft.x(), topLeft.y(), width, height);
     refreshPreviewAndLabelPosition(bbox);
 }
@@ -1321,32 +1306,6 @@ NodeGui::copyPreviewImageBuffer(const std::vector<unsigned int>& data,
         _previewH = height;
     }
     Q_EMIT previewImageComputed();
-}
-
-bool
-NodeGui::getOverlayColor(double* r,
-                         double* g,
-                         double* b) const
-{
-    if ( !getSettingPanel() ) {
-        return false;
-    }
-    if (_overlayLocked) {
-        *r = 0.5;
-        *g = 0.5;
-        *b = 0.5;
-
-        return true;
-    }
-    if ( !getSettingPanel()->hasOverlayColor() ) {
-        return false;
-    }
-    QColor c = getSettingPanel()->getOverlayColor();
-    *r = c.redF();
-    *g = c.greenF();
-    *b = c.blueF();
-
-    return true;
 }
 
 void
@@ -1635,7 +1594,7 @@ NodeGui::refreshCurrentBrush()
     if (_slaveMasterLink) {
         applyBrush(_clonedColor);
     } else {
-        applyBrush(_currentColor);
+        applyBrush(getCurrentColor());
     }
 }
 
@@ -1662,10 +1621,7 @@ NodeGui::isSelectedInParentMultiInstance(const NodeConstPtr& node) const
 void
 NodeGui::setUserSelected(bool b)
 {
-    {
-        QMutexLocker l(&_selectedMutex);
-        _selected = b;
-    }
+    getNode()->onNodeUISelectionChanged(b);
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
@@ -1682,9 +1638,7 @@ NodeGui::setUserSelected(bool b)
 bool
 NodeGui::getIsSelected() const
 {
-    QMutexLocker l(&_selectedMutex);
-
-    return _selected;
+    return getNode()->getNodeIsSelected();
 }
 
 Edge*
@@ -2092,11 +2046,6 @@ NodeGui::getKnobs() const
     return _settingsPanel->getKnobsMapping();
 }
 
-void
-NodeGui::serialize(NodeGuiSerialization* serializationObject) const
-{
-    serializationObject->initialize(this);
-}
 
 void
 NodeGui::serializeInternal(std::list<NodeSerializationPtr >& internalSerialization) const
@@ -2128,18 +2077,6 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
     assert(internalSerialization.size() >= 1);
 
     getSettingPanel()->pushUndoCommand( new LoadNodePresetsCommand(thisShared, internalSerialization) );
-}
-
-void
-NodeGui::copyFrom(const NodeGuiSerialization & obj)
-{
-    setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
-    if ( getNode()->isPreviewEnabled() != obj.isPreviewEnabled() ) {
-        togglePreview();
-    }
-    double w, h;
-    obj.getSize(&w, &h);
-    resize(w, h);
 }
 
 boost::shared_ptr<QUndoStack>
@@ -2269,22 +2206,6 @@ NodeGui::moveAbovePositionRecursively(const QRectF & r)
     }
 }
 
-QPointF
-NodeGui::getPos_mt_safe() const
-{
-    QMutexLocker l(&positionMutex);
-
-    return pos();
-}
-
-void
-NodeGui::setPos_mt_safe(const QPointF & pos)
-{
-    QMutexLocker l(&positionMutex);
-
-    setPos(pos);
-}
-
 void
 NodeGui::centerGraphOnIt()
 {
@@ -2324,7 +2245,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         _masterNodeGui.reset();
         if ( !node->isNodeDisabled() ) {
             if ( !isSelected() ) {
-                applyBrush(_currentColor);
+                applyBrush(getCurrentColor());
             }
         }
     }
@@ -2567,16 +2488,8 @@ NodeGui::destroyGui()
         NodeClipBoard &cb = appPTR->getNodeClipBoard();
         for (std::list< NodeSerializationPtr >::iterator it = cb.nodes.begin();
              it != cb.nodes.end(); ++it) {
-            if ( (*it)->getNode() == internalNode ) {
+            if ( (*it)->getNodeScriptName() == internalNode->getScriptName() ) {
                 cb.nodes.erase(it);
-                break;
-            }
-        }
-
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
-             it != cb.nodesUI.end(); ++it) {
-            if ( (*it)->getFullySpecifiedName() == internalNode->getFullyQualifiedName() ) {
-                cb.nodesUI.erase(it);
                 break;
             }
         }
@@ -2616,9 +2529,9 @@ NodeGui::getSize() const
 
         return QSize( bbox.width(), bbox.height() );
     } else {
-        QMutexLocker k(&_mtSafeSizeMutex);
-
-        return QSize(_mtSafeWidth, _mtSafeHeight);
+        double w,h;
+        getNode()->getSize(&w, &h);
+        return QSize(w,h);
     }
 }
 
@@ -3024,9 +2937,14 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
 QColor
 NodeGui::getCurrentColor() const
 {
-    QMutexLocker k(&_currentColorMutex);
+    double r,g,b;
+    getNode()->getColor(&r,&g,&b);
+    QColor c;
+    c.setRgbF(Image::clamp(r, 0.,1.),
+               Image::clamp(g, 0.,1.),
+               Image::clamp(b, 0.,1.));
 
-    return _currentColor;
+    return c;
 }
 
 void
@@ -3036,6 +2954,16 @@ NodeGui::setCurrentColor(const QColor & c)
     if (_settingsPanel) {
         _settingsPanel->setCurrentColor(c);
     }
+}
+
+void
+NodeGui::setOverlayColor(double r, double g, double b)
+{
+    QColor c;
+    c.fromRgbF(Image::clamp(r, 0.,1.),
+               Image::clamp(g, 0.,1.),
+               Image::clamp(b, 0.,1.));
+    setOverlayColor(c);
 }
 
 void
@@ -3257,20 +3185,14 @@ void
 NodeGui::getPosition(double *x,
                      double* y) const
 {
-    QPointF pos = getPos_mt_safe();
-
-    *x = pos.x();
-    *y = pos.y();
+    return getNode()->getPosition(x, y);
 }
 
 void
 NodeGui::getSize(double* w,
                  double* h) const
 {
-    QSize s = getSize();
-
-    *w = s.width();
-    *h = s.height();
+    return getNode()->getSize(w, h);
 }
 
 void
@@ -3579,8 +3501,15 @@ NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
 void
 NodeGui::setOverlayLocked(bool locked)
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    QMutexLocker k(&_overlayLockedMutex);
     _overlayLocked = locked;
+}
+
+bool
+NodeGui::isOverlayLocked() const
+{
+    QMutexLocker k(&_overlayLockedMutex);
+    return _overlayLocked;
 }
 
 void

@@ -319,8 +319,8 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         int dimension)
 {
     KnobIPtr knob = getKnob();
-
-    if ( knob->getIsSecret() ) {
+    bool isViewerKnob = isViewerUIKnob();
+    if ( (!isViewerKnob && knob->getIsSecret()) || (isViewerKnob && knob->getInViewerContextSecret()) ) {
         return;
     }
 

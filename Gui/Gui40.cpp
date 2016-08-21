@@ -364,58 +364,6 @@ Gui::getApp() const
     return _imp->_appInstance.lock();
 }
 
-const std::list<TabWidget*> &
-Gui::getPanes() const
-{
-    return _imp->_panes;
-}
-
-std::list<TabWidget*>
-Gui::getPanes_mt_safe() const
-{
-    QMutexLocker l(&_imp->_panesMutex);
-
-    return _imp->_panes;
-}
-
-int
-Gui::getPanesCount() const
-{
-    QMutexLocker l(&_imp->_panesMutex);
-
-    return (int)_imp->_panes.size();
-}
-
-QString
-Gui::getAvailablePaneName(const QString & baseName) const
-{
-    QString name = baseName;
-    QMutexLocker l(&_imp->_panesMutex);
-    int baseNumber = _imp->_panes.size();
-
-    if ( name.isEmpty() ) {
-        name.append( QString::fromUtf8("pane") );
-        name.append( QString::number(baseNumber) );
-    }
-
-    for (;; ) {
-        bool foundName = false;
-        for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-            if ( (*it)->objectName_mt_safe() == name ) {
-                foundName = true;
-                break;
-            }
-        }
-        if (foundName) {
-            ++baseNumber;
-            name = QString::fromUtf8("pane%1").arg(baseNumber);
-        } else {
-            break;
-        }
-    }
-
-    return name;
-}
 
 void
 Gui::setDraftRenderEnabled(bool b)
@@ -669,15 +617,11 @@ Gui::ensureScriptEditorVisible()
     } else {
         pane = _imp->_nodeGraphArea->getParentPane();
         if (!pane) {
-            std::list<TabWidget*> tabs;
-            {
-                QMutexLocker k(&_imp->_panesMutex);
-                tabs = _imp->_panes;
-            }
+            std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
             if ( tabs.empty() ) {
                 return;
             }
-            pane = tabs.front();
+            pane = dynamic_cast<TabWidget*>(tabs.front());
         }
         assert(pane);
         pane->moveScriptEditorHere();
@@ -696,15 +640,11 @@ Gui::ensureProgressPanelVisible()
     } else {
         pane = _imp->_nodeGraphArea->getParentPane();
         if (!pane) {
-            std::list<TabWidget*> tabs;
-            {
-                QMutexLocker k(&_imp->_panesMutex);
-                tabs = _imp->_panes;
-            }
+            std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
             if ( tabs.empty() ) {
                 return 0;
             }
-            pane = tabs.front();
+            pane = dynamic_cast<TabWidget*>(tabs.front());
         }
         assert(pane);
         PanelWidget* ret = pane->currentWidget();
@@ -781,16 +721,13 @@ Gui::renderSelectedNode()
         } else {
             if (selectedNodes.size() == 1) {
                 ///create a node and connect it to the node and use it to render
-#ifndef NATRON_ENABLE_IO_META_NODES
-                NodePtr writer = createWriter();
-#else
+
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
                 CreateNodeArgs args(PLUGINID_NATRON_WRITE, graph->getGroup());
                 args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
                 args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                 NodePtr writer = getApp()->createWriter( std::string(), args );
-#endif
                 if (writer) {
                     AppInstance::RenderWork w;
                     w.writer = toOutputEffectInstance( writer->getEffectInstance() );
@@ -896,7 +833,8 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
 
     ///Refresh all visible knobs at the current time
     if ( !getApp()->isGuiFrozen() ) {
-        for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+        std::list<DockablePanelI*> openedPanels = getApp()->getOpenedSettingsPanels();
+        for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
                 NodePtr node = nodePanel->getNode()->getNode();

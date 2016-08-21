@@ -16,70 +16,57 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+#ifndef PYPANELI_H
+#define PYPANELI_H
+
+
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "SerializableWindow.h"
-
-#include <stdexcept>
-
-#include <QtCore/QMutex>
+#include "Engine/EngineFwd.h"
+#include "Engine/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
-SerializableWindow::SerializableWindow()
-    : _lock(new QMutex)
-    , _w(0), _h(0), _x(0), _y(0)
+class PyPanelI : public SerializableObjectBase
 {
-}
+public:
 
-SerializableWindow::~SerializableWindow()
-{
-    delete _lock;
-}
+    PyPanelI()
+    {
 
-void
-SerializableWindow::setMtSafeWindowSize(int w,
-                                        int h)
-{
-    QMutexLocker k(_lock);
+    }
 
-    _w = w;
-    _h = h;
-}
+    virtual ~PyPanelI()
+    {
 
-void
-SerializableWindow::setMtSafePosition(int x,
-                                      int y)
-{
-    QMutexLocker k(_lock);
+    }
 
-    _x = x;
-    _y = y;
-}
+    virtual void setPythonFunction(const QString& function) = 0;
 
-void
-SerializableWindow::getMtSafeWindowSize(int &w,
-                                        int & h)
-{
-    QMutexLocker k(_lock);
+    virtual QString getPythonFunction() const  = 0;
 
-    w = _w;
-    h = _h;
-}
+    virtual void setPanelLabel(const QString& label) = 0;
 
-void
-SerializableWindow::getMtSafePosition(int &x,
-                                      int &y)
-{
-    QMutexLocker k(_lock);
+    virtual QString getPanelLabel() const = 0;
 
-    x = _x;
-    y = _y;
-}
+    virtual QString getPanelScriptName() const = 0;
+
+    virtual KnobsVec getKnobs() const = 0;
+
+    virtual QString save_serialization_thread() const = 0;
+
+    virtual void restore(const QString& data) = 0;
+
+    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
+};
 
 NATRON_NAMESPACE_EXIT;
 
+#endif // PYPANELI_H

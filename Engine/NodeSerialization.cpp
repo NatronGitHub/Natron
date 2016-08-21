@@ -39,147 +39,49 @@ NATRON_NAMESPACE_ENTER;
 
 NodeSerialization::NodeSerialization(const NodePtr & n,
                                      bool serializeInputs)
-    : _isNull(true)
-    , _nbKnobs(0)
+    : _version(NODE_SERIALIZATION_CURRENT_VERSION)
+    , _hasBeenSerialized(false)
     , _knobsValues()
     , _knobsAge(0)
+    , _groupFullyQualifiedScriptName()
     , _nodeLabel()
     , _nodeScriptName()
+    , _cacheID()
     , _pluginID()
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
-    , _hasRotoContext(false)
-    , _hasTrackerContext(false)
-    , _node()
+    , _masterNodeFullyQualifiedScriptName()
+    , _inputs()
+    , _oldInputs()
+    , _rotoContext()
+    , _trackerContext()
+    , _multiInstanceParentName()
+    , _userPages()
+    , _pagesIndexes()
+    , _children()
+    , _pythonModule()
     , _pythonModuleVersion(0)
+    , _userComponents()
+    , _nodePositionCoords()
+    , _nodeSize()
+    , _nodeColor()
+    , _overlayColor()
+    , _nodeIsSelected(false)
+    , _viewerUIKnobsOrder()
 {
+    _nodePositionCoords[0] = _nodePositionCoords[1] = INT_MIN;
+    _nodeSize[0] = _nodeSize[1] = -1;
+    _nodeColor[0] = _nodeColor[1] = _nodeColor[2] = -1;
+    _overlayColor[0] = _overlayColor[1] = _overlayColor[2] = -1;
+
     if (n) {
-        _node = n;
-
-        ///All this code is MT-safe
-
-        _knobsValues.clear();
-        _inputs.clear();
-
-        if ( n->isOpenFXNode() ) {
-            OfxEffectInstancePtr effect = boost::dynamic_pointer_cast<OfxEffectInstance>( n->getEffectInstance() );
-            assert(effect);
-            if (effect) {
-                effect->syncPrivateData_other_thread();
-            }
+        n->toSerialization(this);
+        if (!serializeInputs) {
+            _inputs.clear();
         }
-
-        std::vector< KnobIPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
-        std::list<KnobIPtr > userPages;
-        for (U32 i  = 0; i < knobs.size(); ++i) {
-            KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
-            KnobPagePtr isPage = toKnobPage(knobs[i]);
-
-            if (isPage) {
-                _pagesIndexes.push_back( knobs[i]->getName() );
-                if ( knobs[i]->isUserKnob() ) {
-                    userPages.push_back(knobs[i]);
-                }
-            }
-
-            if ( !knobs[i]->isUserKnob() &&
-                 knobs[i]->getIsPersistent() &&
-                 !isGroup && !isPage
-                 && knobs[i]->hasModificationsForSerialization() ) {
-                ///For choice do a deepclone because we need entries
-                //bool doCopyKnobs = isChoice ? true : copyKnobs;
-
-                KnobSerializationPtr newKnobSer( new KnobSerialization(knobs[i]) );
-                _knobsValues.push_back(newKnobSer);
-            }
-        }
-
-        _nbKnobs = (int)_knobsValues.size();
-
-        for (std::list<KnobIPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization(*it) );
-            _userPages.push_back(s);
-        }
-
-        _knobsAge = n->getKnobsAge();
-
-        _nodeLabel = n->getLabel_mt_safe();
-
-        _nodeScriptName = n->getScriptName_mt_safe();
-
-        _cacheID = n->getCacheID();
-
-        _pluginID = n->getPluginID();
-
-        if ( !n->hasPyPlugBeenEdited() ) {
-            _pythonModule = n->getPluginPythonModule();
-            _pythonModuleVersion = n->getMajorVersion();
-        }
-
-        _pluginMajorVersion = n->getMajorVersion();
-
-        _pluginMinorVersion = n->getMinorVersion();
-
-        if (serializeInputs) {
-            n->getInputNames(_inputs);
-        }
-
-        NodePtr masterNode = n->getMasterNode();
-        if (masterNode) {
-            _masterNodeName = masterNode->getFullyQualifiedName();
-        }
-
-        RotoContextPtr roto = n->getRotoContext();
-        if ( roto && !roto->isEmpty() ) {
-            _hasRotoContext = true;
-            roto->save(&_rotoContext);
-        } else {
-            _hasRotoContext = false;
-        }
-
-        TrackerContextPtr tracker = n->getTrackerContext();
-        if (tracker) {
-            _hasTrackerContext = true;
-            tracker->save(&_trackerContext);
-        } else {
-            _hasTrackerContext = false;
-        }
-
-
-        NodeGroupPtr isGrp = n->isEffectNodeGroup();
-        if (isGrp) {
-            NodesList nodes;
-            isGrp->getActiveNodes(&nodes);
-
-            _children.clear();
-
-            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                if ( (*it)->isPartOfProject() ) {
-                    NodeSerializationPtr state( new NodeSerialization(*it) );
-                    _children.push_back(state);
-                }
-            }
-        }
-
-        _multiInstanceParentName = n->getParentMultiInstanceName();
-
-        NodesList childrenMultiInstance;
-        _node->getChildrenMultiInstance(&childrenMultiInstance);
-        if ( !childrenMultiInstance.empty() ) {
-            assert(!isGrp);
-            for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
-                assert( (*it)->getParentMultiInstance() );
-                if ( (*it)->isActivated() ) {
-                    NodeSerializationPtr state( new NodeSerialization(*it) );
-                    _children.push_back(state);
-                }
-            }
-        }
-
-        n->getUserCreatedComponents(&_userComponents);
-
-        _isNull = false;
     }
 }
+
+
 
 NATRON_NAMESPACE_EXIT;

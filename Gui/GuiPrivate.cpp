@@ -143,10 +143,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _currentRedoAction(0)
     , _undoStacksGroup(0)
     , _undoStacksActions()
-    , _splittersMutex()
-    , _splitters()
-    , _pyPanelsMutex()
-    , _userPanels()
     , _isTripleSyncEnabled(false)
     , areRenderStatsEnabledMutex()
     , areRenderStatsEnabled(false)
@@ -232,18 +228,12 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , viewersViewMenu(0)
     , cacheMenu(0)
     , menuHelp(0)
-    , _panesMutex()
-    , _panes()
-    , _floatingWindowMutex()
-    , _floatingWindows()
     , _settingsGui(0)
     , _projectGui(0)
     , _errorLog(0)
     , _currentlyDraggedPanel(0)
     , _currentlyDraggedPanelInitialSize()
     , _aboutWindow(0)
-    , openedPanelsMutex()
-    , openedPanels()
     , _toolButtonMenuOpened(NULL)
     , aboutToCloseMutex()
     , _aboutToClose(false)
@@ -277,16 +267,16 @@ GuiPrivate::notifyGuiClosing()
 {
     ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
     ///cause bad pointer dereference to the Gui object since we're destroying it.
-    std::list<TabWidget*> tabs;
-    {
-        QMutexLocker k(&_panesMutex);
-        tabs = _panes;
-    }
+    std::list<TabWidgetI*> tabs = _gui->getApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        (*it)->discardGuiPointer();
-        for (int i = 0; i < (*it)->count(); ++i) {
-            (*it)->tabAt(i)->notifyGuiClosingPublic();
+    for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* tab = dynamic_cast<TabWidget*>(*it);
+        if (!tab) {
+            continue;
+        }
+        tab->discardGuiPointer();
+        for (int i = 0; i < tab->count(); ++i) {
+            tab->tabAt(i)->notifyGuiClosingPublic();
         }
     }
 
@@ -441,16 +431,21 @@ GuiPrivate::createProgressPanelGui()
 TabWidget*
 GuiPrivate::getOnly1NonFloatingPane(int & count) const
 {
-    assert( !_panesMutex.tryLock() );
     count = 0;
-    if ( _panes.empty() ) {
+    std::list<TabWidgetI*> tabs = _gui->getApp()->getTabWidgetsSerialization();
+    if ( tabs.empty() ) {
         return NULL;
     }
     TabWidget* firstNonFloating = 0;
-    for (std::list<TabWidget*>::const_iterator it = _panes.begin(); it != _panes.end(); ++it) {
-        if ( !(*it)->isFloatingWindowChild() ) {
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* isWidget = dynamic_cast<TabWidget*>(*it);
+        assert(isWidget);
+        if (!isWidget) {
+            continue;
+        }
+        if ( !isWidget->isFloatingWindowChild() ) {
             if (!firstNonFloating) {
-                firstNonFloating = *it;
+                firstNonFloating = isWidget;
             }
             ++count;
         }

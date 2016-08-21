@@ -29,6 +29,9 @@
 
 #include "Engine/EngineFwd.h"
 
+#define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
+
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -53,9 +56,20 @@ public:
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) = 0;
 
     /**
+     * @brief Recreates all knobs in the Viewer UI if any
+     **/
+    virtual void recreateViewerUIKnobs() = 0;
+
+    /**
      * @brief Removes a specific knob from the gui
      **/
     virtual void deleteKnobGui(const KnobIPtr& knob) = 0;
+
+    /**
+     * @brief Must return the fully qualified script-name of the node holding this panel (e.g: "Group1/SubGroup1/Blur1").
+     * For the project settings panel, return kNatronProjectSettingsPanelSerializationName
+     **/
+    virtual std::string getHolderFullyQualifiedScriptName() const = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

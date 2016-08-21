@@ -32,6 +32,8 @@
 #include <QSplitter>
 #include <QKeyEvent>
 
+#include "Engine/ProjectSerialization.h"
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetHierarchyView.h"
@@ -286,6 +288,20 @@ QUndoStack*
 DopeSheetEditor::getUndoStack() const
 {
     return _imp->model ? _imp->model->getUndoStack() : 0;
+}
+
+bool
+DopeSheetEditor::saveProjection(ViewportData* data)
+{
+    _imp->dopeSheetView->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+    return true;
+}
+
+bool
+DopeSheetEditor::loadProjection(const ViewportData& data)
+{
+    _imp->dopeSheetView->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

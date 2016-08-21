@@ -84,10 +84,6 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     (void)QT_TR_NOOP(kShortcutDescActionNextTab);
     (void)QT_TR_NOOP(kShortcutDescActionPrevTab);
     (void)QT_TR_NOOP(kShortcutDescActionCloseTab);
-#ifndef NATRON_ENABLE_IO_META_NODES
-    (void)QT_TR_NOOP(kShortcutDescActionGraphCreateReader);
-    (void)QT_TR_NOOP(kShortcutDescActionGraphCreateWriter);
-#endif
     (void)QT_TR_NOOP(kShortcutDescActionGraphRearrangeNodes);
     (void)QT_TR_NOOP(kShortcutDescActionGraphRemoveNodes);
     (void)QT_TR_NOOP(kShortcutDescActionGraphShowExpressions);

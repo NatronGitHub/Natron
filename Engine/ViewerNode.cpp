@@ -913,6 +913,13 @@ ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
 }
 
 void
+ViewerNode::onKnobsLoaded()
+{
+    _imp->lastGammaValue = _imp->gammaSliderKnob.lock()->getValue();
+    _imp->lastFstopValue = _imp->gainSliderKnob.lock()->getValue();
+}
+
+void
 ViewerNode::onGroupCreated()
 {
     ViewerNodePtr thisShared = shared_from_this();
@@ -979,6 +986,15 @@ ViewerNode::onGroupCreated()
     _imp->mustSetUpPlaybackButtonsTimer.setSingleShot(true);
     QObject::connect( &_imp->mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), this, SLOT(onSetDownPlaybackButtonsTimeout()) );
 
+
+}
+
+void
+ViewerNode::onContainerGroupLoaded()
+{
+    _imp->refreshInputChoices(true);
+    refreshInputFromChoiceMenu(0);
+    refreshInputFromChoiceMenu(1);
 }
 
 /**
@@ -1764,11 +1780,11 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->layersKnob.lock());
     addKnobToViewerUI(_imp->alphaChannelKnob.lock());
     addKnobToViewerUI(_imp->displayChannelsKnob[0].lock());
-    _imp->displayChannelsKnob[0].lock()->setInViewerContextStretch(eStretchAfter);
+    _imp->displayChannelsKnob[0].lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     addKnobToViewerUI(_imp->aInputNodeChoiceKnob.lock());
     addKnobToViewerUI(_imp->blendingModeChoiceKnob.lock());
     addKnobToViewerUI(_imp->bInputNodeChoiceKnob.lock());
-    _imp->bInputNodeChoiceKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    _imp->bInputNodeChoiceKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
     addKnobToViewerUI(_imp->clipToProjectButtonKnob.lock());
     _imp->clipToProjectButtonKnob.lock()->setInViewerContextItemSpacing(0);
@@ -1779,18 +1795,18 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->fullFrameButtonKnob.lock());
     _imp->fullFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->toggleUserRoIButtonKnob.lock());
-    _imp->toggleUserRoIButtonKnob.lock()->setInViewerContextAddSeparator(true);
+    _imp->toggleUserRoIButtonKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeSeparator);
     addKnobToViewerUI(_imp->refreshButtonKnob.lock());
     _imp->refreshButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->pauseButtonKnob[0].lock());
-    _imp->pauseButtonKnob[0].lock()->setInViewerContextAddSeparator(true);
+    _imp->pauseButtonKnob[0].lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeSeparator);
 
     addKnobToViewerUI(_imp->centerViewerButtonKnob.lock());
     _imp->centerViewerButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->syncViewersButtonKnob.lock());
     _imp->syncViewersButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->zoomChoiceKnob.lock());
-    _imp->zoomChoiceKnob.lock()->setInViewerContextNewLineActivated(true);
+    _imp->zoomChoiceKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
 
 
     addKnobToViewerUI(_imp->enableGainButtonKnob.lock());
@@ -1801,7 +1817,7 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->colorspaceKnob.lock());
     addKnobToViewerUI(_imp->enableCheckerboardButtonKnob.lock());
     addKnobToViewerUI(_imp->activeViewKnob.lock());
-    _imp->activeViewKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    _imp->activeViewKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     addKnobToViewerUI(_imp->enableInfoBarButtonKnob.lock());
 
 
@@ -1810,17 +1826,17 @@ ViewerNode::initializeKnobs()
     playerToolbarPage->addKnob(_imp->setInPointButtonKnob.lock());
     _imp->setInPointButtonKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->inPointKnob.lock());
-    _imp->inPointKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    _imp->inPointKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     playerToolbarPage->addKnob(_imp->enableFpsKnob.lock());
     _imp->enableFpsKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->fpsKnob.lock());
-    _imp->fpsKnob.lock()->setInViewerContextAddSeparator(true);
+    _imp->fpsKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeSeparator);
     playerToolbarPage->addKnob(_imp->enableTurboModeButtonKnob.lock());
     _imp->enableTurboModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->playbackModeKnob.lock());
     _imp->playbackModeKnob.lock()->setInViewerContextItemSpacing(VIEWER_UI_SECTIONS_SPACING_PX);
     playerToolbarPage->addKnob(_imp->syncTimelinesButtonKnob.lock());
-    _imp->syncTimelinesButtonKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    _imp->syncTimelinesButtonKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     playerToolbarPage->addKnob(_imp->firstFrameButtonKnob.lock());
     _imp->firstFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->playBackwardButtonKnob.lock());
@@ -1844,7 +1860,7 @@ ViewerNode::initializeKnobs()
     playerToolbarPage->addKnob(_imp->incrFrameKnob.lock());
     _imp->incrFrameKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->nextIncrButtonKnob.lock());
-    _imp->nextIncrButtonKnob.lock()->setInViewerContextStretch(eStretchAfter);
+    _imp->nextIncrButtonKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     playerToolbarPage->addKnob(_imp->outPointKnob.lock());
     _imp->outPointKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->setOutPointButtonKnob.lock());
@@ -3922,7 +3938,7 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     getInputs(&groupInputNodes, false);
 
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
-    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
 
     NodePtr nodeToConnect = getInternalViewerNode()->getInputRecursive(internalInputIdx);
     if (curLabel == "-") {

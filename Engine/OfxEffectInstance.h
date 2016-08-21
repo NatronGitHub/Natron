@@ -85,12 +85,7 @@ public:
                                               OFX::Host::ImageEffect::Descriptor* desc,
                                               ContextEnum context,
                                               const NodeSerialization* serialization,
-                                              const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                              , bool allowFileDialogs,
-                                              bool *hasUsedFileDialog
-#endif
-                                              ) = 0;
+                                              const CreateNodeArgs& args) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -127,12 +122,7 @@ public:
                                       OFX::Host::ImageEffect::Descriptor* desc,
                                       ContextEnum context,
                                       const NodeSerialization* serialization,
-                                      const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                      , bool allowFileDialogs,
-                                      bool *hasUsedFileDialog
-#endif
-                                      ) OVERRIDE FINAL;
+                                      const CreateNodeArgs& args) OVERRIDE FINAL;
 
     OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
     const OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;

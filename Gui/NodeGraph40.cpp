@@ -301,10 +301,8 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        boost::shared_ptr<NodeGuiSerialization> guiSerialization(new NodeGuiSerialization);
-        (*it)->serialize( guiSerialization.get() );
-        NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
-                                           _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );
+        NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset,
+                                           _imp->group.lock(), std::string(), (*it)->getNode(), &oldNewScriptNameMapping );
 
         newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
         newNodesList.push_back(clone);
@@ -316,7 +314,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
     assert( serializations.size() == newNodes.size() );
     ///restore connections
-    _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
+    NodeGraphPrivate::restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
 
 
     NodesList allNodes;
@@ -437,7 +435,7 @@ NodeGraph::centerOnAllNodes()
         for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->getPos_mt_safe() ) );
+                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );
@@ -448,7 +446,7 @@ NodeGraph::centerOnAllNodes()
         for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             if ( /*(*it)->isActive() && */ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->getPos_mt_safe() ) );
+                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );

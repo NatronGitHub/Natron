@@ -168,6 +168,17 @@ public:
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+
+    /**
+     * @brief Get the current orthographic projection
+     **/
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const ;
+
+    /**
+     * @brief Set the current orthographic projection
+     **/
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio) ;
+
     void refreshSelectionBboxAndRedraw();
 
 public Q_SLOTS:

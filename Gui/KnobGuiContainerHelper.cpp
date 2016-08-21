@@ -38,10 +38,15 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
+
 #include "Gui/KnobGui.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/NodeGui.h"
+#include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TabGroup.h"
 
@@ -1010,6 +1015,41 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
 
     recreateKnobsInternal(curPage, restorePageIndex);
     _imp->refreshPagesSecretness();
+
+    recreateViewerUIKnobs();
+}
+
+void
+KnobGuiContainerHelper::recreateViewerUIKnobs()
+{
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    EffectInstancePtr isEffect = toEffectInstance(_imp->holder);
+    if (!isEffect) {
+        return;
+    }
+
+    NodePtr thisNode = isEffect->getNode();
+    if (!thisNode) {
+        return;
+    }
+    NodeGuiPtr thisNodeGui = boost::dynamic_pointer_cast<NodeGui>(thisNode->getNodeGui());
+    if (!thisNodeGui) {
+        return;
+    }
+    NodeGuiPtr currentViewerInterface = gui->getCurrentNodeViewerInterface(thisNode->getPluginID());
+
+    if (thisNodeGui->getNode()->isEffectViewerNode()) {
+        gui->removeViewerInterface(thisNodeGui, true);
+    } else {
+        gui->removeNodeViewerInterface(thisNodeGui, true);
+    }
+    gui->createNodeViewerInterface(thisNodeGui);
+    if (currentViewerInterface) {
+        gui->setNodeViewerInterface(currentViewerInterface);
+    }
 }
 
 void

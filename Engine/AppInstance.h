@@ -210,11 +210,7 @@ public:
         return eStandardButtonYes;
     }
 
-    virtual void loadProjectGui(bool /*isAutosave*/, boost::archive::xml_iarchive & /*archive*/) const
-    {
-    }
-
-    virtual void saveProjectGui(boost::archive::xml_oarchive & /*archive*/)
+    virtual void loadProjectGui(bool /*isAutosave*/, const ProjectSerializationPtr& /*serialization*/,const boost::shared_ptr<boost::archive::xml_iarchive>&  /*archive*/) const
     {
     }
 
@@ -428,6 +424,50 @@ public:
     const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
     void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
 
+    SerializableWindow* getMainWindowSerialization() const;
+
+    std::list<SerializableWindow*> getFloatingWindowsSerialization() const;
+
+    std::list<SplitterI*> getSplittersSerialization() const;
+
+    std::list<TabWidgetI*> getTabWidgetsSerialization() const;
+
+    std::list<PyPanelI*> getPyPanelsSerialization() const;
+
+    std::list<DockablePanelI*> getOpenedSettingsPanels() const;
+
+    void registerFloatingWindow(SerializableWindow* window);
+    void unregisterFloatingWindow(SerializableWindow* window);
+    void clearFloatingWindows();
+
+
+    void registerSplitter(SplitterI* splitter);
+    void unregisterSplitter(SplitterI* splitter);
+    void clearSplitters();
+
+    void registerTabWidget(TabWidgetI* tabWidget);
+    void unregisterTabWidget(TabWidgetI* tabWidget);
+    void clearTabWidgets(); 
+
+    void registerPyPanel(PyPanelI* panel, const std::string& pythonFunction);
+    void unregisterPyPanel(PyPanelI* panel);
+
+    void registerSettingsPanel(DockablePanelI* panel, int index = -1);
+    void unregisterSettingsPanel(DockablePanelI* panel);
+    void clearSettingsPanels();
+
+    /**
+    * @brief If baseName is already used by another pane or it is empty,this function will return a new pane name that is not already
+    * used by another pane. Otherwise it will return baseName.
+    **/
+    QString getAvailablePaneName( const QString & baseName = QString() ) const;
+
+    virtual void getHistogramScriptNames(std::list<std::string>* /*histograms*/) const {}
+
+    virtual void getViewportsProjection(std::map<std::string,ViewportData>* /*projections*/) const {}
+
+    void saveApplicationWorkspace(ProjectWorkspaceSerialization* serialization);
+
 public Q_SLOTS:
 
     void quit();
@@ -456,12 +496,20 @@ Q_SIGNALS:
 
 protected:
 
+    virtual void onTabWidgetRegistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
+
+    virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
+
     virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
     {
     }
+
+    virtual void createMainWindow() { }
+
+    void setMainWindowPointer(SerializableWindow* window);
 
 private:
 
@@ -474,8 +522,8 @@ private:
     NodePtr createNodeInternal(CreateNodeArgs& args);
 
     void setGroupLabelIDAndVersion(const NodePtr& node,
-                                   const QString& pythonModulePath,
-                                   const QString &pythonModule);
+                                   const QString &pythonModule,
+                                   bool pythonModuleIsAbsoluteScriptFilePath);
 
     NodePtr createNodeFromPythonModule(Plugin* plugin,
                                        const CreateNodeArgs& args);

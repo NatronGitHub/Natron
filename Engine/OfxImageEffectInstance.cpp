@@ -602,7 +602,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + paramType );
     }
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     /**
      * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
      * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
@@ -611,7 +610,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if ( knob->getHolder() != getOfxEffectInstance() ) {
         getOfxEffectInstance()->addKnob(knob);
     }
-#endif
 
     OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
     assert(ptk);
@@ -664,9 +662,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     int viewportLayoutHint = descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextLayoutHint);
     if (viewportLayoutHint == kNatronOfxParamPropInViewerContextLayoutHintAddNewLine) {
-        knob->setInViewerContextNewLineActivated(true);
+        knob->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
     } else if (viewportLayoutHint == kNatronOfxParamPropInViewerContextLayoutHintNormalDivider) {
-        knob->setInViewerContextAddSeparator(true);
+        knob->setInViewerContextLayoutType(eViewerContextLayoutTypeSeparator);
     }
 
     bool viewportSecret = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret);
@@ -756,7 +754,6 @@ OfxImageEffectInstance::addParamsToTheirParents()
                             sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
                             assert(sep);
                             sep->setName(separatorName);
-#ifdef NATRON_ENABLE_IO_META_NODES
                             /**
                              * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
                              * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
@@ -765,7 +762,6 @@ OfxImageEffectInstance::addParamsToTheirParents()
                             if ( knobHolder != getOfxEffectInstance() ) {
                                 getOfxEffectInstance()->addKnob(sep);
                             }
-#endif
                         }
                         parentIsGroup->addKnob(sep);
                     }
@@ -875,7 +871,6 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
                         assert(sep);
                         sep->setName(separatorName);
-#ifdef NATRON_ENABLE_IO_META_NODES
                         /**
                          * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
                          * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
@@ -884,7 +879,6 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         if ( knobHolder != getOfxEffectInstance() ) {
                             getOfxEffectInstance()->addKnob(sep);
                         }
-#endif
                     }
                     pageKnob->addKnob(sep);
                 }

@@ -47,6 +47,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
+#include "Engine/CurveSerialization.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/Image.h"
@@ -1061,45 +1062,6 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
-void
-KnobChoice::choiceRestoration(const KnobChoicePtr& knob,
-                              const ChoiceExtraData* data)
-{
-    assert(knob && data);
-
-
-    ///Clone first and then handle restoration of the static value
-    clone(knob);
-    setSecret( knob->getIsSecret() );
-    if ( getDimension() == knob->getDimension() ) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            setEnabled( i, knob->isEnabled(i) );
-        }
-    }
-
-    {
-        QMutexLocker k(&_entriesMutex);
-        _currentEntryLabel = data->_choiceString;
-    }
-
-    int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_mergedEntries.size() ) && (_mergedEntries[serializedIndex] == data->_choiceString) ) {
-        // we're lucky, entry hasn't changed
-        setValue(serializedIndex);
-    } else {
-        // try to find the same label at some other index
-        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if ( boost::iequals(_mergedEntries[i], data->_choiceString) ) {
-                setValue(i);
-
-                return;
-            }
-        }
-
-
-        //   setValue(-1);
-    }
-}
 
 void
 KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
@@ -2111,20 +2073,22 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
 }
 
 void
-KnobParametric::saveParametricCurves(std::list< Curve >* curves) const
+KnobParametric::saveParametricCurves(std::list< CurveSerialization >* curves) const
 {
     for (U32 i = 0; i < _curves.size(); ++i) {
-        curves->push_back(*_curves[i]);
+        CurveSerialization c;
+        _curves[i]->saveSerialization(&c);
+        curves->push_back(c);
     }
 }
 
 void
-KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
+KnobParametric::loadParametricCurves(const std::list< CurveSerialization > & curves)
 {
     assert( !_curves.empty() );
     int i = 0;
-    for (std::list< Curve >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        _curves[i]->clone(*it);
+    for (std::list< CurveSerialization >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+        _curves[i]->loadSerialization(*it);
         ++i;
     }
 }

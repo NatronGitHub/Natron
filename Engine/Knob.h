@@ -45,6 +45,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
+#include "Engine/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -372,6 +373,7 @@ typedef std::list<KnobChange> KnobChanges;
 class KnobI
     : public OverlaySupport
     , public boost::enable_shared_from_this<KnobI>
+    , public SerializableObjectBase
 {
     friend class KnobHolder;
 
@@ -810,7 +812,7 @@ public:
      * @param modeOff If true, this icon will be used when the parameter is an unchecked state (only relevant for
      * buttons/booleans parameters), otherwise the icon will be used when the parameter is in a checked state
      **/
-    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) = 0;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false, bool alsoSetViewerUIIcon = true) = 0;
     virtual const std::string& getIconLabel(bool checked = false) const = 0;
 
     /**
@@ -851,8 +853,8 @@ public:
     /**
      * @brief Set the icon instead of the label for the viewer GUI
      **/
-    virtual std::string getInViewerContextIconFilePath() const = 0;
-    virtual void setInViewerContextIconFilePath(const std::string& icon) = 0;
+    virtual std::string getInViewerContextIconFilePath(bool checked) const = 0;
+    virtual void setInViewerContextIconFilePath(const std::string& icon, bool checked = true) = 0;
 
     /**
      * @brief Determines whether this knob can be assigned a shortcut or not via the shortcut editor.
@@ -891,20 +893,8 @@ public:
     /**
      * @brief Controls whether to add horizontal stretch before or after (or none) stretch
      **/
-    virtual void setInViewerContextStretch(StretchEnum stretch) = 0;
-    virtual StretchEnum getInViewerContextStretch() const = 0;
-
-    /**
-     * @brief Set whether the knob should have a vertical separator after or not in the viewer
-     **/
-    virtual void setInViewerContextAddSeparator(bool addSeparator) = 0;
-    virtual bool  getInViewerContextAddSeparator() const = 0;
-
-    /**
-     * @brief Set whether the viewer UI should create a new line after this parameter or not
-     **/
-    virtual void setInViewerContextNewLineActivated(bool activated) = 0;
-    virtual bool  getInViewerContextNewLineActivated() const = 0;
+    virtual void setInViewerContextLayoutType(ViewerContextLayoutTypeEnum type) = 0;
+    virtual ViewerContextLayoutTypeEnum getInViewerContextLayoutType() const = 0;
 
     /**
      * @brief Set whether the knob should have its viewer GUI secret or not
@@ -1158,6 +1148,17 @@ public:
                              const int listenedToDimension,
                              const KnobIPtr& listener) = 0;
     virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
+
+    /**
+     * @brief Implement to save the content of the object to the serialization object
+     **/
+    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE = 0;
+
+    /**
+     * @brief Implement to load the content of the serialization object onto this object
+     **/
+    virtual void fromSerialization(const SerializationObjectBase&  serializationBase) OVERRIDE = 0;
+
 
 private:
     virtual void removeListener(const KnobIPtr& listener, int listenerDimension) = 0;
@@ -1480,7 +1481,7 @@ public:
     void setLabel(const std::string& label) OVERRIDE FINAL;
     void setLabel(const QString & label) { setLabel( label.toStdString() ); }
 
-    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) OVERRIDE FINAL;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false, bool alsoSetViewerUIIcon = true) OVERRIDE FINAL;
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolderPtr getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHolder(const KnobHolderPtr& holder) OVERRIDE FINAL;
@@ -1493,20 +1494,16 @@ public:
     virtual int getSpacingBetweenitems() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextLabel(const QString& label) OVERRIDE FINAL;
-    virtual std::string getInViewerContextIconFilePath() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextIconFilePath(const std::string& icon) OVERRIDE FINAL;
+    virtual std::string getInViewerContextIconFilePath(bool checked) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextIconFilePath(const std::string& icon, bool checked = false) OVERRIDE FINAL;
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
     virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addInViewerContextShortcutsReference(const std::string& actionID) OVERRIDE FINAL;
     virtual const std::list<std::string>& getInViewerContextAdditionalShortcuts() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
     virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextStretch(StretchEnum stretch) OVERRIDE FINAL;
-    virtual StretchEnum getInViewerContextStretch() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextAddSeparator(bool addSeparator) OVERRIDE FINAL;
-    virtual bool  getInViewerContextAddSeparator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextNewLineActivated(bool activated) OVERRIDE FINAL;
-    virtual bool  getInViewerContextNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextLayoutType(ViewerContextLayoutTypeEnum type) OVERRIDE FINAL;
+    virtual ViewerContextLayoutTypeEnum getInViewerContextLayoutType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEnabled(int dimension, bool b) OVERRIDE FINAL;
@@ -1644,6 +1641,16 @@ public:
             _k->decrementExpressionRecursionLevel();
         }
     };
+
+    /**
+     * @brief Implement to save the content of the object to the serialization object
+     **/
+    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    /**
+     * @brief Implement to load the content of the serialization object onto this object
+     **/
+    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 protected:
 
@@ -2420,8 +2427,14 @@ public:
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
 
+    void setViewerUIKnobs(const KnobsVec& knobs);
     void addKnobToViewerUI(const KnobIPtr& knob);
-    bool isInViewerUIKnob(const KnobIPtr& knob) const;
+    void insertKnobToViewerUI(const KnobIPtr& knob, int index);
+    void removeKnobViewerUI(const KnobIPtr& knob);
+    bool moveViewerUIKnobOneStepUp(const KnobIPtr& knob);
+    bool moveViewerUIOneStepDown(const KnobIPtr& knob);
+
+    int getInViewerContextKnobIndex(const KnobIConstPtr& knob) const;
     KnobsVec getViewerUIKnobs() const;
 
 protected:

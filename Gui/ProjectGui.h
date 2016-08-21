@@ -72,11 +72,9 @@ public:
         return _project.lock();
     }
 
-    template<class Archive>
-    void save(Archive & ar) const;
 
     template<class Archive>
-    void load(bool isAutosave, Archive & ar);
+    void load(bool isAutosave, const ProjectSerializationPtr& serialization, const boost::shared_ptr<Archive> & ar);
 
     void registerNewColorPicker(KnobColorPtr knob);
 

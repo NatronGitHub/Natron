@@ -37,6 +37,8 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 // /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
 #include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -48,6 +50,32 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief Basically just the same as a Keyframe but without all member functions and extracted to remove any dependency to Natron
+ **/
+struct KeyFrameSerialization
+{
+    double time;
+    double value;
+    int interpolation;
+    double leftDerivative;
+    double rightDerivative;
+
+    template<class Archive>
+    void serialize(Archive & ar,
+                   const unsigned int /*version*/)
+    {
+        ar & ::boost::serialization::make_nvp("Time", time);
+        ar & ::boost::serialization::make_nvp("Value", value);
+        ar & ::boost::serialization::make_nvp("InterpolationMethod", interpolation);
+        ar & ::boost::serialization::make_nvp("LeftDerivative", leftDerivative);
+        ar & ::boost::serialization::make_nvp("RightDerivative", rightDerivative);
+    }
+};
+
+/**
+ * @brief Deprecated, used for backward compatibility before Natron 2.2
+ **/
 template<class Archive>
 void
 KeyFrame::serialize(Archive & ar,
@@ -60,6 +88,42 @@ KeyFrame::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
 }
 
+struct CurveSerialization
+{
+    // We don't need a set complicated data structure here because we trust that the Curve itself
+    // gave us a list of keyframes with a correct ordering
+    std::list<KeyFrameSerialization> keys;
+
+    template<class Archive>
+    void save(Archive & ar,
+                   const unsigned int /*version*/) const
+    {
+        int nKeys = (int)keys.size();
+        ar & ::boost::serialization::make_nvp("nKeys", nKeys);
+        for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+            ar & ::boost::serialization::make_nvp("Key", *it);
+        }
+    }
+
+    template<class Archive>
+    void load(Archive & ar,
+              const unsigned int /*version*/)
+    {
+        int nKeys;
+        ar & ::boost::serialization::make_nvp("nKeys", nKeys);
+        for (int i = 0; i < nKeys; ++i) {
+            KeyFrameSerialization key;
+            ar & ::boost::serialization::make_nvp("Key", key);
+            keys.push_back(key);
+        }
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+};
+
+/**
+ * @brief Deprecated, used for backward compatibility before Natron 2.2
+ **/
 template<class Archive>
 void
 Curve::serialize(Archive & ar,

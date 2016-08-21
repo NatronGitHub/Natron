@@ -53,6 +53,9 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief Deprecated, just used for backward compatibility
+ **/
 class NodeGuiSerialization
 {
 public:
@@ -75,7 +78,6 @@ public:
     {
     }
 
-    void initialize(const NodeGui* n);
 
     double getX() const
     {
@@ -142,7 +144,6 @@ public:
         return _children;
     }
 
-private:
 
     std::string _nodeName;
     double _posX, _posY;

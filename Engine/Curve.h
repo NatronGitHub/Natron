@@ -164,6 +164,10 @@ public:
 
     ~Curve();
 
+    void loadSerialization(const CurveSerialization& serialization);
+
+    void saveSerialization(CurveSerialization* serialization) const;
+
     void operator=(const Curve & other);
 
     /**

@@ -395,11 +395,13 @@ enum ValueChangedReasonEnum
 
 
 // Used to add stretch before or after widgets
-enum StretchEnum
+enum ViewerContextLayoutTypeEnum
 {
-    eStretchNone,
-    eStretchBefore,
-    eStretchAfter
+    eViewerContextLayoutTypeSpacing,
+    eViewerContextLayoutTypeSeparator,
+    eViewerContextLayoutTypeStretchAfter,
+    eViewerContextLayoutTypeStretchBefore,
+    eViewerContextLayoutTypeAddNewLine
 };
 
 enum AnimationLevelEnum

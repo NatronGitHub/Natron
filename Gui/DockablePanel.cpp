@@ -261,7 +261,7 @@ DockablePanel::DockablePanel(Gui* gui,
             NodeGuiIPtr gui_i = isEffect->getNode()->getNodeGui();
             assert(gui_i);
             double r, g, b;
-            gui_i->getColor(&r, &g, &b);
+            isEffect->getNode()->getColor(&r, &g, &b);
             currentColor.setRgbF( Image::clamp(r, 0., 1.),
                                   Image::clamp(g, 0., 1.),
                                   Image::clamp(b, 0., 1.) );
@@ -288,7 +288,6 @@ DockablePanel::DockablePanel(Gui* gui,
             if ( isEffect && isEffect->getNode()->hasOverlay() ) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
-                _imp->_overlayColor.setRgbF(1., 1., 1.);
                 _imp->_overlayButton = new OverlayColorButton(this, QIcon(pixOverlay), _imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(mediumBSize);
                 _imp->_overlayButton->setIconSize(mediumIconSize);
@@ -1089,8 +1088,8 @@ DockablePanel::getFloatingWindow() const
     return _imp->_floatingWidget;
 }
 
-FloatingWidget*
-DockablePanel::floatPanel()
+void
+DockablePanel::floatPanelInWindow(FloatingWidget* window)
 {
     _imp->_floating = !_imp->_floating;
     {
@@ -1103,15 +1102,15 @@ DockablePanel::floatPanel()
         QSize curSize = sizeHint();
 
 
-        _imp->_floatingWidget = new FloatingWidget(_imp->_gui, _imp->_gui);
+        _imp->_floatingWidget = window;
         QObject::connect( _imp->_floatingWidget, SIGNAL(closed()), this, SLOT(closePanel()) );
         _imp->_container->removeWidget(this);
         _imp->_floatingWidget->setWidget(this);
         _imp->_floatingWidget->resize(curSize);
-        _imp->_gui->registerFloatingWindow(_imp->_floatingWidget);
+        _imp->_gui->getApp()->registerFloatingWindow(_imp->_floatingWidget);
     } else {
         assert(_imp->_floatingWidget);
-        _imp->_gui->unregisterFloatingWindow(_imp->_floatingWidget);
+        _imp->_gui->getApp()->unregisterFloatingWindow(_imp->_floatingWidget);
         _imp->_floatingWidget->removeEmbeddedWidget();
         //setParent( _imp->_container->parentWidget() );
         //_imp->_container->insertWidget(0, this);
@@ -1120,6 +1119,13 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget = 0;
     }
     getGui()->buildTabFocusOrderPropertiesBin();
+}
+
+FloatingWidget*
+DockablePanel::floatPanel()
+{
+    FloatingWidget* window = new FloatingWidget(_imp->_gui, _imp->_gui);
+    floatPanelInWindow(window);
     return _imp->_floatingWidget;
 }
 
@@ -1254,11 +1260,9 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
         //p.fill(color);
         QPixmap p = QPixmap::fromImage(img);
         _imp->_overlayButton->setIcon( QIcon(p) );
-        {
-            QMutexLocker k(&_imp->_currentColorMutex);
-            _imp->_overlayColor = color;
-            _imp->_hasOverlayColor = true;
-        }
+
+        node->onNodeUIOverlayColorChanged(color.redF(), color.greenF(), color.blueF());
+
 
         NodesList overlayNodes;
         getGui()->getNodesEntitledForOverlays(overlayNodes);
@@ -1305,29 +1309,24 @@ DockablePanel::onOverlayButtonClicked()
     QColorDialog dialog(this);
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     dialog.setOption(QColorDialog::ShowAlphaChannel);
-    QColor oldColor;
-    bool hadOverlayColor;
+
+    double curOverlayColor[3];
+    node->getOverlayColor(&curOverlayColor[0], &curOverlayColor[1], &curOverlayColor[2]);
     {
-        QMutexLocker locker(&_imp->_currentColorMutex);
-        dialog.setCurrentColor(_imp->_overlayColor);
-        oldColor = _imp->_overlayColor;
-        hadOverlayColor = _imp->_hasOverlayColor;
+        QColor c;
+        c.setRgbF(Image::clamp(curOverlayColor[0], 0., 1.),
+                  Image::clamp(curOverlayColor[1], 0., 1.),
+                  Image::clamp(curOverlayColor[2], 0., 1.));
+        dialog.setCurrentColor(c);
     }
     QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onOverlayColorDialogColorChanged(QColor)) );
 
     if ( dialog.exec() ) {
         QColor c = dialog.currentColor();
-        {
-            QMutexLocker locker(&_imp->_currentColorMutex);
-            _imp->_overlayColor = c;
-            _imp->_hasOverlayColor = true;
-        }
+        node->onNodeUIOverlayColorChanged(c.redF(), c.greenF(), c.blueF());
     } else {
-        if (!hadOverlayColor) {
-            {
-                QMutexLocker locker(&_imp->_currentColorMutex);
-                _imp->_hasOverlayColor = false;
-            }
+        if (curOverlayColor[0] == -1 && curOverlayColor[1] == -1 && curOverlayColor[2] == -1) {
+            // The node didn't have an overlay color before, update icon
             QPixmap pixOverlay;
             appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
             _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
@@ -1339,22 +1338,6 @@ DockablePanel::onOverlayButtonClicked()
     if ( found != overlayNodes.end() ) {
         getGui()->getApp()->redrawAllViewers();
     }
-}
-
-QColor
-DockablePanel::getOverlayColor() const
-{
-    QMutexLocker locker(&_imp->_currentColorMutex);
-
-    return _imp->_overlayColor;
-}
-
-bool
-DockablePanel::hasOverlayColor() const
-{
-    QMutexLocker locker(&_imp->_currentColorMutex);
-
-    return _imp->_hasOverlayColor;
 }
 
 void
@@ -1375,10 +1358,8 @@ DockablePanel::resetHostOverlayColor()
     if (!node) {
         return;
     }
-    {
-        QMutexLocker locker(&_imp->_currentColorMutex);
-        _imp->_hasOverlayColor = false;
-    }
+    node->onNodeUIOverlayColorChanged(-1, -1, -1);
+
     QPixmap pixOverlay;
     appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
@@ -1394,11 +1375,6 @@ DockablePanel::resetHostOverlayColor()
 void
 DockablePanel::setOverlayColor(const QColor& c)
 {
-    {
-        QMutexLocker locker(&_imp->_currentColorMutex);
-        _imp->_overlayColor = c;
-        _imp->_hasOverlayColor = true;
-    }
     onOverlayColorDialogColorChanged(c);
 }
 
@@ -1585,9 +1561,9 @@ DockablePanel::onEnterInGroupClicked()
     } else {
         NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
         if (!lastSelectedGraph) {
-            const std::list<TabWidget*>& panes = _imp->_gui->getPanes();
+            std::list<TabWidgetI*> panes = _imp->_gui->getApp()->getTabWidgetsSerialization();
             assert(panes.size() >= 1);
-            isParentTab = panes.front();
+            isParentTab = dynamic_cast<TabWidget*>(panes.front());
         } else {
             isParentTab = dynamic_cast<TabWidget*>( lastSelectedGraph->parentWidget() );
         }
@@ -1629,59 +1605,23 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
     }
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-struct TreeItem
+std::string
+DockablePanel::getHolderFullyQualifiedScriptName() const
 {
-    QTreeWidgetItem* item;
-    KnobIPtr knob;
-};
-
-struct ManageUserParamsDialogPrivate
-{
-    DockablePanel* panel;
-    QHBoxLayout* mainLayout;
-    QTreeWidget* tree;
-    std::list<TreeItem> items;
-    QWidget* buttonsContainer;
-    QVBoxLayout* buttonsLayout;
-    Button* addButton;
-    Button* pickButton;
-    Button* editButton;
-    Button* removeButton;
-    Button* upButton;
-    Button* downButton;
-    Button* closeButton;
-
-
-    ManageUserParamsDialogPrivate(DockablePanel* panel)
-        : panel(panel)
-        , mainLayout(0)
-        , tree(0)
-        , items()
-        , buttonsContainer(0)
-        , buttonsLayout(0)
-        , addButton(0)
-        , pickButton(0)
-        , editButton(0)
-        , removeButton(0)
-        , upButton(0)
-        , downButton(0)
-        , closeButton(0)
-    {
+    KnobHolderPtr holder = getHolder();
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+    if (isEffect) {
+        return isEffect->getNode()->getFullyQualifiedName();
+    } else if (holder->isProject()) {
+        return kNatronProjectSettingsPanelSerializationName;
+    } else {
+        assert(false);
+        return std::string();
     }
-
-    KnobPagePtr getUserPageKnob() const;
-
-    void initializeKnobs(const KnobsVec& knobs, QTreeWidgetItem* parent, std::list<KnobIPtr>& markedKnobs);
-
-    void rebuildUserPages();
-};
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
+}
 
 
-    NATRON_NAMESPACE_EXIT;
-
+NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;
 #include "moc_DockablePanel.cpp"

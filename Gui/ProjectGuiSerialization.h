@@ -46,13 +46,12 @@ GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/RectD.h"
-
+#include "Engine/ProjectSerialization.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackdropSerialization.h"
 #include "Gui/GuiFwd.h"
 
 
-#define PYTHON_PANEL_SERIALIZATION_VERSION 1
 
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
 #define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
@@ -80,7 +79,8 @@ GCC_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR 9
 #define PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP 10
 #define PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS 11
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS
+#define PROJECT_GUI_SERIALIZATION_DEPRECATED 12
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_DEPRECATED
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
@@ -94,7 +94,6 @@ GCC_DIAG_ON(unused-parameter)
 #define GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL 2
 #define GUI_LAYOUT_SERIALIZATION_VERSION GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
 
-#define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
 
 NATRON_NAMESPACE_ENTER;
 struct ViewerData
@@ -229,51 +228,6 @@ struct ViewerData
     } // serialize
 };
 
-struct PythonPanelSerialization
-{
-    std::list<KnobSerializationPtr> knobs;
-    std::string name;
-    std::string pythonFunction;
-    std::string userData;
-
-    void initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab, const std::string& pythonFunction);
-
-    template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        ar & ::boost::serialization::make_nvp("Label", name);
-        ar & ::boost::serialization::make_nvp("PythonFunction", pythonFunction);
-        int nKnobs = knobs.size();
-        ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
-
-        for (std::list<KnobSerializationPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("item", **it);
-        }
-
-        ar & ::boost::serialization::make_nvp("UserData", userData);
-    }
-
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int /*version*/)
-    {
-        ar & ::boost::serialization::make_nvp("Label", name);
-        ar & ::boost::serialization::make_nvp("PythonFunction", pythonFunction);
-        int nKnobs;
-        ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
-
-        for (int i = 0; i < nKnobs; ++i) {
-            KnobSerializationPtr k(new KnobSerialization);
-            ar & ::boost::serialization::make_nvp("item", *k);
-            knobs.push_back(k);
-        }
-
-        ar & ::boost::serialization::make_nvp("UserData", userData);
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-};
 
 
 /**
@@ -328,7 +282,6 @@ struct PaneLayout
     {
     }
 
-    void initialize(TabWidget* tab);
 
     template<class Archive>
     void save(Archive & ar,
@@ -423,10 +376,6 @@ struct SplitterSerialization
         }
     }
 
-    /**
-     * @brief Called prior to save only
-     **/
-    void initialize(Splitter* splitter);
 
     template<class Archive>
     void save(Archive & ar,
@@ -507,8 +456,6 @@ struct ApplicationWindowSerialization
         delete child_asPane;
     }
 
-    ///Used prior to save only
-    void initialize(bool isMainWindow, SerializableWindow* widget);
 
     template<class Archive>
     void save(Archive & ar,
@@ -590,8 +537,7 @@ public:
     ///New in GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
     std::list<ApplicationWindowSerialization*> _windows;
 
-
-    void initialize(Gui* gui);
+    void convertToProjectWorkspaceSerialization(ProjectWorkspaceSerialization* serialization) const;
 
     template<class Archive>
     void save(Archive & ar,
@@ -629,27 +575,28 @@ public:
 
 class ProjectGuiSerialization
 {
-    ///All nodes gui data
+    // Deprecated: Nodes UI data prior to Natron 2.2
     std::list< NodeGuiSerialization > _serializedNodes;
 
-    ///The layout of the application
+    // The layout of the application windows
     GuiLayoutSerialization _layoutSerialization;
 
-    ///Viewers data such as viewport and activated buttons
+    // Viewports data
     std::map<std::string, ViewerData > _viewersData;
 
-    ///Active histograms
+    // Created histograms
     std::list<std::string> _histograms;
 
-    ///Active backdrops (kept here for bw compatibility with Natron < 1.1
+    // Active backdrops (kept here for bw compatibility with Natron < 1.1
     std::list<NodeBackdropSerialization> _backdrops;
 
-    ///All properties panels opened
+    // All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
-    std::string _scriptEditorInput;
+
+    // List of python panels
     std::list<boost::shared_ptr<PythonPanelSerialization> > _pythonPanels;
 
-    ///The boost version passed to load(), this is not used on save
+    // The boost version passed to load(), this is not used on save
     unsigned int _version;
 
     friend class ::boost::serialization::access;
@@ -664,7 +611,6 @@ class ProjectGuiSerialization
         ar & ::boost::serialization::make_nvp("ViewersData", _viewersData);
         ar & ::boost::serialization::make_nvp("Histograms", _histograms);
         ar & ::boost::serialization::make_nvp("OpenedPanels", _openedPanelsOrdered);
-        ar & ::boost::serialization::make_nvp("ScriptEditorInput", _scriptEditorInput);
         int numPyPanels = (int)_pythonPanels.size();
         ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
         for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = _pythonPanels.begin(); it != _pythonPanels.end(); ++it) {
@@ -700,8 +646,9 @@ class ProjectGuiSerialization
         if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
             ar & ::boost::serialization::make_nvp("OpenedPanels", _openedPanelsOrdered);
         }
-        if (version >= PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR) {
-            ar & ::boost::serialization::make_nvp("ScriptEditorInput", _scriptEditorInput);
+        if (version >= PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR && version < PROJECT_GUI_SERIALIZATION_DEPRECATED) {
+            std::string input;
+            ar & ::boost::serialization::make_nvp("ScriptEditorInput", input);
         }
 
         if (version >= PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS) {
@@ -766,10 +713,6 @@ public:
         return _openedPanelsOrdered;
     }
 
-    const std::string& getInputScript() const
-    {
-        return _scriptEditorInput;
-    }
 
     unsigned int getVersion() const
     {
@@ -780,6 +723,8 @@ public:
     {
         return _pythonPanels;
     }
+
+    void convertToProjectSerialization(ProjectSerialization* serialization) const;
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };

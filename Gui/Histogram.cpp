@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/Texture.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
@@ -168,6 +169,7 @@ public:
     Histogram* widget;
     Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+    mutable QMutex zoomContextMutex;
     ZoomContext zoomCtx;
     EventStateEnum state;
     bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
@@ -674,9 +676,12 @@ Histogram::resizeGL(int width,
         height = 1;
     }
     GL_GPU::glViewport (0, 0, width, height);
+
+    QMutexLocker k(&_imp->zoomContextMutex);
     _imp->zoomCtx.setScreenSize(width, height);
     if (!_imp->hasBeenModifiedSinceResize) {
         _imp->zoomCtx.fill(0., 1., 0., 10.);
+        k.unlock();
         computeHistogramAndRefresh();
     }
 }
@@ -726,7 +731,10 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
 
     switch (_imp->state) {
     case eEventStateDraggingView:
-        _imp->zoomCtx.translate(dx, dy);
+        {
+            QMutexLocker k(&_imp->zoomContextMutex);
+            _imp->zoomCtx.translate(dx, dy);
+        }
         _imp->hasBeenModifiedSinceResize = true;
         computeHistogramAndRefresh();
         break;
@@ -748,7 +756,11 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+
+        {
+            QMutexLocker k(&_imp->zoomContextMutex);
+            _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+        }
 
         _imp->hasBeenModifiedSinceResize = true;
 
@@ -848,6 +860,8 @@ Histogram::wheelEvent(QWheelEvent* e)
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         // Alt + Wheel: zoom time only, keep point under mouse
@@ -859,6 +873,8 @@ Histogram::wheelEvent(QWheelEvent* e)
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
         // Wheel: zoom values and time, keep point under mouse
@@ -870,6 +886,8 @@ Histogram::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
 
@@ -889,7 +907,10 @@ Histogram::keyPressEvent(QKeyEvent* e)
 
     if ( key == Qt::Key_F && modCASIsNone(e) ) {
         _imp->hasBeenModifiedSinceResize = false;
-        _imp->zoomCtx.fill(0., 1., 0., 10.);
+        {
+            QMutexLocker k(&_imp->zoomContextMutex);
+            _imp->zoomCtx.fill(0., 1., 0., 10.);
+        }
         computeHistogramAndRefresh();
     } else {
         accept = false;
@@ -1475,6 +1496,25 @@ Histogram::hideViewerCursor()
     }
     _imp->showViewerPicker = false;
     update();
+}
+
+bool
+Histogram::saveProjection(ViewportData* data)
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    data->left = _imp->zoomCtx.left();
+    data->bottom = _imp->zoomCtx.bottom();
+    data->zoomFactor = _imp->zoomCtx.factor();
+    data->par = _imp->zoomCtx.aspectRatio();
+    return true;
+}
+
+bool
+Histogram::loadProjection(const ViewportData& data)
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    _imp->zoomCtx.setZoom(data.left, data.bottom, data.zoomFactor, data.par);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

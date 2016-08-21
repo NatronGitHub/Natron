@@ -67,6 +67,7 @@
 
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -1403,11 +1404,8 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerBuiltInPlugin<TrackerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "trackerNodeIcon.png"), false, false);
     registerBuiltInPlugin<JoinViewsNode>(QString::fromUtf8(NATRON_IMAGES_PATH "joinViewsNode.png"), false, false);
     registerBuiltInPlugin<OneViewNode>(QString::fromUtf8(NATRON_IMAGES_PATH "oneViewNode.png"), false, false);
-#ifdef NATRON_ENABLE_IO_META_NODES
     registerBuiltInPlugin<ReadNode>(QString::fromUtf8(NATRON_IMAGES_PATH "readImage.png"), false, false);
     registerBuiltInPlugin<WriteNode>(QString::fromUtf8(NATRON_IMAGES_PATH "writeImage.png"), false, false);
-#endif
-
     registerBuiltInPlugin<ViewerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
     registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, true);
 
@@ -1771,10 +1769,10 @@ AppManager::loadPythonGroups()
             moduleName = moduleName.remove(0, lastSlash + 1);
         }
 
-        std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription;
+        std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription, pluginPath;
         unsigned int version;
         bool isToolset;
-        bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(modulePath.toStdString(), moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &isToolset, &version);
+        bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &pluginPath, &isToolset, &version);
 
 
         if (gotInfos) {
@@ -1812,12 +1810,10 @@ AppManager::registerPlugin(const QString& resourcesPath,
                                 isReader, isWriter, isDeprecated);
     std::string stdID = pluginID.toStdString();
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     if ( ReadNode::isBundledReader( stdID, false ) ||
          WriteNode::isBundledWriter( stdID, false ) ) {
         plugin->setForInternalUseOnly(true);
     }
-#endif
 
     PluginsMap::iterator found = _imp->_plugins.find(stdID);
     if ( found != _imp->_plugins.end() ) {
@@ -2012,20 +2008,9 @@ AppManager::getPluginBinary(const QString & pluginId,
 
 EffectInstancePtr
 AppManager::createOFXEffect(const NodePtr& node,
-                            const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                            ,
-                            bool allowFileDialogs,
-                            bool *hasUsedFileDialog
-#endif
-                            ) const
+                            const CreateNodeArgs& args) const
 {
-    return _imp->ofxHost->createOfxEffect(node, args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                          , allowFileDialogs,
-                                          hasUsedFileDialog
-#endif
-                                          );
+    return _imp->ofxHost->createOfxEffect(node, args);
 }
 
 void
@@ -3700,13 +3685,13 @@ PythonGILLocker::~PythonGILLocker()
 }
 
 static bool
-getGroupInfosInternal(const std::string& modulePath,
-                      const std::string& pythonModule,
+getGroupInfosInternal(const std::string& pythonModule,
                       std::string* pluginID,
                       std::string* pluginLabel,
                       std::string* iconFilePath,
                       std::string* grouping,
                       std::string* description,
+                      std::string* pythonScriptDirPath,
                       bool* isToolset,
                       unsigned int* version)
 {
@@ -3716,6 +3701,7 @@ getGroupInfosInternal(const std::string& modulePath,
 #endif
     PythonGILLocker pgl;
     static const QString script = QString::fromUtf8("import sys\n"
+                                                    "import os.path\n"
                                                     "import %1\n"
                                                     "ret = True\n"
                                                     "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
@@ -3728,6 +3714,7 @@ getGroupInfosInternal(const std::string& modulePath,
                                                     "pluginID = templateLabel\n"
                                                     "version = 1\n"
                                                     "isToolset = False\n"
+                                                    "pythonScriptAbsFilePath = os.path.dirname(%1.__file__)\n"
                                                     "if hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
                                                     "    version = %1.getVersion()\n"
                                                     "if hasattr(%1,\"getIsToolset\") and hasattr(%1.getIsToolset,\"__call__\"):\n"
@@ -3766,6 +3753,10 @@ getGroupInfosInternal(const std::string& modulePath,
 
     std::string deleteScript("del ret\n"
                              "del templateLabel\n");
+
+    PyObject* pythonScriptFilePathObj = 0;
+    pythonScriptFilePathObj = PyObject_GetAttrString(mainModule, "pythonScriptAbsFilePath"); //new ref
+
     PyObject* labelObj = 0;
     labelObj = PyObject_GetAttrString(mainModule, "templateLabel"); //new ref
 
@@ -3796,12 +3787,31 @@ getGroupInfosInternal(const std::string& modulePath,
         pluginDescriptionObj = PyObject_GetAttrString(mainModule, "description"); //new ref
     }
 
-    assert(labelObj);
+    assert(labelObj && pythonScriptFilePathObj);
 
+
+    QString modulePath;
+    {
+        std::string modulePYCAbsoluteFilePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pythonScriptFilePathObj);
+#ifdef IS_PYTHON_2
+        modulePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
+#else
+        Py_XDECREF(pythonScriptFilePathObj);
+
+        QString q_modulePYCAbsoluteFilePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
+        QtCompat::removeFileExtension(q_modulePYCAbsoluteFilePath);
+        int foundLastSlash = q_modulePYCAbsoluteFilePath.lastIndexOf( QChar::fromLatin1('/') );
+        if (foundLastSlash != -1) {
+            modulePath = q_modulePYCAbsoluteFilePath.mid(0, foundLastSlash);
+        }
+#endif
+    }
+
+    *pythonScriptDirPath = modulePath.toStdString();
 
     *pluginLabel = NATRON_PYTHON_NAMESPACE::PyStringToStdString(labelObj);
     Py_XDECREF(labelObj);
-
+    
     if (idObj) {
         *pluginID = NATRON_PYTHON_NAMESPACE::PyStringToStdString(idObj);
         deleteScript.append("del pluginID\n");
@@ -3810,7 +3820,7 @@ getGroupInfosInternal(const std::string& modulePath,
 
     if (iconObj) {
         *iconFilePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(iconObj);
-        QFileInfo iconInfo( QString::fromUtf8( modulePath.c_str() ) + QString::fromUtf8( iconFilePath->c_str() ) );
+        QFileInfo iconInfo(modulePath + QString::fromUtf8( iconFilePath->c_str() ) );
         *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
 
         deleteScript.append("del templateIcon\n");
@@ -3855,52 +3865,15 @@ getGroupInfosInternal(const std::string& modulePath,
     return true;
 } // getGroupInfosInternal
 
-static
-bool
-getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
-                                const std::string& modulePath,
-                                const std::string& pythonModule,
-                                std::string* pluginID,
-                                std::string* pluginLabel,
-                                std::string* iconFilePath,
-                                std::string* grouping,
-                                std::string* description,
-                                bool* isToolset,
-                                unsigned int* version)
-{
-    QString qModulePath = QString::fromUtf8( resourceFileName.c_str() );
-
-    assert( qModulePath.startsWith( QString::fromUtf8(":/Resources") ) );
-
-    QFile moduleContent(qModulePath);
-    if ( !moduleContent.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        return false;
-    }
-
-    QByteArray utf8bytes = QString::fromUtf8( pythonModule.c_str() ).toUtf8();
-    char *moduleName = utf8bytes.data();
-    PyObject* moduleCode = Py_CompileString(moduleContent.readAll().constData(), moduleName, Py_file_input);
-    if (!moduleCode) {
-        return false;
-    }
-    PyObject* module = PyImport_ExecCodeModule(moduleName, moduleCode);
-    if (!module) {
-        return false;
-    }
-
-    //Now that the module is loaded, use the regular version
-    return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
-    //PyDict_SetItemString(priv->globals, moduleName, module);
-}
 
 bool
-NATRON_PYTHON_NAMESPACE::getGroupInfos(const std::string& modulePath,
-                                       const std::string& pythonModule,
+NATRON_PYTHON_NAMESPACE::getGroupInfos(const std::string& pythonModule,
                                        std::string* pluginID,
                                        std::string* pluginLabel,
                                        std::string* iconFilePath,
                                        std::string* grouping,
                                        std::string* description,
+                                       std::string* pythonScriptDirPath,
                                        bool* isToolset,
                                        unsigned int* version)
 {
@@ -3908,17 +3881,7 @@ NATRON_PYTHON_NAMESPACE::getGroupInfos(const std::string& modulePath,
 
     return false;
 #endif
-
-    {
-        std::string tofind(":/Resources");
-        if (modulePath.substr( 0, tofind.size() ) == tofind) {
-            std::string resourceFileName = modulePath + pythonModule + ".py";
-
-            return getGroupInfosFromQtResourceFile(resourceFileName, modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
-        }
-    }
-
-    return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
+    return getGroupInfosInternal(pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, pythonScriptDirPath, isToolset, version);
 }
 
 void

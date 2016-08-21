@@ -699,7 +699,7 @@ PreferencesPanel::createGui()
     setWindowTitle( tr("Preferences") );
     _imp->mainLayout = new QVBoxLayout(this);
 
-    _imp->splitter = new Splitter(Qt::Horizontal, this);
+    _imp->splitter = new Splitter(Qt::Horizontal, _imp->gui, this);
 
     _imp->tree = new QTreeWidget(_imp->splitter);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);

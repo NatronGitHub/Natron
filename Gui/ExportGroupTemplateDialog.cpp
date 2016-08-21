@@ -291,13 +291,18 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
                 }
             }
             int version = pyPlug->getMajorVersion();
-            std::string pluginPath = pyPlug->getPluginPythonModule();
+            std::string pythonModuleName = pyPlug->getPluginPythonModule();
+            std::string pluginPath;
             {
-                std::size_t foundLastSlash = pluginPath.find_last_of("/");
-                if (foundLastSlash != std::string::npos) {
-                    pluginPath = pluginPath.substr(0, foundLastSlash);
+                std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
+                unsigned int version;
+                bool istoolset;
+
+                if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
+                    
                 }
             }
+
             {
                 std::size_t foundLastSlash = iconFilePath.find_last_of("/");
                 if (foundLastSlash != std::string::npos) {

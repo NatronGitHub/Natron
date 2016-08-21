@@ -141,6 +141,22 @@ Gui::showErrorLog()
     }
 }
 
+NodeGuiPtr
+Gui::getCurrentNodeViewerInterface(const std::string& pluginID) const
+{
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    if (viewers.empty()) {
+        return NodeGuiPtr();
+    }
+    ViewerTab* viewer = viewers.front();
+    
+    return viewer->getCurrentNodeViewerInterface(pluginID);
+}
+
 void
 Gui::createNodeViewerInterface(const NodeGuiPtr& n)
 {
@@ -159,6 +175,17 @@ Gui::removeNodeViewerInterface(const NodeGuiPtr& n,
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         (*it)->removeNodeViewerInterface(n, permanently, false /*setNewInterface*/);
+    }
+}
+
+void
+Gui::removeViewerInterface(const NodeGuiPtr& n,
+                           bool permanently)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        (*it)->removeViewerInterface(n, permanently);
     }
 }
 
@@ -201,9 +228,16 @@ Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
     if (maxPanels == 0) {
         return;
     }
-    while ( (int)_imp->openedPanels.size() > maxPanels ) {
-        std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin();
-        (*it)->closePanel();
+
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    while ( (int)panels.size() > maxPanels ) {
+        std::list<DockablePanelI*>::reverse_iterator it = panels.rbegin();
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (!isPanel) {
+            return;
+        }
+        isPanel->closePanel();
+        panels = getApp()->getOpenedSettingsPanels();
     }
     _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
 }
@@ -217,15 +251,25 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
-    while ( !_imp->openedPanels.empty() ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        if ( !(*it)->isFloating() ) {
-            (*it)->setClosed(true);
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    bool foundNonFloating = true;
+    while ( !panels.empty() && foundNonFloating) {
+        std::list<DockablePanelI*>::iterator it = panels.begin();
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (isPanel) {
+            if ( !isPanel->isFloating() ) {
+                isPanel->setClosed(true);
+            }
         }
 
-        bool foundNonFloating = false;
-        for (std::list<DockablePanel*>::iterator it2 = _imp->openedPanels.begin(); it2 != _imp->openedPanels.end(); ++it2) {
-            if ( !(*it2)->isFloating() ) {
+        foundNonFloating = false;
+        panels = getApp()->getOpenedSettingsPanels();
+        for (std::list<DockablePanelI*>::iterator it2 = panels.begin(); it2 != panels.end(); ++it2) {
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it2);
+            if (!isPanel) {
+                continue;
+            }
+            if ( !isPanel->isFloating() ) {
                 foundNonFloating = true;
                 break;
             }
@@ -241,14 +285,19 @@ Gui::clearAllVisiblePanels()
 void
 Gui::minimizeMaximizeAllPanels(bool clicked)
 {
-    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (!isPanel) {
+            continue;
+        }
         if (clicked) {
-            if ( !(*it)->isMinimized() ) {
-                (*it)->minimizeOrMaximize(true);
+            if ( !isPanel->isMinimized() ) {
+                isPanel->minimizeOrMaximize(true);
             }
         } else {
-            if ( (*it)->isMinimized() ) {
-                (*it)->minimizeOrMaximize(false);
+            if ( isPanel->isMinimized() ) {
+                isPanel->minimizeOrMaximize(false);
             }
         }
     }
@@ -678,11 +727,11 @@ Gui::keyReleaseEvent(QKeyEvent* e)
 TabWidget*
 Gui::getAnchor() const
 {
-    QMutexLocker l(&_imp->_panesMutex);
+    std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
         if ( (*it)->isAnchor() ) {
-            return *it;
+            return dynamic_cast<TabWidget*>(*it);
         }
     }
 
@@ -753,14 +802,11 @@ Gui::addShortcut(BoundAction* action)
 void
 Gui::getNodesEntitledForOverlays(NodesList & nodes) const
 {
-    std::list<DockablePanel*> panels;
-    {
-        QMutexLocker k(&_imp->openedPanelsMutex);
-        panels = _imp->openedPanels;
-    }
+
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
 
     std::set<ViewerNodePtr> viewerAddedSet;
-    for (std::list<DockablePanel*>::const_iterator it = panels.begin();
+    for (std::list<DockablePanelI*>::const_iterator it = panels.begin();
          it != panels.end(); ++it) {
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
         if (!panel) {

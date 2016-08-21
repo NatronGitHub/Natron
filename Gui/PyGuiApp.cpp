@@ -82,11 +82,14 @@ GuiApp::createModalDialog()
 PyTabWidget*
 GuiApp::getTabWidget(const QString& name) const
 {
-    const std::list<TabWidget*>& tabs = getInternalGuiApp()->getGui()->getPanes();
+    std::list<TabWidgetI*> tabs = getInternalGuiApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        if ( (*it)->objectName_mt_safe() == name ) {
-            return new PyTabWidget(*it);
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        if ( (*it)->getScriptName() == name.toStdString() ) {
+            TabWidget* isTab = dynamic_cast<TabWidget*>(*it);
+            if (isTab) {
+                return new PyTabWidget(isTab);
+            }
         }
     }
 
@@ -117,20 +120,20 @@ GuiApp::moveTab(const QString& scriptName,
         return false;
     }
 
-    return TabWidget::moveTab( w, o, pane->getInternalTabWidget() );
+    return pane->getInternalTabWidget()->moveTab( w, o );
 }
 
 void
 GuiApp::registerPythonPanel(PyPanel* panel,
                             const QString& pythonFunction)
 {
-    getInternalGuiApp()->getGui()->registerPyPanel( panel, pythonFunction.toStdString() );
+    getInternalGuiApp()->registerPyPanel( panel, pythonFunction.toStdString() );
 }
 
 void
 GuiApp::unregisterPythonPanel(PyPanel* panel)
 {
-    getInternalGuiApp()->getGui()->unregisterPyPanel(panel);
+    getInternalGuiApp()->unregisterPyPanel(panel);
 }
 
 QString

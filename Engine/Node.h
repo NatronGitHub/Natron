@@ -47,6 +47,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Engine/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Markdown.h"
@@ -79,6 +80,7 @@ class Node
     : public QObject
     , public boost::enable_shared_from_this<Node>
     , public CacheEntryHolder
+    , public SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -136,12 +138,38 @@ public:
     void initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName);
 
 
-    ///called by load() and OfxEffectInstance, do not call this!
-    void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
+    void loadKnob(const KnobIPtr & knob, const std::list<KnobSerializationPtr> & serialization);
+
+private:
+
+    /**
+     * @brief Restores all links for the given knob if it has masters or expressions.
+     * This function cannot be called until all knobs of the node group have been created because it needs to reference other knobs
+     * from other nodes.
+     * This function throws an exception if no serialization is valid in the object
+     **/
+    void restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serialization,
+                          const NodesList & allNodes,
+                          const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+
+    void restoreUserKnob(const KnobGroupPtr& group,
+                         const KnobPagePtr& page,
+                         const SerializationObjectBase& serializationBase,
+                         unsigned int recursionLevel);
+
+public:
 
 
-    void loadKnob(const KnobIPtr & knob, const std::list<KnobSerializationPtr> & serialization,
-                  bool updateKnobGui = false);
+    /**
+     * @brief Implement to save the content of the object to the serialization object
+     **/
+    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    /**
+     * @brief Implement to load the content of the serialization object onto this object
+     **/
+    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
 
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const CreateNodeArgs& args);
@@ -170,8 +198,6 @@ public:
     void restoreKnobsLinks(const NodeSerialization & serialization,
                            const NodesList & allNodes,
                            const std::map<std::string, std::string>& oldNewScriptNamesMapping);
-
-    void restoreUserKnobs(const NodeSerialization& serialization);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
@@ -626,15 +652,25 @@ public:
      **/
     void setPosition(double x, double y);
     void getPosition(double *x, double *y) const;
+    void onNodeUIPositionChanged(double x, double y);
 
     void setSize(double w, double h);
     void getSize(double* w, double* h) const;
+    void onNodeUISizeChanged(double x, double y);
 
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.
      **/
     bool getColor(double* r, double *g, double* b) const;
     void setColor(double r, double g, double b);
+    void onNodeUIColorChanged(double r, double g, double b);
+
+    void setOverlayColor(double r, double g, double b);
+    bool getOverlayColor(double* r, double* g, double* b) const;
+    void onNodeUIOverlayColorChanged(double r, double g, double b);
+
+    void onNodeUISelectionChanged(bool isSelected);
+    bool getNodeIsSelected() const;
 
 
     std::string getKnobChangedCallback() const;
@@ -885,10 +921,8 @@ public:
 
     NodePtr getMasterNode() const;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;
-#endif
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -1024,10 +1058,6 @@ private:
 
     void createHostMixKnob(const KnobPagePtr& mainPage);
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-    void createWriterFrameStepKnob(const KnobPagePtr& mainPage);
-#endif
-
     void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
                              const KnobPagePtr& mainPage,
@@ -1137,7 +1167,6 @@ public:
 
     void computeFrameRangeForReader(const KnobIPtr& fileKnob);
 
-    bool getOverlayColor(double* r, double* g, double* b) const;
 
     bool canHandleRenderScaleForOverlays() const;
 

@@ -621,14 +621,16 @@ Gui::showView9()
 void
 Gui::setCurveEditorOnTop()
 {
-    QMutexLocker l(&_imp->_panesMutex);
-
-    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-        TabWidget* cur = (*it);
+    std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
+    for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* cur = dynamic_cast<TabWidget*>(*it);
         assert(cur);
+        if (!cur) {
+            continue;
+        }
         for (int i = 0; i < cur->count(); ++i) {
             if (cur->tabAt(i) == _imp->_curveEditor) {
-                cur->makeCurrentTab(i);
+                cur->setCurrentIndex(i);
                 break;
             }
         }

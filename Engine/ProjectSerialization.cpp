@@ -30,35 +30,20 @@
 #include "Engine/AppManager.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/AppInstance.h"
 #include "Engine/TimeLine.h"
 
 NATRON_NAMESPACE_ENTER;
 
-void
-ProjectSerialization::initialize(const Project* project)
+ProjectSerialization::ProjectSerialization(const ProjectPtr& project)
+: _timelineCurrent(0)
+, _creationDate(0)
+, _version(PROJECT_SERIALIZATION_VERSION)
 {
-    ///All the code in this function is MT-safe
-
-    _nodes.initialize(*project);
-
-    project->getAdditionalFormats(&_additionalFormats);
-
-    std::vector< KnobIPtr > knobs = project->getKnobs_mt_safe();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
-        KnobPagePtr isPage = toKnobPage(knobs[i]);
-        KnobButtonPtr isButton = toKnobButton(knobs[i]);
-        if ( knobs[i]->getIsPersistent() &&
-             !isGroup && !isPage && !isButton &&
-             knobs[i]->hasModificationsForSerialization() ) {
-            KnobSerializationPtr newKnobSer( new KnobSerialization(knobs[i]) );
-            _projectKnobs.push_back(newKnobSer);
-        }
+    if (project) {
+        project->toSerialization(this);
     }
-
-    _timelineCurrent = project->currentFrame();
-
-    _creationDate = project->getProjectCreationTime();
 }
+
 
 NATRON_NAMESPACE_EXIT;

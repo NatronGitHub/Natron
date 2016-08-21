@@ -75,7 +75,7 @@ MoveMultipleNodesCommand::move(double dx,
                                double dy)
 {
     for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        QPointF pos = (*it)->getPos_mt_safe();
+        QPointF pos = (*it)->pos();
         (*it)->setPosition(pos.x() + dx, pos.y() + dy);
     }
 }
@@ -623,7 +623,7 @@ InsertNodeCommand::redo()
 
     _inputEdge = 0;
     if (oldSrcInternal && !alreadyConnected) {
-        ///push a second command... this is a bit dirty but I don't have time to add a whole new command just for this
+
         int prefInput = newSrcInternal->getPreferredInputForConnection();
         if (prefInput != -1) {
             _inputEdge = newSrc->getInputArrow(prefInput);
@@ -1168,7 +1168,7 @@ LoadNodePresetsCommand::undo()
     NodeGuiPtr node = _node.lock();
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
-    internalNode->loadKnobs(*_oldSerialization.front(), true);
+    internalNode->fromSerialization(*_oldSerialization.front());
     if (panel) {
         std::list< NodePtr > newChildren, oldChildren;
         getListAsShared(_newChildren, newChildren);
@@ -1206,7 +1206,7 @@ LoadNodePresetsCommand::redo()
              it != _newSerializations.end(); ++it, ++k) {
             if (k > 0) {  /// this is a multi-instance child, create it
                 NodePtr newNode = panel->createNewInstance(false);
-                newNode->loadKnobs(**it);
+                newNode->fromSerialization(**it);
                 std::list<SequenceTime> keys;
                 newNode->getAllKnobsKeyframes(&keys);
                 newNode->getApp()->addMultipleKeyframeIndicatorsAdded(keys, true);
@@ -1215,7 +1215,7 @@ LoadNodePresetsCommand::redo()
         }
     }
 
-    internalNode->loadKnobs(*_newSerializations.front(), true);
+    internalNode->fromSerialization(*_newSerializations.front());
     if (panel) {
         std::list< NodePtr > oldChildren, newChildren;
         getListAsShared(_oldChildren, oldChildren);
@@ -1380,7 +1380,7 @@ ExtractNodeUndoRedoCommand::undo()
             node->connectInput(output->getNode(), it2->first);
         }
 
-        QPointF curPos = output->getPos_mt_safe();
+        QPointF curPos = output->pos();
         output->refreshPosition(curPos.x() - 200, curPos.y(), true);
 
         ///Connect and move inputs
@@ -1393,7 +1393,7 @@ ExtractNodeUndoRedoCommand::undo()
             }
 
             if (input != output) {
-                QPointF curPos = input->getPos_mt_safe();
+                QPointF curPos = input->pos();
                 input->refreshPosition(curPos.x() - 200, curPos.y(), true);
             }
         }
@@ -1402,7 +1402,7 @@ ExtractNodeUndoRedoCommand::undo()
 
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
             NodeGuiPtr node = it2->lock();
-            QPointF curPos = node->getPos_mt_safe();
+            QPointF curPos = node->pos();
             node->refreshPosition(curPos.x() - 200, curPos.y(), true);
         }
 
@@ -1474,7 +1474,7 @@ ExtractNodeUndoRedoCommand::redo()
             }
         }
 
-        QPointF curPos = output->getPos_mt_safe();
+        QPointF curPos = output->pos();
         output->refreshPosition(curPos.x() + 200, curPos.y(), true);
 
 
@@ -1487,7 +1487,7 @@ ExtractNodeUndoRedoCommand::redo()
                 }
             }
             if (node != output) {
-                QPointF curPos = node->getPos_mt_safe();
+                QPointF curPos = node->pos();
                 node->refreshPosition(curPos.x() + 200, curPos.y(), true);
             }
         }
@@ -1496,7 +1496,7 @@ ExtractNodeUndoRedoCommand::redo()
 
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
             NodeGuiPtr node = it2->lock();
-            QPointF curPos = node->getPos_mt_safe();
+            QPointF curPos = node->pos();
             node->refreshPosition(curPos.x() + 200, curPos.y(), true);
         }
     }
@@ -1582,7 +1582,7 @@ GroupFromSelectionCommand::redo()
         }
         originalNodes.push_back(n);
 
-        QPointF nodePos = n->getPos_mt_safe();
+        QPointF nodePos = n->pos();
         groupPosition += nodePos;
     }
 
@@ -1861,14 +1861,14 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         assert(groupGui);
         expandedGroup.group = groupGui;
 
-        QPointF groupNodePos = groupGui->mapToScene( groupGui->mapFromParent( groupGui->getPos_mt_safe() ) );
+        QPointF groupNodePos = groupGui->mapToScene( groupGui->mapFromParent( groupGui->pos() ) );
 
         //This is the BBox of the new inlined nodes
         RectD bbox;
         bbox.setupInfinity();
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
-            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->getPos_mt_safe() ) );
+            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->pos() ) );
             bbox.x1 = std::min( bbox.x1, p.x() );
             bbox.x2 = std::max( bbox.x2, p.x() );
 
@@ -1900,7 +1900,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 assert(inputGui);
                 ntc.input = inputGui;
 
-                QPointF p = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
+                QPointF p = inputGui->mapToScene( inputGui->mapFromParent( inputGui->pos() ) );
                 if (p.y() > inputY) {
                     inputY = p.y();
                 }
@@ -1943,7 +1943,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 if (!inputGui) {
                     continue;
                 }
-                firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
+                firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->pos() ) );
                 outputConnection.input = inputGui;
 
                 std::map<NodePtr, int> outputConnected;
@@ -1955,7 +1955,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     assert(outputGui);
                     outputsConnectedToGroup.push_back(outputGui);
 
-                    QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->getPos_mt_safe() ) );
+                    QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->pos() ) );
                     if (p.y() < outputY) {
                         outputY = p.y();
                     }
@@ -1984,7 +1984,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         // Move all created nodes by this delta to fit in the space we've just made
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
-            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->getPos_mt_safe() ) );
+            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->pos() ) );
             QPointF delta = p - bboxCenter;
             p = groupNodePos + delta;
             p = it2->second->mapToParent( it2->second->mapFromScene(p) );

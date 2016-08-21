@@ -128,7 +128,6 @@ ViewerGL::ViewerGL(ViewerTab* parent,
         setRegionOfDefinition(canonicalFormat, projectFormat.getPixelAspectRatio(), i);
     }
     onProjectFormatChangedInternal(projectFormat, false);
-    resetWipeControls();
 
     QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()) );
 }
@@ -1967,8 +1966,8 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
     if (!_imp->viewerTab->getGui()) {
         return;
     }
-    const std::list<DockablePanel*>& panels = _imp->viewerTab->getGui()->getVisiblePanels();
-    for (std::list<DockablePanel*>::const_iterator it = panels.begin(); it != panels.end(); ++it) {
+    std::list<DockablePanelI*> openedPanels = _imp->viewerTab->getGui()->getApp()->getOpenedSettingsPanels();
+    for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
         NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
         if (!nodePanel) {
             continue;
@@ -2510,18 +2509,18 @@ ViewerGL::updatePersistentMessageToWidth(int w)
         return;
     }
 
-    const std::list<DockablePanel*>& openedPanels = _imp->viewerTab->getGui()->getVisiblePanels();
+    std::list<DockablePanelI*> openedPanels = _imp->viewerTab->getGui()->getApp()->getOpenedSettingsPanels();
 
     _imp->persistentMessages.clear();
     QStringList allMessages;
     int type = 0;
     ///Draw overlays in reverse order of appearance
-    std::list<DockablePanel*>::const_iterator next = openedPanels.begin();
+    std::list<DockablePanelI*>::const_iterator next = openedPanels.begin();
     if ( next != openedPanels.end() ) {
         ++next;
     }
     int nbNonEmpty = 0;
-    for (std::list<DockablePanel*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
+    for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
         const NodeSettingsPanel* isNodePanel = dynamic_cast<const NodeSettingsPanel*>(*it);
         if (!isNodePanel) {
             continue;

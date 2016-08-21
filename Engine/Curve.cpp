@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Interpolation.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/CurveSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1583,6 +1584,39 @@ Curve::onCurveChanged()
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();
 #endif
+}
+
+void
+Curve::loadSerialization(const CurveSerialization& serialization)
+{
+    QMutexLocker l(&_imp->_lock);
+    _imp->keyFrames.clear();
+    for (std::list<KeyFrameSerialization>::const_iterator it = serialization.keys.begin(); it != serialization.keys.end(); ++it) {
+        KeyFrame k;
+        k.setTime(it->time);
+        k.setValue(it->value);
+        k.setInterpolation((KeyframeTypeEnum)it->interpolation);
+        k.setLeftDerivative(it->leftDerivative);
+        k.setRightDerivative(it->rightDerivative);
+        _imp->keyFrames.insert(k);
+    }
+    onCurveChanged();
+}
+
+void
+Curve::saveSerialization(CurveSerialization* serialization) const
+{
+    KeyFrameSet keys = getKeyFrames_mt_safe();
+    for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
+        QMutexLocker l(&_imp->_lock);
+        KeyFrameSerialization k;
+        k.time = it->getTime();
+        k.value = it->getValue();
+        k.interpolation = it->getInterpolation();
+        k.leftDerivative = it->getLeftDerivative();
+        k.rightDerivative = it->getRightDerivative();
+        serialization->keys.push_back(k);
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

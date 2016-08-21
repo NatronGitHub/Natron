@@ -134,7 +134,6 @@ SOURCES += \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
-    NodeGroupSerialization.cpp \
     NoOpBase.cpp \
     OSGLContext.cpp \
     OSGLContext_osmesa.cpp \
@@ -161,6 +160,7 @@ SOURCES += \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
+    PyPanelI.cpp \
     PyAppInstance.cpp \
     PyNodeGroup.cpp \
     PyNode.cpp \
@@ -187,8 +187,12 @@ SOURCES += \
     RotoUndoCommand.cpp \
     ScriptObject.cpp \
     Settings.cpp \
+    SerializableWindow.cpp \
+    SerializationBase.cpp \
+    SplitterI.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
+    TabWidgetI.cpp \
     Texture.cpp \
     TextureRect.cpp \
     ThreadPool.cpp \
@@ -257,6 +261,7 @@ SOURCES += \
     NatronEngine/intnodecreationproperty_wrapper.cpp \
     NatronEngine/nodecreationproperty_wrapper.cpp \
     NatronEngine/stringnodecreationproperty_wrapper.cpp
+
 
 
 HEADERS += \
@@ -384,6 +389,7 @@ HEADERS += \
     PyRoto.h \
     PyTracker.h \
     Pyside_Engine_Python.h \
+    PyPanelI.h \
     ReadNode.h \
     RectD.h \
     RectDSerialization.h \
@@ -412,9 +418,13 @@ HEADERS += \
     RotoUndoCommand.h \
     ScriptObject.h \
     Settings.h \
+    SerializableWindow.h \
+    SerializationBase.h \
     Singleton.h \
+    SplitterI.h \
     StandardPaths.h \
     StringAnimationManager.h \
+    TabWidgetI.h \
     Texture.h \
     TextureRect.h \
     TextureRectSerialization.h \

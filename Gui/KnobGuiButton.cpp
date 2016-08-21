@@ -97,8 +97,14 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     KnobButtonPtr knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
-    QString onIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
-    QString offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
+    QString onIconFilePath, offIconFilePath;
+    if (isViewerUIKnob()) {
+        onIconFilePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(true).c_str() );
+        offIconFilePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(false).c_str() );
+    } else {
+        onIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
+        offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
+    }
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {

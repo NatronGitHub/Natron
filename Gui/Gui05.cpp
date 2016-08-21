@@ -91,10 +91,10 @@ Gui::setupUi()
     _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
 
-    _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
+    _imp->_leftRightSplitter = new Splitter(this, _imp->_centralWidget);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_leftRightSplitter->setObjectName( QString::fromUtf8(kMainSplitterObjectName) );
-    _imp->_splitters.push_back(_imp->_leftRightSplitter);
+    getApp()->registerSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
 
@@ -214,9 +214,9 @@ Gui::createGroupGui(const NodePtr & group,
         if (isTab) {
             where = isTab;
         } else {
-            QMutexLocker k(&_imp->_panesMutex);
-            assert( !_imp->_panes.empty() );
-            where = _imp->_panes.front();
+            std::list<TabWidgetI*> panes = getApp()->getTabWidgetsSerialization();
+            assert( !panes.empty() );
+            where = dynamic_cast<TabWidget*>(panes.front());
         }
     }
 
@@ -325,71 +325,70 @@ Gui::getLastSelectedNodeCollection() const
 void
 Gui::wipeLayout()
 {
-    std::list<TabWidget*> panesCpy;
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        panesCpy = _imp->_panes;
-        _imp->_panes.clear();
-    }
-    std::list<FloatingWidget*> floatingWidgets = getFloatingWindows();
+    std::list<TabWidgetI*> panesCpy = getApp()->getTabWidgetsSerialization();
+    getApp()->clearTabWidgets();
+    std::list<SerializableWindow*> floatingWidgets = getApp()->getFloatingWindowsSerialization();
 
     FloatingWidget* projectFW = _imp->_projectGui->getPanel()->getFloatingWindow();
-    for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
+    for (std::list<SerializableWindow*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
         if (!projectFW || (*it) != projectFW) {
-            (*it)->deleteLater();
+            FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(*it);
+            if (isFloating) {
+                isFloating->deleteLater();
+            }
         }
     }
-    {
-        QMutexLocker k(&_imp->_floatingWindowMutex);
-        _imp->_floatingWindows.clear();
+    getApp()->clearFloatingWindows();
 
-        // Re-add the project window
-        if (projectFW) {
-            _imp->_floatingWindows.push_back(projectFW);
-        }
+    // Re-add the project window
+    if (projectFW) {
+        getApp()->registerFloatingWindow(projectFW);
     }
 
 
-    for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
+
+    for (std::list<TabWidgetI*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
+        TabWidget* pane = dynamic_cast<TabWidget*>(*it);
+        if (!pane) {
+            continue;
+        }
         ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
-        while ( (*it)->count() > 0 ) {
-            (*it)->removeTab(0, false);
+        while ( pane->count() > 0 ) {
+            pane->removeTab(0, false);
         }
         //(*it)->setParent(NULL);
-        (*it)->deleteLater();
+        pane->deleteLater();
     }
 
-    std::list<Splitter*> splittersCpy;
-    {
-        QMutexLocker l(&_imp->_splittersMutex);
-        splittersCpy = _imp->_splitters;
-        _imp->_splitters.clear();
-    }
-    for (std::list<Splitter*>::iterator it = splittersCpy.begin(); it != splittersCpy.end(); ++it) {
+    std::list<SplitterI*> splittersCpy = getApp()->getSplittersSerialization();
+    getApp()->clearSplitters();
+    for (std::list<SplitterI*>::iterator it = splittersCpy.begin(); it != splittersCpy.end(); ++it) {
         if (_imp->_leftRightSplitter != *it) {
-            while ( (*it)->count() > 0 ) {
-                (*it)->widget(0)->setParent(NULL);
+            Splitter* isSplitter = dynamic_cast<Splitter*>(*it);
+            if (!isSplitter) {
+                continue;
+            }
+            while ( isSplitter->count() > 0 ) {
+                isSplitter->widget(0)->setParent(NULL);
             }
             //(*it)->setParent(NULL);
-            (*it)->deleteLater();
+            isSplitter->deleteLater();
         }
     }
 
 
-    Splitter *newSplitter = new Splitter(_imp->_centralWidget);
+    Splitter *newSplitter = new Splitter(this, _imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
     newSplitter->setObjectName_mt_safe( _imp->_leftRightSplitter->objectName_mt_safe() );
     _imp->_mainLayout->removeWidget(_imp->_leftRightSplitter);
-    unregisterSplitter(_imp->_leftRightSplitter);
+    getApp()->unregisterSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_mainLayout->addWidget(newSplitter);
 
-    {
-        QMutexLocker l(&_imp->_splittersMutex);
-        _imp->_splitters.push_back(newSplitter);
-    }
+    getApp()->registerSplitter(newSplitter);
+ 
 } // Gui::wipeLayout
 
 NATRON_NAMESPACE_EXIT;

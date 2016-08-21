@@ -157,12 +157,7 @@ public:
     }
 
     EffectInstancePtr createOFXEffect(const NodePtr& node,
-                                  const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                  , bool allowFileDialogs,
-                                  bool *hasUsedFileDialog
-#endif
-                                  ) const;
+                                  const CreateNodeArgs& args) const;
 
     AppInstancePtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
@@ -758,13 +753,13 @@ std::string PyStringToStdString(PyObject* obj);
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
 
-bool getGroupInfos(const std::string& modulePath,
-                   const std::string& pythonModule,
+bool getGroupInfos(const std::string& pythonModule,
                    std::string* pluginID,
                    std::string* pluginLabel,
                    std::string* iconFilePath,
                    std::string* grouping,
                    std::string* description,
+                   std::string* pythonScriptDirPath,
                    bool* isToolset,
                    unsigned int* version);
 

@@ -1581,7 +1581,7 @@ HostOverlay::draw(double time,
 {
     OfxRGBColourD color;
 
-    if ( !getNode()->getOverlayColor(&color.r, &color.g, &color.b) ) {
+    if ( !getNode()->getNode()->getOverlayColor(&color.r, &color.g, &color.b) ) {
         color.r = color.g = color.b = 0.8;
     }
     OfxPointD pscale;

@@ -49,6 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TrackerSerialization.h"
 #include "Engine/RotoContextSerialization.h"
 #include "Engine/ImageParamsSerialization.h"
+#include "Engine/SerializationBase.h"
 #include "Engine/AppManager.h"
 #include "Engine/EngineFwd.h"
 
@@ -67,42 +68,24 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS 13
 #define NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX 14
 #define NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT 15
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT
+#define NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION 16
+#define NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME 17
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME
 
 NATRON_NAMESPACE_ENTER;
 
-class NodeSerialization
+class NodeSerialization : public SerializationObjectBase
 {
 public:
 
     typedef std::list<KnobSerializationPtr> KnobValues;
 
     ///Used to serialize
-    explicit NodeSerialization(const NodePtr & n,
+    explicit NodeSerialization(const NodePtr & n = NodePtr(),
                       bool serializeInputs = true);
-
-    ////Used to deserialize
-    NodeSerialization()
-        : _isNull(true)
-        , _nbKnobs(0)
-        , _knobsValues()
-        , _knobsAge(0)
-        , _nodeLabel()
-        , _nodeScriptName()
-        , _cacheID()
-        , _pluginID()
-        , _pluginMajorVersion(-1)
-        , _pluginMinorVersion(-1)
-        , _hasRotoContext(false)
-        , _hasTrackerContext(false)
-        , _node()
-        , _pythonModuleVersion(0)
-    {
-    }
 
     ~NodeSerialization()
     {
-        _knobsValues.clear(); _inputs.clear();
     }
 
     const KnobValues & getKnobsValues() const
@@ -128,6 +111,11 @@ public:
     void setNodeScriptName(const std::string &s)
     {
         _nodeScriptName = s;
+    }
+
+    const std::string & getGroupFullyQualifiedName() const
+    {
+        return _groupFullyQualifiedScriptName;
     }
 
     const std::string & getCacheID() const
@@ -172,7 +160,7 @@ public:
 
     bool isNull() const
     {
-        return _isNull;
+        return !_hasBeenSerialized;
     }
 
     U64 getKnobsAge() const
@@ -182,30 +170,16 @@ public:
 
     const std::string & getMasterNodeName() const
     {
-        return _masterNodeName;
+        return _masterNodeFullyQualifiedScriptName;
     }
 
-    NodePtr getNode() const
-    {
-        return _node;
-    }
-
-    bool hasRotoContext() const
-    {
-        return _hasRotoContext;
-    }
-
-    const RotoContextSerialization & getRotoContext() const
+    boost::shared_ptr<RotoContextSerialization>  getRotoContext() const
     {
         return _rotoContext;
     }
 
-    bool hasTrackerContext() const
-    {
-        return _hasTrackerContext;
-    }
 
-    const TrackerContextSerialization& getTrackerContext() const
+    boost::shared_ptr<TrackerContextSerialization> getTrackerContext() const
     {
         return _trackerContext;
     }
@@ -230,38 +204,130 @@ public:
         return _children;
     }
 
-    const std::list<ImageComponents>& getUserCreatedComponents() const
+    const std::list<ImageComponentsSerialization>& getUserCreatedComponents() const
     {
         return _userComponents;
     }
 
-private:
+    const std::string& getGroupFullScriptName() const
+    {
+        return _groupFullyQualifiedScriptName;
+    }
 
-    bool _isNull;
-    int _nbKnobs;
+    void getPosition(double *x, double *y) const
+    {
+        *x = _nodePositionCoords[0];
+        *y = _nodePositionCoords[1];
+    }
+
+    void getSize(double *w, double *h) const
+    {
+        *w = _nodeSize[0];
+        *h = _nodeSize[1];
+    }
+
+    void getColor(double *r, double *g, double *b) const
+    {
+        *r = _nodeColor[0];
+        *g = _nodeColor[1];
+        *b = _nodeColor[2];
+    }
+
+    void getOverlayColor(double *r, double *g, double *b) const
+    {
+        *r = _overlayColor[0];
+        *g = _overlayColor[1];
+        *b = _overlayColor[2];
+    }
+
+    bool getSelected() const
+    {
+        return _nodeIsSelected;
+    }
+
+    unsigned int getVersion() const
+    {
+        return _version;
+    }
+
+
+    unsigned int _version;
+
+    bool _hasBeenSerialized;
+
+    // Knobs serialization
     KnobValues _knobsValues;
+
+    // The age of the knobs. Used for caching
     U64 _knobsAge;
-    std::string _nodeLabel, _nodeScriptName, _cacheID;
+
+    // The group full script-name or empty if the node is part of the top-level group
+    std::string _groupFullyQualifiedScriptName;
+
+    // The node label as seen in the nodegraph
+    std::string _nodeLabel;
+
+    // The node script-name as used in Python
+    std::string _nodeScriptName;
+
+    // The cache ID is the first script name of the node and is ensured to be unique for caching. It cannot be changed.
+    std::string _cacheID;
+
+    // The ID of the plug-in embedded into the node
     std::string _pluginID;
+
+    // Plugin version used by the node
     int _pluginMajorVersion;
     int _pluginMinorVersion;
-    std::string _masterNodeName;
+
+    // If this node is a clone of another one, this is the full script-name of the master node
+    std::string _masterNodeFullyQualifiedScriptName;
+
+    // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node
     std::map<std::string, std::string> _inputs;
+
+    // Deprecated: Before Natron 2, inputs were serialized just by their index. This is left here for backward compatibility,
+    // new serialization schemes should rather use the _inputs map which is more robust against changes.
     std::vector<std::string> _oldInputs;
-    bool _hasRotoContext;
-    RotoContextSerialization _rotoContext;
-    bool _hasTrackerContext;
-    TrackerContextSerialization _trackerContext;
-    NodePtr _node;
+
+    // If this node has a Roto context, this is its serialization
+    boost::shared_ptr<RotoContextSerialization> _rotoContext;
+    // If this node has a Tracker context, this is its serialization
+    boost::shared_ptr<TrackerContextSerialization> _trackerContext;
+
+    // Deprecated: In Natron 1, the tracker was a bundle with sub instances where each track would be 1 node.
+    // This is left here for backward compatibility.
     std::string _multiInstanceParentName;
+
+    // The serialization of the pages created by user
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
+
+    // The pages order in the node by script-name
     std::list<std::string> _pagesIndexes;
 
-    ///If this node is a group or a multi-instance, this is the children
+    // If this node is a group or a multi-instance, this is the children
     std::list< NodeSerializationPtr > _children;
+
+    // If this node is a PyPlug, this is the Python module name
     std::string _pythonModule;
+
+    // If this node is a PyPlug, this is the PyPlug version
     unsigned int _pythonModuleVersion;
-    std::list<ImageComponents> _userComponents;
+
+    // This is the user created components on the node
+    std::list<ImageComponentsSerialization> _userComponents;
+
+    // UI stuff
+    double _nodePositionCoords[2]; // x,y  X=Y=INT_MIN if there is no position info
+    double _nodeSize[2]; // width, height, W=H=-1 if there is no size info
+    double _nodeColor[3]; // node color (RGB), between 0. and 1. If R=G=B=-1 then no color
+    double _overlayColor[3]; // overlay color (RGB), between 0. and 1. If R=G=B=-1 then no color
+    bool _nodeIsSelected; // is this node selected by the user ?
+
+    // Ordering of the knobs in the viewer UI for this node
+    std::list<std::string> _viewerUIKnobsOrder;
+
+    void initializeForSerialization(const NodePtr& node, bool serializeInputs);
 
     friend class ::boost::serialization::access;
     template<class Archive>
@@ -269,28 +335,32 @@ private:
               const unsigned int /*version*/) const
     {
         ar & ::boost::serialization::make_nvp("Plugin_label", _nodeLabel);
+        ar & ::boost::serialization::make_nvp("GroupName", _groupFullyQualifiedScriptName);
         ar & ::boost::serialization::make_nvp("Plugin_script_name", _nodeScriptName);
         ar & ::boost::serialization::make_nvp("Plugin_id", _pluginID);
         ar & ::boost::serialization::make_nvp("PythonModule", _pythonModule);
         ar & ::boost::serialization::make_nvp("PythonModuleVersion", _pythonModuleVersion);
         ar & ::boost::serialization::make_nvp("Plugin_major_version", _pluginMajorVersion);
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
-        ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
+        int nbKnobs = (int)_knobsValues.size();
+        ar & ::boost::serialization::make_nvp("KnobsCount", nbKnobs);
 
         for (KnobValues::const_iterator it = _knobsValues.begin(); it != _knobsValues.end(); ++it) {
             ar & ::boost::serialization::make_nvp( "item", *(*it) );
         }
         ar & ::boost::serialization::make_nvp("Inputs_map", _inputs);
         ar & ::boost::serialization::make_nvp("KnobsAge", _knobsAge);
-        ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeName);
-        ar & ::boost::serialization::make_nvp("HasRotoContext", _hasRotoContext);
-        if (_hasRotoContext) {
-            ar & ::boost::serialization::make_nvp("RotoContext", _rotoContext);
+        ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeFullyQualifiedScriptName);
+        bool hasRotoContext = _rotoContext.get() != 0;
+        ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
+        if (hasRotoContext) {
+            ar & ::boost::serialization::make_nvp("RotoContext", *_rotoContext);
         }
 
-        ar & ::boost::serialization::make_nvp("HasTrackerContext", _hasTrackerContext);
-        if (_hasTrackerContext) {
-            ar & ::boost::serialization::make_nvp("TrackerContext", _trackerContext);
+        bool hasTrackerContext = _trackerContext.get() != 0;
+        ar & ::boost::serialization::make_nvp("HasTrackerContext", hasTrackerContext);
+        if (hasTrackerContext) {
+            ar & ::boost::serialization::make_nvp("TrackerContext", *_trackerContext);
         }
 
         ar & ::boost::serialization::make_nvp("MultiInstanceParent", _multiInstanceParentName);
@@ -317,18 +387,39 @@ private:
 
         ar & ::boost::serialization::make_nvp("UserComponents", _userComponents);
         ar & ::boost::serialization::make_nvp("CacheID", _cacheID);
+
+        ar & ::boost::serialization::make_nvp("PosX", _nodePositionCoords[0]);
+        ar & ::boost::serialization::make_nvp("PosY", _nodePositionCoords[1]);
+        ar & ::boost::serialization::make_nvp("Width", _nodeSize[0]);
+        ar & ::boost::serialization::make_nvp("Height", _nodeSize[1]);
+        ar & ::boost::serialization::make_nvp("NodeColor_R", _nodeColor[0]);
+        ar & ::boost::serialization::make_nvp("NodeColor_G", _nodeColor[1]);
+        ar & ::boost::serialization::make_nvp("NodeColor_B", _nodeColor[2]);
+        ar & ::boost::serialization::make_nvp("OverlayColor_R", _overlayColor[0]);
+        ar & ::boost::serialization::make_nvp("OverlayColor_G", _overlayColor[1]);
+        ar & ::boost::serialization::make_nvp("OverlayColor_B", _overlayColor[2]);
+        ar & ::boost::serialization::make_nvp("IsSelected", _nodeIsSelected);
+        ar & ::boost::serialization::make_nvp("ViewerKnobsOrder", _viewerUIKnobsOrder);
+
     } // save
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
+        _version = version;
+        
         if (version > NODE_SERIALIZATION_CURRENT_VERSION) {
             throw std::invalid_argument("The project you're trying to load contains data produced by a more recent "
                                         "version of Natron, which makes it unreadable");
         }
 
+        _hasBeenSerialized = true;
+        
         ar & ::boost::serialization::make_nvp("Plugin_label", _nodeLabel);
+        if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
+            ar & ::boost::serialization::make_nvp("GroupName", _groupFullyQualifiedScriptName);
+        }
         if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
             ar & ::boost::serialization::make_nvp("Plugin_script_name", _nodeScriptName);
         } else {
@@ -349,8 +440,9 @@ private:
 
         ar & ::boost::serialization::make_nvp("Plugin_major_version", _pluginMajorVersion);
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
-        ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
-        for (int i = 0; i < _nbKnobs; ++i) {
+        int nbKnobs;
+        ar & ::boost::serialization::make_nvp("KnobsCount", nbKnobs);
+        for (int i = 0; i < nbKnobs; ++i) {
             KnobSerializationPtr ks(new KnobSerialization);
             ar & ::boost::serialization::make_nvp("item", *ks);
             _knobsValues.push_back(ks);
@@ -368,22 +460,25 @@ private:
         }
 
         ar & ::boost::serialization::make_nvp("KnobsAge", _knobsAge);
-        ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeName);
+        ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeFullyQualifiedScriptName);
         if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-            _masterNodeName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodeName);
+            _masterNodeFullyQualifiedScriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodeFullyQualifiedScriptName);
         }
-        _isNull = false;
 
         if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {
-            ar & ::boost::serialization::make_nvp("HasRotoContext", _hasRotoContext);
-            if (_hasRotoContext) {
-                ar & ::boost::serialization::make_nvp("RotoContext", _rotoContext);
+            bool hasRotoContext;
+            ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
+            if (hasRotoContext) {
+                _rotoContext.reset(new RotoContextSerialization);
+                ar & ::boost::serialization::make_nvp("RotoContext", *_rotoContext);
             }
 
             if (version >= NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT) {
-                ar & boost::serialization::make_nvp("HasTrackerContext", _hasTrackerContext);
-                if (_hasTrackerContext) {
-                    ar & boost::serialization::make_nvp("TrackerContext", _trackerContext);
+                bool hasTrackerContext;
+                ar & boost::serialization::make_nvp("HasTrackerContext", hasTrackerContext);
+                if (hasTrackerContext) {
+                    _trackerContext.reset(new TrackerContextSerialization);
+                    ar & boost::serialization::make_nvp("TrackerContext", *_trackerContext);
                 }
             }
         }
@@ -426,11 +521,39 @@ private:
             }
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS) {
-            ar & ::boost::serialization::make_nvp("UserComponents", _userComponents);
+            if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
+                ar & ::boost::serialization::make_nvp("UserComponents", _userComponents);
+            } else {
+                std::list<ImageComponents> comps;
+                ar & ::boost::serialization::make_nvp("UserComponents", comps);
+                for (std::list<ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
+                    ImageComponentsSerialization s;
+                    s.layerName = it->getLayerName();
+                    s.globalCompsName = it->getComponentsGlobalName();
+                    s.channelNames = it->getComponentsNames();
+                    _userComponents.push_back(s);
+                }
+            }
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_CACHE_ID) {
             ar & ::boost::serialization::make_nvp("CacheID", _cacheID);
         }
+
+        if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
+            ar & ::boost::serialization::make_nvp("PosX", _nodePositionCoords[0]);
+            ar & ::boost::serialization::make_nvp("PosY", _nodePositionCoords[1]);
+            ar & ::boost::serialization::make_nvp("Width", _nodeSize[0]);
+            ar & ::boost::serialization::make_nvp("Height", _nodeSize[1]);
+            ar & ::boost::serialization::make_nvp("NodeColor_R", _nodeColor[0]);
+            ar & ::boost::serialization::make_nvp("NodeColor_G", _nodeColor[1]);
+            ar & ::boost::serialization::make_nvp("NodeColor_B", _nodeColor[2]);
+            ar & ::boost::serialization::make_nvp("OverlayColor_R", _overlayColor[0]);
+            ar & ::boost::serialization::make_nvp("OverlayColor_G", _overlayColor[1]);
+            ar & ::boost::serialization::make_nvp("OverlayColor_B", _overlayColor[2]);
+            ar & ::boost::serialization::make_nvp("IsSelected", _nodeIsSelected);
+            ar & ::boost::serialization::make_nvp("ViewerKnobsOrder", _viewerUIKnobsOrder);
+
+        } 
     } // load
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()

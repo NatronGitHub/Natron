@@ -161,14 +161,6 @@ public:
 
     virtual void restoreStateAfterCreation() OVERRIDE FINAL;
 
-    /**
-     * @brief Fills the serializationObject with the current state of the NodeGui.
-     **/
-    void serialize(NodeGuiSerialization* serializationObject) const;
-
-
-    void copyFrom(const NodeGuiSerialization & obj);
-
 
     NodePtr getNode() const
     {
@@ -184,13 +176,14 @@ public:
     virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelMinimized() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setPosition(double x, double y) OVERRIDE FINAL;
-    virtual void getPosition(double *x, double* y) const OVERRIDE FINAL;
-    virtual void getSize(double* w, double* h) const OVERRIDE FINAL;
-    virtual void setSize(double w, double h) OVERRIDE FINAL;
-    virtual void getColor(double* r, double *g, double* b) const OVERRIDE FINAL;
-    virtual void setColor(double r, double g, double b) OVERRIDE FINAL;
+    void getPosition(double *x, double* y) const;
+    void getSize(double* w, double* h) const;
+    void getColor(double* r, double *g, double* b) const;
 
+    virtual void setPosition(double x, double y) OVERRIDE FINAL;
+    virtual void setSize(double w, double h) OVERRIDE FINAL;
+    virtual void setColor(double r, double g, double b) OVERRIDE FINAL;
+    virtual void setOverlayColor(double r, double g, double b)  OVERRIDE FINAL;
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
@@ -295,10 +288,6 @@ public:
      **/
     void moveAbovePositionRecursively(const QRectF & r);
 
-    QPointF getPos_mt_safe() const;
-
-    void setPos_mt_safe(const QPointF & pos);
-
     ///same as setScale() but also scales the arrows
     void setScale_natron(double scale);
 
@@ -339,6 +328,8 @@ public:
 
     void setOverlayLocked(bool locked);
 
+    virtual bool isOverlayLocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual void refreshStateIndicator();
     virtual void exportGroupAsPythonScript() OVERRIDE FINAL;
 
@@ -354,7 +345,7 @@ public:
         return _wasBeginEditCalled;
     }
 
-    virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
+
     virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) OVERRIDE FINAL;
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     virtual void drawHostOverlay(double time,
@@ -588,8 +579,6 @@ private:
     NodeWPtr _internalNode;
 
     /*true if the node is selected by the user*/
-    bool _selected;
-    mutable QMutex _selectedMutex;
 
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;
@@ -630,11 +619,8 @@ private:
 
     //True when the settings panel has been  created
     bool _panelCreated;
-    mutable QMutex _currentColorMutex; //< protects _currentColor
-    QColor _currentColor; //< accessed by the serialization thread
     QColor _clonedColor;
     bool _wasBeginEditCalled;
-    mutable QMutex positionMutex;
 
     ///This is the garphical red line displayed when the node is a clone
     LinkArrow* _slaveMasterLink;
@@ -679,11 +665,9 @@ private:
     QString _channelsExtraLabel;
     boost::weak_ptr<NodeGui> _parentMultiInstance;
 
-    ///For the serialization thread
-    mutable QMutex _mtSafeSizeMutex;
-    int _mtSafeWidth, _mtSafeHeight;
     boost::shared_ptr<HostOverlay> _hostOverlay;
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
+    mutable QMutex _overlayLockedMutex;
     bool _overlayLocked;
     boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;

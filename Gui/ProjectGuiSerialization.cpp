@@ -39,6 +39,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/PyParameter.h"
 #include "Engine/Project.h"
+#include "Engine/NodeSerialization.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
@@ -50,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGuiSerialization.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/ScriptEditor.h"
@@ -60,227 +63,150 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-void
-ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
+static void convertNodeGuiSerializationToNodeSerialization(const std::list<NodeGuiSerialization>& nodeGuis, NodeSerialization* serialization)
 {
-    NodesList activeNodes;
-
-    projectGui->getInternalProject()->getActiveNodesExpandGroups(&activeNodes);
-
-    _serializedNodes.clear();
-    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        NodeGuiIPtr nodegui_i = (*it)->getNodeGui();
-        if (!nodegui_i) {
-            continue;
-        }
-        NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
-
-        if ( nodegui->isVisible() ) {
-            NodeCollectionPtr isInCollection = (*it)->getGroup();
-            NodeGroupPtr isCollectionAGroup = toNodeGroup( isInCollection );
-            if (!isCollectionAGroup) {
-                ///Nodes within a group will be serialized recursively in the node group serialization
-                NodeGuiSerialization state;
-                nodegui->serialize(&state);
-                _serializedNodes.push_back(state);
-            }
-            ViewerNodePtr viewer = (*it)->isEffectViewerNode();
-            if (viewer) {
-                ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
-                assert(tab);
-                ViewerData viewerData;
-                double zoompar;
-                tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &zoompar);
-
-                viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
-                viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
-                _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(), viewerData) );
+    for (std::list<NodeGuiSerialization>::const_iterator it = nodeGuis.begin(); it != nodeGuis.end(); ++it) {
+        const std::string& fullName = (it)->_nodeName;
+        std::string groupMasterName;
+        std::string nodeName;
+        {
+            std::size_t foundDot = fullName.find_last_of(".");
+            if (foundDot != std::string::npos) {
+                groupMasterName = fullName.substr(0, foundDot);
+                nodeName = fullName.substr(foundDot + 1);
+            } else {
+                nodeName = fullName;
             }
         }
-    }
-
-    ///Init windows
-    _layoutSerialization.initialize( projectGui->getGui() );
-
-    ///save histograms
-    std::list<Histogram*> histograms = projectGui->getGui()->getHistograms_mt_safe();
-    for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
-        _histograms.push_back( (*it)->objectName().toStdString() );
-    }
-
-    ///save opened panels by order
-
-    std::list<DockablePanel*> panels = projectGui->getGui()->getVisiblePanels_mt_safe();
-    for (std::list<DockablePanel*>::iterator it = panels.begin(); it != panels.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-            KnobHolderPtr holder = (*it)->getHolder();
-            assert(holder);
-
-            EffectInstancePtr isEffect = toEffectInstance(holder);
-            ProjectPtr isProj = toProject(holder);
-
-            if (isProj) {
-                _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
-            } else if (isEffect) {
-                _openedPanelsOrdered.push_back( isEffect->getNode()->getFullyQualifiedName() );
+        if (groupMasterName == serialization->_groupFullyQualifiedScriptName && nodeName == serialization->_nodeScriptName) {
+            serialization->_nodePositionCoords[0] = it->_posX;
+            serialization->_nodePositionCoords[1] = it->_posY;
+            serialization->_nodeSize[0] = it->_width;
+            serialization->_nodeSize[1] = it->_height;
+            if (it->_colorWasFound) {
+                serialization->_nodeColor[0] = it->_r;
+                serialization->_nodeColor[1] = it->_g;
+                serialization->_nodeColor[2] = it->_b;
+            } else {
+                serialization->_nodeColor[0] = serialization->_nodeColor[1] = serialization->_nodeColor[2] = -1;
             }
+            if (it->_hasOverlayColor) {
+                serialization->_overlayColor[0] = it->_r;
+                serialization->_overlayColor[1] = it->_g;
+                serialization->_overlayColor[2] = it->_b;
+            } else {
+                serialization->_overlayColor[0] = serialization->_overlayColor[1] = serialization->_overlayColor[2] = -1;
+            }
+            serialization->_nodeIsSelected = it->_selected;
+            break;
         }
     }
 
-    _scriptEditorInput = projectGui->getGui()->getScriptEditor()->getAutoSavedScript().toStdString();
-
-    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
-    for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
-        s->initialize(it->first, it->second);
-        _pythonPanels.push_back(s);
-    }
-} // initialize
-
-void
-PaneLayout::initialize(TabWidget* tab)
-{
-    QStringList children = tab->getTabScriptNames();
-
-    for (int i = 0; i < children.size(); ++i) {
-        tabs.push_back( children[i].toStdString() );
-    }
-    currentIndex = tab->activeIndex();
-    name = tab->objectName_mt_safe().toStdString();
-    isAnchor = tab->isAnchor();
 }
 
-void
-SplitterSerialization::initialize(Splitter* splitter)
+static void convertPaneLayoutToTabWidgetSerialization(const PaneLayout& deprecated, ProjectTabWidgetSerialization* serialization)
 {
-    sizes = splitter->serializeNatron().toStdString();
-    OrientationEnum nO = eOrientationHorizontal;
-    Qt::Orientation qO = splitter->orientation();
-    switch (qO) {
-    case Qt::Horizontal:
-        nO = eOrientationHorizontal;
-        break;
-    case Qt::Vertical:
-        nO = eOrientationVertical;
-        break;
-    default:
-        assert(false);
-        break;
-    }
-    orientation = (int)nO;
-    std::list<QWidget*> ch;
-    splitter->getChildren_mt_safe(ch);
-    assert(ch.size() == 2);
+    serialization->isAnchor = deprecated.isAnchor;
+    serialization->currentIndex = deprecated.currentIndex;
+    serialization->tabs = deprecated.tabs;
+    serialization->scriptName = deprecated.name;
+}
 
-    for (std::list<QWidget*>::iterator it = ch.begin(); it != ch.end(); ++it) {
-        Child *c = new Child;
-        Splitter* isSplitter = dynamic_cast<Splitter*>(*it);
-        TabWidget* isTabWidget = dynamic_cast<TabWidget*>(*it);
-        if (isSplitter) {
-            c->child_asSplitter = new SplitterSerialization;
-            c->child_asSplitter->initialize(isSplitter);
-        } else if (isTabWidget) {
-            c->child_asPane = new PaneLayout;
-            c->child_asPane->initialize(isTabWidget);
+static void convertSplitterToProjectSplitterSerialization(const SplitterSerialization& deprecated, ProjectWindowSplitterSerialization* serialization)
+{
+    QStringList list = QString::fromUtf8(deprecated.sizes.c_str()).split( QLatin1Char(' ') );
+
+    assert(list.size() == 2);
+    QList<int> s;
+    s << list[0].toInt() << list[1].toInt();
+    if ( (s[0] == 0) || (s[1] == 0) ) {
+        int mean = (s[0] + s[1]) / 2;
+        s[0] = s[1] = mean;
+    }
+
+    assert(deprecated.children.size() == 2);
+    serialization->leftChildSize = s[0];
+    serialization->rightChildSize = s[1];
+    serialization->orientation = deprecated.orientation;
+    serialization->leftChild.reset(new ProjectWindowSplitterSerialization::Child);
+    serialization->rightChild.reset(new ProjectWindowSplitterSerialization::Child);
+
+    ProjectWindowSplitterSerialization::Child* children[2] = {serialization->leftChild.get(), serialization->rightChild.get()};
+    for (int i = 0; i < 2; ++i) {
+        if (deprecated.children[i]->child_asPane) {
+            children[i]->childIsTabWidget.reset(new ProjectTabWidgetSerialization);
+            children[i]->type = eProjectWorkspaceWidgetTypeTabWidget;
+            convertPaneLayoutToTabWidgetSerialization(*deprecated.children[i]->child_asPane, children[i]->childIsTabWidget.get());
+        } else if (deprecated.children[i]->child_asSplitter) {
+            children[i]->childIsSplitter.reset(new ProjectWindowSplitterSerialization);
+            children[i]->type = eProjectWorkspaceWidgetTypeSplitter;
+            convertSplitterToProjectSplitterSerialization(*deprecated.children[i]->child_asSplitter, children[i]->childIsSplitter.get());
         }
-        children.push_back(c);
+
     }
 }
 
 void
-ApplicationWindowSerialization::initialize(bool mainWindow,
-                                           SerializableWindow* widget)
+ProjectGuiSerialization::convertToProjectSerialization(ProjectSerialization* serialization) const
 {
-    isMainWindow = mainWindow;
-    widget->getMtSafePosition(x, y);
-    widget->getMtSafeWindowSize(w, h);
 
-    if (mainWindow) {
-        Gui* gui = dynamic_cast<Gui*>(widget);
-        assert(gui);
-        if (gui) {
-            QWidget* centralWidget = gui->getCentralWidget();
-            Splitter* isSplitter = dynamic_cast<Splitter*>(centralWidget);
-            TabWidget* isTabWidget = dynamic_cast<TabWidget*>(centralWidget);
+    if (!serialization->_projectWorkspace) {
+        serialization->_projectWorkspace.reset(new ProjectWorkspaceSerialization);
+    }
+    for (std::map<std::string, ViewerData >::const_iterator it = _viewersData.begin(); it != _viewersData.end(); ++it) {
+        ViewportData& d = serialization->_viewportsData[it->first];
+        d.left = it->second.zoomLeft;
+        d.bottom = it->second.zoomBottom;
+        d.zoomFactor = it->second.zoomFactor;
+        d.par = 1.;
+        d.zoomOrPanSinceLastFit = it->second.zoomOrPanSinceLastFit;
+    }
 
-            assert(isSplitter || isTabWidget);
-
-            if (isSplitter) {
-                child_asSplitter = new SplitterSerialization;
-                child_asSplitter->initialize(isSplitter);
-            } else if (isTabWidget) {
-                child_asPane = new PaneLayout;
-                child_asPane->initialize(isTabWidget);
-            }
-        }
-    } else {
-        FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(widget);
-        assert(isFloating);
-        if (isFloating) {
-            QWidget* embedded = isFloating->getEmbeddedWidget();
-            Splitter* isSplitter = dynamic_cast<Splitter*>(embedded);
-            TabWidget* isTabWidget = dynamic_cast<TabWidget*>(embedded);
-            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(embedded);
-            assert(isSplitter || isTabWidget || isPanel);
-
-            if (isSplitter) {
-                child_asSplitter = new SplitterSerialization;
-                child_asSplitter->initialize(isSplitter);
-            } else if (isTabWidget) {
-                child_asPane = new PaneLayout;
-                child_asPane->initialize(isTabWidget);
-            } else if (isPanel) {
-                ///A named knob holder is a knob holder which has a unique name.
-                NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>(isPanel);
-                if (isNamedHolder) {
-                    child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
-                } else {
-                    ///This must be the project settings panel
-                    child_asDockablePanel = kNatronProjectSettingsPanelSerializationName;
-                }
-            }
+    for (std::list<NodeSerializationPtr>::iterator it = serialization->_nodes.begin(); it!=serialization->_nodes.end(); ++it) {
+        convertNodeGuiSerializationToNodeSerialization(_serializedNodes, it->get());
+        for (std::list<NodeSerializationPtr>::iterator it2 = (*it)->_children.begin(); it2!=(*it)->_children.end(); ++it2) {
+            convertNodeGuiSerializationToNodeSerialization(_serializedNodes, it2->get());
         }
     }
-} // initialize
 
-void
-GuiLayoutSerialization::initialize(Gui* gui)
-{
-    ApplicationWindowSerialization* mainWindow = new ApplicationWindowSerialization;
+    _layoutSerialization.convertToProjectWorkspaceSerialization(serialization->_projectWorkspace.get());
+    serialization->_projectWorkspace->_histograms = _histograms;
+    serialization->_projectWorkspace->_pythonPanels = _pythonPanels;
 
-    mainWindow->initialize(true, gui);
-    _windows.push_back(mainWindow);
+    serialization->_openedPanelsOrdered = _openedPanelsOrdered;
 
-    std::list<FloatingWidget*> floatingWindows = gui->getFloatingWindows();
-    for (std::list<FloatingWidget*>::iterator it = floatingWindows.begin(); it != floatingWindows.end(); ++it) {
-        ApplicationWindowSerialization* window = new ApplicationWindowSerialization;
-        window->initialize(false, *it);
-        _windows.push_back(window);
-    }
+
+
 }
 
 void
-PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
-                                     const std::string& func)
+GuiLayoutSerialization::convertToProjectWorkspaceSerialization(ProjectWorkspaceSerialization* serialization) const
 {
-    name = tab->getLabel();
-    pythonFunction = func;
-    std::list<NATRON_PYTHON_NAMESPACE::Param*> parameters = tab->getParams();
-    for (std::list<NATRON_PYTHON_NAMESPACE::Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
-        KnobIPtr knob = (*it)->getInternalKnob();
-        KnobGroupPtr isGroup = toKnobGroup(knob);
-        KnobPagePtr isPage = toKnobPage(knob);
-        KnobButtonPtr isButton = toKnobButton(knob);
-        //KnobChoicePtr isChoice = toKnobChoice(knob);
+    for (std::list<ApplicationWindowSerialization*>::const_iterator it = _windows.begin(); it != _windows.end(); ++it) {
+        boost::shared_ptr<ProjectWindowSerialization> window(new ProjectWindowSerialization);
+        window->windowPosition[0] = (*it)->x;
+        window->windowPosition[1] = (*it)->y;
+        window->windowSize[0] = (*it)->w;
+        window->windowSize[1] = (*it)->h;
 
-        if (!isGroup && !isPage && !isButton) {
-            KnobSerializationPtr k( new KnobSerialization(knob) );
-            knobs.push_back(k);
+        if ((*it)->child_asSplitter) {
+            window->isChildSplitter.reset(new ProjectWindowSplitterSerialization);
+            window->childType = eProjectWorkspaceWidgetTypeSplitter;
+            convertSplitterToProjectSplitterSerialization(*(*it)->child_asSplitter, window->isChildSplitter.get());
+        } else if ((*it)->child_asPane) {
+            window->isChildTabWidget.reset(new ProjectTabWidgetSerialization);
+            window->childType = eProjectWorkspaceWidgetTypeTabWidget;
+            convertPaneLayoutToTabWidgetSerialization(*(*it)->child_asPane, window->isChildTabWidget.get());
+        } else if (!(*it)->child_asDockablePanel.empty()) {
+            window->isChildSettingsPanel = (*it)->child_asDockablePanel;
         }
-        delete *it;
-    }
 
-    userData = tab->save_serialization_thread().toStdString();
+        if ((*it)->isMainWindow) {
+            serialization->_mainWindowSerialization = window;
+        } else {
+            serialization->_floatingWindowsSerialization.push_back(window);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

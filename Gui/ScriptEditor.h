@@ -60,10 +60,6 @@ public:
 
     void setInputScript(const QString& script);
 
-    QString getInputScript() const;
-
-    QString getAutoSavedScript() const;
-
     void appendToScriptEditor(const QString& str);
 
     void printAutoDeclaredVariable(const QString& str);

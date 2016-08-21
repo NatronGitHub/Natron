@@ -1014,14 +1014,11 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT) ) {
         symbol = Qt::Key_Period;
         modifiers |= Qt::ShiftModifier;
-    }
-#ifdef NATRON_ENABLE_IO_META_NODES
-    else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
+    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
         symbol = Qt::Key_R;
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
         symbol = Qt::Key_W;
     }
-#endif
     else {
         hasShortcut = false;
     }

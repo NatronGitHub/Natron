@@ -44,17 +44,15 @@ class NodeClipBoard
 {
 public:
     std::list<NodeSerializationPtr > nodes;
-    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
 
     NodeClipBoard()
         : nodes()
-        , nodesUI()
     {
     }
 
     bool isEmpty() const
     {
-        return nodes.empty() && nodesUI.empty();
+        return nodes.empty();
     }
 
     template<class Archive>
@@ -64,13 +62,10 @@ public:
     {
         int nNodes = nodes.size();
 
-        assert( nodes.size() == nodesUI.size() );
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
-        std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator itUI = nodesUI.begin();
         for (std::list<NodeSerializationPtr >::const_iterator it = nodes.begin();
-             it != nodes.end(); ++it, ++itUI) {
+             it != nodes.end(); ++it) {
             ar & ::boost::serialization::make_nvp("Node", **it);
-            ar & ::boost::serialization::make_nvp("NodeUI", **itUI);
         }
     }
 
@@ -79,16 +74,12 @@ public:
               const unsigned int /*version*/)
     {
         nodes.clear();
-        nodesUI.clear();
         int nNodes;
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
         for (int i = 0; i < nNodes; ++i) {
             NodeSerializationPtr nS(new NodeSerialization);
             ar & ::boost::serialization::make_nvp("Node", *nS);
             nodes.push_back(nS);
-            boost::shared_ptr<NodeGuiSerialization> nGui(new NodeGuiSerialization);
-            ar & ::boost::serialization::make_nvp("NodeUI", *nGui);
-            nodesUI.push_back(nGui);
         }
     }
 

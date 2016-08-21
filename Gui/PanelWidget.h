@@ -87,6 +87,10 @@ public:
      */
     virtual void onPanelMadeCurrent() {}
 
+    virtual bool saveProjection(ViewportData* data) { Q_UNUSED(data); return false; }
+
+    virtual bool loadProjection(const ViewportData& data) { Q_UNUSED(data); return false; }
+
 protected:
 
     virtual QUndoStack* getUndoStack() const { return 0; }

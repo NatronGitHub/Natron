@@ -229,7 +229,7 @@ NodeGraph::renameNode()
     assert(node);
 
 
-    QPointF realPos = node->getPos_mt_safe();
+    QPointF realPos = node->pos();
     //qDebug() << "getPos" << realPos.x() << realPos.y();
     realPos = node->mapFromParent(realPos);
     //qDebug() << "fromParent" << realPos.x() << realPos.y();
@@ -643,14 +643,13 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         _imp->copyNodesInternal(nodes, clipboard);
 
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        std::list<NodeSerializationPtr >::const_iterator itOther = clipboard.nodes.begin();
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-             it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            NodeGuiPtr node = _imp->pasteNode( *itOther, *it, QPointF(0, 0), group, std::string(), false, &oldNewScriptNamesMapping);
+        for (std::list<NodeSerializationPtr>::const_iterator it = clipboard.nodes.begin();
+             it != clipboard.nodes.end(); ++it) {
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), group, std::string(), NodePtr(), &oldNewScriptNamesMapping);
             assert(node);
             if (node) {
-                oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();
-                createdNodes.push_back( std::make_pair( (*itOther)->getNodeScriptName(), node ) );
+                oldNewScriptNamesMapping[(*it)->getNodeScriptName()] = node->getNode()->getScriptName();
+                createdNodes.push_back( std::make_pair( (*it)->getNodeScriptName(), node ) );
             }
         }
         assert( clipboard.nodes.size() == createdNodes.size() );
@@ -659,7 +658,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         }
 
         ///Now that all nodes have been duplicated, try to restore nodes connections
-        _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
+        NodeGraphPrivate::restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
 
         //Restore links once all children are created for alias knobs/expressions
         NodesList allNodes;

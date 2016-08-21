@@ -226,12 +226,9 @@ Project::loadProject(const QString & path,
             }
         }
 
-        bool mustSave = false;
-        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
+        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave) ) {
             appPTR->showErrorLog();
-        } else if (mustSave) {
-            saveProject(realPath, realName, 0);
-        }
+        } 
     } catch (const std::exception & e) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
@@ -267,8 +264,7 @@ bool
 Project::loadProjectInternal(const QString & path,
                              const QString & name,
                              bool isAutoSave,
-                             bool isUntitledAutosave,
-                             bool* mustSave)
+                             bool isUntitledAutosave)
 {
     FlagSetter loadingProjectRAII(true, &_imp->isLoadingProject, &_imp->isLoadingProjectMutex);
     QString filePath = path + name;
@@ -309,19 +305,19 @@ Project::loadProjectInternal(const QString & path,
     LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
 
     try {
+        // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
         bool bgProject;
-        boost::archive::xml_iarchive iArchive(ifile);
+        _imp->lastProjectLoaded.reset(new ProjectSerialization);
+        boost::shared_ptr<boost::archive::xml_iarchive> iArchive(new boost::archive::xml_iarchive(ifile));
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
-
-            iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-            ret = load(projectSerializationObj, name, path, mustSave);
+            (*iArchive) >> boost::serialization::make_nvp("Background_project", bgProject);
+            (*iArchive) >> boost::serialization::make_nvp("Project", *_imp->lastProjectLoaded);
+            ret = load(*_imp->lastProjectLoaded, name, path);
         } // __raii_loadingProjectInternal__
 
-        if (!bgProject) {
-            getApp()->loadProjectGui(isAutoSave, iArchive);
+        if (!getApp()->isBackground()) {
+            getApp()->loadProjectGui(isAutoSave, _imp->lastProjectLoaded, iArchive);
         }
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
@@ -549,17 +545,17 @@ Project::saveProjectInternal(const QString & path,
 
         try {
             boost::archive::xml_oarchive oArchive(ofile);
-            bool bgProject = getApp()->isBackground();
-            oArchive << boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            save(&projectSerializationObj);
-            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-            if (!bgProject) {
-                AppInstancePtr app = getApp();
-                if (app) {
-                    app->saveProjectGui(oArchive);
+            ProjectSerialization projectSerializationObj(shared_from_this());
+            bool isBgProject = getApp()->isBackground();
+            if (isBgProject) {
+                // Use the last project loaded serialization for the gui layout
+                if (_imp->lastProjectLoaded) {
+                    projectSerializationObj._projectWorkspace = _imp->lastProjectLoaded->_projectWorkspace;
                 }
             }
+            oArchive << boost::serialization::make_nvp("Background_project", isBgProject);
+            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
+
         } catch (...) {
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
@@ -1432,19 +1428,34 @@ Project::isSaveUpToDate() const
     return _imp->ageSinceLastSave == _imp->lastAutoSave;
 }
 
-void
-Project::save(ProjectSerialization* serializationObject) const
-{
-    serializationObject->initialize(this);
-}
-
 bool
 Project::load(const ProjectSerialization & obj,
               const QString& name,
-              const QString& path,
-              bool* mustSave)
+              const QString& path)
 {
-    return _imp->restoreFromSerialization(obj, name, path, mustSave);
+    _imp->projectName->setValue( name.toStdString() );
+    _imp->projectPath->setValue( path.toStdString() );
+
+    getApp()->setProjectBeingLoadedInfo(obj.getProjectBeingLoadedInfo());
+
+    appPTR->clearErrorLog_mt_safe();
+    fromSerialization(obj);
+
+
+    // Now that all knobs are loaded, call autosetProjectDirectory
+    // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+    // by the main GUI process
+    if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+        _imp->autoSetProjectDirectory(path);
+    }
+
+    std::list<LogEntry> log;
+    appPTR->getErrorLog_mt_safe(&log);
+    if (!log.empty()) {
+        return false;
+    }
+    return true;
+
 }
 
 void
@@ -1838,6 +1849,7 @@ Project::doResetEnd(bool aboutToQuit)
     if (!aboutToQuit) {
         {
             QMutexLocker l(&_imp->projectLock);
+            _imp->lastProjectLoaded.reset();
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();

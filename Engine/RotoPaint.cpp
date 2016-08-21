@@ -341,7 +341,7 @@ RotoPaint::initializeKnobs()
     showTransform->setCheckable(true);
     showTransform->setDefaultValue(true);
     showTransform->setInViewerContextCanHaveShortcut(true);
-    showTransform->setInViewerContextNewLineActivated(true);
+    showTransform->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
     showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoShowTransformOverlay.png", true);
     showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoHideTransformOverlay.png", false);
     generalPage->addKnob(showTransform);
@@ -545,7 +545,7 @@ RotoPaint::initializeKnobs()
     resetCloneOffset->setEvaluateOnChange(false);
     resetCloneOffset->setSecretByDefault(true);
     resetCloneOffset->setInViewerContextCanHaveShortcut(true);
-    resetCloneOffset->setInViewerContextNewLineActivated(true);
+    resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
     generalPage->addKnob(resetCloneOffset);
     addOverlaySlaveParam(resetCloneOffset);
     _imp->ui->resetCloneOffsetButton = resetCloneOffset;
@@ -590,7 +590,7 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(timeOffsetMode);
     addKnobToViewerUI(sourceType);
     addKnobToViewerUI(resetCloneOffset);
-    resetCloneOffset->setInViewerContextStretch(eStretchAfter);
+    resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
     KnobPagePtr toolbar = AppManager::createKnob<KnobPage>( shared_from_this(), std::string(kRotoUIParamToolbar) );
     toolbar->setAsToolBar(true);

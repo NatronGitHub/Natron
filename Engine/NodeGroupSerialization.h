@@ -59,11 +59,16 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief Deprecated: just used for backward compat
+ **/
 class NodeCollectionSerialization
 {
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
 private:
+
+    // The list of all nodes in the collection
     std::list< NodeSerializationPtr > _serializedNodes;
 
 public:
@@ -77,8 +82,6 @@ public:
         _serializedNodes.clear();
     }
 
-    void initialize(const NodeCollection& group);
-
     const std::list< NodeSerializationPtr > & getNodesSerialization() const
     {
         return _serializedNodes;
@@ -89,10 +92,6 @@ public:
         _serializedNodes.push_back(s);
     }
 
-    static bool restoreFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
-                                         const NodeCollectionPtr& group,
-                                         bool createNodes,
-                                         std::map<std::string, bool>* moduleUpdatesProcessed);
 
 private:
 

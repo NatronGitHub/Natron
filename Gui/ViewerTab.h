@@ -127,6 +127,8 @@ public:
 
     QVBoxLayout* getMainLayout() const;
 
+    NodeGuiPtr getCurrentNodeViewerInterface(const std::string& pluginID) const;
+
     /**
      * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
      **/
@@ -143,7 +145,28 @@ public:
      * @param setAnotherFromSamePlugin If true, if another node of the same plug-in is a candidate for a viewer interface, it will replace the existing
      * viewer interface for this plug-in
      **/
-    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool setAnotherFromSamePlugin);
+    void removeNodeViewerInterface(const NodeGuiPtr& n,
+                                   bool permanently,
+                                   bool setAnotherFromSamePlugin);
+
+    /**
+     * @brief Same as removeNodeViewerInterface but for the Viewer node UI only
+     **/
+    void removeViewerInterface(const NodeGuiPtr& n,
+                                bool permanently);
+
+    virtual bool saveProjection(ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const ViewportData& data) OVERRIDE FINAL;
+
+
+private:
+
+    void removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
+                                   bool permanently,
+                                   bool setAnotherFromSamePlugin);
+
+public:
 
     /**
      * @brief Get the list of all nodes that have a user interface created on this viewer (but not necessarily displayed)

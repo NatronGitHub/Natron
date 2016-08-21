@@ -658,8 +658,6 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    void choiceRestoration(const KnobChoicePtr& knob, const ChoiceExtraData* data);
-
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
      **/
@@ -1264,9 +1262,9 @@ public:
     StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::list< Curve >* curves) const;
+    void saveParametricCurves(std::list< CurveSerialization >* curves) const;
 
-    void loadParametricCurves(const std::list< Curve > & curves);
+    void loadParametricCurves(const std::list< CurveSerialization > & curves);
 
 Q_SIGNALS:
 

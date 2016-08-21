@@ -43,11 +43,15 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/Image.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/PyParameter.h" // Param
 #include "Engine/Project.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
@@ -266,51 +270,66 @@ AddFormatDialog::getFormat() const
     return Format(0, 0, w, h, name.toStdString(), pa);
 }
 
-// Version is handled in ProjectGuiSerialization
-template<>
-void
-ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const
-{
-    ProjectGuiSerialization projectGuiSerializationObj;
-
-    projectGuiSerializationObj.initialize(this);
-    archive << boost::serialization::make_nvp("ProjectGui", projectGuiSerializationObj);
-}
 
 static
 void
-loadNodeGuiSerialization(Gui* gui,
-                         const std::map<std::string, ViewerData > & viewersProjections,
-                         const SettingsPtr& settings,
-                         double leftBound,
-                         double rightBound,
-                         const NodeGuiSerialization& serialization)
+loadNodeGuiSerialization(Gui* gui, const NodeSerializationPtr& serialization)
 {
-    const std::string & name = serialization.getFullySpecifiedName();
-    NodePtr internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
+    NodePtr internalNode;
+    const std::string & groupName = serialization->getGroupFullyQualifiedName();
+    NodeCollectionPtr container;
+    if (groupName.empty()) {
+        container = gui->getApp()->getProject();
+    } else {
+        NodePtr groupNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(groupName);
+        if (!groupNode) {
+            return;
+        }
+        NodeGroupPtr isGroupNode = toNodeGroup(groupNode->getEffectInstance());
+        if (isGroupNode) {
+            container = isGroupNode;
+        } else {
+            return;
+        }
+    }
+    internalNode = container->getNodeByName(serialization->getNodeScriptName());
+
+
 
     if (!internalNode) {
         return;
     }
 
-    NodeGuiIPtr nGui_i = internalNode->getNodeGui();
-    assert(nGui_i);
-    NodeGuiPtr nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
-
-    nGui->refreshPosition( serialization.getX(), serialization.getY(), true );
-
-    if ( ( serialization.isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled() ) ||
-         ( !serialization.isPreviewEnabled() && nGui->getNode()->isPreviewEnabled() ) ) {
-        nGui->togglePreview();
+    NodeGuiPtr nGui;
+    {
+        NodeGuiIPtr nGui_i = internalNode->getNodeGui();
+        assert(nGui_i);
+        nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
     }
+    if (!nGui) {
+        return;
+    }
+
+    double x,y,w,h;
+    serialization->getPosition(&x,&y);
+    serialization->getSize(&w, &h);
+
+
+    nGui->refreshPosition( x, y, true );
 
     EffectInstancePtr iseffect = nGui->getNode()->getEffectInstance();
 
-    if ( serialization.colorWasFound() ) {
+    double nodeColor[3];
+    serialization->getColor(&nodeColor[0], &nodeColor[1], &nodeColor[2]);
+    bool hasNodeColor = nodeColor[0] != -1 || nodeColor[1] != -1 || nodeColor[2] != -1;
+
+    BackdropGuiPtr isBd = toBackdropGui( nGui );
+
+    if (hasNodeColor) {
+        SettingsPtr settings = appPTR->getCurrentSettings();
         std::list<std::string> grouping;
         nGui->getNode()->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
-        BackdropGuiPtr isBd = toBackdropGui( nGui );
         float defR, defG, defB;
 
         if ( iseffect->isReader() ) {
@@ -346,118 +365,112 @@ loadNodeGuiSerialization(Gui* gui,
         }
 
 
-        float r, g, b;
-        serialization.getColor(&r, &g, &b);
         ///restore color only if different from default.
-        if ( (std::abs(r - defR) > 0.05) || (std::abs(g - defG) > 0.05) || (std::abs(b - defB) > 0.05) ) {
+        if ( (std::abs(nodeColor[0] - defR) > 0.05) || (std::abs(nodeColor[1] - defG) > 0.05) || (std::abs(nodeColor[2] - defB) > 0.05) ) {
             QColor color;
-            color.setRgbF(r, g, b);
+            color.setRgbF(Image::clamp(nodeColor[0], 0., 1.),
+                          Image::clamp(nodeColor[1], 0., 1.),
+                          Image::clamp(nodeColor[2], 0., 1.));
             nGui->setCurrentColor(color);
         }
 
-        double ovR, ovG, ovB;
-        bool hasOverlayColor = serialization.getOverlayColor(&ovR, &ovG, &ovB);
-        if (hasOverlayColor) {
-            QColor c;
-            c.setRgbF(ovR, ovG, ovB);
-            nGui->setOverlayColor(c);
-        }
-
-        if (isBd) {
-            double w, h;
-            serialization.getSize(&w, &h);
-            isBd->resize(w, h, true);
-        }
     }
 
-    ViewerNodePtr viewer = nGui->getNode()->isEffectViewerNode();
-    if (viewer) {
-        std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
-        if ( found != viewersProjections.end() ) {
-            ViewerTab* tab = gui->getApp()->getGui()->getViewerTabForInstance(viewer);
-            tab->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
-            tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
 
-        }
+    double ovR, ovG, ovB;
+    serialization->getOverlayColor(&ovR, &ovG, &ovB);
+    bool hasOverlayColor = ovR != -1. || ovG != -1. || ovB != -1.;
+
+    if (hasOverlayColor) {
+        QColor c;
+        c.setRgbF(ovR, ovG, ovB);
+        nGui->setOverlayColor(c);
     }
 
-    if ( serialization.isSelected() ) {
+    if (isBd) {
+        isBd->resize(w, h, true);
+    }
+
+
+
+    bool isNodeSelected = serialization->getSelected();
+    if (isNodeSelected) {
         gui->getNodeGraph()->selectNode(nGui, true);
     }
 
-    const std::list<boost::shared_ptr<NodeGuiSerialization> > & nodesGuiSerialization = serialization.getChildren();
-    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
-        loadNodeGuiSerialization(gui, viewersProjections, settings, leftBound, rightBound, **it);
+    const std::list<NodeSerializationPtr> & children = serialization->getNodesCollection();
+    for (std::list<NodeSerializationPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+        loadNodeGuiSerialization(gui, *it);
     }
+
 } // loadNodeGuiSerialization
 
 template<>
 void
-ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive)
+ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive> & archive)
 {
-    ProjectGuiSerialization obj;
-
-    archive >> boost::serialization::make_nvp("ProjectGui", obj);
-
-    const std::map<std::string, ViewerData > & viewersProjections = obj.getViewersProjections();
-    double leftBound, rightBound;
-    _project.lock()->getFrameRange(&leftBound, &rightBound);
+    bool enableNatron1GuiCompat = false;
+    if (serialization->getVersion() < PROJECT_SERIALIZATION_DEPRECATE_PROJECT_GUI) {
 
 
-    ///default color for nodes
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    const std::list<NodeGuiSerialization> & nodesGuiSerialization = obj.getSerializedNodesGui();
-    for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
-        loadNodeGuiSerialization(_gui, viewersProjections, settings, leftBound, rightBound,  *it);
+        ProjectGuiSerialization deprecatedGuiSerialization;
+        (*archive) >> boost::serialization::make_nvp("ProjectGui", deprecatedGuiSerialization);
+
+        enableNatron1GuiCompat = deprecatedGuiSerialization.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL;
+
+        // Restore the old backdrops from old version prior to Natron 1.1
+        const std::list<NodeBackdropSerialization> & backdrops = deprecatedGuiSerialization.getBackdrops();
+        for (std::list<NodeBackdropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+            double x, y;
+            it->getPos(x, y);
+            int w, h;
+            it->getSize(w, h);
+
+            KnobSerializationPtr labelSerialization = it->getLabelSerialization();
+            CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, _project.lock() );
+            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
+            NodePtr node = getGui()->getApp()->createNode(args);
+            NodeGuiIPtr gui_i = node->getNodeGui();
+            assert(gui_i);
+            BackdropGuiPtr bd = toBackdropGui( gui_i );
+            assert(bd);
+            if (bd) {
+                bd->setPos(x, y);
+                bd->resize(w, h);
+                if (labelSerialization->_values[0]->_value.type == ValueSerializationStorage::eSerializationValueVariantTypeString) {
+                    bd->onLabelChanged( QString::fromUtf8( labelSerialization->_values[0]->_value.value.isString.c_str() ) );
+                }
+                float r, g, b;
+                it->getColor(r, g, b);
+                QColor c;
+                c.setRgbF(r, g, b);
+                bd->setCurrentColor(c);
+                node->setLabel( it->getFullySpecifiedName() );
+            }
+        }
+
+        // Now convert what we can convert to our newer format...
+        deprecatedGuiSerialization.convertToProjectSerialization(serialization.get());
     }
 
+    for (std::list<NodeSerializationPtr>::const_iterator it = serialization->_nodes.begin(); it != serialization->_nodes.end(); ++it) {
+        loadNodeGuiSerialization(_gui, *it);
+    }
 
-    const NodesGuiList nodesGui = getVisibleNodes();
+    /*const NodesGuiList nodesGui = getVisibleNodes();
     for (NodesGuiList::const_iterator it = nodesGui.begin(); it != nodesGui.end(); ++it) {
         (*it)->refreshEdges();
         (*it)->refreshKnobLinks();
-    }
+    }*/
 
-    ///now restore the backdrops from old version prior to Natron 1.1
-    const std::list<NodeBackdropSerialization> & backdrops = obj.getBackdrops();
-    for (std::list<NodeBackdropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        double x, y;
-        it->getPos(x, y);
-        int w, h;
-        it->getSize(w, h);
-
-        KnobIPtr labelSerialization = it->getLabelSerialization();
-        CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, _project.lock() );
-        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        
-        NodePtr node = getGui()->getApp()->createNode(args);
-        NodeGuiIPtr gui_i = node->getNodeGui();
-        assert(gui_i);
-        BackdropGuiPtr bd = toBackdropGui( gui_i );
-        assert(bd);
-        if (bd) {
-            bd->setPos(x, y);
-            bd->resize(w, h);
-            KnobStringPtr iStr = toKnobString( labelSerialization );
-            assert(iStr);
-            if (iStr) {
-                bd->onLabelChanged( QString::fromUtf8( iStr->getValue().c_str() ) );
-            }
-            float r, g, b;
-            it->getColor(r, g, b);
-            QColor c;
-            c.setRgbF(r, g, b);
-            bd->setCurrentColor(c);
-            node->setLabel( it->getFullySpecifiedName() );
-        }
-    }
 
     _gui->getApp()->updateProjectLoadStatus( tr("Restoring settings panels") );
 
-    ///now restore opened settings panels
-    const std::list<std::string> & openedPanels = obj.getOpenedPanels();
+    // Now restore opened settings panels
+    const std::list<std::string> & openedPanels = serialization->_openedPanelsOrdered;
     //reverse the iterator to fill the layout bottom up
     for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it != openedPanels.rend(); ++it) {
         if (*it == kNatronProjectSettingsPanelSerializationName) {
@@ -476,73 +489,25 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         }
     }
 
-
-    ///restore user python panels
-    const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = obj.getPythonPanels();
-    if ( !pythonPanels.empty() ) {
-        _gui->getApp()->updateProjectLoadStatus( tr("Restoring user panels") );
-    }
-
-    if ( !pythonPanels.empty() ) {
-        std::string appID = _gui->getApp()->getAppIDString();
-        std::string err;
-        std::string script = "app = " + appID + '\n';
-        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-        assert(ok);
-        if (!ok) {
-            throw std::runtime_error("ProjectGui::load(): interpretPythonScript(" + script + ") failed!");
-        }
-    }
-    for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        std::string script = (*it)->pythonFunction + "()\n";
-        std::string err, output;
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
-            _gui->getApp()->appendToScriptEditor(err);
-        } else {
-            if ( !output.empty() ) {
-                _gui->getApp()->appendToScriptEditor(output);
-            }
-        }
-        const RegisteredTabs& registeredTabs = _gui->getRegisteredTabs();
-        RegisteredTabs::const_iterator found = registeredTabs.find( (*it)->name );
-        if ( found != registeredTabs.end() ) {
-            NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
-            if (panel) {
-                panel->restore( QString::fromUtf8( (*it)->userData.c_str() ) );
-                for (std::list<KnobSerializationPtr>::iterator it2 = (*it)->knobs.begin(); it2 != (*it)->knobs.end(); ++it2) {
-                    NATRON_PYTHON_NAMESPACE::Param* param = panel->getParam( QString::fromUtf8( (*it2)->getName().c_str() ) );
-                    if (param) {
-                        param->getInternalKnob()->clone( (*it2)->getKnob() );
-                        delete param;
-                    }
-                }
-            }
-        }
-    }
-
     _gui->getApp()->updateProjectLoadStatus( tr("Restoring layout") );
+
+
+    
 
     // For auto-saves, always load the workspace
     bool loadWorkspace = isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce();
-    if (loadWorkspace) {
-        _gui->restoreLayout( true, obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL, obj.getGuiLayout() );
+    if (loadWorkspace && serialization->_projectWorkspace) {
+        _gui->restoreLayout( true, enableNatron1GuiCompat, *serialization->_projectWorkspace );
     }
 
-    ///restore the histograms
-    const std::list<std::string> & histograms = obj.getHistograms();
-    for (std::list<std::string>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
-        Histogram* h = _gui->addNewHistogram();
-        h->setObjectName( QString::fromUtf8( (*it).c_str() ) );
-        //move it by default to the viewer pane, before restoring the layout anyway which
-        ///will relocate it correctly
-        _gui->appendTabToDefaultViewerPane(h, h);
+    const RegisteredTabs& registeredTabs = getGui()->getRegisteredTabs();
+    for (std::map<std::string,ViewportData>::const_iterator it = serialization->_viewportsData.begin(); it!=serialization->_viewportsData.end(); ++it) {
+        RegisteredTabs::const_iterator found = registeredTabs.find(it->first);
+        if (found != registeredTabs.end()) {
+            found->second.first->loadProjection(it->second);
+        }
     }
 
-    if (obj.getVersion() < PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT) {
-        _gui->getNodeGraph()->clearSelection();
-    }
-
-    _gui->getScriptEditor()->setInputScript( QString::fromUtf8( obj.getInputScript().c_str() ) );
     _gui->centerAllNodeGraphsWithTimer();
 } // load
 

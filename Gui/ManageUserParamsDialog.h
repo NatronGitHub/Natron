@@ -73,15 +73,20 @@ public Q_SLOTS:
 
     void onCloseClicked();
 
-    void onSelectionChanged();
+    void onKnobsTreeSelectionChanged();
+    void onViewerTreeSelectionChanged();
 
-    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    void onKnobsTreeItemDoubleClicked(QTreeWidgetItem *item, int column);
+    void onViewerTreeItemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
 
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    void onEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
+    
+    void onKnobsEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
+    void onViewerUIEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
 
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };
