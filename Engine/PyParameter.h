@@ -84,7 +84,7 @@ public:
      * @brief Set the icon file-path that should be used for the button.
      * This can only be called right away after the parameter has been created.
      **/
-    void setIconFilePath(const QString& icon);
+    void setIconFilePath(const QString& icon, bool checked = false);
 
     /**
      * @brief Returns the type of the parameter. The list of known type is:

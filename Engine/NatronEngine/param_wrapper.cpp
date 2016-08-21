@@ -1183,7 +1183,7 @@ static PyObject* Sbk_ParamFunc_setHelp(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1191,13 +1191,33 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
         return 0;
     cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setIconFilePath(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setIconFilePath(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:setIconFilePath", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: setIconFilePath(QString)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // setIconFilePath(QString)
+    // 0: setIconFilePath(QString,bool)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // setIconFilePath(QString,bool)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
+            overloadId = 0; // setIconFilePath(QString,bool)
+        }
     }
 
     // Function signature not found.
@@ -1205,12 +1225,25 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "checked");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setIconFilePath(): got multiple values for keyword argument 'checked'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1]))))
+                    goto Sbk_ParamFunc_setIconFilePath_TypeError;
+            }
+        }
         ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1 = false;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setIconFilePath(QString)
-            cppSelf->setIconFilePath(cppArg0);
+            // setIconFilePath(QString,bool)
+            cppSelf->setIconFilePath(cppArg0, cppArg1);
         }
     }
 
@@ -1220,8 +1253,8 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setIconFilePath_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setIconFilePath", overloads);
+        const char* overloads[] = {"unicode, bool = false", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.setIconFilePath", overloads);
         return 0;
 }
 
@@ -1482,7 +1515,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setEnabledByDefault", (PyCFunction)Sbk_ParamFunc_setEnabledByDefault, METH_VARARGS|METH_KEYWORDS},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
     {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
-    {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_O},
+    {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_VARARGS|METH_KEYWORDS},
     {"setPersistent", (PyCFunction)Sbk_ParamFunc_setPersistent, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
     {"setVisibleByDefault", (PyCFunction)Sbk_ParamFunc_setVisibleByDefault, METH_O},

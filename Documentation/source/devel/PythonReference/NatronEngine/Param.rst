@@ -39,7 +39,7 @@ Functions
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
 *    def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
-*    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
+*    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon [,checked])
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
@@ -473,15 +473,17 @@ function that change the value of the parameter will trigger a new render.
 See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
 
 
-.. method:: NatronEngine.Param.setIconFilePath(icon)
+.. method:: NatronEngine.Param.setIconFilePath(icon [,checked])
 
 
     :param icon: :class:`str<NatronEngine.std::string>`
+    :param checked: :class:`bool<PySide.QtCore.bool>`
 
 Set here the icon file path for the label. This should be either an absolute path or
 a file-path relative to a path in the NATRON_PLUGIN_PATH. The icon will replace the
-label of the parameter.
-
+label of the parameter. If this parameter is a :ref:`ButtonParam<ButtonParam>` then
+if *checked* is *True* the icon will be used when the button is down. Similarily if
+*checked* is *False* the icon will be used when the button is up.
 
 
 

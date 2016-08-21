@@ -334,9 +334,9 @@ Param::setAsAlias(Param* other)
 }
 
 void
-Param::setIconFilePath(const QString& icon)
+Param::setIconFilePath(const QString& icon, bool checked)
 {
-    _knob.lock()->setIconLabel( icon.toStdString() );
+    _knob.lock()->setIconLabel( icon.toStdString(), checked, false );
 }
 
 AnimatedParam::AnimatedParam(const KnobIPtr& knob)
