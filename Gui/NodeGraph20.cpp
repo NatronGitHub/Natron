@@ -47,6 +47,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGui.h"
+#include "Gui/TabWidget.h"
 #include "Gui/Utils.h"
 
 #include "Global/QtCompat.h"
@@ -548,7 +549,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdate) {
         update();
     }
-    QGraphicsView::mouseMoveEvent(e);
+    
+    TabWidget* tab = getParentPane() ;
+    if (tab && _imp->_evtState == eEventStateNone) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    } else {
+        QGraphicsView::mouseMoveEvent(e);
+    }
 } // mouseMoveEvent
 
 NATRON_NAMESPACE_EXIT;

@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Shaders.h"
+#include "Gui/TabWidget.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -726,7 +727,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
 
     _imp->oldClick = e->pos();
     _imp->drawCoordinates = true;
-
+    bool caught = true;
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
 
@@ -768,12 +769,23 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         computeHistogramAndRefresh();
         break;
     }
-    case eEventStateNone:
-        _imp->updatePicker( newClick_opengl.x() );
-        update();
-        break;
+        case eEventStateNone:
+            _imp->updatePicker( newClick_opengl.x() );
+            update();
+            break;
+        default:
+            caught = false;
+            break;
     }
-    QGLWidget::mouseMoveEvent(e);
+ 
+    TabWidget* tab = getParentPane() ;
+    if (tab) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    } else {
+        QGLWidget::mouseMoveEvent(e);
+    }
+    
 } // Histogram::mouseMoveEvent
 
 void

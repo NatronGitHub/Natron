@@ -27,11 +27,13 @@
 #include <stdexcept>
 
 #include <QApplication>
+#include <QMouseEvent>
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/RightClickableWidget.h"
+#include "Gui/TabWidget.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -39,6 +41,7 @@ PropertiesBinWrapper::PropertiesBinWrapper(const std::string& scriptName, Gui* p
     : QWidget(parent)
     , PanelWidget(scriptName, this, parent)
 {
+    setMouseTracking(true);
 }
 
 PropertiesBinWrapper::~PropertiesBinWrapper()
@@ -50,6 +53,20 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
 {
     takeClickFocus();
     QWidget::mousePressEvent(e);
+}
+
+void
+PropertiesBinWrapper::mouseMoveEvent(QMouseEvent* e)
+{
+    TabWidget* tab = getParentPane() ;
+    if (tab) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    } else {
+        QWidget::mouseMoveEvent(e);
+    }
+
+    
 }
 
 void

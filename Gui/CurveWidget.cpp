@@ -1107,7 +1107,25 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     if (_imp->_state == eEventStateNone) {
         // nothing else to do
-        QGLWidget::mouseMoveEvent(e);
+        CurveEditor* ce = 0;
+        if ( parentWidget() ) {
+            QWidget* parent  = parentWidget()->parentWidget();
+            if (parent) {
+                if ( parent->objectName() == QString::fromUtf8("CurveEditor") ) {
+                    ce = dynamic_cast<CurveEditor*>(parent);
+                }
+            }
+        }
+        TabWidget* tab = 0;
+        if (ce) {
+            tab = ce->getParentPane() ;
+        }
+        if (tab) {
+            // If the Viewer is in a tab, send the tab widget the event directly
+            qApp->sendEvent(tab, e);
+        } else {
+            QGLWidget::mouseMoveEvent(e);
+        }
 
         return;
     }

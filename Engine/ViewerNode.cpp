@@ -1391,7 +1391,7 @@ ViewerNode::initializeKnobs()
         page->addKnob(param);
         param->setSecretByDefault(true);
         param->setDisplayMinimum(0.);
-        param->setDisplayMaximum(4.);
+        param->setDisplayMaximum(5.);
         _imp->gammaSliderKnob = param;
     }
 

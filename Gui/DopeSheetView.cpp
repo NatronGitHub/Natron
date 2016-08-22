@@ -3475,6 +3475,7 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
     bool caught = true;
     if (e->buttons() == Qt::NoButton) {
         setCursor( _imp->getCursorDuringHover( e->pos() ) );
+        caught = false;
     } else if (_imp->eventState == DopeSheetView::esZoomingView) {
         _imp->zoomOrPannedSinceLastFit = true;
 
@@ -3524,7 +3525,14 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
     _imp->lastPosOnMouseMove = e->pos();
     if (!caught) {
-        QGLWidget::mouseMoveEvent(e);
+        TabWidget* tab = 0;
+        tab = _imp->model->getEditor()->getParentPane() ;
+        if (tab) {
+            // If the Viewer is in a tab, send the tab widget the event directly
+            qApp->sendEvent(tab, e);
+        } else {
+            QGLWidget::mouseMoveEvent(e);
+        }
     }
 } // DopeSheetView::mouseMoveEvent
 
