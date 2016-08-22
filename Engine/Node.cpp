@@ -4462,7 +4462,17 @@ Node::makeDocumentation(bool genHTML) const
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
     if (!pluginDescriptionIsMarkdown) {
-        pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+        if (genHTML) {
+            pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
+
+            // replace URLs with links
+            // regexp "Liberal, Accurate Regex Pattern for Matching All URLs" from https://gist.github.com/gruber/249502
+            // converted to C++ using http://tomeko.net/online_tools/cpp_text_escape.php
+            //QRegExp regExp( QString::fromUtf8("(?i)\\b((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’]))") );
+            //pluginDescription.replace( regExp, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
+        } else {
+            pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+        }
     }
 
     ms << pluginDescription << "\n\n";
