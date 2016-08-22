@@ -348,17 +348,17 @@ public:
         return false;
     }
 
-    virtual bool supportsMultipleClipsBitDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 
-    virtual bool supportsMultipleClipsFPS() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual bool supportsMultipleClipFPSs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 
-    virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }

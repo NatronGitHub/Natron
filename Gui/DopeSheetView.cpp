@@ -3472,6 +3472,7 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
     QPointF mouseZoomCoords = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
 
+    bool caught = true;
     if (e->buttons() == Qt::NoButton) {
         setCursor( _imp->getCursorDuringHover( e->pos() ) );
     } else if (_imp->eventState == DopeSheetView::esZoomingView) {
@@ -3517,9 +3518,14 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
             _imp->updateCurveWidgetFrameRange();
             _imp->gui->centerOpenedViewersOn( _imp->zoomContext.left(), _imp->zoomContext.right() );
         }
+    } else {
+        caught = false;
     }
 
     _imp->lastPosOnMouseMove = e->pos();
+    if (!caught) {
+        QGLWidget::mouseMoveEvent(e);
+    }
 } // DopeSheetView::mouseMoveEvent
 
 void

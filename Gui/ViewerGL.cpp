@@ -1790,7 +1790,7 @@ ViewerGL::penMotionInternal(int x,
     }
     _imp->lastMousePosition = newClick;
     
-    return true;
+    return mustRedraw;
 } // ViewerGL::penMotionInternal
 
 void
