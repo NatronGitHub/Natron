@@ -57,7 +57,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    explicit ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
+    explicit ViewerTab(const std::string& scriptName,
+                       const std::list<NodeGuiPtr> & existingNodesContext,
                        const std::list<NodeGuiPtr>& activePluginsContext,
                        Gui* gui,
                        const NodeGuiPtr& node,
@@ -118,6 +119,12 @@ private:
                                           KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
 public:
+
+    /**
+     * @brief Called even if the viewer does not have mouse hover focus nor click focus so that from anywhere the user can still trigger the timeline prev/next and playback shortcuts
+     **/
+    bool checkForTimelinePlayerGlobalShortcut(Qt::Key qKey,
+                                              const Qt::KeyboardModifiers& mods);
 
     void setZoomOrPannedSinceLastFit(bool enabled);
 
@@ -241,8 +248,6 @@ public Q_SLOTS:
     void setInfobarVisible(bool visible);
     void setInfobarVisible(int index, bool visible);
 
-    void onSetDownPlaybackButtonsTimeout();
-
     void refreshViewerRenderingState();
 
     void onInternalNodeLabelChanged(const QString& name);
@@ -265,6 +270,7 @@ private:
     void manageSlotsForInfoWidget(int textureIndex, bool connect);
 
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;

@@ -1274,54 +1274,18 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
     NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
-
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+        onGroupCreationFinished(node, serialization, autoConnect);
 
-        if (serialization) {
-            if ( serialization && !serialization->getPythonModule().empty() ) {
-                QString moduleName = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
-                setGroupLabelIDAndVersion(node, moduleName, serialization->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME);
+        try {
+            isGrp->onGroupCreated(serialization);
+        } catch (const std::exception & e) {
+            if (argsGroup) {
+                argsGroup->removeNode(node);
             }
-            onGroupCreationFinished(node, serialization, autoConnect);
-        } else if ( !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
-            //if the node is a group and we're not loading the project, create one input and one output
-            NodePtr input, output;
-
-            {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
-                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
-                output = createNode(args);
-                try {
-                    output->setScriptName("Output");
-                } catch (...) {
-                }
-
-                assert(output);
-            }
-            {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
-                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
-                input = createNode(args);
-                assert(input);
-            }
-            if ( input && output && !output->getInput(0) ) {
-                output->connectInput(input, 0);
-
-                double x, y;
-                output->getPosition(&x, &y);
-                y -= 100;
-                input->setPosition(x, y);
-            }
-            onGroupCreationFinished(node, serialization, autoConnect);
-
-            ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
+            return NodePtr();
         }
-        isGrp->onGroupCreated();
     }
 
     return node;

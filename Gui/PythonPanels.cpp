@@ -355,7 +355,7 @@ PyPanel::PyPanel(const QString& scriptName,
                  GuiApp* app)
     : QWidget( app->getGui() )
     , UserParamHolder()
-    , PanelWidget( this, app->getGui() )
+    , PanelWidget(scriptName.toStdString(), this, app->getGui() )
     , _imp( new PyPanelPrivate() )
 {
     setLabel( label.toStdString() );
@@ -376,7 +376,6 @@ PyPanel::PyPanel(const QString& scriptName,
     }
 
     setScriptName(name);
-    getGui()->registerTab(this, this);
 
 
     if (useUserParameters) {

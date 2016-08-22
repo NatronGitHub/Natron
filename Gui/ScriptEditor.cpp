@@ -104,9 +104,9 @@ struct ScriptEditorPrivate
     }
 };
 
-ScriptEditor::ScriptEditor(Gui* gui)
+ScriptEditor::ScriptEditor(const std::string& scriptName, Gui* gui)
     : QWidget(gui)
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new ScriptEditorPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);

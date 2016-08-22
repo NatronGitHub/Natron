@@ -966,7 +966,7 @@ NodeGui::refreshPositionEnd(double x,
     refreshEdges();
     NodePtr node = getNode();
     if (node) {
-        node->onNodeUIPositionChanged(x, y);
+        node->onNodeUIPositionChanged(x,y);
         const NodesWList & outputs = node->getGuiOutputs();
 
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {

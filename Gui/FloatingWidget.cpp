@@ -192,7 +192,16 @@ FloatingWidget::restoreChildFromSerialization(const ProjectWindowSerialization& 
     switch (serialization.childType) {
         case eProjectWorkspaceWidgetTypeSplitter: {
             assert(serialization.isChildSplitter);
-            Splitter* splitter = new Splitter(_gui, this);
+            Qt::Orientation orientation;
+            switch ((OrientationEnum)serialization.isChildSplitter->orientation) {
+                case eOrientationHorizontal:
+                    orientation = Qt::Horizontal;
+                    break;
+                case eOrientationVertical:
+                    orientation = Qt::Vertical;
+                    break;
+            }
+            Splitter* splitter = new Splitter(orientation, _gui, this);
             setWidget(splitter);
             _gui->getApp()->registerSplitter(splitter);
             splitter->fromSerialization(*serialization.isChildSplitter);
@@ -228,10 +237,12 @@ FloatingWidget::restoreChildFromSerialization(const ProjectWindowSerialization& 
                 panel->floatPanelInWindow(this);
             }
         }   break;
+        case eProjectWorkspaceWidgetTypeNone:
+            break;
     }
 
     QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
+    QRect screen = desktop->screenGeometry(desktop->screenNumber(this));
     move( QPoint( serialization.windowPosition[0], serialization.windowPosition[1] ) );
     resize( std::min( serialization.windowSize[0], screen.width() ), std::min( serialization.windowSize[1], screen.height() ) );
 }

@@ -78,11 +78,12 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)
  *
  * Creates a DopeSheetEditor.
  */
-DopeSheetEditor::DopeSheetEditor(Gui *gui,
+DopeSheetEditor::DopeSheetEditor(const std::string& scriptName,
+                                 Gui *gui,
                                  const TimeLinePtr& timeline,
                                  QWidget *parent)
     : QWidget(parent),
-    PanelWidget(this, gui),
+    PanelWidget(scriptName, this, gui),
     _imp( new DopeSheetEditorPrivate(this) )
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

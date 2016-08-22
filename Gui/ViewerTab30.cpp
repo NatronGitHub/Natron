@@ -239,7 +239,12 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
         // Add the player toolbar
         int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
         ++viewerIndex;
-        _imp->mainLayout->insertWidget(viewerIndex, it->second->getPlayerToolbar());
+        bool playerVisible = internalNode->isPlayerVisible();
+        QWidget* playerToolbar = it->second->getPlayerToolbar();
+        if (!playerVisible) {
+            playerToolbar->hide();
+        }
+        _imp->mainLayout->insertWidget(viewerIndex, playerToolbar);
     }
 
     ViewerTabPrivate::PluginViewerContext p;

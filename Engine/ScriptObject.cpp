@@ -57,9 +57,12 @@ ScriptObject::~ScriptObject()
 void
 ScriptObject::setLabel(const std::string& label)
 {
-    QMutexLocker k(&_imp->nameMutex);
+    {
+        QMutexLocker k(&_imp->nameMutex);
 
-    _imp->label = label;
+        _imp->label = label;
+    }
+    onLabelChanged();
 }
 
 std::string
@@ -71,11 +74,22 @@ ScriptObject::getLabel() const
 }
 
 void
+ScriptObject::setScriptNameInternal(const std::string& name, bool callOnScriptNameChanged)
+{
+    {
+        QMutexLocker k(&_imp->nameMutex);
+
+        _imp->name = name;
+    }
+    if (callOnScriptNameChanged) {
+        onScriptNameChanged();
+    }
+}
+
+void
 ScriptObject::setScriptName(const std::string& name)
 {
-    QMutexLocker k(&_imp->nameMutex);
-
-    _imp->name = name;
+    setScriptNameInternal(name, true);
 }
 
 std::string

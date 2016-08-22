@@ -159,7 +159,8 @@ enum ProjectWorkspaceWidgetTypeEnum
 {
     eProjectWorkspaceWidgetTypeTabWidget,
     eProjectWorkspaceWidgetTypeSplitter,
-    eProjectWorkspaceWidgetTypeSettingsPanel
+    eProjectWorkspaceWidgetTypeSettingsPanel,
+    eProjectWorkspaceWidgetTypeNone
 };
 
 struct ProjectTabWidgetSerialization  : public SerializationObjectBase
@@ -256,7 +257,7 @@ struct ProjectWindowSplitterSerialization : public SerializationObjectBase
                 break;
         }
         ar & ::boost::serialization::make_nvp("RightChildType", rightChild->type);
-        switch (leftChild->type) {
+        switch (rightChild->type) {
             case eProjectWorkspaceWidgetTypeSplitter:
                 ar & ::boost::serialization::make_nvp("RightChild", *rightChild->childIsSplitter);
                 break;
@@ -294,7 +295,7 @@ struct ProjectWindowSplitterSerialization : public SerializationObjectBase
         }
         rightChild.reset(new Child);
         ar & ::boost::serialization::make_nvp("RightChildType", rightChild->type);
-        switch (leftChild->type) {
+        switch (rightChild->type) {
             case eProjectWorkspaceWidgetTypeSplitter:
                 rightChild->childIsSplitter.reset(new ProjectWindowSplitterSerialization);
                 ar & ::boost::serialization::make_nvp("RightChild", *rightChild->childIsSplitter);
@@ -364,6 +365,8 @@ struct ProjectWindowSerialization : public SerializationObjectBase
                 assert(!isChildSettingsPanel.empty());
                 ar & ::boost::serialization::make_nvp("Child", isChildSettingsPanel);
                 break;
+            case eProjectWorkspaceWidgetTypeNone:
+                break;
         }
 
         ar & ::boost::serialization::make_nvp("x", windowPosition[0]);
@@ -388,6 +391,8 @@ struct ProjectWindowSerialization : public SerializationObjectBase
                 break;
             case eProjectWorkspaceWidgetTypeSettingsPanel:
                 ar & ::boost::serialization::make_nvp("Child", isChildSettingsPanel);
+                break;
+            case eProjectWorkspaceWidgetTypeNone:
                 break;
         }
         ar & ::boost::serialization::make_nvp("x", windowPosition[0]);

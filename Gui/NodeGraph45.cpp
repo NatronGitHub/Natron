@@ -626,9 +626,8 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
             oldName[i] = '_';
         }
     }
-    getGui()->unregisterTab(this);
     setScriptName(newName);
-    getGui()->registerTab(this, this);
+
   
 }
 

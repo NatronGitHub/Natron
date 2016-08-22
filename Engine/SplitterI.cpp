@@ -54,8 +54,8 @@ SplitterI::toSerialization(SerializationObjectBase* serializationBase)
     }
     {
         serialization->rightChild.reset(new ProjectWindowSplitterSerialization::Child);
-        SplitterI* isRightSplitter = isLeftChildSplitter();
-        TabWidgetI* isRigthTabWidget = isLeftChildTabWidget();
+        SplitterI* isRightSplitter = isRightChildSplitter();
+        TabWidgetI* isRigthTabWidget = isRightChildTabWidget();
         if (isRightSplitter) {
             serialization->rightChild->type = eProjectWorkspaceWidgetTypeSplitter;
             serialization->rightChild->childIsSplitter.reset(new ProjectWindowSplitterSerialization);

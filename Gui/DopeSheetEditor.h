@@ -88,7 +88,8 @@ class DopeSheetEditor
     : public QWidget, public PanelWidget
 {
 public:
-    DopeSheetEditor(Gui *gui,
+    DopeSheetEditor(const std::string& scriptName,
+                    Gui *gui,
                     const TimeLinePtr& timeline,
                     QWidget *parent = 0);
     ~DopeSheetEditor();

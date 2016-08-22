@@ -38,12 +38,14 @@
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -1494,6 +1496,50 @@ NodeGroup::clearLastRenderedImage()
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->getEffectInstance()->purgeCaches();
     }
+}
+
+void
+NodeGroup::onGroupCreated(const NodeSerializationPtr& serialization)
+{
+    if ( serialization && !serialization->getPythonModule().empty() ) {
+        QString moduleName = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
+        AppInstance::setGroupLabelIDAndVersion(getNode(), moduleName, serialization->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME);
+    } else if ( !serialization && !getApp()->isCreatingPythonGroup()) {
+        //if the node is a group and we're not loading the project, create one input and one output
+        NodePtr input, output;
+
+        NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+        {
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, thisShared);
+            args.setProperty(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
+            output = getApp()->createNode(args);
+            try {
+                output->setScriptName("Output");
+            } catch (...) {
+            }
+
+            assert(output);
+        }
+        {
+            CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
+            args.setProperty(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
+            input = getApp()->createNode(args);
+            assert(input);
+        }
+        if ( input && output && !output->getInput(0) ) {
+            output->connectInput(input, 0);
+
+            double x, y;
+            output->getPosition(&x, &y);
+            y -= 100;
+            input->setPosition(x, y);
+        }
+    }
+
 }
 
 bool

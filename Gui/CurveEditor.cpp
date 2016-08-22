@@ -163,12 +163,13 @@ struct CurveEditorPrivate
     }
 };
 
-CurveEditor::CurveEditor(Gui* gui,
+CurveEditor::CurveEditor(const std::string& scriptName,
+                         Gui* gui,
                          const TimeLinePtr& timeline,
                          QWidget *parent)
     : QWidget(parent)
     , CurveSelection()
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new CurveEditorPrivate() )
 {
     setObjectName( QString::fromUtf8("CurveEditor") );

@@ -904,7 +904,7 @@ TabWidget::splitInternal(bool autoSave,
         parentIsFloating->removeEmbeddedWidget();
     }
 
-    Splitter* newSplitter = new Splitter(_imp->gui,0);
+    Splitter* newSplitter = new Splitter(Qt::Horizontal, _imp->gui,0);
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(orientation);
     _imp->gui->getApp()->registerSplitter(newSplitter);

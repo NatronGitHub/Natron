@@ -68,6 +68,7 @@ public:
 
     explicit NodeGraph(Gui* gui,
                        const NodeCollectionPtr& group,
+                       const std::string& scriptName,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 

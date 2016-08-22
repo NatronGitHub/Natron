@@ -156,7 +156,6 @@ public:
     ///a list of ptrs to all histograms
     mutable QMutex _histogramsMutex;
     std::list<Histogram*> _histograms;
-    int _nextHistogramIndex; //< for giving a unique name to histogram tabs
 
     ///The node graph (i.e: the view of the scene)
     NodeGraph* _nodeGraphArea;

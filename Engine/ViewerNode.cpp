@@ -314,6 +314,7 @@
 
 #define kViewerNodeParamActionAbortRender "aboortRender"
 #define kViewerNodeParamActionAbortRenderLabel "Abort Rendering"
+#define kViewerNodeParamActionAbortRenderHint "Abort any ongoing playback or render"
 
 // Viewer overlay
 #define kViewerNodeParamWipeCenter "wipeCenter"
@@ -321,19 +322,9 @@
 #define kViewerNodeParamWipeAngle "wipeAngle"
 
 // Player buttons
-
-
-#define kViewerNodeParamSetInPoint "setInPoint"
-#define kViewerNodeParamSetInPointLabel "Set In Point"
-#define kViewerNodeParamSetInPointHint "Set the playback in point at the current frame"
-
 #define kViewerNodeParamInPoint "inPoint"
 #define kViewerNodeParamInPointLabel "In Point"
 #define kViewerNodeParamInPointHint "The playback in point"
-
-#define kViewerNodeParamSetOutPoint "setOutPoint"
-#define kViewerNodeParamSetOutPointLabel "Set Out Point"
-#define kViewerNodeParamSetOutPointHint "Set the playback out point at the current frame"
 
 #define kViewerNodeParamOutPoint "outPoint"
 #define kViewerNodeParamOutPointLabel "Out Point"
@@ -361,54 +352,7 @@
 #define kViewerNodeParamSyncTimelinesLabel "Sync Timelines"
 #define kViewerNodeParamSyncTimelinesHint "When activated, the timeline frame-range is synchronized with the Dope Sheet and the Curve Editor"
 
-#define kViewerNodeParamFirstFrame "goToFirstFrame"
-#define kViewerNodeParamFirstFrameLabel "First Frame"
-#define kViewerNodeParamFirstFrameHint "Moves the timeline cursor to the playback in point"
 
-#define kViewerNodeParamPlayBackward "playBackward"
-#define kViewerNodeParamPlayBackwardLabel "Play Backward"
-#define kViewerNodeParamPlayBackwardHint "Starts playback backward"
-
-#define kViewerNodeParamCurrentFrame "currentFrame"
-#define kViewerNodeParamCurrentFrameLabel "Current Frame"
-#define kViewerNodeParamCurrentFrameHint "The current frame displayed in the Viewer"
-
-#define kViewerNodeParamPlayForward "playForward"
-#define kViewerNodeParamPlayForwardLabel "Play Forward"
-#define kViewerNodeParamPlayForwardHint "Starts playback forward"
-
-#define kViewerNodeParamLastFrame "goToLastFrame"
-#define kViewerNodeParamLastFrameLabel "Last Frame"
-#define kViewerNodeParamLastFrameHint "Moves the timeline cursor to the playback out point"
-
-#define kViewerNodeParamPreviousFrame "goToPreviousFrame"
-#define kViewerNodeParamPreviousFrameLabel "Previous Frame"
-#define kViewerNodeParamPreviousFrameHint "Moves the timeline cursor to the previous frame"
-
-#define kViewerNodeParamNextFrame "goToNextFrame"
-#define kViewerNodeParamNextFrameLabel "Next Frame"
-#define kViewerNodeParamNextFrameHint "Moves the timeline cursor to the next frame"
-
-#define kViewerNodeParamPreviousKeyFrame "goToPreviousKeyFrame"
-#define kViewerNodeParamPreviousKeyFrameLabel "Previous KeyFrame"
-#define kViewerNodeParamPreviousKeyFrameHint "Moves the timeline cursor to the previous keyframe"
-
-#define kViewerNodeParamNextKeyFrame "goToNextKeyFrame"
-#define kViewerNodeParamNextKeyFrameLabel "Next KeyFrame"
-#define kViewerNodeParamNextKeyFrameHint "Moves the timeline cursor to the next keyframe"
-
-#define kViewerNodeParamPreviousIncr "goToPreviousIncrement"
-#define kViewerNodeParamPreviousIncrLabel "Previous Increment"
-#define kViewerNodeParamPreviousIncrHint "Moves the timeline cursor backward by the number of frames indicated by the Frame Increment parameter"
-
-#define kViewerNodeParamFrameIncrement "frameIncrement"
-#define kViewerNodeParamFrameIncrementLabel "frameIncrement"
-#define kViewerNodeParamFrameIncrementHint "This is the number of frame the timeline will step backward/forward when clicking on the Previous/Next "\
-"Increment buttons"
-
-#define kViewerNodeParamNextIncr "goToNextIncrement"
-#define kViewerNodeParamNextIncrLabel "Next Increment"
-#define kViewerNodeParamNextIncrHint "Moves the timeline cursor forward by the number of frames indicated by the Frame Increment parameter"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -603,6 +547,8 @@ struct ViewerNodePrivate
     {
         return internalViewerProcessNode.lock();
     }
+
+    void onInternalViewerCreated();
 
     void drawWipeControl();
 
@@ -920,8 +866,11 @@ ViewerNode::onKnobsLoaded()
 }
 
 void
-ViewerNode::onGroupCreated()
+ViewerNode::onGroupCreated(const NodeSerializationPtr& serialization)
 {
+    if (serialization) {
+        return;
+    }
     ViewerNodePtr thisShared = shared_from_this();
 
     NodePtr internalViewerNode;
@@ -929,69 +878,93 @@ ViewerNode::onGroupCreated()
         QString nodeName = QString::fromUtf8("ViewerProcess");
         CreateNodeArgs args(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared);
         //args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
         internalViewerNode = getApp()->createNode(args);
-        _imp->internalViewerProcessNode = internalViewerNode;
-        assert(internalViewerNode);
 
-        Q_EMIT internalViewerCreated();
+    }
+    assert(internalViewerNode);
+    if (!internalViewerNode) {
+        throw std::invalid_argument("ViewerNode::onGroupCreated: No internal viewer process!");
+    }
+    _imp->internalViewerProcessNode = internalViewerNode;
+    Q_EMIT internalViewerCreated();
+
+
+    double inputWidth, inputHeight;
+    internalViewerNode->getSize(&inputWidth, &inputHeight);
+    double inputX, inputY;
+    internalViewerNode->getPosition(&inputX, &inputY);
+
+    double startOffset = - (VIEWER_INITIAL_N_INPUTS / 2) * inputWidth - inputWidth / 2. - (VIEWER_INITIAL_N_INPUTS / 2 - 1) * inputWidth / 2;
+
+    std::vector<NodePtr> inputNodes(VIEWER_INITIAL_N_INPUTS);
+    // Create input nodes
+    for (int i = 0; i < VIEWER_INITIAL_N_INPUTS; ++i) {
+        QString inputName = QString::fromUtf8("Input%1").arg(i + 1);
+        CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
+        //args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
+        inputNodes[i] = getApp()->createNode(args);
+        assert(inputNodes[i]);
+        inputNodes[i]->setPosition(inputX + startOffset, inputY - inputHeight * 10);
+        startOffset += inputWidth * 1.5;
     }
 
-    {
-        double inputWidth, inputHeight;
-        internalViewerNode->getSize(&inputWidth, &inputHeight);
-        double inputX, inputY;
-        internalViewerNode->getPosition(&inputX, &inputY);
-
-        double startOffset = - (VIEWER_INITIAL_N_INPUTS / 2) * inputWidth - inputWidth / 2. - (VIEWER_INITIAL_N_INPUTS / 2 - 1) * inputWidth / 2;
-
-        std::vector<NodePtr> inputNodes(VIEWER_INITIAL_N_INPUTS);
-        // Create input nodes
-        for (int i = 0; i < VIEWER_INITIAL_N_INPUTS; ++i) {
-            QString inputName = QString::fromUtf8("Input%1").arg(i + 1);
-            CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
-            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
-            //args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
-            inputNodes[i] = getApp()->createNode(args);
-            assert(inputNodes[i]);
-            inputNodes[i]->setPosition(inputX + startOffset, inputY - inputHeight * 10);
-            startOffset += inputWidth * 1.5;
-        }
-        
-    }
 
 
-    ViewerInstancePtr viewerNode = getInternalViewerNode();
+    _imp->onInternalViewerCreated();
+
+
+}
+
+void
+ViewerNodePrivate::onInternalViewerCreated()
+{
+    ViewerInstancePtr viewerNode = internalViewerProcessNode.lock()->isEffectViewerInstance();
     RenderEnginePtr engine = viewerNode->getRenderEngine();
-    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
-    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
+    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onEngineStopped()) );
+    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), _publicInterface, SLOT(onEngineStarted(bool)) );
 
     // Refresh visibility & enabledness
-    _imp->fpsKnob.lock()->setAllDimensionsEnabled(_imp->enableFpsKnob.lock()->getValue());
+    fpsKnob.lock()->setAllDimensionsEnabled(enableFpsKnob.lock()->getValue());
 
     // Refresh playback mode
-    PlaybackModeEnum mode = (PlaybackModeEnum)_imp->playbackModeKnob.lock()->getValue();
+    PlaybackModeEnum mode = (PlaybackModeEnum)playbackModeKnob.lock()->getValue();
     engine->setPlaybackMode(mode);
 
     // Refresh fps
-    engine->setDesiredFPS(_imp->fpsKnob.lock()->getValue());
+    engine->setDesiredFPS(fpsKnob.lock()->getValue());
 
-    _imp->mustSetUpPlaybackButtonsTimer.setSingleShot(true);
-    QObject::connect( &_imp->mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), this, SLOT(onSetDownPlaybackButtonsTimeout()) );
-
+    mustSetUpPlaybackButtonsTimer.setSingleShot(true);
+    QObject::connect( &mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), _publicInterface, SLOT(onSetDownPlaybackButtonsTimeout()) );
 
 }
 
 void
 ViewerNode::onContainerGroupLoaded()
 {
+    NodePtr internalViewerNode;
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        if ((*it)->isEffectViewerInstance()) {
+            internalViewerNode = *it;
+            break;
+        }
+    }
+    assert(internalViewerNode);
+    if (!internalViewerNode) {
+        throw std::invalid_argument("ViewerNode::onGroupCreated: No internal viewer process!");
+    }
+    _imp->internalViewerProcessNode = internalViewerNode;
+    Q_EMIT internalViewerCreated();
+
+    _imp->onInternalViewerCreated();
+
     _imp->refreshInputChoices(true);
     refreshInputFromChoiceMenu(0);
     refreshInputFromChoiceMenu(1);
@@ -1643,6 +1616,7 @@ ViewerNode::initializeKnobs()
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPlayBackwardLabel) );
         param->setName(kViewerNodeParamPlayBackward);
         param->setHintToolTip(tr(kViewerNodeParamPlayBackwardHint));
+        param->addInViewerContextShortcutsReference(kViewerNodeParamActionAbortRender);
         param->setSecretByDefault(true);
         param->setCheckable(true);
         param->setEvaluateOnChange(false);
@@ -1666,6 +1640,7 @@ ViewerNode::initializeKnobs()
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPlayForwardLabel) );
         param->setName(kViewerNodeParamPlayForward);
         param->setHintToolTip(tr(kViewerNodeParamPlayForwardHint));
+        param->addInViewerContextShortcutsReference(kViewerNodeParamActionAbortRender);
         param->setSecretByDefault(true);
         param->setCheckable(true);
         param->setEvaluateOnChange(false);
@@ -2389,6 +2364,24 @@ bool
 ViewerNode::isTopToolbarVisible() const
 {
     return _imp->rightClickShowHideTopToolbar.lock()->getValue();
+}
+
+bool
+ViewerNode::isTimelineVisible() const
+{
+    return _imp->rightClickShowHideTimeline.lock()->getValue();
+}
+
+bool
+ViewerNode::isPlayerVisible() const
+{
+    return _imp->rightClickShowHidePlayer.lock()->getValue();
+}
+
+bool
+ViewerNode::isInfoBarVisible() const
+{
+    return _imp->enableInfoBarButtonKnob.lock()->getValue();
 }
 
 bool

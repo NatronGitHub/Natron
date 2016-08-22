@@ -413,7 +413,7 @@ public:
     /**
      * @brief Callback called when the group gui has been created
      **/
-    virtual void onGroupCreated() {}
+    virtual void onGroupCreated(const NodeSerializationPtr& serialization);
 
 Q_SIGNALS:
 

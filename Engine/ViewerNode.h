@@ -40,6 +40,63 @@
 
 #define kViewerNodeParamPlayerToolBarPage "playerToolBar"
 
+#define kViewerNodeParamSetInPoint "setInPoint"
+#define kViewerNodeParamSetInPointLabel "Set In Point"
+#define kViewerNodeParamSetInPointHint "Set the playback in point at the current frame"
+
+#define kViewerNodeParamSetOutPoint "setOutPoint"
+#define kViewerNodeParamSetOutPointLabel "Set Out Point"
+#define kViewerNodeParamSetOutPointHint "Set the playback out point at the current frame"
+
+#define kViewerNodeParamFirstFrame "goToFirstFrame"
+#define kViewerNodeParamFirstFrameLabel "First Frame"
+#define kViewerNodeParamFirstFrameHint "Moves the timeline cursor to the playback in point"
+
+#define kViewerNodeParamPlayBackward "playBackward"
+#define kViewerNodeParamPlayBackwardLabel "Play Backward"
+#define kViewerNodeParamPlayBackwardHint "Starts playback backward. Press again or hit %2 to stop"
+
+#define kViewerNodeParamCurrentFrame "currentFrame"
+#define kViewerNodeParamCurrentFrameLabel "Current Frame"
+#define kViewerNodeParamCurrentFrameHint "The current frame displayed in the Viewer"
+
+#define kViewerNodeParamPlayForward "playForward"
+#define kViewerNodeParamPlayForwardLabel "Play Forward"
+#define kViewerNodeParamPlayForwardHint "Starts playback forward. Press again or hit %2 to stop"
+
+#define kViewerNodeParamLastFrame "goToLastFrame"
+#define kViewerNodeParamLastFrameLabel "Last Frame"
+#define kViewerNodeParamLastFrameHint "Moves the timeline cursor to the playback out point"
+
+#define kViewerNodeParamPreviousFrame "goToPreviousFrame"
+#define kViewerNodeParamPreviousFrameLabel "Previous Frame"
+#define kViewerNodeParamPreviousFrameHint "Moves the timeline cursor to the previous frame"
+
+#define kViewerNodeParamNextFrame "goToNextFrame"
+#define kViewerNodeParamNextFrameLabel "Next Frame"
+#define kViewerNodeParamNextFrameHint "Moves the timeline cursor to the next frame"
+
+#define kViewerNodeParamPreviousKeyFrame "goToPreviousKeyFrame"
+#define kViewerNodeParamPreviousKeyFrameLabel "Previous KeyFrame"
+#define kViewerNodeParamPreviousKeyFrameHint "Moves the timeline cursor to the previous keyframe"
+
+#define kViewerNodeParamNextKeyFrame "goToNextKeyFrame"
+#define kViewerNodeParamNextKeyFrameLabel "Next KeyFrame"
+#define kViewerNodeParamNextKeyFrameHint "Moves the timeline cursor to the next keyframe"
+
+#define kViewerNodeParamPreviousIncr "goToPreviousIncrement"
+#define kViewerNodeParamPreviousIncrLabel "Previous Increment"
+#define kViewerNodeParamPreviousIncrHint "Moves the timeline cursor backward by the number of frames indicated by the Frame Increment parameter"
+
+#define kViewerNodeParamFrameIncrement "frameIncrement"
+#define kViewerNodeParamFrameIncrementLabel "frameIncrement"
+#define kViewerNodeParamFrameIncrementHint "This is the number of frame the timeline will step backward/forward when clicking on the Previous/Next "\
+"Increment buttons"
+
+#define kViewerNodeParamNextIncr "goToNextIncrement"
+#define kViewerNodeParamNextIncrLabel "Next Increment"
+#define kViewerNodeParamNextIncrHint "Moves the timeline cursor forward by the number of frames indicated by the Frame Increment parameter"
+
 NATRON_NAMESPACE_ENTER;
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
@@ -120,7 +177,13 @@ public:
 
     bool isTopToolbarVisible() const;
 
+    bool isTimelineVisible() const;
+
+    bool isPlayerVisible() const;
+
     bool isClipToProjectEnabled() const;
+
+    bool isInfoBarVisible() const;
 
     double getWipeAmount() const;
 
@@ -183,7 +246,7 @@ public:
 
     virtual std::string getPluginDescription() const OVERRIDE FINAL;
 
-    virtual void onGroupCreated() OVERRIDE FINAL;
+    virtual void onGroupCreated(const NodeSerializationPtr& serialization) OVERRIDE FINAL;
 
     virtual bool isOutput() const OVERRIDE FINAL
     {

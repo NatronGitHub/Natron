@@ -101,7 +101,6 @@ SerializableWindow::toSerialization(SerializationObjectBase* serializationBase)
     TabWidgetI* isTab = isMainWidgetTab();
     SplitterI* isSplitter = isMainWidgetSplitter();
     DockablePanelI* isPanel = isMainWidgetPanel();
-    assert(isTab || isSplitter || isPanel);
     if (isTab) {
         serialization->childType = eProjectWorkspaceWidgetTypeTabWidget;
         serialization->isChildTabWidget.reset(new ProjectTabWidgetSerialization);
@@ -113,6 +112,8 @@ SerializableWindow::toSerialization(SerializationObjectBase* serializationBase)
     } else if (isPanel) {
         serialization->childType = eProjectWorkspaceWidgetTypeSettingsPanel;
         serialization->isChildSettingsPanel = isPanel->getHolderFullyQualifiedScriptName();
+    } else {
+        serialization->childType = eProjectWorkspaceWidgetTypeNone;
     }
 }
 

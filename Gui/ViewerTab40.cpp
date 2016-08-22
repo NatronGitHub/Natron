@@ -345,9 +345,7 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 
 
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    getGui()->unregisterTab(this);
     setScriptName(newName);
-    getGui()->registerTab(this, this);
  
 }
 

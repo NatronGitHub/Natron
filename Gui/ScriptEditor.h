@@ -54,7 +54,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ScriptEditor(Gui* gui);
+    ScriptEditor(const std::string& scriptName, Gui* gui);
 
     virtual ~ScriptEditor();
 

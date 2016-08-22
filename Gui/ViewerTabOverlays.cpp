@@ -649,6 +649,55 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     return didSomething;
 } // ViewerTab::notifyOverlaysPenUp
 
+
+bool
+ViewerTab::checkForTimelinePlayerGlobalShortcut(Qt::Key qKey,
+                                                const Qt::KeyboardModifiers& mods)
+{
+    const char* knobsToCheck[] = {
+        kViewerNodeParamSetInPoint,
+        kViewerNodeParamSetOutPoint,
+        kViewerNodeParamFirstFrame,
+        kViewerNodeParamPlayBackward,
+        kViewerNodeParamPlayForward,
+        kViewerNodeParamLastFrame,
+        kViewerNodeParamPreviousFrame,
+        kViewerNodeParamNextFrame,
+        kViewerNodeParamPreviousKeyFrame,
+        kViewerNodeParamNextKeyFrame,
+        kViewerNodeParamPreviousIncr,
+        kViewerNodeParamNextIncr,
+        NULL
+    };
+
+    ViewerNodePtr node = getInternalNode();
+    const KnobsVec& knobs = node->getKnobs();
+    int i = 0;
+    std::string pluginShortcutGroup;
+    while (knobsToCheck[i]) {
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            if ( (*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret() ) {
+                if ( pluginShortcutGroup.empty() ) {
+                    pluginShortcutGroup = node->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
+                }
+                if ( isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey) ) {
+                    // This only works for groups and buttons, as defined in the spec
+                    KnobButtonPtr isButton = toKnobButton(*it);
+                    bool ret = false;
+
+                    if (isButton) {
+                        ret = isButton->trigger();
+                    }
+                    return ret;
+                }
+            }
+        }
+        ++i;
+    }
+    return false;
+}
+
+
 bool
 ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
                                            Qt::Key qKey,

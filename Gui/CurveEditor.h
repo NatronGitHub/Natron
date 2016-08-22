@@ -329,7 +329,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    CurveEditor(Gui* gui,
+    CurveEditor(const std::string& scriptName,
+                Gui* gui,
                 const TimeLinePtr& timeline,
                 QWidget* parent = 0);
 

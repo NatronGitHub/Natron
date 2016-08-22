@@ -468,6 +468,10 @@ public:
 
     void saveApplicationWorkspace(ProjectWorkspaceSerialization* serialization);
 
+
+    static void setGroupLabelIDAndVersion(const NodePtr& node,
+                                      const QString &pythonModule,
+                                      bool pythonModuleIsAbsoluteScriptFilePath);
 public Q_SLOTS:
 
     void quit();
@@ -521,9 +525,6 @@ private:
 
     NodePtr createNodeInternal(CreateNodeArgs& args);
 
-    void setGroupLabelIDAndVersion(const NodePtr& node,
-                                   const QString &pythonModule,
-                                   bool pythonModuleIsAbsoluteScriptFilePath);
 
     NodePtr createNodeFromPythonModule(Plugin* plugin,
                                        const CreateNodeArgs& args);

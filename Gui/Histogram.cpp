@@ -199,10 +199,11 @@ public:
     std::vector<double> viewerPickerColor;
 };
 
-Histogram::Histogram(Gui* gui,
+Histogram::Histogram(const std::string& scriptName,
+                     Gui* gui,
                      const QGLWidget* shareWidget)
     : QGLWidget(gui, shareWidget)
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new HistogramPrivate(this) )
 {
     // always running in the main thread

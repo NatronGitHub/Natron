@@ -695,6 +695,7 @@ private:
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;

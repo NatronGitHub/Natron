@@ -362,6 +362,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         } else {
             accept = false;
         }
+    } else if (key == Qt::Key_Left || key == Qt::Key_Right || key == Qt::Key_Up || key == Qt::Key_Down) {
+        // These shortcuts are caught by QGraphicsView to scroll the area. Prevent it.
+        qApp->sendEvent(parentWidget(), e);
+        return;
     } else {
         bool intercepted = false;
 

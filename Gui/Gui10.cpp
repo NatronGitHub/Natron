@@ -185,12 +185,21 @@ void
 Gui::restoreChildFromSerialization(const ProjectWindowSerialization& serialization)
 {
     QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
+    QRect screen = desktop->screenGeometry(desktop->screenNumber(this));
 
     switch (serialization.childType) {
         case eProjectWorkspaceWidgetTypeSplitter: {
             assert(serialization.isChildSplitter);
-            Splitter* splitter = new Splitter(this, this);
+            Qt::Orientation orientation;
+            switch ((OrientationEnum)serialization.isChildSplitter->orientation) {
+                case eOrientationHorizontal:
+                    orientation = Qt::Horizontal;
+                    break;
+                case eOrientationVertical:
+                    orientation = Qt::Vertical;
+                    break;
+            }
+            Splitter* splitter = new Splitter(orientation, this, this);
             _imp->_leftRightSplitter->addWidget_mt_safe(splitter);
             getApp()->registerSplitter(splitter);
             splitter->fromSerialization(*serialization.isChildSplitter);
@@ -203,6 +212,7 @@ Gui::restoreChildFromSerialization(const ProjectWindowSerialization& serializati
             tab->fromSerialization(*serialization.isChildTabWidget);
         }   break;
         case eProjectWorkspaceWidgetTypeSettingsPanel:
+        case eProjectWorkspaceWidgetTypeNone:
             break;
     }
 
@@ -212,8 +222,8 @@ Gui::restoreChildFromSerialization(const ProjectWindowSerialization& serializati
     resize(w, h);
 
     // If the screen size changed, make sure at least 50x50 pixels of the window are visible
-    int x = boost::algorithm::clamp( serialization.windowPosition[0], screen.left(), screen.right() - 50 );
-    int y = boost::algorithm::clamp( serialization.windowPosition[0], screen.top(), screen.bottom() - 50 );
+    int x = boost::algorithm::clamp( serialization.windowPosition[0], screen.left(), screen.right() );
+    int y = boost::algorithm::clamp( serialization.windowPosition[0], screen.top(), screen.bottom() );
     move( QPoint(x, y) );
 
 }

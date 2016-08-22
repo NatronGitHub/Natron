@@ -35,9 +35,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
+PropertiesBinWrapper::PropertiesBinWrapper(const std::string& scriptName, Gui* parent)
     : QWidget(parent)
-    , PanelWidget(this, parent)
+    , PanelWidget(scriptName, this, parent)
 {
 }
 

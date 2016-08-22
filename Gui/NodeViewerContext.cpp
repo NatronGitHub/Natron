@@ -384,9 +384,11 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
                 ++next;
             }
         }
-    }
-    if (thisNode->getNode()->isEffectViewerNode()) {
 
+    }
+
+    ViewerNodePtr isViewer = thisNode->getNode()->isEffectViewerNode();
+    if (isViewer) {
         KnobIPtr playerKnob = thisNode->getNode()->getKnobByName(kViewerNodeParamPlayerToolBarPage);
         KnobPagePtr playerPage = toKnobPage(playerKnob);
         assert(playerPage);

@@ -39,6 +39,7 @@
 #include <QtCore/QThread>
 #include <QCheckBox>
 #include <QtCore/QTimer>
+#include <QWidgetAction>
 #include <QTextEdit>
 
 
@@ -198,7 +199,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _activeViewer(0)
     , _histogramsMutex()
     , _histograms()
-    , _nextHistogramIndex(1)
     , _nodeGraphArea(0)
     , _lastFocusedGraph(0)
     , _groups()
@@ -294,8 +294,7 @@ GuiPrivate::notifyGuiClosing()
 void
 GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesBin = new PropertiesBinWrapper(_gui);
-    _propertiesBin->setScriptName(kPropertiesBinName);
+    _propertiesBin = new PropertiesBinWrapper(kPropertiesBinName, _gui);
     _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
@@ -372,7 +371,6 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
     _propertiesBin->setVisible(false);
-    _gui->registerTab(_propertiesBin, _propertiesBin);
 } // createPropertiesBinGui
 
 void
@@ -381,51 +379,41 @@ GuiPrivate::createNodeGraphGui()
     QGraphicsScene* scene = new QGraphicsScene(_gui);
 
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), scene, _gui);
-    _nodeGraphArea->setScriptName(kNodeGraphObjectName);
+    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), kNodeGraphObjectName, scene, _gui);
     _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
-    _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
 
 void
 GuiPrivate::createCurveEditorGui()
 {
-    _curveEditor = new CurveEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
-    _curveEditor->setScriptName(kCurveEditorObjectName);
+    _curveEditor = new CurveEditor(kCurveEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
     _curveEditor->setLabel( tr("Curve Editor").toStdString() );
     _curveEditor->setVisible(false);
-    _gui->registerTab(_curveEditor, _curveEditor);
 }
 
 void
 GuiPrivate::createDopeSheetGui()
 {
-    _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
-    _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
+    _dopeSheetEditor = new DopeSheetEditor(kDopeSheetEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
     _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
     _dopeSheetEditor->setVisible(false);
-    _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
 
 void
 GuiPrivate::createScriptEditorGui()
 {
-    _scriptEditor = new ScriptEditor(_gui);
-    _scriptEditor->setScriptName("scriptEditor");
+    _scriptEditor = new ScriptEditor("scriptEditor", _gui);
     _scriptEditor->setLabel( tr("Script Editor").toStdString() );
     _scriptEditor->setVisible(false);
-    _gui->registerTab(_scriptEditor, _scriptEditor);
 }
 
 void
 GuiPrivate::createProgressPanelGui()
 {
-    _progressPanel = new ProgressPanel(_gui);
-    _progressPanel->setScriptName("progress");
+    _progressPanel = new ProgressPanel("progress", _gui);
     _progressPanel->setLabel( tr("Progress").toStdString() );
     _progressPanel->setVisible(false);
-    _gui->registerTab(_progressPanel, _progressPanel);
 }
 
 TabWidget*
@@ -535,24 +523,58 @@ private:
     }
 };
 
+/**
+ * @brief From http://doc.qt.io/qt-4.8/qtoolbar.html
+ When a QToolBar is not a child of a QMainWindow, it loses the ability to populate the extension pop up with widgets added to the toolbar using addWidget(). 
+ Please use widget actions created by inheriting QWidgetAction and implementing QWidgetAction::createWidget() instead.
+ **/
+class AutoRaiseToolButtonAction : public QWidgetAction
+{
+    Gui* _gui;
+    ToolButton* _tool;
+public:
+
+    AutoRaiseToolButtonAction(Gui* gui, ToolButton* tool, QObject *parent)
+    : QWidgetAction(parent)
+    , _gui(gui)
+    , _tool(tool)
+    {
+
+    }
+
+    virtual ~AutoRaiseToolButtonAction()
+    {
+        
+    }
+
+private:
+
+    virtual QWidget *createWidget(QWidget *parent) OVERRIDE FINAL
+    {
+        QToolButton* button = new AutoRaiseToolButton(_gui, parent);
+
+        //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
+        //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
+        button->setIcon( _tool->getToolButtonIcon() );
+        button->setMenu( _tool->getMenu() );
+
+        const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
+        button->setFixedSize(toolButtonSize);
+        button->setPopupMode(QToolButton::InstantPopup);
+        button->setToolTip( GuiUtils::convertFromPlainText(_tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
+        return button;
+    }
+
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
 GuiPrivate::addToolButton(ToolButton* tool)
 {
-    QToolButton* button = new AutoRaiseToolButton(_gui, _toolBox);
-
-    //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
-    //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
-    button->setIcon( tool->getToolButtonIcon() );
-    button->setMenu( tool->getMenu() );
-
-    const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
-    button->setFixedSize(toolButtonSize);
-    button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( GuiUtils::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
-    _toolBox->addWidget(button);
+    AutoRaiseToolButtonAction* action = new AutoRaiseToolButtonAction(_gui, tool, _toolBox);
+    _toolBox->addAction(action);
 }
 
 void

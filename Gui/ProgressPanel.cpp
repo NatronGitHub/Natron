@@ -139,9 +139,9 @@ struct ProgressPanelPrivate
     }
 };
 
-ProgressPanel::ProgressPanel(Gui* gui)
+ProgressPanel::ProgressPanel(const std::string& scriptName, Gui* gui)
     : QWidget(gui)
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new ProgressPanelPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);

@@ -78,11 +78,12 @@ NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
 
 NodeGraph::NodeGraph(Gui* gui,
                      const NodeCollectionPtr& group,
+                     const std::string& scriptName,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
     , NodeGraphI()
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new NodeGraphPrivate(this, group) )
 {
     group->setNodeGraphPointer(this);
@@ -91,21 +92,8 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroupPtr isGrp = toNodeGroup( group );
     if (isGrp) {
-        std::string newName = isGrp->getNode()->getFullyQualifiedName();
-        for (std::size_t i = 0; i < newName.size(); ++i) {
-            if (newName[i] == '.') {
-                newName[i] = '_';
-            }
-        }
-        setScriptName(newName);
-        std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode(), &label);
-        setLabel(label);
         QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
         QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );
-    } else {
-        setScriptName(kNodeGraphObjectName);
-        setLabel( tr("Node Graph").toStdString() );
     }
 
     QObject::connect( &_imp->autoScrollTimer, SIGNAL(timeout()), this, SLOT(onAutoScrollTimerTriggered()) );

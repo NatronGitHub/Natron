@@ -274,6 +274,7 @@ ProjectPrivate::restoreGroupFromSerialization(const std::list< NodeSerialization
                 args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
             }
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
             node = group->getApplication()->createNode(args);
         }
         if (!node) {
@@ -435,7 +436,11 @@ ProjectPrivate::restoreGroupFromSerialization(const std::list< NodeSerialization
     for (std::map<NodePtr, NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
         ViewerNodePtr isViewer = it->first->isEffectViewerNode();
         if (isViewer) {
-            isViewer->onContainerGroupLoaded();
+            try {
+                isViewer->onContainerGroupLoaded();
+            } catch (...) {
+                continue;
+            }
         }
     }
 

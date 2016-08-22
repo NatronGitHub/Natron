@@ -1752,7 +1752,7 @@ findMasterKnob(const KnobIPtr & knob,
         ///now that we have the master node, find the corresponding knob
         const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
         for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistent() ) {
+            if ( (otherKnobs[j]->getName() == masterKnobName) ) {
                 return otherKnobs[j];
                 break;
             }
@@ -4052,7 +4052,11 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
 
     createNodePage(settingsPage);
-    createInfoPage();
+
+    bool createInfo = !isEffectNodeGroup();
+    if (createInfo) {
+        createInfoPage();
+    }
 
     if (_imp->effect->isWriter()
         && !ioContainer) {

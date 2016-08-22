@@ -324,6 +324,7 @@ Gui::maximize(TabWidget* what)
             pane->hide();
         }
     }
+    _imp->_toolBox->hide();
 }
 
 void
@@ -336,6 +337,9 @@ Gui::minimize()
             continue;
         }
         pane->show();
+    }
+    if (!_imp->leftToolBarDisplayedOnHoverOnly) {
+        _imp->_toolBox->show();
     }
 }
 
@@ -379,11 +383,25 @@ Gui::addNewViewerTab(const NodeGuiPtr& node,
         }
     }
 
-    ViewerTab* tab = new ViewerTab(nodeViewerUi, activeNodeViewerUi, this, node, where);
+    std::string nodeName =  node->getNode()->getFullyQualifiedName();
+    for (std::size_t i = 0; i < nodeName.size(); ++i) {
+        if (nodeName[i] == '.') {
+            nodeName[i] = '_';
+        }
+    }
+    std::string label;
+    NodeGraph::makeFullyQualifiedLabel(node->getNode(), &label);
+
+    ViewerTab* tab = new ViewerTab(nodeName, nodeViewerUi, activeNodeViewerUi, this, node, where);
+    tab->setLabel(label);
+
     QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
+        if (!_imp->_activeViewer) {
+            _imp->_activeViewer = tab;
+        }
     }
     where->appendTab(tab, tab);
     Q_EMIT viewersChanged();
@@ -561,17 +579,37 @@ Gui::removeViewerTab(ViewerTab* tab,
 Histogram*
 Gui::addNewHistogram()
 {
-    Histogram* h = new Histogram(this);
-    QMutexLocker l(&_imp->_histogramsMutex);
-    std::stringstream ss;
+    std::string baseName = "Histogram";
+    std::string name;
+    bool nameExists;
+    int i = 1;
+    do {
+        nameExists = false;
+        std::stringstream ss;
+        ss << baseName;
+        ss << i;
+        name = ss.str();
 
-    ss << _imp->_nextHistogramIndex;
+        {
+            QMutexLocker l(&_imp->_histogramsMutex);
+            for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
+                if ((*it)->getScriptName() == name) {
+                    nameExists = true;
+                    break;
+                }
+            }
+        }
+        ++i;
+    } while(nameExists);
 
-    h->setScriptName( "histogram" + ss.str() );
-    h->setLabel( "Histogram" + ss.str() );
-    ++_imp->_nextHistogramIndex;
-    _imp->_histograms.push_back(h);
+    std::string scriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
+    Histogram* h = new Histogram(scriptName, this);
+    h->setLabel(name);
 
+    {
+        QMutexLocker l(&_imp->_histogramsMutex);
+        _imp->_histograms.push_back(h);
+    }
     return h;
 }
 

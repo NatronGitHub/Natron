@@ -37,7 +37,7 @@ class PropertiesBinWrapper
 {
 public:
 
-    PropertiesBinWrapper(Gui* parent);
+    PropertiesBinWrapper(const std::string& scriptName, Gui* parent);
 
     virtual ~PropertiesBinWrapper();
 

@@ -635,6 +635,14 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
         connectBInput(9);
     } else {
+
+        // The player controls shortcuts are global to the application, so check them
+        ViewerTab* activeViewer = getActiveViewer();
+        if (activeViewer) {
+            if (activeViewer->checkForTimelinePlayerGlobalShortcut(key, modifiers)) {
+                return;
+            }
+        }
         /*
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
          * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
@@ -722,6 +730,12 @@ Gui::keyReleaseEvent(QKeyEvent* e)
     } else {
         QMainWindow::keyPressEvent(e);
     }
+}
+
+void
+Gui::mouseMoveEvent(QMouseEvent* e)
+{
+    QMainWindow::mouseMoveEvent(e);
 }
 
 TabWidget*

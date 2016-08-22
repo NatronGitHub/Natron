@@ -66,46 +66,20 @@
 NATRON_NAMESPACE_ENTER;
 
 
-static void
-makeFullyQualifiedLabel(const NodePtr& node,
-                        std::string* ret)
-{
-    NodeCollectionPtr parent = node->getGroup();
-    NodeGroupPtr isParentGrp = toNodeGroup(parent);
-    std::string toPreprend = node->getLabel();
-
-    if (isParentGrp) {
-        toPreprend.insert(0, "/");
-    }
-    ret->insert(0, toPreprend);
-    if (isParentGrp) {
-        makeFullyQualifiedLabel(isParentGrp->getNode(), ret);
-    }
-}
-
-
-ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
+ViewerTab::ViewerTab(const std::string& scriptName,
+                     const std::list<NodeGuiPtr> & existingNodesContext,
                      const std::list<NodeGuiPtr>& activePluginsContext,
                      Gui* gui,
                      const NodeGuiPtr& node_ui,
                      QWidget* parent)
     : QWidget(parent)
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new ViewerTabPrivate(this, node_ui) )
 {
     ViewerNodePtr node = node_ui->getNode()->isEffectViewerNode();
     installEventFilter(this);
 
-    std::string nodeName =  node->getNode()->getFullyQualifiedName();
-    for (std::size_t i = 0; i < nodeName.size(); ++i) {
-        if (nodeName[i] == '.') {
-            nodeName[i] = '_';
-        }
-    }
-    setScriptName(nodeName);
-    std::string label;
-    makeFullyQualifiedLabel(node->getNode(), &label);
-    setLabel(label);
+
 
     NodePtr internalNode = node->getNode();
     QObject::connect( internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)) );
@@ -136,11 +110,13 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QString inputNames[2] = {
         QString::fromUtf8("A:"), QString::fromUtf8("B:")
     };
+
+    bool infobarvisible = node->isInfoBarVisible();
     for (int i = 0; i < 2; ++i) {
         _imp->infoWidget[i] = new InfoViewerWidget(inputNames[i], this);
         _imp->viewerSubContainerLayout->addWidget(_imp->infoWidget[i]);
         _imp->viewer->setInfoViewer(_imp->infoWidget[i], i);
-        if (i == 1) {
+        if (i == 1 || !infobarvisible) {
             _imp->infoWidget[i]->hide();
         }
     }
@@ -155,6 +131,10 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
     QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );
     _imp->timeLineGui->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+
+    if (!node->isTimelineVisible()) {
+        _imp->timeLineGui->hide();
+    }
 
     //Add some spacing because the timeline might be black as the info
     _imp->mainLayout->addSpacing( TO_DPIY(5) );
@@ -248,6 +228,12 @@ ViewerTab::loadProjection(const ViewportData& data)
     _imp->viewer->setProjection(data.left, data.bottom, data.zoomFactor, 1.);
     _imp->viewer->setZoomOrPannedSinceLastFit(data.zoomOrPanSinceLastFit);
     return true;
+}
+
+void
+ViewerTab::mouseMoveEvent(QMouseEvent* e)
+{
+    QWidget::mouseMoveEvent(e);
 }
 
 NATRON_NAMESPACE_EXIT;

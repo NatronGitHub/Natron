@@ -34,13 +34,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-Splitter::Splitter(Gui* gui, QWidget* parent)
-    : QSplitter(parent)
-    , _lock()
-    , _gui(gui)
-{
-    setMouseTracking(true);
-}
 
 Splitter::Splitter(Qt::Orientation orientation,
                    Gui* gui,
@@ -220,6 +213,7 @@ Splitter::setNatronOrientation(OrientationEnum orientation)
             break;
         case eOrientationVertical:
             setOrientation(Qt::Vertical);
+            break;
     }
 }
 
@@ -238,7 +232,7 @@ Splitter::restoreChildrenFromSerialization(const ProjectWindowSplitterSerializat
     {
         if (serialization.leftChild->type == eProjectWorkspaceWidgetTypeSplitter) {
             Qt::Orientation orientation;
-            switch ((OrientationEnum)serialization.orientation) {
+            switch ((OrientationEnum)serialization.leftChild->childIsSplitter->orientation) {
                 case eOrientationHorizontal:
                     orientation = Qt::Horizontal;
                     break;
@@ -248,17 +242,19 @@ Splitter::restoreChildrenFromSerialization(const ProjectWindowSplitterSerializat
             }
             Splitter* splitter = new Splitter(orientation, _gui, this);
             splitter->fromSerialization(*serialization.leftChild->childIsSplitter);
+            _gui->getApp()->registerSplitter(splitter);
             addWidget_mt_safe(splitter);
         } else if (serialization.leftChild->type == eProjectWorkspaceWidgetTypeTabWidget) {
             TabWidget* tab = new TabWidget(_gui, this);
             tab->fromSerialization(*serialization.leftChild->childIsTabWidget);
+            _gui->getApp()->registerTabWidget(tab);
             addWidget_mt_safe(tab);
         }
     }
     {
         if (serialization.rightChild->type == eProjectWorkspaceWidgetTypeSplitter) {
             Qt::Orientation orientation;
-            switch ((OrientationEnum)serialization.orientation) {
+            switch ((OrientationEnum)serialization.rightChild->childIsSplitter->orientation) {
                 case eOrientationHorizontal:
                     orientation = Qt::Horizontal;
                     break;
@@ -268,10 +264,12 @@ Splitter::restoreChildrenFromSerialization(const ProjectWindowSplitterSerializat
             }
             Splitter* splitter = new Splitter(orientation, _gui, this);
             splitter->fromSerialization(*serialization.rightChild->childIsSplitter);
+            _gui->getApp()->registerSplitter(splitter);
             addWidget_mt_safe(splitter);
         } else if (serialization.rightChild->type == eProjectWorkspaceWidgetTypeTabWidget) {
             TabWidget* tab = new TabWidget(_gui, this);
             tab->fromSerialization(*serialization.rightChild->childIsTabWidget);
+            _gui->getApp()->registerTabWidget(tab);
             addWidget_mt_safe(tab);
         }
     }

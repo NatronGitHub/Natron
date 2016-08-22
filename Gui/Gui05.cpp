@@ -91,7 +91,7 @@ Gui::setupUi()
     _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
 
-    _imp->_leftRightSplitter = new Splitter(this, _imp->_centralWidget);
+    _imp->_leftRightSplitter = new Splitter(Qt::Horizontal, this, _imp->_centralWidget);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_leftRightSplitter->setObjectName( QString::fromUtf8(kMainSplitterObjectName) );
     getApp()->registerSplitter(_imp->_leftRightSplitter);
@@ -222,7 +222,21 @@ Gui::createGroupGui(const NodePtr & group,
 
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
+
+    
+    std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    for (std::size_t i = 0; i < newName.size(); ++i) {
+        if (newName[i] == '.') {
+            newName[i] = '_';
+        }
+    }
+    newName += "_NodeGraph";
+    std::string label = tr(" Node Graph").toStdString();
+    NodeGraph::makeFullyQualifiedLabel(group, &label);
+
+
+    NodeGraph* nodeGraph = new NodeGraph(this, collection, newName, scene, this);
+    nodeGraph->setLabel(label);
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
@@ -377,7 +391,7 @@ Gui::wipeLayout()
     }
 
 
-    Splitter *newSplitter = new Splitter(this, _imp->_centralWidget);
+    Splitter *newSplitter = new Splitter(Qt::Horizontal,this, _imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
     newSplitter->setObjectName_mt_safe( _imp->_leftRightSplitter->objectName_mt_safe() );
     _imp->_mainLayout->removeWidget(_imp->_leftRightSplitter);

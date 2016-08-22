@@ -591,7 +591,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
 
 
         for (int i = 0; i < 2; ++i) {
-            if ( !_imp->displayTextures[i].isVisible || !bInput) {
+            if ( !_imp->displayTextures[i].isVisible || (!bInput && i == 1)) {
                 continue;
             }
             if ( (i == 1) && (compOperator == eViewerCompositingOperatorNone) ) {

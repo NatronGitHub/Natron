@@ -50,11 +50,9 @@ class Splitter
 {
 public:
 
-    Splitter(Gui* gui, QWidget* parent = 0);
-
     Splitter(Qt::Orientation orientation,
              Gui* gui, 
-             QWidget * parent = 0);
+             QWidget * parent);
 
     virtual ~Splitter()
     {
