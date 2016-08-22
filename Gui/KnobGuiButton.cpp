@@ -75,7 +75,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TabGroup.h"
-#include "Gui/Utils.h"
 
 #include "ofxNatron.h"
 

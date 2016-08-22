@@ -72,7 +72,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerContext.h"
-
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
 #include "Gui/AnimatedCheckBox.h"
@@ -90,7 +90,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TableModelView.h"
-#include "Gui/Utils.h"
 
 #define kTrackCenterName "center"
 #define kTrackInvertName "invert"
@@ -566,13 +565,13 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton = new Button(QIcon(), QString::fromUtf8("+"), _imp->buttonsContainer);
     _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->addButton->setIconSize( QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE) );
-    _imp->addButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal) );
+    _imp->addButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add new."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->addButton);
 
     QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()) );
 
     _imp->removeButton = new Button(QIcon(), QString::fromUtf8("-"), _imp->buttonsContainer);
-    _imp->removeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal) );
+    _imp->removeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove selection."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->removeButton->setIconSize( QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE) );
     _imp->buttonsLayout->addWidget(_imp->removeButton);
@@ -583,7 +582,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->selectAll = new Button(QIcon(selectAll), QString(), _imp->buttonsContainer);
     _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAll->setIconSize( QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE) );
-    _imp->selectAll->setToolTip( GuiUtils::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal) );
+    _imp->selectAll->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Select all."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->selectAll);
 
     QObject::connect( _imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()) );
@@ -591,7 +590,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->resetTracksButton = new Button(QString::fromUtf8("Reset"), _imp->buttonsContainer);
     QObject::connect( _imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal) );
+    _imp->resetTracksButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Reset selected items."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     layout->addWidget(_imp->buttonsContainer);
     appendButtons(_imp->buttonsLayout);
@@ -1874,7 +1873,7 @@ TrackerPanelV1::appendButtons(QHBoxLayout* buttonLayout)
         return;
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"), buttonLayout->parentWidget() );
-    _imp->averageTracksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal) );
+    _imp->averageTracksButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->averageTracksButton, SIGNAL(clicked(bool)), this, SLOT(onAverageTracksButtonClicked()) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }

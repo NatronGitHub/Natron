@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
@@ -77,7 +78,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
-#include "Gui/Utils.h"
 
 #include "ofxNatron.h"
 
@@ -446,7 +446,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     if (isRectangleParam) {
         _imp->rectangleFormatButton = new Button(QIcon(), QString::fromUtf8("wh"), _imp->container);
-        _imp->rectangleFormatButton->setToolTip( GuiUtils::convertFromPlainText(tr("Switch between width/height and right/top notation"), Qt::WhiteSpaceNormal) );
+        _imp->rectangleFormatButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between width/height and right/top notation"), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->rectangleFormatButton->setFixedSize(medSize);
         _imp->rectangleFormatButton->setIconSize(medIconSize);
         _imp->rectangleFormatButton->setFocusPolicy(Qt::NoFocus);
@@ -459,7 +459,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     if ( (nDims > 1) && !isSliderDisabled() && sliderVisible ) {
         _imp->dimensionSwitchButton = new Button(QIcon(), QString::number(nDims), _imp->container);
-        _imp->dimensionSwitchButton->setToolTip( GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal) );
+        _imp->dimensionSwitchButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->dimensionSwitchButton->setFixedSize(medSize);
         _imp->dimensionSwitchButton->setIconSize(medIconSize);
         _imp->dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);

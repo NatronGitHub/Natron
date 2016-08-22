@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
@@ -59,7 +60,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ProgressTaskInfo.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
-#include "Gui/Utils.h"
 #include "Gui/Menu.h"
 #include "Gui/LogWindow.h"
 #include "Gui/NodeGui.h"
@@ -155,7 +155,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
 
 
     _imp->queueTasksCheckbox = new QCheckBox(tr("Queue Renders"), _imp->headerContainer);
-    _imp->queueTasksCheckbox->setToolTip( GuiUtils::convertFromPlainText(tr("When checked, renders will be queued in the Progress Panel and will start only when all other prior renders are done. This does not apply to other tasks such as Tracking or analysis."), Qt::WhiteSpaceNormal) );
+    _imp->queueTasksCheckbox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When checked, renders will be queued in the Progress Panel and will start only when all other prior renders are done. This does not apply to other tasks such as Tracking or analysis."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->queueTasksCheckbox->setChecked( appPTR->getCurrentSettings()->isRenderQueuingEnabled() );
     QObject::connect( _imp->queueTasksCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onQueueRendersCheckboxChecked()) );
     _imp->headerLayout->addWidget(_imp->queueTasksCheckbox);
@@ -163,7 +163,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
     _imp->headerLayout->addSpacing( TO_DPIX(20) );
 
     _imp->removeTasksAfterFinishCheckbox = new QCheckBox(tr("Remove Finished Tasks"), _imp->headerContainer);
-    _imp->removeTasksAfterFinishCheckbox->setToolTip( GuiUtils::convertFromPlainText(tr("When checked, finished tasks that can be paused"  " will be automatically removed from the task list when they are finished. When unchecked, the tasks may be restarted."), Qt::WhiteSpaceNormal) );
+    _imp->removeTasksAfterFinishCheckbox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When checked, finished tasks that can be paused"  " will be automatically removed from the task list when they are finished. When unchecked, the tasks may be restarted."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->removeTasksAfterFinishCheckbox->setChecked(false);
     _imp->headerLayout->addWidget(_imp->removeTasksAfterFinishCheckbox);
 

@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -77,7 +78,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TabGroup.h"
-#include "Gui/Utils.h"
 
 #include "ofxNatron.h"
 
@@ -274,7 +274,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
         if (!activeIndexPresent) {
             QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, GuiUtils::convertFromPlainText(error, Qt::WhiteSpaceNormal) );
+            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
@@ -348,7 +348,7 @@ KnobGuiChoice::onEntriesPopulated()
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
         if (!activeIndexPresent) {
             QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, GuiUtils::convertFromPlainText(error, Qt::WhiteSpaceNormal) );
+            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
@@ -412,7 +412,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
         if (!activeIndexPresent) {
             QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, GuiUtils::convertFromPlainText(error, Qt::WhiteSpaceNormal) );
+            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }

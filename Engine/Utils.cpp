@@ -26,24 +26,26 @@
 
 #include <stdexcept>
 
+#include <QString>
+#include <QChar>
+
 NATRON_NAMESPACE_ENTER;
 
-namespace GuiUtils {
 /*!
-   \fn QString GuiUtils::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
+   \fn QString NATRON_NAMESPACE::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
 
    Converts the plain text string \a plain to an HTML-formatted
    paragraph while preserving most of its look.
 
    \a mode defines how whitespace is handled.
 
-   This function was adapted from GuiUtils::convertFromPlainText()
+   This function was adapted from Qt::convertFromPlainText()
    (see src/gui/text/qtextdocument.cpp in the Qt sources)
-   The difference is that in Qt::WhiteSpaceNormal mode, spaces are preserved at the beginning of the line.
+   The difference is that in NATRON_NAMESPACE::WhiteSpaceNormal mode, spaces are preserved at the beginning of the line.
  */
 QString
 convertFromPlainText(const QString &plain,
-                     Qt::WhiteSpaceMode mode)
+                     NATRON_NAMESPACE::WhiteSpaceMode mode)
 {
     int col = 0;
     bool bol = true;
@@ -70,7 +72,7 @@ convertFromPlainText(const QString &plain,
             bol = true;
         } else {
             bool bolagain = false;
-            if ( (mode == Qt::WhiteSpacePre) && ( plain[i] == QLatin1Char('\t') ) ) {
+            if ( (mode == NATRON_NAMESPACE::WhiteSpacePre) && ( plain[i] == QLatin1Char('\t') ) ) {
                 rich += QChar(0x00a0U);
                 ++col;
                 while (col % 8) {
@@ -78,7 +80,7 @@ convertFromPlainText(const QString &plain,
                     ++col;
                 }
                 bolagain = bol;
-            } else if ( ( bol || (mode == Qt::WhiteSpacePre) ) && plain[i].isSpace() ) {
+            } else if ( ( bol || (mode == NATRON_NAMESPACE::WhiteSpacePre) ) && plain[i].isSpace() ) {
                 rich += QChar(0x00a0U);
                 bolagain = bol;
             } else if ( plain[i] == QLatin1Char('<') ) {
@@ -100,6 +102,5 @@ convertFromPlainText(const QString &plain,
 
     return rich;
 } // convertFromPlainText
-} // namespace GuiUtils
 
 NATRON_NAMESPACE_EXIT;

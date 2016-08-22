@@ -41,6 +41,7 @@
 #include "Engine/KnobTypes.h" // KnobPage
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodePtr
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/AddKnobDialog.h"
 #include "Gui/Button.h"
@@ -51,7 +52,6 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PickKnobDialog.h"
-#include "Gui/Utils.h" // convertFromPlainText
 
 NATRON_NAMESPACE_ENTER;
 
@@ -215,37 +215,37 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
 
     _imp->addButton = new Button(tr("Add..."), _imp->buttonsContainer);
-    _imp->addButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal) );
+    _imp->addButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add a new parameter, group or page"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddClicked()) );
     _imp->buttonsLayout->addWidget(_imp->addButton);
 
     _imp->pickButton = new Button(tr("Pick..."), _imp->buttonsContainer);
-    _imp->pickButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal) );
+    _imp->pickButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->pickButton, SIGNAL(clicked(bool)), this, SLOT(onPickClicked()) );
     _imp->buttonsLayout->addWidget(_imp->pickButton);
 
     _imp->editButton = new Button(tr("Edit..."), _imp->buttonsContainer);
-    _imp->editButton->setToolTip( GuiUtils::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal) );
+    _imp->editButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Edit the selected parameter"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->editButton, SIGNAL(clicked(bool)), this, SLOT(onEditClicked()) );
     _imp->buttonsLayout->addWidget(_imp->editButton);
 
     _imp->removeButton = new Button(tr("Delete"), _imp->buttonsContainer);
-    _imp->removeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Delete the selected parameter"), Qt::WhiteSpaceNormal) );
+    _imp->removeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Delete the selected parameter"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onDeleteClicked()) );
     _imp->buttonsLayout->addWidget(_imp->removeButton);
 
     _imp->upButton = new Button(tr("Up"), _imp->buttonsContainer);
-    _imp->upButton->setToolTip( GuiUtils::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), Qt::WhiteSpaceNormal) );
+    _imp->upButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->upButton, SIGNAL(clicked(bool)), this, SLOT(onUpClicked()) );
     _imp->buttonsLayout->addWidget(_imp->upButton);
 
     _imp->downButton = new Button(tr("Down"), _imp->buttonsContainer);
-    _imp->downButton->setToolTip( GuiUtils::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), Qt::WhiteSpaceNormal) );
+    _imp->downButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->downButton, SIGNAL(clicked(bool)), this, SLOT(onDownClicked()) );
     _imp->buttonsLayout->addWidget(_imp->downButton);
 
     _imp->closeButton = new Button(tr("Close"), _imp->buttonsContainer);
-    _imp->closeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Close this dialog"), Qt::WhiteSpaceNormal) );
+    _imp->closeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Close this dialog"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->closeButton, SIGNAL(clicked(bool)), this, SLOT(onCloseClicked()) );
     _imp->buttonsLayout->addWidget(_imp->closeButton);
 

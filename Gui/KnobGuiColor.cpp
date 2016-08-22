@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
@@ -77,7 +78,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
-#include "Gui/Utils.h"
 
 #include "ofxNatron.h"
 
@@ -251,12 +251,12 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     KnobColorPtr knob = _knob.lock();
     _colorLabel = new ColorPickerLabel( _useSimplifiedUI ? NULL : this, containerLayout->widget() );
     if (!_useSimplifiedUI) {
-        _colorLabel->setToolTip( GuiUtils::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+        _colorLabel->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                                                    "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
                                                                    "To deselect the picker left click anywhere."
                                                                    "Note that by default %1 converts to linear the color picked\n"
                                                                    "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                                                   "preferences panel.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
+                                                                   "preferences panel.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     }
 
     QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
@@ -275,7 +275,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     _colorDialogButton = new Button( QIcon(buttonPix), QString(), containerLayout->widget() );
     _colorDialogButton->setFixedSize(medSize);
     _colorDialogButton->setIconSize(medIconSize);
-    _colorDialogButton->setToolTip( GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal) );
+    _colorDialogButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Open the color dialog."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
     containerLayout->addWidget(_colorDialogButton);

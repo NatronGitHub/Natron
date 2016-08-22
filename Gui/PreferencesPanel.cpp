@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/GuiDefines.h"
@@ -55,7 +56,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/Label.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/Utils.h"
 #include "Gui/Splitter.h"
 #include "Gui/TableModelView.h"
 
@@ -592,14 +592,14 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutsTree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->shortcutsTree->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->shortcutsTree->setSortingEnabled(false);
-    _imp->shortcutsTree->setToolTip( GuiUtils::convertFromPlainText(
+    _imp->shortcutsTree->setToolTip( NATRON_NAMESPACE::convertFromPlainText(
                                          tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
                                             " Note that this table also have some special assignments which also involve the mouse. "
                                             "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
                                             "Note that internally %1 does an emulation of a three-button mouse "
                                             "if your computer doesn't have one, that is: \n"
                                             "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
-                                            "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
+                                            "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->shortcutsTree->setItemDelegate( new ShortcutDelegate(_imp->shortcutsTree) );
 
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
@@ -650,7 +650,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
 
 
     _imp->validateShortcutButton = new Button(tr("Validate"), _imp->shortcutGroup);
-    _imp->validateShortcutButton->setToolTip( GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal) );
+    _imp->validateShortcutButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->shortcutGroupLayout->addWidget(_imp->validateShortcutButton);
     QObject::connect( _imp->validateShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onValidateShortcutButtonClicked()) );
 
@@ -734,15 +734,15 @@ PreferencesPanel::createGui()
 
     _imp->buttonBox = new QDialogButtonBox(Qt::Horizontal);
     _imp->restoreDefaultsB = new Button( tr("Restore defaults") );
-    _imp->restoreDefaultsB->setToolTip( GuiUtils::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
+    _imp->restoreDefaultsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     _imp->prefsHelp = new Button( tr("Help") );
     _imp->prefsHelp->setToolTip( tr("Show help for preference") );
 
     _imp->cancelB = new Button( tr("Discard") );
-    _imp->cancelB->setToolTip( GuiUtils::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), Qt::WhiteSpaceNormal) );
+    _imp->cancelB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->okB = new Button( tr("Save") );
-    _imp->okB->setToolTip( GuiUtils::convertFromPlainText(tr("Save changes on disk and close the window."), Qt::WhiteSpaceNormal) );
+    _imp->okB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Save changes on disk and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonBox->addButton(_imp->restoreDefaultsB, QDialogButtonBox::ResetRole);
     _imp->buttonBox->addButton(_imp->prefsHelp, QDialogButtonBox::ResetRole);
     _imp->buttonBox->addButton(_imp->cancelB, QDialogButtonBox::RejectRole);

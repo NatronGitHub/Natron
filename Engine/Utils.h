@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Natron_Gui_Utils_h
-#define Natron_Gui_Utils_h
+#ifndef Natron_Engine_Utils_h
+#define Natron_Engine_Utils_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -27,20 +27,20 @@
 
 #include "Global/Macros.h"
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QTextDocument> // for Qt::WhiteSpaceMode
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
-namespace GuiUtils {
-QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode);
-} // GuiUtils
+// same as Qt::WhiteSpaceMode
+enum WhiteSpaceMode {
+    WhiteSpaceNormal,
+    WhiteSpacePre,
+    WhiteSpaceNoWrap,
+    WhiteSpaceModeUndefined = -1
+};
+
+QString convertFromPlainText(const QString &plain, NATRON_NAMESPACE::WhiteSpaceMode mode);
 
 NATRON_NAMESPACE_EXIT;
 

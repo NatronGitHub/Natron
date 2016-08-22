@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/Variant.h"
 #include "Engine/ViewerInstance.h"
 
@@ -89,7 +90,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -163,7 +163,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     }
     nodeNames.sort();
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames, nodeNames, false, this);
-    _imp->nodeSelectionCombo->setToolTip( GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal) );
+    _imp->nodeSelectionCombo->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Input the name of a node in the current project."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 
