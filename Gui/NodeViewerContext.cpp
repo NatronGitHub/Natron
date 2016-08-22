@@ -36,9 +36,9 @@
 #include <QUndoCommand>
 #include <ofxKeySyms.h>
 
+#include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/EffectInstance.h"
 #include "Engine/Plugin.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -52,7 +52,6 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/QtEnumConvert.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerToolButton.h"

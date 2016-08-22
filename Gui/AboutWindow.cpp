@@ -39,14 +39,15 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QDir>
 CLANG_DIAG_ON(deprecated)
 
-#include "Engine/AppManager.h"
-
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
+
+#include "Engine/AppManager.h"
+#include "Engine/Utils.h" // convertFromPlainText
+
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
-#include "Gui/Utils.h"
 #include "Gui/TableModelView.h"
 
 #define THIRD_PARTY_LICENSE_DIR_PATH ":"
@@ -121,7 +122,7 @@ AboutWindow::AboutWindow(QWidget* parent)
         QString licenseStr;
         QFile license( QString::fromUtf8(":LICENSE_SHORT.txt") );
         license.open(QIODevice::ReadOnly | QIODevice::Text);
-        licenseStr = GuiUtils::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ), Qt::WhiteSpaceNormal);
+        licenseStr = NATRON_NAMESPACE::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ), NATRON_NAMESPACE::WhiteSpaceNormal);
         aboutText.append(licenseStr);
     }
     {

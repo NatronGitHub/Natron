@@ -70,6 +70,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/Variant.h"
 #include "Engine/ViewerInstance.h"
 
@@ -96,7 +97,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER;

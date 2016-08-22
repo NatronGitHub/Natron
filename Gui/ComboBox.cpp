@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiApplicationManager.h"
@@ -52,7 +53,6 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/Menu.h"
-#include "Gui/Utils.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -504,7 +504,7 @@ ComboBox::insertItem(int index,
     action->setText(item);
     action->setData( QVariant(index) );
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( NATRON_NAMESPACE::convertFromPlainText(toolTip.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -599,7 +599,7 @@ ComboBox::addItem(const QString & item,
             action->setShortcut(key);
         }
         if ( !toolTip.isEmpty() ) {
-            action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+            action->setToolTip( NATRON_NAMESPACE::convertFromPlainText(toolTip.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
         }
 
         addAction(action);
@@ -650,7 +650,7 @@ ComboBox::addItem(const QString & item,
                         action->setShortcut(key);
                     }
                     if ( !toolTip.isEmpty() ) {
-                        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                        action->setToolTip( NATRON_NAMESPACE::convertFromPlainText(toolTip.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
                     }
 
                     node->isLeaf = action;

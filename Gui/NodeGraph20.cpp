@@ -41,13 +41,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGui.h"
-#include "Gui/Utils.h"
 
 #include "Global/QtCompat.h"
 
@@ -409,8 +409,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
              ( e->y() >= (10 - 15) ) && ( e->y() <= (10 + ih + 15) ) ) {
             assert(isGroup);
             QPoint pos = mapToGlobal( e->pos() );
-            QToolTip::showText( pos, GuiUtils::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
-                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), Qt::WhiteSpaceNormal) );
+            QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
+                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         }
     }
 

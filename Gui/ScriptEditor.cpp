@@ -42,6 +42,9 @@
 #include <QScrollBar>
 #include <QKeyEvent>
 
+#include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
 #include "Gui/Button.h"
@@ -49,10 +52,8 @@
 #include "Gui/GuiMacros.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ScriptTextEdit.h"
-#include "Gui/Utils.h"
 #include "Gui/ActionShortcuts.h"
 
-#include "Engine/Settings.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -157,21 +158,21 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect( _imp->clearHistoB, SIGNAL(clicked(bool)), this, SLOT(onClearHistoryClicked()) );
 
     _imp->sourceScriptB = new Button(QIcon(sourceScriptPix), QString(), _imp->buttonsContainer);
-    _imp->sourceScriptB->setToolTip( GuiUtils::convertFromPlainText(tr("Open and execute a script."), Qt::WhiteSpaceNormal) );
+    _imp->sourceScriptB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Open and execute a script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->sourceScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->sourceScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->sourceScriptB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     QObject::connect( _imp->sourceScriptB, SIGNAL(clicked(bool)), this, SLOT(onSourceScriptClicked()) );
 
     _imp->loadScriptB = new Button(QIcon(loadScriptPix), QString(), _imp->buttonsContainer);
-    _imp->loadScriptB->setToolTip( GuiUtils::convertFromPlainText(tr("Open a script without executing it."), Qt::WhiteSpaceNormal) );
+    _imp->loadScriptB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Open a script without executing it."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->loadScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->loadScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->loadScriptB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     QObject::connect( _imp->loadScriptB, SIGNAL(clicked(bool)), this, SLOT(onLoadScriptClicked()) );
 
     _imp->saveScriptB = new Button(QIcon(saveScriptPix), QString(), _imp->buttonsContainer);
-    _imp->saveScriptB->setToolTip( GuiUtils::convertFromPlainText(tr("Save the current script."), Qt::WhiteSpaceNormal) );
+    _imp->saveScriptB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Save the current script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->saveScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->saveScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->saveScriptB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
@@ -214,8 +215,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     bool isAutoDeclEnabled = appPTR->getCurrentSettings()->isAutoDeclaredVariablePrintActivated();
     _imp->showAutoDeclVarsB->setChecked(isAutoDeclEnabled);
     _imp->showAutoDeclVarsB->setDown(isAutoDeclEnabled);
-    _imp->showAutoDeclVarsB->setToolTip( GuiUtils::convertFromPlainText(tr("When checked, auto-declared Python variable will be printed "
-                                                                           "in gray in the output window."), Qt::WhiteSpaceNormal) );
+    _imp->showAutoDeclVarsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When checked, auto-declared Python variable will be printed "
+                                                                           "in gray in the output window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->showAutoDeclVarsB, SIGNAL(clicked(bool)), this, SLOT(onShowAutoDeclVarsClicked(bool)) );
 
     _imp->buttonsContainerLayout->addWidget(_imp->undoB);
@@ -484,7 +485,7 @@ ScriptEditor::onExecScriptClicked()
     std::string error, output;
 
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output) ) {
-        _imp->outputEdit->append( GuiUtils::convertFromPlainText(QString::fromUtf8( error.c_str() ), Qt::WhiteSpaceNormal) );
+        _imp->outputEdit->append( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( error.c_str() ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     } else {
         QString toAppend(script);
         if ( !output.empty() ) {

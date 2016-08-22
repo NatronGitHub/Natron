@@ -38,11 +38,12 @@
 #endif
 
 #include "Engine/EffectInstance.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
-#include "Engine/FStreamsSupport.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
@@ -54,7 +55,6 @@
 #include "Gui/NodeGui.h"
 #include "Gui/TrackerPanel.h"
 #include "Gui/RotoPanel.h"
-#include "Gui/Utils.h" // convertFromPlainText
 
 
 using std::make_pair;
@@ -93,7 +93,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     _settingsButton = new Button( QIcon(pixSettings), QString(), getHeaderWidget() );
     _settingsButton->setFixedSize(mediumBSize);
     _settingsButton->setIconSize(mediumIconSize);
-    _settingsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal) );
+    _settingsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Settings and presets."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton, SIGNAL(clicked()), this, SLOT(onSettingsButtonClicked()) );
     insertHeaderWidget(1, _settingsButton);

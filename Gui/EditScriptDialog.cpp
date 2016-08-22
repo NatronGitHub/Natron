@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/Variant.h"
 #include "Engine/ViewerInstance.h"
 
@@ -90,7 +91,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -181,11 +181,11 @@ EditScriptDialog::create(const QString& initialScript,
     if (makeUseRetButton) {
         bool retVariable = hasRetVariable();
         _imp->useRetButton = new Button(tr("Multi-line"), _imp->midButtonsContainer);
-        _imp->useRetButton->setToolTip( GuiUtils::convertFromPlainText(tr("When checked the Python expression will be interpreted "
+        _imp->useRetButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When checked the Python expression will be interpreted "
                                                                           "as series of statement. The return value should be then assigned to the "
                                                                           "\"ret\" variable. When unchecked the expression must not contain "
                                                                           "any new line character and the result will be interpreted from the "
-                                                                          "interpretation of the single line."), Qt::WhiteSpaceNormal) );
+                                                                          "interpretation of the single line."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->useRetButton->setCheckable(true);
         bool checked = !initialScript.isEmpty() && retVariable;
         _imp->useRetButton->setChecked(checked);

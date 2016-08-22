@@ -58,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
@@ -72,7 +73,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Utils.h"
 
 #define COL_LABEL 0
 #define COL_ACTIVATED 1
@@ -524,7 +524,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
     _imp->currentKeyframe->setReadOnly_NoFocusRect(true);
-    _imp->currentKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("The current keyframe for the selected shape(s)."), Qt::WhiteSpaceNormal) );
+    _imp->currentKeyframe->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The current keyframe for the selected shape(s)."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
 
     _imp->ofLabel = new ClickableLabel(QString::fromUtf8("of"), _imp->splineContainer);
@@ -534,7 +534,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer, SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly_NoFocusRect(true);
-    _imp->totalKeyframes->setToolTip( GuiUtils::convertFromPlainText(tr("The keyframe count for all the selected shapes."), Qt::WhiteSpaceNormal) );
+    _imp->totalKeyframes->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The keyframe count for all the selected shapes."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
 
     int medIconSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
@@ -548,7 +548,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->prevKeyframe = new Button(QIcon(prevPix), QString(), _imp->splineContainer);
     _imp->prevKeyframe->setFixedSize(medButtonSize);
     _imp->prevKeyframe->setIconSize(medButtonIconSize);
-    _imp->prevKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Go to the previous keyframe."), Qt::WhiteSpaceNormal) );
+    _imp->prevKeyframe->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Go to the previous keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->prevKeyframe->setEnabled(false);
     QObject::connect( _imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
@@ -556,7 +556,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->nextKeyframe = new Button(QIcon(nextPix), QString(), _imp->splineContainer);
     _imp->nextKeyframe->setFixedSize(medButtonSize);
     _imp->nextKeyframe->setIconSize(medButtonIconSize);
-    _imp->nextKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Go to the next keyframe."), Qt::WhiteSpaceNormal) );
+    _imp->nextKeyframe->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Go to the next keyframe."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->nextKeyframe->setEnabled(false);
     QObject::connect( _imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
@@ -564,7 +564,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->addKeyframe = new Button(QIcon(addPix), QString(), _imp->splineContainer);
     _imp->addKeyframe->setFixedSize(medButtonSize);
     _imp->addKeyframe->setIconSize(medButtonIconSize);
-    _imp->addKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Add keyframe at the current timeline's time."), Qt::WhiteSpaceNormal) );
+    _imp->addKeyframe->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add keyframe at the current timeline's time."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->addKeyframe->setEnabled(false);
     QObject::connect( _imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->addKeyframe);
@@ -572,7 +572,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->removeKeyframe = new Button(QIcon(removePix), QString(), _imp->splineContainer);
     _imp->removeKeyframe->setFixedSize(medButtonSize);
     _imp->removeKeyframe->setIconSize(medButtonIconSize);
-    _imp->removeKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), Qt::WhiteSpaceNormal) );
+    _imp->removeKeyframe->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->removeKeyframe->setEnabled(false);
     QObject::connect( _imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
@@ -580,7 +580,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->clearAnimation = new Button(QIcon(clearAnimPix), QString(), _imp->splineContainer);
     _imp->clearAnimation->setFixedSize(medButtonSize);
     _imp->clearAnimation->setIconSize(medButtonIconSize);
-    _imp->clearAnimation->setToolTip( GuiUtils::convertFromPlainText(tr("Remove all animation for the selected shape(s)."), Qt::WhiteSpaceNormal) );
+    _imp->clearAnimation->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove all animation for the selected shape(s)."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->clearAnimation->setEnabled(false);
     QObject::connect( _imp->clearAnimation, SIGNAL(clicked(bool)), this, SLOT(onRemoveAnimationButtonClicked()) );
     _imp->splineLayout->addWidget(_imp->clearAnimation);
@@ -596,14 +596,14 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->tree->setDragEnabled(true);
     _imp->tree->setExpandsOnDoubleClick(false);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect, 0);
-    QString treeToolTip = GuiUtils::convertFromPlainText(tr("This tree contains the hierarchy of shapes, strokes and layers along with some "
+    QString treeToolTip = NATRON_NAMESPACE::convertFromPlainText(tr("This tree contains the hierarchy of shapes, strokes and layers along with some "
                                                             "most commonly used attributes for each of them. "
                                                             "Each attribute can be found in the parameters above in the panel.\n"
                                                             "You can reorder items by drag and dropping them and can also right click "
                                                             "each item for more options.\n"
                                                             "The items are rendered from bottom to top always, so that the first shape in "
                                                             "this list will always be the last one rendered "
-                                                            "(generally on top of everything else)."), Qt::WhiteSpaceNormal);
+                                                            "(generally on top of everything else)."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->tree->setToolTip(treeToolTip);
 
     _imp->mainLayout->addWidget(_imp->tree);
@@ -685,13 +685,13 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
 
     _imp->addLayerButton = new Button(QString::fromUtf8("+"), _imp->buttonContainer);
     _imp->addLayerButton->setFixedSize(medButtonSize);
-    _imp->addLayerButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new layer."), Qt::WhiteSpaceNormal) );
+    _imp->addLayerButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add a new layer."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonLayout->addWidget(_imp->addLayerButton);
     QObject::connect( _imp->addLayerButton, SIGNAL(clicked(bool)), this, SLOT(onAddLayerButtonClicked()) );
 
     _imp->removeItemButton = new Button(QString::fromUtf8("-"), _imp->buttonContainer);
     _imp->removeItemButton->setFixedSize(medButtonSize);
-    _imp->removeItemButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove selected items."), Qt::WhiteSpaceNormal) );
+    _imp->removeItemButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove selected items."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonLayout->addWidget(_imp->removeItemButton);
     QObject::connect( _imp->removeItemButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveItemButtonClicked()) );
 
@@ -1112,7 +1112,7 @@ scriptNameToolTipFromItem(const boost::shared_ptr<RotoItem>& item)
     return ( QString::fromUtf8("<p><b>")
              + QString::fromUtf8( item->getScriptName().c_str() )
              + QString::fromUtf8("</b></p>")
-             +  GuiUtils::convertFromPlainText(QCoreApplication::translate("RotoPanel", "The label of the item."), Qt::WhiteSpaceNormal) );
+             +  NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("RotoPanel", "The label of the item."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 }
 
 void
@@ -1139,10 +1139,10 @@ RotoPanelPrivate::insertItemRecursively(double time,
 
 
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip( COL_ACTIVATED, GuiUtils::convertFromPlainText(tr("Controls whether the overlay should be visible on the viewer for "
-                                                                           "the shape."), Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_ACTIVATED, NATRON_NAMESPACE::convertFromPlainText(tr("Controls whether the overlay should be visible on the viewer for "
+                                                                           "the shape."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    treeItem->setToolTip( COL_LOCKED, GuiUtils::convertFromPlainText(tr(kRotoLockedHint), Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_LOCKED, NATRON_NAMESPACE::convertFromPlainText(tr(kRotoLockedHint), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
@@ -1187,16 +1187,16 @@ RotoPanelPrivate::insertItemRecursively(double time,
             }
         }
         treeItem->setIcon(COL_OVERLAY, overlayIcon);
-        treeItem->setToolTip( COL_OVERLAY, GuiUtils::convertFromPlainText(tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_OVERLAY, NATRON_NAMESPACE::convertFromPlainText(tr(kRotoOverlayHint), NATRON_NAMESPACE::WhiteSpaceNormal) );
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
-        treeItem->setToolTip( COL_COLOR, GuiUtils::convertFromPlainText(tr(kRotoColorHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_COLOR, NATRON_NAMESPACE::convertFromPlainText(tr(kRotoColorHint), NATRON_NAMESPACE::WhiteSpaceNormal) );
 #ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        treeItem->setToolTip( COL_INVERTED, GuiUtils::convertFromPlainText(tr(kRotoInvertedHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_INVERTED, NATRON_NAMESPACE::convertFromPlainText(tr(kRotoInvertedHint), NATRON_NAMESPACE::WhiteSpaceNormal) );
 #endif
 
         publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
@@ -1261,7 +1261,7 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     // set the tooltip
     const std::string & tt = item->getCompositingOperatorToolTip();
 
-    cb->setToolTip( GuiUtils::convertFromPlainText(QString::fromUtf8( tt.c_str() ).trimmed(), Qt::WhiteSpaceNormal) );
+    cb->setToolTip( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( tt.c_str() ).trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
     cb->setCurrentIndex_no_emit( item->getCompositingOperator() );
     QObject::connect( cb, SIGNAL(minimumSizeChanged(QSize)), this, SLOT(onOperatorColMinimumSizeChanged(QSize)) );
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);

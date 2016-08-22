@@ -192,6 +192,7 @@ SOURCES += \
     TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
+    Utils.cpp \
     ViewerInstance.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
@@ -417,6 +418,7 @@ HEADERS += \
     Transform.h \
     UpdateViewerParams.h \
     UndoCommand.h \
+    Utils.h \
     Variant.h \
     VariantSerialization.h \
     ViewerInstance.h \
