@@ -78,9 +78,7 @@ ViewerTab::ViewerTab(const std::string& scriptName,
 {
     ViewerNodePtr node = node_ui->getNode()->isEffectViewerNode();
     installEventFilter(this);
-
-
-
+    setMouseTracking(true);
     NodePtr internalNode = node->getNode();
     QObject::connect( internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)) );
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNodeLabelChanged(QString)) );
@@ -233,6 +231,7 @@ ViewerTab::loadProjection(const ViewportData& data)
 void
 ViewerTab::mouseMoveEvent(QMouseEvent* e)
 {
+    // Calling e->ignore() is the same as calling the base implementation of QWidget::mouseMoveEvent(e)
     QWidget::mouseMoveEvent(e);
 }
 

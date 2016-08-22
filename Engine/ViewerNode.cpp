@@ -808,7 +808,7 @@ ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousView, kViewerNodeParamRightClickMenuPreviousViewLabel, Key_Page_Up, eKeyboardModifierShift) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextView, kViewerNodeParamRightClickMenuNextViewLabel, Key_Page_Down, eKeyboardModifierShift) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideOverlays, kViewerNodeParamRightClickMenuShowHideOverlaysLabel, Key_O) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel, Key_space, eKeyboardModifierShift ));
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHidePlayer, kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTimeline, kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideLeftToolbar, kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );

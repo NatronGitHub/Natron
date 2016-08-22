@@ -1578,7 +1578,14 @@ void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
     if ( !penMotionInternal(e->x(), e->y(), /*pressure=*/ 1., currentTimeForEvent(e), e) ) {
-        QGLWidget::mouseMoveEvent(e);
+        //e->ignore(); //< calling e->ignore() is the same as calling the base implementation of QWidget::mouseMoveEvent(e)
+        /*TabWidget* tab = _imp->viewerTab ? _imp->viewerTab->getParentPane() : 0;
+        if (tab) {
+            // If the Viewer is in a tab, send the tab widget the event directly
+            qApp->sendEvent(tab, e);
+        } else {*/
+            QGLWidget::mouseMoveEvent(e);
+        //}
     }
 } // mouseMoveEvent
 
