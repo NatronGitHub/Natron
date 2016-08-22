@@ -645,7 +645,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         std::map<std::string, std::string> oldNewScriptNamesMapping;
         for (std::list<NodeSerializationPtr>::const_iterator it = clipboard.nodes.begin();
              it != clipboard.nodes.end(); ++it) {
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), group, std::string(), NodePtr(), &oldNewScriptNamesMapping);
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, std::string(), NodePtr(), &oldNewScriptNamesMapping);
             assert(node);
             if (node) {
                 oldNewScriptNamesMapping[(*it)->getNodeScriptName()] = node->getNode()->getScriptName();

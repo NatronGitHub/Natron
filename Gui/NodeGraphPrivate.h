@@ -223,10 +223,11 @@ public:
 
     /**
      * @brief Create a new node given the serialization of another one
-     * @param offset[in] The offset applied to the new node position relative to the serialized node's position.
+     * @param distanceFromCopyPosition[in] The offset applied to the new node position relative to the serialized node's position.
      **/
     static NodeGuiPtr pasteNode(const NodeSerializationPtr & internalSerialization,
-                                const QPointF & offset,
+                                const QPointF& averageNodesPosition,
+                                const QPointF& position,
                                 const NodeCollectionPtr& group,
                                 const std::string& parentName,
                                 const NodePtr& cloneMaster,

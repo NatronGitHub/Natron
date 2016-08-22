@@ -2239,10 +2239,10 @@ ViewerNode::initializeKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamWipeCenter), 2 );
         param->setName(kViewerNodeParamWipeCenter);
         param->setSecretByDefault(true);
+        param->setDefaultValuesAreNormalized(true);
         param->setDefaultValue(0.5, 0);
         param->setDefaultValue(0.5, 1);
         page->addKnob(param);
-        param->setDefaultValuesAreNormalized(true);
         addOverlaySlaveParam(param);
         _imp->wipeCenter = param;
     }

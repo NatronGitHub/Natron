@@ -285,6 +285,9 @@ NodeGui::initialize(NodeGraph* dag,
         ///It calls resize
         togglePreview_internal(false);
     } else {
+        double x,y;
+        internalNode->getPosition(&x ,&y);
+        refreshPosition(x, y);
         int w, h;
         getInitialSize(&w, &h);
         resize(w, h);

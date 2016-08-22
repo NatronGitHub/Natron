@@ -732,6 +732,7 @@ private:
         if (_hasViewerInterface) {
             ar & ::boost::serialization::make_nvp("ViewerUISpacing", _inViewerContextItemSpacing);
             ar & ::boost::serialization::make_nvp("ViewerUILayout", _inViewerContextItemLayout);
+            ar & ::boost::serialization::make_nvp("ViewerUISecret", _inViewerContextSecret);
             if (_isUserKnob) {
                 ar & ::boost::serialization::make_nvp("ViewerUILabel", _inViewerContextLabel);
                 ar & ::boost::serialization::make_nvp("ViewerUIIconUnchecked", _inViewerContextIconFilePath[0]);
@@ -763,7 +764,6 @@ private:
         bool isOutFile = _typeName == KnobOutputFile::typeNameStatic();
         bool isPath = _typeName == KnobPath::typeNameStatic();
         bool isString = _typeName == KnobString::typeNameStatic();
-        bool isStringAnimated = isString || isFile;
         bool isParametric = _typeName == KnobParametric::typeNameStatic();
         bool isChoice = _typeName == KnobChoice::typeNameStatic();
         bool isDouble = _typeName == KnobDouble::typeNameStatic();
@@ -777,7 +777,7 @@ private:
         if (isParametric && !_extraData) {
             _extraData.reset(new ParametricExtraData);
         }
-        if (isStringAnimated && !_extraData) {
+        if (isString && !_extraData) {
             _extraData.reset(new TextExtraData);
         }
 
@@ -801,7 +801,7 @@ private:
                 }
             }
             //isParametric->loadParametricCurves(extraData->parametricCurves);
-        } else if (isStringAnimated) {
+        } else if (isString) {
             TextExtraData* extraData = dynamic_cast<TextExtraData*>(_extraData.get());
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraData->keyframes);
             ///Don't load animation for input image files: they no longer hold keyframes
@@ -938,6 +938,7 @@ private:
             if (_hasViewerInterface) {
                 ar & ::boost::serialization::make_nvp("ViewerUISpacing", _inViewerContextItemSpacing);
                 ar & ::boost::serialization::make_nvp("ViewerUILayout", _inViewerContextItemLayout);
+                ar & ::boost::serialization::make_nvp("ViewerUISecret", _inViewerContextSecret);
                 if (_isUserKnob) {
                     ar & ::boost::serialization::make_nvp("ViewerUILabel", _inViewerContextLabel);
                     ar & ::boost::serialization::make_nvp("ViewerUIIconUnchecked", _inViewerContextIconFilePath[0]);

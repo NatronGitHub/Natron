@@ -425,18 +425,17 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     // Restore extra datas
     KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
-    AnimatingKnobStringHelper* animatedStringKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    if (animatedStringKnob) {
+    KnobString* isString = dynamic_cast<KnobString*>(this);
+    if (isString) {
 
         // Don't load animation for input image files: they no longer hold keyframes since Natron 1.0
         // In the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
-        if ( !isInFile || ( isInFile && (isInFile->getName() != kOfxImageEffectFileParamName) ) ) {
-            const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
-            assert(data);
-            if (data) {
-                animatedStringKnob->loadAnimation(data->keyframes);
-            }
+        const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
+        assert(data);
+        if (data) {
+            isString->loadAnimation(data->keyframes);
         }
+
     }
 
     // Load parametric parameter's curves
@@ -466,7 +465,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
         KnobColor* isColor = dynamic_cast<KnobColor*>(this);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
-        KnobString* isString = dynamic_cast<KnobString*>(this);
         KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(this);
         KnobPath* isPath = dynamic_cast<KnobPath*>(this);
 

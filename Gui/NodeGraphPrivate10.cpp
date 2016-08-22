@@ -80,7 +80,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         }
 
 
-        QPointF offset( scenePos.x() - ( (xmin + xmax) / 2. ), scenePos.y() - ( (ymin + ymax) / 2. ) );
+        QPointF offset((xmin + xmax) / 2., (ymin + ymax) / 2.);
 
         NodesGuiList newNodesList;
         std::list<std::pair<NodeSerializationPtr, NodePtr > > newNodesMap;
@@ -94,7 +94,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
             for (std::list<NodeSerializationPtr >::const_iterator it = clipboard.nodes.begin();
                  it != clipboard.nodes.end(); ++it) {
                 const std::string& oldScriptName = (*it)->getNodeScriptName();
-                NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, offset, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
+                NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, offset, scenePos, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
 
                 if (!node) {
                     continue;
@@ -137,7 +137,8 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
 
 NodeGuiPtr
 NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
-                            const QPointF & offset,
+                            const QPointF& averageNodesPosition,
+                            const QPointF& position,
                             const NodeCollectionPtr& groupContainer,
                             const std::string& parentName,
                             const NodePtr& cloneMaster,
@@ -224,8 +225,8 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     // We don't want the clone to have the same hash as the original
     duplicateNode->incrementKnobsAge();
 
-
-    QPointF newPos = duplicateNodeUI->pos() + offset;
+    QPointF offset =  averageNodesPosition - duplicateNodeUI->pos();
+    QPointF newPos = position + offset;
     duplicateNodeUI->setPosition( newPos.x(), newPos.y() );
     duplicateNodeUI->forceComputePreview( groupContainer->getApplication()->getProject()->currentFrame() );
 
@@ -262,7 +263,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
         }
         std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
         for (std::list<NodeSerializationPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            NodeGuiPtr newChild = pasteNode(*it, QPointF(0, 0), collection, parentName, NodePtr(), oldNewScriptNameMapping);
+            NodeGuiPtr newChild = pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), collection, parentName, NodePtr(), oldNewScriptNameMapping);
             if (newChild) {
                 newNodes.push_back( std::make_pair( (*it)->getNodeScriptName(), newChild ) );
                 if ( (*it)->getNodeScriptName() != newChild->getNode()->getScriptName() ) {

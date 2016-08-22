@@ -294,14 +294,14 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
     }
 
-    QPointF offset( scenePos.x() - ( (xmax + xmin) / 2. ), scenePos.y() -  ( (ymax + ymin) / 2. ) );
+    QPointF offset((xmax + xmin) / 2.,(ymax + ymin) / 2.);
     std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
     std::list <NodeSerializationPtr > serializations;
     std::list <NodeGuiPtr > newNodesList;
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset,
+        NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset, scenePos,
                                            _imp->group.lock(), std::string(), (*it)->getNode(), &oldNewScriptNameMapping );
 
         newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
