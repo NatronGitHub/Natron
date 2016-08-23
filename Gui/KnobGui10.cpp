@@ -32,6 +32,7 @@
 
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/Plugin.h"
 #include "Engine/Node.h"
@@ -565,7 +566,7 @@ KnobGui::toolTip(QWidget* w) const
 
     if ( !realTt.isEmpty() ) {
         if (!isMarkdown) {
-            realTt = GuiUtils::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
+            realTt = NATRON_NAMESPACE::convertFromPlainText(realTt.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal);
         }
         tt.append(realTt);
     }

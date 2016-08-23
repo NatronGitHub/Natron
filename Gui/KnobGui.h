@@ -269,6 +269,8 @@ public:
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE;
     virtual void redraw() OVERRIDE;
+
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE;

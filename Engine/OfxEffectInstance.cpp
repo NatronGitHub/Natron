@@ -732,8 +732,10 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
-#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
-        interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
+        int bitdepthPerComponent;
+        bool hasAlpha;
+        getApp()->getViewersOpenGLContextFormat(&bitdepthPerComponent, &hasAlpha);
+        interactDesc.describe(bitdepthPerComponent, hasAlpha);
         boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();

@@ -29,6 +29,7 @@
 #include <QDialogButtonBox>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/Utils.h"
 
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/ComboBox.h"
@@ -36,7 +37,7 @@
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/Utils.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -116,7 +117,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
 
         _imp->viewerUILabelLabel = new Label(tr("Viewer Interface Label:"), this);
         _imp->viewerUILabelEdit = new LineEdit(rowContainer);
-        QString labelTooltip = GuiUtils::convertFromPlainText(tr("The text label of the parameter that will appear in its viewer interface"), Qt::WhiteSpaceNormal);
+        QString labelTooltip = NATRON_NAMESPACE::convertFromPlainText(tr("The text label of the parameter that will appear in its viewer interface"), NATRON_NAMESPACE::WhiteSpaceNormal);
         _imp->viewerUILabelEdit->setToolTip(labelTooltip);
         _imp->viewerUILabelLabel->setToolTip(labelTooltip);
 
@@ -144,9 +145,9 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         }
         QString tooltip;
         if (isButtonKnob) {
-            tooltip = GuiUtils::convertFromPlainText(tr("The icon of the button when checked"), Qt::WhiteSpaceNormal);
+            tooltip = NATRON_NAMESPACE::convertFromPlainText(tr("The icon of the button when checked"), NATRON_NAMESPACE::WhiteSpaceNormal);
         } else {
-            tooltip = GuiUtils::convertFromPlainText(tr("This icon will be used instead of the text label"), Qt::WhiteSpaceNormal);
+            tooltip = NATRON_NAMESPACE::convertFromPlainText(tr("This icon will be used instead of the text label"), NATRON_NAMESPACE::WhiteSpaceNormal);
         }
         _imp->checkedIconLabel = new Label(text, this);
         _imp->checkedIconLineEdit = new LineEdit(rowContainer);
@@ -170,7 +171,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         text = tr("Button Unchecked Icon:");
 
         QString tooltip;
-        tooltip = GuiUtils::convertFromPlainText(tr("The icon of the button when unchecked"), Qt::WhiteSpaceNormal);
+        tooltip = NATRON_NAMESPACE::convertFromPlainText(tr("The icon of the button when unchecked"), NATRON_NAMESPACE::WhiteSpaceNormal);
 
         _imp->uncheckedIconLabel = new Label(text, this);
         _imp->uncheckedIconLineEdit = new LineEdit(rowContainer);
@@ -191,7 +192,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         rowLayout->setContentsMargins(0, 0, 0, 0);
 
         QString text = tr("Layout Type:");
-        QString tooltip = GuiUtils::convertFromPlainText(tr("The layout type for this parameter"), Qt::WhiteSpaceNormal);
+        QString tooltip = NATRON_NAMESPACE::convertFromPlainText(tr("The layout type for this parameter"), NATRON_NAMESPACE::WhiteSpaceNormal);
         _imp->layoutTypeLabel = new Label(text, this);
         _imp->layoutTypeChoice = new ComboBox(rowContainer);
         _imp->layoutTypeLabel->setToolTip(tooltip);
@@ -212,7 +213,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         _imp->itemSpacingSpinbox->setMinimum(0);
         _imp->itemSpacingSpinbox->setValue(_imp->knob->getInViewerContextItemSpacing());
         _imp->itemSpacingSpinbox->setVisible(_imp->layoutTypeChoice->activeIndex() == 0);
-        _imp->itemSpacingSpinbox->setToolTip(GuiUtils::convertFromPlainText(tr("The spacing in pixels to add after the parameter"), Qt::WhiteSpaceNormal));
+        _imp->itemSpacingSpinbox->setToolTip(NATRON_NAMESPACE::convertFromPlainText(tr("The spacing in pixels to add after the parameter"), NATRON_NAMESPACE::WhiteSpaceNormal));
         rowLayout->addWidget(_imp->itemSpacingSpinbox);
         rowLayout->addStretch();
 
@@ -225,7 +226,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         rowLayout->setContentsMargins(0, 0, 0, 0);
 
         QString text = tr("Hidden:");
-        QString tooltip = GuiUtils::convertFromPlainText(tr("When checked, the parameter will be hidden from the viewer interface"), Qt::WhiteSpaceNormal);
+        QString tooltip = NATRON_NAMESPACE::convertFromPlainText(tr("When checked, the parameter will be hidden from the viewer interface"), NATRON_NAMESPACE::WhiteSpaceNormal);
         _imp->hiddenLabel = new Label(text, this);
         _imp->hiddenCheckbox = new AnimatedCheckBox(rowContainer);
         _imp->hiddenLabel->setToolTip(tooltip);

@@ -83,7 +83,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 

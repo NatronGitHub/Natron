@@ -279,6 +279,14 @@ NatronOverlayInteractSupport::n_getViewportSize(double &width,
 }
 
 void
+NatronOverlayInteractSupport::n_getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
+{
+    if (_viewport) {
+        _viewport->getOpenGLContextFormat(depthPerComponents, hasAlpha);
+    }
+}
+
+void
 NatronOverlayInteractSupport::n_getPixelScale(double & xScale,
                                               double & yScale) const
 {

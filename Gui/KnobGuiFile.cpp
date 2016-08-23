@@ -43,6 +43,7 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
@@ -55,7 +56,6 @@
 #include "Gui/Menu.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TableModelView.h"
-#include "Gui/Utils.h"
 
 #include <SequenceParsing.h>
 
@@ -132,7 +132,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
         QPixmap pixRefresh;
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon( QIcon(pixRefresh) );
-        _reloadButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal) );
+        _reloadButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Reload the file."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         QObject::connect( _reloadButton, SIGNAL(clicked()), this, SLOT(onReloadClicked()) );
         layout->addWidget(_reloadButton);
     }
@@ -510,7 +510,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip( GuiUtils::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal) );
+    _openFileButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Browse file..."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
     QWidget *container = new QWidget( layout->parentWidget() );
@@ -766,7 +766,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
         _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _openFileButton->setToolTip( GuiUtils::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal) );
+        _openFileButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
         _openFileButton->setIcon( QIcon(pix) );

@@ -312,6 +312,8 @@ public:
      **/
     virtual void redrawNow() OVERRIDE FINAL;
 
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
+    
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
      **/

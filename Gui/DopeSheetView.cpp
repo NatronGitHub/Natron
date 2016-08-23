@@ -2668,6 +2668,30 @@ DopeSheetView::redraw()
     update();
 }
 
+
+void
+DopeSheetView::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
+{
+    QGLFormat f = format();
+    *hasAlpha = f.alpha();
+    int r = f.redBufferSize();
+    if (r == -1) {
+        r = 8;// taken from qgl.h
+    }
+    int g = f.greenBufferSize();
+    if (g == -1) {
+        g = 8;// taken from qgl.h
+    }
+    int b = f.blueBufferSize();
+    if (b == -1) {
+        b = 8;// taken from qgl.h
+    }
+    int size = r;
+    size = std::min(size, g);
+    size = std::min(size, b);
+    *depthPerComponents = size;
+}
+
 /**
  * @brief DopeSheetView::getViewportSize
  *

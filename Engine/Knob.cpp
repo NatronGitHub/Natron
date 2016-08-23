@@ -3244,6 +3244,18 @@ KnobHelper::redraw()
 }
 
 void
+KnobHelper::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
+{
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
+    if (hasGui) {
+        hasGui->getOpenGLContextFormat(depthPerComponents, hasAlpha);
+    } else {
+        *depthPerComponents = 8;
+        *hasAlpha = false;
+    }
+}
+
+void
 KnobHelper::getViewportSize(double &width,
                             double &height) const
 {

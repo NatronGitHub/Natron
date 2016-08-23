@@ -12,12 +12,12 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
+#include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/TableModelView.h"
-#include "Gui/Utils.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -230,17 +230,17 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     buttonsLayout->setContentsMargins(0, 0, 0, 0);
 
     _imp->addPathButton = new Button( tr("Add..."), buttonsContainer );
-    _imp->addPathButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new value"), Qt::WhiteSpaceNormal) );
+    _imp->addPathButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add a new value"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     QObject::connect( _imp->addPathButton, SIGNAL(clicked()), this, SLOT(onAddButtonClicked()) );
 
     _imp->removePathButton = new Button( tr("Remove"), buttonsContainer);
     QObject::connect( _imp->removePathButton, SIGNAL(clicked()), this, SLOT(onRemoveButtonClicked()) );
-    _imp->removePathButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove selected values"), Qt::WhiteSpaceNormal) );
+    _imp->removePathButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove selected values"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     _imp->editPathButton = new Button( tr("Edit..."), buttonsContainer);
     QObject::connect( _imp->editPathButton, SIGNAL(clicked()), this, SLOT(onEditButtonClicked()) );
-    _imp->editPathButton->setToolTip( GuiUtils::convertFromPlainText(tr("Click to edit seleted value."), Qt::WhiteSpaceNormal) );
+    _imp->editPathButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Click to edit seleted value."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
 
     buttonsLayout->addWidget(_imp->addPathButton);

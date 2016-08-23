@@ -86,10 +86,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/Node.h"
-#include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
@@ -105,7 +106,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TabWidget.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
-#include "Gui/Utils.h"
 
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString
@@ -366,7 +366,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _relativeChoice = new ComboBox(_selectionWidget);
     QObject::connect( _relativeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onRelativeChoiceChanged(int)) );
-    _relativeChoice->setToolTip( GuiUtils::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have " "chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal) );
+    _relativeChoice->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have " "chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
     std::map<std::string, std::string> projectPaths;

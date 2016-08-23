@@ -42,6 +42,7 @@
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
@@ -59,7 +60,6 @@
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerGL.h"
 
 
@@ -122,8 +122,8 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     _imp->viewerLayout->addWidget(_imp->viewerSubContainer);
     _imp->mainLayout->addWidget(_imp->viewerContainer);
 
-
     TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
+
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );

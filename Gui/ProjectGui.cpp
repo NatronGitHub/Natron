@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
@@ -74,7 +75,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
@@ -178,10 +178,10 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
     _copyFromViewerButton = new Button(tr("Copy from"), _fromViewerLine);
-    _copyFromViewerButton->setToolTip( GuiUtils::convertFromPlainText(
+    _copyFromViewerButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
-                                              " indicated on the left."), Qt::WhiteSpaceNormal) );
+                                              " indicated on the left."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _copyFromViewerButton, SIGNAL(clicked()), this, SLOT(onCopyFromViewer()) );
     _mainLayout->addWidget(_fromViewerLine);
 

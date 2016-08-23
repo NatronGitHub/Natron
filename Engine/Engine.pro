@@ -207,6 +207,7 @@ SOURCES += \
     TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
+    Utils.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
     WriteNode.cpp \
@@ -446,6 +447,7 @@ HEADERS += \
     Transform.h \
     UpdateViewerParams.h \
     UndoCommand.h \
+    Utils.h \
     Variant.h \
     VariantSerialization.h \
     ViewerInstance.h \

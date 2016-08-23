@@ -357,6 +357,29 @@ CurveWidget::redraw()
     update();
 }
 
+void
+CurveWidget::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
+{
+    QGLFormat f = format();
+    *hasAlpha = f.alpha();
+    int r = f.redBufferSize();
+    if (r == -1) {
+        r = 8;// taken from qgl.h
+    }
+    int g = f.greenBufferSize();
+    if (g == -1) {
+        g = 8;// taken from qgl.h
+    }
+    int b = f.blueBufferSize();
+    if (b == -1) {
+        b = 8;// taken from qgl.h
+    }
+    int size = r;
+    size = std::min(size, g);
+    size = std::min(size, b);
+    *depthPerComponents = size;
+}
+
 /**
  * @brief Returns the width and height of the viewport in window coordinates.
  **/
@@ -602,7 +625,7 @@ CurveWidget::renderText(double x,
                         const QString & text,
                         const QColor & color,
                         const QFont & font,
-                        int flags) const
+                        int /*flags*/) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

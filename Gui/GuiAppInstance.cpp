@@ -1051,6 +1051,15 @@ GuiAppInstance::abortAllViewers()
 }
 
 void
+GuiAppInstance::getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const
+{
+    ViewerTab* viewer = _imp->_gui->getActiveViewer();
+    if (viewer) {
+        return viewer->getViewer()->getOpenGLContextFormat(bitdepthPerComponent, hasAlpha);
+    }
+}
+
+void
 GuiAppInstance::reloadStylesheet()
 {
     if (_imp->_gui) {

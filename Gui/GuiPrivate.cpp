@@ -87,6 +87,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/ProcessHandler.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/AboutWindow.h"
@@ -121,7 +122,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ToolButton.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
@@ -332,8 +332,8 @@ GuiPrivate::createPropertiesBinGui()
 
     _clearAllPanelsButton->setFixedSize(smallButtonSize);
     _clearAllPanelsButton->setIconSize(smallButtonIconSize);
-    _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
-                                                                      Qt::WhiteSpaceNormal) );
+    _clearAllPanelsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
+                                                                      NATRON_NAMESPACE::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL(clicked(bool)), _gui, SLOT(clearAllVisiblePanels()) );
     QPixmap minimizePix, maximizePix;
@@ -347,7 +347,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
     _minimizeAllPanelsButtons->setIconSize(smallButtonIconSize);
-    _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
+    _minimizeAllPanelsButtons->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Minimize / Maximize all panels."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL(clicked(bool)), _gui, SLOT(minimizeMaximizeAllPanels(bool)) );
 
@@ -355,10 +355,10 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
+    _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
                                                                            "that an unlimited number of panels can be opened."),
-                                                                        Qt::WhiteSpaceNormal) );
+                                                                        NATRON_NAMESPACE::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );
 
@@ -561,7 +561,7 @@ private:
         const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
         button->setFixedSize(toolButtonSize);
         button->setPopupMode(QToolButton::InstantPopup);
-        button->setToolTip( GuiUtils::convertFromPlainText(_tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
+        button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_tool->getLabel().trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
         return button;
     }
 

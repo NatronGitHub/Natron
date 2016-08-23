@@ -138,6 +138,7 @@ public:
     SequenceTime getCurrentFrame() const;
 
     void swapOpenGLBuffers() OVERRIDE FINAL;
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;

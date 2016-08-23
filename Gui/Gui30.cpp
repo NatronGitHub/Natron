@@ -44,6 +44,7 @@
 #include <QUndoGroup>
 #include <QUndoStack>
 
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
 #include "Gui/CurveEditor.h"
@@ -57,7 +58,6 @@
 #include "Gui/QtEnumConvert.h"
 #include "Gui/ResizableMessageBox.h"
 #include "Gui/TabWidget.h"
-#include "Gui/Utils.h" // convertFromPlainText
 
 
 NATRON_NAMESPACE_ENTER;
@@ -329,7 +329,7 @@ Gui::onDoDialog(int type,
         isActiveWindowADialog = qobject_cast<QDialog*>(currentActiveWindow);
     }
 
-    QString msg = useHtml ? content : GuiUtils::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : NATRON_NAMESPACE::convertFromPlainText(content.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal);
 
     if (type == 0) { // error dialog
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -480,7 +480,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
                                       StandardButtons buttons,
                                       int defaultB)
 {
-    QString message = useHtml ? content : GuiUtils::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString message = useHtml ? content : NATRON_NAMESPACE::convertFromPlainText(content.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal);
     MessageBox dialog(title, content, (MessageBox::MessageBoxTypeEnum)type, buttons, (StandardButtonEnum)defaultB, this);
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do Not Show This Again"), &dialog);
 

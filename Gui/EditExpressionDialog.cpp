@@ -89,7 +89,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER;

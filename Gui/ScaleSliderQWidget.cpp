@@ -188,7 +188,13 @@ void
 ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
-        if ( modifierHasControl(e) ) {
+        // Ctrl+click cannot be used to reset to default, because Ctrl is already used for fine-tuning
+        // (fine-tuning is not possible in Nuke)!
+        // same goes for Shift+click.
+        // we use Alt instead (Nuke uses Ctrl).
+        // @see ScaleSliderQWidget::keyPressEvent()
+        //
+        if ( modifierHasAlt(e) ) {
             Q_EMIT resetToDefaultRequested();
         } else {
             QPoint newClick =  e->pos();
