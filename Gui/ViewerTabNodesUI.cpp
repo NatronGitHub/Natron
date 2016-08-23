@@ -62,38 +62,7 @@
 NATRON_NAMESPACE_ENTER;
 
 
-void
-ViewerTab::setZoomOrPannedSinceLastFit(bool enabled)
-{
-    _imp->viewer->setZoomOrPannedSinceLastFit(enabled);
-}
 
-bool
-ViewerTab::getZoomOrPannedSinceLastFit() const
-{
-    return _imp->viewer->getZoomOrPannedSinceLastFit();
-}
-
-
-ViewerGL*
-ViewerTab::getViewer() const
-{
-    return _imp->viewer;
-}
-
-ViewerNodePtr
-ViewerTab::getInternalNode() const
-{
-    return _imp->viewerNode.lock();
-}
-
-
-void
-ViewerTab::setInfoBarResolution(const Format & f)
-{
-    _imp->infoWidget[0]->setResolution(f);
-    _imp->infoWidget[1]->setResolution(f);
-}
 
 NodeGuiPtr
 ViewerTab::getCurrentNodeViewerInterface(const std::string& pluginID) const
@@ -217,6 +186,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
 
         QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
         index = _imp->mainLayout->indexOf(container);
+
         assert(index != -1);
         if (index >= 0) {
             ++index;
@@ -288,6 +258,15 @@ ViewerTab::removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
     {
         // Keep the iterator under this scope since we erase it
         std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
+
+        if (foundActive == _imp->currentNodeContext.end() && n->getNode()->isEffectNodeGroup()) {
+            /*
+             There might be a case where the plug-in ID of a node changed if it's a PyPlug and the user clicked the "Unlock" button to transform
+             it to a Group. Check with the PyPlug ID again
+             */
+            foundActive = _imp->findActiveNodeContextForPlugin(n->getNode()->getPyPlugID());
+        }
+
         if ( foundActive != _imp->currentNodeContext.end() ) {
             activeNodeForPlugin = foundActive->currentNode.lock();
 
@@ -434,22 +413,6 @@ ViewerTab::notifyGuiClosing()
 }
 
 
-void
-ViewerTab::connectToAInput(int inputNb)
-{
-    ViewerNodePtr internalNode = getInternalNode();
-    if (internalNode) {
-        internalNode->connectInputToIndex(inputNb, 0);
-    }
-}
 
-void
-ViewerTab::connectToBInput(int inputNb)
-{
-    ViewerNodePtr internalNode = getInternalNode();
-    if (internalNode) {
-        internalNode->connectInputToIndex(inputNb, 1);
-    }
-}
 
 NATRON_NAMESPACE_EXIT;

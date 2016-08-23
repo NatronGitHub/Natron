@@ -420,14 +420,14 @@ TabWidget::createMenu()
     QObject::connect( hideToolbar, SIGNAL(triggered()), this, SLOT(onHideLeftToolBarActionTriggered()) );
     menu.addAction(hideToolbar);
 
-    QAction* hideTabbar;
+    /*QAction* hideTabbar;
     if (_imp->tabBarVisible) {
         hideTabbar = new QAction(tr("Hide tabs header"), &menu);
     } else {
         hideTabbar = new QAction(tr("Show tabs header"), &menu);
     }
     QObject::connect( hideTabbar, SIGNAL(triggered()), this, SLOT(onShowHideTabBarActionTriggered()) );
-    menu.addAction(hideTabbar);
+    menu.addAction(hideTabbar);*/
     menu.addSeparator();
     menu.addAction( tr("New viewer"), this, SLOT(addNewViewer()) );
     menu.addAction( tr("New histogram"), this, SLOT(newHistogramHere()) );
@@ -1775,11 +1775,25 @@ TabWidget::onSetAsAnchorActionTriggered()
     }
 }
 
+#if 0
 void
 TabWidget::onShowHideTabBarActionTriggered()
 {
     _imp->tabBarVisible = !_imp->tabBarVisible;
     _imp->header->setVisible(_imp->tabBarVisible);
+}
+#endif
+
+void
+TabWidget::setTabHeaderVisible(bool visible)
+{
+    _imp->header->setVisible(visible);
+}
+
+bool
+TabWidget::isTabHeaderVisible() const
+{
+    return _imp->header->isVisible();
 }
 
 void

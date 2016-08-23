@@ -1016,7 +1016,6 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
     recreateKnobsInternal(curPage, restorePageIndex);
     _imp->refreshPagesSecretness();
 
-    recreateViewerUIKnobs();
 }
 
 void
@@ -1116,6 +1115,8 @@ KnobGuiContainerHelper::recreateKnobsInternal(const KnobPageGuiPtr& curPage,
 
     refreshPagesOrder(curPage, restorePageIndex);
     refreshCurrentPage();
+    recreateViewerUIKnobs();
+
 
     onKnobsRecreated();
 }

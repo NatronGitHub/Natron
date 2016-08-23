@@ -255,6 +255,11 @@ public:
     virtual void setTimelineVisible(bool visible) = 0;
 
     /**
+     * @brief Set the tab header visible
+     **/
+    virtual void setTabHeaderVisible(bool visible) = 0;
+
+    /**
      * @brief Set the timeline bounds on the GUI
      **/
     virtual void setTimelineBounds(double first, double last) = 0;

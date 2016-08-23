@@ -3659,6 +3659,11 @@ ViewerGL::setTimelineVisible(bool visible)
     getViewerTab()->setTimelineVisible(visible);
 }
 
+void
+ViewerGL::setTabHeaderVisible(bool visible)
+{
+    getViewerTab()->setTabHeaderVisible(visible);
+}
 
 void
 ViewerGL::setTimelineBounds(double first, double last)

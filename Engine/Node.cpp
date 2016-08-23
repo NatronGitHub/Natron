@@ -203,6 +203,7 @@ struct PyPlugInfo
     std::string pyPlugLabel;
     std::string pyPlugDesc;
     std::string pyPlugIconFilePath;
+    std::string pyPlugPluginPath; //< the directory in which the PyPlug python script is located
     std::list<std::string> pyPlugGrouping;
     int pyPlugVersion;
 
@@ -393,6 +394,7 @@ public:
 
     bool getSelectedLayerInternal(int inputNb, const ChannelSelector& selector, ImageComponents* comp) const;
 
+    bool isPyPlugInternal() const;
 
     Node* _publicInterface; // can not be a smart ptr
     boost::weak_ptr<NodeCollection> group;
@@ -4287,8 +4289,8 @@ Node::makeDocumentation(bool genHTML) const
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        bool isPyPlug = !_imp->pyPlugInfo.pyPlugID.empty();
-        if (isPyPlug) {
+        bool pyplug = _imp->isPyPlugInternal();
+        if (pyplug) {
             pluginID = QString::fromUtf8( _imp->pyPlugInfo.pyPlugID.c_str() );
             pluginLabel =  QString::fromUtf8( _imp->pyPlugInfo.pyPlugLabel.c_str() );
             pluginDescription = QString::fromUtf8( _imp->pyPlugInfo.pyPlugDesc.c_str() );
@@ -4817,7 +4819,7 @@ Node::getMajorVersion() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugVersion;
         }
     }
@@ -4837,7 +4839,7 @@ Node::getMinorVersion() const
     }
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return 0;
         }
     }
@@ -6865,11 +6867,27 @@ Node::getPluginIconFilePath() const
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugIconFilePath.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugIconFilePath;
         }
     }
     return _imp->plugin->getIconFilePath().toStdString();
+}
+
+bool
+Node::Implementation::isPyPlugInternal() const
+{
+    assert(!pyPluginInfoMutex.tryLock());
+    return !pyPlugInfo.pyPlugID.empty() && !pyPlugInfo.pyplugChangedSinceScript;
+}
+
+bool
+Node::isPyPlug() const
+{
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        return _imp->isPyPlugInternal();
+    }
 }
 
 std::string
@@ -6881,7 +6899,7 @@ Node::getPluginID() const
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugID;
         }
     }
@@ -6890,11 +6908,18 @@ Node::getPluginID() const
 }
 
 std::string
+Node::getPyPlugID() const
+{
+    QMutexLocker k(&_imp->pyPluginInfoMutex);
+    return _imp->pyPlugInfo.pyPlugID;
+}
+
+std::string
 Node::getPluginLabel() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugLabel.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugLabel;
         }
     }
@@ -6907,11 +6932,8 @@ Node::getPluginResourcesPath() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pluginPythonModule.empty() ) {
-            std::size_t foundSlash = _imp->pyPlugInfo.pluginPythonModule.find_last_of("/");
-            if (foundSlash != std::string::npos) {
-                return _imp->pyPlugInfo.pluginPythonModule.substr(0, foundSlash);
-            }
+        if ( _imp->isPyPlugInternal() ) {
+            return _imp->pyPlugInfo.pyPlugPluginPath;
         }
     }
 
@@ -6923,7 +6945,7 @@ Node::getPluginDescription() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugDesc;
         }
     }
@@ -6936,7 +6958,7 @@ Node::getPluginGrouping(std::list<std::string>* grouping) const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugGrouping.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             *grouping =  _imp->pyPlugInfo.pyPlugGrouping;
             return;
         }
@@ -8356,6 +8378,7 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
                                   const std::string& pluginID,
                                   const std::string& pluginDesc,
                                   const std::string& pluginIconFilePath,
+                                  const std::string& pluginPath,
                                   unsigned int version)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -8367,6 +8390,7 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
         _imp->pyPlugInfo.pyPlugID = pluginID;
         _imp->pyPlugInfo.pyPlugDesc = pluginDesc;
         _imp->pyPlugInfo.pyPlugLabel = pluginLabel;
+        _imp->pyPlugInfo.pyPlugPluginPath = pluginPath;
         _imp->pyPlugInfo.pyPlugGrouping = grouping;
         _imp->pyPlugInfo.pyPlugIconFilePath = pluginIconFilePath;
     }
@@ -8392,11 +8416,6 @@ Node::setPyPlugEdited(bool edited)
     QMutexLocker k(&_imp->pyPluginInfoMutex);
 
     _imp->pyPlugInfo.pyplugChangedSinceScript = edited;
-    _imp->pyPlugInfo.pyPlugID.clear();
-    _imp->pyPlugInfo.pyPlugLabel.clear();
-    _imp->pyPlugInfo.pyPlugDesc.clear();
-    _imp->pyPlugInfo.pyPlugGrouping.clear();
-    _imp->pyPlugInfo.pyPlugIconFilePath.clear();
 }
 
 void

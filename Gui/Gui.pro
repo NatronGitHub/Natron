@@ -214,7 +214,7 @@ SOURCES += \
     ViewerTab.cpp \
     ViewerTab10.cpp \
     ViewerTabOverlays.cpp \
-    ViewerTab30.cpp \
+    ViewerTabNodesUI.cpp \
     ViewerTab40.cpp \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \

@@ -980,7 +980,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
             stdGrouping.push_back( it->toStdString() );
         }
 
-        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, version);
+        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, pluginPath, version);
         node->setPluginPythonModule(pythonModuleName);
     }
 }

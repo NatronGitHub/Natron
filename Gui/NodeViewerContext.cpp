@@ -108,7 +108,6 @@ public:
     void createKnobInternal(const KnobIPtr& knob,
                             QWidget*& lastRowContainer,
                             QHBoxLayout*& lastRowLayout,
-                            bool isLastOne,
                             KnobsVec& knobsOnSameLine);
 
     void createKnobs(const KnobsVec& knobsUi);
@@ -303,7 +302,6 @@ void
 NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
                                              QWidget*& lastRowContainer,
                                              QHBoxLayout*& lastRowLayout,
-                                             bool isLastOne,
                                              KnobsVec& knobsOnSameLine)
 {
     KnobGuiPtr ret( appPTR->createGuiForKnob(knob, publicInterface) );
@@ -332,6 +330,7 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
 
     if (layoutType == eViewerContextLayoutTypeAddNewLine) {
         knobsOnSameLine.clear();
+        lastRowLayout->addStretch();
         lastRowContainer = new QWidget(widgetsContainer);
         lastRowLayout = new QHBoxLayout(lastRowContainer);
         lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
@@ -339,16 +338,15 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
         widgetsContainerLayout->addWidget(lastRowContainer);
     } else {
         knobsOnSameLine.push_back(knob);
-        if ( !isLastOne ) {
-            if ( layoutType == eViewerContextLayoutTypeSeparator ) {
-                addSpacer(lastRowLayout);
-            } else if ( layoutType == eViewerContextLayoutTypeStretchAfter ) {
-                lastRowLayout->addStretch();
-            } else if ( layoutType == eViewerContextLayoutTypeSpacing ) {
-                int spacing = knob->getInViewerContextItemSpacing();
-                lastRowLayout->addSpacing( TO_DPIX(spacing) );
-            }
+        if ( layoutType == eViewerContextLayoutTypeSeparator ) {
+            addSpacer(lastRowLayout);
+        } else if ( layoutType == eViewerContextLayoutTypeStretchAfter ) {
+            lastRowLayout->addStretch();
+        } else if ( layoutType == eViewerContextLayoutTypeSpacing ) {
+            int spacing = knob->getInViewerContextItemSpacing();
+            lastRowLayout->addSpacing( TO_DPIX(spacing) );
         }
+
     } // makeNewLine
 
 
@@ -376,13 +374,8 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         widgetsContainerLayout->addWidget(lastRowContainer);
 
         KnobsVec knobsOnSameLine;
-        KnobsVec::const_iterator next = knobsOrdered.begin();
-        ++next;
         for (KnobsVec::const_iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
-            createKnobInternal(*it, lastRowContainer, lastRowLayout, next == knobsOrdered.end(), knobsOnSameLine);
-            if ( next != knobsOrdered.end() ) {
-                ++next;
-            }
+            createKnobInternal(*it, lastRowContainer, lastRowLayout,  knobsOnSameLine);
         }
 
     }
@@ -400,14 +393,8 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         playerLayout->setContentsMargins(0, 0, 0, 0);
         playerLayout->setSpacing(0);
         KnobsVec knobsOnSameLine;
-
-        KnobsVec::const_iterator next = playerKnobs.begin();
-        ++next;
         for (KnobsVec::const_iterator it = playerKnobs.begin(); it != playerKnobs.end(); ++it) {
-            createKnobInternal(*it, playerContainer, playerLayout, next == playerKnobs.end(), knobsOnSameLine);
-            if ( next != playerKnobs.end() ) {
-                ++next;
-            }
+            createKnobInternal(*it, playerContainer, playerLayout, knobsOnSameLine);
         }
 
     }

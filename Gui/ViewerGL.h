@@ -291,6 +291,8 @@ public:
 
     virtual void setTimelineVisible(bool visible) OVERRIDE FINAL;
 
+    virtual void setTabHeaderVisible(bool visible) OVERRIDE FINAL;
+
     virtual void setTimelineBounds(double first, double last) OVERRIDE FINAL;
 
     virtual void setTripleSyncEnabled(bool toggled) OVERRIDE FINAL;

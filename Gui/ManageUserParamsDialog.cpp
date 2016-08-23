@@ -842,7 +842,7 @@ ManageUserParamsDialogPrivate::moveViewerUIItemUp(std::list<TreeItem>::iterator 
     treeIt.item->setText(0, treeIt.scriptName);
     treeIt.item->setExpanded(true);
     treeIt.item->insertChildren(0, children);
-    if ( (index == -1) || ( index >= viewerUITree->topLevelItemCount() ) ) {
+    if ( (index == -1) || ( (index - 1) >= viewerUITree->topLevelItemCount() ) ) {
         viewerUITree->addTopLevelItem(treeIt.item);
     } else {
         viewerUITree->insertTopLevelItem(index - 1, treeIt.item);
@@ -886,7 +886,7 @@ ManageUserParamsDialogPrivate::moveViewerUIItemDown(std::list<TreeItem>::iterato
     treeIt.item->setText(0, treeIt.scriptName);
     treeIt.item->setExpanded(true);
     treeIt.item->insertChildren(0, children);
-    if ( (index == -1) || ( index >= viewerUITree->topLevelItemCount() ) ) {
+    if ( (index == -1) || ( (index + 1) >= viewerUITree->topLevelItemCount() ) ) {
         viewerUITree->addTopLevelItem(treeIt.item);
     } else {
         viewerUITree->insertTopLevelItem(index + 1, treeIt.item);

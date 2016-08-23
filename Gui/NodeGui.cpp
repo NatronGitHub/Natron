@@ -1900,7 +1900,8 @@ NodeGui::hideGui()
 
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->removeNodeViewerInterface(thisShared, false);
-
+    }
+    {
         NodeGroupPtr isGrp = node->isEffectNodeGroup();
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();

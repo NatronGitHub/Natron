@@ -248,7 +248,8 @@ public:
     TabWidget* splitHorizontally(bool autoSave = true);
     TabWidget* splitVertically(bool autoSave = true);
 
-
+    void setTabHeaderVisible(bool visible);
+    bool isTabHeaderVisible() const;
 
     ///MT-Safe
     bool isFullScreen() const;
@@ -334,7 +335,7 @@ public Q_SLOTS:
 
     void onSetAsAnchorActionTriggered();
 
-    void onShowHideTabBarActionTriggered();
+    //void onShowHideTabBarActionTriggered();
 
     void onTabBarMouseLeft();
 

@@ -426,8 +426,12 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
         _imp->slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, value0, knob->getEvaluateOnChange(),
                                                sliderType, getGui(), eScaleTypeLinear, layout->parentWidget() );
-
-        _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        if (isViewerUIKnob()) {
+            // When in horizontal layout, we don't want the slider to grow
+            _imp->slider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        } else {
+            _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        }
         if ( hasToolTip() ) {
             toolTip(_imp->slider);
         }

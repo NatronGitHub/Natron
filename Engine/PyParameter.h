@@ -163,6 +163,43 @@ public:
     void setAddNewLine(bool a);
 
     /**
+     * @brief Does this parameter have a viewer interface ?
+     **/
+    bool getHasViewerUI() const;
+
+    /**
+     * @brief Is this parameter visible in the Viewer UI? Only valid for parameters with a viewer ui
+     **/
+    void setViewerUIVisible(bool visible);
+    bool getViewerUIVisible() const;
+
+    /**
+     * @brief Controls the layout type of this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum type);
+    NATRON_NAMESPACE::ViewerContextLayoutTypeEnum getViewerUILayoutType() const;
+
+    /**
+     * @brief Controls the item spacing after this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUIItemSpacing(int spacingPx);
+    int getViewerUIItemSpacing() const;
+
+    /**
+     * @brief Controls the label icon of this parameter in the viewer interface of the Effect holding it.
+     * For buttons, if checked it false, the icon will be used when the button is unchecked, if checked it will be used
+     * when the button is checked.
+     **/
+    void setViewerUIIconFilePath(const QString& icon, bool checked = false);
+    QString getViewerUIIconFilePath(bool checked = false) const;
+
+    /**
+     * @brief Controls the label of this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUILabel(const QString& label);
+    QString getViewerUILabel() const;
+
+    /**
      * @brief Copies all the content of the other param: animation, expression and value.
      * The parameters must be compatible types. E.g: you cannot copy
      * a StringParam to an IntParam but you can convert a Doubleparam to an IntParam.

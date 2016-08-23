@@ -465,7 +465,10 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     if (group) {
         NodeGraphI* graph_i = group->getNodeGraph();
-        assert(graph_i);
+        if (!graph_i) {
+            // If the container does not have a graph UI, do not create the node UI
+            return;
+        }
         graph = dynamic_cast<NodeGraph*>(graph_i);
         assert(graph);
     } else {

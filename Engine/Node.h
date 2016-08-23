@@ -742,6 +742,11 @@ public:
      **/
     std::string getPluginIconFilePath() const;
 
+    /**
+     * @brief Returns true if this node is a PyPlug
+     **/
+    bool isPyPlug() const;
+
     /*============================*/
     AppInstancePtr getApp() const;
 
@@ -1275,6 +1280,7 @@ public:
                                      const std::string& pluginID,
                                      const std::string& pluginDesc,
                                      const std::string& pluginIconFilePath,
+                                     const std::string& pluginPath,
                                      unsigned int version);
 
     void setPluginPythonModule(const std::string& pythonModule);
@@ -1283,6 +1289,12 @@ public:
     void setPyPlugEdited(bool edited);
 
     std::string getPluginPythonModule() const;
+
+    /**
+     * @brief If this node has been created as a PyPlug, this will return it's ID, even if the node is no longer a PyPlug and
+     * has been transformed to a Group.
+     **/
+    std::string getPyPlugID() const;
 
     //Returns true if changed
     bool refreshChannelSelectors();

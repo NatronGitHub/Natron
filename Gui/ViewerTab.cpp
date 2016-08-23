@@ -235,6 +235,57 @@ ViewerTab::mouseMoveEvent(QMouseEvent* e)
     QWidget::mouseMoveEvent(e);
 }
 
+void
+ViewerTab::setZoomOrPannedSinceLastFit(bool enabled)
+{
+    _imp->viewer->setZoomOrPannedSinceLastFit(enabled);
+}
+
+bool
+ViewerTab::getZoomOrPannedSinceLastFit() const
+{
+    return _imp->viewer->getZoomOrPannedSinceLastFit();
+}
+
+
+ViewerGL*
+ViewerTab::getViewer() const
+{
+    return _imp->viewer;
+}
+
+ViewerNodePtr
+ViewerTab::getInternalNode() const
+{
+    return _imp->viewerNode.lock();
+}
+
+
+void
+ViewerTab::setInfoBarResolution(const Format & f)
+{
+    _imp->infoWidget[0]->setResolution(f);
+    _imp->infoWidget[1]->setResolution(f);
+}
+
+void
+ViewerTab::connectToAInput(int inputNb)
+{
+    ViewerNodePtr internalNode = getInternalNode();
+    if (internalNode) {
+        internalNode->connectInputToIndex(inputNb, 0);
+    }
+}
+
+void
+ViewerTab::connectToBInput(int inputNb)
+{
+    ViewerNodePtr internalNode = getInternalNode();
+    if (internalNode) {
+        internalNode->connectInputToIndex(inputNb, 1);
+    }
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

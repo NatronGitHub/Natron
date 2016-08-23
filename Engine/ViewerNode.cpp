@@ -229,6 +229,12 @@
 #define kViewerNodeParamRightClickMenuHideAll "hideAll"
 #define kViewerNodeParamRightClickMenuHideAllLabel "Hide All"
 
+#define kViewerNodeParamRightClickMenuHideAllTop "hideAllTop"
+#define kViewerNodeParamRightClickMenuHideAllTopLabel "Hide All Toolbars + Header"
+
+#define kViewerNodeParamRightClickMenuHideAllBottom "hideAllBottom"
+#define kViewerNodeParamRightClickMenuHideAllBottomLabel "Hide Player + Timeline"
+
 #define kViewerNodeParamRightClickMenuShowHidePlayer "showHidePlayer"
 #define kViewerNodeParamRightClickMenuShowHidePlayerLabel "Show/Hide Player"
 
@@ -241,6 +247,8 @@
 #define kViewerNodeParamRightClickMenuShowHideTopToolbar "showHideTopToolbar"
 #define kViewerNodeParamRightClickMenuShowHideTopToolbarLabel "Show/Hide Top Toolbar"
 
+#define kViewerNodeParamRightClickMenuShowHideTabHeader "showHideTabHeader"
+#define kViewerNodeParamRightClickMenuShowHideTabHeaderLabel "Show/Hide Tab Header"
 
 // Viewer Actions
 #define kViewerNodeParamActionLuminance "displayLuminance"
@@ -486,10 +494,13 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobButton> rightClickShowHideOverlays;
     boost::weak_ptr<KnobChoice> rightClickShowHideSubMenu;
     boost::weak_ptr<KnobButton> rightClickHideAll;
+    boost::weak_ptr<KnobButton> rightClickHideAllTop;
+    boost::weak_ptr<KnobButton> rightClickHideAllBottom;
     boost::weak_ptr<KnobButton> rightClickShowHidePlayer;
     boost::weak_ptr<KnobButton> rightClickShowHideTimeline;
     boost::weak_ptr<KnobButton> rightClickShowHideLeftToolbar;
     boost::weak_ptr<KnobButton> rightClickShowHideTopToolbar;
+    boost::weak_ptr<KnobButton> rightClickShowHideTabHeader;
 
     // Viewer actions
     boost::weak_ptr<KnobButton> displayLuminanceAction[2];
@@ -808,11 +819,14 @@ ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousView, kViewerNodeParamRightClickMenuPreviousViewLabel, Key_Page_Up, eKeyboardModifierShift) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextView, kViewerNodeParamRightClickMenuNextViewLabel, Key_Page_Down, eKeyboardModifierShift) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideOverlays, kViewerNodeParamRightClickMenuShowHideOverlaysLabel, Key_O) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel, Key_space, eKeyboardModifierShift ));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel, Key_space, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierAlt) ));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAllTop, kViewerNodeParamRightClickMenuHideAllTopLabel, Key_space, eKeyboardModifierShift ));
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAllBottom, kViewerNodeParamRightClickMenuHideAllBottomLabel, Key_space, eKeyboardModifierAlt ));
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHidePlayer, kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTimeline, kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideLeftToolbar, kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTopToolbar, kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
+    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTabHeader, kViewerNodeParamRightClickMenuShowHideTabHeaderLabel) );
 
     // Viewer actions
     shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionLuminance, kViewerNodeParamActionLuminanceLabel, Key_Y) );
@@ -1794,6 +1808,7 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->activeViewKnob.lock());
     _imp->activeViewKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
     addKnobToViewerUI(_imp->enableInfoBarButtonKnob.lock());
+    _imp->enableInfoBarButtonKnob.lock()->setInViewerContextItemSpacing(0);
 
 
     // Setup player buttons layout but don't add them to the viewer UI, since it's kind of a specific case, we want the toolbar below
@@ -1931,6 +1946,27 @@ ViewerNode::initializeKnobs()
         page->addKnob(action);
         _imp->rightClickHideAll = action;
     }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuHideAllTopLabel) );
+        action->setName(kViewerNodeParamRightClickMenuHideAllTop);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickHideAllTop = action;
+    }
+
+
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuHideAllBottomLabel) );
+        action->setName(kViewerNodeParamRightClickMenuHideAllBottom);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        page->addKnob(action);
+        _imp->rightClickHideAllBottom = action;
+    }
+
 
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
@@ -1972,6 +2008,17 @@ ViewerNode::initializeKnobs()
         page->addKnob(action);
         _imp->rightClickShowHideTopToolbar = action;
     }
+    {
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideTabHeaderLabel) );
+        action->setName(kViewerNodeParamRightClickMenuShowHideTabHeader);
+        action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
+        action->setCheckable(true);
+        action->setDefaultValue(true);
+        page->addKnob(action);
+        _imp->rightClickShowHideTabHeader = action;
+    }
+
 
     // Viewer actions
     {
@@ -2263,11 +2310,20 @@ ViewerNodePrivate::showRightClickMenu()
     KnobChoicePtr showHideMenu = rightClickShowHideSubMenu.lock();
     std::vector<std::string> showHideEntries;
     showHideEntries.push_back(kViewerNodeParamRightClickMenuHideAll);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuHideAllTop);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuHideAllBottom);
     showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideTopToolbar);
     showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideLeftToolbar);
     showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHidePlayer);
     showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideTimeline);
+    showHideEntries.push_back(kViewerNodeParamRightClickMenuShowHideTabHeader);
     showHideEntries.push_back(kViewerNodeParamEnableColorPicker);
+
+    {
+        std::vector<int> separators;
+        separators.push_back(2);
+        showHideMenu->setSeparators(separators);
+    }
 
     showHideMenu->populateChoices(showHideEntries);
     menu->populateChoices(entries);
@@ -2603,11 +2659,33 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->bInputNodeChoiceKnob.lock()->unblockValueChanges();
     } else if (k == _imp->rightClickHideAll.lock()) {
         bool allHidden = _imp->rightClickHideAll.lock()->getValue();
-        _imp->rightClickShowHideTopToolbar.lock()->setValue(!allHidden);
-        _imp->rightClickShowHideLeftToolbar.lock()->setValue(!allHidden);
-        _imp->rightClickShowHidePlayer.lock()->setValue(!allHidden);
-        _imp->rightClickShowHideTimeline.lock()->setValue(!allHidden);
-        _imp->enableInfoBarButtonKnob.lock()->setValue(!allHidden);
+        _imp->rightClickHideAllTop.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickHideAllBottom.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        if (reason != eValueChangedReasonPluginEdited) {
+            if (!getApp()->isDuringPainting()) {
+                _imp->uiContext->fitImageToFormat();
+            }
+        }
+    } else if (k == _imp->rightClickHideAllTop.lock()) {
+        bool allHidden = _imp->rightClickHideAllTop.lock()->getValue();
+        _imp->rightClickShowHideTopToolbar.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickShowHideLeftToolbar.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickShowHideTabHeader.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        if (reason != eValueChangedReasonPluginEdited) {
+            if (!getApp()->isDuringPainting()) {
+                _imp->uiContext->fitImageToFormat();
+            }
+        }
+    } else if (k == _imp->rightClickHideAllBottom.lock()) {
+        bool allHidden = _imp->rightClickHideAllBottom.lock()->getValue();
+        _imp->rightClickShowHidePlayer.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickShowHideTimeline.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->enableInfoBarButtonKnob.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        if (reason != eValueChangedReasonPluginEdited) {
+            if (!getApp()->isDuringPainting()) {
+                _imp->uiContext->fitImageToFormat();
+            }
+        }
     } else if (k == _imp->rightClickShowHideTopToolbar.lock()) {
         bool topToolbarVisible = _imp->rightClickShowHideTopToolbar.lock()->getValue();
         _imp->uiContext->setTopToolBarVisible(topToolbarVisible);
@@ -2620,6 +2698,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->rightClickShowHideTimeline.lock()) {
         bool visible = _imp->rightClickShowHideTimeline.lock()->getValue();
         _imp->uiContext->setTimelineVisible(visible);
+    } else if (k == _imp->rightClickShowHideTabHeader.lock()) {
+        bool visible = _imp->rightClickShowHideTabHeader.lock()->getValue();
+        _imp->uiContext->setTabHeaderVisible(visible);
     } else if (k == _imp->displayRedAction[0].lock()) {
         if ((DisplayChannelsEnum)_imp->displayChannelsKnob[0].lock()->getValue() != eDisplayChannelsR) {
             setDisplayChannels((int)eDisplayChannelsR, true);

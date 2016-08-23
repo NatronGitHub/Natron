@@ -245,6 +245,7 @@ public Q_SLOTS:
     void setTopToolbarVisible(bool visible);
     void setPlayerVisible(bool visible);
     void setTimelineVisible(bool visible);
+    void setTabHeaderVisible(bool visible);
     void setInfobarVisible(bool visible);
     void setInfobarVisible(int index, bool visible);
 

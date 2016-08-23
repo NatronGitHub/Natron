@@ -221,6 +221,135 @@ Param::setAddNewLine(bool a)
 }
 
 bool
+Param::getHasViewerUI() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return false;
+    }
+    return holder->getInViewerContextKnobIndex(knob) != -1;
+}
+
+void
+Param::setViewerUIVisible(bool visible)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret(!visible);
+}
+
+
+bool
+Param::getViewerUIVisible() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getInViewerContextSecret();
+}
+
+void
+Param::setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum type)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLayoutType(type);
+}
+
+NATRON_NAMESPACE::ViewerContextLayoutTypeEnum
+Param::getViewerUILayoutType() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return eViewerContextLayoutTypeSpacing;
+    }
+    return knob->getInViewerContextLayoutType();
+}
+
+
+void
+Param::setViewerUIItemSpacing(int spacingPx)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextItemSpacing(spacingPx);
+}
+
+int
+Param::getViewerUIItemSpacing() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    return knob->getInViewerContextItemSpacing();
+}
+
+
+void
+Param::setViewerUIIconFilePath(const QString& icon, bool checked)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob || !knob->isUserKnob()) {
+        return;
+    }
+    knob->setInViewerContextIconFilePath(icon.toStdString(), checked);
+}
+
+QString
+Param::getViewerUIIconFilePath(bool checked) const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8(knob->getInViewerContextIconFilePath(checked).c_str());
+}
+
+
+void
+Param::setViewerUILabel(const QString& label)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob || !knob->isUserKnob()) {
+        return;
+    }
+    knob->setInViewerContextLabel(label);
+}
+
+QString
+Param::getViewerUILabel() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8(knob->getInViewerContextLabel().c_str());
+}
+
+bool
 Param::copy(Param* other,
             int dimension)
 {

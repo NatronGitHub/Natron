@@ -367,6 +367,7 @@ TrackerNode::initializeKnobs()
     magWindow->setDefaultValue(200);
     magWindow->setMinimum(10);
     magWindow->setMaximum(10000);
+    magWindow->disableSlider();
     addOverlaySlaveParam(magWindow);
     trackingPage->addKnob(magWindow);
     _imp->ui->magWindowPxSizeKnob = magWindow;

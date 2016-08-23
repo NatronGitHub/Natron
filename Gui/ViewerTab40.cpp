@@ -168,7 +168,6 @@ ViewerTab::setPlayerVisible(bool visible)
             continue;
         }
         it->currentContext->getPlayerToolbar()->setVisible(visible);
-        it->currentContext->getContainerWidget()->setVisible(visible);
     }
 }
 
@@ -176,6 +175,15 @@ void
 ViewerTab::setTimelineVisible(bool visible)
 {
     _imp->timeLineGui->setVisible(visible);
+}
+
+void
+ViewerTab::setTabHeaderVisible(bool visible)
+{
+    TabWidget* w = getParentPane();
+    if (w) {
+        w->setTabHeaderVisible(visible);
+    }
 }
 
 void

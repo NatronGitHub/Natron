@@ -20,6 +20,9 @@ Functions
 *    def :meth:`beginChanges<NatronEngine.Effect.beginChanges>` ()
 *    def :meth:`canConnectInput<NatronEngine.Effect.canConnectInput>` (inputNumber, node)
 *    def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
+*    def :meth:`insertParamInViewerUI<NatronEngine.Effect.insertParamInViewerUI>` (parameter[, index=-1])
+*    def :meth:`removeParamFromViewerUI<NatronEngine.Effect.removeParamFromViewerUI>` (parameter)
+*    def :meth:`clearViewerUIParameters<NatronEngine.Effect.clearViewerUIParameters>` ()
 *    def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 *    def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
 *    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
@@ -186,7 +189,24 @@ Connects *input* to the given *inputNumber* of this Effect.
 This function calls internally :func:`canConnectInput()<NatronEngine.Effect.canConnectInput>`
 to determine if a connection is possible. 
 
+.. method:: NatronEngine.Effect.insertParamInViewerUI (parameter[, index=-1])
 
+	:param parameter: :class:`Param<NatronEngine.Param>`
+	:param index: :class:`int<PySide.QtCore.int>`
+
+	Inserts the given **parameter** in the Viewer interface of this Effect.
+	If **index** is -1, the parameter will be added *after* any other parameter in the Viewer
+	interface, otherwise it will be inserted at the given position.
+	
+.. method:: NatronEngine.Effect.removeParamFromViewerUI (parameter)
+
+	:param parameter: :class:`Param<NatronEngine.Param>`
+	
+	Removes the given **parameter** from the Viewer interface of this Effect.
+
+.. method:: NatronEngine.Effect.clearViewerUIParameters ()
+
+	Removes all parameters from the Viewer interface of this Effect.
 
 .. method:: NatronEngine.Effect.destroy([autoReconnect=true])
 
