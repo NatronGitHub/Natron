@@ -1959,8 +1959,6 @@ exportKnobValues(int indentLevel,
             }
 
         }
-
-        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setEnabledByDefault(False)") );
     }
 
 

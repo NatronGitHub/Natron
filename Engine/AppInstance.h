@@ -506,7 +506,7 @@ protected:
 
     virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect);
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, const CreateNodeArgs& args);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)

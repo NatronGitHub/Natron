@@ -295,7 +295,7 @@ private:
 
     virtual void createMainWindow() OVERRIDE FINAL;
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, const CreateNodeArgs& args) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;

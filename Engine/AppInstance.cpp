@@ -863,6 +863,12 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args.getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
+
+
+    QString moduleName;
+    QString modulePath;
+    plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
+
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
@@ -877,6 +883,10 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;
+            }
+
+            if ( !moduleName.isEmpty() ) {
+                setGroupLabelIDAndVersion(containerNode, moduleName, false);
             }
 
             if (!serialization && args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName).empty()) {
@@ -899,9 +909,6 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         }
 
 
-        QString moduleName;
-        QString modulePath;
-        plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
 
         int appID = getAppID() + 1;
         std::stringstream ss;
@@ -932,9 +939,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             return NodePtr();
         }
 
-        if ( !moduleName.isEmpty() ) {
-            setGroupLabelIDAndVersion(node, moduleName, false);
-        }
+
 
         // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
         if (serialization) {
@@ -943,8 +948,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
 
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-    onGroupCreationFinished(node, serialization, autoConnect);
+    onGroupCreationFinished(node, serialization, args);
 
     return node;
 } // AppInstance::createNodeFromPythonModule
@@ -1275,8 +1279,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
     if (isGrp) {
-        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-        onGroupCreationFinished(node, serialization, autoConnect);
+        if (!isCreatingPythonGroup()) {
+            // For PyPlugs do it in createNodeFromPythonModule
+            onGroupCreationFinished(node, serialization, args);
+        }
 
         try {
             isGrp->onGroupCreated(serialization);
@@ -2018,7 +2024,7 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const NodeSerializationPtr& serialization, bool /*autoConnect*/)
+                                     const NodeSerializationPtr& serialization, const CreateNodeArgs& /*args*/)
 {
     assert(node);
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {

@@ -497,7 +497,9 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
     }
 
     // Must be done after the viewer gui has been created
-    if (!isViewer) {
+    // For viewers, they create their own viewer interface.
+    // For PyPlugs, they call this later once the Group has been setup to be a PyPlug
+    if (!isViewer && !isCreatingPythonGroup()) {
         _imp->_gui->createNodeViewerInterface(nodegui);
     }
 
@@ -1091,10 +1093,20 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const NodeSerializationPtr& serialization, bool autoConnect)
+                                        const NodeSerializationPtr& serialization,
+                                        const CreateNodeArgs& args)
 {
     NodeGuiIPtr node_gui_i = node->getNodeGui();
-    if (autoConnect && !serialization && node_gui_i) {
+    NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+
+    if (node_gui_i) {
+        _imp->_gui->createNodeViewerInterface(nodeGui);
+    }
+
+    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+    double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+    double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+    if (autoConnect && !serialization && node_gui_i && (xPosHint == INT_MIN || yPosHint == INT_MIN)) {
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
@@ -1118,11 +1130,10 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                 selectedNode.reset();
             }
         }
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
  
-    AppInstance::onGroupCreationFinished(node, serialization, autoConnect);
+    AppInstance::onGroupCreationFinished(node, serialization, args);
 
     /*std::list<ViewerInstancePtr> viewers;
        node->hasViewersConnected(&viewers);

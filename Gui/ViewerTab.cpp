@@ -161,6 +161,10 @@ ViewerTab::ViewerTab(const std::string& scriptName,
    
     connectToViewerCache();
 
+
+    createNodeViewerInterface(node_ui);
+    setPluginViewerInterface(node_ui);
+    
     for (std::list<NodeGuiPtr>::const_iterator it = existingNodesContext.begin(); it != existingNodesContext.end(); ++it) {
         ViewerNodePtr isViewerNode = (*it)->getNode()->isEffectViewerNode();
         // For viewers, create the viewer interface separately
@@ -176,8 +180,6 @@ ViewerTab::ViewerTab(const std::string& scriptName,
         }
     }
 
-    createNodeViewerInterface(node_ui);
-    setPluginViewerInterface(node_ui);
 
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
