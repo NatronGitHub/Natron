@@ -4432,7 +4432,15 @@ Node::makeDocumentation(bool genHTML) const
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
     if (!pluginDescriptionIsMarkdown) {
-        pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+        if (genHTML) {
+            pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
+
+            // replace URLs with links
+            QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
+            pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
+        } else {
+            pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+        }
     }
 
     ms << pluginDescription << "\n\n";

@@ -404,13 +404,13 @@ DocumentationManager::handler(QHttpRequest *req,
     } else if ( page.endsWith( QString::fromUtf8(".jpg") ) ) {
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/jpeg") );
     } else if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html") );
+        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8") );
     } else if ( page.endsWith( QString::fromUtf8(".css") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/css") );
+        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/css; charset=utf-8") );
     } else if ( page.endsWith( QString::fromUtf8(".js") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("application/javascript") );
+        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("application/javascript; charset=utf-8") );
     } else if ( page.endsWith( QString::fromUtf8(".txt") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/plain") );
+        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/plain; charset=utf-8") );
     }
 
     // return result
