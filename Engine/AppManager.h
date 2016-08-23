@@ -659,6 +659,9 @@ private:
                             QStringList *foundInit,
                             QStringList *foundInitGui);
 
+    void findAllPresetsRecursive(const QDir& directory,
+                                 QStringList& presetFiles);
+
     bool findAndRunScriptFile(const QString& path,
                          const QStringList& files,
                          const QString& script);
@@ -669,6 +672,8 @@ private:
     bool loadInternal(const CLArgs& cl);
 
     void loadPythonGroups();
+
+    void loadNodesPresets();
 
     void registerEngineMetaTypes() const;
 

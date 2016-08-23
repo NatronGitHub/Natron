@@ -129,11 +129,7 @@ public:
                                   std::string* pluginID,
                                   std::map<std::string, bool>* moduleUpdatesProcessed);
 
-    static bool restoreGroupFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
-                                              const NodeCollectionPtr& group,
-                                              bool createNodes,
-                                              std::map<std::string, bool>* moduleUpdatesProcessed);
-    
+        
     bool findFormat(int index, Format* format) const;
     bool findFormat(const std::string& formatSpec, Format* format) const;
     /**

@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
@@ -2259,6 +2260,68 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
     
 } // Node::fromSerialization
 
+
+void
+Node::loadPresetsFile(const std::string& filePath)
+{
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open(&ifile, filePath);
+    if (!ifile) {
+        std::string message = tr("Failed to open file: ").toStdString() + filePath;
+        throw std::runtime_error(message);
+    }
+
+    NodeSerialization serialization;
+    std::string pluginID;
+
+    boost::archive::xml_iarchive iArchive(ifile);
+    iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
+    iArchive >> boost::serialization::make_nvp("Node", serialization);
+
+    std::string thisPluginID = getPluginID();
+    if (pluginID != thisPluginID) {
+        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+    }
+
+    fromSerialization(serialization);
+
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+    if (isGrp) {
+
+        // Deactivate all internal nodes for group first
+        NodesList nodes = isGrp->getNodes();
+        for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            (*it)->destroyNode(false);
+        }
+
+        std::map<std::string, bool> moduleUpdatesProcessed;
+        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
+    }
+
+} // Node::loadPresetsFile
+
+void
+Node::saveNodeToPresets(const std::string& filePath)
+{
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, filePath);
+    if (!ofile) {
+        std::string message = tr("Failed to open file: ").toStdString() + filePath;
+        throw std::runtime_error(message);
+    }
+
+    NodeSerialization serialization;
+    toSerialization(&serialization);
+
+    // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
+    // we just have to read the plugin id
+    std::string pluginID = getPluginID();
+
+    boost::archive::xml_oarchive oArchive(ofile);
+    oArchive << boost::serialization::make_nvp("PluginID", pluginID);
+    oArchive << boost::serialization::make_nvp("Node", serialization);
+
+} // Node::saveNodeToPresets
 
 void
 Node::restoreSublabel()

@@ -69,6 +69,18 @@ Plugin::isWriter() const
     return _isWriter;
 }
 
+void
+Plugin::addPresetFile(const QString& filePath)
+{
+    _presetsFiles.push_back(filePath);
+}
+
+const QStringList&
+Plugin::getPresetFiles() const
+{
+    return _presetsFiles;
+}
+
 QString
 Plugin::getPluginShortcutGroup() const
 {

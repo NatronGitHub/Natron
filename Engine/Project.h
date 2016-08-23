@@ -359,6 +359,12 @@ public:
 
     virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
+
+    static bool restoreGroupFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
+                                          const NodeCollectionPtr& group,
+                                          bool createNodes,
+                                          std::map<std::string, bool>* moduleUpdatesProcessed);
+
 public Q_SLOTS:
 
     void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
@@ -386,6 +392,7 @@ Q_SIGNALS:
     void projectViewsChanged();
 
 private:
+
 
     /*Returns the index of the format*/
     int tryAddProjectFormat(const Format & f);

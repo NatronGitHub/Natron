@@ -75,11 +75,13 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/JoinViewsNode.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -1266,6 +1268,8 @@ AppManager::loadAllPlugins()
     // Should be done after settings are declared
     loadPythonGroups();
 
+    loadNodesPresets();
+    
     _imp->_settings->restorePluginSettings();
 
 
@@ -1630,6 +1634,61 @@ AppManager::findAllScriptsRecursive(const QDir& directory,
         QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDir);
 
         findAllScriptsRecursive(d, allPlugins, foundInit, foundInitGui);
+    }
+}
+
+
+void
+AppManager::findAllPresetsRecursive(const QDir& directory,
+                             QStringList& presetFiles)
+{
+    if ( !directory.exists() ) {
+        return;
+    }
+
+    QStringList filters;
+    filters << QString::fromUtf8("*." NATRON_PRESETS_FILE_EXT);
+    QStringList files = directory.entryList(filters, QDir::Files | QDir::NoDotAndDotDot);
+
+    for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
+        if ( it->endsWith( QString::fromUtf8("." NATRON_PRESETS_FILE_EXT) )) {
+            presetFiles.push_back(directory.absolutePath() + QChar::fromLatin1('/') + *it);
+        }
+    }
+}
+
+void
+AppManager::loadNodesPresets()
+{
+    QStringList presetFiles;
+
+    QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
+    Q_FOREACH(const QString &templatesSearchDir, templatesSearchPath) {
+        QDir d(templatesSearchDir);
+        findAllPresetsRecursive(d, presetFiles);
+    }
+
+    Q_FOREACH(const QString &presetFile, presetFiles) {
+
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open(&ifile, presetFile.toStdString());
+        if (!ifile) {
+            continue;
+        }
+
+        std::string pluginID;
+        try {
+            boost::archive::xml_iarchive iArchive(ifile);
+            iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
+        } catch (...) {
+            continue;
+        }
+
+        Plugin* foundPlugin = getPluginBinary(QString::fromUtf8(pluginID.c_str()), -1, -1, false);
+        if (!foundPlugin) {
+            continue;
+        }
+        foundPlugin->addPresetFile(presetFile);
     }
 }
 

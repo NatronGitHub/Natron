@@ -729,7 +729,7 @@ Project::fromSerialization(const SerializationObjectBase& serializationBase)
 
         // Restore the nodes
         std::map<std::string, bool> processedModules;
-        ProjectPrivate::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(), true, &processedModules);
+        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(), true, &processedModules);
         getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
 

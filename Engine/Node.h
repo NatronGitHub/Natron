@@ -170,6 +170,12 @@ public:
      **/
     virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
+    /**
+     * @brief Setup the node state according to the presets file.
+     * This function throws exception in case of error.
+     **/
+    void loadPresetsFile(const std::string& filePath);
+    void saveNodeToPresets(const std::string& filePath);
 
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const CreateNodeArgs& args);

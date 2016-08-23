@@ -161,7 +161,7 @@ ProjectPrivate::checkForPyPlugNewVersion(const std::string& pythonModuleName,
 } // checkForPyPlugNewVersion
 
 bool
-ProjectPrivate::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
+Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
                                               const NodeCollectionPtr& group,
                                               bool createNodes,
                                               std::map<std::string, bool>* moduleUpdatesProcessed)
@@ -242,7 +242,7 @@ ProjectPrivate::restoreGroupFromSerialization(const std::list< NodeSerialization
         bool usingPythonModule = false;
         if ( !pythonModuleName.empty() ) {
             unsigned int savedPythonModuleVersion = (*it)->getPythonModuleVersion();
-            checkForPyPlugNewVersion(pythonModuleName, (*it)->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
+            ProjectPrivate::checkForPyPlugNewVersion(pythonModuleName, (*it)->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
 
         } // if (!pythonModuleAbsolutePath.empty()) {
 
@@ -319,7 +319,7 @@ ProjectPrivate::restoreGroupFromSerialization(const std::list< NodeSerialization
             if (isGrp) {
                 EffectInstancePtr sharedEffect = isGrp->shared_from_this();
                 NodeGroupPtr sharedGrp = toNodeGroup(sharedEffect);
-                ProjectPrivate::restoreGroupFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
+                Project::restoreGroupFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 // For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
                 assert( node->isMultiInstance() );
@@ -330,7 +330,7 @@ ProjectPrivate::restoreGroupFromSerialization(const std::list< NodeSerialization
 
     // Deprecated: Multi-instances are deprecated in Natron 2.1 and should not exist afterwards
     for (std::list< NodeSerializationPtr >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
-        ProjectPrivate::restoreGroupFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
+        Project::restoreGroupFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
     }
 
 

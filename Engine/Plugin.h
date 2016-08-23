@@ -195,6 +195,8 @@ class Plugin
 
     PluginOpenGLRenderSupport _openglRenderSupport;
 
+    QStringList _presetsFiles;
+
 public:
 
     Plugin()
@@ -288,6 +290,10 @@ public:
     {
         return _resourcesPath;
     }
+
+    void addPresetFile(const QString& filePath);
+
+    const QStringList& getPresetFiles() const;
 
     QString getPluginShortcutGroup() const;
 
