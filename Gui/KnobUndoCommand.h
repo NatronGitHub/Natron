@@ -401,7 +401,8 @@ private:
 
     bool _isNodeReset;
     int _targetDim;
-    std::list<KnobIWPtr > _knobs, _clones;
+    std::list<KnobIWPtr> _knobs;
+    std::list<KnobSerializationPtr>  _serializations;
 };
 
 class SetExpressionCommand

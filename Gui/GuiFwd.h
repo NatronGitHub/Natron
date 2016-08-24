@@ -130,6 +130,7 @@ class Histogram;
 class HostOverlay;
 class InfoViewerWidget;
 class KeyBoundAction;
+class KeybindRecorder;
 class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;

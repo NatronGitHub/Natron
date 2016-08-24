@@ -50,7 +50,60 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiFwd.h"
 
+class QDialogButtonBox;
+
 NATRON_NAMESPACE_ENTER;
+
+class SavePresetsDialog : public QDialog
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+    Gui* _gui;
+    
+    QGridLayout* mainLayout;
+    
+    Label* presetNameLabel;
+    LineEdit* presetNameEdit;
+    
+    Label* presetIconLabel;
+    LineEdit* presetIconEdit;
+    
+    Label* presetShortcutKeyLabel;
+    KeybindRecorder* presetShortcutKeyEditor;
+    
+    Label* filePathLabel;
+    LineEdit* filePathEdit;
+    Button* filePathOpenButton;
+    
+    QDialogButtonBox* buttonBox;
+    
+    
+public:
+    
+    SavePresetsDialog(Gui* gui, QWidget* parent = 0);
+    
+    
+    virtual ~SavePresetsDialog()
+    {
+        
+    }
+    
+    QString getPresetName() const;
+    
+    QString getPresetIconFile() const;
+    
+    QString getPresetShortcut();
+    
+    QString getPresetPath() const;
+    
+public Q_SLOTS:
+    
+    void onOpenFileButtonClicked();
+    
+
+};
 
 class NodeSettingsPanel
     : public DockablePanel

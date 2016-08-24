@@ -165,10 +165,8 @@ public:
      **/
     virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
-private:
 
-
-    void fromSerializationInternal(const NodeSerialization& serialization);
+    void loadKnobsFromSerialization(const NodeSerialization& serialization);
 
 private:
 

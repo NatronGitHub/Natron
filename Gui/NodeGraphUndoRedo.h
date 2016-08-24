@@ -471,6 +471,32 @@ private:
     bool _firstRedoCalled;
 };
 
+class RestoreNodeToDefaultCommand
+: public QUndoCommand
+{
+    Q_DECLARE_TR_FUNCTIONS(RestoreNodeToDefaultCommand)
+    
+public:
+    
+    RestoreNodeToDefaultCommand(const NodesGuiList & nodes);
+    
+    virtual ~RestoreNodeToDefaultCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    struct NodeDefaults
+    {
+        NodeGuiWPtr node;
+        NodeSerializationPtr serialization;
+    };
+    
+    std::list<NodeDefaults> _nodes;
+    
+};
+
 
 NATRON_NAMESPACE_EXIT;
 

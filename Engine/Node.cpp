@@ -2220,7 +2220,7 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
     }
 
 
-    fromSerializationInternal(*serialization);
+    loadKnobsFromSerialization(*serialization);
 
     setKnobsAge( serialization->_knobsAge );
 
@@ -2241,7 +2241,7 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
 } // Node::fromSerialization
 
 void
-Node::fromSerializationInternal(const NodeSerialization& serialization)
+Node::loadKnobsFromSerialization(const NodeSerialization& serialization)
 {
     assert(_imp->knobsInitialized);
 
@@ -2374,7 +2374,7 @@ Node::loadPresetsInternal(const NodeSerialization& serialization)
 {
     assert(!_imp->initialNodePreset.empty());
 
-    fromSerializationInternal(serialization);
+    loadKnobsFromSerialization(serialization);
 
     // set non animated knobs to be their default values
     const KnobsVec& knobs = getKnobs();
@@ -2484,6 +2484,13 @@ Node::restoreNodeToDefaultState()
     {
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            
+            KnobButtonPtr isBtn = toKnobButton(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
+            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator || ( (*it)->getName() == kUserLabelKnobName ) ) {
+                continue;
+            }
             (*it)->blockValueChanges();
             for (int d = 0; d < (*it)->getDimension(); ++d) {
                 (*it)->resetToDefaultValue(d);

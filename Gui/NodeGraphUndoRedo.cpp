@@ -2084,4 +2084,56 @@ InlineGroupCommand::redo()
     _firstRedoCalled = true;
 }
 
+RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & nodes)
+: QUndoCommand()
+, _nodes()
+{
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodeDefaults d;
+        d.node = *it;
+        d.serialization.reset(new NodeSerialization((*it)->getNode()));
+        _nodes.push_back(d);
+    }
+    setText(tr("Restore node(s) to default"));
+}
+
+RestoreNodeToDefaultCommand::~RestoreNodeToDefaultCommand()
+{
+    
+}
+
+void
+RestoreNodeToDefaultCommand::undo()
+{
+    for (std::list<NodeDefaults>::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        NodeGuiPtr node = it->node.lock();
+        if (!node) {
+            continue;
+        }
+        NodePtr internalNode = node->getNode();
+        if (!internalNode) {
+            continue;
+        }
+        internalNode->loadKnobsFromSerialization(*it->serialization);
+    }
+}
+
+void
+RestoreNodeToDefaultCommand::redo()
+{
+    for (std::list<NodeDefaults>::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        NodeGuiPtr node = it->node.lock();
+        if (!node) {
+            continue;
+        }
+        NodePtr internalNode = node->getNode();
+        if (!internalNode) {
+            continue;
+        }
+        internalNode->restoreNodeToDefaultState();
+    }
+}
+
+
+
 NATRON_NAMESPACE_EXIT;

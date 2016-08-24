@@ -660,26 +660,18 @@ DockablePanel::getHolder() const
 void
 DockablePanel::onRestoreDefaultsButtonClicked()
 {
-    std::list<KnobIPtr > knobsList;
-    MultiInstancePanelPtr multiPanel = getMultiInstancePanel();
-
-    if (multiPanel) {
-        const std::list<std::pair<boost::weak_ptr<Node>, bool> > & instances = multiPanel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Node>, bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            const std::vector<KnobIPtr > & knobs = it->first.lock()->getKnobs();
-            for (std::vector<KnobIPtr >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                KnobButtonPtr isBtn = toKnobButton(*it2);
-                KnobPagePtr isPage = toKnobPage(*it2);
-                KnobGroupPtr isGroup = toKnobGroup(*it2);
-                KnobSeparatorPtr isSeparator = toKnobSeparator(*it2);
-                if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it2)->getName() != kUserLabelKnobName ) &&
-                     ( (*it2)->getName() != kNatronOfxParamStringSublabelName ) ) {
-                    knobsList.push_back(*it2);
-                }
-            }
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (isNodePanel) {
+        NodeGuiPtr node = isNodePanel->getNode();
+        if (!node) {
+            return;
         }
-        multiPanel->clearSelection();
+        NodesGuiList nodes;
+        nodes.push_back(node);
+        pushUndoCommand( new RestoreNodeToDefaultCommand(nodes) );
+        
     } else {
+        std::list<KnobIPtr > knobsList;
         const std::vector<KnobIPtr > & knobs = _imp->_holder->getKnobs();
         for (std::vector<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButtonPtr isBtn = toKnobButton(*it);
@@ -690,14 +682,9 @@ DockablePanel::onRestoreDefaultsButtonClicked()
                 knobsList.push_back(*it);
             }
         }
-    }
 
-    /*
-       This is not a perfect solution because here we only reset knob values to their defaults, but the plug-in
-       may not revert its state to the original as if after the createInstanceAction.
-       We may not either kill this node and create a new one because otherwise the undo/redo stack will be wiped.
-     */
-    pushUndoCommand( new RestoreDefaultsCommand(true, knobsList, -1) );
+        pushUndoCommand( new RestoreDefaultsCommand(true, knobsList, -1) );
+    }
 }
 
 void

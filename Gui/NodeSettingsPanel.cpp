@@ -36,6 +36,8 @@
 #else
 #include <QtGui/QStyle>
 #endif
+#include <QGridLayout>
+#include <QDialogButtonBox>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/FStreamsSupport.h"
@@ -45,14 +47,21 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiDefines.h"
 #include "Gui/Menu.h"
+#include "Gui/Label.h"
+#include "Gui/Button.h"
+#include "Gui/LineEdit.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/QtEnumConvert.h"
+#include "Gui/PreferencesPanel.h"
+#include "Gui/SequenceFileDialog.h"
 #include "Gui/TrackerPanel.h"
 #include "Gui/RotoPanel.h"
 
@@ -248,55 +257,157 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     node->restoreInternal(node, nodeSerialization);
 }
 
-static bool
+/*static bool
 endsWith(const std::string &str,
          const std::string &suffix)
 {
     return ( ( str.size() >= suffix.size() ) &&
              (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
+}*/
+
+
+SavePresetsDialog::SavePresetsDialog(Gui* gui, QWidget* parent)
+: QDialog(parent)
+, _gui(gui)
+{
+    mainLayout = new QGridLayout(this);
+    
+    QWidget* row1 = new QWidget(this);
+    QHBoxLayout* row1Layout = new QHBoxLayout(row1);
+    row1Layout->setContentsMargins(0, 0, 0, 0);
+    QWidget* row2 = new QWidget(this);
+    QHBoxLayout* row2Layout = new QHBoxLayout(row2);
+    row2Layout->setContentsMargins(0, 0, 0, 0);
+    QWidget* row3 = new QWidget(this);
+    QHBoxLayout* row3Layout = new QHBoxLayout(row3);
+    row3Layout->setContentsMargins(0, 0, 0, 0);
+    QWidget* row4 = new QWidget(this);
+    QHBoxLayout* row4Layout = new QHBoxLayout(row4);
+    row4Layout->setContentsMargins(0, 0, 0, 0);
+    
+    presetNameLabel = new Label(tr("Preset Name:"), row1);
+    presetNameEdit = new LineEdit(row1);
+    row1Layout->addWidget(presetNameEdit);
+    
+    presetIconLabel = new Label(tr("Preset Icon File:"), row2);
+    presetIconEdit = new LineEdit(row2);
+    presetIconEdit->setPlaceholderText(tr("Icon file without path"));
+    row2Layout->addWidget(presetIconEdit);
+    
+    presetShortcutKeyLabel = new Label(tr("Shortcut:"), row3);
+    presetShortcutKeyEditor = new KeybindRecorder(row3);
+    row3Layout->addWidget(presetShortcutKeyEditor);
+    
+    filePathLabel = new Label(tr("Preset File:"), row4);
+    filePathEdit = new LineEdit(row4);
+    QPixmap openPix;
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &openPix);
+    filePathOpenButton = new Button(QIcon(openPix), QString(), row4);
+    QObject::connect( filePathOpenButton, SIGNAL(clicked(bool)), this, SLOT(onOpenFileButtonClicked()) );
+    row4Layout->addWidget(filePathEdit);
+    row4Layout->addWidget(filePathOpenButton);
+    
+    mainLayout->addWidget(presetNameLabel, 0, 0);
+    mainLayout->addWidget(row1, 0, 1);
+    
+    mainLayout->addWidget(presetIconLabel, 1, 0);
+    mainLayout->addWidget(row2, 1, 1);
+    
+    mainLayout->addWidget(presetShortcutKeyLabel, 2, 0);
+    mainLayout->addWidget(row3, 2, 1);
+    
+    mainLayout->addWidget(filePathLabel, 3, 0);
+    mainLayout->addWidget(row4, 3, 1);
+    
+    buttonBox = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+                                     Qt::Horizontal, this);
+    QObject::connect( buttonBox, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( buttonBox, SIGNAL(rejected()), this, SLOT(reject()) );
+    
+    mainLayout->addWidget(buttonBox, 4, 0, 1, 2, Qt::AlignRight | Qt::AlignVCenter);
 }
+
+void
+SavePresetsDialog::onOpenFileButtonClicked()
+{
+    std::vector<std::string> filters;
+    const QString& path = _gui->getLastPluginDirectory();
+    SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeDir, path.toStdString(), _gui, false);
+    
+    if ( dialog.exec() ) {
+        std::string selection = dialog.selectedFiles();
+        filePathEdit->setText( QString::fromUtf8( selection.c_str() ) );
+        QDir d = dialog.currentDirectory();
+        _gui->updateLastPluginDirectory( d.absolutePath() );
+    }
+}
+
+QString
+SavePresetsDialog::getPresetName() const
+{
+    return presetNameEdit->text();
+}
+
+QString
+SavePresetsDialog::getPresetIconFile() const
+{
+    return presetIconEdit->text();
+}
+
+QString
+SavePresetsDialog::getPresetShortcut()
+{
+    return presetShortcutKeyEditor->text();
+}
+
+QString
+SavePresetsDialog::getPresetPath() const
+{
+    return filePathEdit->text();
+}
+
 
 void
 NodeSettingsPanel::onExportPresetsActionTriggered()
 {
-    std::vector<std::string> filters;
-
-    filters.push_back(NATRON_PRESETS_FILE_EXT);
-    std::string filename = getGui()->popSaveFileDialog(false, filters, getGui()->getLastSaveProjectDirectory().toStdString(), false);
-    if ( filename.empty() ) {
+    
+    SavePresetsDialog dialog(getGui());
+    if (!dialog.exec()) {
         return;
     }
-
-    if ( !endsWith(filename, "." NATRON_PRESETS_FILE_EXT) ) {
-        filename.append("." NATRON_PRESETS_FILE_EXT);
+    
+    QString presetName = dialog.getPresetName();
+    QString presetIconFile = dialog.getPresetIconFile();
+    QString presetShortcut = dialog.getPresetShortcut();
+    QString presetPath = dialog.getPresetPath();
+    
+    QString presetFilePath = presetPath;
+    if (!presetFilePath.endsWith(QChar::fromAscii('/'))) {
+        presetFilePath += QChar::fromAscii('/');
     }
-
-
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, filename);
-    if (!ofile) {
-        Dialogs::errorDialog( tr("Presets").toStdString(),
-                              tr("Failed to open file %1.").arg( QString::fromUtf8( filename.c_str() ) ).toStdString(), false );
-
-        return;
-    }
-
-    NodeGuiPtr node = getNode();
-    std::list<NodeSerializationPtr > nodeSerialization;
-    node->serializeInternal(nodeSerialization);
+    presetFilePath += presetName;
+    presetFilePath += QChar::fromAscii('.');
+    presetFilePath += QLatin1String(NATRON_PRESETS_FILE_EXT);
+    
+    Qt::KeyboardModifiers qtMods;
+    Qt::Key qtKey;
+    
+    QKeySequence keySeq(presetShortcut, QKeySequence::NativeText);
+    extractKeySequence(keySeq, qtMods, qtKey);
+    
     try {
-        int nNodes = nodeSerialization.size();
-        boost::archive::xml_oarchive oArchive(ofile);
-        oArchive << boost::serialization::make_nvp("NodesCount", nNodes);
-        for (std::list<NodeSerializationPtr >::iterator it = nodeSerialization.begin();
-             it != nodeSerialization.end(); ++it) {
-            oArchive << boost::serialization::make_nvp("Node", **it);
-        }
-    }  catch (const std::exception & e) {
-        Dialogs::errorDialog( "Presets", e.what() );
-
-        return;
+        getNode()->getNode()->saveNodeToPresets(presetFilePath.toStdString(),
+                                                presetName.toStdString(),
+                                                presetIconFile.toStdString(),
+                                                QtEnumConvert::fromQtKey(qtKey),
+                                                QtEnumConvert::fromQtModifiers(qtMods));
+    } catch (const std::exception &e) {
+        Dialogs::errorDialog( tr("Export Presets").toStdString(), e.what(), false );
     }
+
+    
+    
+
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -509,32 +509,39 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
     , _targetDim(targetDim)
     , _knobs()
 {
+    setText( tr("Restore default value(s)") );
+
+    
     for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobButtonPtr isButton = toKnobButton(*it);
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobSeparatorPtr isSep = toKnobSeparator(*it);
+        if (isSep || isPage || (isButton && !isButton->getIsCheckable())) {
+            continue;
+        }
         _knobs.push_front(*it);
-        _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
+        KnobSerializationPtr s(new KnobSerialization(*it));
+        _serializations.push_back(s);
     }
 }
 
 void
 RestoreDefaultsCommand::undo()
 {
-    assert( _clones.size() == _knobs.size() );
+    assert( _serializations.size() == _knobs.size() );
 
     std::list<SequenceTime> times;
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app = first->getHolder()->getApp();
     assert(app);
-    std::list<KnobIWPtr >::const_iterator itClone = _clones.begin();
+    std::list<KnobSerializationPtr >::const_iterator itClone = _serializations.begin();
     for (std::list<KnobIWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
-        KnobIPtr itCloneKnob = itClone->lock();
-        if (!itCloneKnob) {
-            continue;
-        }
-        itKnob->cloneAndUpdateGui( itCloneKnob );
+       
+        itKnob->fromSerialization(**itClone);
 
         if ( itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
@@ -558,7 +565,6 @@ RestoreDefaultsCommand::undo()
         first->getHolder()->getApp()->redrawAllViewers();
     }
 
-    setText( tr("Restore default value(s)") );
 }
 
 void
@@ -653,7 +659,6 @@ RestoreDefaultsCommand::redo()
             first->getHolder()->getApp()->redrawAllViewers();
         }
     }
-    setText( tr("Restore default value(s)") );
 } // RestoreDefaultsCommand::redo
 
 SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
