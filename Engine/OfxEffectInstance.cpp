@@ -1123,7 +1123,7 @@ OfxEffectInstance::getInputHint(int inputNb) const
     assert(_imp->context != eContextNone);
     assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );
     if (_imp->context != eContextReader) {
-        return _imp->clipsInfos[inputNb].clip->getShortLabel();
+        return _imp->clipsInfos[inputNb].clip->getHint();
     } else {
         return NATRON_READER_INPUT_NAME;
     }
