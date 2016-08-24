@@ -528,7 +528,7 @@ private:
     NodePtr createNodeInternal(CreateNodeArgs& args);
 
 
-    NodePtr createNodeFromPythonModule(Plugin* plugin,
+    NodePtr createNodeFromPythonModule(const PluginPtr& plugin,
                                        const CreateNodeArgs& args);
 
     boost::scoped_ptr<AppInstancePrivate> _imp;

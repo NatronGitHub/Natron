@@ -325,6 +325,13 @@ RotoLayer::removeItem(const RotoItemPtr& item)
     getContext()->refreshRotoPaintTree();
 }
 
+void
+RotoLayer::clearItems()
+{
+    QMutexLocker l(&itemMutex);
+    _imp->items.clear();
+}
+
 int
 RotoLayer::getChildIndex(const RotoItemPtr & item) const
 {

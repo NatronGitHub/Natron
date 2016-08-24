@@ -218,7 +218,7 @@ public:
 
     void createReadNodeAndConnectGraph(const std::string& filename);
 
-    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization);
+    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerialization* serialization);
 
     void destroyWriteNode();
 
@@ -600,7 +600,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
-                                  const NodeSerializationPtr& serialization)
+                                  const NodeSerialization* serialization)
 {
     if (creatingWriteNode) {
         return;
@@ -681,7 +681,11 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalEncoderNode");
-        args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+        NodeSerializationPtr s(new NodeSerialization);
+        if (serialization) {
+            *s = *serialization;
+            args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
+        }
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         //Set a pre-value for the inputfile knob only if it did not exist
@@ -775,7 +779,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it != writersForFormat.rend(); ++it) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
+            PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
@@ -986,25 +990,25 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
         }
     }
 
-    _imp->createWriteNode( throwErrors, pattern, NodeSerializationPtr() );
+    _imp->createWriteNode( throwErrors, pattern, 0 );
     _imp->refreshPluginSelectorKnob();
 }
 
 void
-WriteNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
+WriteNode::onKnobsAboutToBeLoaded(const NodeSerialization& serialization)
 {
     _imp->renderButtonKnob = toKnobButton( getKnobByName("startRender") );
     assert( _imp->renderButtonKnob.lock() );
 
-    assert(serialization);
     NodePtr node = getNode();
 
     //Load the pluginID to create first.
-    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization->getKnobsValues() );
+    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization.getKnobsValues() );
 
-    std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
+    std::string filename = getFileNameFromSerialization( serialization.getKnobsValues() );
     //Create the Reader with the serialization
-    _imp->createWriteNode(false, filename, serialization);
+
+    _imp->createWriteNode(false, filename, &serialization);
     _imp->refreshPluginSelectorKnob();
 }
 
@@ -1042,7 +1046,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, 0 );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1067,7 +1071,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, 0 );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }

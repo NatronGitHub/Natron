@@ -90,13 +90,7 @@ public:
     virtual ~GuiApplicationManager();
 
     const std::list<PluginGroupNodePtr> & getTopLevelPluginsToolButtons() const;
-    PluginGroupNodePtr  findPluginToolButtonOrCreate(const QStringList & grouping,
-                                                                     const QString & name,
-                                                                     const QStringList& groupIconPath,
-                                                                     const QString & iconPath,
-                                                                     int major,
-                                                                     int minor,
-                                                                     bool isUserCreatable);
+    PluginGroupNodePtr  findPluginToolButtonOrCreate(const PluginPtr& plugin);
     virtual bool isBackground() const OVERRIDE FINAL
     {
         return false;
@@ -205,8 +199,8 @@ private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
-    void onPluginLoaded(Plugin* plugin) OVERRIDE;
-    virtual void ignorePlugin(Plugin* plugin) OVERRIDE FINAL;
+    void onPluginLoaded(const PluginPtr& plugin) OVERRIDE;
+    virtual void ignorePlugin(const PluginPtr& plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
                                         IOPluginsMap* writersMap) OVERRIDE;

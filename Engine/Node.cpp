@@ -105,6 +105,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
+#define NATRON_NODE_PRESETS_SERIALIZATION_VERSION 1
+
 NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
@@ -228,7 +230,7 @@ public:
     Implementation(Node* publicInterface,
                    const AppInstancePtr& app_,
                    const NodeCollectionPtr& collection,
-                   Plugin* plugin_)
+                   const PluginPtr& plugin_)
         : _publicInterface(publicInterface)
         , group(collection)
         , precomp()
@@ -437,7 +439,7 @@ public:
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
-    Plugin* plugin; //< the plugin which stores the function to instantiate the effect
+    PluginWPtr plugin; //< the plugin which stores the function to instantiate the effect
     mutable QMutex pyPluginInfoMutex;
     PyPlugInfo pyPlugInfo;
     bool computingPreview;
@@ -583,6 +585,9 @@ public:
     double overlayColor[3]; // overlay color (RGB), between 0. and 1. If R=G=B=-1 then no color
     bool nodeIsSelected; // is this node selected by the user ?
 
+    // The name of the preset with which this node was created
+    std::string initialNodePreset;
+
 };
 
 class RefreshingInputData_RAII
@@ -620,7 +625,7 @@ toBGRA(unsigned char r,
 
 Node::Node(const AppInstancePtr& app,
            const NodeCollectionPtr& group,
-           Plugin* plugin)
+           const PluginPtr& plugin)
     : QObject()
     , _imp( new Implementation(this, app, group, plugin) )
 {
@@ -671,16 +676,10 @@ Node::createTrackerContextConditionnally()
     }
 }
 
-const Plugin*
+const PluginPtr
 Node::getPlugin() const
 {
-    return _imp->plugin;
-}
-
-void
-Node::switchInternalPlugin(Plugin* plugin)
-{
-    _imp->plugin = plugin;
+    return _imp->plugin.lock();
 }
 
 void
@@ -755,13 +754,14 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
         std::string name;
         QString pluginLabel;
         AppManager::AppTypeEnum appType = appPTR->getAppType();
-        if ( _imp->plugin &&
+        PluginPtr plugin = getPlugin();
+        if ( plugin &&
             ( ( appType == AppManager::eAppTypeBackground) ||
              ( appType == AppManager::eAppTypeGui) ||
              ( appType == AppManager::eAppTypeInterpreter) ) ) {
-                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+                pluginLabel = plugin->getLabelWithoutSuffix();
             } else {
-                pluginLabel = _imp->plugin->getPluginLabel();
+                pluginLabel = plugin->getPluginLabel();
             }
         try {
             if (group) {
@@ -803,7 +803,8 @@ Node::load(const CreateNodeArgs& args)
     _imp->wasCreatedSilently = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 
     NodePtr thisShared = shared_from_this();
-    LibraryBinary* binary = _imp->plugin->getLibraryBinary();
+
+    LibraryBinary* binary = _imp->plugin.lock()->getLibraryBinary();
     std::pair<bool, EffectBuilder> func(false, NULL);
     if (binary) {
         func = binary->findFunction<EffectBuilder>("create");
@@ -811,7 +812,22 @@ Node::load(const CreateNodeArgs& args)
 
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    
+    std::string presetLabel = args.getProperty<std::string>(kCreateNodeArgsPropPreset);
+
+    if (!presetLabel.empty()) {
+        // If there's a preset specified, load serialization from preset
+        const std::list<PluginPresetDescriptor>& presets = getPlugin()->getPresetFiles();
+        for (std::list<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+            if (it->presetLabel.toStdString() == presetLabel) {
+
+                // We found a matching preset, should we notify user if not found ?
+                _imp->initialNodePreset = presetLabel;
+                break;
+            }
+        }
+
+    }
+
     bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 
 
@@ -867,9 +883,9 @@ Node::load(const CreateNodeArgs& args)
         _imp->effect->setDefaultMetadata();
 
         if (serialization) {
-
-            _imp->effect->onKnobsAboutToBeLoaded(serialization);
             fromSerialization(*serialization);
+        } else if (!_imp->initialNodePreset.empty()) {
+            loadPresets(_imp->initialNodePreset);
         }
         setValuesFromSerialization(args);
 
@@ -956,6 +972,12 @@ Node::load(const CreateNodeArgs& args)
     _imp->runOnNodeCreatedCB(!serialization && !isLoadingPyPlug);
 } // load
 
+std::string
+Node::getCurrentNodePresets() const
+{
+    return _imp->initialNodePreset;
+}
+
 bool
 Node::usesAlpha0ToConvertFromRGBToRGBA() const
 {
@@ -1016,9 +1038,9 @@ Node::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 PluginOpenGLRenderSupport
 Node::getCurrentOpenGLRenderSupport() const
 {
-
-    if (_imp->plugin) {
-        PluginOpenGLRenderSupport pluginProp = _imp->plugin->getPluginOpenGLRenderSupport();
+    PluginPtr plugin = getPlugin();
+    if (plugin) {
+        PluginOpenGLRenderSupport pluginProp = plugin->getPluginOpenGLRenderSupport();
         if (pluginProp != ePluginOpenGLRenderSupportYes) {
             return pluginProp;
         }
@@ -1097,9 +1119,10 @@ void
 Node::refreshDynamicProperties()
 {
     PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
-    if (_imp->plugin) {
-        pluginGLSupport = _imp->plugin->getPluginOpenGLRenderSupport();
-        if (_imp->plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+    PluginPtr plugin = getPlugin();
+    if (plugin) {
+        pluginGLSupport = plugin->getPluginOpenGLRenderSupport();
+        if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
             pluginGLSupport = _imp->effect->supportsOpenGLRender();
         }
@@ -1120,13 +1143,15 @@ Node::refreshDynamicProperties()
 bool
 Node::isRenderScaleSupportEnabledForPlugin() const
 {
-    return _imp->plugin ? _imp->plugin->isRenderScaleEnabled() : true;
+    PluginPtr plugin = getPlugin();
+    return plugin ? plugin->isRenderScaleEnabled() : true;
 }
 
 bool
 Node::isMultiThreadingSupportEnabledForPlugin() const
 {
-    return _imp->plugin ? _imp->plugin->isMultiThreadingEnabled() : true;
+    PluginPtr plugin = getPlugin();
+    return plugin ? plugin->isMultiThreadingEnabled() : true;
 }
 
 void
@@ -2193,49 +2218,13 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
     if ( !serialization->_hasBeenSerialized ) {
         return;
     }
-    assert(_imp->knobsInitialized);
 
 
-    {
-        QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<ImageComponentsSerialization>::const_iterator it = serialization->_userComponents.begin(); it!=serialization->_userComponents.end(); ++it) {
-            ImageComponents s(it->layerName, it->globalCompsName, it->channelNames);
-            _imp->createdComponents.push_back(s);
-        }
-    }
-
-    const KnobsVec& nodeKnobs = getKnobs();
-    // Load all knobs
-    for (std::size_t j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization->_knobsValues);
-    }
-
-    KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
-    if (filenameParam) {
-        computeFrameRangeForReader(filenameParam);
-    }
-
-    // now restore the roto context if the node has a roto context
-    if (serialization->_rotoContext && _imp->rotoContext) {
-        _imp->rotoContext->load(*serialization->_rotoContext);
-    }
-
-    // same for tracker context
-    if (serialization->_trackerContext && _imp->trackContext) {
-        _imp->trackContext->load(*serialization->_trackerContext);
-    }
-
-    {
-        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = serialization->_userPages.begin(); it != serialization->_userPages.end(); ++it) {
-            restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0);
-        }
-    }
-    setPagesOrder( serialization->_pagesIndexes );
+    fromSerializationInternal(*serialization);
 
     setKnobsAge( serialization->_knobsAge );
 
 
-    _imp->effect->onKnobsLoaded();
 
     {
         QMutexLocker k(&_imp->nodeUIDataMutex);
@@ -2246,9 +2235,60 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
         _imp->nodeIsSelected = serialization->getSelected();
     }
 
-    if (!serialization->_viewerUIKnobsOrder.empty()) {
+
+
+    
+} // Node::fromSerialization
+
+void
+Node::fromSerializationInternal(const NodeSerialization& serialization)
+{
+    assert(_imp->knobsInitialized);
+
+    _imp->effect->beginChanges();
+    _imp->effect->onKnobsAboutToBeLoaded(serialization);
+
+    {
+        QMutexLocker k(&_imp->createdComponentsMutex);
+        for (std::list<ImageComponentsSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
+            ImageComponents s(it->layerName, it->globalCompsName, it->channelNames);
+            _imp->createdComponents.push_back(s);
+        }
+    }
+
+    const KnobsVec& nodeKnobs = getKnobs();
+    // Load all knobs
+    for (std::size_t j = 0; j < nodeKnobs.size(); ++j) {
+        loadKnob(nodeKnobs[j], serialization._knobsValues);
+    }
+
+    KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
+    if (filenameParam) {
+        computeFrameRangeForReader(filenameParam);
+    }
+
+    // now restore the roto context if the node has a roto context
+    if (serialization._rotoContext && _imp->rotoContext) {
+        _imp->rotoContext->resetToDefault();
+        _imp->rotoContext->load(*serialization._rotoContext);
+    }
+
+    // same for tracker context
+    if (serialization._trackerContext && _imp->trackContext) {
+        _imp->trackContext->clearMarkers();
+        _imp->trackContext->load(*serialization._trackerContext);
+    }
+
+    {
+        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = serialization._userPages.begin(); it != serialization._userPages.end(); ++it) {
+            restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0);
+        }
+    }
+    setPagesOrder( serialization._pagesIndexes );
+
+    if (!serialization._viewerUIKnobsOrder.empty()) {
         KnobsVec viewerUIknobs;
-        for (std::list<std::string>::const_iterator it = serialization->_viewerUIKnobsOrder.begin(); it!=serialization->_viewerUIKnobsOrder.end(); ++it) {
+        for (std::list<std::string>::const_iterator it = serialization._viewerUIKnobsOrder.begin(); it!=serialization._viewerUIKnobsOrder.end(); ++it) {
             KnobIPtr knob = getKnobByName(*it);
             if (knob) {
                 viewerUIknobs.push_back(knob);
@@ -2257,55 +2297,145 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
         _imp->effect->setViewerUIKnobs(viewerUIknobs);
     }
 
-    
-} // Node::fromSerialization
+
+    _imp->effect->onKnobsLoaded();
+    _imp->effect->endChanges();
+
+} // Node::fromSerializationInternal
+
+void
+Node::loadPresets(const std::string& presetsLabel)
+{
+
+    NodeSerializationPtr serialization(new NodeSerialization);
+
+    // Throws on failure
+    getNodeSerializationFromPresetName(presetsLabel, serialization.get());
+
+    _imp->initialNodePreset = presetsLabel;
+    loadPresetsInternal(*serialization);
+}
+
 
 
 void
-Node::loadPresetsFile(const std::string& filePath)
+Node::getNodeSerializationFromPresetName(const std::string& presetName, NodeSerialization* serialization)
 {
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open(&ifile, filePath);
-    if (!ifile) {
-        std::string message = tr("Failed to open file: ").toStdString() + filePath;
-        throw std::runtime_error(message);
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        throw std::invalid_argument("Invalid plug-in");
     }
 
-    NodeSerialization serialization;
-    std::string pluginID;
+    const std::list<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::list<PluginPresetDescriptor>::const_iterator it = presets.begin() ;it!=presets.end(); ++it) {
+        if (it->presetLabel.toStdString() == presetName) {
 
-    boost::archive::xml_iarchive iArchive(ifile);
-    iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
-    iArchive >> boost::serialization::make_nvp("Node", serialization);
+            std::string filePath = it->presetFilePath.toStdString();
+            FStreamsSupport::ifstream ifile;
+            FStreamsSupport::open(&ifile, filePath);
+            if (!ifile || filePath.empty()) {
+                std::string message = tr("Failed to open file: ").toStdString() + filePath;
+                throw std::runtime_error(message);
+            }
 
-    std::string thisPluginID = getPluginID();
-    if (pluginID != thisPluginID) {
-        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+            std::string pluginID;
+            std::string presetLabel;
+            std::string presetIcon;
+
+            // The version is externalise to maintain compatibility with older presets (starting from Natron 2.2)
+            int version;
+            int symbol;
+            int modifiers;
+            boost::archive::xml_iarchive iArchive(ifile);
+            iArchive >> boost::serialization::make_nvp("Version", version);
+            iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
+            iArchive >> boost::serialization::make_nvp("PresetLabel", presetLabel);
+            iArchive >> boost::serialization::make_nvp("PresetIcon", presetIcon);
+            iArchive >> boost::serialization::make_nvp("PresetSymbol", symbol);
+            iArchive >> boost::serialization::make_nvp("PresetModifiers", modifiers);
+            iArchive >> boost::serialization::make_nvp("Node", *serialization);
+
+            std::string thisPluginID = getPluginID();
+            if (pluginID != thisPluginID) {
+                throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+            }
+
+            return;
+        }
     }
 
-    fromSerialization(serialization);
+
+    std::string message = tr("Cannot find loaded preset named %1").arg(QString::fromUtf8(presetName.c_str())).toStdString();
+    throw std::invalid_argument(message);
+}
+
+void
+Node::loadPresetsInternal(const NodeSerialization& serialization)
+{
+    assert(!_imp->initialNodePreset.empty());
+
+    fromSerializationInternal(serialization);
+
+    // set non animated knobs to be their default values
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->hasModifications() && (*it)->getIsPersistent()) {
+            KnobIntBasePtr isInt = toKnobInt(*it);
+            KnobBoolBasePtr isBool = toKnobBool(*it);
+            KnobStringBasePtr isString = toKnobString(*it);
+            KnobDoubleBasePtr isDouble = toKnobDouble(*it);
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                if ((*it)->isAnimated(d)) {
+                    continue;
+                }
+                if (isInt) {
+                    isInt->setDefaultValue(isInt->getValue(d), d);
+                } else if (isBool) {
+                    isBool->setDefaultValue(isBool->getValue(d), d);
+                } else if (isString) {
+                    isString->setDefaultValue(isString->getValue(d), d);
+                } else if (isDouble) {
+                    isDouble->setDefaultValue(isDouble->getValue(d), d);
+                }
+            }
+        }
+    }
+
+
+    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
+    if (labelKnob) {
+        labelKnob->setValue(std::string("(") + _imp->initialNodePreset + std::string(")"));
+    }
 
     NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp) {
 
-        // Deactivate all internal nodes for group first
-        NodesList nodes = isGrp->getNodes();
-        for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-            (*it)->destroyNode(false);
+    // For Groups only (not PyPlugs) also restore the internal graph as the user set it up.
+    // This is mainly useful for the Viewer group
+    if (isGrp && !getApp()->isCreatingPythonGroup() && !isPyPlug()) {
+
+        {
+            // Deactivate all internal nodes for group first
+            NodesList nodes = isGrp->getNodes();
+            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                (*it)->destroyNode(false);
+            }
         }
 
         std::map<std::string, bool> moduleUpdatesProcessed;
         Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
     }
 
-} // Node::loadPresetsFile
+} // Node::loadPresetsInternal
 
 void
-Node::saveNodeToPresets(const std::string& filePath)
+Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods)
 {
+    if (presetsLabel.empty()) {
+        throw std::runtime_error(tr("The preset label cannot be empty").toStdString());
+    }
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, filePath);
-    if (!ofile) {
+    if (!ofile || filePath.empty()) {
         std::string message = tr("Failed to open file: ").toStdString() + filePath;
         throw std::runtime_error(message);
     }
@@ -2317,11 +2447,72 @@ Node::saveNodeToPresets(const std::string& filePath)
     // we just have to read the plugin id
     std::string pluginID = getPluginID();
 
+
     boost::archive::xml_oarchive oArchive(ofile);
+    int version = NATRON_NODE_PRESETS_SERIALIZATION_VERSION;
+    oArchive << boost::serialization::make_nvp("Version", version);
     oArchive << boost::serialization::make_nvp("PluginID", pluginID);
+    oArchive << boost::serialization::make_nvp("PresetLabel", presetsLabel);
+    oArchive << boost::serialization::make_nvp("PresetIcon", presetsIcon);
+    int sym = (int)symbol;
+    oArchive << boost::serialization::make_nvp("PresetSymbol", sym);
+    int modifier = mods;
+    oArchive << boost::serialization::make_nvp("PresetModifiers", modifier);
     oArchive << boost::serialization::make_nvp("Node", serialization);
 
 } // Node::saveNodeToPresets
+
+void
+Node::restoreNodeToDefaultState()
+{
+    _imp->effect->beginChanges();
+
+    _imp->effect->purgeCaches();
+
+    NodeSerializationPtr serialization;
+    if (!_imp->initialNodePreset.empty()) {
+        try {
+            serialization.reset(new NodeSerialization);
+            getNodeSerializationFromPresetName(_imp->initialNodePreset, serialization.get());
+        } catch (...) {
+
+        }
+    }
+
+    // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
+    // if all parameters are actually to the good value
+    {
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            (*it)->blockValueChanges();
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                (*it)->resetToDefaultValue(d);
+            }
+            (*it)->unblockValueChanges();
+        }
+    }
+
+    if (serialization) {
+        // Load presets from serialization if any
+        loadPresetsInternal(*serialization);
+    }
+
+
+    // Ensure the state of the node is consistent with what the plug-in expects
+    int time = getApp()->getTimeLine()->currentFrame();
+    {
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+        }
+    }
+
+    _imp->effect->endChanges();
+
+    // Refresh hash & meta-data and trigger a render
+    _imp->effect->incrHashAndEvaluate(true, true);
+
+} // Node::restoreNodeToDefaultState
 
 void
 Node::restoreSublabel()
@@ -3589,8 +3780,10 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
 
     PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
-    if (_imp->plugin && _imp->plugin->isOpenGLEnabled()) {
-        glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
+
+    PluginPtr plugin = getPlugin();
+    if (plugin && plugin->isOpenGLEnabled()) {
+        glSupport = plugin->getPluginOpenGLRenderSupport();
     }
     // The Roto node needs to have a "GPU enabled" knob to control the nodes internally
     if (glSupport != ePluginOpenGLRenderSupportNone || dynamic_cast<RotoPaint*>(_imp->effect.get())) {
@@ -4363,11 +4556,12 @@ Node::makeDocumentation(bool genHTML) const
                 pluginGroup.push_back(QString::fromUtf8(it->c_str()));
             }
         } else {
-            pluginID = _imp->plugin->getPluginID();
-            pluginLabel =  _imp->plugin->getPluginLabel();
+            PluginPtr plugin = getPlugin();
+            pluginID = plugin->getPluginID();
+            pluginLabel =  plugin->getPluginLabel();
             pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
-            pluginIcon = _imp->plugin->getIconFilePath();
-            pluginGroup = _imp->plugin->getGrouping();
+            pluginIcon = plugin->getIconFilePath();
+            pluginGroup = plugin->getGrouping();
             pluginDescriptionIsMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
         }
 
@@ -4895,18 +5089,21 @@ Node::getMajorVersion() const
             return _imp->pyPlugInfo.pyPlugVersion;
         }
     }
-    if (!_imp->plugin) {
+
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return 0;
     }
 
-    return _imp->plugin->getMajorVersion();
+    return plugin->getMajorVersion();
 }
 
 int
 Node::getMinorVersion() const
 {
     ///Thread safe as it never changes
-    if (!_imp->plugin) {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return 0;
     }
     {
@@ -4916,7 +5113,7 @@ Node::getMinorVersion() const
         }
     }
 
-    return _imp->plugin->getMinorVersion();
+    return plugin->getMinorVersion();
 }
 
 void
@@ -6933,7 +7130,8 @@ Node::setKnobsFrozen(bool frozen)
 std::string
 Node::getPluginIconFilePath() const
 {
-    if (!_imp->plugin) {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return std::string();
     }
 
@@ -6943,7 +7141,7 @@ Node::getPluginIconFilePath() const
             return _imp->pyPlugInfo.pyPlugIconFilePath;
         }
     }
-    return _imp->plugin->getIconFilePath().toStdString();
+    return plugin->getIconFilePath().toStdString();
 }
 
 bool
@@ -6965,7 +7163,8 @@ Node::isPyPlug() const
 std::string
 Node::getPluginID() const
 {
-    if (!_imp->plugin) {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return std::string();
     }
 
@@ -6976,7 +7175,7 @@ Node::getPluginID() const
         }
     }
 
-    return _imp->plugin->getPluginID().toStdString();
+    return plugin->getPluginID().toStdString();
 }
 
 std::string
@@ -7002,6 +7201,10 @@ Node::getPluginLabel() const
 std::string
 Node::getPluginResourcesPath() const
 {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        return std::string();
+    }
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
         if ( _imp->isPyPlugInternal() ) {
@@ -7009,7 +7212,7 @@ Node::getPluginResourcesPath() const
         }
     }
 
-    return _imp->plugin->getResourcesPath().toStdString();
+    return plugin->getResourcesPath().toStdString();
 }
 
 std::string
@@ -7863,7 +8066,11 @@ Node::onInputChanged(int inputNb)
          * The plug-in might call getImage, set a valid thread storage on the tree.
          **/
         double time = getApp()->getTimeLine()->currentFrame();
+
+        // Keep abortInfo here otherwise it will get destroyed as nobody holds a shared ref to it except here
         AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+
+
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
@@ -11741,7 +11948,7 @@ Node::getHostMixingValue(double time,
 
 InspectorNode::InspectorNode(const AppInstancePtr& app,
                              const NodeCollectionPtr& group,
-                             Plugin* plugin)
+                             const PluginPtr& plugin)
     : Node(app, group, plugin)
 {
 

@@ -853,7 +853,7 @@ public:
 };
 
 NodePtr
-AppInstance::createNodeFromPythonModule(Plugin* plugin,
+AppInstance::createNodeFromPythonModule(const PluginPtr& plugin,
                                         const CreateNodeArgs& args)
 
 {
@@ -1031,7 +1031,7 @@ AppInstance::createWriter(const std::string& filename,
  * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
  **/
 static bool
-isEntitledForInspector(Plugin* plugin,
+isEntitledForInspector(const PluginPtr& plugin,
                        OFX::Host::ImageEffect::Descriptor* ofxDesc)
 {
     if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP) ) ||
@@ -1070,7 +1070,7 @@ NodePtr
 AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     NodePtr node;
-    Plugin* plugin = 0;
+    PluginPtr plugin;
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
@@ -1321,7 +1321,7 @@ AppInstance::exportDocs(const QString path)
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
             if ( !pluginID.isEmpty() ) {
-                Plugin* plugin = 0;
+                PluginPtr plugin;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 if (plugin) {

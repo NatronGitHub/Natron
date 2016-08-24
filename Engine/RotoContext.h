@@ -218,6 +218,7 @@ public:
     ///Deserialization
     void load(const RotoContextSerialization & obj);
 
+    void resetToDefault();
 
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.

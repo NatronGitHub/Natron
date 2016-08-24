@@ -658,14 +658,14 @@ GuiApplicationManager::loadShortcuts()
                 mAction->button = (Qt::MouseButton)settings.value( it2->first + QString::fromUtf8("_Button") ).toInt();
             }
             //If this is a node shortcut, notify the Plugin object that it has a shortcut.
-            if ( hasNonNullKeybind && it->first.startsWith( QString::fromUtf8(kShortcutGroupNodes) ) ) {
+            /*if ( hasNonNullKeybind && it->first.startsWith( QString::fromUtf8(kShortcutGroupNodes) ) ) {
                 const PluginsMap & allPlugins = getPluginsList();
                 PluginsMap::const_iterator found = allPlugins.find( it2->first.toStdString() );
                 if ( found != allPlugins.end() ) {
                     assert(found->second.size() > 0);
                     ( *found->second.rbegin() )->setHasShortcut(true);
                 }
-            }
+            }*/
         }
         settings.endGroup();
     }
@@ -920,7 +920,7 @@ void
 GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 {
     action->updateActionsShortcut();
-    for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
+    /*for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         if ( it->first.startsWith( QString::fromUtf8(kShortcutGroupNodes) ) ) {
             for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if (it2->second == action) {
@@ -934,7 +934,7 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
                 }
             }
         }
-    }
+    }*/
 }
 
 void

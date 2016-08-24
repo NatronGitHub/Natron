@@ -356,11 +356,6 @@ AppManager::~AppManager()
         }
     }
 
-    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            delete *it2;
-        }
-    }
 
     _imp->_backgroundIPC.reset();
 
@@ -1269,7 +1264,7 @@ AppManager::loadAllPlugins()
     loadPythonGroups();
 
     loadNodesPresets();
-    
+
     _imp->_settings->restorePluginSettings();
 
 
@@ -1345,7 +1340,11 @@ AppManager::onAllPluginsLoaded()
         }
 
 
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+            if (it2 == it->second.rbegin()) {
+                // This is the highest major version loaded for that plug-in
+                (*it2)->setIsHighestMajorVersion(true);
+            }
             if ( (*it2)->getIsUserCreatable() ) {
                 (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
                 onPluginLoaded(*it2);
@@ -1377,7 +1376,7 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
 
     // Empty since statically bundled
     QString resourcesPath = QString();
-    Plugin* p = registerPlugin(resourcesPath, qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
+    PluginPtr p = registerPlugin(resourcesPath, qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
                                iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
     std::list<PluginActionShortcut> shortcuts;
     node->getPluginShortcuts(&shortcuts);
@@ -1676,19 +1675,26 @@ AppManager::loadNodesPresets()
             continue;
         }
 
-        std::string pluginID;
+        std::string pluginID, presetLabel, presetIcon;
+        int sym, modifiers;
+        int version;
         try {
             boost::archive::xml_iarchive iArchive(ifile);
+            iArchive >> boost::serialization::make_nvp("Version", version);
             iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
+            iArchive >> boost::serialization::make_nvp("PresetLabel", presetLabel);
+            iArchive >> boost::serialization::make_nvp("PresetIcon", presetIcon);
+            iArchive >> boost::serialization::make_nvp("PresetSymbol", sym);
+            iArchive >> boost::serialization::make_nvp("PresetModifiers", modifiers);
         } catch (...) {
             continue;
         }
 
-        Plugin* foundPlugin = getPluginBinary(QString::fromUtf8(pluginID.c_str()), -1, -1, false);
+        PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(pluginID.c_str()), -1, -1, false);
         if (!foundPlugin) {
             continue;
         }
-        foundPlugin->addPresetFile(presetFile);
+        foundPlugin->addPresetFile(presetFile, QString::fromUtf8(presetLabel.c_str()), QString::fromUtf8(presetIcon.c_str()), (Key)sym, KeyboardModifiers(modifiers));
     }
 }
 
@@ -1837,7 +1843,7 @@ AppManager::loadPythonGroups()
         if (gotInfos) {
             qDebug() << "Loading " << moduleName;
             QStringList grouping = QString::fromUtf8( pluginGrouping.c_str() ).split( QChar::fromLatin1('/') );
-            Plugin* p = registerPlugin(modulePath, grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
+            PluginPtr p = registerPlugin(modulePath, grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
 
             p->setPythonModule(modulePath + moduleName);
             p->setToolsetScript(isToolset);
@@ -1845,7 +1851,7 @@ AppManager::loadPythonGroups()
     }
 } // AppManager::loadPythonGroups
 
-Plugin*
+PluginPtr
 AppManager::registerPlugin(const QString& resourcesPath,
                            const QStringList & groups,
                            const QString & pluginID,
@@ -1860,13 +1866,9 @@ AppManager::registerPlugin(const QString& resourcesPath,
                            int minor,
                            bool isDeprecated)
 {
-    QMutex* pluginMutex = 0;
 
-    if (mustCreateMutex) {
-        pluginMutex = new QMutex(QMutex::Recursive);
-    }
-    Plugin* plugin = new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, pluginMutex, major, minor,
-                                isReader, isWriter, isDeprecated);
+    PluginPtr plugin(new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, mustCreateMutex, major, minor,
+                                isReader, isWriter, isDeprecated));
     std::string stdID = pluginID.toStdString();
 
     if ( ReadNode::isBundledReader( stdID, false ) ||
@@ -1957,13 +1959,13 @@ AppManager::getKnobFactory() const
     return *(_imp->_knobFactory);
 }
 
-Plugin*
+PluginPtr
 AppManager::getPluginBinaryFromOldID(const QString & pluginId,
                                      bool projectIsLowerCase,
                                      int majorVersion,
                                      int minorVersion) const
 {
-    std::map<int, Plugin*> matches;
+    std::map<int, PluginPtr> matches;
 
     if ( pluginId == QString::fromUtf8("Viewer") ) {
         return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP), majorVersion, minorVersion);
@@ -2009,10 +2011,10 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
         }
     }
 
-    return 0;
+    return PluginPtr();
 }
 
-Plugin*
+PluginPtr
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int /*minorVersion*/,
@@ -2062,7 +2064,7 @@ AppManager::getPluginBinary(const QString & pluginId,
 
     throw std::invalid_argument( exc.toStdString() );
 
-    return 0;
+    return PluginPtr();
 }
 
 EffectInstancePtr

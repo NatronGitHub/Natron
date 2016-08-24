@@ -358,7 +358,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
 
         if (it->second.size() == 1) {
             std::pair<QString, QString> idNamePair;
-            Plugin* p = ( *it->second.begin() );
+            PluginPtr p = ( *it->second.begin() );
             if ( !p->getIsUserCreatable() ) {
                 continue;
             }
@@ -438,7 +438,7 @@ NodeCreationDialog::getNodeName(int *major) const
     for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if (it->second.size() == 1) {
             if ( ( *it->second.begin() )->generateUserFriendlyPluginID() == name ) {
-                Plugin* p = ( *it->second.begin() );
+                PluginPtr p = ( *it->second.begin() );
                 *major = p->getMajorVersion();
                 const QString& ret = p->getPluginID();
                 incrementPluginWeight(ret, *major);

@@ -235,6 +235,25 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
 
+
+#define PLUGIN_GROUP_IMAGE_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/image_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_3D_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/3D_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_CHANNEL_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/channel_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_MERGE_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/merge_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_COLOR_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/color_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_TRANSFORM_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/transform_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_DEEP_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/deep_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_FILTER_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/filter_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_VIEWS_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/multiview_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_MISC_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_TOOLSETS_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/toolsets_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_KEYER_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/keyer_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_TIME_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/time_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_PAINT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/paint_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
+#define PLUGIN_DEFAULT_RESOURCES_PATH ":/Resources/"
+
 //Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.

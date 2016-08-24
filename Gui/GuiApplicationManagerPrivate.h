@@ -133,15 +133,14 @@ struct GuiApplicationManagerPrivate
                           const std::string & description,
                           const Qt::KeyboardModifiers & modifiers, Qt::MouseButton button);
 
-    PluginGroupNodePtr  findPluginToolButtonInternal(const std::list<PluginGroupNodePtr>& children,
-                                                                     const PluginGroupNodePtr& parent,
-                                                                     const QStringList & grouping,
-                                                                     const QString & name,
-                                                                     const QStringList & groupingIcon,
-                                                                     const QString & iconPath,
-                                                                     int major,
-                                                                     int minor,
-                                                                     bool isUserCreatable);
+    /**
+     * @brief Finds and existing (or create) PluginGroupNode that matches the given grouping, e.g: "Color/Math" and plugin
+     **/
+    PluginGroupNodePtr  findPluginToolButtonOrCreateInternal(const std::list<PluginGroupNodePtr>& children,
+                                                             const PluginGroupNodePtr& parent,
+                                                             const PluginPtr& plugin,
+                                                             const QStringList& grouping,
+                                                             const QStringList& groupingIcon);
 
     void updateFontConfigCache();
 };

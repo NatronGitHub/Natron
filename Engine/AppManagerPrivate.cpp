@@ -255,7 +255,7 @@ AppManagerPrivate::loadBuiltinFormats()
     }
 } // loadBuiltinFormats
 
-Plugin*
+PluginPtr
 AppManagerPrivate::findPluginById(const QString& newId,
                                   int major,
                                   int minor) const
@@ -268,7 +268,7 @@ AppManagerPrivate::findPluginById(const QString& newId,
         }
     }
 
-    return 0;
+    return PluginPtr();
 }
 
 void

@@ -156,7 +156,7 @@ DocumentationManager::handler(QHttpRequest *req,
                 if (split.length() > 0) {
                     QString pluginID = split.takeLast();
                     if ( !pluginID.isEmpty() ) {
-                        Plugin* plugin = 0;
+                        PluginPtr plugin;
                         try {
                             plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                         } catch (const std::exception& e) {
@@ -250,7 +250,7 @@ DocumentationManager::handler(QHttpRequest *req,
             QVector<QStringList> plugins;
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
-                Plugin* plugin = 0;
+                PluginPtr plugin;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 try {
                     plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
@@ -324,7 +324,7 @@ DocumentationManager::handler(QHttpRequest *req,
             QStringList groups;
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
-                Plugin* plugin = 0;
+                PluginPtr plugin;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 try {
                     plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);

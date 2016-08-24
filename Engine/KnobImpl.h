@@ -2958,7 +2958,6 @@ Knob<T>::computeHasModifications()
             }
         }
 
-        ///Check expressions too in the future
         if (!hasModif) {
             QMutexLocker k(&_valueMutex);
             if ( computeValuesHaveModifications(i, _values[i], _defaultValues[i].value) ) {

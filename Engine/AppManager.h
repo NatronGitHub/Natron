@@ -170,11 +170,11 @@ public:
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
     AppInstancePtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinary(const QString & pluginId,
+    PluginPtr getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
                             bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
+    PluginPtr getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -316,7 +316,7 @@ public:
     {
     }
 
-    Plugin* registerPlugin(const QString& resourcesPath,
+    PluginPtr registerPlugin(const QString& resourcesPath,
                            const QStringList & groups,
                            const QString & pluginID,
                            const QString & pluginLabel,
@@ -639,11 +639,11 @@ protected:
     {
     }
 
-    virtual void ignorePlugin(Plugin* /*plugin*/)
+    virtual void ignorePlugin(const PluginPtr& /*plugin*/)
     {
     }
 
-    virtual void onPluginLoaded(Plugin* /*plugin*/) {}
+    virtual void onPluginLoaded(const PluginPtr& /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
     virtual void clearLastRenderedTextures() {}

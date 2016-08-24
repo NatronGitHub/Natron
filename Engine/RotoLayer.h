@@ -102,6 +102,8 @@ public:
     ///only callable on the main-thread
     void removeItem(const RotoItemPtr& item);
 
+    void clearItems();
+
     ///Returns the index of the given item in the layer, or -1 if not found
     int getChildIndex(const RotoItemPtr& item) const;
 

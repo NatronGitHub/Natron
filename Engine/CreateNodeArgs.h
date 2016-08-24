@@ -83,6 +83,15 @@
 #define kCreateNodeArgsPropNodeSerialization "CreateNodeArgsPropNodeSerialization"
 
 /**
+ * @brief optional x1 std::string property indicating the label of the presets to use to load the node.
+ * The preset label must correspond to a valid label of a a preset file (.nps) that was found by Natron.
+ * The preset label is NOT the filename of the preset file, but the string in the file found next to the key "PresetLabel"
+ * If the preset cannot be found, the presets will not be loaded
+ * Default value - Empty
+ **/
+#define kCreateNodeArgsPropPreset "CreateNodeArgsPropPreset"
+
+/**
  * @brief optional x1 bool property
  * Default Value - false
  * If copy/pasting, we don't want to paste a PyPlug and create copy from the Python script,
@@ -296,6 +305,7 @@ class CreateNodeArgs
         createProperty<int>(kCreateNodeArgsPropPluginVersion, -1, -1);
         createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
+        createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
         createProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, NodeSerializationPtr());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);

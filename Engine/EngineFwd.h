@@ -354,6 +354,7 @@ typedef boost::shared_ptr<PrecompNode> PrecompNodePtr;
 typedef boost::shared_ptr<ProcessHandler> ProcessHandlerPtr;
 typedef boost::shared_ptr<Project> ProjectPtr;
 typedef boost::shared_ptr<ProjectSerialization> ProjectSerializationPtr;
+typedef boost::shared_ptr<Plugin> PluginPtr;
 typedef boost::shared_ptr<PluginGroupNode> PluginGroupNodePtr;
 typedef boost::shared_ptr<PluginMemory> PluginMemoryPtr;
 typedef boost::shared_ptr<ReadNode> ReadNodePtr;
@@ -396,6 +397,8 @@ typedef boost::weak_ptr<KnobPage> KnobPageWPtr;
 typedef boost::weak_ptr<KnobParametric> KnobParametricWPtr;
 typedef boost::weak_ptr<KnobString> KnobStringWPtr;
 typedef boost::weak_ptr<Node> NodeWPtr;
+typedef boost::weak_ptr<Plugin> PluginWPtr;
+typedef boost::weak_ptr<PluginGroupNode> PluginGroupNodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;
 typedef boost::weak_ptr<ViewerInstance> ViewerInstanceWPtr;
 typedef boost::weak_ptr<ViewerNode> ViewerNodeWPtr;
@@ -404,6 +407,7 @@ typedef std::list<NodePtr> NodesList;
 typedef std::list<NodeWPtr> NodesWList;
 typedef std::vector<KnobIPtr> KnobsVec;
 typedef std::list< BezierCPPtr > BezierCPs;
+
 
 NATRON_PYTHON_NAMESPACE_ENTER;
 class App;

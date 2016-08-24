@@ -154,7 +154,7 @@ public:
 
     static void loadStyleSheet();
     ToolButton* findExistingToolButton(const QString & name) const;
-    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& plugin);
+    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& treeNode);
 
     void sortAllPluginsToolButtons();
 

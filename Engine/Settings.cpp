@@ -1811,7 +1811,7 @@ Settings::restorePluginSettings()
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
 
             if ( plugin->getIsForInternalUseOnly() ) {
@@ -1868,7 +1868,7 @@ Settings::savePluginsSettings()
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );

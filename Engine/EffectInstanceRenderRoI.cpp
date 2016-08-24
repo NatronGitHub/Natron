@@ -1745,9 +1745,9 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &_publicInterface->getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
-                const Plugin* p = _publicInterface->getNode()->getPlugin();
+                PluginPtr p = _publicInterface->getNode()->getPlugin();
                 assert(p);
-                locker.reset( new QMutexLocker( p->getPluginLock() ) );
+                locker.reset( new QMutexLocker( p->getPluginLock().get() ) );
             } else {
                 // no need to lock
                 Q_UNUSED(locker);

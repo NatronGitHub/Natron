@@ -977,11 +977,24 @@ linkItemsKnobsRecursively(RotoContext* ctx,
 }
 
 void
+RotoContext::resetToDefault()
+{
+    assert(_imp->layers.size() == 1);
+    RotoLayerPtr baseLayer = _imp->layers.front();
+    RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther;
+    removeItemRecursively(baseLayer, reason);
+    createBaseLayer();
+    Q_EMIT selectionChanged( (int)reason );
+
+
+}
+
+void
 RotoContext::load(const RotoContextSerialization & obj)
 {
     assert( QThread::currentThread() == qApp->thread() );
     ///no need to lock here, when this is called the main-thread is the only active thread
-
+    
     _imp->isCurrentlyLoading = true;
     _imp->autoKeying = obj._autoKeying;
     _imp->featherLink = obj._featherLink;

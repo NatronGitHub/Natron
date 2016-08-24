@@ -95,12 +95,12 @@ protected: // parent of InspectorNode
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstancePtr& app,
          const NodeCollectionPtr& group,
-         Plugin* plugin);
+         const PluginPtr& plugin);
 
 public:
     static NodePtr create(const AppInstancePtr& app,
                           const NodeCollectionPtr& group,
-                          Plugin* plugin)
+                          const PluginPtr& plugin)
     {
         return NodePtr( new Node(app, group, plugin) );
     }
@@ -115,13 +115,8 @@ public:
      **/
     bool isPartOfProject() const;
 
-    const Plugin* getPlugin() const;
+    const PluginPtr getPlugin() const;
 
-    /**
-     * @brief Used internally when instanciating a Python template, we first make a group and then pass a pointer
-     * to the real plugin.
-     **/
-    void switchInternalPlugin(Plugin* plugin);
 
     void setPrecompNode(const PrecompNodePtr& precomp);
 
@@ -170,12 +165,30 @@ public:
      **/
     virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
+private:
+
+
+    void fromSerializationInternal(const NodeSerialization& serialization);
+
+private:
+
+    void getNodeSerializationFromPresetName(const std::string& presetName, NodeSerialization* serialization);
+
+    void loadPresetsInternal(const NodeSerialization& serialization);
+
+public:
+
     /**
      * @brief Setup the node state according to the presets file.
      * This function throws exception in case of error.
      **/
-    void loadPresetsFile(const std::string& filePath);
-    void saveNodeToPresets(const std::string& filePath);
+    void loadPresets(const std::string& presetsLabel);
+
+    void saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods);
+
+    std::string getCurrentNodePresets() const;
+
+    void restoreNodeToDefaultState();
 
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const CreateNodeArgs& args);
@@ -1591,13 +1604,13 @@ private: // derives from Node
 
     InspectorNode(const AppInstancePtr& app,
                   const NodeCollectionPtr& group,
-                  Plugin* plugin);
+                  const PluginPtr& plugin);
 
 public:
 
     static NodePtr create(const AppInstancePtr& app,
                           const NodeCollectionPtr& group,
-                          Plugin* plugin)
+                          const PluginPtr& plugin)
     {
         return NodePtr( new InspectorNode(app, group, plugin) );
     }

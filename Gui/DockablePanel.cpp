@@ -124,7 +124,7 @@ DockablePanel::DockablePanel(Gui* gui,
             headerMode = eHeaderModeReadOnlyName;
         }
 
-        const Plugin* plugin = isEffect->getNode()->getPlugin();
+        PluginPtr plugin = isEffect->getNode()->getPlugin();
         pluginLabelVersioned = tr("%1 version %2.%3").arg( plugin->getPluginLabel() ).arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
     }
     MultiInstancePanelPtr isMultiInstance = boost::dynamic_pointer_cast<MultiInstancePanel>(holder);
@@ -200,7 +200,7 @@ DockablePanel::DockablePanel(Gui* gui,
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET, iconSize, &pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp), QString(), _imp->_headerWidget);
 
-            const Plugin* plugin = isEffect->getNode()->getPlugin();
+            PluginPtr plugin = isEffect->getNode()->getPlugin();
             assert(plugin);
             _imp->_pluginID = plugin->getPluginID();
             _imp->_pluginVersionMajor = plugin->getMajorVersion();

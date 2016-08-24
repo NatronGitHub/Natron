@@ -703,7 +703,7 @@ OfxHost::createOfxEffect(const NodePtr& node,
                          const CreateNodeArgs& args)
 {
     assert(node);
-    const Plugin* natronPlugin = node->getPlugin();
+    PluginPtr natronPlugin = node->getPlugin();
     assert(natronPlugin);
     ContextEnum ctx;
     OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&ctx);
@@ -959,7 +959,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         const bool isDeprecated = p->getDescriptor().isDeprecated();
-        Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
+        PluginPtr natronPlugin = appPTR->registerPlugin( resourcesPath,
                                                        groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
                                                        QString::fromUtf8( pluginLabel.c_str() ),

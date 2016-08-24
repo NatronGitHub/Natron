@@ -239,7 +239,7 @@ public:
 
     void createReadNode(bool throwErrors,
                         const std::string& filename,
-                        const NodeSerializationPtr& serialization );
+                        const NodeSerialization* serialization );
 
     void destroyReadNode();
 
@@ -538,7 +538,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 void
 ReadNodePrivate::createReadNode(bool throwErrors,
                                 const std::string& filename,
-                                const NodeSerializationPtr& serialization)
+                                const NodeSerialization* serialization)
 {
     if (creatingReadNode) {
         return;
@@ -615,7 +615,13 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
-        args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+
+        NodeSerializationPtr s(new NodeSerialization);
+        if (serialization) {
+            *s = *serialization;
+            args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
+        }
+
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         if (serialization || wasCreatedAsHiddenNode) {
@@ -726,7 +732,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
+            PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
@@ -1046,22 +1052,21 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             pattern = args.getProperty<std::string>(propName);
         }
     }
-    _imp->createReadNode( throwErrors, pattern, NodeSerializationPtr() );
+    _imp->createReadNode( throwErrors, pattern, 0 );
     _imp->refreshPluginSelectorKnob();
 }
 
 void
-ReadNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
+ReadNode::onKnobsAboutToBeLoaded(const NodeSerialization& serialization)
 {
-    assert(serialization);
     NodePtr node = getNode();
 
     //Load the pluginID to create first.
-    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization->getKnobsValues() );
+    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization.getKnobsValues() );
 
-    std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
+    std::string filename = getFileNameFromSerialization( serialization.getKnobsValues() );
     //Create the Reader with the serialization
-    _imp->createReadNode(false, filename, serialization);
+    _imp->createReadNode(false, filename, &serialization);
     _imp->refreshPluginSelectorKnob();
 }
 
@@ -1099,7 +1104,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, 0 );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1124,7 +1129,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, 0 );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }

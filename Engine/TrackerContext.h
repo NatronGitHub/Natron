@@ -166,6 +166,8 @@ public:
 
     void removeMarker(const TrackMarkerPtr& marker);
 
+    void clearMarkers();
+
     TrackMarkerPtr getMarkerByName(const std::string & name) const;
 
     std::string generateUniqueTrackName(const std::string& baseName);

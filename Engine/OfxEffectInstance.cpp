@@ -502,8 +502,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 }
             }
             ///before calling the createInstanceAction, load values
+            std::string initialPresets = getNode()->getCurrentNodePresets();
             if ( serialization && !serialization->isNull() ) {
                 getNode()->fromSerialization(*serialization);
+            } else if (!initialPresets.empty()) {
+                getNode()->loadPresets(initialPresets);
             }
 
             getNode()->setValuesFromSerialization(args);
@@ -2681,7 +2684,7 @@ OfxEffectInstance::supportsOpenGLRender() const
 void
 OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
 {
-    const Plugin* p = getNode()->getPlugin();
+    PluginPtr p = getNode()->getPlugin();
     if (p->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportYes) {
         // The property may only change if the plug-in has the property set to yes on the descriptor
         if (activated) {

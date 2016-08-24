@@ -367,6 +367,25 @@ TrackerContext::removeMarker(const TrackMarkerPtr& marker)
     endEditSelection(TrackerContext::eTrackSelectionInternal);
 }
 
+void
+TrackerContext::clearMarkers()
+{
+    std::vector<TrackMarkerPtr > markers;
+    {
+        QMutexLocker k(&_imp->trackerContextMutex);
+        markers = _imp->markers;
+    }
+    for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        removeItemAsPythonField(*it);
+        Q_EMIT trackRemoved(*it);
+    }
+    {
+        QMutexLocker k(&_imp->trackerContextMutex);
+        _imp->markers.clear();
+    }
+    clearSelection(TrackerContext::eTrackSelectionInternal);
+}
+
 NodePtr
 TrackerContext::getNode() const
 {
