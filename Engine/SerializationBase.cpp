@@ -347,7 +347,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
         // Clone animation
         if (serialization->_values[i]->_value.animationCurve) {
-            CurvePtr curve = getCurve(ViewIdx(0), serialization->_dimension);
+            CurvePtr curve = getCurve(ViewIdx(0), i);
             if (curve) {
                 curve->loadSerialization(*serialization->_values[i]->_value.animationCurve);
             }
