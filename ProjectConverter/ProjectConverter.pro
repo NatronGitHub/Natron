@@ -16,34 +16,36 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-QT       += core network
-QT       -= gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
-
-TARGET = NatronRenderer
+TARGET = NatronProjectConverter
+TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 # Cairo is still the default renderer for Roto
 !enable-osmesa {
    CONFIG += enable-cairo
 }
-CONFIG += moc
-CONFIG += boost qt python shiboken pyside 
+CONFIG += moc rcc
+CONFIG += boost opengl qt python shiboken pyside
 enable-cairo: CONFIG += cairo
-CONFIG += static-engine static-host-support static-serialization static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
+CONFIG += static-gui static-engine static-serialization static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
+QT += gui core opengl network
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
+
+CONFIG += openmvg-flags glad-flags
 
 !noexpat: CONFIG += expat
 
-TEMPLATE = app
+DEFINES += NATRON_BOOST_SERIALIZATION_COMPAT
 
-win32 {
-	RC_FILE += ../Natron.rc
-}
+INCLUDEPATH += google-test/include
+INCLUDEPATH += google-test
+INCLUDEPATH += google-mock/include
+INCLUDEPATH += google-mock
+
 
 include(../global.pri)
 
 SOURCES += \
-    NatronRenderer_main.cpp
+    ProjectConverter_main.cpp
 
-INSTALLS += target
-
+#HEADERS += \

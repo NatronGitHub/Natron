@@ -86,7 +86,6 @@ SOURCES += \
     CoonsRegularization.cpp \
     CreateNodeArgs.cpp \
     Curve.cpp \
-    CurveSerialization.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
@@ -99,7 +98,6 @@ SOURCES += \
     FitCurve.cpp \
     FrameEntry.cpp \
     FrameKey.cpp \
-    FrameParamsSerialization.cpp \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
@@ -115,11 +113,9 @@ SOURCES += \
     ImageComponents.cpp \
     ImageKey.cpp \
     ImageMaskMix.cpp \
-    ImageParamsSerialization.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     Knob.cpp \
-    KnobSerialization.cpp \
     KnobFactory.cpp \
     KnobFile.cpp \
     KnobTypes.cpp \
@@ -132,8 +128,6 @@ SOURCES += \
     NodeGroup.cpp \
     NodeMetadata.cpp \
     NonKeyParams.cpp \
-    NonKeyParamsSerialization.cpp \
-    NodeSerialization.cpp \
     NoOpBase.cpp \
     OSGLContext.cpp \
     OSGLContext_osmesa.cpp \
@@ -159,7 +153,6 @@ SOURCES += \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
-    ProjectSerialization.cpp \
     PyPanelI.cpp \
     PyAppInstance.cpp \
     PyNodeGroup.cpp \
@@ -188,7 +181,6 @@ SOURCES += \
     ScriptObject.cpp \
     Settings.cpp \
     SerializableWindow.cpp \
-    SerializationBase.cpp \
     SplitterI.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
@@ -273,21 +265,17 @@ HEADERS += \
     AppManagerPrivate.h \
     Backdrop.h \
     Bezier.h \
-    BezierSerialization.h \
     BezierCP.h \
     BezierCPPrivate.h \
-    BezierCPSerialization.h \
     BlockingBackgroundRender.h \
     BufferableObject.h \
     CLArgs.h \
     Cache.h \
     CacheEntry.h \
     CacheEntryHolder.h \
-    CacheSerialization.h \
     CoonsRegularization.h \
     CreateNodeArgs.h \
     Curve.h \
-    CurveSerialization.h \
     CurvePrivate.h \
     DockablePanelI.h \
     Dot.h \
@@ -302,12 +290,9 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
-    FormatSerialization.h \
     FrameEntry.h \
     FrameKey.h \
-    FrameEntrySerialization.h \
     FrameParams.h \
-    FrameParamsSerialization.h \
     FStreamsSupport.h \
     fstream_mingw.h \
     GenericSchedulerThread.h \
@@ -323,16 +308,13 @@ HEADERS += \
     ImageComponents.h \
     ImageKey.h \
     ImageLocker.h \
-    ImageSerialization.h \
     ImageParams.h \
-    ImageParamsSerialization.h \
     Interpolation.h \
     JoinViewsNode.h \
     KeyHelper.h \
     Knob.h \
     KnobGuiI.h \
     KnobImpl.h \
-    KnobSerialization.h \
     KnobFactory.h \
     KnobFile.h \
     KnobTypes.h \
@@ -346,13 +328,10 @@ HEADERS += \
     MergingEnum.h \
     Node.h \
     NodeGroup.h \
-    NodeGroupSerialization.h \
     NodeGraphI.h \
     NodeGuiI.h \
     NodeMetadata.h \
     NonKeyParams.h \
-    NonKeyParamsSerialization.h \
-    NodeSerialization.h \
     NoOpBase.h \
     OSGLContext.h \
     OSGLContext_osmesa.h \
@@ -381,7 +360,6 @@ HEADERS += \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
-    ProjectSerialization.h \
     PyAppInstance.h \
     PyGlobalFunctions.h \
     PyNodeGroup.h \
@@ -393,20 +371,14 @@ HEADERS += \
     PyPanelI.h \
     ReadNode.h \
     RectD.h \
-    RectDSerialization.h \
     RectI.h \
-    RectISerialization.h \
     RenderStats.h \
     RotoBezierTriangulation.h \
     RotoContext.h \
     RotoContextPrivate.h \
-    RotoContextSerialization.h \
     RotoDrawableItem.h \
-    RotoDrawableItemSerialization.h \
     RotoLayer.h \
-    RotoLayerSerialization.h \
     RotoItem.h \
-    RotoItemSerialization.h \
     RotoPaint.h \
     RotoPaintInteract.h \
     RotoPoint.h \
@@ -415,12 +387,10 @@ HEADERS += \
     RotoShapeRenderCairo.h \
     RotoShapeRenderGL.h \
     RotoStrokeItem.h \
-    RotoStrokeItemSerialization.h \
     RotoUndoCommand.h \
     ScriptObject.h \
     Settings.h \
     SerializableWindow.h \
-    SerializationBase.h \
     Singleton.h \
     SplitterI.h \
     StandardPaths.h \
@@ -428,7 +398,6 @@ HEADERS += \
     TabWidgetI.h \
     Texture.h \
     TextureRect.h \
-    TextureRectSerialization.h \
     ThreadStorage.h \
     ThreadPool.h \
     TimeLine.h \
@@ -441,7 +410,6 @@ HEADERS += \
     TrackerNodeInteract.h \
     TrackerUndoCommand.h \
     TrackMarker.h \
-    TrackerSerialization.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
@@ -449,7 +417,6 @@ HEADERS += \
     UndoCommand.h \
     Utils.h \
     Variant.h \
-    VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ViewerNode.h \

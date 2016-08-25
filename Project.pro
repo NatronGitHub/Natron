@@ -32,10 +32,12 @@ SUBDIRS += \
     qhttpserver \
     hoedown \
     libtess \
+    Serialization \
     Engine \
     Renderer \
     Gui \
     Tests \
+    ProjectConverter \
     App
 
 # where to find the sub projects - give the folders
