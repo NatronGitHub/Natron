@@ -209,6 +209,8 @@ public Q_SLOTS:
 
     void onRightClickMenuRequested(const QPoint & pos);
 
+    void onPanelSelected(const QPoint& pos);
+
     void setKeyOnAllParameters();
     void removeAnimationOnAllParameters();
 

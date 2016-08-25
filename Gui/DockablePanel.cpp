@@ -439,6 +439,7 @@ DockablePanel::createKnobHorizontalFieldContainer(QWidget* parent) const
 {
     RightClickableWidget* clickableWidget = new RightClickableWidget(this, parent);
     QObject::connect( clickableWidget, SIGNAL(rightClicked(QPoint)), this, SLOT(onRightClickMenuRequested(QPoint)) );
+    QObject::connect( clickableWidget, SIGNAL(clicked(QPoint)), this, SLOT(onPanelSelected(QPoint)) );
     QObject::connect( clickableWidget, SIGNAL(escapePressed()), this, SLOT(closePanel()) );
     clickableWidget->setFocusPolicy(Qt::NoFocus);
     return clickableWidget;
@@ -459,6 +460,7 @@ DockablePanel::createPageMainWidget(QWidget* parent) const
 {
     RightClickableWidget* clickableWidget = new RightClickableWidget(this, parent);
     QObject::connect( clickableWidget, SIGNAL(rightClicked(QPoint)), this, SLOT(onRightClickMenuRequested(QPoint)) );
+    QObject::connect( clickableWidget, SIGNAL(clicked(QPoint)), this, SLOT(onPanelSelected(QPoint)) );
     QObject::connect( clickableWidget, SIGNAL(escapePressed()), this, SLOT(closePanel()) );
 
     clickableWidget->setFocusPolicy(Qt::NoFocus);
@@ -1371,6 +1373,20 @@ DockablePanel::focusInEvent(QFocusEvent* e)
     QFrame::focusInEvent(e);
 
     getUndoStack()->setActive();
+}
+
+void
+DockablePanel::onPanelSelected(const QPoint& /*pos*/)
+{
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (!isNodePanel) {
+        return;
+    }
+    NodeGuiPtr node = isNodePanel->getNode();
+    if (!node) {
+        return;
+    }
+    node->getDagGui()->selectNode(node, false);
 }
 
 void

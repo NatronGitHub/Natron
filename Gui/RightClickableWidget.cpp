@@ -52,6 +52,12 @@ RightClickableWidget::mousePressEvent(QMouseEvent* e)
             Q_EMIT rightClicked( e->pos() );
             e->accept();
         }
+    } else if ( buttonDownIsLeft(e) ) {
+        QWidget* underMouse = qApp->widgetAt( e->globalPos() );
+        if (underMouse == this) {
+            Q_EMIT clicked( e->pos() );
+            e->accept();
+        }
     } else {
         QWidget::mousePressEvent(e);
     }
