@@ -1020,14 +1020,15 @@ GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
     }
 
     // If this plug-in has presets, add shortcuts as well
-    const std::list<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
-    for (std::list<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+    plugin->sortPresetsByLabel();
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
         std::string shortcutKey = pluginID.toStdString();
         shortcutKey += "_preset_";
         shortcutKey += it->presetLabel.toStdString();
 
         std::string shortcutLabel = pluginLabel.toStdString();
-        shortcutLabel += "(";
+        shortcutLabel += " (";
         shortcutLabel += it->presetLabel.toStdString();
         shortcutLabel += ")";
         _imp->addKeybind(shortcutGrouping.toStdString(), shortcutKey, shortcutLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->symbol));

@@ -167,7 +167,7 @@ class Plugin
 
     PluginOpenGLRenderSupport _openglRenderSupport;
 
-    std::list<PluginPresetDescriptor> _presetsFiles;
+    std::vector<PluginPresetDescriptor> _presetsFiles;
 
     bool _isHighestVersion;
 
@@ -206,7 +206,9 @@ public:
 
     void addPresetFile(const QString& filePath, const QString& presetLabel, const QString& iconFilePath, Key symbol, const KeyboardModifiers& mods);
 
-    const std::list<PluginPresetDescriptor>& getPresetFiles() const;
+    const std::vector<PluginPresetDescriptor>& getPresetFiles() const;
+
+    void sortPresetsByLabel();
 
     QString getPluginShortcutGroup() const;
 

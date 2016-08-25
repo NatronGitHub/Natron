@@ -161,7 +161,9 @@ public Q_SLOTS:
 
     void onSettingsButtonClicked();
 
-    void onImportPresetsActionTriggered();
+    void onImportPresetsFromFileActionTriggered();
+
+    void onLoadPresetsActionTriggered();
 
     void onExportPresetsActionTriggered();
 };

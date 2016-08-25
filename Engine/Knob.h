@@ -2011,6 +2011,8 @@ public:
     std::vector<T> getDefaultValues_mt_safe() const WARN_UNUSED_RETURN;
     T getDefaultValue(int dimension) const WARN_UNUSED_RETURN;
 
+    T getInitialDefaultValue(int dimension) const WARN_UNUSED_RETURN;
+
     bool isDefaultValueSet(int dimension) const WARN_UNUSED_RETURN;
 
     /**

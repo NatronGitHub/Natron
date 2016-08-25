@@ -622,6 +622,15 @@ NodeGui::createGui()
                                                                         "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _expressionIndicator->setActive(false);
 
+    QGradientStops animGrad;
+    animGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
+    animGrad.push_back( qMakePair( 0.3, QColor(Qt::red) ) );
+    animGrad.push_back( qMakePair( 1., QColor(192, 64, 64) ) );
+    _animationIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("A"), bbox.topRight(), ellipseDiam, ellipseDiam, animGrad, QColor(255, 255, 255), this) );
+    _animationIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or several parameters with an animation"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _animationIndicator->setActive(false);
+
+
     _availableViewsIndicator.reset( new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("V"), bbox.topLeft(), ellipseDiam, ellipseDiam, exprGrad, QColor(255, 255, 255), this) );
     _availableViewsIndicator->setActive(false);
 
@@ -876,14 +885,17 @@ NodeGui::resize(int width,
         return;
     }
 
-    const QPointF topLeft = mapFromParent( pos() );
     const bool hasPluginIcon = _pluginIcon != NULL;
     const int iconWidth = getPluginIconWidth();
     adjustSizeToContent(&width, &height, adjustToTextSize);
 
     getNode()->onNodeUISizeChanged(width, height);
 
+    const QPointF topLeft = mapFromParent( pos() );
     const QPointF bottomRight(topLeft.x() + width, topLeft.y() + height);
+    const QPointF bottomLeft = topLeft + QPointF(0, height);
+    const QPointF topRight = topLeft + QPointF(width, 0);
+
     QRectF bbox(topLeft.x(), topLeft.y(), width, height);
 
     _boundingBox->setRect(bbox);
@@ -926,7 +938,10 @@ NodeGui::resize(int width,
     _streamIssuesWarning->refreshPosition(bitDepthPos);
 
     if (_expressionIndicator) {
-        _expressionIndicator->refreshPosition( topLeft + QPointF(width, 0) );
+        _expressionIndicator->refreshPosition(topRight);
+    }
+    if (_animationIndicator) {
+        _animationIndicator->refreshPosition(bottomLeft);
     }
     if (_availableViewsIndicator) {
         _availableViewsIndicator->refreshPosition(topLeft);
@@ -3557,8 +3572,24 @@ NodeGui::onAvailableViewsChanged()
 }
 
 void
+NodeGui::refreshAnimationIcon()
+{
+    if (!_animationIndicator) {
+        return;
+    }
+    bool hasAnimation = false;
+    const KnobsVec& knobs = getNode()->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end() ;++it) {
+        hasAnimation |= (*it)->hasAnimation();
+    }
+    _animationIndicator->setActive(hasAnimation);
+
+}
+
+void
 NodeGui::onIdentityStateChanged(int inputNb)
 {
+    refreshAnimationIcon();
     if (!_passThroughIndicator) {
         return;
     }

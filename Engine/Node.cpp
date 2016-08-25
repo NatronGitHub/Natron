@@ -816,8 +816,8 @@ Node::load(const CreateNodeArgs& args)
 
     if (!presetLabel.empty()) {
         // If there's a preset specified, load serialization from preset
-        const std::list<PluginPresetDescriptor>& presets = getPlugin()->getPresetFiles();
-        for (std::list<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+        const std::vector<PluginPresetDescriptor>& presets = getPlugin()->getPresetFiles();
+        for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
             if (it->presetLabel.toStdString() == presetLabel) {
 
                 // We found a matching preset, should we notify user if not found ?
@@ -2307,13 +2307,58 @@ void
 Node::loadPresets(const std::string& presetsLabel)
 {
 
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->initialNodePreset = presetsLabel;
+    restoreNodeToDefaultState();
+}
+
+void
+Node::loadPresetsFromFile(const std::string& presetsFile)
+{
+
+    assert(QThread::currentThread() == qApp->thread());
+
     NodeSerializationPtr serialization(new NodeSerialization);
 
     // Throws on failure
-    getNodeSerializationFromPresetName(presetsLabel, serialization.get());
+    std::string presetsLabel;
+    getNodeSerializationFromPresetFile(presetsFile, serialization.get(), &presetsLabel);
 
     _imp->initialNodePreset = presetsLabel;
-    loadPresetsInternal(*serialization);
+    restoreNodeToDefaultState();
+}
+
+void
+Node::getNodeSerializationFromPresetFile(const std::string& presetFile, NodeSerialization* serialization, std::string* presetsLabel)
+{
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open(&ifile, presetFile);
+    if (!ifile || presetFile.empty()) {
+        std::string message = tr("Failed to open file: ").toStdString() + presetFile;
+        throw std::runtime_error(message);
+    }
+
+    std::string pluginID;
+    std::string presetIcon;
+
+    // The version is externalise to maintain compatibility with older presets (starting from Natron 2.2)
+    int version;
+    int symbol;
+    int modifiers;
+    boost::archive::xml_iarchive iArchive(ifile);
+    iArchive >> boost::serialization::make_nvp("Version", version);
+    iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
+    iArchive >> boost::serialization::make_nvp("PresetLabel", *presetsLabel);
+    iArchive >> boost::serialization::make_nvp("PresetIcon", presetIcon);
+    iArchive >> boost::serialization::make_nvp("PresetSymbol", symbol);
+    iArchive >> boost::serialization::make_nvp("PresetModifiers", modifiers);
+    iArchive >> boost::serialization::make_nvp("Node", *serialization);
+
+    std::string thisPluginID = getPluginID();
+    if (pluginID != thisPluginID) {
+        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+    }
+
 }
 
 
@@ -2326,40 +2371,12 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, NodeSeri
         throw std::invalid_argument("Invalid plug-in");
     }
 
-    const std::list<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
-    for (std::list<PluginPresetDescriptor>::const_iterator it = presets.begin() ;it!=presets.end(); ++it) {
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin() ;it!=presets.end(); ++it) {
         if (it->presetLabel.toStdString() == presetName) {
-
-            std::string filePath = it->presetFilePath.toStdString();
-            FStreamsSupport::ifstream ifile;
-            FStreamsSupport::open(&ifile, filePath);
-            if (!ifile || filePath.empty()) {
-                std::string message = tr("Failed to open file: ").toStdString() + filePath;
-                throw std::runtime_error(message);
-            }
-
-            std::string pluginID;
-            std::string presetLabel;
-            std::string presetIcon;
-
-            // The version is externalise to maintain compatibility with older presets (starting from Natron 2.2)
-            int version;
-            int symbol;
-            int modifiers;
-            boost::archive::xml_iarchive iArchive(ifile);
-            iArchive >> boost::serialization::make_nvp("Version", version);
-            iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
-            iArchive >> boost::serialization::make_nvp("PresetLabel", presetLabel);
-            iArchive >> boost::serialization::make_nvp("PresetIcon", presetIcon);
-            iArchive >> boost::serialization::make_nvp("PresetSymbol", symbol);
-            iArchive >> boost::serialization::make_nvp("PresetModifiers", modifiers);
-            iArchive >> boost::serialization::make_nvp("Node", *serialization);
-
-            std::string thisPluginID = getPluginID();
-            if (pluginID != thisPluginID) {
-                throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
-            }
-
+            std::string presetsLabel;
+            getNodeSerializationFromPresetFile(it->presetFilePath.toStdString(), serialization, &presetsLabel);
+            assert(presetsLabel == presetName);
             return;
         }
     }
@@ -2372,6 +2389,8 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, NodeSeri
 void
 Node::loadPresetsInternal(const NodeSerialization& serialization)
 {
+    assert(QThread::currentThread() == qApp->thread());
+
     assert(!_imp->initialNodePreset.empty());
 
     loadKnobsFromSerialization(serialization);
@@ -2379,11 +2398,18 @@ Node::loadPresetsInternal(const NodeSerialization& serialization)
     // set non animated knobs to be their default values
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->hasModifications() && (*it)->getIsPersistent()) {
-            KnobIntBasePtr isInt = toKnobInt(*it);
-            KnobBoolBasePtr isBool = toKnobBool(*it);
-            KnobStringBasePtr isString = toKnobString(*it);
-            KnobDoubleBasePtr isDouble = toKnobDouble(*it);
+        KnobButtonPtr isBtn = toKnobButton(*it);
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+        if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
+            continue;
+        }
+
+        if ((*it)->getIsPersistent()) {
+            KnobIntBasePtr isInt = toKnobIntBase(*it);
+            KnobBoolBasePtr isBool = toKnobBoolBase(*it);
+            KnobStringBasePtr isString = toKnobStringBase(*it);
+            KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
             for (int d = 0; d < (*it)->getDimension(); ++d) {
                 if ((*it)->isAnimated(d)) {
                     continue;
@@ -2465,9 +2491,13 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
 void
 Node::restoreNodeToDefaultState()
 {
+    assert(QThread::currentThread() == qApp->thread());
+
     _imp->effect->beginChanges();
 
-    _imp->effect->purgeCaches();
+    if (isNodeCreated()) {
+        _imp->effect->purgeCaches();
+    }
 
     NodeSerializationPtr serialization;
     if (!_imp->initialNodePreset.empty()) {
@@ -2502,6 +2532,39 @@ Node::restoreNodeToDefaultState()
     if (serialization) {
         // Load presets from serialization if any
         loadPresetsInternal(*serialization);
+    } else {
+        // Reset knob default values to their initial default value if we had a different preset before
+
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            KnobButtonPtr isBtn = toKnobButton(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
+            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
+                continue;
+            }
+
+            if ((*it)->getIsPersistent()) {
+                KnobIntBasePtr isInt = toKnobIntBase(*it);
+                KnobBoolBasePtr isBool = toKnobBoolBase(*it);
+                KnobStringBasePtr isString = toKnobStringBase(*it);
+                KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
+                for (int d = 0; d < (*it)->getDimension(); ++d) {
+                    if ((*it)->isAnimated(d)) {
+                        continue;
+                    }
+                    if (isInt) {
+                        isInt->setDefaultValue(isInt->getInitialDefaultValue(d), d);
+                    } else if (isBool) {
+                        isBool->setDefaultValue(isBool->getInitialDefaultValue(d), d);
+                    } else if (isString) {
+                        isString->setDefaultValue(isString->getInitialDefaultValue(d), d);
+                    } else if (isDouble) {
+                        isDouble->setDefaultValue(isDouble->getInitialDefaultValue(d), d);
+                    }
+                }
+            }
+        }
     }
 
 

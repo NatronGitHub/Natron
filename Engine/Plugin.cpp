@@ -162,7 +162,7 @@ Plugin::isWriter() const
 void
 Plugin::addPresetFile(const QString& filePath, const QString& presetLabel, const QString& iconFilePath, Key symbol, const KeyboardModifiers& mods)
 {
-    for (std::list<PluginPresetDescriptor>::iterator it = _presetsFiles.begin(); it!=_presetsFiles.end(); ++it) {
+    for (std::vector<PluginPresetDescriptor>::iterator it = _presetsFiles.begin(); it!=_presetsFiles.end(); ++it) {
         if (it->presetLabel == presetLabel) {
             // Another preset with the same label already exists for this plug-in, ignore it
             return;
@@ -177,7 +177,23 @@ Plugin::addPresetFile(const QString& filePath, const QString& presetLabel, const
     _presetsFiles.push_back(s);
 }
 
-const std::list<PluginPresetDescriptor>&
+struct PresetsSortByLabelFunctor
+{
+    bool operator() (const PluginPresetDescriptor& lhs,
+                     PluginPresetDescriptor& rhs)
+    {
+        return lhs.presetLabel < rhs.presetLabel;
+    }
+};
+
+void
+Plugin::sortPresetsByLabel()
+{
+    
+    std::sort(_presetsFiles.begin(), _presetsFiles.end(), PresetsSortByLabelFunctor());
+}
+
+const std::vector<PluginPresetDescriptor>&
 Plugin::getPresetFiles() const
 {
     return _presetsFiles;

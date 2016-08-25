@@ -383,6 +383,8 @@ public:
     void setToolButtonMenuOpened(QToolButton* button);
     QToolButton* getToolButtonMenuOpened() const;
 
+    static bool getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, QPixmap* pixmap);
+
     void connectViewersToViewerCache();
 
     void disconnectViewersFromViewerCache();

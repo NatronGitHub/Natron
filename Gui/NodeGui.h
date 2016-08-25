@@ -481,6 +481,8 @@ public Q_SLOTS:
 
     void refreshKnobLinks();
 
+    void refreshAnimationIcon();
+
     /*initialises the input edges*/
     void initializeInputs();
 
@@ -656,6 +658,7 @@ private:
     typedef std::map<NodeWPtr, LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _animationIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y
     QPoint _updateDistanceSinceLastMagnec; //for x and for y

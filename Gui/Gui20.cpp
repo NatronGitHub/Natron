@@ -843,7 +843,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         QObject::connect( defaultPresetAction, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
 
 
-        const std::list<PluginPresetDescriptor>& presets = internalPlugin->getPresetFiles();
+        const std::vector<PluginPresetDescriptor>& presets = internalPlugin->getPresetFiles();
         if (presets.empty()) {
             // If the node has no presets, just make an action, otherwise make a menu
             pluginsToolButton->setAction(defaultPresetAction);
@@ -859,7 +859,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
             defaultPresetAction->setText(pluginLabel + tr(" (Default)"));
             menu->addAction(defaultPresetAction);
 
-            for (std::list<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+            for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
 
                 QKeySequence presetShortcut;
                 {
@@ -876,18 +876,19 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
                 }
 
                 QString presetLabel = pluginLabel;
-                presetLabel += QLatin1String("(");
+                presetLabel += QLatin1String(" (");
                 presetLabel += it->presetLabel;
                 presetLabel += QLatin1String(")");
 
-
-
                 QAction* presetAction = new QAction(this);
+                QPixmap presetPix;
+                if (getPresetIcon(it->presetFilePath, it->presetIconFile, &presetPix)) {
+                    presetAction->setIcon( presetPix );
+                }
                 presetAction->setShortcut(presetShortcut);
                 presetAction->setShortcutContext(Qt::WidgetShortcut);
                 presetAction->setText(presetLabel);
-                presetAction->setIcon( pluginsToolButton->getMenuIcon() );
-                presetAction->setData(it->presetFilePath);
+                presetAction->setData(it->presetLabel);
                 QObject::connect( presetAction, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
 
                 menu->addAction(presetAction);
@@ -904,6 +905,33 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
 
     return pluginsToolButton;
 } // findOrCreateToolButton
+
+bool
+Gui::getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, QPixmap* pixmap)
+{
+    // Try to search the icon file base name in the directory containing the presets file
+    if (!pixmap) {
+        return false;
+    }
+    QString presetIconFilePath = presetIconFile;
+    QString path = presetFilePath;
+    int foundSlash = path.lastIndexOf(QLatin1Char('/'));
+    if (foundSlash != -1) {
+        path = path.mid(0, foundSlash + 1);
+    }
+    presetIconFilePath = path + presetIconFilePath;
+
+    if (QFile::exists(presetIconFilePath)) {
+        pixmap->load(presetIconFilePath);
+        if (!pixmap->isNull()) {
+            int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+            if ( (std::max( pixmap->width(), pixmap->height() ) != menuSize) && !pixmap->isNull() ) {
+                *pixmap = pixmap->scaled(menuSize, menuSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            }
+        }
+    }
+    return !pixmap->isNull();
+}
 
 std::list<ToolButton*>
 Gui::getToolButtonsOrdered() const

@@ -400,8 +400,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
 
                 // Also check for presets shortcuts
                 bool mustBreak = false;
-                const std::list<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
-                for (std::list<PluginPresetDescriptor>::const_iterator it2 = presets.begin(); it2 != presets.end(); ++it2) {
+                const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+                for (std::vector<PluginPresetDescriptor>::const_iterator it2 = presets.begin(); it2 != presets.end(); ++it2) {
 
                     std::string shortcutKey = plugin->getPluginID().toStdString();
                     shortcutKey += "_preset_";

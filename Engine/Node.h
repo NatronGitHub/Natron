@@ -170,6 +170,8 @@ public:
 
 private:
 
+    void getNodeSerializationFromPresetFile(const std::string& presetFile, NodeSerialization* serialization, std::string* presetsLabel);
+
     void getNodeSerializationFromPresetName(const std::string& presetName, NodeSerialization* serialization);
 
     void loadPresetsInternal(const NodeSerialization& serialization);
@@ -181,6 +183,7 @@ public:
      * This function throws exception in case of error.
      **/
     void loadPresets(const std::string& presetsLabel);
+    void loadPresetsFromFile(const std::string& presetsFile);
 
     void saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods);
 
