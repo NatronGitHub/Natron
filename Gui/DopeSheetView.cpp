@@ -3472,12 +3472,10 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
             if ( !modCASIsShift(e) ) {
                 _imp->model->getSelectionModel()->clearKeyframeSelection();
 
-                DSKnobPtr dsKnob = _imp->hierarchyView->getDSKnobAt( e->pos().y() );
-                if (dsKnob) {
-                    double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+                    /*double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
                     _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, OutputEffectInstancePtr(),
-                                              eTimelineChangeReasonDopeSheetEditorSeek);
-                }
+                                              eTimelineChangeReasonDopeSheetEditorSeek);*/
+
             }
 
             _imp->selectionRect.x1 = _imp->selectionRect.x2 = clickZoomCoords.x();
