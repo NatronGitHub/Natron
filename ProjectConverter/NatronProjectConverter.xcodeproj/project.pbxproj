@@ -597,6 +597,19 @@
 			settings = {
 			};
 		};
+		FE689290CA1E833E7D4B5792 = {
+			isa = PBXFileReference;
+			name = "yamlcpp";
+			path = "../libs/yaml-cpp/build/Debug/libyamlcpp.a";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8317209CF73629982D16BA00 = {
+			fileRef = "FE689290CA1E833E7D4B5792";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
 		D0A1AADFEA73F78641C682A5 = {
 			isa = PBXFileReference;
 			name = "CoreServices.framework";
@@ -827,6 +840,7 @@
 				"963BC00D89D3A6ED1846C3DE",
 				"41D37402434E9FE9597097A8",
 				"4DC8150AC22A9A59071A41E4",
+				"FE689290CA1E833E7D4B5792",
 				"D0A1AADFEA73F78641C682A5",
 				"8D02019D6DCFA44A4B4FFE2C",
 				"2B9F5257240B5626E8434A44",
@@ -890,6 +904,7 @@
 				"E8141D3BFA13BAAD19639E35",
 				"8CCDAE6D844311DD7DDDC8DC",
 				"8BB2D32A00644F84D18AEA3E",
+				"8317209CF73629982D16BA00",
 				"9C3DD8DCBC0821F151F42E8D",
 				"321734D6862B8813BF300FCE",
 				"AFC8D705CF8FF7878AA3265A",
@@ -970,6 +985,7 @@
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/qhttpserver/src/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/hoedown/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/libtess/build/Debug/",
+						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/yaml-cpp/build/Debug/",
 						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
 						"-ldl",
 						"-L/opt/local/lib",
@@ -1058,6 +1074,7 @@
 					"../libs/qhttpserver/src",
 					"../libs/hoedown/src",
 					"../libs/libtess",
+					"../libs/yaml-cpp/include",
 					"/opt/osmesa/include",
 					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
 					"/opt/local/include/shiboken-2.7",
@@ -1107,6 +1124,8 @@
 					"/Users/alexandre/development/Natron/libs/hoedown/build/Debug/",
 					"/Users/alexandre/development/Natron/ProjectConverter/../libs/libtess/build/Debug/",
 					"/Users/alexandre/development/Natron/libs/libtess/build/Debug/",
+					"/Users/alexandre/development/Natron/ProjectConverter/../libs/yaml-cpp/build/Debug/",
+					"/Users/alexandre/development/Natron/libs/yaml-cpp/build/Debug/",
 					"/System/Library/Frameworks/",
 					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
 					"/opt/local/lib",
@@ -1232,6 +1251,7 @@
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/qhttpserver/src/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/hoedown/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/libtess/build/Debug/",
+						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/yaml-cpp/build/Debug/",
 						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
 						"-ldl",
 						"-L/opt/local/lib",
@@ -1328,6 +1348,7 @@
 					"../libs/qhttpserver/src",
 					"../libs/hoedown/src",
 					"../libs/libtess",
+					"../libs/yaml-cpp/include",
 					"/opt/osmesa/include",
 					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
 					"/opt/local/include/shiboken-2.7",
@@ -1377,6 +1398,8 @@
 					"/Users/alexandre/development/Natron/libs/hoedown/build/Debug/",
 					"/Users/alexandre/development/Natron/ProjectConverter/../libs/libtess/build/Debug/",
 					"/Users/alexandre/development/Natron/libs/libtess/build/Debug/",
+					"/Users/alexandre/development/Natron/ProjectConverter/../libs/yaml-cpp/build/Debug/",
+					"/Users/alexandre/development/Natron/libs/yaml-cpp/build/Debug/",
 					"/System/Library/Frameworks/",
 					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
 					"/opt/local/lib",
@@ -1502,6 +1525,7 @@
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/qhttpserver/src/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/hoedown/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/libtess/build/Debug/",
+						"-L/Users/alexandre/development/Natron/ProjectConverter/../libs/yaml-cpp/build/Debug/",
 						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
 						"-ldl",
 						"-L/opt/local/lib",

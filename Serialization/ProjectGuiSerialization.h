@@ -47,11 +47,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 
-#include "Engine/RectD.h"
-#include "Engine/ProjectSerialization.h"
-#include "Gui/NodeGuiSerialization.h"
-#include "Gui/NodeBackdropSerialization.h"
-#include "Gui/GuiFwd.h"
+#include "Serialization/RectDSerialization.h"
+#include "Serialization/ProjectSerialization.h"
+#include "Serialization/NodeGuiSerialization.h"
+#include "Serialization/NodeBackdropSerialization.h"
 
 
 
@@ -601,7 +600,25 @@ class ProjectGuiSerialization
     // The boost version passed to load(), this is not used on save
     unsigned int _version;
 
-    friend class ::boost::serialization::access;
+
+    ProjectGuiSerialization()
+    : _serializedNodes()
+    , _layoutSerialization()
+    , _viewersData()
+    , _histograms()
+    , _backdrops()
+    , _openedPanelsOrdered()
+    , _version(0)
+    {
+    }
+
+    ~ProjectGuiSerialization()
+    {
+    }
+
+
+
+    void convertToProjectSerialization(ProjectSerialization* serialization) const;
 
     template<class Archive>
     void save(Archive & ar,
@@ -665,68 +682,7 @@ class ProjectGuiSerialization
         _version = version;
     }
 
-public:
 
-    ProjectGuiSerialization()
-        : _serializedNodes()
-        , _layoutSerialization()
-        , _viewersData()
-        , _histograms()
-        , _backdrops()
-        , _openedPanelsOrdered()
-        , _version(0)
-    {
-    }
-
-    ~ProjectGuiSerialization()
-    {
-        _serializedNodes.clear();
-    }
-
-    void initialize(const ProjectGui* projectGui);
-
-    const std::list< NodeGuiSerialization > & getSerializedNodesGui() const
-    {
-        return _serializedNodes;
-    }
-
-    const GuiLayoutSerialization & getGuiLayout() const
-    {
-        return _layoutSerialization;
-    }
-
-    const std::map<std::string, ViewerData > & getViewersProjections() const
-    {
-        return _viewersData;
-    }
-
-    const std::list<std::string> & getHistograms() const
-    {
-        return _histograms;
-    }
-
-    const std::list<NodeBackdropSerialization> & getBackdrops() const
-    {
-        return _backdrops;
-    }
-
-    const std::list<std::string> & getOpenedPanels() const
-    {
-        return _openedPanelsOrdered;
-    }
-
-
-    unsigned int getVersion() const
-    {
-        return _version;
-    }
-
-    const std::list<boost::shared_ptr<PythonPanelSerialization> >& getPythonPanels() const
-    {
-        return _pythonPanels;
-    }
-
-    void convertToProjectSerialization(ProjectSerialization* serialization) const;
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };

@@ -54,7 +54,23 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER;
 
-#pragma message WARN("Missing BezierCPSerialization class")
+class BezierCPSerialization
+: public SerializationObjectBase
+{
+public:
+
+    BezierCPSerialization()
+    {
+
+    }
+
+    virtual ~BezierCPSerialization()
+    {
+
+    }
+};
+
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 template<class Archive>
 void

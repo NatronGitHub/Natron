@@ -31,24 +31,26 @@
 #include <vector>
 
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
 #ifndef Q_MOC_RUN
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/scoped_ptr.hpp>
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+#endif
 GCC_DIAG_ON(unused-parameter)
 GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
-#endif
+
 
 
 #include "Serialization/CurveSerialization.h"
@@ -320,7 +322,19 @@ struct ValueSerializationStorage
     // Enabled state is serialized per-dimension
     bool enabled;
 
-    ValueSerializationStorage();
+
+    ValueSerializationStorage()
+    : type(eSerializationValueVariantTypeNone)
+    , value()
+    , defaultValue()
+    , animationCurve()
+    , expression()
+    , expresionHasReturnVariable(false)
+    , slaveMasterLink()
+    , enabled(true)
+    {
+        
+    }
 };
 
 class KnobSerializationBase;
@@ -339,8 +353,17 @@ struct ValueSerialization
 
 
     ValueSerialization(KnobSerializationBase* serialization,
-                       const std::string& typeName,
-                       int dimension = -1);
+                                           const std::string& typeName,
+                                           int dimension = - 1)
+    : _version(VALUE_SERIALIZATION_VERSION)
+    , _serialization(serialization)
+    , _typeName(typeName)
+    , _dimension(dimension)
+    , _value()
+    {
+        
+    }
+
 
     // For backward compatibility when the label was not yet in the ChoiceExtraData class
     void setChoiceExtraLabel(const std::string& label);
@@ -580,7 +603,6 @@ public:
 class KnobSerialization
     : public KnobSerializationBase
 {
-    Q_DECLARE_TR_FUNCTIONS(KnobSerialization)
 
 public:
 
@@ -656,7 +678,6 @@ public:
     virtual void setChoiceExtraString(const std::string& label) OVERRIDE FINAL;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
@@ -973,7 +994,7 @@ public:
     bool _isOpened; //< only for groups
 
 
-    GroupKnobSerialization(const KnobIPtr& knob = KnobIPtr())
+    GroupKnobSerialization()
     : _children()
     , _typeName()
     , _name()
@@ -982,9 +1003,7 @@ public:
     , _isSetAsTab(false)
     , _isOpened(false)
     {
-        if (knob) {
-            knob->toSerialization(this);
-        }
+
     }
 
     virtual ~GroupKnobSerialization()

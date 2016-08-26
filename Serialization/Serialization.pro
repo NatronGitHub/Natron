@@ -19,12 +19,18 @@
 TARGET = Serialization
 TEMPLATE = lib
 CONFIG += staticlib
-CONFIG -= qt
+QT += core network gui opengl
+greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
+
+CONFIG += moc
+CONFIG += boost qt python
 
 include(../global.pri)
 include(../../libs.pri)
 include(../../config.pri)
 
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../Global
 
 HEADERS += \
     BezierSerialization.h \

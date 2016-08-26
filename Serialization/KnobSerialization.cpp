@@ -32,18 +32,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
-                                       const std::string& typeName,
-                                       int dimension)
-    : _version(VALUE_SERIALIZATION_VERSION)
-    , _serialization(serialization)
-    , _typeName(typeName)
-    , _dimension(dimension)
-    , _value()
-{
-   
-}
-
 ValueSerializationStorage::ValueSerializationStorage()
 : type(eSerializationValueVariantTypeNone)
 , value()

@@ -24,6 +24,8 @@
 
 #include "ProjectGuiSerialization.h"
 
+#include <QStringList>
+
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/NodeGuiSerialization.h"

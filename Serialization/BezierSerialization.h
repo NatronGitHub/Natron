@@ -28,7 +28,7 @@
 #include "Global/Macros.h"
 
 
-
+#include "Serialization/SerializationBase.h"
 #include "Serialization/RotoDrawableItemSerialization.h"
 #include "Serialization/BezierCPSerialization.h"
 
@@ -42,7 +42,8 @@
 NATRON_NAMESPACE_ENTER;
 
 class BezierSerialization
-    : public RotoDrawableItemSerialization
+    : public SerializationObjectBase
+    , public RotoDrawableItemSerialization
 {
 
 public:

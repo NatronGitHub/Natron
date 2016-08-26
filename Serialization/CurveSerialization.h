@@ -27,6 +27,7 @@
 
 #include "Global/Macros.h"
 
+#include <list>
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 #include "Curve.h"
@@ -41,6 +42,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/serialization/list.hpp>
 #include <boost/serialization/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)

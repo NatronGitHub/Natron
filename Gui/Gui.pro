@@ -155,7 +155,6 @@ SOURCES += \
     Menu.cpp \
     MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
-    NodeBackdropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -180,7 +179,6 @@ SOURCES += \
     PreferencesPanel.cpp \
     PreviewThread.cpp \
     ProjectGui.cpp \
-    ProjectGuiSerialization.cpp \
     ProgressPanel.cpp \
     ProgressTaskInfo.cpp \
     PropertiesBinWrapper.cpp \
@@ -299,7 +297,6 @@ HEADERS += \
     Menu.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
-    NodeBackdropSerialization.h \
     NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \
@@ -307,7 +304,6 @@ HEADERS += \
     NodeGraphTextItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
-    NodeGuiSerialization.h \
     NodeSettingsPanel.h \
     NodeViewerContext.h \
     PanelWidget.h \
@@ -315,7 +311,6 @@ HEADERS += \
     PreferencesPanel.h \
     PreviewThread.h \
     ProjectGui.h \
-    ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
     ProgressPanel.h \
     ProgressTaskInfo.h \

@@ -287,6 +287,13 @@
 			remoteGlobalIDString = DCE44EEBD5943F419495A13F;
 			remoteInfo = tess;
 		};
+		AC7915111D70394D00CD424C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC79150C1D70394D00CD424C;
+			remoteInfo = yamlcpp;
+		};
 		ACD67BFD1CEC9D0900DD2CFE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */;
@@ -414,6 +421,7 @@
 		AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Serialization.xcodeproj; path = Serialization/Serialization.xcodeproj; sourceTree = "<group>"; };
 		AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronProjectConverter.xcodeproj; path = ProjectConverter/NatronProjectConverter.xcodeproj; sourceTree = "<group>"; };
 		AC77629C1D1ACE460006A58E /* tess.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = tess.xcodeproj; path = libs/libtess/tess.xcodeproj; sourceTree = "<group>"; };
+		AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = yamlcpp.xcodeproj; path = "libs/yaml-cpp/yamlcpp.xcodeproj"; sourceTree = "<group>"; };
 		ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = hoedown.xcodeproj; path = libs/hoedown/hoedown.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -550,6 +558,7 @@
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
+				AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */,
 				AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
 			);
@@ -668,6 +677,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AC79150A1D70394D00CD424C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC7915121D70394D00CD424C /* libyamlcpp.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		ACD67BF81CEC9D0900DD2CFE /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -770,6 +787,10 @@
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
+				},
+				{
+					ProductGroup = AC79150A1D70394D00CD424C /* Products */;
+					ProjectRef = AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -879,6 +900,13 @@
 			fileType = archive.ar;
 			path = libtess.a;
 			remoteRef = AC7762A21D1ACE460006A58E /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC7915121D70394D00CD424C /* libyamlcpp.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libyamlcpp.a;
+			remoteRef = AC7915111D70394D00CD424C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		ACD67BFE1CEC9D0900DD2CFE /* libhoedown.a */ = {
