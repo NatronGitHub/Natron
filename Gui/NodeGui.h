@@ -507,7 +507,7 @@ public Q_SLOTS:
 
     void onStreamWarningsChanged();
 
-    void onNodeExtraLabelChanged(const QString & label);
+    void refreshNodeText();
 
     void onSwitchInputActionTriggered();
 
@@ -550,8 +550,6 @@ private:
     void refreshEdgesVisibilityInternal(bool hovered);
 
     void refreshPositionEnd(double x, double y);
-
-    void setNameItemHtml(const QString & name, const QString & label);
 
     void togglePreview_internal(bool refreshPreview = true);
 
@@ -656,7 +654,6 @@ private:
     QPoint _updateDistanceSinceLastMagnec; //for x and for y
     QPointF _distanceSinceLastMagnec; //for x and for y
     QPointF _magnecStartingPos; //for x and for y
-    QString _nodeLabel;
     QString _channelsExtraLabel;
     boost::weak_ptr<NodeGui> _parentMultiInstance;
 

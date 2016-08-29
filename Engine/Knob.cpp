@@ -4919,6 +4919,11 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             TextExtraData* extraData = new TextExtraData;
             isString->getAnimation().save(&extraData->keyframes);
             serialization->_extraData.reset(extraData);
+            extraData->fontFamily = isString->getFontFamily();
+            extraData->fontSize = isString->getFontSize();
+            isString->getFontColor(&extraData->fontColor[0], &extraData->fontColor[1], &extraData->fontColor[2]);
+            extraData->italicActivated = isString->getItalicActivated();
+            extraData->boldActivated = isString->getBoldActivated();
         }
         if (serialization->_isUserKnob) {
             if (isString) {
@@ -4973,11 +4978,32 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_mustSerialize = true;
         if (!serialization->_isUserKnob && !serialization->_visibilityChanged && !serialization->_masterIsAlias &&
             !serialization->_hasViewerInterface) {
-            bool mustSerializeDimension = false;
+            bool mustSerialize = false;
             for (std::size_t i = 0; i < serialization->_values.size(); ++i) {
-                mustSerializeDimension |= serialization->_values[i]._mustSerialize;
+                mustSerialize |= serialization->_values[i]._mustSerialize;
             }
-            serialization->_mustSerialize = mustSerializeDimension;
+
+            if (!mustSerialize) {
+                // Check if there are extra data
+                {
+                    const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
+                    if (data) {
+                        if (!data->keyframes.empty() || data->fontFamily != NATRON_FONT || data->fontSize != 6 || data->fontColor[0] != 0 || data->fontColor[1] != 0 || data->fontColor[2] != 0) {
+                            mustSerialize = true;
+                        }
+                    }
+                }
+                {
+                    const ParametricExtraData* data = dynamic_cast<const ParametricExtraData*>(serialization->_extraData.get());
+                    if (data) {
+                        if (!data->parametricCurves.empty()) {
+                            mustSerialize = true;
+                        }
+                    }
+                }
+
+            }
+            serialization->_mustSerialize = mustSerialize;
         }
     } // groupSerialization
 } // KnobHelper::toSerialization
@@ -5050,7 +5076,11 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         if (data) {
             isString->loadAnimation(data->keyframes);
         }
-
+        isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
+        isString->setFontFamily(data->fontFamily);
+        isString->setFontSize(data->fontSize);
+        isString->setItalicActivated(data->italicActivated);
+        isString->setBoldActivated(data->boldActivated);
     }
 
     // Load parametric parameter's curves

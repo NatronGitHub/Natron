@@ -476,7 +476,7 @@ public:
 
     boost::weak_ptr<KnobInt> frameIncrKnob;
     KnobPageWPtr nodeSettingsPage;
-    KnobStringWPtr nodeLabelKnob;
+    KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
     boost::weak_ptr<KnobBool> previewEnabledKnob;
     boost::weak_ptr<KnobBool> disableNodeKnob;
     boost::weak_ptr<KnobChoice> openglRenderingEnabledKnob;
@@ -943,7 +943,7 @@ Node::load(const CreateNodeArgs& args)
     }
 
     /*if (isMultiInstanceChild && !args.serialization) {
-        updateEffectLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
+        updateEffectSubLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
      }*/
     restoreSublabel();
 
@@ -2629,39 +2629,46 @@ Node::restoreNodeToDefaultState()
 void
 Node::restoreSublabel()
 {
+
+    KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+    if (!sublabelKnob) {
+        return;
+    }
+    KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
+    _imp->ofxSubLabelKnob = sublabelKnobIsString;
+    if (!sublabelKnobIsString) {
+        return;
+    }
     //Check if natron custom tags are present and insert them if needed
     /// If the node has a sublabel, restore it in the label
     KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-
-    if (labelKnob) {
-        QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
-        int foundNatronCustomTag = labeltext.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-        if (foundNatronCustomTag == -1) {
-            KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
-            if (sublabelKnob) {
-                KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
-                if (sublabelKnobIsString) {
-                    QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
-                    if ( !sublabel.isEmpty() ) {
-                        int fontEndTagFound = labeltext.lastIndexOf( QString::fromUtf8(kFontEndTag) );
-                        if (fontEndTagFound == -1) {
-                            labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                            labeltext.append( QLatin1Char('(') + sublabel + QLatin1Char(')') );
-                            labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
-                        } else {
-                            QString toAppend( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                            toAppend += QLatin1Char('(');
-                            toAppend += sublabel;
-                            toAppend += QLatin1Char(')');
-                            toAppend += QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
-                            labeltext.insert(fontEndTagFound, toAppend);
-                        }
-                        labelKnob->setValue( labeltext.toStdString() );
-                    }
-                }
-            }
-        }
+    if (!labelKnob) {
+        return;
     }
+
+    /*
+    QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
+    int foundNatronCustomTag = labeltext.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+    if (foundNatronCustomTag == -1) {
+        QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
+        if ( !sublabel.isEmpty() ) {
+            int fontEndTagFound = labeltext.lastIndexOf( QString::fromUtf8(kFontEndTag) );
+            if (fontEndTagFound == -1) {
+                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+                labeltext.append( QLatin1Char('(') + sublabel + QLatin1Char(')') );
+                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
+            } else {
+                QString toAppend( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+                toAppend += QLatin1Char('(');
+                toAppend += sublabel;
+                toAppend += QLatin1Char(')');
+                toAppend += QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
+                labeltext.insert(fontEndTagFound, toAppend);
+            }
+            labelKnob->setValue( labeltext.toStdString() );
+        }
+    }*/
+
 }
 
 void
@@ -8350,10 +8357,9 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
             }
         }
     } else if ( _imp->effect->isWriter() ) {
-        KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
         KnobOutputFilePtr isFile = toKnobOutputFile(fileKnob);
-        if (isFile && sublabelKnob) {
-            KnobStringBasePtr isString = toKnobStringBase(sublabelKnob);
+        if (isFile && _imp->ofxSubLabelKnob.lock()) {
+            KnobStringBasePtr isString = _imp->ofxSubLabelKnob.lock();
 
             std::string pattern = isFile->getValue();
             if (isString) {
@@ -9099,6 +9105,18 @@ Node::refreshIdentityState()
     Q_EMIT refreshIdentityStateRequested();
 }
 
+KnobStringPtr
+Node::getExtraLabelKnob() const
+{
+    return _imp->nodeLabelKnob.lock();
+}
+
+KnobStringPtr
+Node::getOFXSubLabelKnob() const
+{
+    return _imp->ofxSubLabelKnob.lock();
+}
+
 /*
    This is called AFTER the instanceChanged action has been called on the plug-in
  */
@@ -9151,19 +9169,8 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                 (*it)->computeHashRecursive(markedNodes);
             }
         }
-    } else if ( what == _imp->nodeLabelKnob.lock() ) {
-        Q_EMIT nodeExtraLabelChanged( QString::fromUtf8( _imp->nodeLabelKnob.lock()->getValue().c_str() ) );
-    } else if (what->getName() == kNatronOfxParamStringSublabelName) {
-        //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
-        KnobStringPtr strKnob = toKnobString(what);
-        if (strKnob) {
-            QString operation = QString::fromUtf8( strKnob->getValue().c_str() );
-            if ( !operation.isEmpty() ) {
-                operation.prepend( QString::fromUtf8("(") );
-                operation.append( QString::fromUtf8(")") );
-            }
-            replaceCustomDataInlabel(operation);
-        }
+    } else if ( what == _imp->nodeLabelKnob.lock() || what == _imp->ofxSubLabelKnob.lock() ) {
+        Q_EMIT nodeExtraLabelChanged();
     } else if ( what == _imp->hideInputs.lock() ) {
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
@@ -9627,40 +9634,6 @@ Node::hasAtLeastOneChannelToProcess() const
     return true;
 }
 
-void
-Node::replaceCustomDataInlabel(const QString & data)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-    if (!labelKnob) {
-        return;
-    }
-    QString label = QString::fromUtf8( labelKnob->getValue().c_str() );
-    ///Since the label is html encoded, find the text's start
-    int foundFontTag = label.indexOf( QString::fromUtf8("<font") );
-    bool htmlPresent =  (foundFontTag != -1);
-    ///we're sure this end tag is the one of the font tag
-    QString endFont( QString::fromUtf8("\">") );
-    int endFontTag = label.indexOf(endFont, foundFontTag);
-    QString customTagStart( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-    QString customTagEnd( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
-    int foundNatronCustomDataTag = label.indexOf(customTagStart, endFontTag == -1 ? 0 : endFontTag);
-    if (foundNatronCustomDataTag != -1) {
-        ///remove the current custom data
-        int foundNatronEndTag = label.indexOf(customTagEnd, foundNatronCustomDataTag);
-        assert(foundNatronEndTag != -1);
-
-        foundNatronEndTag += customTagEnd.size();
-        label.remove(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
-    }
-
-    int i = htmlPresent ? endFontTag + endFont.size() : 0;
-    label.insert(i, customTagStart);
-    label.insert(i + customTagStart.size(), data);
-    label.insert(i + customTagStart.size() + data.size(), customTagEnd);
-    labelKnob->setValue( label.toStdString() );
-}
-
 KnobBoolPtr
 Node::getDisabledKnob() const
 {
@@ -9939,13 +9912,12 @@ Node::isBackdropNode() const
 }
 
 void
-Node::updateEffectLabelKnob(const QString & name)
+Node::updateEffectSubLabelKnob(const QString & name)
 {
     if (!_imp->effect) {
         return;
     }
-    KnobIPtr knob = getKnobByName(kNatronOfxParamStringSublabelName);
-    KnobStringPtr strKnob = toKnobString(knob);
+    KnobStringPtr strKnob = _imp->ofxSubLabelKnob.lock();
     if (strKnob) {
         strKnob->setValue( name.toStdString() );
     }

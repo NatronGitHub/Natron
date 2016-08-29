@@ -179,6 +179,21 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
                 }
                 em << YAML_NAMESPACE::EndSeq;
             }
+            if (std::abs(textData->fontColor[0] - 0.) > 0.01 || std::abs(textData->fontColor[1] - 0.) > 0.01 || std::abs(textData->fontColor[2] - 0.) > 0.01) {
+                em << YAML_NAMESPACE::Key << "FontColor" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << textData->fontColor[0] << textData->fontColor[1] << textData->fontColor[2] << YAML_NAMESPACE::EndSeq;
+            }
+            if (textData->fontSize != 6) {
+                em << YAML_NAMESPACE::Key << "FontSize" << YAML_NAMESPACE::Value << textData->fontSize;
+            }
+            if (textData->fontFamily != NATRON_FONT) {
+                em << YAML_NAMESPACE::Key << "Font" << YAML_NAMESPACE::Value << textData->fontFamily;
+            }
+            if (textData->italicActivated) {
+                propNames.push_back("Italic");
+            }
+            if (textData->boldActivated) {
+                propNames.push_back("Bold");
+            }
         }
     }
 
@@ -450,8 +465,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["TextAnim"]) {
         YAML_NAMESPACE::Node curveNode = node["TextAnim"];
-        TextExtraData *data = new TextExtraData;
-        _extraData.reset(data);
+        TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
         // If type = 0 we expect a int, otherwise a string
         int type = 0;
         std::pair<int, std::string> p;
@@ -465,6 +479,27 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
                 data->keyframes.insert(p);
             }
         }
+    }
+
+    if (node["FontColor"]) {
+        YAML_NAMESPACE::Node n = node["FontColor"];
+        if (n.size() != 3) {
+            throw YAML_NAMESPACE::InvalidNode();
+        }
+        TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
+        data->fontColor[0] = n[0].as<double>();
+        data->fontColor[1] = n[1].as<double>();
+        data->fontColor[2] = n[2].as<double>();
+
+    }
+    if (node["FontSize"]) {
+        TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
+        data->fontSize = node["FontSize"].as<int>();
+    }
+
+    if (node["Font"]) {
+        TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
+        data->fontFamily = node["Font"].as<std::string>();
     }
 
     if (node["NDims"]) {
@@ -597,10 +632,18 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
             } else if (prop == "UseOverlay") {
                 TypeExtraData* data = getOrCreateExtraData<TypeExtraData>(_extraData);
                 data->useHostOverlayHandle = true;
+            } else if (prop == "Italic") {
+                TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
+                data->italicActivated = true;
+            } else if (prop == "Bold") {
+                TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
+                data->boldActivated = true;
             } else {
                 assert(false);
                 std::cerr << "WARNING: Unrecognized parameter property " << prop << std::endl;
             }
+
+
         }
 
     }

@@ -1033,11 +1033,103 @@ public:
         return !_multiLine;
     }
 
+    int getFontSize() const
+    {
+        return _fontSize;
+    }
+
+    void setFontSize(int size)
+    {
+        _fontSize = size;
+    }
+
+    std::string getFontFamily() const
+    {
+        return _fontFamily;
+    }
+
+    void setFontFamily(const std::string& family) {
+        _fontFamily = family;
+    }
+
+    void getFontColor(double* r, double* g, double* b) const
+    {
+        *r = _fontColor[0];
+        *g = _fontColor[1];
+        *b = _fontColor[2];
+    }
+
+    void setFontColor(double r, double g, double b)
+    {
+        _fontColor[0] = r;
+        _fontColor[1] = g;
+        _fontColor[2] = b;
+    }
+
+    bool getItalicActivated() const
+    {
+        return _italicActivated;
+    }
+
+    void setItalicActivated(bool b) {
+        _italicActivated = b;
+    }
+
+    bool getBoldActivated() const
+    {
+        return _boldActivated;
+    }
+
+    void setBoldActivated(bool b) {
+        _boldActivated = b;
+    }
+
     /**
      * @brief Relevant for multi-lines with rich text enables. It tells if
      * the string has content without the html tags
      **/
     bool hasContentWithoutHtmlTags();
+
+    static bool parseFont(const QString & s, int *fontSize, QString* fontFamily, bool* isBold, bool* isItalic, double* r, double *g, double* b);
+
+    /**
+     * @brief This is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
+     * of the font size.
+     **/
+    static void findReplaceColorName(QString& text, double r, double g, double b);
+
+    /**
+     * @brief Make a html friendly font tag from font properties
+     **/
+    static QString makeFontTag(const QString& family, int fontSize, double r, double g, double b);
+
+    /**
+     * @brief Surround the given text by the given font tag
+     **/
+    static QString decorateTextWithFontTag(const QString& family, int fontSize, double r, double g, double b, bool isBold, bool isItalic, const QString& text);
+
+    /**
+     * @brief Remove any custom Natron html tag content from the given text and returned a stripped version of it.
+     **/
+    static QString removeNatronHtmlTag(QString text);
+
+    /**
+     * @brief Get the content in between custom Natron html tags if any
+     **/
+    static QString getNatronHtmlTagContent(QString text);
+
+    /**
+     * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
+     * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
+     **/
+    static QString removeAutoAddedHtmlTags(QString text, bool removeNatronTag = true);
+
+    QString decorateStringWithCurrentState(const QString& str);
+
+    /**
+     * @brief Same as getValue() but decorates the string with the current font state. Only useful if rich text has been enabled
+     **/
+    QString getValueDecorated(double time, ViewSpec view);
 
 private:
 
@@ -1051,6 +1143,11 @@ private:
     bool _customHtmlText;
     bool _isLabel;
     bool _isCustom;
+    int _fontSize;
+    bool _boldActivated;
+    bool _italicActivated;
+    std::string _fontFamily;
+    double _fontColor[3];
 };
 
 inline KnobStringPtr

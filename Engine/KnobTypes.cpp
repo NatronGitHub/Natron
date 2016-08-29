@@ -47,6 +47,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
+#include "Engine/ColorParser.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/Image.h"
@@ -1228,7 +1229,13 @@ KnobString::KnobString(const KnobHolderPtr& holder,
     , _customHtmlText(false)
     , _isLabel(false)
     , _isCustom(false)
+    , _fontSize(6)
+    , _boldActivated(false)
+    , _italicActivated(false)
+    , _fontFamily(NATRON_FONT)
+    , _fontColor()
 {
+    _fontColor[0] = _fontColor[1] = _fontColor[2] = 0.;
 }
 
 KnobString::~KnobString()
@@ -1253,6 +1260,84 @@ KnobString::typeName() const
 {
     return typeNameStatic();
 }
+
+bool
+KnobString::parseFont(const QString & label, int* fontSize, QString* fontFamily, bool* isBold, bool* isItalic, double* r, double *g, double* b)
+{
+    assert(isBold && isItalic && r && g && b && fontFamily && fontSize);
+
+    *isBold = false;
+    *isItalic = false;
+    *fontSize = 0;
+    *r = *g = *b = 0.;
+
+    QString toFind = QString::fromUtf8(kFontSizeTag);
+    int startFontTag = label.indexOf(toFind);
+
+    assert(startFontTag != -1);
+    if (startFontTag == -1) {
+        return false;
+    }
+    startFontTag += toFind.size();
+    int j = startFontTag;
+    QString sizeStr;
+    while ( j < label.size() && label.at(j).isDigit() ) {
+        sizeStr.push_back( label.at(j) );
+        ++j;
+    }
+
+    toFind = QString::fromUtf8(kFontFaceTag);
+    startFontTag = label.indexOf(toFind, startFontTag);
+    assert(startFontTag != -1);
+    if (startFontTag == -1) {
+        return false;
+    }
+    startFontTag += toFind.size();
+    j = startFontTag;
+    QString faceStr;
+    while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
+        faceStr.push_back( label.at(j) );
+        ++j;
+    }
+
+    *fontSize = sizeStr.toInt();
+    *fontFamily = faceStr;
+
+    {
+        toFind = QString::fromUtf8(kBoldStartTag);
+        int foundBold = label.indexOf(toFind);
+        if (foundBold != -1) {
+            *isBold = true;
+        }
+    }
+
+    {
+        toFind = QString::fromUtf8(kItalicStartTag);
+        int foundItalic = label.indexOf(toFind);
+        if (foundItalic != -1) {
+            *isItalic = true;
+        }
+    }
+    {
+        toFind = QString::fromUtf8(kFontColorTag);
+        int foundColor = label.indexOf(toFind);
+        if (foundColor != -1) {
+            foundColor += toFind.size();
+            QString currentColor;
+            int j = foundColor;
+            while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
+                currentColor.push_back( label.at(j) );
+                ++j;
+            }
+            int red, green, blue;
+            ColorParser::parseColor(currentColor, &red, &green, &blue);
+            *r = red / 255.0;
+            *g = green / 255.0;
+            *b = blue / 255.0;
+        }
+    }
+    return true;
+} // KnobString::parseFont
 
 bool
 KnobString::hasContentWithoutHtmlTags()
@@ -1298,6 +1383,218 @@ KnobString::hasContentWithoutHtmlTags()
     }
 
     return true;
+}
+
+void
+KnobString::findReplaceColorName(QString& text,
+                                double r, double g, double b)
+{
+    //find the first font tag
+    QString toFind = QString::fromUtf8(kFontSizeTag);
+    int i = text.indexOf(toFind);
+
+    QString colorName = ColorParser::getColorName(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+
+    if (i != -1) {
+        toFind = QString::fromUtf8(kFontColorTag);
+        int foundColorTag = text.indexOf(toFind, i);
+        if (foundColorTag != -1) {
+            foundColorTag += toFind.size();
+            QString currentColor;
+            int j = foundColorTag;
+            while ( j < text.size() && text.at(j) != QLatin1Char('"') ) {
+                currentColor.push_back( text.at(j) );
+                ++j;
+            }
+            text.remove( foundColorTag, currentColor.size() );
+            text.insert( foundColorTag, colorName);
+        } else {
+            text.insert( i, QString::fromUtf8(kFontColorTag) );
+            text.insert( i + toFind.size(), colorName + QString::fromUtf8("\"") );
+        }
+    }
+}
+
+QString
+KnobString::removeNatronHtmlTag(QString text)
+{
+    // We also remove any custom data added by natron so the user doesn't see it
+    int startCustomData = text.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+
+    if (startCustomData != -1) {
+
+        // Found start tag, now find end tag and remove what's in-between
+        QString endTag( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
+        int endCustomData = text.indexOf(endTag, startCustomData);
+        assert(endCustomData != -1);
+        if (endCustomData == -1) {
+            return text;
+        }
+        endCustomData += endTag.size();
+        text.remove(startCustomData, endCustomData - startCustomData);
+    }
+
+    return text;
+}
+
+QString
+KnobString::getNatronHtmlTagContent(QString text)
+{
+    QString label = removeAutoAddedHtmlTags(text, false);
+    QString startTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = label.indexOf(startTag);
+
+    if (startCustomData != -1) {
+
+        // Found start tag, now find end tag and get what's in-between
+        QString endTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = label.indexOf(endTag, startCustomData);
+        assert(endCustomData != -1);
+        if (endCustomData == -1) {
+            return label;
+        }
+        label = label.remove( endCustomData, endTag.size() );
+        label = label.remove( startCustomData, startTag.size() );
+    }
+
+    return label;
+}
+
+QString
+KnobString::removeAutoAddedHtmlTags(QString text,
+                                       bool removeNatronTag)
+{
+    // Find font start tag
+    QString toFind = QString::fromUtf8(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    bool foundFontStart = i != -1;
+
+    // Remove bold tag
+    QString boldStr = QString::fromUtf8(kBoldStartTag);
+    int foundBold = text.lastIndexOf(boldStr, i);
+
+    // Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
+    //assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
+
+    if (foundBold != -1) {
+        // We found bold, remove it
+        text.remove( foundBold, boldStr.size() );
+        boldStr = QString::fromUtf8(kBoldEndTag);
+        foundBold = text.lastIndexOf(boldStr);
+        assert(foundBold != -1);
+        if (foundBold == -1) {
+            return text;
+        }
+        text.remove( foundBold, boldStr.size() );
+    }
+
+    // Refresh the index of the font start tag
+    i = text.indexOf(toFind);
+
+    // Remove italic tag
+    QString italStr = QString::fromUtf8(kItalicStartTag);
+    int foundItal = text.lastIndexOf(italStr, i);
+
+    // Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
+    // assert((_italicActivated && foundItal != -1) || (!_italicActivated && foundItal == -1));
+
+    if (foundItal != -1) {
+        // We found italic, remove it
+        text.remove( foundItal, italStr.size() );
+        italStr = QString::fromUtf8(kItalicEndTag);
+        foundItal = text.lastIndexOf(italStr);
+        assert(foundItal != -1);
+        text.remove( foundItal, italStr.size() );
+    }
+
+    // Refresh the index of the font start tag
+    i = text.indexOf(toFind);
+
+    // Find the end of the font declaration start tag
+    QString endTag = QString::fromUtf8("\">");
+    int foundEndTag = text.indexOf(endTag, i);
+    foundEndTag += endTag.size();
+    if (foundFontStart) {
+        //Remove the whole font declaration tag
+        text.remove(i, foundEndTag - i);
+    }
+
+    // Find the font end tag
+    endTag = QString::fromUtf8(kFontEndTag);
+    foundEndTag = text.lastIndexOf(endTag);
+    assert( (foundEndTag != -1 && foundFontStart) || !foundFontStart );
+    if (foundEndTag != -1) {
+        // Remove the font end tag
+        text.remove( foundEndTag, endTag.size() );
+    }
+
+    // We also remove any custom data added by natron so the user doesn't see it
+    if (removeNatronTag) {
+        return removeNatronHtmlTag(text);
+    } else {
+        return text;
+    }
+} // removeAutoAddedHtmlTags
+
+QString
+KnobString::makeFontTag(const QString& family,
+                        int fontSize,
+                        double r, double g, double b)
+{
+    QString colorName = ColorParser::getColorName(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+    return QString::fromUtf8(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+    .arg(fontSize)
+    .arg(colorName)
+    .arg(family);
+}
+
+QString
+KnobString::decorateTextWithFontTag(const QString& family,
+                                    int fontSize,
+                                    double r, double g, double b,
+                                    bool isBold, bool isItalic,
+                                    const QString& text)
+{
+    QString ret = makeFontTag(family, fontSize, r, g, b);
+    if (isBold) {
+        ret += QString::fromUtf8(kBoldStartTag);
+    }
+    if (isItalic) {
+        ret += QString::fromUtf8(kItalicStartTag);
+    }
+    ret += text;
+    if (isBold) {
+        ret += QString::fromUtf8(kBoldEndTag);
+    }
+    if (isItalic) {
+        ret += QString::fromUtf8(kItalicEndTag);
+    }
+
+    ret += QString::fromUtf8(kFontEndTag);
+    return ret;
+}
+
+QString
+KnobString::decorateStringWithCurrentState(const QString& str)
+{
+    QString ret = str;
+    if (!_richText) {
+        return ret;
+    }
+    ret = decorateTextWithFontTag(QString::fromUtf8(_fontFamily.c_str()), _fontSize, _fontColor[0], _fontColor[1], _fontColor[2], _boldActivated, _italicActivated, ret);
+    return ret;
+}
+
+QString
+KnobString::getValueDecorated(double time, ViewSpec view)
+{
+    QString ret;
+    if (isAnimated(0)) {
+        ret = QString::fromUtf8(getValueAtTime(time, 0 , view).c_str());
+    } else {
+        ret = QString::fromUtf8(getValue(0, view).c_str());
+    }
+    return decorateStringWithCurrentState(ret);
 }
 
 void

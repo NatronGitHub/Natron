@@ -73,7 +73,6 @@ public:
     boost::weak_ptr<KnobInt> firstFrameKnob, lastFrameKnob;
     KnobStringWPtr outputNodeNameKnob;
     boost::weak_ptr<KnobChoice> errorBehaviourKnbo;
-    //kNatronOfxParamStringSublabelName to display the project name
     KnobStringWPtr subLabelKnob;
     QMutex dataMutex;
     NodesWList precompInputs;

@@ -23,6 +23,9 @@
 #include <list>
 #include <vector>
 
+#include "Global/Macros.h"
+
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -43,14 +46,16 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/shared_ptr.hpp>
 #endif // NATRON_BOOST_SERIALIZATION_COMPAT
 
-#endif // #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-
-#include "Global/Macros.h"
-
-
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include "yaml.h"
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+#endif // #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+
+
+
+
+
 
 SERIALIZATION_NAMESPACE_ENTER;
 class BezierSerialization;

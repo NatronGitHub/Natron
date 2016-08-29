@@ -232,12 +232,32 @@ class TextExtraData
 {
 public:
     TextExtraData()
-        : TypeExtraData(), label(false),  multiLine(false), richText(false), keyframes() {}
+    : TypeExtraData()
+    , label(false)
+    , multiLine(false)
+    , richText(false)
+    , fontSize(6)
+    , fontFamily(NATRON_FONT)
+    , italicActivated(false)
+    , boldActivated(false)
+    , fontColor()
+    , keyframes()
+    {
+        fontColor[0] = fontColor[1] = fontColor[2] = 0.;
+    }
 
     // User knob only
     bool label;
     bool multiLine;
     bool richText;
+
+    // Non user knob only
+    int fontSize;
+    std::string fontFamily;
+    bool italicActivated;
+    bool boldActivated;
+    double fontColor[3];
+
 
     // Animation keyframes
     std::map<int, std::string> keyframes;

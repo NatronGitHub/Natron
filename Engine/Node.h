@@ -952,6 +952,10 @@ public:
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;
 
+    KnobStringPtr getExtraLabelKnob() const;
+
+    KnobStringPtr getOFXSubLabelKnob() const;
+
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
      * the thread can continue and render normally. If another thread is currently
@@ -1003,12 +1007,6 @@ public:
 
     bool areKeyframesVisibleOnTimeline() const;
 
-    /**
-     * @brief The given label is appended in the node's label but will not be editable
-     * by the user from the settings panel.
-     * If a custom data tag is found, it will replace any custom data.
-     **/
-    void replaceCustomDataInlabel(const QString & data);
 
 private:
 
@@ -1031,7 +1029,7 @@ public:
      * @brief Updates the sub label knob: e.g for the Merge node it corresponds to the
      * operation name currently used and visible on the node
      **/
-    void updateEffectLabelKnob(const QString & name);
+    void updateEffectSubLabelKnob(const QString & name);
 
     /**
      * @brief Returns true if an effect should be able to connect this node.
@@ -1553,7 +1551,7 @@ Q_SIGNALS:
     void disabledKnobToggled(bool disabled);
 
     void streamWarningsChanged();
-    void nodeExtraLabelChanged(QString);
+    void nodeExtraLabelChanged();
 
 
     void mustDequeueActions();

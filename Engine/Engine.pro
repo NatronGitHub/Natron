@@ -86,6 +86,7 @@ SOURCES += \
     Cache.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
+    ColorParser.cpp \
     CreateNodeArgs.cpp \
     Curve.cpp \
     DiskCacheNode.cpp \
@@ -277,6 +278,7 @@ HEADERS += \
     CacheEntry.h \
     CacheEntryHolder.h \
     CoonsRegularization.h \
+    ColorParser.h \
     CreateNodeArgs.h \
     Curve.h \
     CurvePrivate.h \

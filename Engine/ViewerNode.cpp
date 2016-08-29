@@ -1646,6 +1646,7 @@ ViewerNode::initializeKnobs()
         param->setSecretByDefault(true);
         param->setDefaultValue(currentFrame);
         param->setEvaluateOnChange(false);
+        param->setIsPersistent(false);
         param->setValueCenteredInSpinBox(true);
         param->disableSlider();
         _imp->curFrameKnob = param;

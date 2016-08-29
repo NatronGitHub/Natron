@@ -190,7 +190,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _updateDistanceSinceLastMagnec()
     , _distanceSinceLastMagnec()
     , _magnecStartingPos()
-    , _nodeLabel()
     , _parentMultiInstance()
     , _hostOverlay()
     , _undoStack( new QUndoStack() )
@@ -233,7 +232,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(previewKnobToggled()), this, SLOT(onPreviewKnobToggled()) );
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()), this, SLOT(onStreamWarningsChanged()) );
-    QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)), this, SLOT(onNodeExtraLabelChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged()), this, SLOT(refreshNodeText()) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
@@ -269,17 +268,6 @@ NodeGui::initialize(NodeGraph* dag,
     } else if ( internalNode->getEffectInstance()->isBuiltinTrackerNode() ) {
         ensurePanelCreated();
     }
-
-    //Refresh the merge operator icon
-    if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
-        KnobIPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
-        assert(knob);
-        KnobStringPtr strKnob = toKnobString(knob);
-        if (strKnob) {
-            onNodeExtraLabelChanged( QString::fromUtf8( strKnob->getValue().c_str() ) );
-        }
-    }
-
 
     if ( internalNode->makePreviewByDefault() ) {
         ///It calls resize
@@ -385,10 +373,9 @@ NodeGui::restoreStateAfterCreation()
     if ( disabledknob && disabledknob->getValue() ) {
         onDisabledKnobToggled(true);
     }
-    if ( !internalNode->isMultiInstance() ) {
-        _nodeLabel = QString::fromUtf8( internalNode->getNodeExtraLabel().c_str() );
-        replaceLineBreaksWithHtmlParagraph(_nodeLabel);
-    }
+
+    refreshNodeText();
+
     ///Refresh the name in the line edit
     onInternalNameChanged( QString::fromUtf8( internalNode->getLabel().c_str() ) );
     onOutputLayerChanged();
@@ -757,7 +744,12 @@ NodeGui::refreshSize()
 {
     QRectF bbox = boundingRect();
 
-    resize( bbox.width(), bbox.height(), false, !_nodeLabel.isEmpty() );
+    KnobStringPtr extraLabelKnob = getNode()->getExtraLabelKnob();
+    QString label;
+    if (extraLabelKnob) {
+        label = QString::fromUtf8(extraLabelKnob->getValue().c_str());
+    }
+    resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
 }
 
 int
@@ -2751,106 +2743,6 @@ NodeGui::getOutputArrow() const
     return _outputEdge;
 }
 
-void
-NodeGui::setNameItemHtml(const QString & name,
-                         const QString & label)
-{
-    if (!_nameItem) {
-        return;
-    }
-    QString textLabel;
-    textLabel.append( QString::fromUtf8("<div align=\"center\">") );
-
-
-    if ( !label.isEmpty() ) {
-        QString labelCopy = label;
-
-        ///remove any custom data tag natron might have added
-        QString startCustomTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START);
-        int startCustomData = labelCopy.indexOf(startCustomTag);
-        if (startCustomData != -1) {
-            labelCopy.remove( startCustomData, startCustomTag.size() );
-
-            QString endCustomTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
-            int endCustomData = labelCopy.indexOf(endCustomTag, startCustomData);
-            assert(endCustomData != -1);
-            labelCopy.remove( endCustomData, endCustomTag.size() );
-            labelCopy.insert( endCustomData, QString::fromUtf8("<br>") );
-        }
-
-        ///add the node name into the html encoded label
-        int startFontTag = labelCopy.indexOf( QString::fromUtf8("<font size=") );
-        if (startFontTag != -1) {
-            QString toFind = QString::fromUtf8("\">");
-            int endFontTag = labelCopy.indexOf(toFind, startFontTag);
-            if (endFontTag != -1) {
-                endFontTag += toFind.size();
-            }
-
-            QString toInsert = name + _channelsExtraLabel + QString::fromUtf8("<br>");
-            labelCopy.insert(endFontTag == -1 ? 0 : endFontTag, toInsert);
-        } else {
-            labelCopy.prepend( name + _channelsExtraLabel + QString::fromUtf8("<br>") );
-            ///Default to something not too bad
-            /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
-                               .arg(6)
-                               .arg( QColor(Qt::black).name() )
-                               .arg(QApplication::font().family()));
-               labelCopy.prepend(fontTag);
-               labelCopy.append("</font>");*/
-        }
-        textLabel.append(labelCopy);
-    } else {
-        ///Default to something not too bad
-        /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
-                           .arg(6)
-                           .arg( QColor(Qt::black).name() )
-                           .arg(QApplication::font().family()));
-           textLabel.append(fontTag);*/
-        textLabel.append(name);
-        textLabel.append(_channelsExtraLabel);
-        //textLabel.append("</font>");
-    }
-    textLabel.append( QString::fromUtf8("</div>") );
-
-    int startFontTag = textLabel.indexOf( QString::fromUtf8("<font size=") );
-    int endFontTag = -1;
-    if (startFontTag != -1) {
-        startFontTag = textLabel.indexOf(QString::fromUtf8("\">"), startFontTag);
-    }
-
-    QString oldText = _nameItem->toHtml();
-    if (textLabel == oldText) {
-        return;
-    }
-
-    QFont f;
-    QColor color = Qt::black;
-    if (startFontTag != -1) {
-        KnobGuiString::parseFont(textLabel, &f, &color);
-        //Remove font from the HTML
-        textLabel.remove(startFontTag, endFontTag - startFontTag);
-    } else {
-        f = QApplication::font();
-    }
-    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
-    if (!antialias) {
-        f.setStyleStrategy(QFont::NoAntialias);
-    }
-    _nameItem->setDefaultTextColor(color);
-
-    _nameItem->setFont(f);
-
-    _nameItem->setHtml(textLabel);
-    _nameItem->adjustSize();
-
-
-    QRectF bbox = boundingRect();
-    resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
-//    QRectF currentBbox = boundingRect();
-//    QRectF labelBbox = _nameItem->boundingRect();
-//    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );
-} // setNameItemHtml
 
 void
 NodeGui::onOutputLayerChanged()
@@ -2877,49 +2769,101 @@ NodeGui::onOutputLayerChanged()
         return;
     }
     _channelsExtraLabel = extraLayerStr;
-    setNameItemHtml(QString::fromUtf8( getNode()->getLabel().c_str() ), _nodeLabel);
+    refreshNodeText();
 }
 
+
 void
-NodeGui::onNodeExtraLabelChanged(const QString & label)
+NodeGui::refreshNodeText()
 {
     if ( !_graph->getGui() ) {
         return;
     }
     NodePtr node = getNode();
-    _nodeLabel = label;
-    if ( node->isMultiInstance() ) {
-        ///The multi-instances store in the kNatronOfxParamStringSublabelName knob the name of the instance
-        ///Since the "main-instance" is the one displayed on the node-graph we don't want it to display its name
-        ///hence we remove it
-        _nodeLabel = KnobGuiString::removeNatronHtmlTag(_nodeLabel);
-    }
-    replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
-    setNameItemHtml(QString::fromUtf8( node->getLabel().c_str() ), _nodeLabel);
 
-    //For the merge node, set its operator icon
+    KnobStringPtr extraLabelKnob = node->getExtraLabelKnob();
+    KnobStringPtr subLabelKnob = node->getOFXSubLabelKnob();
+
+
+    QString subLabelContent;
+    if (subLabelKnob) {
+        subLabelContent = QString::fromUtf8(subLabelKnob->getValue().c_str());
+    }
+
+    // For the merge node, set its operator icon
     if ( getNode()->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
         assert(_mergeIcon);
-        QString op = KnobGuiString::getNatronHtmlTagContent(label);
-        if  ( !op.isEmpty() ) {
-            //Remove surrounding parenthesis
-            if ( op[0] == QLatin1Char('(') ) {
-                op.remove(0, 1);
-            }
-            if ( op[op.size() - 1] == QLatin1Char(')') ) {
-                op.remove(op.size() - 1, 1);
-            }
-        }
         QPixmap pix;
-        getPixmapForMergeOperator(op, &pix);
+        getPixmapForMergeOperator(subLabelContent, &pix);
         if ( pix.isNull() ) {
             _mergeIcon->setVisible(false);
         } else {
             _mergeIcon->setVisible(true);
             _mergeIcon->setPixmap(pix);
         }
-        refreshSize();
+        subLabelContent.clear();
     }
+
+    QString userAddedText;
+    if (extraLabelKnob) {
+        userAddedText = QString::fromUtf8(extraLabelKnob->getValue().c_str());
+    }
+    QString nodeLabel = QString::fromUtf8(node->getLabel().c_str());
+
+    QString finalText;
+
+    finalText += nodeLabel;
+    finalText += QLatin1Char('\n');
+    if (!subLabelContent.isEmpty()) {
+        finalText += subLabelContent;
+        finalText += QLatin1Char('\n');
+    }
+    if (!_channelsExtraLabel.isEmpty()) {
+        finalText += _channelsExtraLabel;
+        finalText += QLatin1Char('\n');
+    }
+    finalText += userAddedText;
+
+    replaceLineBreaksWithHtmlParagraph(finalText);
+
+    finalText.prepend(QString::fromUtf8("<div align=\"center\">"));
+    finalText.append(QString::fromUtf8("</div>"));
+
+    QString oldText = _nameItem->toHtml();
+    if (finalText == oldText) {
+        // Nothing changed
+        return;
+    }
+
+    QFont f;
+    QColor color;
+    if (extraLabelKnob)  {
+        // Get the font from the label knob
+        f.setFamily(QString::fromUtf8(extraLabelKnob->getFontFamily().c_str()));
+        f.setPointSize(extraLabelKnob->getFontSize());
+        f.setItalic(extraLabelKnob->getItalicActivated());
+        f.setBold(extraLabelKnob->getBoldActivated());
+        double r,g,b;
+        extraLabelKnob->getFontColor(&r, &g, &b);
+        color.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+    } else {
+        f = QApplication::font();
+        color = Qt::black;
+    }
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        f.setStyleStrategy(QFont::NoAntialias);
+    }
+    _nameItem->setDefaultTextColor(color);
+    _nameItem->setFont(f);
+    _nameItem->setHtml(finalText);
+    _nameItem->adjustSize();
+
+
+    QRectF bbox = boundingRect();
+    resize( bbox.width(), bbox.height(), false, !userAddedText.isEmpty() );
+
+
 }
 
 QColor
@@ -3131,7 +3075,7 @@ NodeGui::onInternalNameChanged(const QString & s)
         return;
     }
 
-    setNameItemHtml(s, _nodeLabel);
+    refreshNodeText();
 
     if (_settingsPanel) {
         _settingsPanel->setName(s);
