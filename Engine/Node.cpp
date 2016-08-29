@@ -597,6 +597,7 @@ public:
     bool nodeIsSelected; // is this node selected by the user ?
 
     // The name of the preset with which this node was created
+    mutable QMutex nodePresetMutex;
     std::string initialNodePreset;
 
     // This is a list of KnobPage script-names defining the ordering of the pages in the settings panel.
@@ -840,6 +841,7 @@ Node::load(const CreateNodeArgs& args)
             if (it->presetLabel.toStdString() == presetLabel) {
 
                 // We found a matching preset, should we notify user if not found ?
+                QMutexLocker k(&_imp->nodePresetMutex);
                 _imp->initialNodePreset = presetLabel;
                 break;
             }
@@ -997,6 +999,7 @@ Node::load(const CreateNodeArgs& args)
 std::string
 Node::getCurrentNodePresets() const
 {
+    QMutexLocker k(&_imp->nodePresetMutex);
     return _imp->initialNodePreset;
 }
 
@@ -2164,6 +2167,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         serialization->_pythonModule = getPluginPythonModule();
         serialization->_pythonModuleVersion = getMajorVersion();
     }
+    
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        serialization->_presetLabel = _imp->initialNodePreset;
+    }
 
     serialization->_pluginMajorVersion = getMajorVersion();
 
@@ -2274,7 +2282,10 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
 
     setKnobsAge( serialization->_knobsAge );
 
-
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        _imp->initialNodePreset = serialization->_presetLabel;
+    }
 
     {
         QMutexLocker k(&_imp->nodeUIDataMutex);
@@ -2365,7 +2376,10 @@ Node::loadPresets(const std::string& presetsLabel)
 {
 
     assert(QThread::currentThread() == qApp->thread());
-    _imp->initialNodePreset = presetsLabel;
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        _imp->initialNodePreset = presetsLabel;
+    }
     restoreNodeToDefaultState();
 }
 
@@ -2381,7 +2395,10 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
     std::string presetsLabel;
     getNodeSerializationFromPresetFile(presetsFile, serialization.get(), &presetsLabel);
 
-    _imp->initialNodePreset = presetsLabel;
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        _imp->initialNodePreset = presetsLabel;
+    }
     restoreNodeToDefaultState();
 }
 
@@ -2541,11 +2558,12 @@ Node::restoreNodeToDefaultState()
         _imp->effect->purgeCaches();
     }
 
+    std::string nodePreset = getCurrentNodePresets();
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
-    if (!_imp->initialNodePreset.empty()) {
+    if (!nodePreset.empty()) {
         try {
             serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
-            getNodeSerializationFromPresetName(_imp->initialNodePreset, serialization.get());
+            getNodeSerializationFromPresetName(nodePreset, serialization.get());
         } catch (...) {
 
         }

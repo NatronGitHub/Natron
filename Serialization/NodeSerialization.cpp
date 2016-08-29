@@ -117,6 +117,10 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
             em << YAML_NAMESPACE::Key << "PyPlugVersion" << YAML_NAMESPACE::Value << _pythonModuleVersion;
         }
     }
+    
+    if (!_presetLabel.empty()) {
+        em << YAML_NAMESPACE::Key << "Preset" << YAML_NAMESPACE::Value << _presetLabel;
+    }
 
     if (!_userComponents.empty()) {
         em << YAML_NAMESPACE::Key << "NewLayers" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
@@ -236,6 +240,10 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
     }
 
+    if (node["Preset"]) {
+        _presetLabel = node["Preset"].as<std::string>();
+    }
+    
     if (node["NewLayers"]) {
         YAML_NAMESPACE::Node layersNode = node["NewLayers"];
         for (YAML_NAMESPACE::const_iterator it = layersNode.begin(); it!=layersNode.end(); ++it) {

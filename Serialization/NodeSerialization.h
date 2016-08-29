@@ -165,6 +165,9 @@ public:
 
     // Ordering of the knobs in the viewer UI for this node
     std::list<std::string> _viewerUIKnobsOrder;
+    
+    // If this node was built with a preset, this is the one
+    std::string _presetLabel;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     unsigned int _boostSerializationClassVersion;
