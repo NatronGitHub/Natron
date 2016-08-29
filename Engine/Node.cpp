@@ -33,11 +33,13 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
@@ -56,6 +58,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Backdrop.h"
+#include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
@@ -77,7 +80,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Lut.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OpenGLViewerI.h"
@@ -87,6 +89,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -100,6 +103,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/WriteNode.h"
+
+#include "Serialization/KnobSerialization.h"
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/SerializationIO.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -400,6 +407,10 @@ public:
 
     bool isPyPlugInternal() const;
 
+    void refreshDefaultPagesOrder();
+
+    void refreshDefaultViewerKnobsOrder();
+
     Node* _publicInterface; // can not be a smart ptr
     boost::weak_ptr<NodeCollection> group;
     boost::weak_ptr<PrecompNode> precomp;
@@ -588,6 +599,14 @@ public:
     // The name of the preset with which this node was created
     std::string initialNodePreset;
 
+    // This is a list of KnobPage script-names defining the ordering of the pages in the settings panel.
+    // This is used to determine if the ordering has changed or not for serialization purpose
+    std::list<std::string> defaultPagesOrder;
+
+    // This is a list of Knob script-names which are by default in the viewer interface.
+    // This is used to determine if the ordering has changed or not for serialization purpose
+    std::list<std::string> defaultViewerKnobsOrder;
+
 };
 
 class RefreshingInputData_RAII
@@ -697,7 +716,7 @@ Node::isPartOfPrecomp() const
 }
 
 void
-Node::initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName)
+Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName)
 {
     /*
      If the serialization is not null, we are either pasting a node or loading it from a project.
@@ -728,11 +747,11 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
         setScriptName_no_error_check(name);
 
     } else if (serialization) {
-        if ( group && !group->isCacheIDAlreadyTaken( serialization->getCacheID() ) ) {
+        if ( group && !group->isCacheIDAlreadyTaken( serialization->_cacheID ) ) {
             QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = serialization->getCacheID();
+            _imp->cacheID = serialization->_cacheID;
         }
-        const std::string& baseName = serialization->getNodeScriptName();
+        const std::string& baseName = serialization->_nodeScriptName;
         std::string name = baseName;
         int no = 1;
         do {
@@ -748,7 +767,7 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
-        setLabel( serialization->getNodeLabel() );
+        setLabel( serialization->_nodeLabel );
 
     } else {
         std::string name;
@@ -811,7 +830,7 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     std::string presetLabel = args.getProperty<std::string>(kCreateNodeArgsPropPreset);
 
     if (!presetLabel.empty()) {
@@ -961,6 +980,9 @@ Node::load(const CreateNodeArgs& args)
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args);
+
+    _imp->refreshDefaultPagesOrder();
+    _imp->refreshDefaultViewerKnobsOrder();
 
     _imp->nodeCreated = true;
 
@@ -1795,16 +1817,16 @@ findMasterKnob(const KnobIPtr & knob,
 
 
 void
-Node::restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serialization,
+Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
                        const NodesList & allNodes,
                       const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
 
-    KnobSerialization* isKnobSerialization = dynamic_cast<KnobSerialization*>(serialization.get());
-    GroupKnobSerialization* isGroupKnobSerialization = dynamic_cast<GroupKnobSerialization*>(serialization.get());
+    SERIALIZATION_NAMESPACE::KnobSerialization* isKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobSerialization*>(serialization.get());
+    SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroupKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(serialization.get());
 
     if (isGroupKnobSerialization) {
-        for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
+        for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
             try {
                 restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
             } catch (const std::exception& e) {
@@ -1830,9 +1852,9 @@ Node::restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serializa
         {
             if (isKnobSerialization->_masterIsAlias) {
 
-                const std::string& aliasKnobName = isKnobSerialization->_values[0]->_value.slaveMasterLink.masterKnobName;
-                const std::string& aliasNodeName = isKnobSerialization->_values[0]->_value.slaveMasterLink.masterNodeName;
-                const std::string& masterTrackName  = isKnobSerialization->_values[0]->_value.slaveMasterLink.masterTrackName;
+                const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
+                const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
+                const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
                 KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
                 if (alias) {
                     knob->setKnobAsAliasOfThis(alias, true);
@@ -1840,15 +1862,15 @@ Node::restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serializa
 
             } else {
                 for (int i = 0; i < isKnobSerialization->_dimension; ++i) {
-                    if (isKnobSerialization->_values[i]->_value.slaveMasterLink.masterDimension != -1) {
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterDimension != -1) {
                         KnobIPtr master = findMasterKnob(knob,
                                                          allNodes,
-                                                         isKnobSerialization->_values[i]->_value.slaveMasterLink.masterKnobName,
-                                                         isKnobSerialization->_values[i]->_value.slaveMasterLink.masterNodeName,
-                                                         isKnobSerialization->_values[i]->_value.slaveMasterLink.masterTrackName,
+                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName,
+                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName,
+                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName,
                                                          oldNewScriptNamesMapping);
                         if (master) {
-                            knob->slaveTo(i, master, isKnobSerialization->_values[i]->_value.slaveMasterLink.masterDimension);
+                            knob->slaveTo(i, master, isKnobSerialization->_values[i]._slaveMasterLink.masterDimension);
                         }
                     }
                 }
@@ -1863,15 +1885,15 @@ Node::restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serializa
 
             try {
                 for (int i = 0; i < dims; ++i) {
-                    if ( !isKnobSerialization->_values[i]->_value.expression.empty() ) {
-                        QString expr( QString::fromUtf8( isKnobSerialization->_values[i]->_value.expression.c_str() ) );
+                    if ( !isKnobSerialization->_values[i]._expression.empty() ) {
+                        QString expr( QString::fromUtf8( isKnobSerialization->_values[i]._expression.c_str() ) );
 
                         //Replace all occurrences of script-names that we know have changed
                         for (std::map<std::string, std::string>::const_iterator it = oldNewScriptNamesMapping.begin();
                              it != oldNewScriptNamesMapping.end(); ++it) {
                             expr.replace( QString::fromUtf8( it->first.c_str() ), QString::fromUtf8( it->second.c_str() ) );
                         }
-                        knob->restoreExpression(i, expr.toStdString(), isKnobSerialization->_values[i]->_value.expresionHasReturnVariable);
+                        knob->restoreExpression(i, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
                     }
                 }
             } catch (const std::exception& e) {
@@ -1886,12 +1908,12 @@ Node::restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serializa
 void
 Node::restoreUserKnob(const KnobGroupPtr& group,
                       const KnobPagePtr& page,
-                      const SerializationObjectBase& serializationBase,
+                      const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase,
                       unsigned int recursionLevel)
 {
     
-    const KnobSerialization* serialization = dynamic_cast<const KnobSerialization*>(&serializationBase);
-    const GroupKnobSerialization* groupSerialization = dynamic_cast<const GroupKnobSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::KnobSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::KnobSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::GroupKnobSerialization* groupSerialization = dynamic_cast<const SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(&serializationBase);
     assert(serialization || groupSerialization);
     if (!serialization && !groupSerialization) {
         return;
@@ -1928,7 +1950,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!page) {
                 return;
             }
-            for (std::list<boost::shared_ptr<KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
+            for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
             }
 
@@ -1956,7 +1978,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 group->addKnob(grp);
             }
             grp->setValue(groupSerialization->_isOpened);
-            for (std::list<boost::shared_ptr<KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
+            for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(grp, page, **it, recursionLevel + 1);
             }
         } // ispage
@@ -2039,12 +2061,22 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
 
 } // restoreUserKnob
 
+std::string
+Node::getContainerGroupFullyQualifiedName() const
+{
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr containerIsGroup = toNodeGroup(collection);
+    if (containerIsGroup) {
+        return  containerIsGroup->getNode()->getFullyQualifiedName();
+    }
+    return std::string();
+}
 
 void
-Node::toSerialization(SerializationObjectBase* serializationBase)
+Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
 {
 
-    NodeSerialization* serialization = dynamic_cast<NodeSerialization*>(serializationBase);
+    SERIALIZATION_NAMESPACE::NodeSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::NodeSerialization*>(serializationBase);
     assert(serialization);
     if (!serialization) {
         return;
@@ -2060,6 +2092,8 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
         isOfxEffect->syncPrivateData_other_thread();
     }
 
+    // Check if pages ordering changed, if not do not serialize
+    bool pageOrderChanged = hasPageOrderChangedSinceDefault();
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
@@ -2069,7 +2103,9 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
 
         // For pages, check if it is a user knob, if so serialialize user knobs recursively
         if (isPage) {
-            serialization->_pagesIndexes.push_back( knobs[i]->getName() );
+            if (pageOrderChanged) {
+                serialization->_pagesIndexes.push_back( knobs[i]->getName() );
+            }
             if ( knobs[i]->isUserKnob() ) {
                 userPages.push_back(knobs[i]);
             }
@@ -2096,23 +2132,23 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
             continue;
         }
 
-        KnobSerializationPtr newKnobSer( new KnobSerialization(knobs[i]) );
-        serialization->_knobsValues.push_back(newKnobSer);
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        knobs[i]->toSerialization(newKnobSer.get());
+        if (newKnobSer->_mustSerialize) {
+            serialization->_knobsValues.push_back(newKnobSer);
+        }
 
     }
 
     // Serialize user pages now
     for (std::list<KnobIPtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-        boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization(*it) );
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> s( new SERIALIZATION_NAMESPACE::GroupKnobSerialization );
+        (*it)->toSerialization(s.get());
         serialization->_userPages.push_back(s);
     }
 
 
-    NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr containerIsGroup = toNodeGroup(collection);
-    if (containerIsGroup) {
-        serialization->_groupFullyQualifiedScriptName = containerIsGroup->getNode()->getFullyQualifiedName();
-    }
+    serialization->_groupFullyQualifiedScriptName = getContainerGroupFullyQualifiedName();
 
     serialization->_knobsAge = getKnobsAge();
 
@@ -2143,14 +2179,14 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
 
     RotoContextPtr roto = getRotoContext();
     if ( roto && !roto->isEmpty() ) {
-        serialization->_rotoContext.reset(new RotoContextSerialization);
-        roto->save(serialization->_rotoContext.get());
+        serialization->_rotoContext.reset(new SERIALIZATION_NAMESPACE::RotoContextSerialization);
+        roto->toSerialization(serialization->_rotoContext.get());
     }
 
     TrackerContextPtr tracker = getTrackerContext();
     if (tracker) {
-        serialization->_trackerContext.reset(new TrackerContextSerialization);
-        tracker->save(serialization->_trackerContext.get());
+        serialization->_trackerContext.reset(new SERIALIZATION_NAMESPACE::TrackerContextSerialization);
+        tracker->toSerialization(serialization->_trackerContext.get());
     }
 
 
@@ -2162,7 +2198,8 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
 
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if ( (*it)->isPartOfProject() ) {
-                NodeSerializationPtr state( new NodeSerialization(*it) );
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                (*it)->toSerialization(state.get());
                 serialization->_children.push_back(state);
             }
         }
@@ -2177,7 +2214,8 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
         for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
             assert( (*it)->getParentMultiInstance() );
             if ( (*it)->isActivated() ) {
-                NodeSerializationPtr state( new NodeSerialization(*it) );
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                (*it)->toSerialization(state.get());
                 serialization->_children.push_back(state);
             }
         }
@@ -2187,7 +2225,7 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
     std::list<ImageComponents> userComps;
     getUserCreatedComponents(&userComps);
     for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
-        ImageComponentsSerialization s;
+        SERIALIZATION_NAMESPACE::ImageComponentsSerialization s;
         s.layerName = it->getLayerName();
         s.globalCompsName = it->getComponentsGlobalName();
         s.channelNames = it->getComponentsNames();
@@ -2196,29 +2234,41 @@ Node::toSerialization(SerializationObjectBase* serializationBase)
 
     getPosition(&serialization->_nodePositionCoords[0], &serialization->_nodePositionCoords[1]);
     getSize(&serialization->_nodeSize[0], &serialization->_nodeSize[1]);
-    getColor(&serialization->_nodeColor[0], &serialization->_nodeColor[1], &serialization->_nodeColor[2]);
+
+    if (hasColorChangedSinceDefault()) {
+        getColor(&serialization->_nodeColor[0], &serialization->_nodeColor[1], &serialization->_nodeColor[2]);
+    }
     getOverlayColor(&serialization->_overlayColor[0], &serialization->_overlayColor[1], &serialization->_overlayColor[2]);
 
-    KnobsVec viewerUIKnobs = getEffectInstance()->getViewerUIKnobs();
-    for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it) {
-        serialization->_viewerUIKnobsOrder.push_back((*it)->getName());
-    }
+    // Only serialize viewer UI knobs order if it has changed
 
-    serialization->_hasBeenSerialized = true;
+    KnobsVec viewerUIKnobs = getEffectInstance()->getViewerUIKnobs();
+    if (viewerUIKnobs.size() != _imp->defaultViewerKnobsOrder.size()) {
+        std::list<std::string>::const_iterator it2 = _imp->defaultViewerKnobsOrder.begin();
+        bool hasChanged = false;
+        for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it, ++it2) {
+            if ((*it)->getName() != *it2) {
+                hasChanged = true;
+                break;
+            }
+        }
+        if (hasChanged) {
+            for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it, ++it2) {
+                serialization->_viewerUIKnobsOrder.push_back((*it)->getName());
+            }
+        }
+    }
+    
 } // Node::toSerialization
 
 void
-Node::fromSerialization(const SerializationObjectBase& serializationBase)
+Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
 {
-    const NodeSerialization* serialization = dynamic_cast<const NodeSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::NodeSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::NodeSerialization*>(&serializationBase);
     assert(serialization);
     if (!serialization) {
         return;
     }
-    if ( !serialization->_hasBeenSerialized ) {
-        return;
-    }
-
 
     loadKnobsFromSerialization(*serialization);
 
@@ -2228,11 +2278,16 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
 
     {
         QMutexLocker k(&_imp->nodeUIDataMutex);
-        serialization->getPosition(&_imp->nodePositionCoords[0], &_imp->nodePositionCoords[1]);
-        serialization->getSize(&_imp->nodeSize[0], &_imp->nodeSize[1]);
-        serialization->getColor(&_imp->nodeColor[0], &_imp->nodeColor[1], &_imp->nodeColor[2]);
-        serialization->getOverlayColor(&_imp->overlayColor[0], &_imp->overlayColor[1], &_imp->overlayColor[2]);
-        _imp->nodeIsSelected = serialization->getSelected();
+        _imp->nodePositionCoords[0] = serialization->_nodePositionCoords[0];
+        _imp->nodePositionCoords[1] = serialization->_nodePositionCoords[1];
+        _imp->nodeSize[0] = serialization->_nodeSize[0];
+        _imp->nodeSize[1] = serialization->_nodeSize[1];
+        _imp->nodeColor[0] = serialization->_nodeColor[0];
+        _imp->nodeColor[1] = serialization->_nodeColor[1];
+        _imp->nodeColor[2] = serialization->_nodeColor[2];
+        _imp->overlayColor[0] = serialization->_overlayColor[0];
+        _imp->overlayColor[1] = serialization->_overlayColor[1];
+        _imp->overlayColor[2] = serialization->_overlayColor[2];
     }
 
 
@@ -2241,7 +2296,7 @@ Node::fromSerialization(const SerializationObjectBase& serializationBase)
 } // Node::fromSerialization
 
 void
-Node::loadKnobsFromSerialization(const NodeSerialization& serialization)
+Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
 {
     assert(_imp->knobsInitialized);
 
@@ -2250,7 +2305,7 @@ Node::loadKnobsFromSerialization(const NodeSerialization& serialization)
 
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<ImageComponentsSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
+        for (std::list<SERIALIZATION_NAMESPACE::ImageComponentsSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
             ImageComponents s(it->layerName, it->globalCompsName, it->channelNames);
             _imp->createdComponents.push_back(s);
         }
@@ -2270,21 +2325,23 @@ Node::loadKnobsFromSerialization(const NodeSerialization& serialization)
     // now restore the roto context if the node has a roto context
     if (serialization._rotoContext && _imp->rotoContext) {
         _imp->rotoContext->resetToDefault();
-        _imp->rotoContext->load(*serialization._rotoContext);
+        _imp->rotoContext->fromSerialization(*serialization._rotoContext);
     }
 
     // same for tracker context
     if (serialization._trackerContext && _imp->trackContext) {
         _imp->trackContext->clearMarkers();
-        _imp->trackContext->load(*serialization._trackerContext);
+        _imp->trackContext->fromSerialization(*serialization._trackerContext);
     }
 
     {
-        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = serialization._userPages.begin(); it != serialization._userPages.end(); ++it) {
+        for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >::const_iterator it = serialization._userPages.begin(); it != serialization._userPages.end(); ++it) {
             restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0);
         }
     }
-    setPagesOrder( serialization._pagesIndexes );
+    if (!serialization._pagesIndexes.empty()) {
+        setPagesOrder( serialization._pagesIndexes );
+    }
 
     if (!serialization._viewerUIKnobsOrder.empty()) {
         KnobsVec viewerUIknobs;
@@ -2318,7 +2375,7 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
 
     assert(QThread::currentThread() == qApp->thread());
 
-    NodeSerializationPtr serialization(new NodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
 
     // Throws on failure
     std::string presetsLabel;
@@ -2329,7 +2386,7 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
 }
 
 void
-Node::getNodeSerializationFromPresetFile(const std::string& presetFile, NodeSerialization* serialization, std::string* presetsLabel)
+Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization, std::string* presetsLabel)
 {
     FStreamsSupport::ifstream ifile;
     FStreamsSupport::open(&ifile, presetFile);
@@ -2338,25 +2395,18 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, NodeSeri
         throw std::runtime_error(message);
     }
 
-    std::string pluginID;
-    std::string presetIcon;
+    SERIALIZATION_NAMESPACE::NodePresetSerialization obj;
+    SERIALIZATION_NAMESPACE::read(ifile,&obj);
 
-    // The version is externalise to maintain compatibility with older presets (starting from Natron 2.2)
-    int version;
-    int symbol;
-    int modifiers;
-    boost::archive::xml_iarchive iArchive(ifile);
-    iArchive >> boost::serialization::make_nvp("Version", version);
-    iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
-    iArchive >> boost::serialization::make_nvp("PresetLabel", *presetsLabel);
-    iArchive >> boost::serialization::make_nvp("PresetIcon", presetIcon);
-    iArchive >> boost::serialization::make_nvp("PresetSymbol", symbol);
-    iArchive >> boost::serialization::make_nvp("PresetModifiers", modifiers);
-    iArchive >> boost::serialization::make_nvp("Node", *serialization);
-
+    if (serialization) {
+        *serialization = obj.node;
+    }
+    if (presetsLabel) {
+        *presetsLabel = obj.presetLabel;
+    }
     std::string thisPluginID = getPluginID();
-    if (pluginID != thisPluginID) {
-        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+    if (obj.pluginID != thisPluginID) {
+        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
     }
 
 }
@@ -2364,7 +2414,7 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, NodeSeri
 
 
 void
-Node::getNodeSerializationFromPresetName(const std::string& presetName, NodeSerialization* serialization)
+Node::getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
 {
     PluginPtr plugin = getPlugin();
     if (!plugin) {
@@ -2387,7 +2437,7 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, NodeSeri
 }
 
 void
-Node::loadPresetsInternal(const NodeSerialization& serialization)
+Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -2466,25 +2516,17 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
         throw std::runtime_error(message);
     }
 
-    NodeSerialization serialization;
-    toSerialization(&serialization);
-
+    SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
     // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
     // we just have to read the plugin id
-    std::string pluginID = getPluginID();
+    serialization.pluginID = getPluginID();
+    serialization.presetLabel = presetsLabel;
+    serialization.presetIcon = presetsIcon;
+    serialization.presetSymbol = (int)symbol;
+    serialization.presetModifiers = (int)mods;
+    toSerialization(&serialization.node);
 
-
-    boost::archive::xml_oarchive oArchive(ofile);
-    int version = NATRON_NODE_PRESETS_SERIALIZATION_VERSION;
-    oArchive << boost::serialization::make_nvp("Version", version);
-    oArchive << boost::serialization::make_nvp("PluginID", pluginID);
-    oArchive << boost::serialization::make_nvp("PresetLabel", presetsLabel);
-    oArchive << boost::serialization::make_nvp("PresetIcon", presetsIcon);
-    int sym = (int)symbol;
-    oArchive << boost::serialization::make_nvp("PresetSymbol", sym);
-    int modifier = mods;
-    oArchive << boost::serialization::make_nvp("PresetModifiers", modifier);
-    oArchive << boost::serialization::make_nvp("Node", serialization);
+    SERIALIZATION_NAMESPACE::write(ofile, serialization);
 
 } // Node::saveNodeToPresets
 
@@ -2499,10 +2541,10 @@ Node::restoreNodeToDefaultState()
         _imp->effect->purgeCaches();
     }
 
-    NodeSerializationPtr serialization;
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
     if (!_imp->initialNodePreset.empty()) {
         try {
-            serialization.reset(new NodeSerialization);
+            serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
             getNodeSerializationFromPresetName(_imp->initialNodePreset, serialization.get());
         } catch (...) {
 
@@ -2624,12 +2666,12 @@ Node::restoreSublabel()
 
 void
 Node::loadKnob(const KnobIPtr & knob,
-               const std::list<KnobSerializationPtr> & knobsValues)
+               const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues)
 {
     // Try to find a serialized value for this knob
     bool found = false;
 
-    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
             found = true;
             knob->fromSerialization(**it);
@@ -2645,7 +2687,7 @@ Node::loadKnob(const KnobIPtr & knob,
         bool isA = knob->getName() == "a";
         KnobBoolPtr isBoolean = toKnobBool(knob);
         if (isBoolean && (isR || isG || isB || isA)) {
-            for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
                 if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
                      ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
                      ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
@@ -2659,16 +2701,16 @@ Node::loadKnob(const KnobIPtr & knob,
 
 
 void
-Node::restoreKnobsLinks(const NodeSerialization & serialization,
+Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
                         const NodesList & allNodes,
                         const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    const NodeSerialization::KnobValues & knobsValues = serialization.getKnobsValues();
+    const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues = serialization._knobsValues;
     ///try to find a serialized value for this knob
-    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         try {
             restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
         } catch (const std::exception& e) {
@@ -2681,8 +2723,8 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         }
     }
 
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
-    for (std::list<boost::shared_ptr<GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+    const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >& userKnobs = serialization._userPages;
+    for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
         try {
             restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
         } catch (const std::exception& e) {
@@ -2718,10 +2760,34 @@ Node::setPagesOrder(const std::list<std::string>& pages)
     }
 }
 
+void
+Node::Implementation::refreshDefaultPagesOrder()
+{
+    const KnobsVec& knobs = effect->getKnobs();
+    defaultPagesOrder.clear();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr ispage = toKnobPage(*it);
+        if (ispage) {
+            defaultPagesOrder.push_back( ispage->getName() );
+        }
+    }
+
+}
+
+void
+Node::Implementation::refreshDefaultViewerKnobsOrder()
+{
+    KnobsVec knobs = effect->getViewerUIKnobs();
+    defaultViewerKnobsOrder.clear();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        defaultViewerKnobsOrder.push_back( (*it)->getName() );
+    }
+}
+
 std::list<std::string>
 Node::getPagesOrder() const
 {
-    const KnobsVec& knobs = getKnobs();
+    KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
     std::list<std::string> ret;
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -2732,6 +2798,22 @@ Node::getPagesOrder() const
     }
 
     return ret;
+}
+
+bool
+Node::hasPageOrderChangedSinceDefault() const
+{
+    std::list<std::string> pagesOrder = getPagesOrder();
+    if (pagesOrder.size() != _imp->defaultPagesOrder.size()) {
+        return true;
+    }
+    std::list<std::string>::const_iterator it2 = _imp->defaultPagesOrder.begin();
+    for (std::list<std::string>::const_iterator it = pagesOrder.begin(); it!=pagesOrder.end(); ++it, ++it2) {
+        if (*it != *it2) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void
@@ -10632,6 +10714,55 @@ Node::getColor(double* r,
     *g = _imp->nodeColor[1];
     *b = _imp->nodeColor[2];
     return true;
+}
+
+bool
+Node::hasColorChangedSinceDefault() const
+{
+    std::list<std::string> grouping;
+    getPluginGrouping(&grouping);
+    std::string majGroup = grouping.empty() ? "" : grouping.front();
+    float defR, defG, defB;
+
+    SettingsPtr settings = appPTR->getCurrentSettings();
+
+    if ( _imp->effect->isReader() ) {
+        settings->getReaderColor(&defR, &defG, &defB);
+    } else if ( _imp->effect->isWriter() ) {
+        settings->getWriterColor(&defR, &defG, &defB);
+    } else if ( _imp->effect->isGenerator() ) {
+        settings->getGeneratorColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_COLOR) {
+        settings->getColorGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_FILTER) {
+        settings->getFilterGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+        settings->getChannelGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_KEYER) {
+        settings->getKeyerGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_MERGE) {
+        settings->getMergeGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_PAINT) {
+        settings->getDrawGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_TIME) {
+        settings->getTimeGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+        settings->getTransformGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+        settings->getViewsGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_DEEP) {
+        settings->getDeepGroupColor(&defR, &defG, &defB);
+    } else if (dynamic_cast<Backdrop*>(_imp->effect.get())) {
+        settings->getDefaultBackdropColor(&defR, &defG, &defB);
+    } else {
+        settings->getDefaultNodeColor(&defR, &defG, &defB);
+    }
+
+    if ( (std::abs(_imp->nodeColor[0] - defR) > 0.01) || (std::abs(_imp->nodeColor[1] - defG) > 0.01) || (std::abs(_imp->nodeColor[2] - defB) > 0.01) ) {
+        return true;
+    }
+
+    return false;
 }
 
 void

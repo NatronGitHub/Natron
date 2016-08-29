@@ -32,7 +32,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtAlgorithms>
 CLANG_DIAG_ON(deprecated)
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/weak_ptr.hpp>
+#endif
+
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Engine/CreateNodeArgs.h"

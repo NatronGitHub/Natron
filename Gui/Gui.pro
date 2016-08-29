@@ -46,6 +46,7 @@ INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
+INCLUDEPATH += $$PWD/../Serialization
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
@@ -297,7 +298,6 @@ HEADERS += \
     Menu.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
-    NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \

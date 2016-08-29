@@ -695,12 +695,12 @@ win32-msvc*{
                 CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/win32/debug/yamlcpp.lib
         }
 } else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/yamlcpp.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/yamlcpp.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/yamlcpp.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/yamlcpp.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Release/yamlcpp.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Debug/yamlcpp.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/yamlcpp.a
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/libyamlcpp.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/libyamlcpp.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/libyamlcpp.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/libyamlcpp.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Release/libyamlcpp.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Debug/libyamlcpp.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/libyamlcpp.a
 }
 } # static-yaml-cpp

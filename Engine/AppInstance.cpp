@@ -56,13 +56,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/DiskCacheNode.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/KnobFile.h"
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/SerializableWindow.h"
@@ -71,6 +72,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TabWidgetI.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/ProjectSerialization.h"
+
+#include <SequenceParsing.h>
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -166,7 +173,7 @@ public:
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobIWPtr> invalidExprKnobs;
 
-    ProjectBeingLoadedInfo projectBeingLoaded;
+    SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectBeingLoaded;
 
     mutable QMutex uiInfoMutex;
 
@@ -231,7 +238,7 @@ AppInstance::~AppInstance()
     _imp->_currentProject->clearNodes(false);
 }
 
-const ProjectBeingLoadedInfo&
+const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo&
 AppInstance::getProjectBeingLoadedInfo() const
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -239,7 +246,7 @@ AppInstance::getProjectBeingLoadedInfo() const
 }
 
 void
-AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
+AppInstance::setProjectBeingLoadedInfo(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& info)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->projectBeingLoaded = info;
@@ -861,7 +868,7 @@ AppInstance::createNodeFromPythonModule(const PluginPtr& plugin,
     bool istoolsetScript = plugin->getToolsetScript();
     NodePtr node;
 
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args.getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
 
 
@@ -1072,7 +1079,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     NodePtr node;
     PluginPtr plugin;
 
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
@@ -2024,7 +2031,7 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const NodeSerializationPtr& serialization, const CreateNodeArgs& /*args*/)
+                                     const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& /*args*/)
 {
     assert(node);
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
@@ -2430,20 +2437,20 @@ AppInstance::getAvailablePaneName(const QString & baseName) const
 }
 
 void
-AppInstance::saveApplicationWorkspace(ProjectWorkspaceSerialization* serialization)
+AppInstance::saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization)
 {
 
     // Main window
     SerializableWindow* mainWindow = getMainWindowSerialization();
     if (mainWindow) {
-        serialization->_mainWindowSerialization.reset(new ProjectWindowSerialization);
+        serialization->_mainWindowSerialization.reset(new SERIALIZATION_NAMESPACE::WindowSerialization);
         mainWindow->toSerialization(serialization->_mainWindowSerialization.get());
     }
 
     // Floating windows
     std::list<SerializableWindow*> floatingWindows = getFloatingWindowsSerialization();
     for (std::list<SerializableWindow*>::iterator it = floatingWindows.begin(); it!=floatingWindows.end(); ++it) {
-        boost::shared_ptr<ProjectWindowSerialization> s(new ProjectWindowSerialization);
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> s(new SERIALIZATION_NAMESPACE::WindowSerialization);
         (*it)->toSerialization(s.get());
         serialization->_floatingWindowsSerialization.push_back(s);
 
@@ -2452,8 +2459,8 @@ AppInstance::saveApplicationWorkspace(ProjectWorkspaceSerialization* serializati
     // Save active python panels
     std::list<PyPanelI*> pythonPanels = getPyPanelsSerialization();
     for (std::list<PyPanelI*>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
-        (*it)->toSerialization(s.get());
+        SERIALIZATION_NAMESPACE::PythonPanelSerialization s;
+        (*it)->toSerialization(&s);
         serialization->_pythonPanels.push_back(s);
     }
 

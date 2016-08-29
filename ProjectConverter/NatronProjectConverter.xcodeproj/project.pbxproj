@@ -454,6 +454,19 @@
 			settings = {
 			};
 		};
+		E187D7A1892370C41AA39DAC = {
+			isa = PBXFileReference;
+			name = "Serialization";
+			path = "../Serialization/build/Debug/libSerialization.a";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		ABCE4233778A55D6F3D6A529 = {
+			fileRef = "E187D7A1892370C41AA39DAC";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
 		8677DF1FEEED309A9B20F35B = {
 			isa = PBXFileReference;
 			name = "Gui";
@@ -829,6 +842,7 @@
 				"956FEF3F3EF5296323B5A922",
 				"9CD717ECA469BE9B948776FC",
 				"CE9BE01FDF788249D179FC8C",
+				"E187D7A1892370C41AA39DAC",
 				"8677DF1FEEED309A9B20F35B",
 				"74489810E6C17DC0FC613821",
 				"A69DD5547B8D4C67D78037C8",
@@ -893,6 +907,7 @@
 				"516A21FBAF54D4A43544BEDD",
 				"7277D2360B82A5B9AFEA36D0",
 				"C2E257A7B0B9B5B8ABE2422B",
+				"ABCE4233778A55D6F3D6A529",
 				"9539401B0DD420A676F1CBD1",
 				"221FCAAF735DEA609EF512AF",
 				"8DD25B1641AFEFD018DC8429",
@@ -973,7 +988,6 @@
 						"-F/opt/local/libexec/qt4/Library/Frameworks",
 						"-F/opt/local/libexec/qt4/lib",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Serialization/build/Debug/",
-						"-lSerialization",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Gui/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Engine/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../HostSupport/build/Debug/",
@@ -1102,6 +1116,7 @@
 					"/opt/osmesa/lib",
 					"/opt/llvm/lib",
 					"/Users/alexandre/development/Natron/ProjectConverter/../Serialization/build/Debug/",
+					"/Users/alexandre/development/Natron/Serialization/build/Debug/",
 					"/Users/alexandre/development/Natron/ProjectConverter/../Gui/build/Debug/",
 					"/Users/alexandre/development/Natron/Gui/build/Debug/",
 					"/Users/alexandre/development/Natron/ProjectConverter/../Engine/build/Debug/",
@@ -1239,7 +1254,6 @@
 						"-F/opt/local/libexec/qt4/Library/Frameworks",
 						"-F/opt/local/libexec/qt4/lib",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Serialization/build/Debug/",
-						"-lSerialization",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Gui/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Engine/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../HostSupport/build/Debug/",
@@ -1376,6 +1390,7 @@
 					"/opt/osmesa/lib",
 					"/opt/llvm/lib",
 					"/Users/alexandre/development/Natron/ProjectConverter/../Serialization/build/Debug/",
+					"/Users/alexandre/development/Natron/Serialization/build/Debug/",
 					"/Users/alexandre/development/Natron/ProjectConverter/../Gui/build/Debug/",
 					"/Users/alexandre/development/Natron/Gui/build/Debug/",
 					"/Users/alexandre/development/Natron/ProjectConverter/../Engine/build/Debug/",
@@ -1513,7 +1528,6 @@
 						"-F/opt/local/libexec/qt4/Library/Frameworks",
 						"-F/opt/local/libexec/qt4/lib",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Serialization/build/Debug/",
-						"-lSerialization",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Gui/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../Engine/build/Debug/",
 						"-L/Users/alexandre/development/Natron/ProjectConverter/../HostSupport/build/Debug/",

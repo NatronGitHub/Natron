@@ -528,6 +528,12 @@ CurveWidget::resizeGL(int width,
     }
 }
 
+bool
+CurveWidget::hasDrawnOnce() const
+{
+    return _imp->drawnOnce;
+}
+
 void
 CurveWidget::paintGL()
 {
@@ -544,6 +550,9 @@ CurveWidget::paintGL()
     if (_imp->zoomCtx.factor() <= 0) {
         return;
     }
+
+    _imp->drawnOnce = true;
+
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     zoomLeft = _imp->zoomCtx.left();
     zoomRight = _imp->zoomCtx.right();

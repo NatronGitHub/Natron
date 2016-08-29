@@ -28,11 +28,11 @@
 #include <list>
 #include <string>
 #include "Engine/EngineFwd.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class TabWidgetI : public SerializableObjectBase
+class TabWidgetI : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -64,9 +64,9 @@ public:
 
     virtual void setTabsFromScriptNames(const std::list<std::string>& tabs) = 0;
 
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 };
 

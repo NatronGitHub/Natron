@@ -100,6 +100,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _timelineBtmPoly()
     , _widget(widget)
     , _selectionModel(selectionModel)
+    , drawnOnce(false)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

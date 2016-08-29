@@ -448,7 +448,7 @@ App::writeToScriptEditor(const QString& message)
 void
 App::addFormat(const QString& formatSpec)
 {
-    if ( !getInternalApp()->getProject()->addFormat( formatSpec.toStdString() ) ) {
+    if ( !getInternalApp()->getProject()->addDefaultFormat( formatSpec.toStdString() ) ) {
         getInternalApp()->appendToScriptEditor( formatSpec.toStdString() );
     }
 }

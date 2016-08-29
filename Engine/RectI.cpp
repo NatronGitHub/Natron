@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include "Engine/RectD.h"
+#include "Serialization/RectISerialization.h"
 
 #define MINAREA64 4096  // = 4096 pixels (=64*64)
 #define MINAREA128 16384
@@ -132,6 +133,32 @@ RectI::toCanonical_noClipping(unsigned int thisLevel,
     rect->x2 = (x2 << thisLevel) * par;
     rect->y1 = y1 << thisLevel;
     rect->y2 = y2 << thisLevel;
+}
+
+void
+RectI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::RectISerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RectISerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    s->x1 = x1;
+    s->y1 = y2;
+    s->x2 = x2;
+    s->y2 = y2;
+}
+
+void
+RectI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::RectISerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RectISerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    x1 = s->x1;
+    y1 = s->y1;
+    x2 = s->x2;
+    y2 = s->y2;
 }
 
 NATRON_NAMESPACE_EXIT;

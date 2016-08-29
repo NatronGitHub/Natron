@@ -27,11 +27,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class PyPanelI : public SerializableObjectBase
+class PyPanelI : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -61,9 +61,9 @@ public:
 
     virtual void restore(const QString& data) = 0;
 
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 };
 

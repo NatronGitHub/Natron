@@ -19,15 +19,6 @@
 #ifndef Engine_RotoStrokeItemSerialization_h
 #define Engine_RotoStrokeItemSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-
-#include "Serialization/CurveSerialization.h"
-#include "Serialization/KnobSerialization.h"
 #include "Serialization/RotoDrawableItemSerialization.h"
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
@@ -35,11 +26,36 @@
 #define ROTO_STROKE_SERIALIZATION_VERSION ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES
 #endif
 
-NATRON_NAMESPACE_ENTER;
+// Corresponds to RotoStrokeType enum
+enum RotoStrokeType
+{
+    eRotoStrokeTypeSolid,
+    eRotoStrokeTypeEraser,
+    eRotoStrokeTypeClone,
+    eRotoStrokeTypeReveal,
+    eRotoStrokeTypeBlur,
+    eRotoStrokeTypeSharpen,
+    eRotoStrokeTypeSmear,
+    eRotoStrokeTypeDodge,
+    eRotoStrokeTypeBurn,
+};
+
+#define kRotoStrokeItemSerializationBrushTypeSolid "Solid"
+#define kRotoStrokeItemSerializationBrushTypeEraser "Eraser"
+#define kRotoStrokeItemSerializationBrushTypeClone "Clone"
+#define kRotoStrokeItemSerializationBrushTypeReveal "Reveal"
+#define kRotoStrokeItemSerializationBrushTypeBlur "Blur"
+#define kRotoStrokeItemSerializationBrushTypeSmear "Smear"
+#define kRotoStrokeItemSerializationBrushTypeDodge "Dodge"
+#define kRotoStrokeItemSerializationBrushTypeBurn "Burn"
+
+SERIALIZATION_NAMESPACE_ENTER;
+
 struct StrokePoint
 {
     double x, y, pressure;
 
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int /*version*/)
@@ -48,6 +64,7 @@ struct StrokePoint
         ar & ::boost::serialization::make_nvp("Y", y);
         ar & ::boost::serialization::make_nvp("Press", pressure);
     }
+#endif
 };
 
 
@@ -58,12 +75,18 @@ class RotoStrokeItemSerialization
 public:
 
 
+    std::string _brushType;
+    struct PointCurves
+    {
+        CurveSerializationPtr x,y,pressure;
+    };
+    std::list<PointCurves> _subStrokes;
+
+
     RotoStrokeItemSerialization()
         : RotoDrawableItemSerialization()
         , _brushType()
-        , _xCurves()
-        , _yCurves()
-        , _pressureCurves()
+        , _subStrokes()
     {
     }
 
@@ -71,7 +94,18 @@ public:
     {
     }
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        throw std::runtime_error("Saving with boost is no longer supported");
+    }
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -84,25 +118,36 @@ public:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
-            CurvePtr x(new Curve), y(new Curve), p(new Curve);
-            ar & ::boost::serialization::make_nvp("CurveX", *x);
-            ar & ::boost::serialization::make_nvp("CurveY", *y);
-            ar & ::boost::serialization::make_nvp("CurveP", *p);
-            _xCurves.push_back(x);
-            _yCurves.push_back(y);
-            _pressureCurves.push_back(p);
+            NATRON_NAMESPACE::Curve x,y,p;
+            ar & ::boost::serialization::make_nvp("CurveX", x);
+            ar & ::boost::serialization::make_nvp("CurveY", y);
+            ar & ::boost::serialization::make_nvp("CurveP", p);
+            PointCurves subStroke;
+            subStroke.x.reset(new CurveSerialization);
+            subStroke.y.reset(new CurveSerialization);
+            subStroke.pressure.reset(new CurveSerialization);
+            x.toSerialization(subStroke.x.get());
+            y.toSerialization(subStroke.y.get());
+            p.toSerialization(subStroke.pressure.get());
+            _subStrokes.push_back(subStroke);
+
         } else {
             int nb;
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
             ar & ::boost::serialization::make_nvp("NbItems", nb);
             for (int i = 0; i < nb; ++i) {
-                CurvePtr x(new Curve), y(new Curve), p(new Curve);
-                ar & ::boost::serialization::make_nvp("CurveX", *x);
-                ar & ::boost::serialization::make_nvp("CurveY", *y);
-                ar & ::boost::serialization::make_nvp("CurveP", *p);
-                _xCurves.push_back(x);
-                _yCurves.push_back(y);
-                _pressureCurves.push_back(p);
+                NATRON_NAMESPACE::Curve x,y,p;
+                ar & ::boost::serialization::make_nvp("CurveX", x);
+                ar & ::boost::serialization::make_nvp("CurveY", y);
+                ar & ::boost::serialization::make_nvp("CurveP", p);
+                PointCurves subStroke;
+                subStroke.x.reset(new CurveSerialization);
+                subStroke.y.reset(new CurveSerialization);
+                subStroke.pressure.reset(new CurveSerialization);
+                x.toSerialization(subStroke.x.get());
+                y.toSerialization(subStroke.y.get());
+                p.toSerialization(subStroke.pressure.get());
+                _subStrokes.push_back(subStroke);
             }
         }
     }
@@ -110,14 +155,12 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    int _brushType;
-    std::list<CurvePtr > _xCurves, _yCurves, _pressureCurves;
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoStrokeItemSerialization, ROTO_STROKE_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization, ROTO_STROKE_SERIALIZATION_VERSION)
 #endif
 
 #endif // Engine_RotoStrokeItemSerialization_h

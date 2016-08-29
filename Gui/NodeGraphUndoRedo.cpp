@@ -37,14 +37,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
@@ -52,6 +50,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MultiInstancePanel.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
@@ -1136,111 +1137,6 @@ EnableNodesCommand::redo()
     setText( tr("Enable nodes") );
 }
 
-LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
-                                               const std::list<NodeSerializationPtr >& serialization,
-                                               QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _firstRedoCalled(false)
-    , _isUndone(false)
-    , _node(node)
-    , _newSerializations(serialization)
-{
-}
-
-void
-LoadNodePresetsCommand::getListAsShared(const std::list< NodeWPtr >& original,
-                                        std::list< NodePtr >& shared) const
-{
-    for (std::list< NodeWPtr >::const_iterator it = original.begin(); it != original.end(); ++it) {
-        shared.push_back( it->lock() );
-    }
-}
-
-LoadNodePresetsCommand::~LoadNodePresetsCommand()
-{
-}
-
-void
-LoadNodePresetsCommand::undo()
-{
-    _isUndone = true;
-
-    NodeGuiPtr node = _node.lock();
-    NodePtr internalNode = node->getNode();
-    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
-    internalNode->fromSerialization(*_oldSerialization.front());
-    if (panel) {
-        std::list< NodePtr > newChildren, oldChildren;
-        getListAsShared(_newChildren, newChildren);
-        getListAsShared(_oldChildren, oldChildren);
-        panel->removeInstances(newChildren);
-        panel->addInstances(oldChildren);
-    }
-    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
-    internalNode->getApp()->triggerAutoSave();
-    setText( tr("Load presets") );
-}
-
-void
-LoadNodePresetsCommand::redo()
-{
-    NodeGuiPtr node = _node.lock();
-    NodePtr internalNode = node->getNode();
-    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
-
-    if (!_firstRedoCalled) {
-        ///Serialize the current state of the node
-        node->serializeInternal(_oldSerialization);
-
-        if (panel) {
-            const std::list<std::pair<NodeWPtr, bool> >& children = panel->getInstances();
-            for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = children.begin();
-                 it != children.end(); ++it) {
-                _oldChildren.push_back( it->first.lock() );
-            }
-        }
-
-        int k = 0;
-
-        for (std::list<NodeSerializationPtr >::const_iterator it = _newSerializations.begin();
-             it != _newSerializations.end(); ++it, ++k) {
-            if (k > 0) {  /// this is a multi-instance child, create it
-                NodePtr newNode = panel->createNewInstance(false);
-                newNode->fromSerialization(**it);
-                std::list<SequenceTime> keys;
-                newNode->getAllKnobsKeyframes(&keys);
-                newNode->getApp()->addMultipleKeyframeIndicatorsAdded(keys, true);
-                _newChildren.push_back(newNode);
-            }
-        }
-    }
-
-    internalNode->fromSerialization(*_newSerializations.front());
-    if (panel) {
-        std::list< NodePtr > oldChildren, newChildren;
-        getListAsShared(_oldChildren, oldChildren);
-        getListAsShared(_newChildren, newChildren);
-        panel->removeInstances(oldChildren);
-        if (_firstRedoCalled) {
-            panel->addInstances(newChildren);
-        }
-    }
-
-    NodesList allNodes;
-    internalNode->getGroup()->getActiveNodes(&allNodes);
-    NodeGroupPtr isGroup = internalNode->isEffectNodeGroup();
-    if (isGroup) {
-        isGroup->getActiveNodes(&allNodes);
-    }
-    std::map<std::string, std::string> oldNewScriptNames;
-    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes, oldNewScriptNames);
-    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
-    internalNode->getApp()->triggerAutoSave();
-    _firstRedoCalled = true;
-
-    setText( tr("Load presets") );
-} // LoadNodePresetsCommand::redo
-
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
                                                      const QString& oldName,
                                                      const QString& newName)
@@ -1822,7 +1718,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         /*
          * First-off copy all the nodes within the group, except the Inputs and Ouput nodes
          */
-        NodeClipBoard cb;
+        SERIALIZATION_NAMESPACE::NodeClipBoard cb;
         NodesList nodes = group->getNodes();
         std::vector<NodePtr> groupInputs;
         NodePtr groupOutput = group->getOutputNode(true);
@@ -2091,7 +1987,8 @@ RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & no
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeDefaults d;
         d.node = *it;
-        d.serialization.reset(new NodeSerialization((*it)->getNode()));
+        d.serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        (*it)->getNode()->toSerialization(d.serialization.get());
         _nodes.push_back(d);
     }
     setText(tr("Restore node(s) to default"));

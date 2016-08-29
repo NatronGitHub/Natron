@@ -38,10 +38,8 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
@@ -66,6 +64,8 @@
 #include "Gui/SplashScreen.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
+
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -514,7 +514,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->initializeInputs();
     }
     
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     if ( !serialization && !isViewer ) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
@@ -792,9 +792,9 @@ GuiAppInstance::isShowingDialog() const
 }
 
 void
-GuiAppInstance::loadProjectGui(bool isAutosave, const ProjectSerializationPtr& serialization,const boost::shared_ptr<boost::archive::xml_iarchive> & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const
 {
-    _imp->_gui->loadProjectGui(isAutosave, serialization, archive);
+    _imp->_gui->loadProjectGui(isAutosave, serialization);
 }
 
 
@@ -1093,7 +1093,7 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const NodeSerializationPtr& serialization,
+                                        const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization,
                                         const CreateNodeArgs& args)
 {
     NodeGuiIPtr node_gui_i = node->getNodeGui();
@@ -1733,11 +1733,11 @@ GuiAppInstance::getHistogramScriptNames(std::list<std::string>* histograms) cons
 }
 
 void
-GuiAppInstance::getViewportsProjection(std::map<std::string,ViewportData>* projections) const
+GuiAppInstance::getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* projections) const
 {
     RegisteredTabs tabs = getGui()->getRegisteredTabs();
     for (RegisteredTabs::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
-        ViewportData data;
+        SERIALIZATION_NAMESPACE::ViewportData data;
         if (it->second.first->saveProjection(&data)) {
             (*projections)[it->first] = data;
         }

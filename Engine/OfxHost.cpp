@@ -91,7 +91,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -106,6 +105,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/ThreadPool.h"
+
+#include "Serialization/NodeSerialization.h"
+
 
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
@@ -713,7 +715,7 @@ OfxHost::createOfxEffect(const NodePtr& node,
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect = boost::dynamic_pointer_cast<AbstractOfxEffectInstance>( OfxEffectInstance::create(node) );
     assert(hostSideEffect);
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     if ( node && !node->getEffectInstance() ) {

@@ -81,14 +81,14 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer

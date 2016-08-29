@@ -1156,7 +1156,7 @@ void
 RotoPaint::onKnobsLoaded()
 {
     _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
-
+#pragma message WARN("Set autokeying, featherlink and rippleedit on context from buttons")
     // Figure out which toolbutton was selected last
     KnobPagePtr toolbar = _imp->ui->toolbarPage.lock();
     if (toolbar) {

@@ -98,7 +98,7 @@ public:
 
 private:
 
-    virtual void restoreChildrenFromSerialization(const ProjectWindowSplitterSerialization& serialization) OVERRIDE FINAL;
+    virtual void restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization& serialization) OVERRIDE FINAL;
 
     virtual bool event(QEvent* e) OVERRIDE FINAL;
     mutable QMutex _lock;

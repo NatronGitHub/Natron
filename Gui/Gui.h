@@ -223,7 +223,7 @@ public:
     ///Make the layout according to the serialization.
     ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
     ///prior to restoring. This is because older projects didn't have as much info to recreate the entire layout.
-    void restoreLayout(bool wipePrevious, bool enableOldProjectCompatibility, const ProjectWorkspaceSerialization& layoutSerialization);
+    void restoreLayout(bool wipePrevious, bool enableOldProjectCompatibility, const SERIALIZATION_NAMESPACE::WorkspaceSerialization& layoutSerialization);
 
 
     void onPaneRegistered(TabWidgetI* pane);
@@ -278,7 +278,7 @@ public:
 
     ProjectGui* getProjectGui() const;
 
-    void loadProjectGui(bool isAutosave, const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive> & obj) const;
+    void loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
@@ -523,7 +523,7 @@ public:
 
 protected:
 
-    virtual void restoreChildFromSerialization(const ProjectWindowSerialization& serialization) OVERRIDE FINAL;
+    virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) OVERRIDE FINAL;
     
     // Reimplemented Protected Functions
 

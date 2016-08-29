@@ -19,98 +19,46 @@
 #ifndef Engine_FormatSerialization_h
 #define Engine_FormatSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include "Serialization/SerializationBase.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Format.h"
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/nvp.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
+SERIALIZATION_NAMESPACE_ENTER;
 
-#include "Engine/EngineFwd.h"
-#endif
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#define FORMAT_SERIALIZATION_CHANGES_TO_RECTD 2
-#define FORMAT_SERIALIZATION_CHANGES_TO_RECTI 3
-#define FORMAT_SERIALIZATION_VERSION FORMAT_SERIALIZATION_CHANGES_TO_RECTI
-#endif
-
-NATRON_NAMESPACE_ENTER;
-
-struct FormatSerialization
+class FormatSerialization
+: public SerializationObjectBase
 {
+public:
+
     int x1, y1, x2, y2;
     double par;
     std::string name;
 
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    template<class Archive>
-    void
-    serialize(Archive & ar,
-                      const unsigned int /*version*/)
+    FormatSerialization()
+    : SerializationObjectBase()
+    , x1(0)
+    , y1(0)
+    , x2(0)
+    , y2(0)
+    , par(1.)
+    , name()
     {
-        ar & ::boost::serialization::make_nvp("x1", x1);
-        ar & ::boost::serialization::make_nvp("y1", y1);
-        ar & ::boost::serialization::make_nvp("x2", x2);
-        ar & ::boost::serialization::make_nvp("y2", y2);
-        ar & ::boost::serialization::make_nvp("par", par);
-        ar & ::boost::serialization::make_nvp("Name", name);
+
     }
-#endif
+
+    virtual ~FormatSerialization()
+    {
+        
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
+
 };
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-/**
- * @brief Deprecated, just used for backward compat.
- **/
-template<class Archive>
-void
-Format::serialize(Archive & ar,
-                  const unsigned int version)
-{
-    if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTD) {
-        RectI r;
-        ar & ::boost::serialization::make_nvp("RectI", r);
-        x1 = r.x1;
-        x2 = r.x2;
-        y1 = r.y1;
-        y2 = r.y2;
-    } else if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTI) {
-        RectD r;
-        ar & ::boost::serialization::make_nvp("RectD", r);
-        x1 = r.x1;
-        x2 = r.x2;
-        y1 = r.y1;
-        y2 = r.y2;
-    } else {
-        boost::serialization::void_cast_register<Format, RectI>( static_cast<Format *>(NULL),
-                                                                 static_cast<RectI *>(NULL) );
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
-    }
-    ar & ::boost::serialization::make_nvp("Pixel_aspect_ratio", _par);
-    ar & ::boost::serialization::make_nvp("Name", _name);
-}
-#endif
 
-NATRON_NAMESPACE_EXIT;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::Format, FORMAT_SERIALIZATION_VERSION)
-#endif
+SERIALIZATION_NAMESPACE_EXIT;
+
 
 #endif // Engine_FormatSerialization_h

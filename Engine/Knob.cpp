@@ -36,6 +36,12 @@
 #include <QtCore/QThread>
 #include <QtCore/QDebug>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/AppInstance.h"
@@ -44,7 +50,6 @@
 #include "Engine/DockablePanelI.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -53,10 +58,17 @@
 #include "Engine/TLSHolder.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+#include "Serialization/CurveSerialization.h"
+#include "Serialization/KnobSerialization.h"
+
 #include "Engine/EngineFwd.h"
+
+SERIALIZATION_NAMESPACE_USING
 
 NATRON_NAMESPACE_ENTER;
 
@@ -612,6 +624,10 @@ KnobHelper::populate()
     boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
 
     setSignalSlotHandler(handler);
+
+    if (!isAnimatedByDefault()) {
+        _imp->isAnimationEnabled = false;
+    }
 
     KnobColor* isColor = dynamic_cast<KnobColor*>(this);
     KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(this);
@@ -4594,6 +4610,597 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
         (*it)->getAllExpressionDependenciesRecursive(nodes);
     }
 }
+
+
+
+static void
+initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, ValueSerialization* serialization)
+{
+    serialization->_expression = knob->getExpression(dimension);
+    serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(dimension);
+    CurvePtr curve = knob->getCurve(ViewSpec::current(), dimension);
+    if (curve) {
+        curve->toSerialization(&serialization->_animationCurve);
+    }
+
+    std::pair< int, KnobIPtr > master = knob->getMaster(dimension);
+
+    if ( master.second && !knob->isMastersPersistenceIgnored() ) {
+        serialization->_slaveMasterLink.masterDimension = master.first;
+
+        NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
+        assert(holder);
+
+        TrackMarkerPtr isMarker = toTrackMarker(holder);
+        if (isMarker) {
+            serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
+            serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+        } else {
+            // coverity[dead_error_line]
+            serialization->_slaveMasterLink.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
+        }
+        serialization->_slaveMasterLink.masterKnobName = master.second->getName();
+    } else {
+        serialization->_slaveMasterLink.masterDimension = -1;
+    }
+
+    serialization->_enabledChanged = (knob->isEnabled(dimension) != knob->isDefaultEnabled(dimension));
+
+    KnobBoolBasePtr isBoolBase = toKnobBoolBase(knob);
+    KnobIntPtr isInt = toKnobInt(knob);
+    KnobBoolPtr isBool = toKnobBool(knob);
+    KnobButtonPtr isButton = toKnobButton(knob);
+    KnobDoubleBasePtr isDoubleBase = toKnobDoubleBase(knob);
+    KnobDoublePtr isDouble = toKnobDouble(knob);
+    KnobColorPtr isColor = toKnobColor(knob);
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobStringBasePtr isStringBase = toKnobStringBase(knob);
+    KnobParametricPtr isParametric = toKnobParametric(knob);
+    KnobPagePtr isPage = toKnobPage(knob);
+    KnobGroupPtr isGrp = toKnobGroup(knob);
+    KnobSeparatorPtr isSep = toKnobSeparator(knob);
+    KnobButtonPtr btn = toKnobButton(knob);
+
+    if (isInt) {
+        serialization->_value.isInt = isInt->getValue(dimension);
+        serialization->_type = ValueSerialization::eSerializationValueVariantTypeInteger;
+        serialization->_defaultValue.isInt = isInt->getDefaultValue(dimension);
+        serialization->_serializeValue = (serialization->_value.isInt != serialization->_defaultValue.isInt);
+        serialization->_serializeDefaultValue = isInt->hasDefaultValueChanged(dimension);
+    } else if (isBool || isGrp || isButton) {
+        serialization->_value.isBool = isBoolBase->getValue(dimension);
+        serialization->_type = ValueSerialization::eSerializationValueVariantTypeBoolean;
+        serialization->_defaultValue.isBool = isBoolBase->getDefaultValue(dimension);
+        serialization->_serializeValue = (serialization->_value.isBool != serialization->_defaultValue.isBool);
+        serialization->_serializeDefaultValue = isBoolBase->hasDefaultValueChanged(dimension);
+    } else if (isColor || isDouble) {
+        serialization->_value.isDouble = isDoubleBase->getValue(dimension);
+        serialization->_type = ValueSerialization::eSerializationValueVariantTypeDouble;
+        serialization->_defaultValue.isDouble = isDouble->getDefaultValue(dimension);
+        serialization->_serializeValue = (serialization->_value.isDouble != serialization->_defaultValue.isDouble);
+        serialization->_serializeDefaultValue = isDouble->hasDefaultValueChanged(dimension);
+    } else if (isStringBase) {
+        serialization->_value.isString = isStringBase->getValue(dimension);
+        serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
+        serialization->_defaultValue.isString = isStringBase->getDefaultValue(dimension);
+        serialization->_serializeValue = (serialization->_value.isString != serialization->_defaultValue.isString);
+        serialization->_serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
+
+    } else if (isChoice) {
+        serialization->_value.isString = isChoice->getActiveEntryText_mt_safe();
+        serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
+        //serialization->_defaultValue.isString
+        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+        int defIndex = isChoice->getDefaultValue(dimension);
+        std::string defValue;
+        if (defIndex >= 0 && defIndex < (int)entries.size()) {
+            defValue = entries[defIndex];
+        }
+        serialization->_defaultValue.isString = defValue;
+        serialization->_serializeValue = (serialization->_value.isString != serialization->_defaultValue.isString);
+        serialization->_serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
+
+    }
+
+    // Check if we need to serialize this dimension
+    serialization->_mustSerialize = true;
+
+    if (serialization->_expression.empty() && !serialization->_enabledChanged && serialization->_slaveMasterLink.masterKnobName.empty() && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
+        serialization->_mustSerialize = false;
+    }
+
+} // initializeValueSerializationStorage
+
+void
+KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, int targetDimension, bool restoreDefaultValue)
+{
+    KnobIPtr thisShared = shared_from_this();
+    KnobBoolBasePtr isBoolBase = toKnobBoolBase(thisShared);
+    KnobIntPtr isInt = toKnobInt(thisShared);
+    KnobBoolPtr isBool = toKnobBool(thisShared);
+    KnobButtonPtr isButton = toKnobButton(thisShared);
+    KnobDoubleBasePtr isDoubleBase = toKnobDoubleBase(thisShared);
+    KnobDoublePtr isDouble = toKnobDouble(thisShared);
+    KnobColorPtr isColor = toKnobColor(thisShared);
+    KnobChoicePtr isChoice = toKnobChoice(thisShared);
+    KnobStringBasePtr isStringBase = toKnobStringBase(thisShared);
+    KnobPagePtr isPage = toKnobPage(thisShared);
+    KnobGroupPtr isGrp = toKnobGroup(thisShared);
+    KnobSeparatorPtr isSep = toKnobSeparator(thisShared);
+    KnobButtonPtr btn = toKnobButton(thisShared);
+
+    // We do the opposite of what is done in initializeValueSerializationStorage()
+    if (isInt) {
+        if (restoreDefaultValue) {
+            isInt->setDefaultValueWithoutApplying(obj._defaultValue.isInt, targetDimension);
+        }
+        isInt->setValue(obj._value.isInt, ViewSpec::all(), targetDimension);
+    } else if (isBool || isGrp || isButton) {
+        assert(isBoolBase);
+        if (restoreDefaultValue) {
+            isBoolBase->setDefaultValueWithoutApplying(obj._defaultValue.isBool, targetDimension);
+        }
+        isBoolBase->setValue(obj._value.isBool, ViewSpec::all(), targetDimension);
+    } else if (isColor || isDouble) {
+        assert(isDoubleBase);
+        if (restoreDefaultValue) {
+            isDoubleBase->setDefaultValueWithoutApplying(obj._defaultValue.isDouble, targetDimension);
+        }
+        isDoubleBase->setValue(obj._value.isDouble, ViewSpec::all(), targetDimension);
+
+    } else if (isStringBase) {
+        if (restoreDefaultValue) {
+            isStringBase->setDefaultValueWithoutApplying(obj._defaultValue.isString, targetDimension);
+        }
+        isStringBase->setValue(obj._value.isString, ViewSpec::all(), targetDimension);
+
+    } else if (isChoice) {
+        bool found = false;
+        bool foundDefault = false;
+        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if ( boost::iequals(entries[i], obj._value.isString) ) {
+                isChoice->setValue(i);
+                found = true;
+                break;
+            } else if (boost::iequals(entries[i], obj._defaultValue.isString)) {
+                foundDefault = true;
+            }
+        }
+        if (!found) {
+            // Fallback on default if found, otherwise just remember the active entry if the entries happen
+            // to have it again in the future
+            if (foundDefault) {
+                isChoice->setValueFromLabel(obj._defaultValue.isString, 0);
+            } else {
+                isChoice->setActiveEntry(obj._defaultValue.isString);
+            }
+        }
+    }
+
+}
+
+void
+KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
+{
+
+    SERIALIZATION_NAMESPACE::KnobSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobSerialization*>(serializationBase);
+    SERIALIZATION_NAMESPACE::GroupKnobSerialization* groupSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(serializationBase);
+    assert(serialization || groupSerialization);
+    if (!serialization && !groupSerialization) {
+        return;
+    }
+
+    if (groupSerialization) {
+        KnobGroup* isGrp = dynamic_cast<KnobGroup*>(this);
+        KnobPage* isPage = dynamic_cast<KnobPage*>(this);
+
+        assert(isGrp || isPage);
+
+        groupSerialization->_typeName = typeName();
+        groupSerialization->_name = getName();
+        groupSerialization->_label = getLabel();
+        groupSerialization->_secret = getIsSecret();
+
+        if (isGrp) {
+            groupSerialization->_isSetAsTab = isGrp->isTab();
+            groupSerialization->_isOpened = isGrp->getValue();
+        }
+
+        KnobsVec children;
+
+        if (isGrp) {
+            children = isGrp->getChildren();
+        } else if (isPage) {
+            children = isPage->getChildren();
+        }
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            if (isPage) {
+                // If page, check that the child is a top level child and not child of a sub-group
+                // otherwise let the sub group register the child
+                KnobIPtr parent = children[i]->getParentKnob();
+                if (parent.get() != isPage) {
+                    continue;
+                }
+            }
+            KnobGroupPtr isGrp = toKnobGroup(children[i]);
+            if (isGrp) {
+                boost::shared_ptr<GroupKnobSerialization> serialisation( new GroupKnobSerialization );
+                isGrp->toSerialization(serialisation.get());
+                groupSerialization->_children.push_back(serialisation);
+            } else {
+                //KnobChoicePtr isChoice = toKnobChoice(children[i].get());
+                //bool copyKnob = false;//isChoice != NULL;
+                KnobSerializationPtr serialisation( new KnobSerialization );
+                children[i]->toSerialization(serialisation.get());
+                groupSerialization->_children.push_back(serialisation);
+            }
+        }
+    } else {
+
+
+        KnobIPtr thisShared = shared_from_this();
+
+        serialization->_typeName = typeName();
+        serialization->_dimension = getDimension();
+        serialization->_scriptName = getName();
+        serialization->_visibilityChanged = (getIsSecret() != getDefaultIsSecret());
+
+        // Values bits
+        serialization->_values.resize(serialization->_dimension);
+        for (int i = 0; i < serialization->_dimension; ++i) {
+            serialization->_values[i]._serialization = serialization;
+            serialization->_values[i]._dimension = i;
+            initializeValueSerializationStorage(thisShared, i, &serialization->_values[i]);
+        }
+
+        serialization->_masterIsAlias = getAliasMaster().get() != 0;
+
+        // User knobs bits
+        serialization->_isUserKnob = isUserKnob();
+        serialization->_label = getLabel();
+        serialization->_triggerNewLine = isNewLineActivated();
+        serialization->_evaluatesOnChange = getEvaluateOnChange();
+        serialization->_isPersistent = getIsPersistent();
+        serialization->_animatesChanged = (isAnimationEnabled() != isAnimatedByDefault());
+        serialization->_tooltip = getHintToolTip();
+        serialization->_iconFilePath[0] = getIconLabel(false);
+        serialization->_iconFilePath[1] = getIconLabel(true);
+
+        // Viewer UI context bits
+        if (getHolder()) {
+            if (getHolder()->getInViewerContextKnobIndex(thisShared) != -1) {
+                serialization->_hasViewerInterface = true;
+                serialization->_inViewerContextItemSpacing = getInViewerContextItemSpacing();
+                ViewerContextLayoutTypeEnum layout = getInViewerContextLayoutType();
+                switch (layout) {
+                    case eViewerContextLayoutTypeAddNewLine:
+                        serialization->_inViewerContextItemLayout = kInViewerContextItemLayoutNewLine;
+                        break;
+                    case eViewerContextLayoutTypeSeparator:
+                        serialization->_inViewerContextItemLayout = kInViewerContextItemLayoutAddSeparator;
+                        break;
+                    case eViewerContextLayoutTypeStretchAfter:
+                        serialization->_inViewerContextItemLayout = kInViewerContextItemLayoutStretchAfter;
+                        break;
+                    case eViewerContextLayoutTypeStretchBefore:
+                        serialization->_inViewerContextItemLayout = kInViewerContextItemLayoutStretchBefore;
+                        break;
+                    case eViewerContextLayoutTypeSpacing:
+                        serialization->_inViewerContextItemLayout.clear();
+                        break;
+                }
+                serialization->_inViewerContextSecret = getInViewerContextSecret();
+                if (serialization->_isUserKnob) {
+                    serialization->_inViewerContextLabel = getInViewerContextLabel();
+                    serialization->_inViewerContextIconFilePath[0] = getInViewerContextIconFilePath(false);
+                    serialization->_inViewerContextIconFilePath[1] = getInViewerContextIconFilePath(true);
+
+                }
+            }
+        }
+
+        // Per-type specific data
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
+        if (isChoice) {
+            ChoiceExtraData* extraData = new ChoiceExtraData;
+            extraData->_entries = isChoice->getEntries_mt_safe();
+            extraData->_helpStrings = isChoice->getEntriesHelp_mt_safe();
+            serialization->_extraData.reset(extraData);
+        }
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
+        if (isParametric) {
+            ParametricExtraData* extraData = new ParametricExtraData;
+            isParametric->saveParametricCurves(&extraData->parametricCurves);
+            serialization->_extraData.reset(extraData);
+        }
+        KnobString* isString = dynamic_cast<KnobString*>(this);
+        if (isString) {
+            TextExtraData* extraData = new TextExtraData;
+            isString->getAnimation().save(&extraData->keyframes);
+            serialization->_extraData.reset(extraData);
+        }
+        if (serialization->_isUserKnob) {
+            if (isString) {
+                TextExtraData* extraData = dynamic_cast<TextExtraData*>(serialization->_extraData.get());
+                assert(extraData);
+                extraData->label = isString->isLabel();
+                extraData->multiLine = isString->isMultiLine();
+                extraData->richText = isString->usesRichText();
+            }
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(this);
+            KnobInt* isInt = dynamic_cast<KnobInt*>(this);
+            KnobColor* isColor = dynamic_cast<KnobColor*>(this);
+            if (isDbl || isInt || isColor) {
+                ValueExtraData* extraData = new ValueExtraData;
+                if (isDbl) {
+                    extraData->useHostOverlayHandle = serialization->_dimension == 2 && isDbl->getHasHostOverlayHandle();
+                    extraData->min = isDbl->getMinimum();
+                    extraData->max = isDbl->getMaximum();
+                    extraData->dmin = isDbl->getDisplayMinimum();
+                    extraData->dmax = isDbl->getDisplayMaximum();
+                } else if (isInt) {
+                    extraData->min = isInt->getMinimum();
+                    extraData->max = isInt->getMaximum();
+                    extraData->dmin = isInt->getDisplayMinimum();
+                    extraData->dmax = isInt->getDisplayMaximum();
+                } else if (isColor) {
+                    extraData->min = isColor->getMinimum();
+                    extraData->max = isColor->getMaximum();
+                    extraData->dmin = isColor->getDisplayMinimum();
+                    extraData->dmax = isColor->getDisplayMaximum();
+                }
+                serialization->_extraData.reset(extraData);
+            }
+
+            KnobFile* isFile = dynamic_cast<KnobFile*>(this);
+            KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(this);
+            if (isFile || isOutFile) {
+                FileExtraData* extraData = new FileExtraData;
+                extraData->useSequences = isFile ? isFile->isInputImageFile() : isOutFile->isOutputImageFile();
+                serialization->_extraData.reset(extraData);
+            }
+
+            KnobPath* isPath = dynamic_cast<KnobPath*>(this);
+            if (isPath) {
+                PathExtraData* extraData = new PathExtraData;
+                extraData->multiPath = isPath->isMultiPath();
+                serialization->_extraData.reset(extraData);
+            }
+        }
+
+        // Check if we need to serialize this knob
+        serialization->_mustSerialize = true;
+        if (!serialization->_isUserKnob && !serialization->_visibilityChanged && !serialization->_masterIsAlias &&
+            !serialization->_hasViewerInterface) {
+            bool mustSerializeDimension = false;
+            for (std::size_t i = 0; i < serialization->_values.size(); ++i) {
+                mustSerializeDimension |= serialization->_values[i]._mustSerialize;
+            }
+            serialization->_mustSerialize = mustSerializeDimension;
+        }
+    } // groupSerialization
+} // KnobHelper::toSerialization
+
+
+void
+KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
+{
+    // We allow non persistent knobs to be loaded if we found a valid serialization for them
+    const SERIALIZATION_NAMESPACE::KnobSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::KnobSerialization*>(&serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    // Block any instance change action call when loading a knob
+    blockValueChanges();
+    beginChanges();
+
+    // Restore visibility
+    if (serialization->_visibilityChanged) {
+        setSecret(!getDefaultIsSecret());
+    }
+
+
+    // There is a case where the dimension of a parameter might have changed between versions, e.g:
+    // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
+    // both dimensions.
+    // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
+    // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
+    // knob's dimensions.
+
+
+    // The number of serialized dimension does not necessarily equals the number of dimensions of the knob because some dimensions
+    // may had no modification to serialize.
+    for (std::size_t k = 0; k < serialization->_values.size(); ++k) {
+
+        int dimensionIndex = serialization->_values[k]._dimension;
+
+        // Restore enabled state
+        if (serialization->_values[k]._enabledChanged) {
+            setEnabled(dimensionIndex, isDefaultEnabled(dimensionIndex));
+        }
+
+        // Clone animation
+        if (!serialization->_values[k]._animationCurve.keys.empty()) {
+            CurvePtr curve = getCurve(ViewIdx(0), dimensionIndex);
+            if (curve) {
+                curve->fromSerialization(serialization->_values[k]._animationCurve);
+            }
+        }
+
+#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
+        bool restoreDefaultValue = true;
+#else
+        bool restoreDefaultValue = serialization->_values[k]._boostSerializationClassVersion >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES;
+#endif
+        restoreValueFromSerialization(serialization->_values[k], dimensionIndex, restoreDefaultValue);
+    } // for all dims
+
+    // Restore extra datas
+    KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
+    KnobString* isString = dynamic_cast<KnobString*>(this);
+    if (isString) {
+
+        // Don't load animation for input image files: they no longer hold keyframes since Natron 1.0
+        // In the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
+        const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
+        assert(data);
+        if (data) {
+            isString->loadAnimation(data->keyframes);
+        }
+
+    }
+
+    // Load parametric parameter's curves
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
+    if (isParametric) {
+        const ParametricExtraData* data = dynamic_cast<const ParametricExtraData*>(serialization->_extraData.get());
+        assert(data);
+        if (data) {
+            isParametric->loadParametricCurves(data->parametricCurves);
+        }
+    }
+
+
+    // Restore user knobs bits
+    if (serialization->_isUserKnob) {
+        setAsUserKnob(true);
+        setIsPersistent(serialization->_isPersistent);
+        if (serialization->_animatesChanged) {
+            setAnimationEnabled(!isAnimatedByDefault());
+        }
+        setEvaluateOnChange(serialization->_evaluatesOnChange);
+        setName(serialization->_scriptName);
+        setHintToolTip(serialization->_tooltip);
+        setAddNewLine(serialization->_triggerNewLine);
+        setIconLabel(serialization->_iconFilePath[0], false);
+        setIconLabel(serialization->_iconFilePath[1], true);
+
+        KnobInt* isInt = dynamic_cast<KnobInt*>(this);
+        KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
+        KnobColor* isColor = dynamic_cast<KnobColor*>(this);
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
+        KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(this);
+        KnobPath* isPath = dynamic_cast<KnobPath*>(this);
+
+        int nDims = std::min( getDimension(), serialization->_dimension );
+
+        if (isInt) {
+            const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data) {
+                std::vector<int> minimums, maximums, dminimums, dmaximums;
+                for (int i = 0; i < nDims; ++i) {
+                    minimums.push_back(data->min);
+                    maximums.push_back(data->max);
+                    dminimums.push_back(data->dmin);
+                    dmaximums.push_back(data->dmax);
+                }
+                isInt->setMinimumsAndMaximums(minimums, maximums);
+                isInt->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
+            }
+        } else if (isDouble) {
+            const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data) {
+                std::vector<double> minimums, maximums, dminimums, dmaximums;
+                for (int i = 0; i < nDims; ++i) {
+                    minimums.push_back(data->min);
+                    maximums.push_back(data->max);
+                    dminimums.push_back(data->dmin);
+                    dmaximums.push_back(data->dmax);
+                }
+                isDouble->setMinimumsAndMaximums(minimums, maximums);
+                isDouble->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
+                if (data->useHostOverlayHandle) {
+                    isDouble->setHasHostOverlayHandle(true);
+                }
+            }
+
+        } else if (isChoice) {
+            const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data) {
+                isChoice->populateChoices(data->_entries, data->_helpStrings);
+            }
+        } else if (isColor) {
+            const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data) {
+                std::vector<double> minimums, maximums, dminimums, dmaximums;
+                for (int i = 0; i < nDims; ++i) {
+                    minimums.push_back(data->min);
+                    maximums.push_back(data->max);
+                    dminimums.push_back(data->dmin);
+                    dmaximums.push_back(data->dmax);
+                }
+                isColor->setMinimumsAndMaximums(minimums, maximums);
+                isColor->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
+            }
+        } else if (isString) {
+            const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data) {
+                if (data->label) {
+                    isString->setAsLabel();
+                } else if (data->multiLine) {
+                    isString->setAsMultiLine();
+                    if (data->richText) {
+                        isString->setUsesRichText(true);
+                    }
+                }
+            }
+
+        } else if (isInFile || isOutFile) {
+            const FileExtraData* data = dynamic_cast<const FileExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data && data->useSequences) {
+                if (isInFile) {
+                    isInFile->setAsInputImage();
+                } else if (isOutFile) {
+                    isOutFile->setAsOutputImageFile();
+                }
+            }
+        } else if (isPath) {
+            const PathExtraData* data = dynamic_cast<const PathExtraData*>(serialization->_extraData.get());
+            assert(data);
+            if (data && data->multiPath) {
+                isPath->setMultiPath(true);
+            }
+        }
+
+    } // isUserKnob
+
+    // Restore viewer UI context
+    if (serialization->_hasViewerInterface) {
+        setInViewerContextItemSpacing(serialization->_inViewerContextItemSpacing);
+        ViewerContextLayoutTypeEnum layoutType = eViewerContextLayoutTypeSpacing;
+        if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutNewLine) {
+            layoutType = eViewerContextLayoutTypeAddNewLine;
+        } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutStretchAfter) {
+            layoutType = eViewerContextLayoutTypeStretchAfter;
+        } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutStretchBefore) {
+            layoutType = eViewerContextLayoutTypeStretchBefore;
+        } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutAddSeparator) {
+            layoutType = eViewerContextLayoutTypeSeparator;
+        }
+        setInViewerContextLayoutType(layoutType);
+        setInViewerContextSecret(serialization->_inViewerContextSecret);
+        if (isUserKnob()) {
+            setInViewerContextLabel(QString::fromUtf8(serialization->_inViewerContextLabel.c_str()));
+            setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[0], false);
+            setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[1], true);
+        }
+    }
+    
+    //allow changes again
+    endChanges();
+    unblockValueChanges();
+} // KnobHelper::fromSerialization
+
+
 
 /***************************KNOB HOLDER******************************************/
 

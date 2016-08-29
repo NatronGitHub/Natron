@@ -21,32 +21,6 @@
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-
-#include <list>
-#include <string>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/map.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
 #include "Serialization/RectDSerialization.h"
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/NodeGuiSerialization.h"
@@ -538,7 +512,7 @@ public:
     ///New in GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
     std::list<ApplicationWindowSerialization*> _windows;
 
-    void convertToProjectWorkspaceSerialization(ProjectWorkspaceSerialization* serialization) const;
+    void convertToWorkspaceSerialization(WorkspaceSerialization* serialization) const;
 
     template<class Archive>
     void save(Archive & ar,

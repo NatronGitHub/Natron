@@ -99,7 +99,7 @@ public:
     TimeLinePtr timeline; // global timeline
     bool autoSetProjectFormat;
     mutable QMutex isLoadingProjectMutex;
-    ProjectSerializationPtr lastProjectLoaded;
+    SERIALIZATION_NAMESPACE::ProjectSerializationPtr lastProjectLoaded;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;

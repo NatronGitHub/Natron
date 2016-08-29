@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
-#include "Gui/NodeClipBoard.h"
+#include "Serialization/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/PreviewThread.h"
 
@@ -79,7 +79,7 @@ struct GuiApplicationManagerPrivate
     bool _shortcutsChangedVersion;
     QString _fontFamily;
     int _fontSize;
-    NodeClipBoard _nodeCB;
+    SERIALIZATION_NAMESPACE::NodeClipBoard _nodeCB;
     std::list<PythonUserCommand> pythonCommands;
 
     ///Used temporarily to store startup args while we load fonts

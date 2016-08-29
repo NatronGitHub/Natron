@@ -114,6 +114,11 @@ public:
         return KnobIntPtr(new KnobInt(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     void disableSlider();
 
     bool isSliderDisabled() const;
@@ -207,6 +212,11 @@ public:
         return KnobBoolPtr(new KnobBool(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
     /// @see Curve::getValueAt() for the animation code.
@@ -272,6 +282,11 @@ public:
     }
 
     virtual ~KnobDouble();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -506,6 +521,11 @@ public:
         return _isToolButtonAction;
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
 private:
 
 
@@ -585,6 +605,11 @@ public:
     }
 
     virtual ~KnobChoice();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -782,6 +807,11 @@ public:
         return true;
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
 private:
 
 
@@ -864,6 +894,11 @@ public:
         return true;
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
 public Q_SLOTS:
 
     void onDimensionSwitchToggled(bool b);
@@ -929,6 +964,11 @@ public:
     }
 
     virtual ~KnobString();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
     /// Can this type be animated?
     /// String animation consists in setting constant strings at
@@ -1058,6 +1098,11 @@ public:
         return KnobGroupPtr(new KnobGroup(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     void addKnob(const KnobIPtr& k);
     void removeKnob(const KnobIPtr& k);
 
@@ -1129,6 +1174,11 @@ public:
                                 bool declaredByPlugin = true)
     {
         return KnobPagePtr(new KnobPage(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
     }
 
     void addKnob(const KnobIPtr& k);
@@ -1212,6 +1262,11 @@ public:
         return KnobParametricPtr(new KnobParametric(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     void setCurveColor(int dimension, double r, double g, double b);
 
     void getCurveColor(int dimension, double* r, double* g, double* b);
@@ -1262,9 +1317,9 @@ public:
     StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::list< CurveSerialization >* curves) const;
+    void saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const;
 
-    void loadParametricCurves(const std::list< CurveSerialization > & curves);
+    void loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::CurveSerialization > & curves);
 
 Q_SIGNALS:
 
@@ -1315,6 +1370,11 @@ protected: // derives from KnobI, parent of KnobLayer, KnobPath
 
 public:
     virtual ~KnobTable();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
     void getTable(std::list<std::vector<std::string> >* table);
     void getTableSingleCol(std::list<std::string>* table);
@@ -1396,6 +1456,7 @@ public:
     virtual ~KnobLayers()
     {
     }
+
 
     virtual int getColumnsCount() const OVERRIDE FINAL
     {

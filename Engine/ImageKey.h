@@ -31,12 +31,17 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#include "Serialization/ImageKeySerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 class ImageKey
-    :  public KeyHelper<U64>
+    : public KeyHelper<U64>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
+
+    typedef SERIALIZATION_NAMESPACE::ImageKeySerialization SerializationType;
 
     U64 _nodeHashKey;
     double _time;
@@ -49,6 +54,7 @@ public:
     //hence it is probably not very high quality, even though the mipmap level is 0
     bool _fullScaleWithDownscaleInputs;
 
+#pragma message WARN("_pixelAspect, _frameVaryingOrAnimated, _fullScaleWithDownscaleInputs should go in ImageParams are they are not useful for the key")
     ImageKey();
 
     ImageKey(const CacheEntryHolder* holder,
@@ -60,7 +66,7 @@ public:
              bool draftMode,
              bool fullScaleWithDownscaleInputs);
 
-    void fillHash(Hash64* hash) const;
+    virtual void fillHash(Hash64* hash) const OVERRIDE FINAL;
 
     U64 getTreeVersion() const
     {
@@ -79,8 +85,9 @@ public:
         return ViewIdx(_view);
     }
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

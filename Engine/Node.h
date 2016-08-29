@@ -47,7 +47,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Markdown.h"
@@ -80,7 +80,7 @@ class Node
     : public QObject
     , public boost::enable_shared_from_this<Node>
     , public CacheEntryHolder
-    , public SerializableObjectBase
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -130,10 +130,10 @@ public:
     void load(const CreateNodeArgs& args);
 
 
-    void initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName);
+    void initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName);
 
 
-    void loadKnob(const KnobIPtr & knob, const std::list<KnobSerializationPtr> & serialization);
+    void loadKnob(const KnobIPtr & knob, const std::list<SERIALIZATION_NAMESPACE::KnobSerializationPtr> & serialization);
 
 private:
 
@@ -143,13 +143,13 @@ private:
      * from other nodes.
      * This function throws an exception if no serialization is valid in the object
      **/
-    void restoreKnobLinks(const boost::shared_ptr<KnobSerializationBase>& serialization,
+    void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
                           const NodesList & allNodes,
                           const std::map<std::string, std::string>& oldNewScriptNamesMapping);
 
     void restoreUserKnob(const KnobGroupPtr& group,
                          const KnobPagePtr& page,
-                         const SerializationObjectBase& serializationBase,
+                         const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase,
                          unsigned int recursionLevel);
 
 public:
@@ -158,23 +158,23 @@ public:
     /**
      * @brief Implement to save the content of the object to the serialization object
      **/
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
     /**
      * @brief Implement to load the content of the serialization object onto this object
      **/
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 
-    void loadKnobsFromSerialization(const NodeSerialization& serialization);
+    void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 
 private:
 
-    void getNodeSerializationFromPresetFile(const std::string& presetFile, NodeSerialization* serialization, std::string* presetsLabel);
+    void getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization, std::string* presetsLabel);
 
-    void getNodeSerializationFromPresetName(const std::string& presetName, NodeSerialization* serialization);
+    void getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
-    void loadPresetsInternal(const NodeSerialization& serialization);
+    void loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 
 public:
 
@@ -215,13 +215,15 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization & serialization,
+    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
                            const NodesList & allNodes,
                            const std::map<std::string, std::string>& oldNewScriptNamesMapping);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
     std::list<std::string> getPagesOrder() const;
+
+    bool hasPageOrderChangedSinceDefault() const;
 
     bool isNodeCreated() const;
 
@@ -684,6 +686,7 @@ public:
     bool getColor(double* r, double *g, double* b) const;
     void setColor(double r, double g, double b);
     void onNodeUIColorChanged(double r, double g, double b);
+    bool hasColorChangedSinceDefault() const;
 
     void setOverlayColor(double r, double g, double b);
     bool getOverlayColor(double* r, double* g, double* b) const;
@@ -1174,6 +1177,8 @@ public:
      * - a node within the group 1 of the group 1 of the project would be : <g>group1</g><g>group1</g>Blur1
      **/
     std::string getFullyQualifiedName() const;
+
+    std::string getContainerGroupFullyQualifiedName() const;
 
     void setLabel(const std::string& label);
 

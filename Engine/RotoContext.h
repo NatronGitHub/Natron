@@ -50,7 +50,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-
+#include "Serialization/SerializationBase.h"
 
 //#define NATRON_ROTO_INVERTIBLE
 //#define NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -69,8 +69,11 @@ struct RotoContextPrivate;
 class RotoContext
     : public QObject
     , public boost::enable_shared_from_this<RotoContext>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -212,11 +215,9 @@ public:
      **/
     U64 getAge();
 
-    ///Serialization
-    void save(RotoContextSerialization* obj) const;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
-    ///Deserialization
-    void load(const RotoContextSerialization & obj);
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
     void resetToDefault();
 

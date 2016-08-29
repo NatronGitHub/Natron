@@ -19,35 +19,43 @@
 #ifndef Engine_RectDSerialization_h
 #define Engine_RectDSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-
-#include "RectD.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+#include "Engine/RectD.h"
 #endif
 
-#include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
-#pragma message WARN("Missing RectDSerialization class")
+class RectDSerialization
+: public SerializationObjectBase
+{
+public:
+
+    double x1,y1,x2,y2;
+
+    RectDSerialization()
+    : SerializationObjectBase()
+    , x1(0)
+    , y1(0)
+    , x2(0)
+    , y2(0)
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
+};
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+SERIALIZATION_NAMESPACE_EXIT;
 
 template<class Archive>
 void
-RectD::serialize(Archive & ar,
+NATRON_NAMESPACE::RectD::serialize(Archive & ar,
                  const unsigned int version)
 {
     Q_UNUSED(version);
@@ -56,9 +64,11 @@ RectD::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Right", x2);
     ar & ::boost::serialization::make_nvp("Top", y2);
 }
-
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
+#endif
 
-NATRON_NAMESPACE_EXIT;
+#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
+SERIALIZATION_NAMESPACE_EXIT;
+#endif
 
 #endif // Engine_RectDSerialization_h

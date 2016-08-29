@@ -170,7 +170,7 @@ public:
 
     bool isNodeClipBoardEmpty() const;
 
-    NodeClipBoard& getNodeClipBoard();
+    SERIALIZATION_NAMESPACE::NodeClipBoard& getNodeClipBoard();
     virtual void reloadStylesheets() OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
 

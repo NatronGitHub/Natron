@@ -44,9 +44,11 @@
 #include "Gui/Menu.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout, GuiLayoutSerialization
 #include "Gui/SequenceFileDialog.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+#include "Serialization/SerializationIO.h"
+SERIALIZATION_NAMESPACE_USING
 
 NATRON_NAMESPACE_ENTER;
 
@@ -60,32 +62,14 @@ Gui::importLayoutInternal(const std::string& filename)
 
         return;
     }
-
+    
     try {
+        WorkspaceSerialization s;
+        SERIALIZATION_NAMESPACE::read(ifile, &s);
+        restoreLayout(true, false, s);
 
-        try {
-            boost::archive::xml_iarchive iArchive(ifile);
-            // Try first to load an old gui layout
-            GuiLayoutSerialization s;
-            iArchive >> boost::serialization::make_nvp("Layout", s);
-            ProjectWorkspaceSerialization serialization;
-            s.convertToProjectWorkspaceSerialization(&serialization);
-            restoreLayout(true, false, serialization);
-        } catch (...) {
-            // try the newer version
-            boost::archive::xml_iarchive iArchive(ifile);
-            // Try first to load an old gui layout
-            ProjectWorkspaceSerialization s;
-            iArchive >> boost::serialization::make_nvp("Layout", s);
-            restoreLayout(true, false, s);
-        }
-    } catch (const boost::archive::archive_exception & e) {
-        QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
-        Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
-        return;
-    } catch (const std::exception & e) {
-        QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
+    }  catch (const std::exception & e) {
+        QString err = QString::fromUtf8("Failed to open file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
         Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
         return;

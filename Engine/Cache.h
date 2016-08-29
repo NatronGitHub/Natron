@@ -51,6 +51,7 @@ GCC_DIAG_OFF(deprecated)
 GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include "Serialization/CacheSerialization.h"
 #endif
 
 #include "Engine/AppManager.h" //for access to settings
@@ -61,6 +62,7 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/ImageLocker.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/EngineFwd.h"
+
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries
 #define NATRON_CACHE_LIMIT_PERCENT 0.9
@@ -379,7 +381,8 @@ Q_SIGNALS:
  */
 template<typename EntryType>
 class Cache
-        : public CacheAPI
+: public CacheAPI
+, public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     friend class CacheCleanerThread;
 public:
@@ -390,10 +393,6 @@ public:
     typedef typename EntryType::param_t param_t;
     typedef boost::shared_ptr<param_t> ParamsTypePtr;
     typedef boost::shared_ptr<EntryType> EntryTypePtr;
-
-    struct SerializedEntry;
-
-    typedef std::list< SerializedEntry > CacheTOC;
 
 public:
 
@@ -1548,11 +1547,15 @@ public:
 
     /*Saves cache to disk as a settings file.
              */
-    template<typename EntryType>
-    void
-    Cache<EntryType>::save(CacheTOC* tableOfContents)
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL
     {
+        SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>* s = dynamic_cast<SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>*>(obj);
+        if (!s) {
+            return;
+        }
+
         clearInMemoryPortion(false);
+        s->cacheVersion = cacheVersion();
         {
             QMutexLocker l(&_lock);     // must be locked
 
@@ -1560,17 +1563,18 @@ public:
                 std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
                 for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
                     if ( (*it2)->isStoredOnDisk() ) {
-                        SerializedEntry serialization;
+                        SERIALIZATION_NAMESPACE::SerializedEntry<EntryType> serialization;
                         serialization.hash = (*it2)->getHashKey();
-                        serialization.params = (*it2)->getParams();
-                        serialization.key = (*it2)->getKey();
+                        (*it2)->getParams()->toSerialization(&serialization.params);
+                        key_t key = (*it2)->getKey();
+                        key.toSerialization(&serialization.key);
                         serialization.size = (*it2)->dataSize();
                         serialization.filePath = (*it2)->getFilePath();
                         serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
 
                         (*it2)->syncBackingFile();
 
-                        tableOfContents->push_back(serialization);
+                        s->entries.push_back(serialization);
 #ifdef DEBUG
                         if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
                             qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
@@ -1583,18 +1587,23 @@ public:
     }
 
     /*Restores the cache from disk.*/
-    template<typename EntryType>
-    void
-    Cache<EntryType>::restore(const CacheTOC & tableOfContents)
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& obj) OVERRIDE FINAL
     {
+        const SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>* s = dynamic_cast<const SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>*>(&obj);
+        if (!s) {
+            return;
+        }
         ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
         ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
         std::list<EntryTypePtr> entriesToBeDeleted;
 
         std::set<QString> usedFilePaths;
-        for (typename CacheTOC::const_iterator it =
-             tableOfContents.begin(); it != tableOfContents.end(); ++it) {
-            if ( it->hash != it->key.getHash() ) {
+        for (typename std::list<SERIALIZATION_NAMESPACE::SerializedEntry<EntryType> >::const_iterator it =
+             s->entries.begin(); it != s->entries.end(); ++it) {
+
+            key_t key;
+            key.fromSerialization(it->key);
+            if ( it->hash != key.getHash() ) {
                 /*
                          * If this warning is printed this means that the value computed by it->key()
                          * is different than the value stored prior to serialiazing this entry. In other words there're
@@ -1616,7 +1625,9 @@ public:
             EntryType* value = NULL;
 
             try {
-                value = new EntryType(it->key, it->params, this);
+                ParamsTypePtr params(new param_t);
+                params->fromSerialization(it->params);
+                value = new EntryType(key, params, this);
                 if (it->size != getTileSizeBytes()) {
                     continue;
                 }

@@ -880,7 +880,7 @@ ViewerNode::onKnobsLoaded()
 }
 
 void
-ViewerNode::onGroupCreated(const NodeSerializationPtr& serialization)
+ViewerNode::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
 {
     if (serialization) {
         return;
@@ -1563,7 +1563,7 @@ ViewerNode::initializeKnobs()
         param->setSecretByDefault(true);
         param->setDefaultValue(projectFps);
         param->setEvaluateOnChange(false);
-        param->setAllDimensionsEnabled(false);
+        param->setDefaultEnabled(0, false);
         param->setMinimum(0.);
         param->disableSlider();
         _imp->fpsKnob = param;

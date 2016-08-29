@@ -84,7 +84,7 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               OFX::Host::ImageEffect::Descriptor* desc,
                                               ContextEnum context,
-                                              const NodeSerialization* serialization,
+                                              const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
                                               const CreateNodeArgs& args) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
@@ -121,7 +121,7 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       OFX::Host::ImageEffect::Descriptor* desc,
                                       ContextEnum context,
-                                      const NodeSerialization* serialization,
+                                      const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
                                       const CreateNodeArgs& args) OVERRIDE FINAL;
 
     OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;

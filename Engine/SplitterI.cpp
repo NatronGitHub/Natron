@@ -24,55 +24,61 @@
 
 #include "SplitterI.h"
 #include "Engine/TabWidgetI.h"
-#include "Engine/ProjectSerialization.h"
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
 void
-SplitterI::toSerialization(SerializationObjectBase* serializationBase)
+SplitterI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
 {
-    ProjectWindowSplitterSerialization* serialization = dynamic_cast<ProjectWindowSplitterSerialization*>(serializationBase);
+    SERIALIZATION_NAMESPACE::WidgetSplitterSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::WidgetSplitterSerialization*>(serializationBase);
     if (!serialization) {
         return;
     }
-    serialization->orientation = getNatronOrientation();
+    OrientationEnum ori = getNatronOrientation();
+    switch (ori) {
+        case eOrientationHorizontal:
+            serialization->orientation = kSplitterOrientationHorizontal;
+            break;
+        case eOrientationVertical:
+            serialization->orientation = kSplitterOrientationVertical;
+            break;
+    }
     serialization->leftChildSize = getLeftChildrenSize();
     serialization->rightChildSize = getRightChildrenSize();
     {
-        serialization->leftChild.reset(new ProjectWindowSplitterSerialization::Child);
         SplitterI* isLeftSplitter = isLeftChildSplitter();
         TabWidgetI* isLeftTabWidget = isLeftChildTabWidget();
         if (isLeftSplitter) {
-            serialization->leftChild->type = eProjectWorkspaceWidgetTypeSplitter;
-            serialization->leftChild->childIsSplitter.reset(new ProjectWindowSplitterSerialization);
-            isLeftSplitter->toSerialization(serialization->leftChild->childIsSplitter.get());
+            serialization->leftChild.type = kSplitterChildTypeSplitter;
+            serialization->leftChild.childIsSplitter.reset(new SERIALIZATION_NAMESPACE::WidgetSplitterSerialization);
+            isLeftSplitter->toSerialization(serialization->leftChild.childIsSplitter.get());
         } else if (isLeftTabWidget) {
-            serialization->leftChild->type = eProjectWorkspaceWidgetTypeTabWidget;
-            serialization->leftChild->childIsTabWidget.reset(new ProjectTabWidgetSerialization);
-            isLeftTabWidget->toSerialization(serialization->leftChild->childIsTabWidget.get());
+            serialization->leftChild.type = kSplitterChildTypeTabWidget;
+            serialization->leftChild.childIsTabWidget.reset(new SERIALIZATION_NAMESPACE::TabWidgetSerialization);
+            isLeftTabWidget->toSerialization(serialization->leftChild.childIsTabWidget.get());
         }
     }
     {
-        serialization->rightChild.reset(new ProjectWindowSplitterSerialization::Child);
         SplitterI* isRightSplitter = isRightChildSplitter();
         TabWidgetI* isRigthTabWidget = isRightChildTabWidget();
         if (isRightSplitter) {
-            serialization->rightChild->type = eProjectWorkspaceWidgetTypeSplitter;
-            serialization->rightChild->childIsSplitter.reset(new ProjectWindowSplitterSerialization);
-            isRightSplitter->toSerialization(serialization->rightChild->childIsSplitter.get());
+            serialization->rightChild.type = kSplitterChildTypeSplitter;
+            serialization->rightChild.childIsSplitter.reset(new SERIALIZATION_NAMESPACE::WidgetSplitterSerialization);
+            isRightSplitter->toSerialization(serialization->rightChild.childIsSplitter.get());
         } else if (isRigthTabWidget) {
-            serialization->rightChild->type = eProjectWorkspaceWidgetTypeTabWidget;
-            serialization->rightChild->childIsTabWidget.reset(new ProjectTabWidgetSerialization);
-            isRigthTabWidget->toSerialization(serialization->rightChild->childIsTabWidget.get());
+            serialization->rightChild.type = kSplitterChildTypeTabWidget;
+            serialization->rightChild.childIsTabWidget.reset(new SERIALIZATION_NAMESPACE::TabWidgetSerialization);
+            isRigthTabWidget->toSerialization(serialization->rightChild.childIsTabWidget.get());
         }
 
     }
 }
 
 void
-SplitterI::fromSerialization(const SerializationObjectBase& serializationBase)
+SplitterI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
 {
-    const ProjectWindowSplitterSerialization* serialization = dynamic_cast<const ProjectWindowSplitterSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization*>(&serializationBase);
     if (!serialization) {
         return;
     }

@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Serialization/NonKeyParamsSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 NonKeyParams::NonKeyParams()
@@ -54,6 +56,30 @@ const CacheEntryStorageInfo&
 NonKeyParams::getStorageInfo() const
 {
     return _storageInfo;
+}
+
+void
+NonKeyParams::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+{
+    SERIALIZATION_NAMESPACE::NonKeyParamsSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::NonKeyParamsSerialization*>(serializationBase);
+    if (!serialization) {
+        return;
+    }
+    serialization->dataTypeSize = _storageInfo.dataTypeSize;
+    serialization->nComps = _storageInfo.numComponents;
+    _storageInfo.bounds.toSerialization(&serialization->bounds);
+}
+
+void
+NonKeyParams::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+{
+    const SERIALIZATION_NAMESPACE::NonKeyParamsSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::NonKeyParamsSerialization*>(&serializationBase);
+    if (!serialization) {
+        return;
+    }
+    _storageInfo.dataTypeSize = serialization->dataTypeSize;
+    _storageInfo.numComponents = serialization->nComps;
+    _storageInfo.bounds.fromSerialization(serialization->bounds);
 }
 
 NATRON_NAMESPACE_EXIT;

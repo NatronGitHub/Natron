@@ -26,43 +26,57 @@
 // ***** END PYTHON BLOCK *****
 
 
-#include "Engine/RotoLayerSerialization.h"
+#include "Serialization/RotoLayerSerialization.h"
+
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 #define ROTO_CTX_REMOVE_COUNTERS 2
 #define ROTO_CTX_VERSION ROTO_CTX_REMOVE_COUNTERS
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class RotoContextSerialization
+: public SerializationObjectBase
 {
 
 public:
 
     RotoContextSerialization()
-        : _baseLayer(new RotoLayerSerialization)
-        , _selectedItems()
-        , _autoKeying(false)
-        , _rippleEdit(false)
-        , _featherLink(false)
+        : _baseLayer()
     {
     }
 
-    ~RotoContextSerialization()
+    virtual ~RotoContextSerialization()
     {
     }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        throw std::runtime_error("Saving with boost is no longer supported");
+    }
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
         ar & ::boost::serialization::make_nvp("BaseLayer", _baseLayer);
-        ar & ::boost::serialization::make_nvp("AutoKeying", _autoKeying);
-        ar & ::boost::serialization::make_nvp("RippleEdit", _rippleEdit);
-        ar & ::boost::serialization::make_nvp("FeatherLink", _featherLink);
-        ar & ::boost::serialization::make_nvp("Selection", _selectedItems);
+
+        bool autoKeying, rippleEdit, featherLink;
+        ar & ::boost::serialization::make_nvp("AutoKeying", autoKeying);
+        ar & ::boost::serialization::make_nvp("RippleEdit", rippleEdit);
+        ar & ::boost::serialization::make_nvp("FeatherLink", featherLink);
+
+        std::list<std::string> selectedItems;
+        ar & ::boost::serialization::make_nvp("Selection", selectedItems);
 
         if (version < ROTO_CTX_REMOVE_COUNTERS) {
             std::map<std::string, int> _itemCounters;
@@ -73,17 +87,13 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    RotoLayerSerializationPtr _baseLayer;
-    std::list< std::string > _selectedItems;
-    bool _autoKeying;
-    bool _rippleEdit;
-    bool _featherLink;
+    RotoLayerSerialization _baseLayer;
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoContextSerialization, ROTO_CTX_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoContextSerialization, ROTO_CTX_VERSION)
 #endif
 
 

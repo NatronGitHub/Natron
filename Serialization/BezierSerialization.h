@@ -28,7 +28,6 @@
 #include "Global/Macros.h"
 
 
-#include "Serialization/SerializationBase.h"
 #include "Serialization/RotoDrawableItemSerialization.h"
 #include "Serialization/BezierCPSerialization.h"
 
@@ -39,11 +38,10 @@
 #define BEZIER_SERIALIZATION_VERSION BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class BezierSerialization
-    : public SerializationObjectBase
-    , public RotoDrawableItemSerialization
+    : public RotoDrawableItemSerialization
 {
 
 public:
@@ -61,8 +59,18 @@ public:
     {
     }
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+    
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        throw std::runtime_error("Saving with boost is no longer supported");
+    }
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -80,13 +88,17 @@ public:
             ar & ::boost::serialization::make_nvp("IsStroke", isStroke);
         }
         for (int i = 0; i < numPoints; ++i) {
-            BezierCP cp;
+            NATRON_NAMESPACE::BezierCP cp;
             ar & ::boost::serialization::make_nvp("CP", cp);
-            _controlPoints.push_back(cp);
+            BezierCPSerialization cps;
+            cp.toSerialization(&cps);
+            _controlPoints.push_back(cps);
 
-            BezierCP fp;
+            NATRON_NAMESPACE::BezierCP fp;
             ar & ::boost::serialization::make_nvp("FP", fp);
-            _featherPoints.push_back(fp);
+            BezierCPSerialization fps;
+            fp.toSerialization(&fps);
+            _featherPoints.push_back(fps);
         }
         ar & ::boost::serialization::make_nvp("Closed", _closed);
         if (version >= BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER) {
@@ -99,16 +111,16 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    std::list< BezierCP > _controlPoints, _featherPoints;
+    std::list< BezierCPSerialization > _controlPoints, _featherPoints;
     bool _closed;
     bool _isOpenBezier;
 };
 
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::BezierSerialization, BEZIER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::BezierSerialization, BEZIER_SERIALIZATION_VERSION)
 #endif
 
 #endif // Engine_BezierSerialization_h

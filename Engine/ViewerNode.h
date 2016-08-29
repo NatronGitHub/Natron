@@ -246,7 +246,7 @@ public:
 
     virtual std::string getPluginDescription() const OVERRIDE FINAL;
 
-    virtual void onGroupCreated(const NodeSerializationPtr& serialization) OVERRIDE FINAL;
+    virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization) OVERRIDE FINAL;
 
     virtual bool isOutput() const OVERRIDE FINAL
     {

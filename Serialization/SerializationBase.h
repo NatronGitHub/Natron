@@ -16,19 +16,13 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef SERIALIZATIONWRITER_H
-#define SERIALIZATIONWRITER_H
-
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
+#ifndef SERIALIZATION_BASE_H
+#define SERIALIZATION_BASE_H
 
 
-#include "Engine/EngineFwd.h"
+#include "Serialization/SerializationFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 /**
  * @brief Base class for serialization objects
@@ -46,6 +40,16 @@ public:
     {
         
     }
+
+    /**
+     * @brief Implement to write the content of the object to the emitter
+     **/
+    virtual void encode(YAML::Emitter& em) const = 0;
+
+    /**
+     * @brief Implement to read the content of the object from the yaml node
+     **/
+    virtual void decode(const YAML::Node& node) = 0;
 };
 
 /**
@@ -77,6 +81,6 @@ public:
 
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
-#endif // SERIALIZATIONWRITER_H
+#endif // SERIALIZATION_BASE_H

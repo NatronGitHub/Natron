@@ -45,7 +45,6 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -58,6 +57,8 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/NodeSerialization.h"
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 11
 
@@ -1499,11 +1500,17 @@ NodeGroup::clearLastRenderedImage()
 }
 
 void
-NodeGroup::onGroupCreated(const NodeSerializationPtr& serialization)
+NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
 {
-    if ( serialization && !serialization->getPythonModule().empty() ) {
-        QString moduleName = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
-        AppInstance::setGroupLabelIDAndVersion(getNode(), moduleName, serialization->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME);
+    if ( serialization && !serialization->_pythonModule.empty() ) {
+        QString moduleName = QString::fromUtf8( ( serialization->_pythonModule.c_str() ) );
+
+#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
+        bool pythonModuleIsScriptFile = false;
+#else
+        bool pythonModuleIsScriptFile = serialization->_boostSerializationClassVersion < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME;
+#endif
+        AppInstance::setGroupLabelIDAndVersion(getNode(), moduleName, pythonModuleIsScriptFile);
     } else if ( !serialization && !getApp()->isCreatingPythonGroup()) {
         //if the node is a group and we're not loading the project, create one input and one output
         NodePtr input, output;

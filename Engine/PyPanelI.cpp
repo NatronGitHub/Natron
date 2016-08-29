@@ -24,7 +24,11 @@
 
 #include "PyPanelI.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/ProjectSerialization.h"
+
+#include "Serialization/KnobSerialization.h"
+#include "Serialization/WorkspaceSerialization.h"
+
+SERIALIZATION_NAMESPACE_USING
 
 NATRON_NAMESPACE_ENTER;
 
@@ -42,8 +46,11 @@ PyPanelI::toSerialization(SerializationObjectBase* serializationBase)
         KnobPagePtr isPage = toKnobPage(*it);
 
         if (!isGroup && !isPage) {
-            KnobSerializationPtr k( new KnobSerialization(*it) );
-            serialization->knobs.push_back(k);
+            KnobSerializationPtr k( new KnobSerialization );
+            (*it)->toSerialization(k.get());
+            if (k->_mustSerialize) {
+                serialization->knobs.push_back(k);
+            }
         }
     }
 

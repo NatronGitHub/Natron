@@ -26,7 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -34,7 +34,7 @@ NATRON_NAMESPACE_ENTER;
  * @brief A serializable window is a window which have mutex-protected members that can be accessed in the serialization thread
  * because width() height() pos() etc... are not thread-safe.
  **/
-class SerializableWindow : public SerializableObjectBase
+class SerializableWindow : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     mutable QMutex* _lock;
     int _w, _h;
@@ -63,12 +63,12 @@ public:
     /**
      * @brief Implement to save the content of the object to the serialization object
      **/
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
     /**
      * @brief Implement to load the content of the serialization object onto this object
      **/
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
     virtual TabWidgetI* isMainWidgetTab() const = 0;
 
@@ -78,7 +78,7 @@ public:
 
 protected:
 
-    virtual void restoreChildFromSerialization(const ProjectWindowSerialization& serialization) = 0;
+    virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) = 0;
     
 };
 

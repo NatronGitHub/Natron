@@ -90,7 +90,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void restoreChildFromSerialization(const ProjectWindowSerialization& serialization) OVERRIDE FINAL;
+    virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) OVERRIDE FINAL;
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;

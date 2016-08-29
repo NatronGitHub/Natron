@@ -46,7 +46,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
-#include "Engine/BezierSerialization.h"
 #include "Engine/BezierCP.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
@@ -56,12 +55,16 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoLayerSerialization.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/BezierSerialization.h"
+#include "Serialization/RotoLayerSerialization.h"
+#include "Serialization/RotoStrokeItemSerialization.h"
+
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -153,14 +156,13 @@ RotoLayer::clone(const RotoItem* other)
 }
 
 void
-RotoLayer::save(const RotoItemSerializationPtr& obj) const
+RotoLayer::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
-    RotoLayerSerializationPtr s = boost::dynamic_pointer_cast<RotoLayerSerialization>(obj);
-
-    assert(s);
+    SERIALIZATION_NAMESPACE::RotoLayerSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RotoLayerSerialization*>(obj);
     if (!s) {
-        throw std::logic_error("RotoLayer::save");
+        return;
     }
+
     RotoItems items;
     {
         QMutexLocker l(&itemMutex);
@@ -171,18 +173,18 @@ RotoLayer::save(const RotoItemSerializationPtr& obj) const
         BezierPtr isBezier = toBezier(*it);
         RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
         RotoLayerPtr layer = toRotoLayer(*it);
-        RotoItemSerializationPtr childSerialization;
+        SERIALIZATION_NAMESPACE::RotoItemSerializationPtr childSerialization;
         if (isBezier && !isStroke) {
-            childSerialization.reset(new BezierSerialization);
-            isBezier->save( childSerialization );
+            childSerialization.reset(new SERIALIZATION_NAMESPACE::BezierSerialization);
+            isBezier->toSerialization( childSerialization.get() );
         } else if (isStroke) {
-            childSerialization.reset( new RotoStrokeItemSerialization() );
-            isStroke->save( childSerialization );
+            childSerialization.reset( new SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization() );
+            isStroke->toSerialization( childSerialization.get() );
         } else {
             assert(layer);
             if (layer) {
-                childSerialization.reset(new RotoLayerSerialization);
-                layer->save( childSerialization );
+                childSerialization.reset(new SERIALIZATION_NAMESPACE::RotoLayerSerialization);
+                layer->toSerialization( childSerialization.get() );
             }
         }
         assert(childSerialization);
@@ -190,35 +192,40 @@ RotoLayer::save(const RotoItemSerializationPtr& obj) const
     }
 
 
-    RotoItem::save(obj);
+    RotoItem::toSerialization(obj);
 }
 
 void
-RotoLayer::load(const RotoItemSerialization &obj)
+RotoLayer::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
-    const RotoLayerSerialization & s = dynamic_cast<const RotoLayerSerialization &>(obj);
+    const SERIALIZATION_NAMESPACE::RotoLayerSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoLayerSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+
     RotoLayerPtr this_layer = toRotoLayer( shared_from_this() );
 
     assert(this_layer);
-    RotoItem::load(obj);
+    RotoItem::fromSerialization(obj);
     {
-        for (std::list<RotoItemSerializationPtr >::const_iterator it = s.children.begin(); it != s.children.end(); ++it) {
-            boost::shared_ptr<BezierSerialization> b = boost::dynamic_pointer_cast<BezierSerialization>(*it);
-            boost::shared_ptr<RotoStrokeItemSerialization> s = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(*it);
-            boost::shared_ptr<RotoLayerSerialization> l = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
-            if (b && !s) {
+        for (std::list<SERIALIZATION_NAMESPACE::RotoItemSerializationPtr >::const_iterator it = s->children.begin(); it != s->children.end(); ++it) {
+            SERIALIZATION_NAMESPACE::BezierSerializationPtr isBezier = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::BezierSerialization>(*it);
+            SERIALIZATION_NAMESPACE::RotoStrokeItemSerializationPtr isStroke = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization>(*it);
+            SERIALIZATION_NAMESPACE::RotoLayerSerializationPtr isLayer = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::RotoLayerSerialization>(*it);
+            if (isBezier) {
                 BezierPtr bezier( new Bezier(getContext(), kRotoBezierBaseName, RotoLayerPtr(), false) );
                 bezier->createNodes(false);
-                bezier->load(*b);
+                bezier->fromSerialization(*isBezier);
                 if ( !bezier->getParentLayer() ) {
                     bezier->setParentLayer(this_layer);
                 }
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
-            } else if (s) {
-                RotoStrokeItemPtr stroke( new RotoStrokeItem( (RotoStrokeType)s->getType(), getContext(), kRotoPaintBrushBaseName, RotoLayerPtr() ) );
+            } else if (isStroke) {
+                RotoStrokeType type = RotoStrokeItem::strokeTypeFromSerializationString(isStroke->_brushType);
+                RotoStrokeItemPtr stroke( new RotoStrokeItem( type, getContext(), kRotoPaintBrushBaseName, RotoLayerPtr() ) );
                 stroke->createNodes(false);
-                stroke->load(*s);
+                stroke->fromSerialization(*isStroke);
                 if ( !stroke->getParentLayer() ) {
                     stroke->setParentLayer(this_layer);
                 }
@@ -226,11 +233,11 @@ RotoLayer::load(const RotoItemSerialization &obj)
 
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(stroke);
-            } else if (l) {
+            } else if (isLayer) {
                 RotoLayerPtr layer( new RotoLayer(getContext(), kRotoLayerBaseName, this_layer) );
                 _imp->items.push_back(layer);
                 getContext()->addLayer(layer);
-                layer->load(*l);
+                layer->fromSerialization(*isLayer);
                 if ( !layer->getParentLayer() ) {
                     layer->setParentLayer(this_layer);
                 }

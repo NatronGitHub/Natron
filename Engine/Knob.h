@@ -45,7 +45,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -373,7 +373,7 @@ typedef std::list<KnobChange> KnobChanges;
 class KnobI
     : public OverlaySupport
     , public boost::enable_shared_from_this<KnobI>
-    , public SerializableObjectBase
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     friend class KnobHolder;
 
@@ -456,6 +456,11 @@ public:
      * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
+
+    /**
+     * @brief Returns true if by default this knob has the animated flag on
+     **/
+    virtual bool isAnimatedByDefault() const = 0;
 
     /**
      * @brief Returns true if the knob has had modifications
@@ -1153,15 +1158,17 @@ public:
     /**
      * @brief Implement to save the content of the object to the serialization object
      **/
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE = 0;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE = 0;
 
     /**
      * @brief Implement to load the content of the serialization object onto this object
      **/
-    virtual void fromSerialization(const SerializationObjectBase&  serializationBase) OVERRIDE = 0;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&  serializationBase) OVERRIDE = 0;
 
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, int targetDimension, bool restoreDefaultValue) = 0;
 
 private:
+
     virtual void removeListener(const KnobIPtr& listener, int listenerDimension) = 0;
 
 public:
@@ -1583,6 +1590,9 @@ public:
     virtual KnobIPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
 
+    virtual bool hasDefaultValueChanged(int dimension) const = 0;
+
+
 private:
 
 
@@ -1593,7 +1603,6 @@ protected:
 
     virtual bool setHasModifications(int dimension, bool value, bool lock) OVERRIDE FINAL;
 
-    virtual bool hasDefaultValueChanged(int dimension) const = 0;
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
@@ -1647,12 +1656,14 @@ public:
     /**
      * @brief Implement to save the content of the object to the serialization object
      **/
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
     /**
      * @brief Implement to load the content of the serialization object onto this object
      **/
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, int targetDimension, bool restoreDefaultValue) OVERRIDE FINAL;
 
 protected:
 
@@ -2098,15 +2109,17 @@ public:
 
     bool getValueFromCurve(double time, ViewSpec view, int dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret);
 
+    virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
+
+    
 protected:
 
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
 
+
 private:
 
     virtual void copyValuesFromCurve(int dim) OVERRIDE FINAL;
-
-    virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
 
     void initMinMax();
 

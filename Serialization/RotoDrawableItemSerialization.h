@@ -19,15 +19,6 @@
 #ifndef Engine_RotoDrawableItemSerialization_h
 #define Engine_RotoDrawableItemSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-
-
 #include "Serialization/RotoItemSerialization.h"
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
@@ -37,7 +28,7 @@
 #define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class RotoDrawableItemSerialization
     : public RotoItemSerialization
@@ -54,7 +45,18 @@ public:
     {
     }
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        throw std::runtime_error("Saving with boost is no longer supported");
+    }
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -113,11 +115,11 @@ public:
     double _overlayColor[4];
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoDrawableItemSerialization, ROTO_DRAWABLE_ITEM_VERSION)
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoDrawableItemSerialization);
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization, ROTO_DRAWABLE_ITEM_VERSION)
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization);
 #endif
 
 

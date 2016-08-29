@@ -19,38 +19,27 @@
 #ifndef Engine_RotoItemSerialization_h
 #define Engine_RotoItemSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) && defined(NATRON_BOOST_SERIALIZATION_COMPAT)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/map.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
+#include "Serialization/SerializationBase.h"
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 #define ROTO_ITEM_INTRODUCES_LABEL 2
 #define ROTO_ITEM_VERSION ROTO_ITEM_INTRODUCES_LABEL
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class RotoItemSerialization
+: public SerializationObjectBase
 {
 
 public:
+
+    std::string name, label;
+    bool activated;
+    std::string parentLayerName;
+    bool locked;
+
 
     RotoItemSerialization()
         : name()
@@ -64,7 +53,21 @@ public:
     {
     }
 
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        throw std::runtime_error("Saving with boost is no longer supported");
+    }
+
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -82,16 +85,13 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    std::string name, label;
-    bool activated;
-    std::string parentLayerName;
-    bool locked;
+
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoItemSerialization, ROTO_ITEM_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoItemSerialization, ROTO_ITEM_VERSION)
 #endif
 
 

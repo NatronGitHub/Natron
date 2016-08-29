@@ -162,9 +162,9 @@ public:
     void removeViewerInterface(const NodeGuiPtr& n,
                                 bool permanently);
 
-    virtual bool saveProjection(ViewportData* data) OVERRIDE FINAL;
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
 
-    virtual bool loadProjection(const ViewportData& data) OVERRIDE FINAL;
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
 
 private:

@@ -216,8 +216,8 @@ public:
 
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(const NodesGuiList& selection, NodeClipBoard & clipboard);
-    void pasteNodesInternal(const NodeClipBoard & clipboard, const QPointF& scenPos,
+    void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard);
+    void pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard, const QPointF& scenPos,
                             bool useUndoCommand,
                             std::list<std::pair<std::string, NodeGuiPtr > > *newNodes);
 
@@ -225,7 +225,7 @@ public:
      * @brief Create a new node given the serialization of another one
      * @param distanceFromCopyPosition[in] The offset applied to the new node position relative to the serialized node's position.
      **/
-    static NodeGuiPtr pasteNode(const NodeSerializationPtr & internalSerialization,
+    static NodeGuiPtr pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr & internalSerialization,
                                 const QPointF& averageNodesPosition,
                                 const QPointF& position,
                                 const NodeCollectionPtr& group,
@@ -239,7 +239,7 @@ public:
      * WARNING: The 2 lists must be ordered the same: each item in serializations corresponds to the same item in the newNodes
      * list. We're not using 2 lists to avoid a copy from the paste function.
      **/
-    static void restoreConnections(const std::list<NodeSerializationPtr > & serializations,
+    static void restoreConnections(const SERIALIZATION_NAMESPACE::NodeSerializationList& serializations,
                             const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
                             const std::map<std::string, std::string>& oldNewScriptNamesMap);
 

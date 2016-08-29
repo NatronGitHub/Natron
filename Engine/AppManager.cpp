@@ -81,7 +81,6 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/JoinViewsNode.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -104,6 +103,9 @@
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 #include "Engine/ViewerNode.h"
 #include "Engine/WriteNode.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/SerializationIO.h"
 
 #include "sbkversion.h" // shiboken/pyside version
 
@@ -1674,27 +1676,20 @@ AppManager::loadNodesPresets()
         if (!ifile) {
             continue;
         }
-
-        std::string pluginID, presetLabel, presetIcon;
-        int sym, modifiers;
-        int version;
+        SERIALIZATION_NAMESPACE::NodePresetSerialization obj;
+        obj.decodeMetaDataOnly = true;
         try {
-            boost::archive::xml_iarchive iArchive(ifile);
-            iArchive >> boost::serialization::make_nvp("Version", version);
-            iArchive >> boost::serialization::make_nvp("PluginID", pluginID);
-            iArchive >> boost::serialization::make_nvp("PresetLabel", presetLabel);
-            iArchive >> boost::serialization::make_nvp("PresetIcon", presetIcon);
-            iArchive >> boost::serialization::make_nvp("PresetSymbol", sym);
-            iArchive >> boost::serialization::make_nvp("PresetModifiers", modifiers);
+            SERIALIZATION_NAMESPACE::read(ifile, &obj);
         } catch (...) {
             continue;
         }
 
-        PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(pluginID.c_str()), -1, -1, false);
+
+        PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(obj.pluginID.c_str()), -1, -1, false);
         if (!foundPlugin) {
             continue;
         }
-        foundPlugin->addPresetFile(presetFile, QString::fromUtf8(presetLabel.c_str()), QString::fromUtf8(presetIcon.c_str()), (Key)sym, KeyboardModifiers(modifiers));
+        foundPlugin->addPresetFile(presetFile, QString::fromUtf8(obj.presetLabel.c_str()), QString::fromUtf8(obj.presetIcon.c_str()), (Key)obj.presetSymbol, KeyboardModifiers(obj.presetModifiers));
     }
 }
 

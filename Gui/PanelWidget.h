@@ -88,9 +88,9 @@ public:
      */
     virtual void onPanelMadeCurrent() {}
 
-    virtual bool saveProjection(ViewportData* data) { Q_UNUSED(data); return false; }
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) { Q_UNUSED(data); return false; }
 
-    virtual bool loadProjection(const ViewportData& data) { Q_UNUSED(data); return false; }
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) { Q_UNUSED(data); return false; }
 
 protected:
 

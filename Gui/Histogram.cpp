@@ -46,7 +46,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/Texture.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
@@ -67,6 +66,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/ticks.h"
+
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1514,7 +1515,7 @@ Histogram::hideViewerCursor()
 }
 
 bool
-Histogram::saveProjection(ViewportData* data)
+Histogram::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
 {
     QMutexLocker k(&_imp->zoomContextMutex);
     data->left = _imp->zoomCtx.left();
@@ -1525,7 +1526,7 @@ Histogram::saveProjection(ViewportData* data)
 }
 
 bool
-Histogram::loadProjection(const ViewportData& data)
+Histogram::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
 {
     QMutexLocker k(&_imp->zoomContextMutex);
     _imp->zoomCtx.setZoom(data.left, data.bottom, data.zoomFactor, data.par);

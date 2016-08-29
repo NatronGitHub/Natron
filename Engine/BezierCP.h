@@ -42,6 +42,7 @@
 
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -65,6 +66,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 struct BezierCPPrivate;
 class BezierCP
+: public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     ///This is the unique class allowed to call the setters.
     friend class Bezier;
@@ -79,6 +81,22 @@ public:
     BezierCP(const BezierPtr& curve);
 
     virtual ~BezierCP();
+
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
+
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
+    
+
 
     CurvePtr getXCurve() const;
     CurvePtr getYCurve() const;

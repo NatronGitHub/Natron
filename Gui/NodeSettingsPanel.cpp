@@ -43,7 +43,6 @@
 #include "Engine/FStreamsSupport.h"
 #include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -66,6 +65,7 @@
 #include "Gui/TrackerPanel.h"
 #include "Gui/RotoPanel.h"
 
+#include "Serialization/NodeSerialization.h"
 
 using std::make_pair;
 NATRON_NAMESPACE_ENTER;

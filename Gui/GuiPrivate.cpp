@@ -78,7 +78,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -111,7 +110,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"

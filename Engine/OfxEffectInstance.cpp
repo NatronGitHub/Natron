@@ -61,7 +61,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -79,6 +78,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #ifdef DEBUG
 #include "Engine/TLSHolder.h"
 #endif
+
+#include "Serialization/NodeSerialization.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -344,7 +345,7 @@ void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 OFX::Host::ImageEffect::Descriptor* desc,
                                                 ContextEnum context,
-                                                const NodeSerialization* serialization,
+                                                const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
                                                 const CreateNodeArgs& args)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
@@ -503,7 +504,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             }
             ///before calling the createInstanceAction, load values
             std::string initialPresets = getNode()->getCurrentNodePresets();
-            if ( serialization && !serialization->isNull() ) {
+            if (serialization) {
                 getNode()->fromSerialization(*serialization);
             } else if (!initialPresets.empty()) {
                 getNode()->loadPresets(initialPresets);
@@ -572,7 +573,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
 
 
-        if ( isReader() && serialization && !serialization->isNull() ) {
+        if ( isReader() && serialization  ) {
             getNode()->refreshCreatedViews();
         }
     } catch (const std::exception & e) {

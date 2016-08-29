@@ -40,7 +40,6 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Project.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
@@ -62,6 +61,7 @@
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerGL.h"
 
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -215,7 +215,7 @@ ViewerTab::onInternalViewerCreated()
 }
 
 bool
-ViewerTab::saveProjection(ViewportData* data)
+ViewerTab::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
 {
     _imp->viewer->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
     data->zoomOrPanSinceLastFit = _imp->viewer->getZoomOrPannedSinceLastFit();
@@ -223,7 +223,7 @@ ViewerTab::saveProjection(ViewportData* data)
 }
 
 bool
-ViewerTab::loadProjection(const ViewportData& data)
+ViewerTab::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
 {
     _imp->viewer->setProjection(data.left, data.bottom, data.zoomFactor, 1.);
     _imp->viewer->setZoomOrPannedSinceLastFit(data.zoomOrPanSinceLastFit);

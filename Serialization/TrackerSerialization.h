@@ -19,46 +19,33 @@
 #ifndef TRACKERSERIALIZATION_H
 #define TRACKERSERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-#include "Engine/TrackerContext.h"
-#endif
-
 #include "Serialization/KnobSerialization.h"
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+#include "Engine/TrackerContext.h"
 #define TRACK_SERIALIZATION_ADD_TRACKER_PM 2
 #define TRACK_SERIALIZATION_VERSION TRACK_SERIALIZATION_ADD_TRACKER_PM
 #define TRACKER_CONTEXT_SERIALIZATION_VERSION 1
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class TrackSerialization
+: public SerializationObjectBase
 {
 
 public:
 
+
+    bool _enabled;
+    bool _isPM;
+    std::string _label, _scriptName;
+    std::list<KnobSerializationPtr> _knobs;
+    std::list<int> _userKeys;
+
     TrackSerialization()
-        : _enabled(true)
+        : SerializationObjectBase()
+        , _enabled(true)
         , _isPM(false)
         , _label()
         , _scriptName()
@@ -67,28 +54,17 @@ public:
     {
     }
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
     void save(Archive & ar,
-              const unsigned int version) const
+              const unsigned int /*version*/) const
     {
-        (void)version;
-
-        ar & boost::serialization::make_nvp("IsTrackerPM", _isPM);
-        ar & boost::serialization::make_nvp("Enabled", _enabled);
-        ar & boost::serialization::make_nvp("ScriptName", _scriptName);
-        ar & boost::serialization::make_nvp("Label", _label);
-        int nbItems = (int)_knobs.size();
-        ar & boost::serialization::make_nvp("NbItems", nbItems);
-        for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-            ar & boost::serialization::make_nvp("Item", **it);
-        }
-
-        int nbUserKeys = (int)_userKeys.size();
-        ar & boost::serialization::make_nvp("NbUserKeys", nbUserKeys);
-        for (std::list<int>::const_iterator it = _userKeys.begin(); it != _userKeys.end(); ++it) {
-            ar & boost::serialization::make_nvp("UserKeys", *it);
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -123,20 +99,17 @@ public:
 #endif
 
 
-    bool _enabled;
-    bool _isPM;
-    std::string _label, _scriptName;
-    std::list<KnobSerializationPtr> _knobs;
-    std::list<int> _userKeys;
 };
 
 
 class TrackerContextSerialization
+: public SerializationObjectBase
 {
 public:
 
     TrackerContextSerialization()
-        : _tracks()
+        : SerializationObjectBase()
+        , _tracks()
     {
     }
 
@@ -146,12 +119,7 @@ public:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
-        int nbItems = _tracks.size();
-        ar & boost::serialization::make_nvp("NbItems", nbItems);
-        for (std::list<TrackSerialization>::const_iterator it = _tracks.begin(); it != _tracks.end(); ++it) {
-            ar & boost::serialization::make_nvp("Item", *it);
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -171,14 +139,18 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
     std::list<TrackSerialization> _tracks;
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::TrackSerialization, TRACK_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::TrackSerialization, TRACK_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
 #endif
 
 

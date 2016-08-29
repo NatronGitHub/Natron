@@ -19,32 +19,6 @@
 #ifndef NODESERIALIZATION_H
 #define NODESERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-
-#include <string>
-#include <stdexcept>
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-GCC_DIAG_OFF(sign-compare)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_ON(sign-compare)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
 
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/TrackerSerialization.h"
@@ -53,6 +27,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Serialization/SerializationBase.h"
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+#include "Engine/ImageComponents.h"
+#include "Engine/EffectInstance.h"
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
 #define NODE_SERIALIZATION_INTRODUCES_USER_KNOBS 4
@@ -72,19 +48,15 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class NodeSerialization : public SerializationObjectBase
 {
 public:
 
-    typedef std::list<KnobSerializationPtr> KnobValues;
-
     ///Used to serialize
     explicit NodeSerialization()
-    : _version(NODE_SERIALIZATION_CURRENT_VERSION)
-    , _hasBeenSerialized(false)
-    , _knobsValues()
+    : _knobsValues()
     , _knobsAge(0)
     , _groupFullyQualifiedScriptName()
     , _nodeLabel()
@@ -95,7 +67,6 @@ public:
     , _pluginMinorVersion(-1)
     , _masterNodeFullyQualifiedScriptName()
     , _inputs()
-    , _oldInputs()
     , _rotoContext()
     , _trackerContext()
     , _multiInstanceParentName()
@@ -109,38 +80,30 @@ public:
     , _nodeSize()
     , _nodeColor()
     , _overlayColor()
-    , _nodeIsSelected(false)
     , _viewerUIKnobsOrder()
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    , _boostSerializationClassVersion(NODE_SERIALIZATION_CURRENT_VERSION)
+#endif
     {
         _nodePositionCoords[0] = _nodePositionCoords[1] = INT_MIN;
         _nodeSize[0] = _nodeSize[1] = -1;
         _nodeColor[0] = _nodeColor[1] = _nodeColor[2] = -1;
         _overlayColor[0] = _overlayColor[1] = _overlayColor[2] = -1;
 
-        if (n) {
-            n->toSerialization(this);
-            if (!serializeInputs) {
-                _inputs.clear();
-            }
-        }
     }
 
 
-    ~NodeSerialization()
+    virtual ~NodeSerialization()
     {
     }
 
 
 
-    unsigned int _version;
-
-    bool _hasBeenSerialized;
-
     // Knobs serialization
-    KnobValues _knobsValues;
+    KnobSerializationList _knobsValues;
 
     // The age of the knobs. Used for caching
-    U64 _knobsAge;
+    unsigned long long _knobsAge;
 
     // The group full script-name or empty if the node is part of the top-level group
     std::string _groupFullyQualifiedScriptName;
@@ -167,31 +130,23 @@ public:
     // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node
     std::map<std::string, std::string> _inputs;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    // Deprecated: Before Natron 2, inputs were serialized just by their index. This is left here for backward compatibility,
-    // new serialization schemes should rather use the _inputs map which is more robust against changes.
-    std::vector<std::string> _oldInputs;
-#endif
-
     // If this node has a Roto context, this is its serialization
     boost::shared_ptr<RotoContextSerialization> _rotoContext;
     // If this node has a Tracker context, this is its serialization
     boost::shared_ptr<TrackerContextSerialization> _trackerContext;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     // Deprecated: In Natron 1, the tracker was a bundle with sub instances where each track would be 1 node.
     // This is left here for backward compatibility.
     std::string _multiInstanceParentName;
-#endif
 
-    // The serialization of the pages created by user
+    // The serialization of the pages created by the user
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
 
     // The pages order in the node by script-name
     std::list<std::string> _pagesIndexes;
 
     // If this node is a group or a multi-instance, this is the children
-    std::list< NodeSerializationPtr > _children;
+    NodeSerializationList _children;
 
     // If this node is a PyPlug, this is the Python module name
     std::string _pythonModule;
@@ -207,82 +162,24 @@ public:
     double _nodeSize[2]; // width, height, W=H=-1 if there is no size info
     double _nodeColor[3]; // node color (RGB), between 0. and 1. If R=G=B=-1 then no color
     double _overlayColor[3]; // overlay color (RGB), between 0. and 1. If R=G=B=-1 then no color
-    bool _nodeIsSelected; // is this node selected by the user ?
 
     // Ordering of the knobs in the viewer UI for this node
     std::list<std::string> _viewerUIKnobsOrder;
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    unsigned int _boostSerializationClassVersion;
+#endif
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Plugin_label", _nodeLabel);
-        ar & ::boost::serialization::make_nvp("GroupName", _groupFullyQualifiedScriptName);
-        ar & ::boost::serialization::make_nvp("Plugin_script_name", _nodeScriptName);
-        ar & ::boost::serialization::make_nvp("Plugin_id", _pluginID);
-        ar & ::boost::serialization::make_nvp("PythonModule", _pythonModule);
-        ar & ::boost::serialization::make_nvp("PythonModuleVersion", _pythonModuleVersion);
-        ar & ::boost::serialization::make_nvp("Plugin_major_version", _pluginMajorVersion);
-        ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
-        int nbKnobs = (int)_knobsValues.size();
-        ar & ::boost::serialization::make_nvp("KnobsCount", nbKnobs);
-
-        for (KnobValues::const_iterator it = _knobsValues.begin(); it != _knobsValues.end(); ++it) {
-            ar & ::boost::serialization::make_nvp( "item", *(*it) );
-        }
-        ar & ::boost::serialization::make_nvp("Inputs_map", _inputs);
-        ar & ::boost::serialization::make_nvp("KnobsAge", _knobsAge);
-        ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeFullyQualifiedScriptName);
-        bool hasRotoContext = _rotoContext.get() != 0;
-        ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
-        if (hasRotoContext) {
-            ar & ::boost::serialization::make_nvp("RotoContext", *_rotoContext);
-        }
-
-        bool hasTrackerContext = _trackerContext.get() != 0;
-        ar & ::boost::serialization::make_nvp("HasTrackerContext", hasTrackerContext);
-        if (hasTrackerContext) {
-            ar & ::boost::serialization::make_nvp("TrackerContext", *_trackerContext);
-        }
-
-        ar & ::boost::serialization::make_nvp("MultiInstanceParent", _multiInstanceParentName);
-        int userPagesCount = (int)_userPages.size();
-        ar & ::boost::serialization::make_nvp("UserPagesCount", userPagesCount);
-        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin(); it != _userPages.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("item", **it);
-        }
-
-        int pageSizes = (int)_pagesIndexes.size();
-        ar & ::boost::serialization::make_nvp("PagesCount", pageSizes);
-        for (std::list<std::string>::const_iterator it = _pagesIndexes.begin(); it != _pagesIndexes.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("name", *it);
-        }
-
-        int nodesCount = (int)_children.size();
-        ar & ::boost::serialization::make_nvp("Children", nodesCount);
-
-        for (std::list< NodeSerializationPtr >::const_iterator it = _children.begin();
-             it != _children.end();
-             ++it) {
-            ar & ::boost::serialization::make_nvp("item", **it);
-        }
-
-        ar & ::boost::serialization::make_nvp("UserComponents", _userComponents);
-        ar & ::boost::serialization::make_nvp("CacheID", _cacheID);
-
-        ar & ::boost::serialization::make_nvp("PosX", _nodePositionCoords[0]);
-        ar & ::boost::serialization::make_nvp("PosY", _nodePositionCoords[1]);
-        ar & ::boost::serialization::make_nvp("Width", _nodeSize[0]);
-        ar & ::boost::serialization::make_nvp("Height", _nodeSize[1]);
-        ar & ::boost::serialization::make_nvp("NodeColor_R", _nodeColor[0]);
-        ar & ::boost::serialization::make_nvp("NodeColor_G", _nodeColor[1]);
-        ar & ::boost::serialization::make_nvp("NodeColor_B", _nodeColor[2]);
-        ar & ::boost::serialization::make_nvp("OverlayColor_R", _overlayColor[0]);
-        ar & ::boost::serialization::make_nvp("OverlayColor_G", _overlayColor[1]);
-        ar & ::boost::serialization::make_nvp("OverlayColor_B", _overlayColor[2]);
-        ar & ::boost::serialization::make_nvp("IsSelected", _nodeIsSelected);
-        ar & ::boost::serialization::make_nvp("ViewerKnobsOrder", _viewerUIKnobsOrder);
+         throw std::runtime_error("Saving with boost is no longer supported");
 
     } // save
 
@@ -290,15 +187,13 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
-        _version = version;
+        _boostSerializationClassVersion = version;
         
         if (version > NODE_SERIALIZATION_CURRENT_VERSION) {
             throw std::invalid_argument("The project you're trying to load contains data produced by a more recent "
                                         "version of Natron, which makes it unreadable");
         }
 
-        _hasBeenSerialized = true;
-        
         ar & ::boost::serialization::make_nvp("Plugin_label", _nodeLabel);
         if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
             ar & ::boost::serialization::make_nvp("GroupName", _groupFullyQualifiedScriptName);
@@ -306,7 +201,7 @@ public:
         if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
             ar & ::boost::serialization::make_nvp("Plugin_script_name", _nodeScriptName);
         } else {
-            _nodeScriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeLabel);
+            _nodeScriptName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeLabel);
         }
         ar & ::boost::serialization::make_nvp("Plugin_id", _pluginID);
 
@@ -332,10 +227,14 @@ public:
         }
 
         if (version < NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION) {
-            ar & ::boost::serialization::make_nvp("Inputs_map", _oldInputs);
+            std::vector<std::string> oldInputs;
+            ar & ::boost::serialization::make_nvp("Inputs_map", oldInputs);
             if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-                for (U32 i = 0; i < _oldInputs.size(); ++i) {
-                    _oldInputs[i] = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_oldInputs[i]);
+                for (std::size_t i = 0; i < oldInputs.size(); ++i) {
+                    oldInputs[i] = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(oldInputs[i]);
+                    std::stringstream ss;
+                    ss << i;
+                    _inputs[ss.str()] = oldInputs[i];
                 }
             }
         } else {
@@ -345,7 +244,7 @@ public:
         ar & ::boost::serialization::make_nvp("KnobsAge", _knobsAge);
         ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeFullyQualifiedScriptName);
         if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-            _masterNodeFullyQualifiedScriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodeFullyQualifiedScriptName);
+            _masterNodeFullyQualifiedScriptName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodeFullyQualifiedScriptName);
         }
 
         if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {
@@ -368,7 +267,7 @@ public:
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
             ar & ::boost::serialization::make_nvp("MultiInstanceParent", _multiInstanceParentName);
             if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-                _multiInstanceParentName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_multiInstanceParentName);
+                _multiInstanceParentName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_multiInstanceParentName);
             }
         }
 
@@ -407,9 +306,9 @@ public:
             if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
                 ar & ::boost::serialization::make_nvp("UserComponents", _userComponents);
             } else {
-                std::list<ImageComponents> comps;
+                std::list<NATRON_NAMESPACE::ImageComponents> comps;
                 ar & ::boost::serialization::make_nvp("UserComponents", comps);
-                for (std::list<ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
+                for (std::list<NATRON_NAMESPACE::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
                     ImageComponentsSerialization s;
                     s.layerName = it->getLayerName();
                     s.globalCompsName = it->getComponentsGlobalName();
@@ -433,7 +332,8 @@ public:
             ar & ::boost::serialization::make_nvp("OverlayColor_R", _overlayColor[0]);
             ar & ::boost::serialization::make_nvp("OverlayColor_G", _overlayColor[1]);
             ar & ::boost::serialization::make_nvp("OverlayColor_B", _overlayColor[2]);
-            ar & ::boost::serialization::make_nvp("IsSelected", _nodeIsSelected);
+            bool selected;
+            ar & ::boost::serialization::make_nvp("IsSelected", selected);
             ar & ::boost::serialization::make_nvp("ViewerKnobsOrder", _viewerUIKnobsOrder);
 
         } 
@@ -443,10 +343,51 @@ public:
 #endif
 };
 
-NATRON_NAMESPACE_EXIT;
+
+class NodePresetSerialization : public SerializationObjectBase
+{
+public:
+    
+    int version;
+    std::string pluginID;
+    std::string presetLabel;
+    std::string presetIcon;
+    int presetSymbol;
+    int presetModifiers;
+    NodeSerialization node;
+
+    // This flag is used to speed-up preset parsing by Natron: it will only read relevant meta-data from this class
+    // to show to the user in the interface instead of the whole node serialization object.
+    bool decodeMetaDataOnly;
+
+    NodePresetSerialization()
+    : SerializationObjectBase()
+    , version(0)
+    , pluginID()
+    , presetLabel()
+    , presetIcon()
+    , presetSymbol(0)
+    , presetModifiers(0)
+    , node()
+    , decodeMetaDataOnly(false)
+    {
+
+    }
+
+    virtual ~NodePresetSerialization()
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+};
+
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeSerialization, NODE_SERIALIZATION_CURRENT_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::NodeSerialization, NODE_SERIALIZATION_CURRENT_VERSION)
 #endif
 
 

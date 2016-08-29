@@ -140,9 +140,9 @@ public:
                  top() == other.top() );
     }
 
-    template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
 private:
     double _par;

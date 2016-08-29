@@ -47,6 +47,8 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/FitCurve.h"
 #include "Engine/EngineFwd.h"
 
+#include "Serialization/SerializationBase.h"
+
 
 #define kRotoLayerBaseName "Layer"
 #define kRotoBezierBaseName "Bezier"
@@ -69,6 +71,7 @@ struct RotoItemPrivate;
 class RotoItem
     : public QObject
     , public boost::enable_shared_from_this<RotoItem>
+    , SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -141,14 +144,14 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(const RotoItemSerializationPtr& obj) const;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void load(const RotoItemSerialization & obj);
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
     /**
      * @brief Returns the name of the node holding this item

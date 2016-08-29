@@ -312,6 +312,9 @@ public:
 
     // UI
     Menu *contextMenu;
+
+    // True if paintGL was run at least once
+    bool drawnOnce;
 };
 
 DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
@@ -336,6 +339,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
     , eventState(DopeSheetView::esNoEditingState)
     , currentEditedReader()
     , contextMenu( new Menu(q_ptr) )
+    , drawnOnce(false)
 {
 }
 
@@ -3222,10 +3226,14 @@ DopeSheetView::resizeGL(int w,
     }
 }
 
+bool
+DopeSheetView::hasDrawnOnce() const
+{
+    return _imp->drawnOnce;
+}
+
 /**
  * @brief DopeSheetView::paintGL
- *
- *
  */
 void
 DopeSheetView::paintGL()
@@ -3243,6 +3251,8 @@ DopeSheetView::paintGL()
         return;
     }
 
+    _imp->drawnOnce = true;
+    
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     zoomLeft = _imp->zoomContext.left();
     zoomRight = _imp->zoomContext.right();

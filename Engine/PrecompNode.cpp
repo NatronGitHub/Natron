@@ -47,12 +47,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/KnobSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 

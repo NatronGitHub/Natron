@@ -31,7 +31,7 @@
 #include "Engine/TabWidgetI.h"
 #include "Engine/SplitterI.h"
 #include "Engine/DockablePanelI.h"
-#include "Engine/ProjectSerialization.h"
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -90,9 +90,9 @@ SerializableWindow::getMtSafePosition(int &x,
  * @brief Implement to save the content of the object to the serialization object
  **/
 void
-SerializableWindow::toSerialization(SerializationObjectBase* serializationBase)
+SerializableWindow::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
 {
-    ProjectWindowSerialization* serialization = dynamic_cast<ProjectWindowSerialization*>(serializationBase);
+    SERIALIZATION_NAMESPACE::WindowSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::WindowSerialization*>(serializationBase);
     if (!serialization) {
         return;
     }
@@ -102,18 +102,16 @@ SerializableWindow::toSerialization(SerializationObjectBase* serializationBase)
     SplitterI* isSplitter = isMainWidgetSplitter();
     DockablePanelI* isPanel = isMainWidgetPanel();
     if (isTab) {
-        serialization->childType = eProjectWorkspaceWidgetTypeTabWidget;
-        serialization->isChildTabWidget.reset(new ProjectTabWidgetSerialization);
+        serialization->childType = kSplitterChildTypeTabWidget;
+        serialization->isChildTabWidget.reset(new SERIALIZATION_NAMESPACE::TabWidgetSerialization);
         isTab->toSerialization(serialization->isChildTabWidget.get());
     } else if (isSplitter) {
-        serialization->childType = eProjectWorkspaceWidgetTypeSplitter;
-        serialization->isChildSplitter.reset(new ProjectWindowSplitterSerialization);
+        serialization->childType = kSplitterChildTypeSplitter;
+        serialization->isChildSplitter.reset(new SERIALIZATION_NAMESPACE::WidgetSplitterSerialization);
         isSplitter->toSerialization(serialization->isChildSplitter.get());
     } else if (isPanel) {
-        serialization->childType = eProjectWorkspaceWidgetTypeSettingsPanel;
+        serialization->childType = kSplitterChildTypeSettingsPanel;
         serialization->isChildSettingsPanel = isPanel->getHolderFullyQualifiedScriptName();
-    } else {
-        serialization->childType = eProjectWorkspaceWidgetTypeNone;
     }
 }
 
@@ -121,9 +119,9 @@ SerializableWindow::toSerialization(SerializationObjectBase* serializationBase)
  * @brief Implement to load the content of the serialization object onto this object
  **/
 void
-SerializableWindow::fromSerialization(const SerializationObjectBase& serializationBase)
+SerializableWindow::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
 {
-    const ProjectWindowSerialization* serialization = dynamic_cast<const ProjectWindowSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::WindowSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::WindowSerialization*>(&serializationBase);
     if (!serialization) {
         return;
     }

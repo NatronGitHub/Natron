@@ -33,6 +33,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
 
+#include "Serialization/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -88,6 +89,7 @@ struct CacheEntryStorageInfo
 };
 
 class NonKeyParams
+: public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -104,8 +106,9 @@ public:
     const CacheEntryStorageInfo& getStorageInfo() const;
     CacheEntryStorageInfo& getStorageInfo();
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
 protected:
 

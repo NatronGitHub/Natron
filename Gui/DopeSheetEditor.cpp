@@ -32,7 +32,7 @@
 #include <QSplitter>
 #include <QKeyEvent>
 
-#include "Engine/ProjectSerialization.h"
+#include "Serialization/WorkspaceSerialization.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DopeSheet.h"
@@ -292,14 +292,17 @@ DopeSheetEditor::getUndoStack() const
 }
 
 bool
-DopeSheetEditor::saveProjection(ViewportData* data)
+DopeSheetEditor::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
 {
+    if (!_imp->dopeSheetView->hasDrawnOnce()) {
+        return false;
+    }
     _imp->dopeSheetView->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
     return true;
 }
 
 bool
-DopeSheetEditor::loadProjection(const ViewportData& data)
+DopeSheetEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
 {
     _imp->dopeSheetView->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
     return true;

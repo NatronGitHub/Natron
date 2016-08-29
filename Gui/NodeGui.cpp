@@ -57,7 +57,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeGroup.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/PyNode.h"
@@ -89,10 +88,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/Menu.h"
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
-#include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeGraphTextItem.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreviewThread.h"
@@ -102,6 +99,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
@@ -2066,37 +2066,6 @@ NodeGui::getKnobs() const
 }
 
 
-void
-NodeGui::serializeInternal(std::list<NodeSerializationPtr >& internalSerialization) const
-{
-    NodePtr node = getNode();
-    NodeSerializationPtr thisSerialization( new NodeSerialization(node, false) );
-
-    internalSerialization.push_back(thisSerialization);
-
-    ///For multi-instancs, serialize children too
-    if ( node->isMultiInstance() ) {
-        assert(_settingsPanel);
-        MultiInstancePanelPtr panel = _settingsPanel->getMultiInstancePanel();
-        assert(panel);
-
-        const std::list<std::pair<NodeWPtr, bool> >& instances = panel->getInstances();
-        for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = instances.begin();
-             it != instances.end(); ++it) {
-            NodeSerializationPtr childSerialization( new NodeSerialization(it->first.lock(), false) );
-            internalSerialization.push_back(childSerialization);
-        }
-    }
-}
-
-void
-NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<NodeSerializationPtr >& internalSerialization)
-{
-    assert(internalSerialization.size() >= 1);
-
-    getSettingPanel()->pushUndoCommand( new LoadNodePresetsCommand(thisShared, internalSerialization) );
-}
 
 boost::shared_ptr<QUndoStack>
 NodeGui::getUndoStack() const
@@ -2504,10 +2473,10 @@ NodeGui::destroyGui()
     // remove from clipboard if existing
     if (internalNode) {
         ///remove the node from the clipboard if it is
-        NodeClipBoard &cb = appPTR->getNodeClipBoard();
-        for (std::list< NodeSerializationPtr >::iterator it = cb.nodes.begin();
+        SERIALIZATION_NAMESPACE::NodeClipBoard &cb = appPTR->getNodeClipBoard();
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::iterator it = cb.nodes.begin();
              it != cb.nodes.end(); ++it) {
-            if ( (*it)->getNodeScriptName() == internalNode->getScriptName() ) {
+            if ( (*it)->_nodeScriptName == internalNode->getScriptName()  && (*it)->_groupFullyQualifiedScriptName == internalNode->getContainerGroupFullyQualifiedName()) {
                 cb.nodes.erase(it);
                 break;
             }

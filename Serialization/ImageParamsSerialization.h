@@ -19,56 +19,31 @@
 #ifndef IMAGEPARAMSSERIALIZATION_H
 #define IMAGEPARAMSSERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
+#include "Serialization/NonKeyParamsSerialization.h"
+#include "Serialization/RectDSerialization.h"
 
-#include "Global/Macros.h"
-
-#include "ImageParams.h"
-
-#include "Global/GlobalDefines.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_OFF(unused-parameter)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(sign-compare)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_ON(sign-compare)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+#include "Engine/ImageComponents.h"
 #endif
 
-#include "Engine/EngineFwd.h"
+SERIALIZATION_NAMESPACE_ENTER;
 
-// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
-
-namespace boost {
-namespace serialization {
-template<class Archive>
-void
-serialize(Archive & ar,
-          OfxRangeD & r,
-          const unsigned int /*version*/)
+class ImageComponentsSerialization
+: public SerializationObjectBase
 {
-    ar &  boost::serialization::make_nvp("Min", r.min);
-    ar &  boost::serialization::make_nvp("Max", r.max);
-}
-}
-}
+public:
 
-NATRON_NAMESPACE_ENTER;
+    ImageComponentsSerialization()
+    : SerializationObjectBase()
+    {
 
-struct ImageComponentsSerialization
-{
+    }
+
+    virtual ~ImageComponentsSerialization()
+    {
+
+    }
+
     // The layer name, e.g: Beauty
     std::string layerName;
 
@@ -79,49 +54,59 @@ struct ImageComponentsSerialization
     // Each individual channel names, e.g: "R", "G", "B", "A"
     std::vector<std::string> channelNames;
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/)
-    {
-        ar &  boost::serialization::make_nvp("Layer", layerName);
-        ar &  boost::serialization::make_nvp("Components", channelNames);
-        ar &  boost::serialization::make_nvp("CompName", globalCompsName);
-    }
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
 };
 
-#pragma message WARN("Missing ImageParamsSerialization class")
+class ImageParamsSerialization
+: public NonKeyParamsSerialization
+{
+public:
 
+    RectDSerialization rod;
+    bool isRoDProjectFormat;
+    double par;
+    ImageComponentsSerialization components;
+    int bitdepth;
+    int fielding;
+    int premult;
+    unsigned int mipMapLevel;
+
+
+    ImageParamsSerialization()
+    : NonKeyParamsSerialization()
+    {
+
+    }
+
+    virtual ~ImageParamsSerialization()
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+};
+
+SERIALIZATION_NAMESPACE_EXIT
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 /**
  * @brief Deprecated, just used for backward compatibility in NodeSerialization
  **/
 template<class Archive>
 void
-ImageComponents::serialize(Archive & ar,
+NATRON_NAMESPACE::ImageComponents::serialize(Archive & ar,
                            const unsigned int /*version*/)
 {
     ar &  boost::serialization::make_nvp("Layer", _layerName);
     ar &  boost::serialization::make_nvp("Components", _componentNames);
     ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
 }
+#endif
 
-template<class Archive>
-void
-ImageParams::serialize(Archive & ar,
-                       const unsigned int /*version*/)
-{
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
-    ar & ::boost::serialization::make_nvp("RoD", _rod);
-    ar & ::boost::serialization::make_nvp("IsProjectFormat", _isRoDProjectFormat);
-    // backward compatibility is not necessary
-    //if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {
-    //    std::map<int, std::map<int,std::vector<RangeD> > > f;
-    //    ar & ::boost::serialization::make_nvp("FramesNeeded",f);
-    //}
-    ar & ::boost::serialization::make_nvp("Components", _components);
-    ar & ::boost::serialization::make_nvp("MMLevel", _mipMapLevel);
-    ar & ::boost::serialization::make_nvp("Premult", _premult);
-    ar & ::boost::serialization::make_nvp("Fielding", _fielding);
-}
-
-NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGEPARAMSSERIALIZATION_H

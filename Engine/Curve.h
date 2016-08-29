@@ -38,6 +38,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
@@ -129,7 +130,7 @@ typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 struct CurvePrivate;
 
-class Curve
+class Curve : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     enum CurveChangedReasonEnum
     {
@@ -164,9 +165,9 @@ public:
 
     ~Curve();
 
-    void loadSerialization(const CurveSerialization& serialization);
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serialization) OVERRIDE FINAL;
 
-    void saveSerialization(CurveSerialization* serialization) const;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serialization) OVERRIDE FINAL;
 
     void operator=(const Curve & other);
 
@@ -298,9 +299,12 @@ public:
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, double time);
 
 private:
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+#endif
 
     ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;

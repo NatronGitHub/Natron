@@ -33,7 +33,7 @@
 #include <QDesktopWidget>
 #include <QScrollArea>
 #include "Engine/Project.h"
-#include "Engine/ProjectSerialization.h"
+#include "Engine/Node.h"
 #include "Gui/Gui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ProjectGui.h"
@@ -42,6 +42,8 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -187,58 +189,50 @@ FloatingWidget::isMainWidgetPanel() const
 }
 
 void
-FloatingWidget::restoreChildFromSerialization(const ProjectWindowSerialization& serialization)
+FloatingWidget::restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization)
 {
-    switch (serialization.childType) {
-        case eProjectWorkspaceWidgetTypeSplitter: {
-            assert(serialization.isChildSplitter);
-            Qt::Orientation orientation;
-            switch ((OrientationEnum)serialization.isChildSplitter->orientation) {
-                case eOrientationHorizontal:
-                    orientation = Qt::Horizontal;
-                    break;
-                case eOrientationVertical:
-                    orientation = Qt::Vertical;
-                    break;
-            }
-            Splitter* splitter = new Splitter(orientation, _gui, this);
-            setWidget(splitter);
-            _gui->getApp()->registerSplitter(splitter);
-            splitter->fromSerialization(*serialization.isChildSplitter);
-        }   break;
-        case eProjectWorkspaceWidgetTypeTabWidget: {
-            assert(serialization.isChildTabWidget);
-            TabWidget* tab = new TabWidget(_gui, this);
-            setWidget(tab);
-            _gui->getApp()->registerTabWidget(tab);
-            tab->fromSerialization(*serialization.isChildTabWidget);
-        }   break;
-        case eProjectWorkspaceWidgetTypeSettingsPanel: {
-            DockablePanel* panel = 0;
-            if ( serialization.isChildSettingsPanel == kNatronProjectSettingsPanelSerializationName ) {
-                panel = _gui->getProjectGui()->getPanel();
-            } else {
-                // Find a node with the dockable panel name
-                NodesList nodes;
-                _gui->getApp()->getProject()->getNodes_recursive(nodes, true);
-                for (NodesList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-                    if ( (*it2)->getFullyQualifiedName() == serialization.isChildSettingsPanel ) {
-                        NodeGuiPtr nodeUI = boost::dynamic_pointer_cast<NodeGui>((*it2)->getNodeGui());
-                        if (nodeUI) {
-                            nodeUI->ensurePanelCreated();
-                            panel = nodeUI->getSettingPanel();
-                        }
-                        break;
+    if (serialization.childType == kSplitterChildTypeSplitter) {
+        assert(serialization.isChildSplitter);
+        Qt::Orientation orientation = Qt::Horizontal;
+        if (serialization.isChildSplitter->orientation == kSplitterOrientationHorizontal) {
+            orientation = Qt::Horizontal;
+        } else if (serialization.isChildSplitter->orientation == kSplitterOrientationVertical) {
+            orientation = Qt::Vertical;
+        }
+        Splitter* splitter = new Splitter(orientation, _gui, this);
+        setWidget(splitter);
+        _gui->getApp()->registerSplitter(splitter);
+        splitter->fromSerialization(*serialization.isChildSplitter);
+    } else if (serialization.childType == kSplitterChildTypeTabWidget) {
+        assert(serialization.isChildTabWidget);
+        TabWidget* tab = new TabWidget(_gui, this);
+        setWidget(tab);
+        _gui->getApp()->registerTabWidget(tab);
+        tab->fromSerialization(*serialization.isChildTabWidget);
+    } else if (serialization.childType == kSplitterChildTypeSettingsPanel) {
+        DockablePanel* panel = 0;
+        if ( serialization.isChildSettingsPanel == kNatronProjectSettingsPanelSerializationNameOld || serialization.isChildSettingsPanel == kNatronProjectSettingsPanelSerializationNameNew ) {
+            panel = _gui->getProjectGui()->getPanel();
+        } else {
+            // Find a node with the dockable panel name
+            NodesList nodes;
+            _gui->getApp()->getProject()->getNodes_recursive(nodes, true);
+            for (NodesList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                if ( (*it2)->getFullyQualifiedName() == serialization.isChildSettingsPanel ) {
+                    NodeGuiPtr nodeUI = boost::dynamic_pointer_cast<NodeGui>((*it2)->getNodeGui());
+                    if (nodeUI) {
+                        nodeUI->ensurePanelCreated();
+                        panel = nodeUI->getSettingPanel();
                     }
+                    break;
                 }
+            }
 
-            }
-            if (panel) {
-                panel->floatPanelInWindow(this);
-            }
-        }   break;
-        case eProjectWorkspaceWidgetTypeNone:
-            break;
+        }
+        if (panel) {
+            panel->floatPanelInWindow(this);
+        }
+
     }
 
     QDesktopWidget* desktop = QApplication::desktop();

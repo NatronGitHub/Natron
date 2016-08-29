@@ -379,7 +379,7 @@ public:
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 
-    void copyFrom(const KnobSerializationPtr& fromKnobSerialization, const KnobIPtr& fromKnob, bool isRedo);
+    void copyFrom(const SERIALIZATION_NAMESPACE::KnobSerializationPtr& fromKnobSerialization, const KnobIPtr& fromKnob, bool isRedo);
 };
 
 
@@ -402,7 +402,7 @@ private:
     bool _isNodeReset;
     int _targetDim;
     std::list<KnobIWPtr> _knobs;
-    std::list<KnobSerializationPtr>  _serializations;
+    SERIALIZATION_NAMESPACE::KnobSerializationList _serializations;
 };
 
 class SetExpressionCommand

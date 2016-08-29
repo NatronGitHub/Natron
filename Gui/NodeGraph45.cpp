@@ -43,7 +43,6 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
@@ -58,10 +57,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 #include "Global/QtCompat.h"
 
@@ -638,17 +639,17 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
 {
     {
         CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
-        NodeClipBoard clipboard;
+        SERIALIZATION_NAMESPACE::NodeClipBoard clipboard;
         _imp->copyNodesInternal(nodes, clipboard);
 
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        for (std::list<NodeSerializationPtr>::const_iterator it = clipboard.nodes.begin();
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
              it != clipboard.nodes.end(); ++it) {
             NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, std::string(), NodePtr(), &oldNewScriptNamesMapping);
             assert(node);
             if (node) {
-                oldNewScriptNamesMapping[(*it)->getNodeScriptName()] = node->getNode()->getScriptName();
-                createdNodes.push_back( std::make_pair( (*it)->getNodeScriptName(), node ) );
+                oldNewScriptNamesMapping[(*it)->_nodeScriptName] = node->getNode()->getScriptName();
+                createdNodes.push_back( std::make_pair( (*it)->_nodeScriptName, node ) );
             }
         }
         assert( clipboard.nodes.size() == createdNodes.size() );
@@ -668,7 +669,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
             allNodes.push_back(isGroupNode->getNode());
         }
 
-        std::list<NodeSerializationPtr >::const_iterator itSerialization = clipboard.nodes.begin();
+        SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
             it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
         }

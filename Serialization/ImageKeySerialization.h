@@ -16,55 +16,49 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_ViewIdxSerialization_h_H
-#define Engine_ViewIdxSerialization_h_H
+#ifndef SERIALIZATION_IMAGEKEYSERIALIZATION_H
+#define SERIALIZATION_IMAGEKEYSERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
 
-#include "Engine/ViewIdx.h"
+#include "Serialization/SerializationBase.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_OFF(unused-parameter)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_ON(unused-parameter)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+SERIALIZATION_NAMESPACE_ENTER;
 
-#define VIEWIDX_SERIALIZATION_VERSION 1
-
-#pragma message WARN("Missing ImageKeySerialization class")
-
-NATRON_NAMESPACE_ENTER;
-
-template<class Archive>
-void
-ImageKey::serialize(Archive & ar,
-                    const unsigned int version)
+class ImageKeySerialization
+: public SerializationObjectBase
 {
-    if (version >= IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID) {
-        ar & ::boost::serialization::make_nvp("HolderID", _holderID);
+public:
+
+    unsigned long long nodeHashKey;
+    std::string holderID;
+    bool frameVaryingOrAnimated;
+    double time;
+    int view;
+    double par;
+    bool draft;
+
+    ImageKeySerialization()
+    : SerializationObjectBase()
+    {
+
     }
-    ar & ::boost::serialization::make_nvp("NodeHashKey", _nodeHashKey);
-    ar & ::boost::serialization::make_nvp("FrameVarying", _frameVaryingOrAnimated);
-    ar & ::boost::serialization::make_nvp("Time", _time);
-    ar & ::boost::serialization::make_nvp("View", _view);
-    ar & ::boost::serialization::make_nvp("PixelAspect", _pixelAspect);
-    ar & ::boost::serialization::make_nvp("Draft", _draftMode);
-}
+
+    virtual ~ImageKeySerialization()
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 
-NATRON_NAMESPACE_EXIT;
-
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImageKey, IMAGE_KEY_SERIALIZATION_VERSION)
+};
 
 
-#endif // Engine_ViewIdxSerialization_h_H
+
+SERIALIZATION_NAMESPACE_EXIT;
+
+
+
+#endif // SERIALIZATION_IMAGEKEYSERIALIZATION_H

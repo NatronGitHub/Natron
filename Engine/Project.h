@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -65,7 +65,7 @@ class Project
     , public NodeCollection
     , public AfterQuitProcessingI
     , public boost::noncopyable
-    , public SerializableObjectBase
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -344,7 +344,10 @@ public:
 
     void closeProject_blocking(bool aboutToQuit);
 
-    bool addFormat(const std::string& formatSpec);
+    /**
+     * @brief Add a format to the default formats of the Project. This will not be seriliazed in the user project.
+     **/
+    bool addDefaultFormat(const std::string& formatSpec);
 
     void setTimeLine(const TimeLinePtr& timeline);
 
@@ -355,12 +358,12 @@ public:
     void reset(bool aboutToQuit, bool blocking);
 
 
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 
-    static bool restoreGroupFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
+    static bool restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
                                           const NodeCollectionPtr& group,
                                           bool createNodes,
                                           std::map<std::string, bool>* moduleUpdatesProcessed);
@@ -395,7 +398,7 @@ private:
 
 
     /*Returns the index of the format*/
-    int tryAddProjectFormat(const Format & f);
+    int tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat);
 
     void setProjectDefaultFormat(const Format & f);
 
@@ -438,7 +441,7 @@ private:
                                     ViewSpec view,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
-    bool load(const ProjectSerialization & obj, const QString& name, const QString& path);
+    bool load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj, const QString& name, const QString& path);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

@@ -47,18 +47,19 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
-#include "Engine/CurveSerialization.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
+
+#include "Serialization/CurveSerialization.h"
+#include "Serialization/KnobSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -133,7 +134,7 @@ KnobInt::canAnimate() const
     return true;
 }
 
-const std::string KnobInt::_typeNameStr("Int");
+const std::string KnobInt::_typeNameStr(kKnobIntTypeName);
 const std::string &
 KnobInt::typeNameStatic()
 {
@@ -162,7 +163,7 @@ KnobBool::canAnimate() const
     return canAnimateStatic();
 }
 
-const std::string KnobBool::_typeNameStr("Bool");
+const std::string KnobBool::_typeNameStr(kKnobBoolTypeName);
 const std::string &
 KnobBool::typeNameStatic()
 {
@@ -243,7 +244,7 @@ KnobDouble::canAnimate() const
     return true;
 }
 
-const std::string KnobDouble::_typeNameStr("Double");
+const std::string KnobDouble::_typeNameStr(kKnobDoubleTypeName);
 const std::string &
 KnobDouble::typeNameStatic()
 {
@@ -427,7 +428,7 @@ KnobButton::canAnimate() const
     return false;
 }
 
-const std::string KnobButton::_typeNameStr("Button");
+const std::string KnobButton::_typeNameStr(kKnobButtonTypeName);
 const std::string &
 KnobButton::typeNameStatic()
 {
@@ -523,7 +524,7 @@ KnobChoice::canAnimate() const
     return canAnimateStatic();
 }
 
-const std::string KnobChoice::_typeNameStr("Choice");
+const std::string KnobChoice::_typeNameStr(kKnobChoiceTypeName);
 const std::string &
 KnobChoice::typeNameStatic()
 {
@@ -1136,7 +1137,7 @@ KnobSeparator::canAnimate() const
     return false;
 }
 
-const std::string KnobSeparator::_typeNameStr("Separator");
+const std::string KnobSeparator::_typeNameStr(kKnobSeparatorTypeName);
 const std::string &
 KnobSeparator::typeNameStatic()
 {
@@ -1189,7 +1190,7 @@ KnobColor::canAnimate() const
 }
 
 const std::string
-KnobColor::_typeNameStr("Color");
+KnobColor::_typeNameStr(kKnobColorTypeName);
 const std::string &
 KnobColor::typeNameStatic()
 {
@@ -1240,7 +1241,7 @@ KnobString::canAnimate() const
     return canAnimateStatic();
 }
 
-const std::string KnobString::_typeNameStr("String");
+const std::string KnobString::_typeNameStr(kKnobStringTypeName);
 const std::string &
 KnobString::typeNameStatic()
 {
@@ -1361,7 +1362,7 @@ KnobGroup::canAnimate() const
     return false;
 }
 
-const std::string KnobGroup::_typeNameStr("Group");
+const std::string KnobGroup::_typeNameStr(kKnobGroupTypeName);
 const std::string &
 KnobGroup::typeNameStatic()
 {
@@ -1500,7 +1501,7 @@ KnobPage::canAnimate() const
     return false;
 }
 
-const std::string KnobPage::_typeNameStr("Page");
+const std::string KnobPage::_typeNameStr(kKnobPageTypeName);
 const std::string &
 KnobPage::typeNameStatic()
 {
@@ -1650,7 +1651,7 @@ KnobParametric::populate()
     }
 }
 
-const std::string KnobParametric::_typeNameStr("Parametric");
+const std::string KnobParametric::_typeNameStr(kKnobParametricTypeName);
 const std::string &
 KnobParametric::typeNameStatic()
 {
@@ -2073,22 +2074,22 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
 }
 
 void
-KnobParametric::saveParametricCurves(std::list< CurveSerialization >* curves) const
+KnobParametric::saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const
 {
     for (U32 i = 0; i < _curves.size(); ++i) {
-        CurveSerialization c;
-        _curves[i]->saveSerialization(&c);
+        SERIALIZATION_NAMESPACE::CurveSerialization c;
+        _curves[i]->toSerialization(&c);
         curves->push_back(c);
     }
 }
 
 void
-KnobParametric::loadParametricCurves(const std::list< CurveSerialization > & curves)
+KnobParametric::loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::CurveSerialization > & curves)
 {
     assert( !_curves.empty() );
     int i = 0;
-    for (std::list< CurveSerialization >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        _curves[i]->loadSerialization(*it);
+    for (std::list< SERIALIZATION_NAMESPACE::CurveSerialization >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+        _curves[i]->fromSerialization(*it);
         ++i;
     }
 }
@@ -2393,7 +2394,7 @@ KnobTable::removeRow(int index)
     setTable(table);
 }
 
-const std::string KnobLayers::_typeNameStr("Layers");
+const std::string KnobLayers::_typeNameStr(kKnobLayersTypeName);
 const std::string&
 KnobLayers::typeNameStatic()
 {

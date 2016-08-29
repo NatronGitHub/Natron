@@ -122,6 +122,8 @@ public:
      */
     void centerOn(double xMin, double xMax);
 
+    bool hasDrawnOnce() const;
+
     /**
      * @brief Returns a pair composed of the first keyframe (or the starting
      * time of the first reader) displayed in the view and the last.

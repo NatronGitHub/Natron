@@ -26,11 +26,22 @@ CONFIG += moc
 CONFIG += boost qt python
 
 include(../global.pri)
-include(../../libs.pri)
-include(../../config.pri)
+include(../libs.pri)
+include(../config.pri)
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
+
+INCLUDEPATH += $$PWD/../libs/OpenFX/include
+DEPENDPATH  += $$PWD/../libs/OpenFX/include
+INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
+DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
+INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
+DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../Global
+INCLUDEPATH += $$PWD/../libs/SequenceParsing
+
 
 HEADERS += \
     BezierSerialization.h \
@@ -38,13 +49,14 @@ HEADERS += \
     CacheSerialization.h \
     CurveSerialization.h \
     FormatSerialization.h \
-    NodeSerialization.h \
-    FrameEntrySerialization.h \
+    FrameKeySerialization.h \
     FrameParamsSerialization.h \
     ImageKeySerialization.h \
     ImageParamsSerialization.h \
     KnobSerialization.h \
+    NodeSerialization.h \
     NodeBackdropSerialization.h \
+    NodeClipBoard.h \
     NodeGroupSerialization.h \
     NodeGuiSerialization.h \
     NodeSerialization.h \
@@ -59,10 +71,36 @@ HEADERS += \
     RotoLayerSerialization.h \
     RotoStrokeItemSerialization.h \
     SerializationBase.h \
+    SerializationFwd.h \
+    SerializationIO.h \
     TextureRectSerialization.h \
-    TrackerSerialization.h
+    TrackerSerialization.h \
+    WorkspaceSerialization.h
 
 
 SOURCES += \
     KnobSerialization.cpp \
-    ProjectGuiSerialization.cpp
+    ProjectGuiSerialization.cpp \
+    BezierCPSerialization.cpp \
+    BezierSerialization.cpp \
+    CurveSerialization.cpp \
+    FormatSerialization.cpp \
+    FrameKeySerialization.cpp \
+    FrameParamsSerialization.cpp \
+    ImageKeySerialization.cpp \
+    ImageParamsSerialization.cpp \
+    NodeSerialization.cpp \
+    NodeClipBoard.cpp \
+    NonKeyParamsSerialization.cpp \
+    ProjectSerialization.cpp \
+    RectDSerialization.cpp \
+    RectISerialization.cpp \
+    RotoContextSerialization.cpp \
+    RotoDrawableItemSerialization.cpp \
+    RotoItemSerialization.cpp \
+    RotoLayerSerialization.cpp \
+    RotoStrokeItemSerialization.cpp \
+    SerializationIO.cpp \
+    TextureRectSerialization.cpp \
+    TrackerSerialization.cpp \
+    WorkspaceSerialization.cpp

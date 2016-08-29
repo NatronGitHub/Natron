@@ -29,7 +29,8 @@
 
 #include "Engine/EngineFwd.h"
 
-#define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
+#define kNatronProjectSettingsPanelSerializationNameOld "Natron_Project_Settings_Panel"
+#define kNatronProjectSettingsPanelSerializationNameNew "ProjectSettings"
 
 
 NATRON_NAMESPACE_ENTER;

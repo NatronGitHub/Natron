@@ -34,6 +34,8 @@
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
@@ -67,23 +69,23 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/BezierCPSerialization.h"
+#include "Engine/DockablePanelI.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/FormatSerialization.h"
 #include "Engine/FStreamsSupport.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
-#include "Engine/ProjectSerialization.h"
-#include "Engine/RectDSerialization.h"
-#include "Engine/RectISerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
+
+#include "Serialization/ProjectSerialization.h"
+#include "Serialization/SerializationIO.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -306,21 +308,19 @@ Project::loadProjectInternal(const QString & path,
 
     try {
         // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
-        bool bgProject;
-        _imp->lastProjectLoaded.reset(new ProjectSerialization);
-        boost::shared_ptr<boost::archive::xml_iarchive> iArchive(new boost::archive::xml_iarchive(ifile));
+        _imp->lastProjectLoaded.reset(new SERIALIZATION_NAMESPACE::ProjectSerialization);
+        SERIALIZATION_NAMESPACE::read(ifile, _imp->lastProjectLoaded.get());
+
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
-            (*iArchive) >> boost::serialization::make_nvp("Background_project", bgProject);
-            (*iArchive) >> boost::serialization::make_nvp("Project", *_imp->lastProjectLoaded);
             ret = load(*_imp->lastProjectLoaded, name, path);
-        } // __raii_loadingProjectInternal__
+        }
 
         if (!getApp()->isBackground()) {
-            getApp()->loadProjectGui(isAutoSave, _imp->lastProjectLoaded, iArchive);
+            getApp()->loadProjectGui(isAutoSave, _imp->lastProjectLoaded);
         }
     } catch (...) {
-        const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
             (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
             (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
@@ -544,18 +544,9 @@ Project::saveProjectInternal(const QString & path,
         }
 
         try {
-            boost::archive::xml_oarchive oArchive(ofile);
-            ProjectSerialization projectSerializationObj(shared_from_this());
-            bool isBgProject = getApp()->isBackground();
-            if (isBgProject) {
-                // Use the last project loaded serialization for the gui layout
-                if (_imp->lastProjectLoaded) {
-                    projectSerializationObj._projectWorkspace = _imp->lastProjectLoaded->_projectWorkspace;
-                }
-            }
-            oArchive << boost::serialization::make_nvp("Background_project", isBgProject);
-            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-
+            SERIALIZATION_NAMESPACE::ProjectSerialization projectSerializationObj;
+            toSerialization(&projectSerializationObj);
+            SERIALIZATION_NAMESPACE::write(ofile, projectSerializationObj);
         } catch (...) {
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
@@ -1120,7 +1111,7 @@ Project::currentFrame() const
 }
 
 int
-Project::tryAddProjectFormat(const Format & f)
+Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat)
 {
     //assert( !_imp->formatMutex.tryLock() );
     if ( ( f.left() >= f.right() ) || ( f.bottom() >= f.top() ) ) {
@@ -1137,29 +1128,41 @@ Project::tryAddProjectFormat(const Format & f)
         }
     }
 
+    QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+
+    int ret = -1;
     std::vector<std::string> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
-        const Format & f = *it;
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        entries.push_back( str.toStdString() );
+    }
+    if (!addAsAdditionalFormat) {
         entries.push_back( formatStr.toStdString() );
+        ret = (entries.size() - 1);
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
-        const Format & f = *it;
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        entries.push_back( formatStr.toStdString() );
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        entries.push_back( str.toStdString() );
     }
-    QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-    _imp->additionalFormats.push_back(f);
-    _imp->formatKnob->appendChoice( formatStr.toStdString() );
+    if (addAsAdditionalFormat) {
+        ret = (entries.size() - 1);
+    }
 
-    return ( _imp->builtinFormats.size() + _imp->additionalFormats.size() ) - 1;
+    if (addAsAdditionalFormat) {
+        _imp->additionalFormats.push_back(f);
+    } else {
+        _imp->builtinFormats.push_back(f);
+    }
+    _imp->formatKnob->populateChoices(entries);
+
+    return ret;
 }
 
 void
 Project::setProjectDefaultFormat(const Format & f)
 {
     //assert( !_imp->formatMutex.tryLock() );
-    int index = tryAddProjectFormat(f);
+    int index = tryAddProjectFormat(f, true);
 
     _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
@@ -1429,14 +1432,14 @@ Project::isSaveUpToDate() const
 }
 
 bool
-Project::load(const ProjectSerialization & obj,
+Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
               const QString& name,
               const QString& path)
 {
     _imp->projectName->setValue( name.toStdString() );
     _imp->projectPath->setValue( path.toStdString() );
 
-    getApp()->setProjectBeingLoadedInfo(obj.getProjectBeingLoadedInfo());
+    getApp()->setProjectBeingLoadedInfo(obj._projectLoadedInfo);
 
     appPTR->clearErrorLog_mt_safe();
     fromSerialization(obj);
@@ -1985,7 +1988,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
             }
         } else if (!skipAdd) {
             dispW = frmt;
-            tryAddProjectFormat(dispW);
+            tryAddProjectFormat(dispW, true);
         }
     }
 }
@@ -2630,13 +2633,13 @@ Project::extractTreesFromNodes(const NodesList& nodes,
 }
 
 bool
-Project::addFormat(const std::string& formatSpec)
+Project::addDefaultFormat(const std::string& formatSpec)
 {
     Format f;
 
     if ( ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), &f) ) {
         QMutexLocker k(&_imp->formatMutex);
-        tryAddProjectFormat(f);
+        tryAddProjectFormat(f, false);
 
         return true;
     } else {
@@ -2662,6 +2665,204 @@ Project::setTimeLine(const TimeLinePtr& timeline)
 {
     _imp->timeline = timeline;
 }
+
+
+void
+Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+{
+    // All the code in this function is MT-safe and run in the serialization thread
+    SERIALIZATION_NAMESPACE::ProjectSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ProjectSerialization*>(serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    // Serialize nodes
+    {
+        NodesList nodes;
+        getActiveNodes(&nodes);
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                (*it)->toSerialization(state.get());
+                serialization->_nodes.push_back(state);
+            }
+        }
+    }
+
+    // Get user additional formats
+    std::list<Format> formats;
+    getAdditionalFormats(&formats);
+    for (std::list<Format>::iterator it = formats.begin(); it!=formats.end(); ++it) {
+        SERIALIZATION_NAMESPACE::FormatSerialization s;
+        s.x1 = it->x1;
+        s.y1 = it->y1;
+        s.x2 = it->x2;
+        s.y2 = it->y2;
+        s.par = it->getPixelAspectRatio();
+        s.name = it->getName();
+        serialization->_additionalFormats.push_back(s);
+    }
+
+    // Serialize project settings
+    std::vector< KnobIPtr > knobs = getKnobs_mt_safe();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
+        KnobPagePtr isPage = toKnobPage(knobs[i]);
+        KnobButtonPtr isButton = toKnobButton(knobs[i]);
+        if ( knobs[i]->getIsPersistent() &&
+            !isGroup && !isPage && !isButton &&
+            knobs[i]->hasModificationsForSerialization() ) {
+            SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+            knobs[i]->toSerialization(newKnobSer.get());
+            if (newKnobSer->_mustSerialize) {
+                serialization->_projectKnobs.push_back(newKnobSer);
+            }
+        }
+    }
+
+
+    serialization->_projectLoadedInfo.bits = isApplication32Bits() ? 32 : 64;
+#ifdef __NATRON_WIN32__
+    serialization->_projectLoadedInfo.osStr = kOSTypeNameWindows;
+#elif defined(__NATRON_OSX__)
+    serialization->_projectLoadedInfo.osStr = kOSTypeNameMacOSX;
+#elif defined(__NATRON_LINUX__)
+    serialization->_projectLoadedInfo.osStr = kOSTypeNameLinux;
+#endif
+    serialization->_projectLoadedInfo.gitBranch = GIT_BRANCH;
+    serialization->_projectLoadedInfo.gitCommit = GIT_COMMIT;
+    serialization->_projectLoadedInfo.vMajor = NATRON_VERSION_MAJOR;
+    serialization->_projectLoadedInfo.vMinor = NATRON_VERSION_MINOR;
+    serialization->_projectLoadedInfo.vRev = NATRON_VERSION_REVISION;
+
+
+    // Timeline's current frame
+    serialization->_timelineCurrent = currentFrame();
+
+    // Remember project creation date
+    serialization->_creationDate = getProjectCreationTime();
+
+    if (getApp()->isBackground()) {
+        // Use the last project loaded serialization for the gui layout
+        if (_imp->lastProjectLoaded) {
+            serialization->_projectWorkspace = _imp->lastProjectLoaded->_projectWorkspace;
+        }
+    } else {
+        // Serialize workspace
+        serialization->_projectWorkspace.reset(new SERIALIZATION_NAMESPACE::WorkspaceSerialization);
+        getApp()->saveApplicationWorkspace(serialization->_projectWorkspace.get());
+
+        // Save opened panels
+        std::list<DockablePanelI*> openedPanels = getApp()->getOpenedSettingsPanels();
+        for (std::list<DockablePanelI*>::iterator it = openedPanels.begin(); it!=openedPanels.end(); ++it) {
+            serialization->_openedPanelsOrdered.push_back((*it)->getHolderFullyQualifiedScriptName());
+        }
+
+        // Save viewports
+        getApp()->getViewportsProjection(&serialization->_viewportsData);
+    }
+    
+} // Project::toSerialization
+
+
+void
+Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+{
+
+    // All the code in this function is MT-safe and run in the serialization thread
+    const SERIALIZATION_NAMESPACE::ProjectSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::ProjectSerialization*>(&serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    {
+        CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(getApp());
+
+        // Restore project creation date
+        _imp->projectCreationTime = QDateTime::fromMSecsSinceEpoch( serialization->_creationDate );
+
+        getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
+
+        // Restore project formats
+        // We must restore the entries in the combobox before restoring the value
+        std::vector<std::string> entries;
+        for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+            entries.push_back( formatStr.toStdString() );
+        }
+
+        {
+            _imp->additionalFormats.clear();
+            for (std::list<SERIALIZATION_NAMESPACE::FormatSerialization>::const_iterator it = serialization->_additionalFormats.begin(); it != serialization->_additionalFormats.end(); ++it) {
+                Format f;
+                f.setName(it->name);
+                f.setPixelAspectRatio(it->par);
+                f.x1 = it->x1;
+                f.y1 = it->y1;
+                f.x2 = it->x2;
+                f.y2 = it->y2;
+                _imp->additionalFormats.push_back(f);
+            }
+            for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
+                QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+                entries.push_back( formatStr.toStdString() );
+            }
+        }
+
+        _imp->formatKnob->populateChoices(entries);
+        _imp->autoSetProjectFormat = false;
+
+        const KnobsVec& projectKnobs = getKnobs();
+
+        // Restore project's knobs
+        for (std::size_t i = 0; i < projectKnobs.size(); ++i) {
+            // Try to find a serialized value for this knob
+            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
+                if ( (*it)->getName() == projectKnobs[i]->getName() ) {
+                    projectKnobs[i]->fromSerialization(**it);
+                    break;
+                }
+            }
+            if (projectKnobs[i] == _imp->envVars) {
+                onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+            } else if (projectKnobs[i] == _imp->natronVersion) {
+                std::string v = _imp->natronVersion->getValue();
+                if (v == "Natron v1.0.0") {
+                    getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
+                }
+            }
+        }
+
+        // Restore the timeline
+        _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+
+
+        // Restore the nodes
+        std::map<std::string, bool> processedModules;
+        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(), true, &processedModules);
+        getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
+    } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
+
+
+    // Recompute all meta-datas and stuff depending on the trees now
+    forceComputeInputDependentDataOnAllTrees();
+
+    QDateTime time = QDateTime::currentDateTime();
+    _imp->hasProjectBeenSavedByUser = true;
+    _imp->ageSinceLastSave = time;
+    _imp->lastAutoSave = time;
+    getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    if (serialization->_boostSerializationClassVersion < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+        recomputeFrameRangeFromReaders();
+    }
+#endif
+    
+} // Project::fromSerialization
+
 
 NATRON_NAMESPACE_EXIT;
 

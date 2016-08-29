@@ -35,7 +35,7 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobFile.h" // KnobFile
-#include "Engine/KnobSerialization.h"
+#include "Serialization/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -58,7 +58,7 @@ NATRON_NAMESPACE_ENTER;
 struct AddKnobDialogPrivate
 {
     KnobIPtr knob;
-    KnobSerializationPtr originalKnobSerialization;
+    SERIALIZATION_NAMESPACE::KnobSerializationPtr originalKnobSerialization;
     KnobIPtr isKnobAlias;
     DockablePanel* panel;
     QVBoxLayout* vLayout;
@@ -1070,7 +1070,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->panel->setUserPageActiveIndex();
 
     if (knob) {
-        _imp->originalKnobSerialization.reset( new KnobSerialization(knob) );
+        _imp->originalKnobSerialization.reset( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        knob->toSerialization(_imp->originalKnobSerialization.get());
     }
 }
 

@@ -48,8 +48,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Transform.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContextPrivate.h"
-#include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/TrackerSerialization.h"
+
 
 #define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 200
 
@@ -88,33 +90,44 @@ TrackerContext::~TrackerContext()
 }
 
 void
-TrackerContext::load(const TrackerContextSerialization& serialization)
+TrackerContext::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    const SERIALIZATION_NAMESPACE::TrackerContextSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::TrackerContextSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+
     TrackerContextPtr thisShared = shared_from_this();
     QMutexLocker k(&_imp->trackerContextMutex);
 
-    for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
+    for (std::list<SERIALIZATION_NAMESPACE::TrackSerialization>::const_iterator it = s->_tracks.begin(); it != s->_tracks.end(); ++it) {
         TrackMarkerPtr marker;
-        if ( it->usePatternMatching() ) {
+        if ( it->_isPM ) {
             marker = TrackMarkerPM::create(thisShared);
         } else {
             marker = TrackMarker::create(thisShared);
         }
         marker->initializeKnobsPublic();
-        marker->load(*it);
+        marker->fromSerialization(*it);
         _imp->markers.push_back(marker);
     }
 }
 
 void
-TrackerContext::save(TrackerContextSerialization* serialization) const
+TrackerContext::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
+
+    SERIALIZATION_NAMESPACE::TrackerContextSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::TrackerContextSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+
     QMutexLocker k(&_imp->trackerContextMutex);
 
     for (std::size_t i = 0; i < _imp->markers.size(); ++i) {
-        TrackSerialization s;
-        _imp->markers[i]->save(&s);
-        serialization->_tracks.push_back(s);
+        SERIALIZATION_NAMESPACE::TrackSerialization track;
+        _imp->markers[i]->toSerialization(&track);
+        s->_tracks.push_back(track);
     }
 }
 

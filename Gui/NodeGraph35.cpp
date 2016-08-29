@@ -40,7 +40,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
-#include "Engine/KnobSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -54,6 +53,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ToolButton.h"
+
+#include "Serialization/KnobSerialization.h"
 
 #include "Global/QtCompat.h"
 

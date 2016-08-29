@@ -307,7 +307,7 @@ class CreateNodeArgs
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
         createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-        createProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, NodeSerializationPtr());
+        createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
         createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);

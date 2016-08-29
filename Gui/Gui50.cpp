@@ -67,10 +67,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -104,6 +104,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
+
+#include <SequenceParsing.h>
 
 NATRON_NAMESPACE_ENTER;
 

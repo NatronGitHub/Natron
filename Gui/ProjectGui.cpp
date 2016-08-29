@@ -44,10 +44,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Image.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/PyParameter.h" // Param
 #include "Engine/Project.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
@@ -68,7 +66,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
-#include "Gui/ProjectGuiSerialization.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/ScriptEditor.h"
@@ -78,9 +75,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-//Remove when serialization is gone from this file
-#include "Engine/RectISerialization.h"
-#include "Engine/RectDSerialization.h"
+#include "Serialization/ProjectSerialization.h"
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/WorkspaceSerialization.h"
+#include "Serialization/RectISerialization.h"
+#include "Serialization/RectDSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -273,10 +272,10 @@ AddFormatDialog::getFormat() const
 
 static
 void
-loadNodeGuiSerialization(Gui* gui, const NodeSerializationPtr& serialization)
+loadNodeGuiSerialization(Gui* gui, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
 {
     NodePtr internalNode;
-    const std::string & groupName = serialization->getGroupFullyQualifiedName();
+    const std::string & groupName = serialization->_groupFullyQualifiedScriptName;
     NodeCollectionPtr container;
     if (groupName.empty()) {
         container = gui->getApp()->getProject();
@@ -292,7 +291,7 @@ loadNodeGuiSerialization(Gui* gui, const NodeSerializationPtr& serialization)
             return;
         }
     }
-    internalNode = container->getNodeByName(serialization->getNodeScriptName());
+    internalNode = container->getNodeByName(serialization->_nodeScriptName);
 
 
 
@@ -310,18 +309,12 @@ loadNodeGuiSerialization(Gui* gui, const NodeSerializationPtr& serialization)
         return;
     }
 
-    double x,y,w,h;
-    serialization->getPosition(&x,&y);
-    serialization->getSize(&w, &h);
 
-
-    nGui->refreshPosition( x, y, true );
+    nGui->refreshPosition(serialization->_nodePositionCoords[0], serialization->_nodePositionCoords[1], true );
 
     EffectInstancePtr iseffect = nGui->getNode()->getEffectInstance();
 
-    double nodeColor[3];
-    serialization->getColor(&nodeColor[0], &nodeColor[1], &nodeColor[2]);
-    bool hasNodeColor = nodeColor[0] != -1 || nodeColor[1] != -1 || nodeColor[2] != -1;
+    bool hasNodeColor = serialization->_nodeColor[0] != -1 || serialization->_nodeColor[1] != -1 || serialization->_nodeColor[2] != -1;
 
     BackdropGuiPtr isBd = toBackdropGui( nGui );
 
@@ -366,106 +359,42 @@ loadNodeGuiSerialization(Gui* gui, const NodeSerializationPtr& serialization)
 
 
         ///restore color only if different from default.
-        if ( (std::abs(nodeColor[0] - defR) > 0.05) || (std::abs(nodeColor[1] - defG) > 0.05) || (std::abs(nodeColor[2] - defB) > 0.05) ) {
+        if ( (std::abs(serialization->_nodeColor[0] - defR) > 0.05) || (std::abs(serialization->_nodeColor[1] - defG) > 0.05) || (std::abs(serialization->_nodeColor[2] - defB) > 0.05) ) {
             QColor color;
-            color.setRgbF(Image::clamp(nodeColor[0], 0., 1.),
-                          Image::clamp(nodeColor[1], 0., 1.),
-                          Image::clamp(nodeColor[2], 0., 1.));
+            color.setRgbF(Image::clamp(serialization->_nodeColor[0], 0., 1.),
+                          Image::clamp(serialization->_nodeColor[1], 0., 1.),
+                          Image::clamp(serialization->_nodeColor[2], 0., 1.));
             nGui->setCurrentColor(color);
         }
 
     }
 
 
-    double ovR, ovG, ovB;
-    serialization->getOverlayColor(&ovR, &ovG, &ovB);
-    bool hasOverlayColor = ovR != -1. || ovG != -1. || ovB != -1.;
+    bool hasOverlayColor = serialization->_overlayColor[0] != -1. || serialization->_overlayColor[1] != -1. || serialization->_overlayColor[2] != -1.;
 
     if (hasOverlayColor) {
         QColor c;
-        c.setRgbF(ovR, ovG, ovB);
+        c.setRgbF(serialization->_overlayColor[0], serialization->_overlayColor[1], serialization->_overlayColor[2]);
         nGui->setOverlayColor(c);
     }
 
     if (isBd) {
-        isBd->resize(w, h, true);
+        isBd->resize(serialization->_nodeSize[0], serialization->_nodeSize[1], true);
     }
 
-
-
-    bool isNodeSelected = serialization->getSelected();
-    if (isNodeSelected) {
-        gui->getNodeGraph()->selectNode(nGui, true);
-    }
-
-    const std::list<NodeSerializationPtr> & children = serialization->getNodesCollection();
-    for (std::list<NodeSerializationPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serialization->_children.begin(); it != serialization->_children.end(); ++it) {
         loadNodeGuiSerialization(gui, *it);
     }
 
 } // loadNodeGuiSerialization
 
-template<>
 void
-ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive> & archive)
+ProjectGui::load(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization)
 {
-    bool enableNatron1GuiCompat = false;
-    if (serialization->getVersion() < PROJECT_SERIALIZATION_DEPRECATE_PROJECT_GUI) {
 
-
-        ProjectGuiSerialization deprecatedGuiSerialization;
-        (*archive) >> boost::serialization::make_nvp("ProjectGui", deprecatedGuiSerialization);
-
-        enableNatron1GuiCompat = deprecatedGuiSerialization.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL;
-
-        // Restore the old backdrops from old version prior to Natron 1.1
-        const std::list<NodeBackdropSerialization> & backdrops = deprecatedGuiSerialization.getBackdrops();
-        for (std::list<NodeBackdropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-            double x, y;
-            it->getPos(x, y);
-            int w, h;
-            it->getSize(w, h);
-
-            KnobSerializationPtr labelSerialization = it->getLabelSerialization();
-            CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, _project.lock() );
-            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-
-            NodePtr node = getGui()->getApp()->createNode(args);
-            NodeGuiIPtr gui_i = node->getNodeGui();
-            assert(gui_i);
-            BackdropGuiPtr bd = toBackdropGui( gui_i );
-            assert(bd);
-            if (bd) {
-                bd->setPos(x, y);
-                bd->resize(w, h);
-                if (labelSerialization->_values[0]->_value.type == ValueSerializationStorage::eSerializationValueVariantTypeString) {
-                    bd->onLabelChanged( QString::fromUtf8( labelSerialization->_values[0]->_value.value.isString.c_str() ) );
-                }
-                float r, g, b;
-                it->getColor(r, g, b);
-                QColor c;
-                c.setRgbF(r, g, b);
-                bd->setCurrentColor(c);
-                node->setLabel( it->getFullySpecifiedName() );
-            }
-        }
-
-        // Now convert what we can convert to our newer format...
-        deprecatedGuiSerialization.convertToProjectSerialization(serialization.get());
-    }
-
-    for (std::list<NodeSerializationPtr>::const_iterator it = serialization->_nodes.begin(); it != serialization->_nodes.end(); ++it) {
+    for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::const_iterator it = serialization->_nodes.begin(); it != serialization->_nodes.end(); ++it) {
         loadNodeGuiSerialization(_gui, *it);
     }
-
-    /*const NodesGuiList nodesGui = getVisibleNodes();
-    for (NodesGuiList::const_iterator it = nodesGui.begin(); it != nodesGui.end(); ++it) {
-        (*it)->refreshEdges();
-        (*it)->refreshKnobLinks();
-    }*/
-
 
     _gui->getApp()->updateProjectLoadStatus( tr("Restoring settings panels") );
 
@@ -473,7 +402,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  const ProjectSe
     const std::list<std::string> & openedPanels = serialization->_openedPanelsOrdered;
     //reverse the iterator to fill the layout bottom up
     for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it != openedPanels.rend(); ++it) {
-        if (*it == kNatronProjectSettingsPanelSerializationName) {
+        if (*it == kNatronProjectSettingsPanelSerializationNameOld || *it == kNatronProjectSettingsPanelSerializationNameNew) {
             _gui->setVisibleProjectSettingsPanel();
         } else {
             NodePtr node = getInternalProject()->getNodeByFullySpecifiedName(*it);
@@ -497,11 +426,11 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  const ProjectSe
     // For auto-saves, always load the workspace
     bool loadWorkspace = isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce();
     if (loadWorkspace && serialization->_projectWorkspace) {
-        _gui->restoreLayout( true, enableNatron1GuiCompat, *serialization->_projectWorkspace );
+        _gui->restoreLayout( true, false, *serialization->_projectWorkspace );
     }
 
     const RegisteredTabs& registeredTabs = getGui()->getRegisteredTabs();
-    for (std::map<std::string,ViewportData>::const_iterator it = serialization->_viewportsData.begin(); it!=serialization->_viewportsData.end(); ++it) {
+    for (std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>::const_iterator it = serialization->_viewportsData.begin(); it!=serialization->_viewportsData.end(); ++it) {
         RegisteredTabs::const_iterator found = registeredTabs.find(it->first);
         if (found != registeredTabs.end()) {
             found->second.first->loadProjection(it->second);

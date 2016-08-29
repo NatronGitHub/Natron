@@ -19,38 +19,8 @@
 #ifndef KNOBSERIALIZATION_H
 #define KNOBSERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-
 #include <map>
 #include <vector>
-
-
-
-#ifndef Q_MOC_RUN
-GCC_DIAG_OFF(unused-parameter)
-GCC_DIAG_OFF(sign-compare)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/scoped_ptr.hpp>
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-#endif
-GCC_DIAG_ON(unused-parameter)
-GCC_DIAG_ON(sign-compare)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 
 
 #include "Serialization/CurveSerialization.h"
@@ -58,6 +28,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
+#include "Engine/Curve.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
+
+#include <SequenceParsing.h>
+
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS 2
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET 3
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL 4
@@ -90,9 +67,33 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #define GROUP_KNOB_SERIALIZATION_INTRODUCES_TYPENAME 2
 #define GROUP_KNOB_SERIALIZATION_VERSION GROUP_KNOB_SERIALIZATION_INTRODUCES_TYPENAME
-#endif
+#endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
-NATRON_NAMESPACE_ENTER;
+#define kInViewerContextItemLayoutSpacing "Spacing"
+#define kInViewerContextItemLayoutStretchBefore "StretchB"
+#define kInViewerContextItemLayoutStretchAfter "StretchA"
+#define kInViewerContextItemLayoutNewLine "NewLine"
+#define kInViewerContextItemLayoutAddSeparator "Separator"
+
+#define kKnobIntTypeName "Int"
+#define kKnobDoubleTypeName "Double"
+#define kKnobColorTypeName "Color"
+#define kKnobBoolTypeName "Bool"
+#define kKnobStringTypeName "String"
+#define kKnobButtonTypeName "Button"
+#define kKnobChoiceTypeName "Choice"
+#define kKnobSeparatorTypeName "Separator"
+#define kKnobGroupTypeName "Group"
+#define kKnobPageTypeName "Page"
+#define kKnobParametricTypeName "Parametric"
+#define kKnobLayersTypeName "Layers"
+#define kKnobFileTypeName "InputFile"
+#define kKnobOutputFileTypeName "OutputFile"
+#define kKnobPathTypeName "Path"
+
+#define kKnobInViewerContextDefaultItemSpacing 5
+
+SERIALIZATION_NAMESPACE_ENTER;
 
 /**
  User knobs are serialized in a different manner. For them we also need to remember all layouts bits as well
@@ -131,10 +132,7 @@ struct MasterSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("MasterDimension", masterDimension);
-        ar & ::boost::serialization::make_nvp("MasterNodeName", masterNodeName);
-        ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
-        ar & ::boost::serialization::make_nvp("MasterTrackName", masterTrackName);
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -180,7 +178,12 @@ class TypeExtraData
 {
 public:
 
-    TypeExtraData() {}
+    // User knob only
+    bool useHostOverlayHandle;
+
+    TypeExtraData()
+    : useHostOverlayHandle(false)
+    {}
 
     virtual ~TypeExtraData() {}
 };
@@ -192,12 +195,9 @@ public:
 
 
     ChoiceExtraData()
-        : TypeExtraData(), _choiceString(), _entries(), _helpStrings() {}
+        : TypeExtraData(), _entries(), _helpStrings() {}
 
     virtual ~ChoiceExtraData() {}
-
-     // For choice params, we save the choice string, as it might not necessarily exist in the entries when restoring
-    std::string _choiceString;
 
     // Entries and help strings are only serialized for user knobs
     std::vector<std::string> _entries;
@@ -265,20 +265,6 @@ public:
 };
 
 
-class DoubleExtraData
-: public ValueExtraData
-{
-public:
-    DoubleExtraData()
-    : ValueExtraData()
-    , useHostOverlayHandle(false)
-    {}
-
-    // User knob only
-    bool useHostOverlayHandle;
-
-};
-
 class ParametricExtraData
 : public TypeExtraData
 {
@@ -294,11 +280,15 @@ public:
     std::list<CurveSerialization> parametricCurves;
 };
 
+
+class KnobSerializationBase;
+
 /**
- * @brief Contains all info held by a single dimension in the knob
+ * @brief This class is used by KnobSerialization itself
  **/
-struct ValueSerializationStorage
+struct ValueSerialization
 {
+    // Enum indicating what's the data-type saved by the Knob
     enum SerializationValueVariantTypeEnum
     {
         eSerializationValueVariantTypeNone,
@@ -309,64 +299,63 @@ struct ValueSerializationStorage
 
     };
 
+    // If true, at least one of the fields below needs to be serialized
+    bool _mustSerialize;
+
+    int _dimension;
+
+    // Pointer to the actual KnobSerialization
+    KnobSerializationBase* _serialization;
+
     // Control which type member holds the current value of the variant
-    SerializationValueVariantTypeEnum type;
+    SerializationValueVariantTypeEnum _type;
 
+    // Serialization of the value and default value as a variant
+    SerializationValueVariant _value, _defaultValue;
 
-    SerializationValueVariant value,defaultValue;
-    boost::shared_ptr<CurveSerialization> animationCurve;
-    std::string expression;
-    bool expresionHasReturnVariable;
-    MasterSerialization slaveMasterLink;
+    // Whether we should save the value and default value
+    bool _serializeValue, _serializeDefaultValue;
+
+    // Serialization of the animation curve
+    CurveSerialization _animationCurve;
+
+    // Expression
+    std::string _expression;
+    bool _expresionHasReturnVariable;
+
+    // Slave/Master link
+    MasterSerialization _slaveMasterLink;
 
     // Enabled state is serialized per-dimension
-    bool enabled;
+    bool _enabledChanged;
 
-
-    ValueSerializationStorage()
-    : type(eSerializationValueVariantTypeNone)
-    , value()
-    , defaultValue()
-    , animationCurve()
-    , expression()
-    , expresionHasReturnVariable(false)
-    , slaveMasterLink()
-    , enabled(true)
-    {
-        
-    }
-};
-
-class KnobSerializationBase;
-
-/**
- * @brief This class is deprecated and just used for backward compatibility for loading projects older than Natron 2.2.0.
- **/
-struct ValueSerialization
-{
-    int _version;
-    KnobSerializationBase* _serialization;
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    int _boostSerializationClassVersion;
     std::string _typeName;
-    int _dimension;
-    
-    ValueSerializationStorage _value;
+#endif
 
-
-    ValueSerialization(KnobSerializationBase* serialization,
-                                           const std::string& typeName,
-                                           int dimension = - 1)
-    : _version(VALUE_SERIALIZATION_VERSION)
-    , _serialization(serialization)
-    , _typeName(typeName)
-    , _dimension(dimension)
+    ValueSerialization()
+    : _mustSerialize(false)
+    , _dimension(-1)
+    , _serialization(0)
+    , _type(eSerializationValueVariantTypeNone)
     , _value()
+    , _defaultValue()
+    , _serializeValue(false)
+    , _serializeDefaultValue(false)
+    , _animationCurve()
+    , _expression()
+    , _expresionHasReturnVariable(false)
+    , _slaveMasterLink()
+    , _enabledChanged(false)
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    , _boostSerializationClassVersion(VALUE_SERIALIZATION_VERSION)
+    , _typeName()
+#endif
     {
         
     }
 
-
-    // For backward compatibility when the label was not yet in the ChoiceExtraData class
-    void setChoiceExtraLabel(const std::string& label);
 
     const std::string& getKnobName() const;
 
@@ -375,157 +364,122 @@ struct ValueSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-
-        bool enabled = _value.enabled;
-        ar & ::boost::serialization::make_nvp("Enabled", enabled);
-        bool hasAnimation = _value.animationCurve.get() != 0;
-        ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
-
-        if (hasAnimation) {
-            ar & ::boost::serialization::make_nvp( "Curve", *_value.animationCurve);
-        }
-
-        ar & ::boost::serialization::make_nvp("DataType", _value.type);
-
-        switch (_value.type) {
-            case ValueSerializationStorage::eSerializationValueVariantTypeNone:
-                break;
-            case ValueSerializationStorage::eSerializationValueVariantTypeInteger:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isInt);
-                ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isInt);
-                break;
-            case ValueSerializationStorage::eSerializationValueVariantTypeDouble:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isDouble);
-                ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isDouble);
-                break;
-            case ValueSerializationStorage::eSerializationValueVariantTypeString:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isString);
-                ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isString);
-                break;
-            case ValueSerializationStorage::eSerializationValueVariantTypeBoolean:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isBool);
-                ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isBool);
-                break;
-        }
-
-        bool hasMaster = _value.slaveMasterLink.masterDimension != -1;
-        ar & ::boost::serialization::make_nvp("HasMaster", hasMaster);
-        if (hasMaster) {
-            ar & ::boost::serialization::make_nvp("Master", _value.slaveMasterLink);
-        }
-
-        ar & ::boost::serialization::make_nvp("Expression", _value.expression);
-        ar & ::boost::serialization::make_nvp("ExprHasRet", _value.expresionHasReturnVariable);
+        throw std::runtime_error("Saving with boost is no longer supported");
     } // save
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        _version = version;
+        _boostSerializationClassVersion = version;
 
-        bool isFile = _typeName == KnobFile::typeNameStatic();
-        bool isChoice = _typeName == KnobChoice::typeNameStatic();
+        bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
+        bool isChoice = _typeName == NATRON_NAMESPACE::KnobChoice::typeNameStatic();
 
-        ar & ::boost::serialization::make_nvp("Enabled", _value.enabled);
+        bool enabled;
+        ar & ::boost::serialization::make_nvp("Enabled", enabled);
+
+        // Assume that by default the knob is enabled
+        if (!enabled) {
+            _enabledChanged = true;
+        }
 
         bool hasAnimation;
         ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
         bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
-            _value.animationCurve.reset(new CurveSerialization);
             if (version >= VALUE_SERIALIZATION_CHANGES_CURVE_SERIALIZATION) {
-                ar & ::boost::serialization::make_nvp("Curve", *_value.animationCurve);
+                ar & ::boost::serialization::make_nvp("Curve", _animationCurve);
             } else {
-                Curve c;
+                NATRON_NAMESPACE::Curve c;
                 ar & ::boost::serialization::make_nvp("Curve", c);
-                c.saveSerialization(_value.animationCurve.get());
+                c.toSerialization(&_animationCurve);
             }
             convertOldFileKeyframesToPattern = isFile && getKnobName() == kOfxImageEffectFileParamName;
         }
 
-        _value.type = ValueSerializationStorage::eSerializationValueVariantTypeNone;
+        _type = ValueSerialization::eSerializationValueVariantTypeNone;
         if (version >= VALUE_SERIALIZATION_INTRODUCES_DATA_TYPE) {
-            ar & ::boost::serialization::make_nvp("DataType", _value.type);
+            ar & ::boost::serialization::make_nvp("DataType", _type);
         } else {
-            bool isString = _typeName == KnobString::typeNameStatic();
-            bool isColor = _typeName == KnobColor::typeNameStatic();
-            bool isDouble = _typeName == KnobDouble::typeNameStatic();
-            bool isInt = _typeName == KnobInt::typeNameStatic();
-            bool isBool = _typeName == KnobBool::typeNameStatic();
+            bool isString = _typeName == NATRON_NAMESPACE::KnobString::typeNameStatic();
+            bool isColor = _typeName == NATRON_NAMESPACE::KnobColor::typeNameStatic();
+            bool isDouble = _typeName == NATRON_NAMESPACE::KnobDouble::typeNameStatic();
+            bool isInt = _typeName == NATRON_NAMESPACE::KnobInt::typeNameStatic();
+            bool isBool = _typeName == NATRON_NAMESPACE::KnobBool::typeNameStatic();
 
             if (isInt) {
-                _value.type = ValueSerializationStorage::eSerializationValueVariantTypeInteger;
+                _type = ValueSerialization::eSerializationValueVariantTypeInteger;
             } else if (isDouble || isColor) {
-                _value.type = ValueSerializationStorage::eSerializationValueVariantTypeDouble;
+                _type = ValueSerialization::eSerializationValueVariantTypeDouble;
             } else if (isBool) {
-                _value.type = ValueSerializationStorage::eSerializationValueVariantTypeBoolean;
+                _type = ValueSerialization::eSerializationValueVariantTypeBoolean;
             } else if (isString) {
-                _value.type = ValueSerializationStorage::eSerializationValueVariantTypeString;
+                _type = ValueSerialization::eSerializationValueVariantTypeString;
             }
 
             if (isChoice) {
-                _value.type = ValueSerializationStorage::eSerializationValueVariantTypeInteger;
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isInt);
-                assert(_value.value.isInt >= 0);
+                _type = ValueSerialization::eSerializationValueVariantTypeInteger;
+                ar & ::boost::serialization::make_nvp("Value", _value.isInt);
+                assert(_value.isInt >= 0);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
                     if (version < VALUE_SERIALIZATION_REMOVES_EXTRA_DATA) {
                         std::string label;
                         ar & ::boost::serialization::make_nvp("Label", label);
-                        setChoiceExtraLabel(label);
+                        _value.isString  = label;
                     }
                 }
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isInt);
+                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
                 }
             } else if (isFile) {
-                _value.type = ValueSerializationStorage::eSerializationValueVariantTypeString;
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isString);
+                _type = ValueSerialization::eSerializationValueVariantTypeString;
+                ar & ::boost::serialization::make_nvp("Value", _value.isString);
 
                 ///Convert the old keyframes stored in the file parameter by analysing one keyframe
                 ///and deducing the pattern from it and setting it as a value instead
                 if (convertOldFileKeyframesToPattern) {
-                    SequenceParsing::FileNameContent content(_value.value.isString);
+                    SequenceParsing::FileNameContent content(_value.isString);
                     content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1,
                                                                   content.getNumPrependingZeroes() + 1,
-                                                                  &_value.value.isString);
+                                                                  &_value.isString);
                 }
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isString);
+                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
                 }
             }
 
         }
 
-        switch (_value.type) {
-            case ValueSerializationStorage::eSerializationValueVariantTypeNone:
+        switch (_type) {
+            case ValueSerialization::eSerializationValueVariantTypeNone:
                 break;
 
-            case ValueSerializationStorage::eSerializationValueVariantTypeInteger:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isInt);
+            case ValueSerialization::eSerializationValueVariantTypeInteger:
+                ar & ::boost::serialization::make_nvp("Value", _value.isInt);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isInt);
+                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
                 }
                 break;
 
-            case ValueSerializationStorage::eSerializationValueVariantTypeDouble:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isDouble);
+            case ValueSerialization::eSerializationValueVariantTypeDouble:
+                ar & ::boost::serialization::make_nvp("Value", _value.isDouble);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isDouble);
+                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isDouble);
                 }
                 break;
 
-            case ValueSerializationStorage::eSerializationValueVariantTypeString:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isString);
+            case ValueSerialization::eSerializationValueVariantTypeString:
+                ar & ::boost::serialization::make_nvp("Value", _value.isString);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isString);
+                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
                 }
                 break;
 
-            case ValueSerializationStorage::eSerializationValueVariantTypeBoolean:
-                ar & ::boost::serialization::make_nvp("Value", _value.value.isBool);
+            case ValueSerialization::eSerializationValueVariantTypeBoolean:
+                ar & ::boost::serialization::make_nvp("Value", _value.isBool);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _value.defaultValue.isBool);
+                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isBool);
                 }
 
                 break;
@@ -537,47 +491,47 @@ struct ValueSerialization
         bool hasMaster;
         ar & ::boost::serialization::make_nvp("HasMaster", hasMaster);
         if (hasMaster) {
-            ar & ::boost::serialization::make_nvp("Master", _value.slaveMasterLink);
+            ar & ::boost::serialization::make_nvp("Master", _slaveMasterLink);
         }
 
         if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS) {
-            ar & ::boost::serialization::make_nvp("Expression", _value.expression);
-            ar & ::boost::serialization::make_nvp("ExprHasRet", _value.expresionHasReturnVariable);
+            ar & ::boost::serialization::make_nvp("Expression", _expression);
+            ar & ::boost::serialization::make_nvp("ExprHasRet", _expresionHasReturnVariable);
         }
 
         if ( (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS) && (version < VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS) ) {
 
-            bool isString = _typeName == KnobString::typeNameStatic();
-            bool isColor = _typeName == KnobColor::typeNameStatic();
-            bool isDouble = _typeName == KnobDouble::typeNameStatic();
-            bool isInt = _typeName == KnobInt::typeNameStatic();
-            bool isBool = _typeName == KnobBool::typeNameStatic();
-            bool isFile = _typeName == KnobFile::typeNameStatic();
-            bool isOutFile = _typeName == KnobOutputFile::typeNameStatic();
-            bool isPath = _typeName == KnobPath::typeNameStatic();
+            bool isString = _typeName == NATRON_NAMESPACE::KnobString::typeNameStatic();
+            bool isColor = _typeName == NATRON_NAMESPACE::KnobColor::typeNameStatic();
+            bool isDouble = _typeName == NATRON_NAMESPACE::KnobDouble::typeNameStatic();
+            bool isInt = _typeName == NATRON_NAMESPACE::KnobInt::typeNameStatic();
+            bool isBool = _typeName == NATRON_NAMESPACE::KnobBool::typeNameStatic();
+            bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
+            bool isOutFile = _typeName == NATRON_NAMESPACE::KnobOutputFile::typeNameStatic();
+            bool isPath = _typeName == NATRON_NAMESPACE::KnobPath::typeNameStatic();
 
             bool isDoubleVal = isDouble || isColor;
             bool isIntVal = isChoice || isInt;
             bool isStrVal = isFile || isOutFile || isPath || isString;
 
             if (isIntVal) {
-                std::map<SequenceTime, int> exprValues;
+                std::map<int, int> exprValues;
                 ar & ::boost::serialization::make_nvp("ExprResults", exprValues);
             } else if (isBool) {
-                std::map<SequenceTime, bool> exprValues;
+                std::map<int, bool> exprValues;
                 ar & ::boost::serialization::make_nvp("ExprResults", exprValues);
             } else if (isDoubleVal) {
-                std::map<SequenceTime, double> exprValues;
+                std::map<int, double> exprValues;
                 ar & ::boost::serialization::make_nvp("ExprResults", exprValues);
             } else if (isStrVal) {
-                std::map<SequenceTime, std::string> exprValues;
+                std::map<int, std::string> exprValues;
                 ar & ::boost::serialization::make_nvp("ExprResults", exprValues);
             }
         }
     } // load
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
+#endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 };
 
 
@@ -595,8 +549,6 @@ public:
 
     virtual const std::string& getTypeName() const = 0;
 
-    // For backward compatibility when the label was not yet in the ChoiceExtraData class
-    virtual void setChoiceExtraString(const std::string& /*label*/) {}
 
 };
 
@@ -606,15 +558,12 @@ class KnobSerialization
 
 public:
 
-    unsigned int _version;
-    bool _hasBeenSerialized; // True if this object contains a valid serialization.
-
-    std::string _typeName; // used to re-create the appropriate knob type
+    std::string _typeName; // used for user knobs only to re-create the appropriate knob type
     std::string _scriptName; // the unique script-name of the knob
     int _dimension; // the number of dimensions held by the knob
-    bool _isSecret; // is this knob secret ?
+    bool _visibilityChanged; // true if the secretness of the knob is different than default
     bool _masterIsAlias; // is the master/slave link an alias ?
-    mutable std::vector<boost::shared_ptr<ValueSerialization> > _values; // serialized value for each dimension
+    mutable std::vector<ValueSerialization> _values; // serialized value for each dimension
     mutable boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
     bool _isUserKnob; // is this knob created by the user or was this created by a plug-in ?
@@ -623,23 +572,28 @@ public:
     bool _triggerNewLine; // only serialized for user knobs
     bool _evaluatesOnChange; // only serialized for user knobs
     bool _isPersistent; // only serialized for user knobs
-    bool _animationEnabled; // only serialized for user knobs
+    bool _animatesChanged; // only serialized for user knobs
     bool _hasViewerInterface; // does this knob has a user interface ?
     bool _inViewerContextSecret; // is this knob secret in the viewer interface
     int _inViewerContextItemSpacing; // item spacing in viewer, serialized for all knobs if they have a viewer UI
-    int _inViewerContextItemLayout; // item layout in viewer, serialized for all knobs if they have a viewer UI
+    std::string _inViewerContextItemLayout; // item layout in viewer, serialized for all knobs if they have a viewer UI
     std::string _inViewerContextIconFilePath[2]; // only serialized for user knobs with a viewer interface
     std::string _inViewerContextLabel; // only serialized for user knobs with a viewer interface
     std::string _tooltip; // serialized for user knobs only
 
+    // True if the knob has been changed since its default state or if this is a user knob
+    bool _mustSerialize;
+
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    unsigned int _boostSerializationClassVersion;
+#endif
+
 
     explicit KnobSerialization()
-    : _version(KNOB_SERIALIZATION_VERSION)
-    , _hasBeenSerialized(false)
-    , _typeName()
+    : _typeName()
     , _scriptName()
     , _dimension(0)
-    , _isSecret(false)
+    , _visibilityChanged(false)
     , _masterIsAlias(false)
     , _values()
     , _extraData()
@@ -648,14 +602,18 @@ public:
     , _triggerNewLine(false)
     , _evaluatesOnChange(false)
     , _isPersistent(false)
-    , _animationEnabled(false)
+    , _animatesChanged(false)
     , _hasViewerInterface(false)
     , _inViewerContextSecret(false)
-    , _inViewerContextItemSpacing(0)
-    , _inViewerContextItemLayout(0)
+    , _inViewerContextItemSpacing(kKnobInViewerContextDefaultItemSpacing)
+    , _inViewerContextItemLayout()
     , _inViewerContextIconFilePath()
     , _inViewerContextLabel()
     , _tooltip()
+    , _mustSerialize(false)
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    , _boostSerializationClassVersion(KNOB_SERIALIZATION_VERSION)
+#endif
     {
 
     }
@@ -672,106 +630,36 @@ public:
         return _typeName;
     }
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
-    // For backward compatibility when the label was not yet in the ChoiceExtraData class
-    virtual void setChoiceExtraString(const std::string& label) OVERRIDE FINAL;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-
-        ar & ::boost::serialization::make_nvp("Name", _scriptName);
-        ar & ::boost::serialization::make_nvp("Type", _typeName);
-        ar & ::boost::serialization::make_nvp("Dimension", _dimension);
-        ar & ::boost::serialization::make_nvp("Secret", _isSecret);
-        ar & ::boost::serialization::make_nvp("MasterIsAlias", _masterIsAlias);
-
-        assert((int)_values.size() == _dimension);
-        for (int i = 0; i < _dimension; ++i) {
-            ar & ::boost::serialization::make_nvp("item", *(_values[i]));
-        }
-
-        // Save extra datas
-        ParametricExtraData* parametricData = dynamic_cast<ParametricExtraData*>(_extraData.get());
-        TextExtraData* textData = dynamic_cast<TextExtraData*>(_extraData.get());
-        ChoiceExtraData* cdata = dynamic_cast<ChoiceExtraData*>(_extraData.get());
-        if (parametricData) {
-            ar & ::boost::serialization::make_nvp("ParametricCurves", parametricData->parametricCurves);
-        } else if (textData) {
-            ar & ::boost::serialization::make_nvp("StringsAnimation", textData->keyframes);
-        } else if (cdata) {
-            ar & ::boost::serialization::make_nvp("ChoiceLabel", cdata->_choiceString);
-        }
-
-        ar & ::boost::serialization::make_nvp("UserKnob", _isUserKnob);
-        if (_isUserKnob) {
-            ar & ::boost::serialization::make_nvp("Label", _label);
-            ar & ::boost::serialization::make_nvp("Help", _tooltip);
-            ar & ::boost::serialization::make_nvp("NewLine", _triggerNewLine);
-            ar & ::boost::serialization::make_nvp("Evaluate", _evaluatesOnChange);
-            ar & ::boost::serialization::make_nvp("Animates", _animationEnabled);
-            ar & ::boost::serialization::make_nvp("Persistent", _isPersistent);
-            ar & ::boost::serialization::make_nvp("UncheckedIcon", _iconFilePath[0]);
-            ar & ::boost::serialization::make_nvp("CheckedIcon", _iconFilePath[1]);
-            if (_extraData) {
-                ValueExtraData* vdata = dynamic_cast<ValueExtraData*>(_extraData.get());
-                TextExtraData* tdata = dynamic_cast<TextExtraData*>(_extraData.get());
-                FileExtraData* fdata = dynamic_cast<FileExtraData*>(_extraData.get());
-                PathExtraData* pdata = dynamic_cast<PathExtraData*>(_extraData.get());
-
-                if (cdata) {
-                    ar & ::boost::serialization::make_nvp("Entries", cdata->_entries);
-                    ar & ::boost::serialization::make_nvp("Helps", cdata->_helpStrings);
-                } else if (vdata) {
-                    ar & ::boost::serialization::make_nvp("Min", vdata->min);
-                    ar & ::boost::serialization::make_nvp("Max", vdata->max);
-                    ar & ::boost::serialization::make_nvp("DMin", vdata->dmin);
-                    ar & ::boost::serialization::make_nvp("DMax", vdata->dmax);
-                } else if (fdata) {
-                    ar & ::boost::serialization::make_nvp("Sequences", fdata->useSequences);
-                } else if (pdata) {
-                    ar & ::boost::serialization::make_nvp("MultiPath", pdata->multiPath);
-                } else if (tdata) {
-                    ar & ::boost::serialization::make_nvp("IsLabel", tdata->label);
-                    ar & ::boost::serialization::make_nvp("IsMultiLine", tdata->multiLine);
-                    ar & ::boost::serialization::make_nvp("UseRichText", tdata->richText);
-                }
-            }
-
-            bool isDouble = _typeName == KnobDouble::typeNameStatic();
-            if ( isDouble ) {
-                DoubleExtraData* doubleData = dynamic_cast<DoubleExtraData*>(_extraData.get());
-                ar & ::boost::serialization::make_nvp("HasOverlayHandle", doubleData->useHostOverlayHandle);
-            }
-        }
-        ar & ::boost::serialization::make_nvp("HasViewerUI", _hasViewerInterface);
-        if (_hasViewerInterface) {
-            ar & ::boost::serialization::make_nvp("ViewerUISpacing", _inViewerContextItemSpacing);
-            ar & ::boost::serialization::make_nvp("ViewerUILayout", _inViewerContextItemLayout);
-            ar & ::boost::serialization::make_nvp("ViewerUISecret", _inViewerContextSecret);
-            if (_isUserKnob) {
-                ar & ::boost::serialization::make_nvp("ViewerUILabel", _inViewerContextLabel);
-                ar & ::boost::serialization::make_nvp("ViewerUIIconUnchecked", _inViewerContextIconFilePath[0]);
-                ar & ::boost::serialization::make_nvp("ViewerUIIconChecked", _inViewerContextIconFilePath[1]);
-            }
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     } // save
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        _version = version;
+        _boostSerializationClassVersion = version;
         
         ar & ::boost::serialization::make_nvp("Name", _scriptName);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
         _values.resize(_dimension);
 
-        ar & ::boost::serialization::make_nvp("Secret", _isSecret);
+        bool secret;
+        ar & ::boost::serialization::make_nvp("Secret", secret);
+        if (secret) {
+            // Assume by default that knobs are visible
+            _visibilityChanged = true;
+        }
 
         if (version >= KNOB_SERIALIZATION_INTRODUCES_ALIAS) {
             ar & ::boost::serialization::make_nvp("MasterIsAlias", _masterIsAlias);
@@ -779,16 +667,16 @@ public:
             _masterIsAlias = false;
         }
 
-        bool isFile = _typeName == KnobFile::typeNameStatic();
-        bool isOutFile = _typeName == KnobOutputFile::typeNameStatic();
-        bool isPath = _typeName == KnobPath::typeNameStatic();
-        bool isString = _typeName == KnobString::typeNameStatic();
-        bool isParametric = _typeName == KnobParametric::typeNameStatic();
-        bool isChoice = _typeName == KnobChoice::typeNameStatic();
-        bool isDouble = _typeName == KnobDouble::typeNameStatic();
-        bool isColor = _typeName == KnobColor::typeNameStatic();
-        bool isInt = _typeName == KnobInt::typeNameStatic();
-        bool isBool = _typeName == KnobBool::typeNameStatic();
+        bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
+        bool isOutFile = _typeName == NATRON_NAMESPACE::KnobOutputFile::typeNameStatic();
+        bool isPath = _typeName == NATRON_NAMESPACE::KnobPath::typeNameStatic();
+        bool isString = _typeName == NATRON_NAMESPACE::KnobString::typeNameStatic();
+        bool isParametric = _typeName == NATRON_NAMESPACE::KnobParametric::typeNameStatic();
+        bool isChoice = _typeName == NATRON_NAMESPACE::KnobChoice::typeNameStatic();
+        bool isDouble = _typeName == NATRON_NAMESPACE::KnobDouble::typeNameStatic();
+        bool isColor = _typeName == NATRON_NAMESPACE::KnobColor::typeNameStatic();
+        bool isInt = _typeName == NATRON_NAMESPACE::KnobInt::typeNameStatic();
+        bool isBool = _typeName == NATRON_NAMESPACE::KnobBool::typeNameStatic();
 
         if (isChoice && !_extraData) {
             _extraData.reset(new ChoiceExtraData);
@@ -801,8 +689,10 @@ public:
         }
 
         for (int i = 0; i < _dimension; ++i) {
-            _values[i].reset(new ValueSerialization(this, _typeName, i));
-            ar & ::boost::serialization::make_nvp("item", *_values[i]);
+            _values[i]._typeName = _typeName;
+            _values[i]._dimension = i;
+            _values[i]._serialization = this;
+            ar & ::boost::serialization::make_nvp("item", _values[i]);
         }
 
         ////restore extra datas
@@ -811,11 +701,11 @@ public:
             if (version >= KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION) {
                 ar & ::boost::serialization::make_nvp("ParametricCurves", extraData->parametricCurves);
             } else {
-                std::list<Curve> curves;
+                std::list<NATRON_NAMESPACE::Curve> curves;
                 ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
-                for (std::list<Curve>::iterator it = curves.begin(); it!=curves.end(); ++it) {
+                for (std::list<NATRON_NAMESPACE::Curve>::iterator it = curves.begin(); it!=curves.end(); ++it) {
                     CurveSerialization c;
-                    it->saveSerialization(&c);
+                    it->toSerialization(&c);
                     extraData->parametricCurves.push_back(c);
                 }
             }
@@ -852,12 +742,9 @@ public:
 
         if (version >= KNOB_SERIALIZATION_INTRODUCES_USER_KNOB) {
             if (isChoice) {
-                assert(_extraData);
-                ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData.get());
-                assert(cData);
-                if (cData) {
-                    ar & ::boost::serialization::make_nvp("ChoiceLabel", cData->_choiceString);
-                }
+                std::string stringChoice;
+                ar & ::boost::serialization::make_nvp("ChoiceLabel", stringChoice);
+                _values[0]._value.isString = stringChoice;
             }
 
 
@@ -867,7 +754,17 @@ public:
                 ar & ::boost::serialization::make_nvp("Help", _tooltip);
                 ar & ::boost::serialization::make_nvp("NewLine", _triggerNewLine);
                 ar & ::boost::serialization::make_nvp("Evaluate", _evaluatesOnChange);
-                ar & ::boost::serialization::make_nvp("Animates", _animationEnabled);
+
+                {
+                    bool animationEnabled;
+                    ar & ::boost::serialization::make_nvp("Animates", animationEnabled);
+
+                    bool animationEnabledByDefault = isInt || isDouble || isColor;
+                    if ((animationEnabledByDefault && !animationEnabled) ||
+                        (!animationEnabledByDefault && animationEnabled)) {
+                        _animatesChanged = true;
+                    }
+                }
                 ar & ::boost::serialization::make_nvp("Persistent", _isPersistent);
                 if (version >= KNOB_SERIALIZATION_INTRODUCE_USER_KNOB_ICON_FILE_PATH) {
                     ar & ::boost::serialization::make_nvp("UncheckedIcon", _iconFilePath[0]);
@@ -891,12 +788,7 @@ public:
                     ar & ::boost::serialization::make_nvp("UseRichText", tdata->richText);
                 }
                 if (isDouble || isInt || isColor) {
-                    ValueExtraData* extraData;
-                    if (isDouble) {
-                        extraData = new DoubleExtraData;
-                    } else {
-                        extraData = new ValueExtraData;
-                    }
+                    ValueExtraData* extraData = new ValueExtraData;
                     ar & ::boost::serialization::make_nvp("Min", extraData->min);
                     ar & ::boost::serialization::make_nvp("Max", extraData->max);
                     if (version >= KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX) {
@@ -921,7 +813,7 @@ public:
                 if ( isDouble &&
                     (((version >= KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS) && (_dimension == 2)) ||
                      (version >= KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI)) ) {
-                    DoubleExtraData* extraData = dynamic_cast<DoubleExtraData*>(_extraData.get());
+                    ValueExtraData* extraData = dynamic_cast<ValueExtraData*>(_extraData.get());
                     assert(extraData);
                     ar & ::boost::serialization::make_nvp("HasOverlayHandle", extraData->useHostOverlayHandle);
                 }
@@ -966,8 +858,7 @@ public:
             }
         }
 
-        _hasBeenSerialized = true;
-        
+
     } // load
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -1020,7 +911,9 @@ public:
         return _typeName;
     }
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
@@ -1090,13 +983,13 @@ public:
 #endif
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::KnobSerialization, KNOB_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ValueSerialization, VALUE_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::MasterSerialization, MASTER_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::GroupKnobSerialization, GROUP_KNOB_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::KnobSerialization, KNOB_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::ValueSerialization, VALUE_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::MasterSerialization, MASTER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::GroupKnobSerialization, GROUP_KNOB_SERIALIZATION_VERSION)
 #endif
 
 #endif // KNOBSERIALIZATION_H

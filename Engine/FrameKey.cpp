@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "Engine/ViewIdx.h"
+#include "Serialization/FrameKeySerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -136,4 +137,47 @@ FrameKey::operator==(const FrameKey & other) const
            _draftMode == other._draftMode;
 }
 
+void
+FrameKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::FrameKeySerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::FrameKeySerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    s->frame = _time;
+    s->view = _view;
+    s->treeHash = _treeVersion;
+    s->gain = _gain;
+    s->gamma = _gamma;
+    s->lut = _lut;
+    s->bitdepth = _bitDepth;
+    s->channels = _channels;
+    _textureRect.toSerialization(&s->textureRect);
+    s->inputName = _inputName;
+    _layer.toSerialization(&s->layer);
+    s->alphaChannelFullName = _alphaChannelFullName;
+    s->draftMode = _draftMode;
+}
+
+void
+FrameKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::FrameKeySerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::FrameKeySerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    _time = s->frame;
+    _view = s->view;
+    _treeVersion = s->treeHash;
+    _gain = s->gain;
+    _gamma = s->gamma;
+    _lut = s->lut;
+    _bitDepth = s->bitdepth;
+    _channels = s->channels;
+    _textureRect.fromSerialization(s->textureRect);
+    _inputName = s->inputName;
+    _layer.fromSerialization(s->layer);
+    _alphaChannelFullName = s->alphaChannelFullName;
+    _draftMode = s->draftMode;
+}
 NATRON_NAMESPACE_EXIT;

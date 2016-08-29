@@ -59,6 +59,7 @@ INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
+INCLUDEPATH += $$PWD/../Serialization
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 INCLUDEPATH += $$PWD/../google-breakpad/src
@@ -96,6 +97,7 @@ SOURCES += \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \
+    Format.cpp \
     FrameEntry.cpp \
     FrameKey.cpp \
     FStreamsSupport.cpp \

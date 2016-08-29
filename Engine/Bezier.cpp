@@ -56,12 +56,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Format.h"
 #include "Engine/RotoLayer.h"
-#include "Engine/BezierSerialization.h"
 #include "Engine/RenderStats.h"
 #include "Engine/Transform.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/BezierCPSerialization.h"
+#include "Serialization/BezierSerialization.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -3257,11 +3259,13 @@ Bezier::rightDerivativeAtPoint(bool useGuiCurves,
 }
 
 void
-Bezier::save(const RotoItemSerializationPtr& obj) const
+Bezier::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
-    BezierSerializationPtr s = boost::dynamic_pointer_cast<BezierSerialization>(obj);
-
-    if (s) {
+    SERIALIZATION_NAMESPACE::BezierSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::BezierSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    {
         QMutexLocker l(&itemMutex);
 
         s->_closed = _imp->finished;
@@ -3272,44 +3276,47 @@ Bezier::save(const RotoItemSerializationPtr& obj) const
         bool useFeather = useFeatherPoints();
         BezierCPs::const_iterator fp = _imp->featherPoints.begin();
         for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-            BezierCP c;
-            c.clone(**it);
+            SERIALIZATION_NAMESPACE::BezierCPSerialization c;
+            (*it)->toSerialization(&c);
             s->_controlPoints.push_back(c);
             if (useFeather) {
-                BezierCP f;
-                f.clone(**fp);
+                SERIALIZATION_NAMESPACE::BezierCPSerialization f;
+                (*fp)->toSerialization(&f);
                 s->_featherPoints.push_back(f);
                 ++fp;
             }
         }
-    }
 
-    RotoDrawableItem::save(obj);
+    }
+    RotoDrawableItem::toSerialization(obj);
 }
 
 void
-Bezier::load(const RotoItemSerialization & obj)
+Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    const SERIALIZATION_NAMESPACE::BezierSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::BezierSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+
     BezierPtr this_shared = toBezier( shared_from_this() );
 
     assert(this_shared);
-
-    const BezierSerialization & s = dynamic_cast<const BezierSerialization &>(obj);
     {
         QMutexLocker l(&itemMutex);
-        _imp->isOpenBezier = s._isOpenBezier;
-        _imp->finished = s._closed && !_imp->isOpenBezier;
+        _imp->isOpenBezier = s->_isOpenBezier;
+        _imp->finished = s->_closed && !_imp->isOpenBezier;
 
         bool useFeather = useFeatherPoints();
-        std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
-        for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it) {
+        std::list<SERIALIZATION_NAMESPACE::BezierCPSerialization>::const_iterator itF = s->_featherPoints.begin();
+        for (std::list<SERIALIZATION_NAMESPACE::BezierCPSerialization>::const_iterator it = s->_controlPoints.begin(); it != s->_controlPoints.end(); ++it) {
             BezierCPPtr cp( new BezierCP(this_shared) );
-            cp->clone(*it);
+            cp->fromSerialization(*it);
             _imp->points.push_back(cp);
 
             if (useFeather) {
                 BezierCPPtr fp( new FeatherPoint(this_shared) );
-                fp->clone(*itF);
+                fp->fromSerialization(*itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;
             }
@@ -3317,7 +3324,7 @@ Bezier::load(const RotoItemSerialization & obj)
         copyInternalPointsToGuiPoints();
     }
     refreshPolygonOrientation(false);
-    RotoDrawableItem::load(obj);
+    RotoDrawableItem::fromSerialization(obj);
 }
 
 void

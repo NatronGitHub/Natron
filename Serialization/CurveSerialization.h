@@ -28,64 +28,71 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <string>
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Curve.h"
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/set.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/scoped_ptr.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
+#include "Engine/Curve.h"
 #include "Engine/CurvePrivate.h"
-#include "Engine/EngineFwd.h"
-#endif
+#endif // NATRON_BOOST_SERIALIZATION_COMPAT
 
-NATRON_NAMESPACE_ENTER;
+#include "Serialization/SerializationBase.h"
+
+SERIALIZATION_NAMESPACE_ENTER;
+
+#define kKeyframeSerializationTypeConstant "K"
+#define kKeyframeSerializationTypeLinear "L"
+#define kKeyframeSerializationTypeSmooth "S"
+#define kKeyframeSerializationTypeCatmullRom "R"
+#define kKeyframeSerializationTypeCubic "C"
+#define kKeyframeSerializationTypeHorizontal "H"
+#define kKeyframeSerializationTypeFree "F"
+#define kKeyframeSerializationTypeBroken "X"
 
 /**
- * @brief Basically just the same as a Keyframe but without all member functions and extracted to remove any dependency to Natron
+ * @brief Basically just the same as a Keyframe but without all member functions and extracted to remove any dependency to Natron.
+ * This class i contained into CurveSerialization
  **/
 struct KeyFrameSerialization
 {
+
+    // The frame in the timeline. This is not necessarily an integer if the user applied retiming operations
     double time;
+
+    // The value of the keyframe
     double value;
-    int interpolation;
-    double leftDerivative;
+
+    // Letter that corresponds to one value of KeyframeTypeEnum
+    // eKeyframeTypeConstant = kKeyframeSerializationTypeConstant,
+    // eKeyframeTypeLinear = kKeyframeSerializationTypeLinear
+    // eKeyframeTypeSmooth = kKeyframeSerializationTypeSmooth
+    // eKeyframeTypeCatmullRom = kKeyframeSerializationTypeCatmullRom
+    // eKeyframeTypeCubic = kKeyframeSerializationTypeCubic
+    // eKeyframeTypeHorizontal = kKeyframeSerializationTypeHorizontal
+    // eKeyframeTypeFree = kKeyframeSerializationTypeFree
+    // eKeyframeTypeBroken = kKeyframeSerializationTypeBroken
+    // eKeyframeTypeNone = empty string, meaning we do not serialize the value
+    //
+    // This value is only serialized if this is the first keyframe in the curve OR if the interpolation type changes
+    // at this keyframe.
+    std::string interpolation;
+
+    // This is only needed in eKeyframeTypeFree mode where the user controls the interpolation of both tangents at once
+    // or in eKeyframeTypeBroken mode
     double rightDerivative;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int /*version*/)
-    {
-        ar & ::boost::serialization::make_nvp("Time", time);
-        ar & ::boost::serialization::make_nvp("Value", value);
-        ar & ::boost::serialization::make_nvp("InterpolationMethod", interpolation);
-        ar & ::boost::serialization::make_nvp("LeftDerivative", leftDerivative);
-        ar & ::boost::serialization::make_nvp("RightDerivative", rightDerivative);
-    }
-#endif
+    // This is only needed in eKeyframeTypeBroken mode when user can have set different right/left tangents
+    double leftDerivative;
+
 };
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+SERIALIZATION_NAMESPACE_EXIT
 /**
  * @brief Deprecated, used for backward compatibility before Natron 2.2
  **/
 template<class Archive>
 void
-KeyFrame::serialize(Archive & ar,
+NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
                     const unsigned int /*version*/)
 {
     ar & ::boost::serialization::make_nvp("Time", _time);
@@ -94,48 +101,36 @@ KeyFrame::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
     ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
 }
-#endif
-
-
-struct CurveSerialization
-{
-    // We don't need a set complicated data structure here because we trust that the Curve itself
-    // gave us a list of keyframes with a correct ordering
-    std::list<KeyFrameSerialization> keys;
-
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int /*version*/)
-    {
-        int nKeys;
-        ar & ::boost::serialization::make_nvp("nKeys", nKeys);
-        for (int i = 0; i < nKeys; ++i) {
-            KeyFrameSerialization key;
-            ar & ::boost::serialization::make_nvp("Key", key);
-            keys.push_back(key);
-        }
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
-};
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 /**
  * @brief Deprecated, used for backward compatibility before Natron 2.2
  **/
 template<class Archive>
 void
-Curve::serialize(Archive & ar,
-                 const unsigned int /*version*/)
+NATRON_NAMESPACE::Curve::serialize(Archive & ar,
+                                   const unsigned int /*version*/)
 {
     QMutexLocker l(&_imp->_lock);
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
 }
-#endif
+SERIALIZATION_NAMESPACE_ENTER
+#endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
-NATRON_NAMESPACE_EXIT;
+
+class CurveSerialization
+: public SerializationObjectBase
+{
+public:
+
+    // We don't need a set complicated data structure here because we trust that the Curve itself
+    // gave us a list of keyframes with a correct ordering
+    std::list<KeyFrameSerialization> keys;
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
+
+};
+
+SERIALIZATION_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_CURVESERIALIZATION_H

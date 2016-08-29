@@ -19,49 +19,41 @@
 #ifndef NONKEYPARAMSSERIALIZATION_H
 #define NONKEYPARAMSSERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
+#include "Serialization/RectISerialization.h"
 
-#include "Global/Macros.h"
+SERIALIZATION_NAMESPACE_ENTER;
 
-#include "Engine/NonKeyParams.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-
-//Should not be needed but doesn't work without explicit instanciation with XML
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
-#include "Engine/EngineFwd.h"
-
-#pragma message WARN("Missing NonKeyParamsSerialization class")
-NATRON_NAMESPACE_ENTER;
-
-template<class Archive>
-void
-NonKeyParams::serialize(Archive & ar,
-                        const unsigned int /*version*/)
+class NonKeyParamsSerialization
+: public SerializationObjectBase
 {
-    ar & ::boost::serialization::make_nvp("DataTypeSize", _storageInfo.dataTypeSize);
-    ar & ::boost::serialization::make_nvp("NComps", _storageInfo.numComponents);
-    ar & ::boost::serialization::make_nvp("Bounds", _storageInfo.bounds);
-    ar & ::boost::serialization::make_nvp("StorageMode", _storageInfo.mode);
-    ar & ::boost::serialization::make_nvp("TexTarget", _storageInfo.textureTarget);
-}
+public:
 
-NATRON_NAMESPACE_EXIT;
+    std::size_t dataTypeSize;
+    int nComps;
+    RectISerialization bounds;
 
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(NATRON_NAMESPACE::NonKeyParams);
+    NonKeyParamsSerialization()
+    : SerializationObjectBase()
+    , dataTypeSize(0)
+    , nComps(0)
+    , bounds()
+    {
+
+    }
+
+    virtual ~NonKeyParamsSerialization()
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
+};
+
+
+SERIALIZATION_NAMESPACE_EXIT;
+
 
 #endif // NONKEYPARAMSSERIALIZATION_H

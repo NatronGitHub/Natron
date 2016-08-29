@@ -315,14 +315,6 @@ public:
 
     void setKnobLinksVisible(bool visible);
 
-    /**
-     * @brief Serialize this node. If this is a multi-instance node, every instance will
-     * be serialized, hence the list.
-     **/
-    void serializeInternal(std::list<NodeSerializationPtr >& internalSerialization) const;
-    void restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<NodeSerializationPtr >& internalSerialization);
-
     void setMergeHintActive(bool active);
 
 

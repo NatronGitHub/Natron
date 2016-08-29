@@ -21,52 +21,23 @@
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
-#include "Engine/KnobSerialization.h"
-#include "Engine/EngineFwd.h"
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/KnobSerialization.h"
 
 
 #define NODE_COLLECTION_SERIALIZATION_VERSION 1
 
 #define NODE_GROUP_SERIALIZATION_VERSION 1
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 /**
  * @brief Deprecated: just used for backward compat
  **/
 class NodeCollectionSerialization
 {
-    Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
 private:
 
@@ -129,9 +100,9 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeCollectionSerialization, NODE_COLLECTION_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::NodeCollectionSerialization, NODE_COLLECTION_SERIALIZATION_VERSION)
 
 #endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 #endif // NODEGROUPSERIALIZATION_H

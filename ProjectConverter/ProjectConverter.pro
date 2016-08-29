@@ -25,9 +25,9 @@ CONFIG -= app_bundle
    CONFIG += enable-cairo
 }
 CONFIG += moc rcc
-CONFIG += boost opengl qt python shiboken pyside
+CONFIG += boost-serialization-lib boost opengl qt python shiboken pyside
 enable-cairo: CONFIG += cairo
-CONFIG += static-gui static-engine static-serialization static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess static-yaml-cpp
+CONFIG += static-yaml-cpp static-gui static-engine static-serialization static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 

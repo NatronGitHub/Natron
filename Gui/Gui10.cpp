@@ -35,9 +35,7 @@
 #include <QApplication> // qApp
 #include <QDesktopWidget>
 
-#include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/FStreamsSupport.h"
 
 #include "Gui/CurveEditor.h"
@@ -50,7 +48,6 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/Splitter.h"
@@ -59,6 +56,9 @@
 #include "Gui/ViewerTab.h"
 
 #include "Global/QtCompat.h" // removeFileExtension
+
+#include "Serialization/SerializationIO.h"
+#include "Serialization/WorkspaceSerialization.h"
 
 #ifdef __NATRON_WIN32__
 #if _WIN32_WINNT < 0x0500
@@ -119,7 +119,7 @@ Gui::createDefaultLayout1()
 void
 Gui::restoreLayout(bool wipePrevious,
                    bool enableOldProjectCompatibility,
-                   const ProjectWorkspaceSerialization& layoutSerialization)
+                   const SERIALIZATION_NAMESPACE::WorkspaceSerialization& layoutSerialization)
 {
     ///Wipe the current layout
     if (wipePrevious) {
@@ -142,7 +142,7 @@ Gui::restoreLayout(bool wipePrevious,
         }
 
         // Restore user python panels
-        const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = layoutSerialization._pythonPanels;
+        const std::list<SERIALIZATION_NAMESPACE::PythonPanelSerialization >& pythonPanels = layoutSerialization._pythonPanels;
         if ( !pythonPanels.empty() ) {
             std::string appID = getApp()->getAppIDString();
             std::string err;
@@ -150,8 +150,8 @@ Gui::restoreLayout(bool wipePrevious,
             bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
             (void)ok;
         }
-        for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-            std::string script = (*it)->pythonFunction + "()\n";
+        for (std::list<SERIALIZATION_NAMESPACE::PythonPanelSerialization >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+            std::string script = it->pythonFunction + "()\n";
             std::string err, output;
             if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
                 getApp()->appendToScriptEditor(err);
@@ -161,17 +161,17 @@ Gui::restoreLayout(bool wipePrevious,
                 }
             }
             const RegisteredTabs& registeredTabs = getRegisteredTabs();
-            RegisteredTabs::const_iterator found = registeredTabs.find( (*it)->name );
+            RegisteredTabs::const_iterator found = registeredTabs.find(it->name );
             if ( found != registeredTabs.end() ) {
                 NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
                 if (panel) {
-                    panel->fromSerialization(**it);
+                    panel->fromSerialization(*it);
                 }
             }
         }
 
         fromSerialization(*layoutSerialization._mainWindowSerialization);
-        for (std::list<boost::shared_ptr<ProjectWindowSerialization> >::const_iterator it = layoutSerialization._floatingWindowsSerialization.begin(); it!= layoutSerialization._floatingWindowsSerialization.end(); ++it) {
+        for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> >::const_iterator it = layoutSerialization._floatingWindowsSerialization.begin(); it!= layoutSerialization._floatingWindowsSerialization.end(); ++it) {
             FloatingWidget* window = new FloatingWidget(this);
             getApp()->registerFloatingWindow(window);
             window->fromSerialization(**it);
@@ -182,39 +182,30 @@ Gui::restoreLayout(bool wipePrevious,
 } // restoreLayout
 
 void
-Gui::restoreChildFromSerialization(const ProjectWindowSerialization& serialization)
+Gui::restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization)
 {
     QDesktopWidget* desktop = QApplication::desktop();
     QRect screen = desktop->screenGeometry(desktop->screenNumber(this));
-
-    switch (serialization.childType) {
-        case eProjectWorkspaceWidgetTypeSplitter: {
-            assert(serialization.isChildSplitter);
-            Qt::Orientation orientation;
-            switch ((OrientationEnum)serialization.isChildSplitter->orientation) {
-                case eOrientationHorizontal:
-                    orientation = Qt::Horizontal;
-                    break;
-                case eOrientationVertical:
-                    orientation = Qt::Vertical;
-                    break;
-            }
-            Splitter* splitter = new Splitter(orientation, this, this);
-            _imp->_leftRightSplitter->addWidget_mt_safe(splitter);
-            getApp()->registerSplitter(splitter);
-            splitter->fromSerialization(*serialization.isChildSplitter);
-        }   break;
-        case eProjectWorkspaceWidgetTypeTabWidget: {
-            assert(serialization.isChildTabWidget);
-            TabWidget* tab = new TabWidget(this, this);
-            _imp->_leftRightSplitter->addWidget_mt_safe(tab);
-            getApp()->registerTabWidget(tab);
-            tab->fromSerialization(*serialization.isChildTabWidget);
-        }   break;
-        case eProjectWorkspaceWidgetTypeSettingsPanel:
-        case eProjectWorkspaceWidgetTypeNone:
-            break;
+    if (serialization.childType == kSplitterChildTypeSplitter) {
+        assert(serialization.isChildSplitter);
+        Qt::Orientation orientation = Qt::Horizontal;
+        if (serialization.isChildSplitter->orientation == kSplitterOrientationHorizontal) {
+            orientation = Qt::Horizontal;
+        } else if (serialization.isChildSplitter->orientation == kSplitterOrientationVertical) {
+            orientation = Qt::Vertical;
+        }
+        Splitter* splitter = new Splitter(orientation, this, this);
+        _imp->_leftRightSplitter->addWidget_mt_safe(splitter);
+        getApp()->registerSplitter(splitter);
+        splitter->fromSerialization(*serialization.isChildSplitter);
+    } else if (serialization.childType == kSplitterChildTypeTabWidget) {
+        assert(serialization.isChildTabWidget);
+        TabWidget* tab = new TabWidget(this, this);
+        _imp->_leftRightSplitter->addWidget_mt_safe(tab);
+        getApp()->registerTabWidget(tab);
+        tab->fromSerialization(*serialization.isChildTabWidget);
     }
+
 
     // Restore geometry
     int w = std::min( serialization.windowSize[0], screen.width() );
@@ -254,14 +245,13 @@ Gui::exportLayout()
         }
 
         try {
-            boost::archive::xml_oarchive oArchive(ofile);
-            ProjectWorkspaceSerialization s;
+            SERIALIZATION_NAMESPACE::WorkspaceSerialization s;
             getApp()->saveApplicationWorkspace(&s);
-            oArchive << boost::serialization::make_nvp("Layout", s);
-        }catch (...) {
+            SERIALIZATION_NAMESPACE::write(ofile, s);
+        } catch (...) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                  , tr("Failed to save the layout").toStdString(), false );
-
+                                 , tr("Failed to save workspace").toStdString(), false );
+            
             return;
         }
     }

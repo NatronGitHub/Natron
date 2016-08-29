@@ -80,6 +80,11 @@ public:
 
     virtual ~KnobFile();
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     static const std::string & typeNameStatic();
 
     void setAsInputImage()
@@ -158,6 +163,11 @@ public:
     }
 
     static const std::string & typeNameStatic();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
     void setAsOutputImageFile()
     {
@@ -241,6 +251,7 @@ public:
     }
 
     static const std::string & typeNameStatic();
+
 
     void setMultiPath(bool b);
 

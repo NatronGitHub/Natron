@@ -46,7 +46,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Node.h"
 
 #include "Global/QtCompat.h"
@@ -963,10 +962,10 @@ GuiApplicationManager::clearLastRenderedTextures()
 bool
 GuiApplicationManager::isNodeClipBoardEmpty() const
 {
-    return _imp->_nodeCB.isEmpty();
+    return _imp->_nodeCB.nodes.empty();
 }
 
-NodeClipBoard&
+SERIALIZATION_NAMESPACE::NodeClipBoard&
 GuiApplicationManager::getNodeClipBoard()
 {
     return _imp->_nodeCB;

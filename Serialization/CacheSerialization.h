@@ -19,94 +19,138 @@
 #ifndef Engine_CacheSerialization_h
 #define Engine_CacheSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) && defined(NATRON_BOOST_SERIALIZATION_COMPAT)
-#include <boost/shared_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/list.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/split_member.hpp>
+#include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
 
-#include "Serialization/ImageSerialization.h"
+#include "Serialization/SerializationBase.h"
+#include "Serialization/ImageKeySerialization.h"
 #include "Serialization/ImageParamsSerialization.h"
-#include "Serialization/FrameEntrySerialization.h"
+#include "Serialization/FrameKeySerialization.h"
 #include "Serialization/FrameParamsSerialization.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#define SERIALIZED_ENTRY_INTRODUCES_SIZE 2
-#define SERIALIZED_ENTRY_VERSION SERIALIZED_ENTRY_INTRODUCES_SIZE
-#endif
 
-
-///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
-//#define NATRON_DEBUG_CACHE
-
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 
 template<typename EntryType>
 class SerializedEntry
+: public SerializationObjectBase
 {
 public:
 
     typedef typename EntryType::hash_type hash_type;
-    typedef typename EntryType::key_t key_t;
-    typedef typename EntryType::param_t param_t;
-    typedef boost::shared_ptr<param_t> ParamsTypePtr;
+    typedef typename EntryType::key_serialization_t key_serialization_t;
+    typedef typename EntryType::params_serialization_t params_serialization_t;
 
-
+    // The hash can be recovered from the key, but it is also serialized to double check that the entry still
+    // has a valid hash
     hash_type hash;
-    key_t key;
-    ParamsTypePtr params;
-    std::size_t size; //< the data size in bytes
-    std::string filePath; //< we need to serialize it as several entries can have the same hash, hence we index them
+
+    // The unique identifier of the cache entry
+    key_serialization_t key;
+
+    // The parameters that go along the cache entry but that do not necessarilly uniquely identify it
+    params_serialization_t params;
+
+    // The size in bytes
+    std::size_t size;
+
+    // Even though entries have their filename given by their hash,
+    // we need to serialize it as multiple entries can have the same hash.
+    // Each entry with the same hash has an index appended
+    std::string filePath;
+
+    // At which byte in the cache file does this entry start. For Image cache generally each file is one entry so this is 0
+    // but for a Tile cache, it is an offset in the cache memory files.
     std::size_t dataOffsetInFile;
 
     SerializedEntry()
-        : hash(0)
-          , key()
-          , params()
-          , size(0)
-          , filePath()
-          , dataOffsetInFile(0)
+    : hash(0)
+    , key()
+    , params()
+    , size(0)
+    , filePath()
+    , dataOffsetInFile(0)
     {
     }
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int /*version*/)
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL
     {
-        ar & ::boost::serialization::make_nvp("Hash", hash);
-        ar & ::boost::serialization::make_nvp("Key", key);
-        ar & ::boost::serialization::make_nvp("Params", params);
-        ar & ::boost::serialization::make_nvp("Size", size);
-        ar & ::boost::serialization::make_nvp("Filename", filePath);
-        ar & ::boost::serialization::make_nvp("Offset", dataOffsetInFile);
+        em << YAML::BeginSeq;
+        em << YAML::Flow;
+        em << filePath;
+        em << dataOffsetInFile;
+        em << size;
+        em << hash;
+        key.encode(em);
+        params.encode(em);
+        em << YAML::EndSeq;
+
     }
-#endif
+
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL
+    {
+        if (!node.IsSequence() || node.size() != 6) {
+            throw YAML::InvalidNode();
+        }
+        filePath = node[0].as<std::string>();
+        dataOffsetInFile = node[1].as<std::size_t>();
+        size = node[2].as<std::size_t>();
+        hash = node[3].as<hash_type>();
+        key.decode(node[4]);
+        params.decode(node[5]);
+    }
+
+
+};
+
+template<typename EntryType>
+class CacheSerialization
+: public SerializationObjectBase
+{
+
+public:
+
+    int cacheVersion;
+    std::list<SerializedEntry<EntryType> > entries;
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL
+    {
+        em << YAML::BeginMap;
+        em << YAML::Key << "Version" << YAML::Value << cacheVersion;
+        if (!entries.empty()) {
+            em << YAML::Key << "Entries" << YAML::Value;
+            em << YAML::BeginSeq;
+            for (typename std::list<SerializedEntry<EntryType> >::const_iterator it = entries.begin(); it!=entries.end(); ++it) {
+                it->encode(em);
+            }
+            em << YAML::EndSeq;
+        }
+        em << YAML::EndMap;
+    }
+
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL
+    {
+        if (node["Version"]) {
+            cacheVersion = node["Version"].as<int>();
+        }
+        if (node["Entries"]) {
+            YAML::Node entriesNode = node["Entries"];
+            for (YAML::const_iterator it = entriesNode.begin(); it!=entriesNode.end(); ++it) {
+                SerializedEntry<EntryType> entry;
+                entry.decode(it->second);
+                entries.push_back(entry);
+            }
+        }
+    }
 };
 
 
-#pragma message WARN("Missing CacheSerialization class")
-NATRON_NAMESPACE_EXIT;
+
+
+SERIALIZATION_NAMESPACE_EXIT;
 
 
 #endif // Engine_CacheSerialization_h

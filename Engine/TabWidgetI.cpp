@@ -23,13 +23,13 @@
 // ***** END PYTHON BLOCK *****
 
 #include "TabWidgetI.h"
-#include "Engine/ProjectSerialization.h"
+#include "Serialization/WorkspaceSerialization.h"
 NATRON_NAMESPACE_ENTER;
 
 void
-TabWidgetI::toSerialization(SerializationObjectBase* serializationBase)
+TabWidgetI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
 {
-    ProjectTabWidgetSerialization* serialization = dynamic_cast<ProjectTabWidgetSerialization*>(serializationBase);
+    SERIALIZATION_NAMESPACE::TabWidgetSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::TabWidgetSerialization*>(serializationBase);
     if (!serialization) {
         return;
     }
@@ -42,9 +42,9 @@ TabWidgetI::toSerialization(SerializationObjectBase* serializationBase)
 }
 
 void
-TabWidgetI::fromSerialization(const SerializationObjectBase& serializationBase)
+TabWidgetI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
 {
-    const ProjectTabWidgetSerialization* serialization = dynamic_cast<const ProjectTabWidgetSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::TabWidgetSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::TabWidgetSerialization*>(&serializationBase);
     if (!serialization) {
         return;
     }

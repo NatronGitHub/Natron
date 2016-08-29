@@ -38,6 +38,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
@@ -49,7 +50,7 @@ NATRON_NAMESPACE_ENTER;
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)
  **/
-class RectI
+class RectI : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -59,10 +60,12 @@ public:
     int x2; // right
     int y2; // top
 
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version);
-
+#endif
+    
     RectI()
         : x1(0), y1(0), x2(0), y2(0)
     {
@@ -438,6 +441,10 @@ public:
 
         return ret;
     }
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 };
 
 GCC_DIAG_ON(strict-overflow)

@@ -39,7 +39,7 @@
 #define ROTO_LAYER_SERIALIZATION_VERSION ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER
 #endif
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 
 class RotoLayerSerialization
     : public RotoItemSerialization
@@ -58,7 +58,18 @@ public:
 
 
 
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        throw std::runtime_error("Saving with boost is no longer supported");
+    }
+
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
@@ -99,13 +110,13 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    std::list < RotoItemSerializationPtr > children;
+    std::list <RotoItemSerializationPtr> children;
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoLayerSerialization, ROTO_LAYER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoLayerSerialization, ROTO_LAYER_SERIALIZATION_VERSION)
 #endif
 
 #endif // Engine_RotoLayerSerialization_h

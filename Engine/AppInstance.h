@@ -210,7 +210,7 @@ public:
         return eStandardButtonYes;
     }
 
-    virtual void loadProjectGui(bool /*isAutosave*/, const ProjectSerializationPtr& /*serialization*/,const boost::shared_ptr<boost::archive::xml_iarchive>&  /*archive*/) const
+    virtual void loadProjectGui(bool /*isAutosave*/, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& /*serialization*/) const
     {
     }
 
@@ -423,8 +423,8 @@ public:
     void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
     virtual void reloadScriptEditorFonts() {}
 
-    const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
-    void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
+    const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
+    void setProjectBeingLoadedInfo(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& info);
 
     SerializableWindow* getMainWindowSerialization() const;
 
@@ -466,9 +466,9 @@ public:
 
     virtual void getHistogramScriptNames(std::list<std::string>* /*histograms*/) const {}
 
-    virtual void getViewportsProjection(std::map<std::string,ViewportData>* /*projections*/) const {}
+    virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* /*projections*/) const {}
 
-    void saveApplicationWorkspace(ProjectWorkspaceSerialization* serialization);
+    void saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization);
 
 
     static void setGroupLabelIDAndVersion(const NodePtr& node,
@@ -506,7 +506,7 @@ protected:
 
     virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, const CreateNodeArgs& args);
+    virtual void onGroupCreationFinished(const NodePtr& node, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& args);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)

@@ -37,12 +37,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/PyNode.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/ProjectSerialization.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/PyGuiApp.h"
+
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;

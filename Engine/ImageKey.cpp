@@ -29,6 +29,7 @@
 
 #include "Engine/ViewIdx.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 ImageKey::ImageKey()
@@ -94,6 +95,36 @@ ImageKey::operator==(const ImageKey & other) const
                _draftMode == other._draftMode &&
                _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
     }
+}
+
+void
+ImageKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+{
+    SERIALIZATION_NAMESPACE::ImageKeySerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ImageKeySerialization*>(serializationBase);
+    if (!serialization) {
+        return;
+    }
+    serialization->nodeHashKey = _nodeHashKey;
+    serialization->time = _time;
+    serialization->view = _view;
+    serialization->draft = _draftMode;
+    serialization->par = _pixelAspect;
+    serialization->frameVaryingOrAnimated = _frameVaryingOrAnimated;
+}
+
+void
+ImageKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+{
+    const SERIALIZATION_NAMESPACE::ImageKeySerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::ImageKeySerialization*>(&serializationBase);
+    if (!serialization) {
+        return;
+    }
+    _nodeHashKey = serialization->nodeHashKey;
+    _time = serialization->time;
+    _view = serialization->view;
+    _draftMode = serialization->draft;
+    _pixelAspect = serialization->par;
+    _frameVaryingOrAnimated = serialization->frameVaryingOrAnimated;
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -37,7 +37,6 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -52,6 +51,8 @@
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraphTextItem.h"
+
+#include "Serialization/NodeSerialization.h"
 
 #include "Global/QtCompat.h"
 
@@ -408,7 +409,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         isTopLevelNodeBeingCreated = true;
     }
     
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
     if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {

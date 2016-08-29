@@ -27,11 +27,12 @@
 
 #include <stdexcept>
 
+#include <QDebug>
+
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
@@ -40,42 +41,41 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
-#include "Gui/NodeGuiSerialization.h"
 
+
+#include "Serialization/NodeClipBoard.h"
+#include "Serialization/NodeSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
 
 void
-NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
+NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard,
                                      const QPointF& scenePos,
                                      bool useUndoCommand,
                                      std::list<std::pair<std::string, NodeGuiPtr > > *newNodes)
 {
-    if ( !clipboard.isEmpty() ) {
+    if ( !clipboard.nodes.empty() ) {
         double xmax = INT_MIN;
         double xmin = INT_MAX;
         double ymin = INT_MAX;
         double ymax = INT_MIN;
 
-        for (std::list<NodeSerializationPtr>::const_iterator it = clipboard.nodes.begin();
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
              it != clipboard.nodes.end(); ++it) {
-            double x,y,w,h;
-            (*it)->getPosition(&x, &y);
-            (*it)->getSize(&w, &h);
-            if ( (x + w) > xmax ) {
-                xmax = x;
+
+            if ( ((*it)->_nodePositionCoords[0] + (*it)->_nodeSize[0]) > xmax ) {
+                xmax = (*it)->_nodePositionCoords[0];
             }
-            if (x < xmin) {
-                xmin = x;
+            if ((*it)->_nodePositionCoords[0] < xmin) {
+                xmin = (*it)->_nodePositionCoords[0];
             }
-            if ( (y + h) > ymax ) {
-                ymax = y;
+            if ( ((*it)->_nodePositionCoords[1] + (*it)->_nodeSize[1]) > ymax ) {
+                ymax = (*it)->_nodePositionCoords[1];
             }
-            if (y < ymin) {
-                ymin = y;
+            if ((*it)->_nodePositionCoords[1] < ymin) {
+                ymin = (*it)->_nodePositionCoords[1];
             }
         }
 
@@ -83,17 +83,17 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         QPointF offset((xmin + xmax) / 2., (ymin + ymax) / 2.);
 
         NodesGuiList newNodesList;
-        std::list<std::pair<NodeSerializationPtr, NodePtr > > newNodesMap;
+        std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > newNodesMap;
 
         ///The script-name of the copy node is different than the one of the original one
         ///We store the mapping so we can restore node links correctly
         std::map<std::string, std::string> oldNewScriptNamesMap;
         {
             CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
-            const std::list<NodeSerializationPtr >& internalNodesClipBoard = clipboard.nodes;
-            for (std::list<NodeSerializationPtr >::const_iterator it = clipboard.nodes.begin();
+            const SERIALIZATION_NAMESPACE::NodeSerializationList& internalNodesClipBoard = clipboard.nodes;
+            for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
                  it != clipboard.nodes.end(); ++it) {
-                const std::string& oldScriptName = (*it)->getNodeScriptName();
+                const std::string& oldScriptName = (*it)->_nodeScriptName;
                 NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, offset, scenePos, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
 
                 if (!node) {
@@ -116,7 +116,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
 
 
             //Restore links once all children are created for alias knobs/expressions
-            for (std::list<std::pair<NodeSerializationPtr, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
+            for (std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
                 it->second->restoreKnobsLinks(*(it->first), allNodes, oldNewScriptNamesMap);
             }
         }
@@ -136,7 +136,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
 } // pasteNodesInternal
 
 NodeGuiPtr
-NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
+NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr & internalSerialization,
                             const QPointF& averageNodesPosition,
                             const QPointF& position,
                             const NodeCollectionPtr& groupContainer,
@@ -149,13 +149,13 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     // Create the duplicate node
     NodePtr duplicateNode;
     {
-        CreateNodeArgs args(internalSerialization->getPluginID(), groupContainer);
-        args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
+        CreateNodeArgs args(internalSerialization->_pluginID, groupContainer);
+        args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
         if (!parentName.empty()) {
             args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, parentName);
         }
-        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->getPluginMajorVersion(), 0);
-        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->getPluginMinorVersion(), 1);
+        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMajorVersion, 0);
+        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMinorVersion, 1);
         args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
@@ -178,7 +178,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
         targetGroupFullScriptName = isContainerGroup->getNode()->getFullyQualifiedName();
     }
 
-    const std::string& originalGroupFullScriptName = internalSerialization->getGroupFullScriptName();
+    const std::string& originalGroupFullScriptName = internalSerialization->_groupFullyQualifiedScriptName;
 
     // Set the new label of the node
     // If we paste the node in a different graph, it can keep its scriptname/label
@@ -186,11 +186,11 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     if (targetGroupFullScriptName == originalGroupFullScriptName) {
         // We pasted the node in the same group, give it another label
         int no = 1;
-        std::string label = internalSerialization->getNodeLabel();
+        std::string label = internalSerialization->_nodeLabel;
         do {
             if (no > 1) {
                 std::stringstream ss;
-                ss << internalSerialization->getNodeLabel();
+                ss << internalSerialization->_nodeLabel;
                 ss << '_';
                 ss << no;
                 label = ss.str();
@@ -202,7 +202,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     }
 
     // If the node was a clone, make it a clone too
-    const std::string & masterNodeFullScriptName = internalSerialization->getMasterNodeName();
+    const std::string & masterNodeFullScriptName = internalSerialization->_masterNodeFullyQualifiedScriptName;
     if ( !masterNodeFullScriptName.empty() ) {
         NodePtr masterNode = groupContainer->getApplication()->getProject()->getNodeByName(masterNodeFullScriptName);
 
@@ -241,13 +241,13 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     // Recurse if this is a group or multi-instance
     NodeGroupPtr isGrp = toNodeGroup( duplicateNode->getEffectInstance()->shared_from_this() );
 
-    const std::list<NodeSerializationPtr >& nodes = internalSerialization->getNodesCollection();
+    const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes = internalSerialization->_children;
 
 
     // If the script-name of the duplicate node has changed, register it into the oldNewScriptNameMapping
     // map so that connections and links can be restored.
-    if ( internalSerialization->getNodeScriptName() != duplicateNode->getScriptName() ) {
-        (*oldNewScriptNameMapping)[internalSerialization->getNodeScriptName()] = duplicateNode->getScriptName();
+    if ( internalSerialization->_nodeScriptName != duplicateNode->getScriptName() ) {
+        (*oldNewScriptNameMapping)[internalSerialization->_nodeScriptName] = duplicateNode->getScriptName();
     }
 
     // For PyPlugs, don't recurse otherwise we would recreate all nodes on top of the ones created by the python script
@@ -262,12 +262,12 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
             parentName = duplicateNode->getScriptName_mt_safe();
         }
         std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-        for (std::list<NodeSerializationPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             NodeGuiPtr newChild = pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), collection, parentName, NodePtr(), oldNewScriptNameMapping);
             if (newChild) {
-                newNodes.push_back( std::make_pair( (*it)->getNodeScriptName(), newChild ) );
-                if ( (*it)->getNodeScriptName() != newChild->getNode()->getScriptName() ) {
-                    (*oldNewScriptNameMapping)[(*it)->getNodeScriptName()] = newChild->getNode()->getScriptName();
+                newNodes.push_back( std::make_pair( (*it)->_nodeScriptName, newChild ) );
+                if ( (*it)->_nodeScriptName != newChild->getNode()->getScriptName() ) {
+                    (*oldNewScriptNameMapping)[(*it)->_nodeScriptName] = newChild->getNode()->getScriptName();
                 }
                 allNodes.push_back( newChild->getNode() );
             }
@@ -285,17 +285,17 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 } // NodeGraphPrivate::pasteNode
 
 void
-NodeGraphPrivate::restoreConnections(const std::list<NodeSerializationPtr > & serializations,
+NodeGraphPrivate::restoreConnections(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializations,
                                      const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
                                      const std::map<std::string, std::string> &oldNewScriptNamesMap)
 {
     ///For all nodes restore its connections
-    std::list<NodeSerializationPtr >::const_iterator itSer = serializations.begin();
+    SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator itSer = serializations.begin();
 
     assert( serializations.size() == newNodes.size() );
     for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it = newNodes.begin();
          it != newNodes.end(); ++it, ++itSer) {
-        const std::map<std::string, std::string> & inputNames = (*itSer)->getInputs();
+        const std::map<std::string, std::string> & inputNames = (*itSer)->_inputs;
         ///Restore each input
         for (std::map<std::string, std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
             std::string inputScriptName = it2->second;

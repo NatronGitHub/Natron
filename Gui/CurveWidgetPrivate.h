@@ -186,6 +186,8 @@ public:
     QSize sizeH;
     bool zoomOrPannedSinceLastFit;
 
+    // True if paintGL() was run at least once
+    bool drawnOnce;
 private:
 
     QPolygonF _timelineTopPoly;

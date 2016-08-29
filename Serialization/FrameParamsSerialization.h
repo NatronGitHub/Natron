@@ -19,40 +19,37 @@
 #ifndef Engine_FrameParamsSerialization_h
 #define Engine_FrameParamsSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include "Serialization/NonKeyParamsSerialization.h"
+#include "Serialization/RectDSerialization.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/base_object.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-#include "Engine/FrameParams.h"
-#include "Engine/EngineFwd.h"
+SERIALIZATION_NAMESPACE_ENTER;
 
-NATRON_NAMESPACE_ENTER;
-
-// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
-#pragma message WARN("Missing FrameParamsSerialization class")
-template<class Archive>
-void
-FrameParams::serialize(Archive & ar,
-                       const unsigned int /*version*/)
+class FrameParamsSerialization
+: public NonKeyParamsSerialization
 {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
-    ar & ::boost::serialization::make_nvp("Rod", _rod);
-}
+public:
+    
+    RectDSerialization rod;
 
-NATRON_NAMESPACE_EXIT;
+    FrameParamsSerialization()
+    : NonKeyParamsSerialization()
+    , rod()
+    {
+
+    }
+
+    virtual ~FrameParamsSerialization()
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
+};
+
+SERIALIZATION_NAMESPACE_EXIT;
 
 #endif // Engine_FrameParamsSerialization_h

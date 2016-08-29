@@ -316,32 +316,6 @@ private:
 };
 
 
-class LoadNodePresetsCommand
-    : public QUndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(LoadNodePresetsCommand)
-
-public:
-
-    LoadNodePresetsCommand(const NodeGuiPtr & node,
-                           const std::list<NodeSerializationPtr >& serialization,
-                           QUndoCommand *parent = 0);
-
-    virtual ~LoadNodePresetsCommand();
-    virtual void undo();
-    virtual void redo();
-
-private:
-
-    void getListAsShared(const std::list< NodeWPtr >& original,
-                         std::list< NodePtr >& shared) const;
-
-    bool _firstRedoCalled;
-    bool _isUndone;
-    boost::weak_ptr<NodeGui> _node;
-    std::list< NodeWPtr > _oldChildren, _newChildren; //< children if multi-instance
-    std::list<NodeSerializationPtr > _newSerializations, _oldSerialization;
-};
 
 class RenameNodeUndoRedoCommand
     : public QUndoCommand
@@ -490,7 +464,7 @@ private:
     struct NodeDefaults
     {
         NodeGuiWPtr node;
-        NodeSerializationPtr serialization;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
     };
     
     std::list<NodeDefaults> _nodes;

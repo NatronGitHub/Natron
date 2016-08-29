@@ -42,7 +42,7 @@
 
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/KnobSerialization.h" 
+#include "Serialization/KnobSerialization.h" 
 #include "Engine/Lut.h" // Color, floatToInt
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodeGroup, NodeCollection, NodesList
@@ -1410,10 +1410,10 @@ Gui::saveWarning()
 }
 
 void
-Gui::loadProjectGui(bool isAutosave, const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive>& obj) const
+Gui::loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const
 {
     if (_imp->_projectGui) {
-        _imp->_projectGui->load(isAutosave, serialization, obj);
+        _imp->_projectGui->load(isAutosave, serialization);
     }
 }
 

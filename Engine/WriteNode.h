@@ -121,7 +121,7 @@ private:
 
     virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobsAboutToBeLoaded(const NodeSerialization& serialization) OVERRIDE FINAL;
+    virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,

@@ -36,13 +36,6 @@
 #include <cassert>
 #include <stdexcept>
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/serialization/export.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>
 #include <QtCore/QTemporaryFile>
@@ -55,7 +48,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/GLIncludes.h"
 
 #include "Engine/FStreamsSupport.h"
-#include "Engine/CacheSerialization.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
@@ -63,17 +55,14 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
-#include "Engine/RectDSerialization.h"
-#include "Engine/RectISerialization.h"
 #include "Engine/StandardPaths.h"
 
+#include "Serialization/CacheSerialization.h"
+#include "Serialization/SerializationIO.h"
 
 // Don't forget to update glad.h and glad.c aswell when updating theses
 #define NATRON_OPENGL_VERSION_REQUIRED_MAJOR 2
 #define NATRON_OPENGL_VERSION_REQUIRED_MINOR 0
-
-BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
-BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
 NATRON_NAMESPACE_ENTER;
 AppManagerPrivate::AppManagerPrivate()
@@ -299,13 +288,10 @@ saveCache(const boost::shared_ptr<Cache<T> >& cache)
     }
 
 
-    typename Cache<T>::CacheTOC toc;
-    cache->save(&toc);
-    unsigned int version = cache->cacheVersion();
+    typename SERIALIZATION_NAMESPACE::CacheSerialization<T> toc;
+    cache->toSerialization(&toc);
     try {
-        boost::archive::binary_oarchive oArchive(ofile);
-        oArchive << version;
-        oArchive << toc;
+        SERIALIZATION_NAMESPACE::write(ofile, toc);
     } catch (const std::exception & e) {
         qDebug() << "Failed to serialize the cache table of contents:" << e.what();
     }
@@ -332,19 +318,16 @@ restoreCache(AppManagerPrivate* p,
 
             return;
         }
-        typename Cache<T>::CacheTOC tableOfContents;
-        unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
+        typename SERIALIZATION_NAMESPACE::CacheSerialization<T> toc;
         try {
-            boost::archive::binary_iarchive iArchive(ifile);
-            if (cache->cacheVersion() >= NATRON_CACHE_VERSION) {
-                iArchive >> cacheVersion;
-            }
+            SERIALIZATION_NAMESPACE::read(ifile, &toc);
             //Only load caches with same version, otherwise wipe it!
-            if ( cacheVersion == cache->cacheVersion() ) {
-                iArchive >> tableOfContents;
-            } else {
+            if ( toc.cacheVersion != (int)cache->cacheVersion() ) {
                 p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
+            } else {
+                cache->fromSerialization(toc);
             }
+
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
             p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
@@ -355,7 +338,6 @@ restoreCache(AppManagerPrivate* p,
         QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
         restoreFile.remove();
 
-        cache->restore(tableOfContents);
     }
 }
 

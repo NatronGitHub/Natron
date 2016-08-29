@@ -63,10 +63,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OSGLContext.h"
 #include "Engine/ImageParams.h"
 #include "Engine/ImageLocker.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContextSerialization.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
@@ -75,6 +73,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
+
+#include "Serialization/RotoLayerSerialization.h"
+#include "Serialization/RotoContextSerialization.h"
+#include "Serialization/NodeSerialization.h"
+
 
 #define kMergeOFXParamOperation "operation"
 #define kMergeOFXParamInvertMask "maskInvert"
@@ -936,45 +939,22 @@ RotoContext::isEmpty() const
 }
 
 void
-RotoContext::save(RotoContextSerialization* obj) const
+RotoContext::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
-    QMutexLocker l(&_imp->rotoContextMutex);
+    SERIALIZATION_NAMESPACE::RotoContextSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RotoContextSerialization*>(obj);
+    if (!s) {
+        return;
+    }
 
-    obj->_autoKeying = _imp->autoKeying;
-    obj->_featherLink = _imp->featherLink;
-    obj->_rippleEdit = _imp->rippleEdit;
+    QMutexLocker l(&_imp->rotoContextMutex);
 
     ///There must always be the base layer
     assert( !_imp->layers.empty() );
 
     ///Serializing this layer will recursively serialize everything
-    _imp->layers.front()->save( boost::dynamic_pointer_cast<RotoItemSerialization>(obj->_baseLayer) );
-
-    ///the age of the context is not serialized as the images are wiped from the cache anyway
-
-    ///Serialize the selection
-    for (std::list<RotoItemPtr >::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        obj->_selectedItems.push_back( (*it)->getScriptName() );
-    }
+    _imp->layers.front()->toSerialization(&s->_baseLayer);
 }
 
-static void
-linkItemsKnobsRecursively(RotoContext* ctx,
-                          const RotoLayerPtr & layer)
-{
-    const RotoItems & items = layer->getItems();
-
-    for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
-        BezierPtr isBezier = toBezier(*it);
-        RotoLayerPtr isLayer = toRotoLayer(*it);
-
-        if (isBezier) {
-            ctx->select(isBezier, RotoItem::eSelectionReasonOther);
-        } else if (isLayer) {
-            linkItemsKnobsRecursively(ctx, isLayer);
-        }
-    }
-}
 
 void
 RotoContext::resetToDefault()
@@ -990,15 +970,17 @@ RotoContext::resetToDefault()
 }
 
 void
-RotoContext::load(const RotoContextSerialization & obj)
+RotoContext::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    const SERIALIZATION_NAMESPACE::RotoContextSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoContextSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+
     assert( QThread::currentThread() == qApp->thread() );
     ///no need to lock here, when this is called the main-thread is the only active thread
     
     _imp->isCurrentlyLoading = true;
-    _imp->autoKeying = obj._autoKeying;
-    _imp->featherLink = obj._featherLink;
-    _imp->rippleEdit = obj._rippleEdit;
 
     for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         it->lock()->setDefaultAllDimensionsEnabled(false);
@@ -1008,18 +990,8 @@ RotoContext::load(const RotoContextSerialization & obj)
 
     RotoLayerPtr baseLayer = _imp->layers.front();
 
-    baseLayer->load(*(obj._baseLayer));
+    baseLayer->fromSerialization(s->_baseLayer);
 
-    for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it != obj._selectedItems.end(); ++it) {
-        RotoItemPtr item = getItemByName(*it);
-        BezierPtr isBezier = toBezier(item);
-        RotoLayerPtr isLayer = toRotoLayer(item);
-        if (isBezier) {
-            select(isBezier, RotoItem::eSelectionReasonOther);
-        } else if (isLayer) {
-            linkItemsKnobsRecursively(this, isLayer);
-        }
-    }
     _imp->isCurrentlyLoading = false;
     refreshRotoPaintTree();
 }

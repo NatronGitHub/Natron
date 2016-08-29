@@ -42,15 +42,16 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/ProjectSerialization.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -161,10 +162,10 @@ ProjectPrivate::checkForPyPlugNewVersion(const std::string& pythonModuleName,
 } // checkForPyPlugNewVersion
 
 bool
-Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > & serializedNodes,
-                                              const NodeCollectionPtr& group,
-                                              bool createNodes,
-                                              std::map<std::string, bool>* moduleUpdatesProcessed)
+Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
+                                       const NodeCollectionPtr& group,
+                                       bool createNodes,
+                                       std::map<std::string, bool>* moduleUpdatesProcessed)
 {
     bool mustShowErrorsLog = false;
 
@@ -183,15 +184,15 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
     // If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     // Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     // This map contains all the parents that must be reconnected and an iterator to the child serialization
-    std::map<NodePtr, std::list<NodeSerializationPtr >::const_iterator > parentsToReconnect;
-    std::list< NodeSerializationPtr > multiInstancesToRecurse;
+    std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator > parentsToReconnect;
+    SERIALIZATION_NAMESPACE::NodeSerializationList multiInstancesToRecurse;
 
 
     // Loop over all node serialization and create them first
-    std::map<NodePtr, NodeSerializationPtr > createdNodes;
-    for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > createdNodes;
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-        std::string pluginID = (*it)->getPluginID();
+        std::string pluginID = (*it)->_pluginID;
         /*if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER_GROUP) || (pluginID == "Viewer") ) ) {
             // If the node is a viewer, don't try to load it in background mode
             continue;
@@ -200,11 +201,11 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
         // If the node is a multiinstance child find in all the serialized nodes if the parent exists.
         // If not, create it
         // Multi-instances are deprecated in Natron 2.1 and should not exist afterwards
-        if ( !(*it)->getMultiInstanceParentName().empty() ) {
+        if ( !(*it)->_multiInstanceParentName.empty() ) {
             bool foundParent = false;
-            for (std::list< NodeSerializationPtr >::const_iterator it2 = serializedNodes.begin();
+            for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it2 = serializedNodes.begin();
                  it2 != serializedNodes.end(); ++it2) {
-                if ( (*it2)->getNodeScriptName() == (*it)->getMultiInstanceParentName() ) {
+                if ( (*it2)->_nodeScriptName == (*it)->_multiInstanceParentName ) {
                     foundParent = true;
                     break;
                 }
@@ -212,7 +213,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
             if (!foundParent) {
                 ///Maybe it was created so far by another child who created it so look into the nodes
 
-                NodePtr parent = group->getNodeByName( (*it)->getMultiInstanceParentName() );
+                NodePtr parent = group->getNodeByName( (*it)->_multiInstanceParentName );
                 if (parent) {
                     foundParent = true;
                 }
@@ -226,7 +227,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
 
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {
-                        parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
+                        parent->setScriptName((*it)->_multiInstanceParentName);
                     } catch (...) {
                     }
 
@@ -237,19 +238,24 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
 
         // If the node is a PyPlug, load the PyPlug but if the version loaded by Natron is different ask the user whehter he/she
         // wants to update the PyPlug, otherwise load it as a group and keep it as it is in the project file
-        const std::string& pythonModuleName = (*it)->getPythonModule();
+        const std::string& pythonModuleName = (*it)->_pythonModule;
         NodePtr node;
         bool usingPythonModule = false;
         if ( !pythonModuleName.empty() ) {
-            unsigned int savedPythonModuleVersion = (*it)->getPythonModuleVersion();
-            ProjectPrivate::checkForPyPlugNewVersion(pythonModuleName, (*it)->getVersion() < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
+            unsigned int savedPythonModuleVersion = (*it)->_pythonModuleVersion;
+#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
+            bool moduleNameIsScriptPath = false;
+#else
+            bool moduleNameIsScriptPath = (*it)->_boostSerializationClassVersion < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME;
+#endif
+            ProjectPrivate::checkForPyPlugNewVersion(pythonModuleName, moduleNameIsScriptPath, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
 
         } // if (!pythonModuleAbsolutePath.empty()) {
 
         if (!createNodes) {
             // We are in the case where we loaded a PyPlug: it probably created all the nodes in the group already but didn't
             // load their serialization
-            node = group->getNodeByName( (*it)->getNodeScriptName() );
+            node = group->getNodeByName( (*it)->_nodeScriptName );
         }
 
         int majorVersion, minorVersion;
@@ -260,18 +266,18 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
         } else {
             // For regular C++ plug-ins, we do not have a backup, we forced to let the user use the plug-ins that were anyway loaded with
             // the application
-            majorVersion = (*it)->getPluginMajorVersion();
-            minorVersion = (*it)->getPluginMinorVersion();
+            majorVersion = (*it)->_pluginMajorVersion;
+            minorVersion = (*it)->_pluginMinorVersion;
         }
 
         if (!node) {
             CreateNodeArgs args(pluginID, group);
             args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
             args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
-            args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, *it);
+            args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, *it);
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
-            if (!(*it)->getMultiInstanceParentName().empty()) {
-                args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
+            if (!(*it)->_multiInstanceParentName.empty()) {
+                args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->_multiInstanceParentName);
             }
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -294,7 +300,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
                 QString text( tr("WARNING: The node %1 (%2) version %3.%4 "
                                  "was found in the script but was loaded "
                                  "with version %5.%6 instead.")
-                             .arg( QString::fromUtf8( (*it)->getNodeScriptName().c_str() ) )
+                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
                              .arg( QString::fromUtf8( pluginID.c_str() ) )
                              .arg(majorVersion)
                              .arg(minorVersion)
@@ -313,7 +319,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
         createdNodes[node] = *it;
 
         // For group, create children
-        const std::list<NodeSerializationPtr >& children = (*it)->getNodesCollection();
+        const SERIALIZATION_NAMESPACE::NodeSerializationList& children = (*it)->_children;
         if ( !children.empty() && !usingPythonModule) {
             NodeGroupPtr isGrp = node->isEffectNodeGroup();
             if (isGrp) {
@@ -329,8 +335,8 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
     } // for all node serialization
 
     // Deprecated: Multi-instances are deprecated in Natron 2.1 and should not exist afterwards
-    for (std::list< NodeSerializationPtr >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
-        Project::restoreGroupFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
+        Project::restoreGroupFromSerialization( (*it)->_children, group, true, moduleUpdatesProcessed );
     }
 
 
@@ -338,14 +344,14 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
 
 
     // Connect the nodes together
-    for (std::map<NodePtr, NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
         /*if ( appPTR->isBackground() && ( it->first->isEffectViewerInstance() ) ) {
             //ignore viewers on background mode
             continue;
         }*/
 
         // Deprecated: For all nodes that are part of a multi-instance, fetch the main instance node pointer
-        const std::string & parentName = it->second->getMultiInstanceParentName();
+        const std::string & parentName = it->second->_multiInstanceParentName;
         if ( !parentName.empty() ) {
             it->first->fetchParentMultiInstancePointer();
             //Do not restore connections as we just use the ones of the parent anyway
@@ -353,7 +359,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
         }
 
         // Restore clone state if this node is a clone
-        const std::string & masterNodeName = it->second->getMasterNodeName();
+        const std::string & masterNodeName = it->second->_masterNodeFullyQualifiedScriptName;
         if ( !masterNodeName.empty() ) {
             // Find master node
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
@@ -361,7 +367,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
             if (!masterNode) {
                 appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                 tr("Cannot restore the link between %1 and %2.")
-                                                .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
+                                                .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
                                                 .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
                 mustShowErrorsLog = true;
             } else {
@@ -374,44 +380,37 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
             continue;
         }
 
-        const std::vector<std::string> & oldInputs = it->second->getOldInputs();
-        if ( !oldInputs.empty() ) {
-             // Prior to Natron v2 OpenFX effects had their inputs reversed internally
-            bool isOfxEffect = it->first->isOpenFXNode();
-
-            for (std::size_t j = 0; j < oldInputs.size(); ++j) {
-                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j], it->first) ) {
-                    if (createNodes) {
-                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
-                        .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
-                        .arg( QString::fromUtf8( oldInputs[j].c_str() ) );
-                    }
-                }
+        // Loop over the inputs map
+        // This is a map <input label, input node name>
+        const std::map<std::string, std::string>& inputs = it->second->_inputs;
+        for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
+            if ( it2->second.empty() ) {
+                continue;
             }
-        } else {
-            // Loop over the inputs map
-            // This is a map <input label, input node name>
-            const std::map<std::string, std::string>& inputs = it->second->getInputs();
-            for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-                if ( it2->second.empty() ) {
-                    continue;
+            int index = it->first->getInputNumberFromLabel(it2->first);
+            if (index == -1) {
+                // Prior to Natron 1.1, input names were not serialized, try to convert to index
+                bool ok;
+                index = QString::fromUtf8(it2->first.c_str()).toInt(&ok);
+                if (!ok) {
+                    index = -1;
                 }
-                int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
                     appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                     tr("Could not find input named %1")
                                                     .arg( QString::fromUtf8( it2->first.c_str() ) ) );
-                    continue;
                 }
-                if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
-                    if (createNodes) {
-                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
-                        .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
-                        .arg( QString::fromUtf8( it2->second.c_str() ) );
-                    }
+                continue;
+            }
+            if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
+                if (createNodes) {
+                    qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
+                    .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
+                    .arg( QString::fromUtf8( it2->second.c_str() ) );
                 }
             }
         }
+
     } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     // Now that the graph is setup, restore expressions and slave/master links for knobs
@@ -422,7 +421,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
 
     {
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        for (std::map<NodePtr, NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
             if ( appPTR->isBackground() && ( it->first->isEffectViewerInstance() ) ) {
                 //ignore viewers on background mode
                 continue;
@@ -433,7 +432,7 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
 
     // Viewers are specials and needs to be notified once all connections have been made in their container group in order
     // to correctly link the internal nodes
-    for (std::map<NodePtr, NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
         ViewerNodePtr isViewer = it->first->isEffectViewerNode();
         if (isViewer) {
             try {
@@ -445,47 +444,39 @@ Project::restoreGroupFromSerialization(const std::list< NodeSerializationPtr > &
     }
 
     // Deprecated: Also reconnect parents of multiinstance nodes that were created on the fly
-    for (std::map<NodePtr, std::list<NodeSerializationPtr >::const_iterator >::const_iterator
+    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator >::const_iterator
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
-        const std::vector<std::string> & oldInputs = (*it->second)->getOldInputs();
-        if ( !oldInputs.empty() ) {
-            /*
-             * Prior to Natron v2 OpenFX effects had their inputs reversed internally
-             */
-            bool isOfxEffect = it->first->isOpenFXNode();
 
-            for (U32 j = 0; j < oldInputs.size(); ++j) {
-                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j], it->first) ) {
-                    if (createNodes) {
-                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
-                        .arg( QString::fromUtf8( it->first->getPluginLabel().c_str() ) )
-                        .arg( QString::fromUtf8( oldInputs[j].c_str() ) );
-                    }
-                }
+        const std::map<std::string, std::string>& inputs = (*it->second)->_inputs;
+        for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
+            if ( it2->second.empty() ) {
+                continue;
             }
-        } else {
-            const std::map<std::string, std::string>& inputs = (*it->second)->getInputs();
-            for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-                if ( it2->second.empty() ) {
-                    continue;
+            int index = it->first->getInputNumberFromLabel(it2->first);
+            if (index == -1) {
+                // Prior to Natron 1.1, input names were not serialized, try to convert to index
+                bool ok;
+                index = QString::fromUtf8(it2->first.c_str()).toInt(&ok);
+                if (!ok) {
+                    index = -1;
                 }
-                int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
                     appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                     tr("Could not find input named %1").arg( QString::fromUtf8( it2->first.c_str() ) ) );
-                    continue;
                 }
-                if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
-                    if (createNodes) {
-                        qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
-                        .arg( QString::fromUtf8( it->first->getPluginLabel().c_str() ) )
-                        .arg( QString::fromUtf8( it2->second.c_str() ) );
-                    }
+                continue;
+            }
+            if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
+                if (createNodes) {
+                    qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
+                    .arg( QString::fromUtf8( it->first->getPluginLabel().c_str() ) )
+                    .arg( QString::fromUtf8( it2->second.c_str() ) );
                 }
             }
         }
+
     }
-    
+
     return !mustShowErrorsLog;
 } // ProjectPrivate::restoreGroupFromSerialization
 

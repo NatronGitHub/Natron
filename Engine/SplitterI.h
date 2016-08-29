@@ -27,14 +27,14 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
-#include "Engine/SerializationBase.h"
+#include "Serialization/SerializationBase.h"
 #include "Global/Enums.h"
 
 NATRON_NAMESPACE_ENTER;
 /**
  * @brief Interface for the Splitter class
  **/
-class SplitterI : public SerializableObjectBase
+class SplitterI : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -67,13 +67,13 @@ public:
     virtual TabWidgetI* isRightChildTabWidget() const = 0;
 
 
-    virtual void toSerialization(SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
-    virtual void fromSerialization(const SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 protected:
 
-    virtual void restoreChildrenFromSerialization(const ProjectWindowSplitterSerialization& serialization) = 0;
+    virtual void restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization& serialization) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

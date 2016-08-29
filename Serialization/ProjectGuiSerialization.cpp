@@ -16,6 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -74,7 +76,7 @@ static void convertNodeGuiSerializationToNodeSerialization(const std::list<NodeG
 
 }
 
-static void convertPaneLayoutToTabWidgetSerialization(const PaneLayout& deprecated, ProjectTabWidgetSerialization* serialization)
+static void convertPaneLayoutToTabWidgetSerialization(const PaneLayout& deprecated, TabWidgetSerialization* serialization)
 {
     serialization->isAnchor = deprecated.isAnchor;
     serialization->currentIndex = deprecated.currentIndex;
@@ -82,7 +84,7 @@ static void convertPaneLayoutToTabWidgetSerialization(const PaneLayout& deprecat
     serialization->scriptName = deprecated.name;
 }
 
-static void convertSplitterToProjectSplitterSerialization(const SplitterSerialization& deprecated, ProjectWindowSplitterSerialization* serialization)
+static void convertSplitterToProjectSplitterSerialization(const SplitterSerialization& deprecated, WidgetSplitterSerialization* serialization)
 {
     QStringList list = QString::fromUtf8(deprecated.sizes.c_str()).split( QLatin1Char(' ') );
 
@@ -98,17 +100,17 @@ static void convertSplitterToProjectSplitterSerialization(const SplitterSerializ
     serialization->leftChildSize = s[0];
     serialization->rightChildSize = s[1];
     serialization->orientation = deprecated.orientation;
-    serialization->leftChild.reset(new ProjectWindowSplitterSerialization::Child);
-    serialization->rightChild.reset(new ProjectWindowSplitterSerialization::Child);
+    serialization->leftChild.reset(new WidgetSplitterSerialization::Child);
+    serialization->rightChild.reset(new WidgetSplitterSerialization::Child);
 
-    ProjectWindowSplitterSerialization::Child* children[2] = {serialization->leftChild.get(), serialization->rightChild.get()};
+    WidgetSplitterSerialization::Child* children[2] = {serialization->leftChild.get(), serialization->rightChild.get()};
     for (int i = 0; i < 2; ++i) {
         if (deprecated.children[i]->child_asPane) {
-            children[i]->childIsTabWidget.reset(new ProjectTabWidgetSerialization);
+            children[i]->childIsTabWidget.reset(new TabWidgetSerialization);
             children[i]->type = eProjectWorkspaceWidgetTypeTabWidget;
             convertPaneLayoutToTabWidgetSerialization(*deprecated.children[i]->child_asPane, children[i]->childIsTabWidget.get());
         } else if (deprecated.children[i]->child_asSplitter) {
-            children[i]->childIsSplitter.reset(new ProjectWindowSplitterSerialization);
+            children[i]->childIsSplitter.reset(new WidgetSplitterSerialization);
             children[i]->type = eProjectWorkspaceWidgetTypeSplitter;
             convertSplitterToProjectSplitterSerialization(*deprecated.children[i]->child_asSplitter, children[i]->childIsSplitter.get());
         }
@@ -121,7 +123,7 @@ ProjectGuiSerialization::convertToProjectSerialization(ProjectSerialization* ser
 {
 
     if (!serialization->_projectWorkspace) {
-        serialization->_projectWorkspace.reset(new ProjectWorkspaceSerialization);
+        serialization->_projectWorkspace.reset(new WorkspaceSerialization);
     }
     for (std::map<std::string, ViewerData >::const_iterator it = _viewersData.begin(); it != _viewersData.end(); ++it) {
         ViewportData& d = serialization->_viewportsData[it->first];
@@ -139,7 +141,7 @@ ProjectGuiSerialization::convertToProjectSerialization(ProjectSerialization* ser
         }
     }
 
-    _layoutSerialization.convertToProjectWorkspaceSerialization(serialization->_projectWorkspace.get());
+    _layoutSerialization.convertToWorkspaceSerialization(serialization->_projectWorkspace.get());
     serialization->_projectWorkspace->_histograms = _histograms;
     serialization->_projectWorkspace->_pythonPanels = _pythonPanels;
 
@@ -150,21 +152,21 @@ ProjectGuiSerialization::convertToProjectSerialization(ProjectSerialization* ser
 }
 
 void
-GuiLayoutSerialization::convertToProjectWorkspaceSerialization(ProjectWorkspaceSerialization* serialization) const
+GuiLayoutSerialization::convertToWorkspaceSerialization(WorkspaceSerialization* serialization) const
 {
     for (std::list<ApplicationWindowSerialization*>::const_iterator it = _windows.begin(); it != _windows.end(); ++it) {
-        boost::shared_ptr<ProjectWindowSerialization> window(new ProjectWindowSerialization);
+        boost::shared_ptr<WindowSerialization> window(new WindowSerialization);
         window->windowPosition[0] = (*it)->x;
         window->windowPosition[1] = (*it)->y;
         window->windowSize[0] = (*it)->w;
         window->windowSize[1] = (*it)->h;
 
         if ((*it)->child_asSplitter) {
-            window->isChildSplitter.reset(new ProjectWindowSplitterSerialization);
+            window->isChildSplitter.reset(new WidgetSplitterSerialization);
             window->childType = eProjectWorkspaceWidgetTypeSplitter;
             convertSplitterToProjectSplitterSerialization(*(*it)->child_asSplitter, window->isChildSplitter.get());
         } else if ((*it)->child_asPane) {
-            window->isChildTabWidget.reset(new ProjectTabWidgetSerialization);
+            window->isChildTabWidget.reset(new TabWidgetSerialization);
             window->childType = eProjectWorkspaceWidgetTypeTabWidget;
             convertPaneLayoutToTabWidgetSerialization(*(*it)->child_asPane, window->isChildTabWidget.get());
         } else if (!(*it)->child_asDockablePanel.empty()) {
@@ -180,3 +182,5 @@ GuiLayoutSerialization::convertToProjectWorkspaceSerialization(ProjectWorkspaceS
 }
 
 NATRON_NAMESPACE_EXIT;
+
+#endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT

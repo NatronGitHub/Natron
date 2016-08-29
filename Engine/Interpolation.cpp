@@ -30,6 +30,7 @@
 #include <vector>
 #include <algorithm> // min, max
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -37,6 +38,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/math/special_functions/cbrt.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+#endif
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */

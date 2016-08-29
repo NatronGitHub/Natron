@@ -134,7 +134,7 @@ public:
                                               StandardButtons buttons,
                                               StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void loadProjectGui(bool isAutosave,  const ProjectSerializationPtr& serialization, const boost::shared_ptr<boost::archive::xml_iarchive>& archive) const OVERRIDE FINAL;
+    virtual void loadProjectGui(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
@@ -201,7 +201,7 @@ public:
 
     virtual void getHistogramScriptNames(std::list<std::string>* histograms) const OVERRIDE FINAL;
 
-    virtual void getViewportsProjection(std::map<std::string,ViewportData>* projections) const OVERRIDE FINAL;
+    virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* projections) const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -295,7 +295,7 @@ private:
 
     virtual void createMainWindow() OVERRIDE FINAL;
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, const CreateNodeArgs& args) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& args) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;

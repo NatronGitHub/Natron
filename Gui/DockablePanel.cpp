@@ -1617,7 +1617,7 @@ DockablePanel::getHolderFullyQualifiedScriptName() const
     if (isEffect) {
         return isEffect->getNode()->getFullyQualifiedName();
     } else if (holder->isProject()) {
-        return kNatronProjectSettingsPanelSerializationName;
+        return kNatronProjectSettingsPanelSerializationNameNew;
     } else {
         assert(false);
         return std::string();

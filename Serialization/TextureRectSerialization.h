@@ -19,53 +19,40 @@
 #ifndef NATRON_ENGINE_TEXTURERECTSERIALIZATION_H
 #define NATRON_ENGINE_TEXTURERECTSERIALIZATION_H
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
+#include "Serialization/RectISerialization.h"
 
-#include "Global/Macros.h"
+SERIALIZATION_NAMESPACE_ENTER
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-#include "Engine/TextureRect.h"
-#include "Engine/EngineFwd.h"
-
-
-#pragma message WARN("Missing TextureRectSerialization class")
-
-// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
-#define TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR 2
-#define TEXTURE_RECT_VERSION TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR
-
-namespace boost {
-namespace serialization {
-template<class Archive>
-void
-serialize(Archive & ar,
-          NATRON_NAMESPACE::TextureRect &t,
-          const unsigned int /*version*/)
+class TextureRectSerialization
+: public SerializationObjectBase
 {
-    ar &
-    ::boost::serialization::make_nvp("x1", t.x1) &
-    ::boost::serialization::make_nvp("x2", t.x2) &
-    ::boost::serialization::make_nvp("y1", t.y1) &
-    ::boost::serialization::make_nvp("y2", t.y2) &
-    ::boost::serialization::make_nvp("po2", t.closestPo2) &
-    ::boost::serialization::make_nvp("par", t.par);
-}
-}
-}
+public:
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::TextureRect, TEXTURE_RECT_VERSION);
+    RectISerialization rect;
+    int closestPo2;
+    double par;
+
+    TextureRectSerialization()
+    : SerializationObjectBase()
+    , rect()
+    , closestPo2(0)
+    , par(0)
+    {
+
+    }
+
+    virtual ~TextureRectSerialization()
+    {
+
+    }
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+
+};
+
+
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_TEXTURERECTSERIALIZATION_H
