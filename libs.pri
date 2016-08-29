@@ -139,6 +139,11 @@ libtess-flags {
 INCLUDEPATH += $$PWD/libs/libtess
 }
 
+yaml-cpp-flags {
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include/include
+}
+
 ################
 # Serialization
 
@@ -668,6 +673,7 @@ win32-msvc*{
 static-yaml-cpp {
 
 INCLUDEPATH += $$PWD/libs/yaml-cpp/include
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include/include
 DEPENDPATH += $$OUT_PWD/../libs/yaml-cpp/include
 
 win32-msvc*{

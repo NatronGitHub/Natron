@@ -29,7 +29,11 @@ enable-cairo: CONFIG += cairo
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
+CONFIG += glad-flags yaml-cpp-flags
+
+
 include(../global.pri)
+include(../libs.pri)
 
 precompile_header {
   # Use Precompiled headers (PCH)
@@ -65,7 +69,6 @@ INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
 
-CONFIG += glad-flags
 
 win32-msvc* {
         CONFIG(64bit) {

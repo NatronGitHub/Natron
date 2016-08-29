@@ -25,6 +25,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 CONFIG += moc
 CONFIG += boost qt python
 
+CONFIG += yaml-cpp-flags
+
 include(../global.pri)
 include(../libs.pri)
 include(../config.pri)
