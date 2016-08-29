@@ -18,17 +18,13 @@
 
 #include "CurveSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER;
 
 void
-CurveSerialization::encode(YAML::Emitter& em) const
+CurveSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Flow;
+    em << YAML_NAMESPACE::BeginSeq;
 
     std::string prevInterpolation; // No valid interpolation set yet
     for (std::list<KeyFrameSerialization>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
@@ -55,7 +51,7 @@ CurveSerialization::encode(YAML::Emitter& em) const
         }
 
     }
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 enum CurveDecodeStateEnum
@@ -69,7 +65,7 @@ enum CurveDecodeStateEnum
 };
 
 void
-CurveSerialization::decode(const YAML::Node& node)
+CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence()) {
         return;
@@ -81,7 +77,7 @@ CurveSerialization::decode(const YAML::Node& node)
     std::string interpolation;
     KeyFrameSerialization keyframe;
     bool pushKeyFrame = false;
-    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
+    for (YAML_NAMESPACE::const_iterator it = node.begin(); it != node.end(); ++it) {
 
         switch (state) {
             case eCurveDecodeStateExpectTime:
@@ -108,7 +104,7 @@ CurveSerialization::decode(const YAML::Node& node)
             case eCurveDecodeStateMayExpectInterpolation:
                 try {
                     keyframe.interpolation = it->as<std::string>();
-                } catch (const YAML::BadConversion& /*e*/) {
+                } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
                     // No interpolation, use the interpolation set previously.
                     // If interpolation is not set, set interpolation to linear
                     if (interpolation.empty()) {

@@ -18,58 +18,54 @@
 
 #include "RotoDrawableItemSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 #include "Serialization/KnobSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoDrawableItemSerialization::encode(YAML::Emitter& em) const
+RotoDrawableItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     RotoItemSerialization::encode(em);
 
-    em << YAML::BeginMap;
-    em << YAML::Key << "Params" << YAML::Value;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
+    em << YAML_NAMESPACE::BeginSeq;
     for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
         (*it)->encode(em);
     }
-    em << YAML::EndSeq;
-    em << YAML::Key << "OverlayColor" << YAML::Value;
-    em << YAML::Flow;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::EndSeq;
+    em << YAML_NAMESPACE::Key << "OverlayColor" << YAML_NAMESPACE::Value;
+    em << YAML_NAMESPACE::Flow;
+    em << YAML_NAMESPACE::BeginSeq;
     em << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << _overlayColor[3];
-    em << YAML::EndSeq;
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::EndSeq;
+    em << YAML_NAMESPACE::EndMap;
 
     
 }
 
 void
-RotoDrawableItemSerialization::decode(const YAML::Node& node)
+RotoDrawableItemSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     RotoItemSerialization::decode(node);
 
-    for (YAML::const_iterator it = node.begin(); it!=node.end(); ++it) {
+    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
         std::string key = it->first.as<std::string>();
         if (key == "Params") {
             if (!it->second.IsSequence()) {
-                throw YAML::InvalidNode();
+                throw YAML_NAMESPACE::InvalidNode();
             }
-            for (YAML::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
                 KnobSerializationPtr s(new KnobSerialization);
                 s->decode(it2->second);
                 _knobs.push_back(s);
             }
         } else if (key == "OverlayColor") {
             if (!it->second.IsSequence() || it->second.size() != 4) {
-                throw YAML::InvalidNode();
+                throw YAML_NAMESPACE::InvalidNode();
             }
             int i = 0;
-            for (YAML::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2, ++i) {
+            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2, ++i) {
                 _overlayColor[i] = it2->as<double>();
             }
         }

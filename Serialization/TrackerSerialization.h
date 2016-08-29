@@ -54,9 +54,9 @@ public:
     {
     }
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
@@ -139,9 +139,9 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
     std::list<TrackSerialization> _tracks;
 };

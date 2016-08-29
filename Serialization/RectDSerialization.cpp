@@ -18,23 +18,19 @@
 
 #include "RectDSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RectDSerialization::encode(YAML::Emitter& em) const
+RectDSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginSeq << x1 << y1 << x2 << y2 << YAML::EndSeq;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << x1 << y1 << x2 << y2 << YAML_NAMESPACE::EndSeq;
 }
 
 void
-RectDSerialization::decode(const YAML::Node& node)
+RectDSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence() || node.size() != 4) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
 
     x1 = node[0].as<double>();

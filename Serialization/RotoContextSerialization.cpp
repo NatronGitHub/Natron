@@ -18,20 +18,16 @@
 
 #include "RotoContextSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoContextSerialization::encode(YAML::Emitter& em) const
+RotoContextSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     _baseLayer.encode(em);
 }
 
 void
-RotoContextSerialization::decode(const YAML::Node& node)
+RotoContextSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     _baseLayer.decode(node);
 }

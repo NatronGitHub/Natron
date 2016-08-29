@@ -18,23 +18,19 @@
 
 #include "ImageParamsSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-ImageComponentsSerialization::encode(YAML::Emitter& em) const
+ImageComponentsSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginSeq << layerName << globalCompsName << YAML::Flow << channelNames << YAML::EndSeq;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << layerName << globalCompsName << YAML_NAMESPACE::Flow << channelNames << YAML_NAMESPACE::EndSeq;
 }
 
 void
-ImageComponentsSerialization::decode(const YAML::Node& node)
+ImageComponentsSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence() || node.size() != 3) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
     layerName = node[0].as<std::string>();
     globalCompsName = node[1].as<std::string>();
@@ -42,9 +38,9 @@ ImageComponentsSerialization::decode(const YAML::Node& node)
 }
 
 void
-ImageParamsSerialization::encode(YAML::Emitter& em) const
+ImageParamsSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
     NonKeyParamsSerialization::encode(em);
     rod.encode(em);
     em << isRoDProjectFormat;
@@ -54,14 +50,14 @@ ImageParamsSerialization::encode(YAML::Emitter& em) const
     em << fielding;
     em << premult;
     em << mipMapLevel;
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
-ImageParamsSerialization::decode(const YAML::Node& node)
+ImageParamsSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence() || node.size() != 9) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
     NonKeyParamsSerialization::decode(node[0]);
     rod.decode(node[1]);

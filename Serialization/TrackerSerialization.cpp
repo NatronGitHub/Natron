@@ -18,59 +18,55 @@
 
 #include "TrackerSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-TrackSerialization::encode(YAML::Emitter& em) const
+TrackSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::BeginMap;
+    em << YAML_NAMESPACE::BeginMap;
     bool hasProperties = _enabled || _isPM;
     if (hasProperties) {
-        em << YAML::Key << "Properties" << YAML::Value;
-        em << YAML::Flow << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Properties" << YAML_NAMESPACE::Value;
+        em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         if (!_enabled) {
             em << "Disabled";
         }
         if (_isPM) {
             em << "PM";
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
 
-    em << YAML::Key << "ScriptName" << YAML::Value << _scriptName;
+    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << _scriptName;
     if (!_label.empty()) {
-        em << YAML::Key << "Label" << YAML::Value << _label;
+        em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << _label;
     }
-    em << YAML::Key << "Params" << YAML::Value;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
+    em << YAML_NAMESPACE::BeginSeq;
     for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
         (*it)->encode(em);
     }
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
     if (!_userKeys.empty()) {
-        em << YAML::Key << "UserKeyframes" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "UserKeyframes" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         for (std::list<int>::const_iterator it = _userKeys.begin(); it != _userKeys.end(); ++it) {
             em << *it;
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
-TrackSerialization::decode(const YAML::Node& node)
+TrackSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
 
     if (node["Properties"]) {
-        YAML::Node propsNode = node["Properties"];
-        for (YAML::const_iterator it = propsNode.begin(); it!=propsNode.end(); ++it) {
+        YAML_NAMESPACE::Node propsNode = node["Properties"];
+        for (YAML_NAMESPACE::const_iterator it = propsNode.begin(); it!=propsNode.end(); ++it) {
             std::string key = it->first.as<std::string>();
             if (key == "Disabled") {
                 _enabled = false;
@@ -85,14 +81,14 @@ TrackSerialization::decode(const YAML::Node& node)
     }
 
     if (node["UserKeyframes"]) {
-        YAML::Node keys = node["UserKeyframes"];
-        for (YAML::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+        YAML_NAMESPACE::Node keys = node["UserKeyframes"];
+        for (YAML_NAMESPACE::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
             _userKeys.push_back(it->second.as<int>());
         }
     }
 
-    YAML::Node params = node["Params"];
-    for (YAML::const_iterator it = params.begin(); it!=params.end(); ++it) {
+    YAML_NAMESPACE::Node params = node["Params"];
+    for (YAML_NAMESPACE::const_iterator it = params.begin(); it!=params.end(); ++it) {
         KnobSerializationPtr k(new KnobSerialization);
         k->decode(it->second);
         _knobs.push_back(k);
@@ -100,19 +96,19 @@ TrackSerialization::decode(const YAML::Node& node)
 }
 
 void
-TrackerContextSerialization::encode(YAML::Emitter& em) const
+TrackerContextSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::BeginSeq;
     for (std::list<TrackSerialization>::const_iterator it = _tracks.begin(); it!=_tracks.end(); ++it) {
         it->encode(em);
     }
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
-TrackerContextSerialization::decode(const YAML::Node& node)
+TrackerContextSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    for (YAML::const_iterator it = node.begin(); it!=node.end(); ++it) {
+    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
         TrackSerialization t;
         t.decode(it->second);
         _tracks.push_back(t);

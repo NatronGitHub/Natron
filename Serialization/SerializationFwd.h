@@ -47,7 +47,12 @@ GCC_DIAG_OFF(unused-parameter)
 
 #include "Global/Macros.h"
 
-namespace YAML {
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include "yaml.h"
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+namespace YAML_NAMESPACE {
 class Emitter;
 class Node;
 }

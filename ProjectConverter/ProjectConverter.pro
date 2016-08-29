@@ -31,7 +31,7 @@ CONFIG += static-yaml-cpp static-gui static-engine static-serialization static-h
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
-CONFIG += openmvg-flags glad-flags
+CONFIG += openmvg-flags glad-flags yaml-cpp-flags
 
 !noexpat: CONFIG += expat
 

@@ -18,32 +18,28 @@
 
 #include "ProjectSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 
 void
-ProjectBeingLoadedInfo::encode(YAML::Emitter& em) const
+ProjectBeingLoadedInfo::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginMap;
-    em << YAML::Key << "Version" << YAML::Value << YAML::Flow << YAML::BeginSeq << vMajor << vMinor << vRev << YAML::EndSeq;
-    em << YAML::Key << "Branch" << YAML::Value << gitBranch;
-    em << YAML::Key << "Commit" << YAML::Value << gitCommit;
-    em << YAML::Key << "OS" << YAML::Value << osStr;
-    em << YAML::Key << "Bits" << YAML::Value << bits;
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "Version" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << vMajor << vMinor << vRev << YAML_NAMESPACE::EndSeq;
+    em << YAML_NAMESPACE::Key << "Branch" << YAML_NAMESPACE::Value << gitBranch;
+    em << YAML_NAMESPACE::Key << "Commit" << YAML_NAMESPACE::Value << gitCommit;
+    em << YAML_NAMESPACE::Key << "OS" << YAML_NAMESPACE::Value << osStr;
+    em << YAML_NAMESPACE::Key << "Bits" << YAML_NAMESPACE::Value << bits;
+    em << YAML_NAMESPACE::EndMap;
 }
 
 void
-ProjectBeingLoadedInfo::decode(const YAML::Node& node)
+ProjectBeingLoadedInfo::decode(const YAML_NAMESPACE::Node& node)
 {
     {
-        YAML::Node n = node["Version"];
+        YAML_NAMESPACE::Node n = node["Version"];
         if (n.size() != 3) {
-            throw YAML::InvalidNode();
+            throw YAML_NAMESPACE::InvalidNode();
         }
         vMajor = n[0].as<int>();
         vMinor = n[1].as<int>();
@@ -56,85 +52,85 @@ ProjectBeingLoadedInfo::decode(const YAML::Node& node)
 }
 
 void
-ProjectSerialization::encode(YAML::Emitter& em) const
+ProjectSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::BeginMap;
+    em << YAML_NAMESPACE::BeginMap;
 
     if (!_nodes.empty()) {
-        em << YAML::Key << "Nodes" << YAML::Value << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Nodes" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
         for (NodeSerializationList::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
 
     if (!_additionalFormats.empty()) {
-        em << YAML::Key << "Formats" << YAML::Value << YAML::Flow  << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Formats" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow  << YAML_NAMESPACE::BeginSeq;
         for (std::list<FormatSerialization>::const_iterator it = _additionalFormats.begin(); it!=_additionalFormats.end(); ++it) {
             it->encode(em);
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
 
     if (!_projectKnobs.empty()) {
-        em << YAML::Key << "Params" << YAML::Value << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
         for (KnobSerializationList::const_iterator it = _projectKnobs.begin(); it!=_projectKnobs.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
 
-    em << YAML::Key << "Frame" << YAML::Value << _timelineCurrent;
-    em << YAML::Key << "CreationDate" << YAML::Value << _creationDate;
-    em << YAML::Key << "NatronVersion" << YAML::Value;
+    em << YAML_NAMESPACE::Key << "Frame" << YAML_NAMESPACE::Value << _timelineCurrent;
+    em << YAML_NAMESPACE::Key << "CreationDate" << YAML_NAMESPACE::Value << _creationDate;
+    em << YAML_NAMESPACE::Key << "NatronVersion" << YAML_NAMESPACE::Value;
     _projectLoadedInfo.encode(em);
 
     if (!_openedPanelsOrdered.empty()) {
-        em << YAML::Key << "OpenedPanels" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "OpenedPanels" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         for (std::list<std::string>::const_iterator it = _openedPanelsOrdered.begin(); it!=_openedPanelsOrdered.end(); ++it) {
             em << *it;
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
     if (_projectWorkspace) {
-        em << YAML::Key << "Workspace" << YAML::Value;
+        em << YAML_NAMESPACE::Key << "Workspace" << YAML_NAMESPACE::Value;
         _projectWorkspace->encode(em);
     }
     if (!_viewportsData.empty()) {
-        em << YAML::Key << "Viewports" << YAML::Value << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Viewports" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
         for (std::map<std::string, ViewportData>::const_iterator it = _viewportsData.begin(); it!=_viewportsData.end(); ++it) {
-            em << YAML::Flow << YAML::BeginSeq;
+            em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
             em << it->first;
             it->second.encode(em);
-            em << YAML::EndSeq;
+            em << YAML_NAMESPACE::EndSeq;
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::EndMap;
 } // ProjectSerialization::encode
 
 void
-ProjectSerialization::decode(const YAML::Node& node)
+ProjectSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (node["Nodes"]) {
-        YAML::Node n = node["Nodes"];
-        for (YAML::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        YAML_NAMESPACE::Node n = node["Nodes"];
+        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
             NodeSerializationPtr ns(new NodeSerialization);
             ns->decode(it->second);
             _nodes.push_back(ns);
         }
     }
     if (node["Formats"]) {
-        YAML::Node n = node["Formats"];
-        for (YAML::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        YAML_NAMESPACE::Node n = node["Formats"];
+        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
             FormatSerialization s;
             s.decode(it->second);
             _additionalFormats.push_back(s);
         }
     }
     if (node["Params"]) {
-        YAML::Node n = node["Params"];
-        for (YAML::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        YAML_NAMESPACE::Node n = node["Params"];
+        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(it->second);
             _projectKnobs.push_back(s);
@@ -144,8 +140,8 @@ ProjectSerialization::decode(const YAML::Node& node)
     _creationDate = node["CreationDate"].as<long long>();
     _projectLoadedInfo.decode(node["NatronVersion"]);
     if (node["OpenedPanels"]) {
-        YAML::Node n = node["OpenedPanels"];
-        for (YAML::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        YAML_NAMESPACE::Node n = node["OpenedPanels"];
+        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
             _openedPanelsOrdered.push_back(it->second.as<std::string>());
         }
     }
@@ -154,10 +150,10 @@ ProjectSerialization::decode(const YAML::Node& node)
         _projectWorkspace->decode(node["Workspace"]);
     }
     if (node["Viewports"]) {
-        YAML::Node n = node["Viewports"];
-        for (YAML::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        YAML_NAMESPACE::Node n = node["Viewports"];
+        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
             if (!it->second.IsSequence() || it->second.size() != 2) {
-                throw YAML::InvalidNode();
+                throw YAML_NAMESPACE::InvalidNode();
             }
             std::string name = it->second[0].as<std::string>();
             ViewportData data;

@@ -18,52 +18,49 @@
 
 #include "BezierSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/BezierCPSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-BezierSerialization::encode(YAML::Emitter& em) const
+BezierSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     RotoDrawableItemSerialization::encode(em);
-    em << YAML::BeginMap;
-    em << YAML::Key << "Shape" << YAML::Value;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "Shape" << YAML_NAMESPACE::Value;
+    em << YAML_NAMESPACE::BeginSeq;
     for (std::list< BezierCPSerialization >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
         it->encode(em);
     }
-    em << YAML::EndSeq;
-    em << YAML::Key << "Feather" << YAML::Value;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::EndSeq;
+    em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
+    em << YAML_NAMESPACE::BeginSeq;
     for (std::list< BezierCPSerialization >::const_iterator it = _featherPoints.begin(); it != _featherPoints.end(); ++it) {
         it->encode(em);
     }
-    em << YAML::EndSeq;
-    em << YAML::Key << "CanClose" << YAML::Value << !_isOpenBezier;
+    em << YAML_NAMESPACE::EndSeq;
+    em << YAML_NAMESPACE::Key << "CanClose" << YAML_NAMESPACE::Value << !_isOpenBezier;
     if (!_isOpenBezier) {
-        em << YAML::Key << "Closed" << YAML::Value << _closed;
+        em << YAML_NAMESPACE::Key << "Closed" << YAML_NAMESPACE::Value << _closed;
     }
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::EndMap;
 }
 
 void
-BezierSerialization::decode(const YAML::Node& node)
+BezierSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     RotoDrawableItemSerialization::decode(node);
-    for (YAML::const_iterator it = node.begin(); it!=node.end(); ++it) {
+    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
 
         std::string key = it->first.as<std::string>();
         if (key == "Shape") {
-            for (YAML::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
                 BezierCPSerialization s;
                 s.decode(it2->second);
                 _controlPoints.push_back(s);
             }
         } else if (key == "Feather") {
-            for (YAML::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
                 BezierCPSerialization s;
                 s.decode(it2->second);
                 _featherPoints.push_back(s);

@@ -18,22 +18,19 @@
 
 #include "FrameParamsSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-FrameParamsSerialization::encode(YAML::Emitter& em) const
+FrameParamsSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
     NonKeyParamsSerialization::encode(em);
     rod.encode(em);
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
-FrameParamsSerialization::decode(const YAML::Node& node)
+FrameParamsSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     NonKeyParamsSerialization::decode(node[0]);
     rod.decode(node[1]);

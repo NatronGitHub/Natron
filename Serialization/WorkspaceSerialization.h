@@ -67,9 +67,9 @@ public:
     }
 
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 
 
@@ -111,9 +111,9 @@ public:
 
     }
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
@@ -196,9 +196,9 @@ public:
 
     }
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 };
 
@@ -243,9 +243,9 @@ public:
 
     }
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 };
 
@@ -291,9 +291,9 @@ public:
 
     }
     
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 };
 
@@ -334,9 +334,9 @@ public:
     }
 
 
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML::Node& node) OVERRIDE;
+    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
 };
 

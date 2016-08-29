@@ -25,10 +25,6 @@
 
 #include "Global/Macros.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 #include "Serialization/SerializationFwd.h"
 #include "Serialization/WorkspaceSerialization.h"
 #include "Serialization/ProjectSerialization.h"
@@ -42,7 +38,7 @@ SERIALIZATION_NAMESPACE_ENTER
 template <typename T>
 void write(std::ostream& stream, const T& obj)
 {
-    YAML::Emitter em;
+    YAML_NAMESPACE::Emitter em;
     obj.encode(em);
     stream << em.c_str();
 }
@@ -56,7 +52,7 @@ void read(std::istream& stream, T* obj)
     if (!obj) {
         throw std::invalid_argument("Invalid serialization object");
     }
-    YAML::Node node = YAML::Load(stream);
+    YAML_NAMESPACE::Node node = YAML_NAMESPACE::Load(stream);
     obj->decode(node);
 }
 

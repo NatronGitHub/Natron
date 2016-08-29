@@ -25,11 +25,6 @@
 
 #include "Serialization/CurveSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
-
 SERIALIZATION_NAMESPACE_ENTER;
 
 const std::string&
@@ -40,13 +35,13 @@ ValueSerialization::getKnobName() const
 
 
 void
-KnobSerialization::encode(YAML::Emitter& em) const
+KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     if (!_mustSerialize) {
         return;
     }
-    em << YAML::BeginMap;
-    em << YAML::Key << "ScriptName" << YAML::Value << _scriptName;
+    em << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << _scriptName;
 
     // Instead of inserting in the map each boolean
     // we serialize strings, meaning that
@@ -70,9 +65,9 @@ KnobSerialization::encode(YAML::Emitter& em) const
     if (hasDimensionToSerialize) {
         // We serialize a value, we need to know which type of knob this is because at the time of deserialization the
         // application may not have created the corresponding knob already and may not know to what type it corresponds
-        em << YAML::Key << "Dimensions" << YAML::Value;
+        em << YAML_NAMESPACE::Key << "Dimensions" << YAML_NAMESPACE::Value;
         // Starting dimensions
-        em << YAML::BeginSeq;
+        em << YAML_NAMESPACE::BeginSeq;
         for (std::size_t i = 0; i < _values.size(); ++i) {
             const ValueSerialization& s = _values[i];
 
@@ -80,13 +75,13 @@ KnobSerialization::encode(YAML::Emitter& em) const
                 continue;
             }
 
-            em << YAML::Flow << YAML::BeginMap;
+            em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
 
             std::list<std::string> dimensionProps;
-            em << YAML::Key << "Index" << YAML::Value << s._dimension;
+            em << YAML_NAMESPACE::Key << "Index" << YAML_NAMESPACE::Value << s._dimension;
 
             if (s._serializeValue && s._animationCurve.keys.empty()) {
-                em << YAML::Key << "Value" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "Value" << YAML_NAMESPACE::Value;
                 switch (s._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
                         em << s._value.isBool;
@@ -105,7 +100,7 @@ KnobSerialization::encode(YAML::Emitter& em) const
                 }
             }
             if (s._serializeDefaultValue) {
-                em << YAML::Key << "Default" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "Default" << YAML_NAMESPACE::Value;
                 switch (s._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
                         em << s._defaultValue.isBool;
@@ -125,12 +120,12 @@ KnobSerialization::encode(YAML::Emitter& em) const
             }
             if (!s._animationCurve.keys.empty()) {
                 // Serialize only if non empty
-                em << YAML::Key << "Curve" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "Curve" << YAML_NAMESPACE::Value;
                 s._animationCurve.encode(em);
             }
             if (!s._expression.empty()) {
                 // Serialize only if non empty
-                em << YAML::Key << "Expr" << YAML::Value << s._expression;
+                em << YAML_NAMESPACE::Key << "Expr" << YAML_NAMESPACE::Value << s._expression;
                 if (s._expresionHasReturnVariable) {
                     // Serialize only if true because otherwise we assume false by default
                     dimensionProps.push_back("ExprHasRet");
@@ -140,26 +135,26 @@ KnobSerialization::encode(YAML::Emitter& em) const
                 dimensionProps.push_back("EnabledChanged");
             }
             if (!s._slaveMasterLink.masterKnobName.empty()) {
-                em << YAML::Key << "Master" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+                em << YAML_NAMESPACE::Key << "Master" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
                 em << s._slaveMasterLink.masterKnobName;
                 em << s._slaveMasterLink.masterDimension;
                 em << s._slaveMasterLink.masterNodeName;
                 if (!s._slaveMasterLink.masterTrackName.empty()) {
                     em << s._slaveMasterLink.masterTrackName;
                 }
-                em << YAML::EndSeq;
+                em << YAML_NAMESPACE::EndSeq;
             }
             if (!dimensionProps.empty()) {
-                em << YAML::Key << "DimProps" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+                em << YAML_NAMESPACE::Key << "DimProps" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
                 for (std::list<std::string>::const_iterator it2 = dimensionProps.begin(); it2 != dimensionProps.end(); ++it2) {
                     em << *it2;
                 }
-                em << YAML::EndSeq;
+                em << YAML_NAMESPACE::EndSeq;
             }
 
-            em << YAML::EndMap;
+            em << YAML_NAMESPACE::EndMap;
         } // for each dimension
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     } // hasDimensionToSerialize
 
     TextExtraData* textData = dynamic_cast<TextExtraData*>(_extraData.get());
@@ -167,22 +162,22 @@ KnobSerialization::encode(YAML::Emitter& em) const
         ParametricExtraData* parametricData = dynamic_cast<ParametricExtraData*>(_extraData.get());
         if (parametricData) {
             if (!parametricData->parametricCurves.empty()) {
-                em << YAML::Key << "ParametricCurves" << YAML::Value;
-                em << YAML::BeginSeq;
+                em << YAML_NAMESPACE::Key << "ParametricCurves" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::BeginSeq;
                 for (std::list<CurveSerialization>::const_iterator it = parametricData->parametricCurves.begin(); it!=parametricData->parametricCurves.end(); ++it) {
                     it->encode(em);
                 }
-                em << YAML::EndSeq;
+                em << YAML_NAMESPACE::EndSeq;
             }
         } else if (textData) {
             if (!textData->keyframes.empty()) {
-                em << YAML::Key << "TextAnim" << YAML::Value;
-                em << YAML::Flow;
-                em << YAML::BeginSeq;
+                em << YAML_NAMESPACE::Key << "TextAnim" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::Flow;
+                em << YAML_NAMESPACE::BeginSeq;
                 for (std::map<int, std::string>::const_iterator it = textData->keyframes.begin(); it!=textData->keyframes.end(); ++it) {
                     em << it->first << it->second;
                 }
-                em << YAML::EndSeq;
+                em << YAML_NAMESPACE::EndSeq;
             }
         }
     }
@@ -190,14 +185,14 @@ KnobSerialization::encode(YAML::Emitter& em) const
     if (_isUserKnob) {
         // Num of dimensions can be figured out for knobs created by plug-in
         // Knobs created by user need to know it
-        em << YAML::Key << "NDims" << YAML::Value << _dimension;
-        em << YAML::Key << "TypeName" << YAML::Value << _typeName;
+        em << YAML_NAMESPACE::Key << "NDims" << YAML_NAMESPACE::Value << _dimension;
+        em << YAML_NAMESPACE::Key << "TypeName" << YAML_NAMESPACE::Value << _typeName;
 
         if (_label != _scriptName) {
-            em << YAML::Key << "Label" << YAML::Value << _label;
+            em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << _label;
         }
         if (!_tooltip.empty()) {
-            em << YAML::Key << "Hint" << YAML::Value << _tooltip;
+            em << YAML_NAMESPACE::Key << "Hint" << YAML_NAMESPACE::Value << _tooltip;
         }
         if (!_triggerNewLine) {
             propNames.push_back("NoNewLine");
@@ -212,10 +207,10 @@ KnobSerialization::encode(YAML::Emitter& em) const
             propNames.push_back("Volatile");
         }
         if (!_iconFilePath[0].empty()) {
-            em << YAML::Key << "UncheckedIcon" << YAML::Value << _iconFilePath[0];
+            em << YAML_NAMESPACE::Key << "UncheckedIcon" << YAML_NAMESPACE::Value << _iconFilePath[0];
         }
         if (!_iconFilePath[1].empty()) {
-            em << YAML::Key << "CheckedIcon" << YAML::Value << _iconFilePath[1];
+            em << YAML_NAMESPACE::Key << "CheckedIcon" << YAML_NAMESPACE::Value << _iconFilePath[1];
         }
 
         TypeExtraData* typeData = _extraData.get();
@@ -227,33 +222,33 @@ KnobSerialization::encode(YAML::Emitter& em) const
 
         if (cdata) {
             if (!cdata->_entries.empty()) {
-                em << YAML::Key << "Entries" << YAML::Value;
-                em << YAML::BeginSeq;
+                em << YAML_NAMESPACE::Key << "Entries" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::BeginSeq;
                 for (std::size_t i = 0; i < cdata->_entries.size(); ++i) {
                     em << cdata->_entries[i];
                 }
-                em << YAML::EndSeq;
+                em << YAML_NAMESPACE::EndSeq;
             }
             if (!cdata->_helpStrings.empty()) {
-                em << YAML::Key << "Hints" << YAML::Value;
-                em << YAML::BeginSeq;
+                em << YAML_NAMESPACE::Key << "Hints" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::BeginSeq;
                 for (std::size_t i = 0; i < cdata->_helpStrings.size(); ++i) {
                     em << cdata->_helpStrings[i];
                 }
-                em << YAML::EndSeq;
+                em << YAML_NAMESPACE::EndSeq;
             }
         } else if (vdata) {
             if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
-                em << YAML::Key << "Min" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "Min" << YAML_NAMESPACE::Value;
             }
             if (vdata->min != INT_MAX && vdata->min != DBL_MAX) {
-                em << YAML::Key << "Max" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "Max" << YAML_NAMESPACE::Value;
             }
             if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
-                em << YAML::Key << "DisplayMin" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "DisplayMin" << YAML_NAMESPACE::Value;
             }
             if (vdata->min != INT_MAX && vdata->min != DBL_MAX) {
-                em << YAML::Key << "DisplayMax" << YAML::Value;
+                em << YAML_NAMESPACE::Key << "DisplayMax" << YAML_NAMESPACE::Value;
             }
         } else if (tdata) {
             if (tdata->label) {
@@ -285,34 +280,34 @@ KnobSerialization::encode(YAML::Emitter& em) const
 
     if (_hasViewerInterface) {
         if (_inViewerContextItemLayout != kInViewerContextItemLayoutSpacing) {
-            em << YAML::Key << "InViewerLayout" << YAML::Value << _inViewerContextItemLayout;
+            em << YAML_NAMESPACE::Key << "InViewerLayout" << YAML_NAMESPACE::Value << _inViewerContextItemLayout;
         } else {
             if (_inViewerContextItemSpacing != kKnobInViewerContextDefaultItemSpacing) {
-                em << YAML::Key << "InViewerSpacing" << YAML::Value << _inViewerContextItemSpacing;
+                em << YAML_NAMESPACE::Key << "InViewerSpacing" << YAML_NAMESPACE::Value << _inViewerContextItemSpacing;
             }
         }
         if (_isUserKnob) {
             if (!_inViewerContextLabel.empty()) {
-                em << YAML::Key << "InViewerLabel" << YAML::Value << _inViewerContextLabel;
+                em << YAML_NAMESPACE::Key << "InViewerLabel" << YAML_NAMESPACE::Value << _inViewerContextLabel;
             }
             if (!_inViewerContextIconFilePath[0].empty()) {
-                em << YAML::Key << "InViewerIconUnchecked" << YAML::Value << _inViewerContextIconFilePath[0];
+                em << YAML_NAMESPACE::Key << "InViewerIconUnchecked" << YAML_NAMESPACE::Value << _inViewerContextIconFilePath[0];
             }
             if (!_inViewerContextIconFilePath[1].empty()) {
-                em << YAML::Key << "InViewerIconChecked" << YAML::Value << _inViewerContextIconFilePath[1];
+                em << YAML_NAMESPACE::Key << "InViewerIconChecked" << YAML_NAMESPACE::Value << _inViewerContextIconFilePath[1];
             }
         }
     }
 
     if (!propNames.empty()) {
-        em << YAML::Key << "Props" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Props" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         for (std::list<std::string>::const_iterator it2 = propNames.begin(); it2 != propNames.end(); ++it2) {
             em << *it2;
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
 
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::EndMap;
 } // KnobSerialization::encode
 
 template <typename T>
@@ -327,12 +322,12 @@ static T* getOrCreateExtraData(boost::scoped_ptr<TypeExtraData>& extraData)
     }
     assert(data);
     if (!data) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
     return data;
 }
 
-static void decodeValueFromNode(const YAML::Node& node,
+static void decodeValueFromNode(const YAML_NAMESPACE::Node& node,
                                 SerializationValueVariant& variant)
 {
     /*
@@ -341,17 +336,17 @@ static void decodeValueFromNode(const YAML::Node& node,
      */
     try {
         variant.isString = node.as<std::string>();
-    } catch (const YAML::BadConversion& /*e*/) {
+    } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
         try {
             variant.isDouble = node.as<double>();
             variant.isInt = (int)variant.isDouble;
             variant.isBool = (bool)variant.isInt;
-        } catch (const YAML::BadConversion& /*e*/) {
+        } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
             try {
                 variant.isInt = node.as<int>();
                 variant.isBool = (bool)variant.isInt;
                 variant.isDouble = (bool)variant.isInt;
-            } catch (const YAML::BadConversion& /*e*/) {
+            } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
                 variant.isBool = node.as<bool>();
                 variant.isInt = (int)variant.isBool;
                 variant.isDouble = (double)variant.isInt;
@@ -362,7 +357,7 @@ static void decodeValueFromNode(const YAML::Node& node,
 }
 
 void
-KnobSerialization::decode(const YAML::Node& node)
+KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsMap()) {
         return;
@@ -373,36 +368,36 @@ KnobSerialization::decode(const YAML::Node& node)
 
     if (node["Dimensions"]) {
 
-        YAML::Node dimensionsNode = node["Dimensions"];
+        YAML_NAMESPACE::Node dimensionsNode = node["Dimensions"];
         if (!dimensionsNode.IsSequence()) {
-            throw YAML::InvalidNode();
+            throw YAML_NAMESPACE::InvalidNode();
         }
         _values.resize(dimensionsNode.size());
         for (std::size_t i = 0; i < _values.size(); ++i) {
             _values[i]._serialization = this;
             _values[i]._dimension = i;
         }
-        for (YAML::const_iterator it = dimensionsNode.begin(); it!=dimensionsNode.end(); ++it) {
+        for (YAML_NAMESPACE::const_iterator it = dimensionsNode.begin(); it!=dimensionsNode.end(); ++it) {
 
             if (!it->second.IsMap()) {
-                throw YAML::InvalidNode();
+                throw YAML_NAMESPACE::InvalidNode();
             }
             int dim = it->second["Index"].as<int>();
             if (dim < 0 || dim >= (int)_values.size()) {
-                throw YAML::BadSubscript();
+                throw YAML_NAMESPACE::BadSubscript();
             }
             ValueSerialization& s = _values[dim];
             s._dimension = dim;
             if (it->second["Value"]) {
-                YAML::Node valueNode = it->second["Value"];
+                YAML_NAMESPACE::Node valueNode = it->second["Value"];
                 decodeValueFromNode(valueNode, s._value);
             }
             if (it->second["Default"]) {
-                YAML::Node valueNode = it->second["Default"];
+                YAML_NAMESPACE::Node valueNode = it->second["Default"];
                 decodeValueFromNode(valueNode, s._defaultValue);
             }
             if (it->second["Curve"]) {
-                YAML::Node curveNode = it->second["Curve"];
+                YAML_NAMESPACE::Node curveNode = it->second["Curve"];
                 s._animationCurve.decode(curveNode);
             }
             if (it->second["Expr"]) {
@@ -410,9 +405,9 @@ KnobSerialization::decode(const YAML::Node& node)
         
             }
             if (it->second["Master"]) {
-                YAML::Node masterNode = it->second["Master"];
+                YAML_NAMESPACE::Node masterNode = it->second["Master"];
                 if (!masterNode.IsSequence() || (masterNode.size() != 3 && masterNode.size() != 4)) {
-                    throw YAML::InvalidNode();
+                    throw YAML_NAMESPACE::InvalidNode();
                 }
 
                 s._slaveMasterLink.masterKnobName = masterNode[0].as<std::string>();
@@ -426,8 +421,8 @@ KnobSerialization::decode(const YAML::Node& node)
             }
 
             if (it->second["DimProps"]) {
-                YAML::Node propsNode = it->second["DimProps"];
-                for (YAML::const_iterator it2 = propsNode.begin(); it2 != propsNode.end(); ++it2) {
+                YAML_NAMESPACE::Node propsNode = it->second["DimProps"];
+                for (YAML_NAMESPACE::const_iterator it2 = propsNode.begin(); it2 != propsNode.end(); ++it2) {
                     std::string prop = it2->second.as<std::string>();
                     if (prop == "EnabledChanged") {
                         s._enabledChanged = true;
@@ -444,23 +439,23 @@ KnobSerialization::decode(const YAML::Node& node)
     } // has dimension serialized
 
     if (node["ParametricCurves"]) {
-        YAML::Node curveNode = node["ParametricCurves"];
+        YAML_NAMESPACE::Node curveNode = node["ParametricCurves"];
         ParametricExtraData *data = new ParametricExtraData;
         _extraData.reset(data);
-        for (YAML::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
+        for (YAML_NAMESPACE::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
             CurveSerialization s;
             s.decode(it->second);
             data->parametricCurves.push_back(s);
         }
     }
     if (node["TextAnim"]) {
-        YAML::Node curveNode = node["TextAnim"];
+        YAML_NAMESPACE::Node curveNode = node["TextAnim"];
         TextExtraData *data = new TextExtraData;
         _extraData.reset(data);
         // If type = 0 we expect a int, otherwise a string
         int type = 0;
         std::pair<int, std::string> p;
-        for (YAML::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
+        for (YAML_NAMESPACE::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
             if (type == 0) {
                 p.first = it->second.as<int>();
                 type = 1;
@@ -507,15 +502,15 @@ KnobSerialization::decode(const YAML::Node& node)
             // This is a choice
             ChoiceExtraData *data = new ChoiceExtraData;
             _extraData.reset(data);
-            YAML::Node entriesNode = node["Entries"];
-            for (YAML::const_iterator it = entriesNode.begin(); it!=entriesNode.end(); ++it) {
+            YAML_NAMESPACE::Node entriesNode = node["Entries"];
+            for (YAML_NAMESPACE::const_iterator it = entriesNode.begin(); it!=entriesNode.end(); ++it) {
                 data->_entries.push_back(it->second.as<std::string>());
             }
 
             // Also look for hints...
             if (node["Hints"]) {
-                YAML::Node hintsNode = node["Hints"];
-                for (YAML::const_iterator it = hintsNode.begin(); it!=hintsNode.end(); ++it) {
+                YAML_NAMESPACE::Node hintsNode = node["Hints"];
+                for (YAML_NAMESPACE::const_iterator it = hintsNode.begin(); it!=hintsNode.end(); ++it) {
                     data->_helpStrings.push_back(it->second.as<std::string>());
                 }
             }
@@ -565,8 +560,8 @@ KnobSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Props"]) {
-        YAML::Node propsNode = node["Props"];
-        for (YAML::const_iterator it2 = propsNode.begin(); it2 != propsNode.end(); ++it2) {
+        YAML_NAMESPACE::Node propsNode = node["Props"];
+        for (YAML_NAMESPACE::const_iterator it2 = propsNode.begin(); it2 != propsNode.end(); ++it2) {
             std::string prop = it2->second.as<std::string>();
             if (prop == "VisibilityChanged") {
                 _visibilityChanged = true;
@@ -614,22 +609,22 @@ KnobSerialization::decode(const YAML::Node& node)
 
 
 void
-GroupKnobSerialization::encode(YAML::Emitter& em) const
+GroupKnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::VerbatimTag("GroupParam");
-    em << YAML::BeginMap;
+    em << YAML_NAMESPACE::VerbatimTag("GroupParam");
+    em << YAML_NAMESPACE::BeginMap;
 
-    em << YAML::Key << "TypeName" << YAML::Value << _typeName;
-    em << YAML::Key << "ScriptName" << YAML::Value << _name;
+    em << YAML_NAMESPACE::Key << "TypeName" << YAML_NAMESPACE::Value << _typeName;
+    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << _name;
     if (_label != _name) {
-        em << YAML::Key << "Label" << YAML::Value << _label;
+        em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << _label;
     }
 
-    em << YAML::Key << "Params" << YAML::Value << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
     for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = _children.begin(); it!=_children.end(); ++it) {
         (*it)->encode(em);
     }
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 
 
 
@@ -644,17 +639,17 @@ GroupKnobSerialization::encode(YAML::Emitter& em) const
         props.push_back("Secret");
     }
     if (!props.empty()) {
-        em << YAML::Key << "Props" << YAML::Value << YAML::BeginSeq;
+        em << YAML_NAMESPACE::Key << "Props" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
         for (std::list<std::string>::const_iterator it = props.begin(); it!=props.end(); ++it) {
             em << *it;
         }
-        em << YAML::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::EndMap;
 } // GroupKnobSerialization::encode
 
 void
-GroupKnobSerialization::decode(const YAML::Node& node)
+GroupKnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     _typeName = node["TypeName"].as<std::string>();
     _name = node["ScriptName"].as<std::string>();
@@ -664,8 +659,8 @@ GroupKnobSerialization::decode(const YAML::Node& node)
         _label = _name;
     }
 
-    YAML::Node paramsNode = node["Params"];
-    for (YAML::const_iterator it = paramsNode.begin(); it!=paramsNode.end(); ++it) {
+    YAML_NAMESPACE::Node paramsNode = node["Params"];
+    for (YAML_NAMESPACE::const_iterator it = paramsNode.begin(); it!=paramsNode.end(); ++it) {
         if (it->second.Tag() != "GroupParam") {
             GroupKnobSerializationPtr s(new GroupKnobSerialization);
             s->decode(it->second);
@@ -678,8 +673,8 @@ GroupKnobSerialization::decode(const YAML::Node& node)
     }
 
     if (node["Props"]) {
-        YAML::Node propsNode = node["Props"];
-        for (YAML::const_iterator it2 = propsNode.begin(); it2 != propsNode.end(); ++it2) {
+        YAML_NAMESPACE::Node propsNode = node["Props"];
+        for (YAML_NAMESPACE::const_iterator it2 = propsNode.begin(); it2 != propsNode.end(); ++it2) {
             std::string prop = it2->second.as<std::string>();
             if (prop == "Opened") {
                 _isOpened = true;

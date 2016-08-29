@@ -18,29 +18,25 @@
 
 #include "RotoItemSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoItemSerialization::encode(YAML::Emitter& em) const
+RotoItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::BeginMap;
-    em << YAML::Key << "ScriptName" << YAML::Value << name;
-    em << YAML::Key << "Label" << YAML::Value << label;
-    em << YAML::Key << "Activated" << YAML::Value << activated;
-    em << YAML::Key << "Layer" << YAML::Value << parentLayerName;
-    em << YAML::Key << "Locked" << YAML::Value << locked;
-    em << YAML::EndMap;
+    em << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << name;
+    em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << label;
+    em << YAML_NAMESPACE::Key << "Activated" << YAML_NAMESPACE::Value << activated;
+    em << YAML_NAMESPACE::Key << "Layer" << YAML_NAMESPACE::Value << parentLayerName;
+    em << YAML_NAMESPACE::Key << "Locked" << YAML_NAMESPACE::Value << locked;
+    em << YAML_NAMESPACE::EndMap;
 
 }
 
 void
-RotoItemSerialization::decode(const YAML::Node& node)
+RotoItemSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    for (YAML::const_iterator it = node.begin(); it!=node.end(); ++it) {
+    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
         std::string key = it->first.as<std::string>();
         if (key == "ScriptName") {
             name = it->second.as<std::string>();

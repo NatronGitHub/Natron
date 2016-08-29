@@ -18,26 +18,22 @@
 
 #include "NonKeyParamsSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-NonKeyParamsSerialization::encode(YAML::Emitter& em) const
+NonKeyParamsSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
     em << dataTypeSize << nComps;
     bounds.encode(em);
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
-NonKeyParamsSerialization::decode(const YAML::Node& node)
+NonKeyParamsSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence() || node.size() != 3) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
     dataTypeSize = node[0].as<std::size_t>();
     nComps = node[1].as<int>();

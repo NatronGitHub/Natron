@@ -18,16 +18,13 @@
 
 #include "FormatSerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 void
-FormatSerialization::encode(YAML::Emitter& em) const
+FormatSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow;
-    em << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Flow;
+    em << YAML_NAMESPACE::BeginSeq;
     em << x1 << y1 << x2 << y2;
     if (par != 1.) {
         em << par;
@@ -35,16 +32,16 @@ FormatSerialization::encode(YAML::Emitter& em) const
     if (!name.empty()) {
         em << name;
     }
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 
 }
 
 
 void
-FormatSerialization::decode(const YAML::Node& node)
+FormatSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence() || node.size() < 4) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
     x1 = node[0].as<int>();
     y1 = node[1].as<int>();
@@ -57,7 +54,7 @@ FormatSerialization::decode(const YAML::Node& node)
             if (node.size() == 6) {
                 name = node[5].as<std::string>();
             }
-        } catch (const YAML::BadConversion& /*e*/) {
+        } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
             // No PAR, assume it is 1
             name = node[4].as<std::string>();
         }

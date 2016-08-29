@@ -18,29 +18,26 @@
 
 #include "FrameKeySerialization.h"
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <yaml-cpp/yaml.h>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-FrameKeySerialization::encode(YAML::Emitter& em) const
+FrameKeySerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML::Flow << YAML::BeginSeq;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
     em << frame << view << treeHash << gain << gamma << lut << bitdepth << channels;
     textureRect.encode(em);
     em << mipMapLevel << inputName;
     layer.encode(em);
     em << alphaChannelFullName;
     em << draftMode;
-    em << YAML::EndSeq;
+    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
-FrameKeySerialization::decode(const YAML::Node& node)
+FrameKeySerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (!node.IsSequence() || node.size() != 14) {
-        throw YAML::InvalidNode();
+        throw YAML_NAMESPACE::InvalidNode();
     }
     frame = node[0].as<int>();
     view = node[1].as<int>();
