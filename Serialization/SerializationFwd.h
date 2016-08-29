@@ -52,12 +52,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include "yaml.h"
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-namespace YAML_NAMESPACE {
-class Emitter;
-class Node;
-}
-
-
 SERIALIZATION_NAMESPACE_ENTER;
 class BezierSerialization;
 class CurveSerialization;
