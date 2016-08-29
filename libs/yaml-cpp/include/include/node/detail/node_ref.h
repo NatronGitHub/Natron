@@ -7,13 +7,13 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/node/type.h"
-#include "yaml-cpp/node/ptr.h"
-#include "yaml-cpp/node/detail/node_data.h"
+#include "dll.h"
+#include "node/type.h"
+#include "node/ptr.h"
+#include "node/detail/node_data.h"
 #include <boost/utility.hpp>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 class node_ref : private boost::noncopyable {
  public:
@@ -92,6 +92,6 @@ class node_ref : private boost::noncopyable {
   shared_node_data m_pData;
 };
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // VALUE_DETAIL_NODE_REF_H_62B23520_7C8E_11DE_8A39_0800200C9A66

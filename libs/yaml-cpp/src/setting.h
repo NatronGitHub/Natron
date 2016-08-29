@@ -9,9 +9,9 @@
 
 #include <memory>
 #include <vector>
-#include "yaml-cpp/noncopyable.h"
+#include "noncopyable.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class SettingChangeBase;
 
 template <typename T>
@@ -94,6 +94,6 @@ class SettingChanges : private noncopyable {
   typedef std::vector<SettingChangeBase*> setting_changes;
   setting_changes m_settingChanges;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // SETTING_H_62B23520_7C8E_11DE_8A39_0800200C9A66

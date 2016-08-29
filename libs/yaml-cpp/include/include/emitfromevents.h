@@ -9,15 +9,15 @@
 
 #include <stack>
 
-#include "yaml-cpp/anchor.h"
-#include "yaml-cpp/emitterstyle.h"
-#include "yaml-cpp/eventhandler.h"
+#include "anchor.h"
+#include "emitterstyle.h"
+#include "eventhandler.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 struct Mark;
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class Emitter;
 
 class EmitFromEvents : public EventHandler {
@@ -52,6 +52,6 @@ class EmitFromEvents : public EventHandler {
   };
   std::stack<State::value> m_stateStack;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EMITFROMEVENTS_H_62B23520_7C8E_11DE_8A39_0800200C9A66

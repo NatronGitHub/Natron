@@ -13,21 +13,21 @@
 #include <sstream>
 #include <vector>
 
-#include "yaml-cpp/binary.h"
-#include "yaml-cpp/node/impl.h"
-#include "yaml-cpp/node/iterator.h"
-#include "yaml-cpp/node/node.h"
-#include "yaml-cpp/node/type.h"
-#include "yaml-cpp/null.h"
+#include "binary.h"
+#include "node/impl.h"
+#include "node/iterator.h"
+#include "node/node.h"
+#include "node/type.h"
+#include "null.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class Binary;
 struct _Null;
 template <typename T>
 struct convert;
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace conversion {
 inline bool IsInfinity(const std::string& input) {
   return input == ".inf" || input == ".Inf" || input == ".INF" ||
@@ -292,6 +292,6 @@ struct convert<Binary> {
     return true;
   }
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // NODE_CONVERT_H_62B23520_7C8E_11DE_8A39_0800200C9A66

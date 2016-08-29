@@ -7,12 +7,12 @@
 #include "singledocparser.h"
 #include "tag.h"
 #include "token.h"
-#include "yaml-cpp/emitterstyle.h"
-#include "yaml-cpp/eventhandler.h"
-#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
-#include "yaml-cpp/mark.h"
+#include "emitterstyle.h"
+#include "eventhandler.h"
+#include "exceptions.h"  // IWYU pragma: keep
+#include "mark.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 SingleDocParser::SingleDocParser(Scanner& scanner, const Directives& directives)
     : m_scanner(scanner),
       m_directives(directives),
@@ -410,4 +410,4 @@ anchor_t SingleDocParser::LookupAnchor(const Mark& mark,
 
   return it->second;
 }
-}
+YAML_NAMESPACE_EXIT

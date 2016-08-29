@@ -9,23 +9,23 @@
 
 #include <stdexcept>
 
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/emitterstyle.h"
-#include "yaml-cpp/mark.h"
-#include "yaml-cpp/node/detail/bool_type.h"
-#include "yaml-cpp/node/detail/iterator_fwd.h"
-#include "yaml-cpp/node/ptr.h"
-#include "yaml-cpp/node/type.h"
+#include "dll.h"
+#include "emitterstyle.h"
+#include "mark.h"
+#include "node/detail/bool_type.h"
+#include "node/detail/iterator_fwd.h"
+#include "node/ptr.h"
+#include "node/type.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 class node;
 class node_data;
 struct iterator_value;
 }  // namespace detail
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class YAML_CPP_API Node {
  public:
   friend class NodeBuilder;
@@ -38,8 +38,8 @@ class YAML_CPP_API Node {
   template <typename T, typename S>
   friend struct as_if;
 
-  typedef YAML::iterator iterator;
-  typedef YAML::const_iterator const_iterator;
+  typedef YAML_NAMESPACE::iterator iterator;
+  typedef YAML_NAMESPACE::const_iterator const_iterator;
 
   Node();
   explicit Node(NodeType::value type);
@@ -49,7 +49,7 @@ class YAML_CPP_API Node {
   Node(const Node& rhs);
   ~Node();
 
-  YAML::Mark Mark() const;
+  YAML_NAMESPACE::Mark Mark() const;
   NodeType::value Type() const;
   bool IsDefined() const;
   bool IsNull() const { return Type() == NodeType::Null; }
@@ -140,6 +140,6 @@ YAML_CPP_API Node Clone(const Node& node);
 
 template <typename T>
 struct convert;
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // NODE_NODE_H_62B23520_7C8E_11DE_8A39_0800200C9A66

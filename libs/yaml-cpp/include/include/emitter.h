@@ -12,20 +12,20 @@
 #include <sstream>
 #include <string>
 
-#include "yaml-cpp/binary.h"
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/emitterdef.h"
-#include "yaml-cpp/emittermanip.h"
-#include "yaml-cpp/noncopyable.h"
-#include "yaml-cpp/null.h"
-#include "yaml-cpp/ostream_wrapper.h"
+#include "binary.h"
+#include "dll.h"
+#include "emitterdef.h"
+#include "emittermanip.h"
+#include "noncopyable.h"
+#include "null.h"
+#include "ostream_wrapper.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class Binary;
 struct _Null;
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class EmitterState;
 
 class YAML_CPP_API Emitter : private noncopyable {
@@ -249,6 +249,6 @@ inline Emitter& operator<<(Emitter& emitter, _Indent indent) {
 inline Emitter& operator<<(Emitter& emitter, _Precision precision) {
   return emitter.SetLocalPrecision(precision);
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EMITTER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

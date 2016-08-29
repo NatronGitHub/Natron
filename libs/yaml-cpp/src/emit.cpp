@@ -1,9 +1,9 @@
-#include "yaml-cpp/node/emit.h"
-#include "yaml-cpp/emitfromevents.h"
-#include "yaml-cpp/emitter.h"
+#include "node/emit.h"
+#include "emitfromevents.h"
+#include "emitter.h"
 #include "nodeevents.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 Emitter& operator<<(Emitter& out, const Node& node) {
   EmitFromEvents emitFromEvents(out);
   NodeEvents events(node);
@@ -22,4 +22,4 @@ std::string Dump(const Node& node) {
   emitter << node;
   return emitter.c_str();
 }
-}
+YAML_NAMESPACE_EXIT

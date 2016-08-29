@@ -1,14 +1,14 @@
-#include "yaml-cpp/node/parse.h"
+#include "node/parse.h"
 
 #include <fstream>
 #include <sstream>
 
-#include "yaml-cpp/node/node.h"
-#include "yaml-cpp/node/impl.h"
-#include "yaml-cpp/parser.h"
+#include "node/node.h"
+#include "node/impl.h"
+#include "parser.h"
 #include "nodebuilder.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 Node Load(const std::string& input) {
   std::stringstream stream(input);
   return Load(stream);
@@ -65,4 +65,4 @@ std::vector<Node> LoadAllFromFile(const std::string& filename) {
     throw BadFile();
   return LoadAll(fin);
 }
-}
+YAML_NAMESPACE_EXIT

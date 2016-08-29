@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "yaml-cpp/node/convert.h"
+#include "node/convert.h"
 
 namespace {
 // we're not gonna mess with the mess that is all the isupper/etc. functions
@@ -41,7 +41,7 @@ bool IsFlexibleCase(const std::string& str) {
 }
 }
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 bool convert<bool>::decode(const Node& node, bool& rhs) {
   if (!node.IsScalar())
     return false;
@@ -72,4 +72,4 @@ bool convert<bool>::decode(const Node& node, bool& rhs) {
 
   return false;
 }
-}
+YAML_NAMESPACE_EXIT

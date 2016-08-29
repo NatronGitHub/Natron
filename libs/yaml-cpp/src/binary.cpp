@@ -1,6 +1,6 @@
-#include "yaml-cpp/binary.h"
+#include "binary.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 static const char encoding[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -90,4 +90,4 @@ std::vector<unsigned char> DecodeBase64(const std::string &input) {
   ret.resize(out - &ret[0]);
   return ret;
 }
-}
+YAML_NAMESPACE_EXIT

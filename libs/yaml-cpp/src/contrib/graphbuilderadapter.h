@@ -11,18 +11,18 @@
 #include <map>
 #include <stack>
 
-#include "yaml-cpp/anchor.h"
-#include "yaml-cpp/contrib/anchordict.h"
-#include "yaml-cpp/contrib/graphbuilder.h"
-#include "yaml-cpp/emitterstyle.h"
-#include "yaml-cpp/eventhandler.h"
+#include "anchor.h"
+#include "contrib/anchordict.h"
+#include "contrib/graphbuilder.h"
+#include "emitterstyle.h"
+#include "eventhandler.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class GraphBuilderInterface;
 struct Mark;
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class GraphBuilderAdapter : public EventHandler {
  public:
   GraphBuilderAdapter(GraphBuilderInterface& builder)
@@ -74,6 +74,6 @@ class GraphBuilderAdapter : public EventHandler {
   void RegisterAnchor(anchor_t anchor, void* pNode);
   void DispositionNode(void* pNode);
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // GRAPHBUILDERADAPTER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

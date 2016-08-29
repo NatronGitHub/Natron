@@ -1,10 +1,10 @@
-#include "yaml-cpp/ostream_wrapper.h"
+#include "ostream_wrapper.h"
 
 #include <algorithm>
 #include <cstring>
 #include <iostream>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 ostream_wrapper::ostream_wrapper()
     : m_buffer(1, '\0'),
       m_pStream(0),
@@ -54,4 +54,4 @@ void ostream_wrapper::update_pos(char ch) {
     m_comment = false;
   }
 }
-}
+YAML_NAMESPACE_EXIT

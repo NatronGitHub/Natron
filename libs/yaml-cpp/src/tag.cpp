@@ -5,7 +5,7 @@
 #include "tag.h"
 #include "token.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 Tag::Tag(const Token& token) : type(static_cast<TYPE>(token.data)) {
   switch (type) {
     case VERBATIM:
@@ -46,4 +46,4 @@ const std::string Tag::Translate(const Directives& directives) {
   }
   throw std::runtime_error("yaml-cpp: internal error, bad tag type");
 }
-}
+YAML_NAMESPACE_EXIT

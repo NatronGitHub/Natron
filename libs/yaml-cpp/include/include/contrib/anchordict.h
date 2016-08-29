@@ -11,7 +11,7 @@
 
 #include "../anchor.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 /// AnchorDict
 /// . An object that stores and retrieves values correlating to anchor_t
 ///   values.
@@ -32,6 +32,6 @@ class AnchorDict {
  private:
   std::vector<T> m_data;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // ANCHORDICT_H_62B23520_7C8E_11DE_8A39_0800200C9A66

@@ -1,5 +1,5 @@
-#include "yaml-cpp/null.h"
+#include "null.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 _Null Null;
-}
+YAML_NAMESPACE_EXIT

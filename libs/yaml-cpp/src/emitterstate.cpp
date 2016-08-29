@@ -1,9 +1,9 @@
 #include <limits>
 
 #include "emitterstate.h"
-#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
+#include "exceptions.h"  // IWYU pragma: keep
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 EmitterState::EmitterState()
     : m_isGood(true),
       m_curIndent(0),
@@ -347,4 +347,4 @@ bool EmitterState::SetDoublePrecision(int value, FmtScope::value scope) {
   _Set(m_doublePrecision, value, scope);
   return true;
 }
-}
+YAML_NAMESPACE_EXIT

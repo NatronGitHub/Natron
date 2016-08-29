@@ -7,7 +7,7 @@
 #pragma once
 #endif
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 struct unspecified_bool {
   struct NOT_ALLOWED;
@@ -15,12 +15,12 @@ struct unspecified_bool {
 };
 typedef void (*unspecified_bool_type)(unspecified_bool::NOT_ALLOWED*);
 }
-}
+YAML_NAMESPACE_EXIT
 
 #define YAML_CPP_OPERATOR_BOOL()                                            \
-  operator YAML::detail::unspecified_bool_type() const {                    \
+  operator YAML_NAMESPACE::detail::unspecified_bool_type() const {          \
     return this->operator!() ? 0                                            \
-                             : &YAML::detail::unspecified_bool::true_value; \
+                             : &YAML_NAMESPACE::detail::unspecified_bool::true_value; \
   }
 
 #endif  // NODE_DETAIL_BOOL_TYPE_H_62B23520_7C8E_11DE_8A39_0800200C9A66

@@ -5,9 +5,9 @@
 #include "exp.h"
 #include "regeximpl.h"
 #include "stream.h"
-#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
+#include "exceptions.h"  // IWYU pragma: keep
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 // ScanScalar
 // . This is where the scalar magic happens.
 //
@@ -218,4 +218,4 @@ std::string ScanScalar(Stream& INPUT, ScanScalarParams& params) {
 
   return scalar;
 }
-}
+YAML_NAMESPACE_EXIT

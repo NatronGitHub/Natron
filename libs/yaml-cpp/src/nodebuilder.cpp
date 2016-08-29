@@ -2,12 +2,12 @@
 #include <cassert>
 
 #include "nodebuilder.h"
-#include "yaml-cpp/node/detail/node.h"
-#include "yaml-cpp/node/impl.h"
-#include "yaml-cpp/node/node.h"
-#include "yaml-cpp/node/type.h"
+#include "node/detail/node.h"
+#include "node/impl.h"
+#include "node/node.h"
+#include "node/type.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 struct Mark;
 
 NodeBuilder::NodeBuilder()
@@ -128,4 +128,4 @@ void NodeBuilder::RegisterAnchor(anchor_t anchor, detail::node& node) {
     m_anchors.push_back(&node);
   }
 }
-}
+YAML_NAMESPACE_EXIT

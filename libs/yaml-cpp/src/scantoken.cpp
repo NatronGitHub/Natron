@@ -8,10 +8,10 @@
 #include "scantag.h"  // IWYU pragma: keep
 #include "tag.h"      // IWYU pragma: keep
 #include "token.h"
-#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
-#include "yaml-cpp/mark.h"
+#include "exceptions.h"  // IWYU pragma: keep
+#include "mark.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 ///////////////////////////////////////////////////////////////////////
 // Specialization for scanning specific tokens
 
@@ -433,4 +433,4 @@ void Scanner::ScanBlockScalar() {
   token.value = scalar;
   m_tokens.push(token);
 }
-}
+YAML_NAMESPACE_EXIT

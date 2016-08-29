@@ -9,15 +9,15 @@
 
 #include "ptr_stack.h"
 #include "setting.h"
-#include "yaml-cpp/emitterdef.h"
-#include "yaml-cpp/emittermanip.h"
+#include "emitterdef.h"
+#include "emittermanip.h"
 #include <cassert>
 #include <vector>
 #include <stack>
 #include <memory>
 #include <stdexcept>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 struct FmtScope {
   enum value { Local, Global };
 };
@@ -198,6 +198,6 @@ void EmitterState::_Set(Setting<T>& fmt, T value, FmtScope::value scope) {
       assert(false);
   }
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EMITTERSTATE_H_62B23520_7C8E_11DE_8A39_0800200C9A66

@@ -7,12 +7,12 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/mark.h"
+#include "mark.h"
 #include <iostream>
 #include <string>
 #include <vector>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 const std::string TokenNames[] = {
     "DIRECTIVE", "DOC_START", "DOC_END", "BLOCK_SEQ_START", "BLOCK_MAP_START",
     "BLOCK_SEQ_END", "BLOCK_MAP_END", "BLOCK_ENTRY", "FLOW_SEQ_START",
@@ -64,6 +64,6 @@ struct Token {
   std::vector<std::string> params;
   int data;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // TOKEN_H_62B23520_7C8E_11DE_8A39_0800200C9A66

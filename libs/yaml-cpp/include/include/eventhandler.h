@@ -9,10 +9,10 @@
 
 #include <string>
 
-#include "yaml-cpp/anchor.h"
-#include "yaml-cpp/emitterstyle.h"
+#include "anchor.h"
+#include "emitterstyle.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 struct Mark;
 
 class EventHandler {
@@ -35,6 +35,6 @@ class EventHandler {
                           anchor_t anchor, EmitterStyle::value style) = 0;
   virtual void OnMapEnd() = 0;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EVENTHANDLER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

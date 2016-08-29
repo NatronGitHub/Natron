@@ -7,12 +7,12 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/dll.h"
+#include "dll.h"
 #include <list>
 #include <utility>
 #include <vector>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class node;
 
 namespace detail {
@@ -23,6 +23,6 @@ class iterator_base;
 
 typedef detail::iterator_base<detail::iterator_value> iterator;
 typedef detail::iterator_base<const detail::iterator_value> const_iterator;
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // VALUE_DETAIL_ITERATOR_FWD_H_62B23520_7C8E_11DE_8A39_0800200C9A66

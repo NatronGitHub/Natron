@@ -12,7 +12,7 @@
 #include <set>
 #include <map>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 template <typename Seq>
 inline Emitter& EmitSeq(Emitter& emitter, const Seq& seq) {
   emitter << BeginSeq;
@@ -46,6 +46,6 @@ inline Emitter& operator<<(Emitter& emitter, const std::map<K, V>& m) {
   emitter << EndMap;
   return emitter;
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // STLEMITTER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

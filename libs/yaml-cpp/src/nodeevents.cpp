@@ -1,12 +1,12 @@
 #include "nodeevents.h"
-#include "yaml-cpp/eventhandler.h"
-#include "yaml-cpp/mark.h"
-#include "yaml-cpp/node/detail/node.h"
-#include "yaml-cpp/node/detail/node_iterator.h"
-#include "yaml-cpp/node/node.h"
-#include "yaml-cpp/node/type.h"
+#include "eventhandler.h"
+#include "mark.h"
+#include "node/detail/node.h"
+#include "node/detail/node_iterator.h"
+#include "node/node.h"
+#include "node/type.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 void NodeEvents::AliasManager::RegisterReference(const detail::node& node) {
   m_anchorByIdentity.insert(std::make_pair(node.ref(), _CreateNewAnchor()));
 }
@@ -98,4 +98,4 @@ bool NodeEvents::IsAliased(const detail::node& node) const {
   RefCount::const_iterator it = m_refCount.find(node.ref());
   return it != m_refCount.end() && it->second > 1;
 }
-}
+YAML_NAMESPACE_EXIT

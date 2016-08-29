@@ -7,10 +7,12 @@
 #pragma once
 #endif
 
-namespace YAML {
+#include "version.h"
+
+YAML_NAMESPACE_ENTER
 struct EmitterStyle {
   enum value { Default, Block, Flow };
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EMITTERSTYLE_H_62B23520_7C8E_11DE_8A39_0800200C9A66

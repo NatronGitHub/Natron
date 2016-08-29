@@ -7,13 +7,13 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/mark.h"
-#include "yaml-cpp/traits.h"
+#include "mark.h"
+#include "traits.h"
 #include <stdexcept>
 #include <string>
 #include <sstream>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 // error messages
 namespace ErrorMsg {
 const char* const YAML_DIRECTIVE_ARGS =
@@ -226,6 +226,6 @@ class BadFile : public Exception {
  public:
   BadFile() : Exception(Mark::null_mark(), ErrorMsg::BAD_FILE) {}
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EXCEPTIONS_H_62B23520_7C8E_11DE_8A39_0800200C9A66

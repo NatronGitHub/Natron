@@ -1,6 +1,6 @@
 #include "regex_yaml.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 // constructors
 RegEx::RegEx() : m_op(REGEX_EMPTY) {}
 
@@ -42,4 +42,4 @@ RegEx operator+(const RegEx& ex1, const RegEx& ex2) {
   ret.m_params.push_back(ex2);
   return ret;
 }
-}
+YAML_NAMESPACE_EXIT

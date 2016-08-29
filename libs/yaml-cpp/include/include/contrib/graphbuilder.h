@@ -7,10 +7,10 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/mark.h"
+#include "mark.h"
 #include <string>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class Parser;
 
 // GraphBuilderInterface
@@ -142,6 +142,6 @@ typename Impl::Node *BuildGraphOfNextDocument(Parser &parser, Impl &impl) {
   return static_cast<typename Impl::Node *>(
       BuildGraphOfNextDocument(parser, graphBuilder));
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // GRAPHBUILDER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

@@ -1,6 +1,6 @@
 #include "directives.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 Directives::Directives() {
   // version
   version.isDefault = true;
@@ -19,4 +19,4 @@ const std::string Directives::TranslateTagHandle(
 
   return it->second;
 }
-}
+YAML_NAMESPACE_EXIT

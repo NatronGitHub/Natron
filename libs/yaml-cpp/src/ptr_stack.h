@@ -12,10 +12,10 @@
 #include <memory>
 #include <vector>
 
-#include "yaml-cpp/noncopyable.h"
+#include "noncopyable.h"
 
 template <typename T>
-class ptr_stack : private YAML::noncopyable {
+class ptr_stack : private YAML_NAMESPACE::noncopyable {
  public:
   ptr_stack() {}
   ~ptr_stack() { clear(); }

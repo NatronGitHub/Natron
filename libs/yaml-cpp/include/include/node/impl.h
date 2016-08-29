@@ -7,14 +7,14 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/node/node.h"
-#include "yaml-cpp/node/iterator.h"
-#include "yaml-cpp/node/detail/memory.h"
-#include "yaml-cpp/node/detail/node.h"
-#include "yaml-cpp/exceptions.h"
+#include "node/node.h"
+#include "node/iterator.h"
+#include "node/detail/memory.h"
+#include "node/detail/node.h"
+#include "exceptions.h"
 #include <string>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 inline Node::Node() : m_isValid(true), m_pNode(NULL) {}
 
 inline Node::Node(NodeType::value type)
@@ -202,7 +202,7 @@ inline Node& Node::operator=(const T& rhs) {
   return *this;
 }
 
-inline void Node::reset(const YAML::Node& rhs) {
+inline void Node::reset(const YAML_NAMESPACE::Node& rhs) {
   if (!m_isValid || !rhs.m_isValid)
     throw InvalidNode();
   m_pMemory = rhs.m_pMemory;
@@ -443,6 +443,6 @@ inline void Node::force_insert(const Key& key, const Value& value) {
 
 // free functions
 inline bool operator==(const Node& lhs, const Node& rhs) { return lhs.is(rhs); }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // NODE_IMPL_H_62B23520_7C8E_11DE_8A39_0800200C9A66

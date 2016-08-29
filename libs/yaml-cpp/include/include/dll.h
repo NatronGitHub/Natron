@@ -7,6 +7,8 @@
 #pragma once
 #endif
 
+#include "version.h"
+
 // The following ifdef block is the standard way of creating macros which make
 // exporting
 // from a DLL simpler. All files within this DLL are compiled with the

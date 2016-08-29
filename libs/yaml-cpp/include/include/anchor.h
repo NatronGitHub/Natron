@@ -9,9 +9,11 @@
 
 #include <cstddef>
 
-namespace YAML {
+#include "version.h"
+
+YAML_NAMESPACE_ENTER
 typedef std::size_t anchor_t;
 const anchor_t NullAnchor = 0;
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // ANCHOR_H_62B23520_7C8E_11DE_8A39_0800200C9A66

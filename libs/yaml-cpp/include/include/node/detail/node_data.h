@@ -15,19 +15,19 @@
 #include <utility>
 #include <vector>
 
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/node/detail/node_iterator.h"
-#include "yaml-cpp/node/iterator.h"
-#include "yaml-cpp/node/ptr.h"
-#include "yaml-cpp/node/type.h"
+#include "dll.h"
+#include "node/detail/node_iterator.h"
+#include "node/iterator.h"
+#include "node/ptr.h"
+#include "node/type.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 class node;
 }  // namespace detail
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 class YAML_CPP_API node_data : private boost::noncopyable {
  public:
@@ -122,6 +122,6 @@ class YAML_CPP_API node_data : private boost::noncopyable {
   mutable kv_pairs m_undefinedPairs;
 };
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // VALUE_DETAIL_NODE_DATA_H_62B23520_7C8E_11DE_8A39_0800200C9A66

@@ -10,7 +10,9 @@
 #include <string>
 #include <vector>
 
-namespace YAML {
+#include "version.h"
+
+YAML_NAMESPACE_ENTER
 class Stream;
 
 enum REGEX_OP {
@@ -78,7 +80,7 @@ class RegEx {
   char m_a, m_z;
   std::vector<RegEx> m_params;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #include "regeximpl.h"
 

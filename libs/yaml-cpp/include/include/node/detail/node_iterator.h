@@ -7,15 +7,15 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/node/ptr.h"
+#include "dll.h"
+#include "node/ptr.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <map>
 #include <utility>
 #include <vector>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 struct iterator_type {
   enum value { None, Sequence, Map };
@@ -154,6 +154,6 @@ class node_iterator_base
 typedef node_iterator_base<node> node_iterator;
 typedef node_iterator_base<const node> const_node_iterator;
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // VALUE_DETAIL_NODE_ITERATOR_H_62B23520_7C8E_11DE_8A39_0800200C9A66

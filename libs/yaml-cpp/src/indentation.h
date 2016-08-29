@@ -10,9 +10,9 @@
 #include <iostream>
 #include <cstddef>
 
-#include "yaml-cpp/ostream_wrapper.h"
+#include "ostream_wrapper.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 struct Indentation {
   Indentation(std::size_t n_) : n(n_) {}
   std::size_t n;
@@ -36,6 +36,6 @@ inline ostream_wrapper& operator<<(ostream_wrapper& out,
     out << ' ';
   return out;
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // INDENTATION_H_62B23520_7C8E_11DE_8A39_0800200C9A66

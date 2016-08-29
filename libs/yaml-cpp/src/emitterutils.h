@@ -10,14 +10,14 @@
 #include <string>
 
 #include "emitterstate.h"
-#include "yaml-cpp/emittermanip.h"
-#include "yaml-cpp/ostream_wrapper.h"
+#include "emittermanip.h"
+#include "ostream_wrapper.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class ostream_wrapper;
-}  // namespace YAML
+YAML_NAMESPACE_EXIT
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class Binary;
 
 struct StringFormat {
@@ -45,6 +45,6 @@ bool WriteTagWithPrefix(ostream_wrapper& out, const std::string& prefix,
                         const std::string& tag);
 bool WriteBinary(ostream_wrapper& out, const Binary& binary);
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // EMITTERUTILS_H_62B23520_7C8E_11DE_8A39_0800200C9A66

@@ -10,9 +10,9 @@
 #include <string>
 #include <vector>
 
-#include "yaml-cpp/dll.h"
+#include "dll.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 YAML_CPP_API std::string EncodeBase64(const unsigned char *data,
                                       std::size_t size);
 YAML_CPP_API std::vector<unsigned char> DecodeBase64(const std::string &input);
@@ -62,6 +62,6 @@ class YAML_CPP_API Binary {
   const unsigned char *m_unownedData;
   std::size_t m_unownedSize;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // BASE64_H_62B23520_7C8E_11DE_8A39_0800200C9A66

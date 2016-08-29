@@ -7,11 +7,11 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/node/detail/node.h"
-#include "yaml-cpp/node/detail/node_data.h"
+#include "node/detail/node.h"
+#include "node/detail/node_data.h"
 #include <boost/type_traits.hpp>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 template <typename Key, typename Enable = void>
 struct get_idx {
@@ -172,6 +172,6 @@ inline node& node_data::convert_to_node(const T& rhs,
   return *value.m_pNode;
 }
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // NODE_DETAIL_IMPL_H_62B23520_7C8E_11DE_8A39_0800200C9A66

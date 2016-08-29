@@ -9,7 +9,7 @@
 
 #include <cstddef>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class StringCharSource {
  public:
   StringCharSource(const char* str, std::size_t size)
@@ -43,6 +43,6 @@ class StringCharSource {
   std::size_t m_size;
   std::size_t m_offset;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // STRINGSOURCE_H_62B23520_7C8E_11DE_8A39_0800200C9A66

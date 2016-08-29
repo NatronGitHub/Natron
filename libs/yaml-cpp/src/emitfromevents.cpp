@@ -1,24 +1,24 @@
 #include <cassert>
 #include <sstream>
 
-#include "yaml-cpp/emitfromevents.h"
-#include "yaml-cpp/emitter.h"
-#include "yaml-cpp/emittermanip.h"
-#include "yaml-cpp/null.h"
+#include "emitfromevents.h"
+#include "emitter.h"
+#include "emittermanip.h"
+#include "null.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 struct Mark;
-}  // namespace YAML
+}  // YAML_NAMESPACE_ENTER
 
 namespace {
-std::string ToString(YAML::anchor_t anchor) {
+std::string ToString(YAML_NAMESPACE::anchor_t anchor) {
   std::stringstream stream;
   stream << anchor;
   return stream.str();
 }
 }
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 EmitFromEvents::EmitFromEvents(Emitter& emitter) : m_emitter(emitter) {}
 
 void EmitFromEvents::OnDocumentStart(const Mark&) {}
@@ -116,4 +116,4 @@ void EmitFromEvents::EmitProps(const std::string& tag, anchor_t anchor) {
   if (anchor)
     m_emitter << Anchor(ToString(anchor));
 }
-}
+YAML_NAMESPACE_EXIT

@@ -7,10 +7,10 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/dll.h"
+#include "dll.h"
 #include <boost/shared_ptr.hpp>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 class node;
 class node_ref;
@@ -24,6 +24,6 @@ typedef boost::shared_ptr<node_data> shared_node_data;
 typedef boost::shared_ptr<memory_holder> shared_memory_holder;
 typedef boost::shared_ptr<memory> shared_memory;
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // VALUE_PTR_H_62B23520_7C8E_11DE_8A39_0800200C9A66

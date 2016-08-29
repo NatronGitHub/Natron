@@ -7,13 +7,13 @@
 #pragma once
 #endif
 
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/node/ptr.h"
-#include "yaml-cpp/node/detail/node_iterator.h"
+#include "dll.h"
+#include "node/ptr.h"
+#include "node/detail/node_iterator.h"
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/utility.hpp>
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 namespace detail {
 struct iterator_value;
 
@@ -60,6 +60,6 @@ class iterator_base
   shared_memory_holder m_pMemory;
 };
 }
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // VALUE_DETAIL_ITERATOR_H_62B23520_7C8E_11DE_8A39_0800200C9A66

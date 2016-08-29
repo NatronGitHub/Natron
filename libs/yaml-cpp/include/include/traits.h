@@ -7,7 +7,7 @@
 #pragma once
 #endif
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 template <typename>
 struct is_numeric {
   enum { value = false };
@@ -98,6 +98,6 @@ struct disable_if_c<true, T> {};
 
 template <class Cond, class T = void>
 struct disable_if : public disable_if_c<Cond::value, T> {};
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // TRAITS_H_62B23520_7C8E_11DE_8A39_0800200C9A66

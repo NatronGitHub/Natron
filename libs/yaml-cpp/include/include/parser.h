@@ -10,10 +10,10 @@
 #include <ios>
 #include <memory>
 
-#include "yaml-cpp/dll.h"
-#include "yaml-cpp/noncopyable.h"
+#include "dll.h"
+#include "noncopyable.h"
 
-namespace YAML {
+YAML_NAMESPACE_ENTER
 class EventHandler;
 class Node;
 class Scanner;
@@ -43,6 +43,6 @@ class YAML_CPP_API Parser : private noncopyable {
   std::auto_ptr<Scanner> m_pScanner;
   std::auto_ptr<Directives> m_pDirectives;
 };
-}
+YAML_NAMESPACE_EXIT
 
 #endif  // PARSER_H_62B23520_7C8E_11DE_8A39_0800200C9A66
