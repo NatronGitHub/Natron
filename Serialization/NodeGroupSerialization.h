@@ -73,14 +73,7 @@ private:
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        int nodesCount = (int)_serializedNodes.size();
-        ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
-
-        for (std::list< NodeSerializationPtr >::const_iterator it = _serializedNodes.begin();
-             it != _serializedNodes.end();
-             ++it) {
-            ar & ::boost::serialization::make_nvp("item", **it);
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>

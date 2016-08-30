@@ -113,7 +113,15 @@ private:
     friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
-                   const unsigned int version);
+                   const unsigned int version)
+    {
+        ar & ::boost::serialization::make_nvp("Time", _time);
+        ar & ::boost::serialization::make_nvp("Value", _value);
+        ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
+        ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
+        ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
+
+    }
 };
 
 struct KeyFrame_compare_time
@@ -303,7 +311,11 @@ private:
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     friend class ::boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        KeyFrameSet keys = getKeyFrames_mt_safe();
+        ar & ::boost::serialization::make_nvp("KeyFrameSet", keys);
+    }
 #endif
 
     ///////The following functions are not thread-safe

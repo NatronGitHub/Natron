@@ -39,10 +39,7 @@
 #define PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS 4
 #define PROJECT_SERIALIZATION_INTRODUCES_GROUPS 5
 #define PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION 6
-#define PROJECT_SERIALIZATION_CHANGE_FORMAT_SERIALIZATION 7
-#define PROJECT_SERIALIZATION_CHANGE_NODE_COLLECTION_SERIALIZATION 8
-#define PROJECT_SERIALIZATION_DEPRECATE_PROJECT_GUI 9
-#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_DEPRECATE_PROJECT_GUI
+#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION
 #endif
 
 #define kOSTypeNameWindows "Windows"
@@ -224,18 +221,10 @@ public:
                 ar & ::boost::serialization::make_nvp("item", *ns);
                 _nodes.push_back(ns);
             }
-        } else if (version < PROJECT_SERIALIZATION_CHANGE_NODE_COLLECTION_SERIALIZATION) {
+        } else {
             NodeCollectionSerialization nodes;
             ar & ::boost::serialization::make_nvp("NodesCollection", nodes);
             _nodes = nodes.getNodesSerialization();
-        } else {
-            int nodesCount;
-            ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
-            for (int i = 0; i < nodesCount; ++i) {
-                NodeSerializationPtr ns(new NodeSerialization);
-                ar & ::boost::serialization::make_nvp("Node", *ns);
-                _nodes.push_back(ns);
-            }
         }
 
         int knobsCount;
@@ -246,23 +235,20 @@ public:
             ar & ::boost::serialization::make_nvp("item", *ks);
             _projectKnobs.push_back(ks);
         }
-
-        if (version < PROJECT_SERIALIZATION_CHANGE_FORMAT_SERIALIZATION) {
-            std::list<NATRON_NAMESPACE::Format> formats;
-            ar & ::boost::serialization::make_nvp("AdditionalFormats", formats);
-            for (std::list<NATRON_NAMESPACE::Format>::iterator it = formats.begin(); it!=formats.end(); ++it) {
-                FormatSerialization s;
-                s.x1 = it->x1;
-                s.y1 = it->y1;
-                s.x2 = it->x2;
-                s.y2 = it->y2;
-                s.par = it->getPixelAspectRatio();
-                s.name = it->getName();
-                _additionalFormats.push_back(s);
-            }
-        } else {
-            ar & ::boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
+        
+        std::list<NATRON_NAMESPACE::Format> formats;
+        ar & ::boost::serialization::make_nvp("AdditionalFormats", formats);
+        for (std::list<NATRON_NAMESPACE::Format>::iterator it = formats.begin(); it!=formats.end(); ++it) {
+            FormatSerialization s;
+            s.x1 = it->x1;
+            s.y1 = it->y1;
+            s.x2 = it->x2;
+            s.y2 = it->y2;
+            s.par = it->getPixelAspectRatio();
+            s.name = it->getName();
+            _additionalFormats.push_back(s);
         }
+        
 
         ar & ::boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
         if (version < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
@@ -276,22 +262,6 @@ public:
         }
         ar & ::boost::serialization::make_nvp("CreationDate", _creationDate);
 
-        if (version >= PROJECT_SERIALIZATION_DEPRECATE_PROJECT_GUI) {
-            _projectWorkspace.reset(new WorkspaceSerialization);
-            ar & ::boost::serialization::make_nvp("Workspace", *_projectWorkspace);
-
-            int nViewports;
-            ar & ::boost::serialization::make_nvp("nViewports", nViewports);
-            for (int i = 0; i < nViewports; ++i) {
-                std::string name;
-                ViewportData data;
-                ar & ::boost::serialization::make_nvp("ScriptName", name);
-                ar & ::boost::serialization::make_nvp("Data", data);
-                _viewportsData[name] = data;
-            }
-            ar & ::boost::serialization::make_nvp("OpenedPanels", _openedPanelsOrdered);
-
-        }
     } // load
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()

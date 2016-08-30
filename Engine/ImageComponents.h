@@ -178,7 +178,13 @@ public:
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar &  boost::serialization::make_nvp("Layer", _layerName);
+        ar &  boost::serialization::make_nvp("Components", _componentNames);
+        ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
+
+    }
 #endif
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
