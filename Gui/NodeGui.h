@@ -577,7 +577,7 @@ private:
     bool _panelOpenedBeforeDeactivate;
     NodeGraphPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
-    QGraphicsPixmapItem* _mergeIcon;
+    QGraphicsPixmapItem* _presetIcon;
     NodeGraphTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     QGraphicsPolygonItem* _resizeHandle;

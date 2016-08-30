@@ -882,7 +882,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
 
                 QAction* presetAction = new QAction(this);
                 QPixmap presetPix;
-                if (getPresetIcon(it->presetFilePath, it->presetIconFile, &presetPix)) {
+                if (getPresetIcon(it->presetFilePath, it->presetIconFile, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &presetPix)) {
                     presetAction->setIcon( presetPix );
                 }
                 presetAction->setShortcut(presetShortcut);
@@ -907,7 +907,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
 } // findOrCreateToolButton
 
 bool
-Gui::getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, QPixmap* pixmap)
+Gui::getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, int pixSize, QPixmap* pixmap)
 {
     // Try to search the icon file base name in the directory containing the presets file
     if (!pixmap) {
@@ -924,9 +924,8 @@ Gui::getPresetIcon(const QString& presetFilePath, const QString& presetIconFile,
     if (QFile::exists(presetIconFilePath)) {
         pixmap->load(presetIconFilePath);
         if (!pixmap->isNull()) {
-            int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
-            if ( (std::max( pixmap->width(), pixmap->height() ) != menuSize) && !pixmap->isNull() ) {
-                *pixmap = pixmap->scaled(menuSize, menuSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            if ( (std::max( pixmap->width(), pixmap->height() ) != pixSize) && !pixmap->isNull() ) {
+                *pixmap = pixmap->scaled(pixSize, pixSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
         }
     }

@@ -2403,6 +2403,7 @@ Node::loadPresets(const std::string& presetsLabel)
         QMutexLocker k(&_imp->nodePresetMutex);
         _imp->initialNodePreset = presetsLabel;
     }
+    Q_EMIT nodePresetsChanged();
     restoreNodeToDefaultState();
 }
 
@@ -2422,6 +2423,7 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
         QMutexLocker k(&_imp->nodePresetMutex);
         _imp->initialNodePreset = presetsLabel;
     }
+    Q_EMIT nodePresetsChanged();
     restoreNodeToDefaultState();
 }
 
@@ -2517,11 +2519,6 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& seri
         }
     }
 
-
-    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-    if (labelKnob) {
-        labelKnob->setValue(std::string("(") + _imp->initialNodePreset + std::string(")"));
-    }
 
     NodeGroupPtr isGrp = isEffectNodeGroup();
 

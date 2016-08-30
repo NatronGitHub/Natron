@@ -157,7 +157,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _panelOpenedBeforeDeactivate(false)
     , _pluginIcon(NULL)
     , _pluginIconFrame(NULL)
-    , _mergeIcon(NULL)
+    , _presetIcon(NULL)
     , _nameItem(NULL)
     , _nameFrame(NULL)
     , _resizeHandle(NULL)
@@ -233,6 +233,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()), this, SLOT(onStreamWarningsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged()), this, SLOT(refreshNodeText()) );
+    QObject::connect( internalNode.get(), SIGNAL(nodePresetsChanged()), this, SLOT(refreshNodeText()) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
@@ -580,10 +581,10 @@ NodeGui::createGui()
         }
     }
 
-    if ( node->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        _mergeIcon = new NodeGraphPixmapItem(getDagGui(), this);
-        _mergeIcon->setZValue(depth + 1);
-    }
+    _presetIcon = new NodeGraphPixmapItem(getDagGui(), this);
+    _presetIcon->setZValue(depth + 1);
+    _presetIcon->hide();
+
 
     _nameItem = new NodeGraphTextItem(getDagGui(), this, false);
     _nameItem->setPlainText( QString::fromUtf8( node->getLabel().c_str() ) );
@@ -825,6 +826,10 @@ NodeGui::adjustSizeToContent(int* /*w*/,
     } else {
         *h = std::max( (double)*h, labelBbox.height() * 1.2 );
     }
+    if (_pluginIcon && _pluginIcon->isVisible() && _presetIcon && _presetIcon->isVisible()) {
+        int iconsHeight = _pluginIcon->boundingRect().height() + _presetIcon->boundingRect().height();
+        *h = std::max(*h, iconsHeight);
+    }
 }
 
 int
@@ -897,7 +902,7 @@ NodeGui::resize(int width,
         return;
     }
 
-    const bool hasPluginIcon = _pluginIcon != NULL;
+    const bool hasPluginIcon = _pluginIcon && _pluginIcon->isVisible();
     const int iconWidth = getPluginIconWidth();
     adjustSizeToContent(&width, &height, adjustToTextSize);
 
@@ -916,15 +921,15 @@ NodeGui::resize(int width,
     int iconOffsetX = TO_DPIX(PLUGIN_ICON_OFFSET);
     if (hasPluginIcon) {
         _pluginIcon->setX(topLeft.x() + iconOffsetX);
-        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) / 2.;
-        _pluginIcon->setY(topLeft.y() + iconsOffset);
+        int iconsYOffset = _presetIcon  && _presetIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) / 2.;
+        _pluginIcon->setY(topLeft.y() + iconsYOffset);
         _pluginIconFrame->setRect(topLeft.x(), topLeft.y(), iconWidth, height);
     }
 
-    if ( _mergeIcon && _mergeIcon->isVisible() ) {
-        int iconsOffset =  (height - 2 * iconSize) / 3.;
-        _mergeIcon->setX(topLeft.x() + iconOffsetX);
-        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + iconSize);
+    if ( _presetIcon  && _presetIcon->isVisible() ) {
+        int iconsYOffset =  (height - 2 * iconSize) / 3.;
+        _presetIcon->setX(topLeft.x() + iconOffsetX);
+        _presetIcon->setY(topLeft.y() + iconsYOffset * 2 + iconSize);
     }
 
     QFont f(appFont, appFontSize);
@@ -2810,18 +2815,45 @@ NodeGui::refreshNodeText()
         subLabelContent = QString::fromUtf8(subLabelKnob->getValue().c_str());
     }
 
+    PluginPtr plugin = node->getPlugin();
+
+    QString presetsLabel = QString::fromUtf8(node->getCurrentNodePresets().c_str());
+    bool presetsIconSet = false;
+
     // For the merge node, set its operator icon
-    if ( getNode()->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        assert(_mergeIcon);
+    if ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
+        assert(_presetIcon);
         QPixmap pix;
         getPixmapForMergeOperator(subLabelContent, &pix);
         if ( pix.isNull() ) {
-            _mergeIcon->setVisible(false);
+            _presetIcon->setVisible(false);
         } else {
-            _mergeIcon->setVisible(true);
-            _mergeIcon->setPixmap(pix);
+            _presetIcon->setVisible(true);
+            _presetIcon->setPixmap(pix);
         }
         subLabelContent.clear();
+    } else {
+
+        if (presetsLabel.isEmpty()) {
+            _presetIcon->setVisible(false);
+        } else {
+            const std::vector<PluginPresetDescriptor>& presetDesc = plugin->getPresetFiles();
+            for (std::size_t i = 0; i < presetDesc.size(); ++i) {
+                if (presetDesc[i].presetLabel == presetsLabel) {
+                    QPixmap pix;
+                    Gui::getPresetIcon(presetDesc[i].presetFilePath, presetDesc[i].presetIconFile, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), &pix);
+                    
+                    if (!pix.isNull()) {
+                        _presetIcon->setVisible(true);
+                        _presetIcon->setPixmap(pix);
+                        presetsIconSet = true;
+                    }
+                    break;
+                }
+                
+            }
+        }
+
     }
 
     QString userAddedText;
@@ -2831,8 +2863,12 @@ NodeGui::refreshNodeText()
     QString nodeLabel = QString::fromUtf8(node->getLabel().c_str());
 
     QString finalText;
-
     finalText += nodeLabel;
+
+    if (!presetsIconSet && !presetsLabel.isEmpty()) {
+        finalText += QLatin1Char('\n');
+        finalText += presetsLabel;
+    }
     if (!subLabelContent.isEmpty()) {
         finalText += QLatin1Char('\n');
         finalText += subLabelContent;

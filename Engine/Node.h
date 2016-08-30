@@ -1552,6 +1552,7 @@ Q_SIGNALS:
     void streamWarningsChanged();
     void nodeExtraLabelChanged();
 
+    void nodePresetsChanged();
 
     void mustDequeueActions();
 

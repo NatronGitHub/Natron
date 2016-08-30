@@ -237,7 +237,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
         QAction* action = new QAction(it->presetLabel, loadPresetsMenu);
         action->setData(it->presetLabel);
         QPixmap presetPix;
-        if (Gui::getPresetIcon(it->presetFilePath, it->presetIconFile, &presetPix)) {
+        if (Gui::getPresetIcon(it->presetFilePath, it->presetIconFile, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &presetPix)) {
             action->setIcon( presetPix );
         }
         action->setShortcut(presetShortcut);
