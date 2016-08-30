@@ -26,17 +26,21 @@ void
 BezierSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     RotoDrawableItemSerialization::encode(em);
-    em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "Shape" << YAML_NAMESPACE::Value;
-    em << YAML_NAMESPACE::BeginSeq;
-    for (std::list< BezierCPSerialization >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
-        it->encode(em);
+    if (!_controlPoints.empty()) {
+        em << YAML_NAMESPACE::BeginMap;
+        em << YAML_NAMESPACE::Key << "Shape" << YAML_NAMESPACE::Value;
+        em << YAML_NAMESPACE::BeginSeq;
+        for (std::list< BezierCPSerialization >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
+            it->encode(em);
+        }
     }
-    em << YAML_NAMESPACE::EndSeq;
-    em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
-    em << YAML_NAMESPACE::BeginSeq;
-    for (std::list< BezierCPSerialization >::const_iterator it = _featherPoints.begin(); it != _featherPoints.end(); ++it) {
-        it->encode(em);
+    if (!_featherPoints.empty()) {
+        em << YAML_NAMESPACE::EndSeq;
+        em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
+        em << YAML_NAMESPACE::BeginSeq;
+        for (std::list< BezierCPSerialization >::const_iterator it = _featherPoints.begin(); it != _featherPoints.end(); ++it) {
+            it->encode(em);
+        }
     }
     em << YAML_NAMESPACE::EndSeq;
     em << YAML_NAMESPACE::Key << "CanClose" << YAML_NAMESPACE::Value << !_isOpenBezier;
@@ -50,30 +54,30 @@ void
 BezierSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     RotoDrawableItemSerialization::decode(node);
-    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
-
-        std::string key = it->first.as<std::string>();
-        if (key == "Shape") {
-            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
-                BezierCPSerialization s;
-                s.decode(it2->second);
-                _controlPoints.push_back(s);
-            }
-        } else if (key == "Feather") {
-            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
-                BezierCPSerialization s;
-                s.decode(it2->second);
-                _featherPoints.push_back(s);
-            }
-        } else if (key == "Closed") {
-            _closed = it->second.as<bool>();
-        } else if (key == "CanClose") {
-            _isOpenBezier = !it->second.as<bool>();
-            if (_isOpenBezier) {
-                _closed = false;
-            }
+    if (node["Shape"]) {
+        YAML_NAMESPACE::Node shapeNode = node["Shape"];
+        for (std::size_t i = 0; i < shapeNode.size(); ++i) {
+            BezierCPSerialization s;
+            s.decode(shapeNode[i]);
+            _controlPoints.push_back(s);
         }
+    }
+    if (node["Feather"]) {
+        YAML_NAMESPACE::Node shapeNode = node["Feather"];
+        for (std::size_t i = 0; i < shapeNode.size(); ++i) {
+            BezierCPSerialization s;
+            s.decode(shapeNode[i]);
+            _featherPoints.push_back(s);
+        }
+    }
+    if (node["Closed"]) {
+        _closed = node["Closed"].as<bool>();
+    }
 
+    if (node["CanClose"]) {
+        _isOpenBezier = !node["CanClose"].as<bool>();
+    } else {
+        _isOpenBezier = false;
     }
 }
 

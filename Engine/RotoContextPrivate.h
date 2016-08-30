@@ -1111,9 +1111,7 @@ public:
         knobs.push_back(customOffset);
 #endif
 
-        overlayColor[0] = 0.85164;
-        overlayColor[1] = 0.196936;
-        overlayColor[2] = 0.196936;
+        RotoDrawableItem::getDefaultOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]);
         overlayColor[3] = 1.;
     }
 

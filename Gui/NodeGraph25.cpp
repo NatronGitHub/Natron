@@ -230,7 +230,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     bool groupEdited = true;
 
     if (isGroup) {
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
 
     if (!groupEdited) {

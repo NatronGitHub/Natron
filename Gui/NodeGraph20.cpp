@@ -396,7 +396,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     bool groupEdited = true;
     if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
     if (!groupEdited && isGroupEditable) {
         ///check if user is nearby unlock
@@ -409,6 +409,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             QPoint pos = mapToGlobal( e->pos() );
             QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
                                                                                                 "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+            e->accept();
+            return;
         }
     }
 

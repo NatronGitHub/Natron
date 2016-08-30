@@ -43,7 +43,7 @@ public:
 
     RotoItemSerialization()
         : name()
-        , activated(false)
+        , activated(true)
         , parentLayerName()
         , locked(false)
     {

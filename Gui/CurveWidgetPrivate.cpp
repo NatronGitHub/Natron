@@ -96,11 +96,11 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , savedTexture(0)
     , sizeH()
     , zoomOrPannedSinceLastFit(false)
+    , drawnOnce(false)
     , _timelineTopPoly()
     , _timelineBtmPoly()
     , _widget(widget)
     , _selectionModel(selectionModel)
-    , drawnOnce(false)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

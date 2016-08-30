@@ -243,94 +243,193 @@ struct Expr
 
 struct KnobHelperPrivate
 {
-    KnobHelper* publicInterface; // can not be a smart ptr
+    // Ptr to the public class, can not be a smart ptr
+    KnobHelper* publicInterface;
 
+    // The holder containing this knob. This may be null if the knob is not in a collection
     KnobHolderWPtr holder;
-    mutable QMutex labelMutex;
-    std::string label; //< the text label that will be displayed  on the GUI
-    std::string iconFilePath[2]; //< an icon to replace the label (one when checked, one when unchecked, for toggable buttons)
-    std::string name; //< the knob can have a name different than the label displayed on GUI.
-    //By default this is the same as label but can be set by calling setName().
-    std::string originalName; //< the original name passed to setName() by the user
 
-    // Gui related stuff
+    // Protects the label
+    mutable QMutex labelMutex;
+
+    // The text label that will be displayed  on the GUI
+    std::string label;
+
+     // An icon to replace the label (one when checked, one when unchecked, for toggable buttons)
+    std::string iconFilePath[2];
+
+    // The script-name of the knob as available to python
+    std::string name;
+
+     // The original name passed to setName() by the user. The name might be different to comply to Python
+    std::string originalName;
+
+    // Should we add a new line after this parameter in the settings panel
     bool newLine;
+
+    // Should we add a horizontal separator after this parameter
     bool addSeparator;
+
+    // How much spacing in pixels should we add after this parameter. Only relevant if newLine is false
     int itemSpacing;
 
-    // If this knob is supposed to be visible in the Viewer UI, this is the index at which it should be positioned
+    // The spacing in pixels after this knob in the Viewer UI
     int inViewerContextItemSpacing;
+
+    // The layout type in the viewer UI
     ViewerContextLayoutTypeEnum inViewerContextLayoutType;
+
+    // The label in the viewer UI
     std::string inViewerContextLabel;
+
+    // The icon in the viewer UI
     std::string inViewerContextIconFilePath[2];
+
+    // Should this knob be available in the ShortCut editor by default?
     bool inViewerContextHasShortcut;
+
+    // This is a list of script-names of knob shortcuts one can reference in the tooltip help.
+    // See ViewerNode.cpp for an example.
     std::list<std::string> additionalShortcutsInTooltip;
 
+    // A weak ptr to the parent knob containing this one. Each knob should be at least in a KnobPage
+    // except the KnobPage itself.
     KnobIWPtr parentKnob;
-    mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
-    bool IsSecret, defaultIsSecret, inViewerContextSecret;
-    std::vector<bool> enabled, defaultEnabled;
+
+    // Protects IsSecret, defaultIsSecret, enabled, inViewerContextSecret, defaultEnabled, evaluateOnChange
+    mutable QMutex stateMutex;
+
+    // Tells whether the knob is secret
+    bool IsSecret;
+
+    // Tells whether the knob is assumed to be secret by default. This is to avoid serializing the IsSecret value
+    bool defaultIsSecret;
+
+    // Tells whether the knob is secret in the viewer. By default it is always visible in the viewer (if it has a viewer UI)
+    bool inViewerContextSecret;
+
+    // For each dimension tells whether the knob is enabled
+    std::vector<bool> enabled;
+
+    // For each dimension, tells whether the knob is considered to be enabled by default. This is to avoid serializing the enabled value
+    std::vector<bool> defaultEnabled;
+
+    // True if this knob can use the undo/redo stack
     bool CanUndo;
-    QMutex evaluateOnChangeMutex;
-    bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
-    bool IsPersistent; //will it be serialized?
+
+    // If true, a value change will never trigger an evaluation (render)
+    bool evaluateOnChange;
+
+    // If false this knob is not serialized into the project
+    bool IsPersistent;
+
+    // The hint tooltip displayed when hovering the mouse on the parameter
     std::string tooltipHint;
+
+    // True if the hint contains markdown encoded data
     bool hintIsMarkdown;
+
+    // True if this knob can receive animation curves
     bool isAnimationEnabled;
+
+    // The number of dimensions in this knob (e.g: an RGBA KnobColor is 4-dimensional)
     int dimension;
-    /* the keys for a specific dimension*/
+
+    // For each dimension an animation curve
     CurvesMap curves;
 
-    ////curve links
-    ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
-    mutable QReadWriteLock mastersMutex; //< protects _masters & ignoreMasterPersistence & listeners
-    MastersMap masters; //from what knob is slaved each curve if any
-    bool ignoreMasterPersistence; //< when true masters will not be serialized
+    // Read/Write lock protecting _masters & ignoreMasterPersistence & listeners
+    mutable QReadWriteLock mastersMutex;
 
-    //Used when this knob is an alias of another knob. The other knob is set in "slaveForAlias"
-    KnobIPtr slaveForAlias;
+    // For each dimension, tells to which knob and the dimension in that knob it is slaved to
+    MastersMap masters;
 
-    ///This is a list of all the knobs that have expressions/links to this knob.
+    // When true masters will not be serialized
+    bool ignoreMasterPersistence;
+
+    // Used when this knob is an alias of another knob. The other knob is set in "slaveForAlias"
+    KnobIWPtr slaveForAlias;
+
+    // This is a list of all the knobs that have expressions/links refering to this knob.
+    // For each knob, a ListenerDim struct associated to each of its dimension informs as to the nature of the link (i.e: slave/master link or expression link)
     KnobI::ListenerDimsMap listeners;
-    mutable QMutex animationLevelMutex;
-    std::vector<AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
-    bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
-    bool dynamicallyCreated; //< true if the knob was dynamically created by the user (either via python or via the gui)
-    bool userKnob; //< true if it was created by the user and should be put into the "User" page
 
-    ///Pointer to the ofx param overlay interact
+    // Protects animationLevel
+    mutable QMutex animationLevelMutex;
+
+    // Indicates for each dimension whether it is static/interpolated/onkeyframe
+    std::vector<AnimationLevelEnum> animationLevel;
+
+    // Was the knob declared by a plug-in or added by Natron?
+    bool declaredByPlugin;
+
+    // True if the knob was dynamically created by the user (either via python or via the gui)
+    bool dynamicallyCreated;
+
+    // True if it was created by the user and should be put into the "User" page
+    bool userKnob;
+
+    // Pointer to the ofx param overlay interact for ofx parameter which have a custom interact
+    // This is only supported OpenFX-wise
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
 
-    ///Pointer to the knobGui interface if it has any
+    // Pointer to the knobGui interface if it has any
     KnobGuiIWPtr gui;
+
+    // Protects mustCloneGuiCurves & mustCloneInternalCurves & mustClearExprResults
     mutable QMutex mustCloneGuiCurvesMutex;
-    /// Set to true if gui curves were modified by the user instead of the real internal curves.
-    /// If true then when finished rendering, the knob should clone the guiCurves into the internal curves.
+
+    // Set to true if gui curves were modified by the user instead of the real internal curves.
+    // If true then when finished rendering, the knob should clone the guiCurves into the internal curves.
     std::vector<bool> mustCloneGuiCurves;
+
+    // Set to true if the internal curves were modified and we should update the gui curves
     std::vector<bool> mustCloneInternalCurves;
 
-    ///Used by deQueueValuesSet to know whether we should clear expressions results or not
+    // Used by deQueueValuesSet to know whether we should clear expressions results or not
     std::vector<bool> mustClearExprResults;
 
-    ///A blind handle to the ofx param, needed for custom overlay interacts
+    // A blind handle to the ofx param, needed for custom OpenFX interpolation
     void* ofxParamHandle;
 
-    ///This is to deal with multi-instance effects such as the Tracker: instance specifics knobs are
-    ///not shared between instances whereas non instance specifics are shared.
+    // This is to deal with multi-instance effects such as the Tracker: instance specifics knobs are
+    // not shared between instances whereas non instance specifics are shared.
     bool isInstanceSpecific;
+
+    // For each dimension, the label displayed on the interface (e.g: "R" "G" "B" "A")
     std::vector<std::string> dimensionNames;
+
+    // Protects expressions
     mutable QMutex expressionMutex;
+
+    // For each dimension its expression
     std::vector<Expr> expressions;
+
+    // Protects lastRandomHash
     mutable QMutex lastRandomHashMutex;
+
+    // The last return value of random to preserve its state
     mutable U32 lastRandomHash;
 
-    ///Used to prevent recursive calls for expressions
+    // TLS data for the knob
     boost::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
+
+    // Protects hasModifications
     mutable QMutex hasModificationsMutex;
+
+    // For each dimension tells whether the knob is considered to have modification or not
     std::vector<bool> hasModifications;
+
+    // Protects valueChangedBlocked & listenersNotificationBlocked
     mutable QMutex valueChangedBlockedMutex;
-    int valueChangedBlocked; // protected by valueChangedBlockedMutex
-    int listenersNotificationBlocked; // protected by valueChangedBlockedMutex
+
+    // Recursive counter to prevent calls to knobChanged callback
+    int valueChangedBlocked;
+
+    // Recursive counter to prevent calls to knobChanged callback for listeners knob (i.e: knobs that refer to this one)
+    int listenersNotificationBlocked;
+
+    // If true, when this knob change, it is required to refresh the meta-data on a Node
     bool isClipPreferenceSlave;
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
@@ -361,7 +460,6 @@ struct KnobHelperPrivate
         , enabled(dimension_)
         , defaultEnabled(dimension_)
         , CanUndo(true)
-        , evaluateOnChangeMutex()
         , evaluateOnChange(true)
         , IsPersistent(true)
         , tooltipHint()
@@ -3146,7 +3244,7 @@ KnobHelper::setEvaluateOnChange(bool b)
         b = false;
     }
     {
-        QMutexLocker k(&_imp->evaluateOnChangeMutex);
+        QMutexLocker k(&_imp->stateMutex);
         _imp->evaluateOnChange = b;
     }
     if (_signalSlotHandler) {
@@ -3193,7 +3291,7 @@ KnobHelper::getIsMetadataSlave() const
 bool
 KnobHelper::getEvaluateOnChange() const
 {
-    QMutexLocker k(&_imp->evaluateOnChangeMutex);
+    QMutexLocker k(&_imp->stateMutex);
 
     return _imp->evaluateOnChange;
 }
@@ -4563,7 +4661,7 @@ KnobHelper::getAliasMaster()  const
 {
     QReadLocker k(&_imp->mastersMutex);
 
-    return _imp->slaveForAlias;
+    return _imp->slaveForAlias.lock();
 }
 
 void
@@ -4988,7 +5086,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
                 {
                     const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
                     if (data) {
-                        if (!data->keyframes.empty() || data->fontFamily != NATRON_FONT || data->fontSize != 6 || data->fontColor[0] != 0 || data->fontColor[1] != 0 || data->fontColor[2] != 0) {
+                        if (!data->keyframes.empty() || data->fontFamily != NATRON_FONT || data->fontSize != KnobString::getDefaultFontPointSize() || data->fontColor[0] != 0 || data->fontColor[1] != 0 || data->fontColor[2] != 0) {
                             mustSerialize = true;
                         }
                     }
@@ -5068,26 +5166,22 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
     KnobString* isString = dynamic_cast<KnobString*>(this);
     if (isString) {
-
-        // Don't load animation for input image files: they no longer hold keyframes since Natron 1.0
-        // In the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
         const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
-        assert(data);
         if (data) {
             isString->loadAnimation(data->keyframes);
+            isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
+            isString->setFontFamily(data->fontFamily);
+            isString->setFontSize(data->fontSize);
+            isString->setItalicActivated(data->italicActivated);
+            isString->setBoldActivated(data->boldActivated);
         }
-        isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
-        isString->setFontFamily(data->fontFamily);
-        isString->setFontSize(data->fontSize);
-        isString->setItalicActivated(data->italicActivated);
-        isString->setBoldActivated(data->boldActivated);
+
     }
 
     // Load parametric parameter's curves
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
     if (isParametric) {
         const ParametricExtraData* data = dynamic_cast<const ParametricExtraData*>(serialization->_extraData.get());
-        assert(data);
         if (data) {
             isParametric->loadParametricCurves(data->parametricCurves);
         }
@@ -5151,13 +5245,11 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
         } else if (isChoice) {
             const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(serialization->_extraData.get());
-            assert(data);
             if (data) {
                 isChoice->populateChoices(data->_entries, data->_helpStrings);
             }
         } else if (isColor) {
             const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
-            assert(data);
             if (data) {
                 std::vector<double> minimums, maximums, dminimums, dmaximums;
                 for (int i = 0; i < nDims; ++i) {
@@ -5171,7 +5263,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             }
         } else if (isString) {
             const TextExtraData* data = dynamic_cast<const TextExtraData*>(serialization->_extraData.get());
-            assert(data);
             if (data) {
                 if (data->label) {
                     isString->setAsLabel();
@@ -5185,7 +5276,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
         } else if (isInFile || isOutFile) {
             const FileExtraData* data = dynamic_cast<const FileExtraData*>(serialization->_extraData.get());
-            assert(data);
             if (data && data->useSequences) {
                 if (isInFile) {
                     isInFile->setAsInputImage();
@@ -5195,7 +5285,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             }
         } else if (isPath) {
             const PathExtraData* data = dynamic_cast<const PathExtraData*>(serialization->_extraData.get());
-            assert(data);
             if (data && data->multiPath) {
                 isPath->setMultiPath(true);
             }

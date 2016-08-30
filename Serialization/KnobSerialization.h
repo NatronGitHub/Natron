@@ -92,6 +92,7 @@
 #define kKnobPathTypeName "Path"
 
 #define kKnobInViewerContextDefaultItemSpacing 5
+#define kKnobStringDefaultFontSize 11
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -236,7 +237,7 @@ public:
     , label(false)
     , multiLine(false)
     , richText(false)
-    , fontSize(6)
+    , fontSize(kKnobStringDefaultFontSize)
     , fontFamily(NATRON_FONT)
     , italicActivated(false)
     , boldActivated(false)

@@ -71,11 +71,23 @@ struct NodeCollectionPrivate
     mutable QMutex nodesMutex;
     NodesList nodes;
 
+    mutable QMutex graphEditedMutex;
+
+    // If false the user cannot ever edit this graph from the UI, except if from Python the setSubGraphEditable function is called
+    bool isEditable;
+
+    // If true, the user did edit the subgraph
+    bool wasGroupEditedByUser;
+
+
     NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
         , nodes()
+        , graphEditedMutex()
+        , isEditable(true)
+        , wasGroupEditedByUser(false)
     {
     }
 
@@ -997,6 +1009,37 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >&
     }
 }
 
+void
+NodeCollection::setSubGraphEditedByUser(bool edited)
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    _imp->wasGroupEditedByUser = edited;
+}
+
+bool
+NodeCollection::isSubGraphEditedByUser() const
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    return _imp->wasGroupEditedByUser;
+}
+
+void
+NodeCollection::setSubGraphEditable(bool editable)
+{
+    {
+        QMutexLocker k(&_imp->graphEditedMutex);
+        _imp->isEditable = editable;
+    }
+    onGraphEditableChanged(editable);
+}
+
+bool
+NodeCollection::isSubGraphEditable() const
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    return _imp->isEditable;
+}
+
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
@@ -1004,7 +1047,7 @@ struct NodeGroupPrivate
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
-    bool isEditable;
+
     KnobButtonPtr exportAsTemplate;
 
     NodeGroupPrivate()
@@ -1015,7 +1058,6 @@ struct NodeGroupPrivate
         , guiOutputs()
         , isDeactivatingGroup(false)
         , isActivatingGroup(false)
-        , isEditable(true)
         , exportAsTemplate()
     {
     }
@@ -1502,6 +1544,9 @@ NodeGroup::clearLastRenderedImage()
 void
 NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
 {
+    // Group nodes are always considered "edited"
+    setSubGraphEditedByUser(true);
+
     if ( serialization && !serialization->_pythonModule.empty() ) {
         QString moduleName = QString::fromUtf8( ( serialization->_pythonModule.c_str() ) );
 
@@ -1570,21 +1615,7 @@ NodeGroup::knobChanged(const KnobIPtr& k,
     return ret;
 }
 
-void
-NodeGroup::setSubGraphEditable(bool editable)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->isEditable = editable;
-    Q_EMIT graphEditableChanged(editable);
-}
 
-bool
-NodeGroup::isSubGraphEditable() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->isEditable;
-}
 
 static QString
 escapeString(const QString& str)

@@ -114,25 +114,25 @@ ProjectSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
     if (node["Nodes"]) {
         YAML_NAMESPACE::Node n = node["Nodes"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        for (std::size_t i = 0; i < n.size(); ++i) {
             NodeSerializationPtr ns(new NodeSerialization);
-            ns->decode(it->second);
+            ns->decode(n[i]);
             _nodes.push_back(ns);
         }
     }
     if (node["Formats"]) {
         YAML_NAMESPACE::Node n = node["Formats"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        for (std::size_t i = 0; i < n.size(); ++i) {
             FormatSerialization s;
-            s.decode(it->second);
+            s.decode(n[i]);
             _additionalFormats.push_back(s);
         }
     }
     if (node["Params"]) {
         YAML_NAMESPACE::Node n = node["Params"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        for (std::size_t i = 0; i < n.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
-            s->decode(it->second);
+            s->decode(n[i]);
             _projectKnobs.push_back(s);
         }
     }
@@ -141,8 +141,8 @@ ProjectSerialization::decode(const YAML_NAMESPACE::Node& node)
     _projectLoadedInfo.decode(node["NatronVersion"]);
     if (node["OpenedPanels"]) {
         YAML_NAMESPACE::Node n = node["OpenedPanels"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
-            _openedPanelsOrdered.push_back(it->second.as<std::string>());
+        for (std::size_t i = 0; i < n.size(); ++i) {
+            _openedPanelsOrdered.push_back(n[i].as<std::string>());
         }
     }
     if (node["Workspace"]) {
@@ -151,13 +151,13 @@ ProjectSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["Viewports"]) {
         YAML_NAMESPACE::Node n = node["Viewports"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
-            if (!it->second.IsSequence() || it->second.size() != 2) {
+        for (std::size_t i = 0; i < n.size(); ++i) {
+            if (!n[i].IsSequence() || n[i].size() != 2) {
                 throw YAML_NAMESPACE::InvalidNode();
             }
-            std::string name = it->second[0].as<std::string>();
+            std::string name = n[i][0].as<std::string>();
             ViewportData data;
-            data.decode(it->second[1]);
+            data.decode(n[i][1]);
             _viewportsData.insert(std::make_pair(name, data));
         }
     }

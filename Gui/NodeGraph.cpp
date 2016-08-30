@@ -280,7 +280,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
     bool groupEdited = true;
     if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
 
     bool drawLockedMode = !isGroupEditable || !groupEdited;

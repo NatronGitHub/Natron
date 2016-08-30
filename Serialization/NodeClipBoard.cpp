@@ -39,9 +39,9 @@ NodeClipBoard::decode(const YAML_NAMESPACE::Node& node)
         throw YAML_NAMESPACE::InvalidNode();
     }
     nodes.clear();
-    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
+    for (std::size_t i = 0; i < node.size(); ++i) {
         NodeSerializationPtr n(new NodeSerialization);
-        n->decode(it->second);
+        n->decode(node[i]);
         nodes.push_back(n);
     }
 }

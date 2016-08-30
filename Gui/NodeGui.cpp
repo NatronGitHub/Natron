@@ -242,6 +242,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
+
     OutputEffectInstancePtr isOutput = toOutputEffectInstance( internalNode->getEffectInstance() );
     if (isOutput) {
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
@@ -398,7 +399,26 @@ NodeGui::ensurePanelCreated()
 
     initializeKnobs();
     beginEditKnobs();
+
     if (_settingsPanel) {
+
+
+        {
+            // Connect slots from the extra label to refresh the font when it changes
+            KnobStringPtr extraLabelKnob = getNode()->getExtraLabelKnob();
+            if (extraLabelKnob) {
+                KnobGuiIPtr extraLabelKnobUI = extraLabelKnob->getKnobGuiPointer();
+                if (extraLabelKnobUI) {
+                    KnobGuiPtr knobUi = boost::dynamic_pointer_cast<KnobGui>(extraLabelKnobUI);
+                    KnobGuiString* knobString = dynamic_cast<KnobGuiString*>(knobUi.get());
+                    if (knobString) {
+                        QObject::connect( knobString, SIGNAL(fontPropertyChanged()), this, SLOT(refreshNodeText()) );
+
+                    }
+                }
+            }
+        }
+
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
         QObject::connect( _settingsPanel, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
         QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
@@ -2813,16 +2833,19 @@ NodeGui::refreshNodeText()
     QString finalText;
 
     finalText += nodeLabel;
-    finalText += QLatin1Char('\n');
     if (!subLabelContent.isEmpty()) {
-        finalText += subLabelContent;
         finalText += QLatin1Char('\n');
+        finalText += subLabelContent;
     }
     if (!_channelsExtraLabel.isEmpty()) {
-        finalText += _channelsExtraLabel;
         finalText += QLatin1Char('\n');
+        finalText += _channelsExtraLabel;
+
     }
-    finalText += userAddedText;
+    if (!userAddedText.isEmpty()) {
+        finalText += QLatin1Char('\n');
+        finalText += userAddedText;
+    }
 
     replaceLineBreaksWithHtmlParagraph(finalText);
 

@@ -194,31 +194,31 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
 
     if (node["Params"]) {
         YAML_NAMESPACE::Node paramsNode = node["Params"];
-        for (YAML_NAMESPACE::const_iterator it = paramsNode.begin(); it!=paramsNode.end(); ++it) {
+        for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
-            s->decode(it->second);
+            s->decode(paramsNode[i]);
             _knobsValues.push_back(s);
         }
     }
     if (node["UserPages"]) {
         YAML_NAMESPACE::Node pagesNode = node["UserPages"];
-        for (YAML_NAMESPACE::const_iterator it = pagesNode.begin(); it!=pagesNode.end(); ++it) {
+        for (std::size_t i = 0; i < pagesNode.size(); ++i) {
             GroupKnobSerializationPtr s(new GroupKnobSerialization);
-            s->decode(it->second);
+            s->decode(pagesNode[i]);
             _userPages.push_back(s);
         }
     }
     if (node["PagesOrder"]) {
         YAML_NAMESPACE::Node pagesOrder = node["PagesOrder"];
-        for (YAML_NAMESPACE::const_iterator it = pagesOrder.begin(); it!=pagesOrder.end(); ++it) {
-            _pagesIndexes.push_back(it->second.as<std::string>());
+        for (std::size_t i = 0; i < pagesOrder.size(); ++i) {
+            _pagesIndexes.push_back(pagesOrder[i].as<std::string>());
         }
     }
     if (node["Children"]) {
         YAML_NAMESPACE::Node childrenNode = node["Children"];
-        for (YAML_NAMESPACE::const_iterator it = childrenNode.begin(); it!=childrenNode.end(); ++it) {
+        for (std::size_t i = 0; i < childrenNode.size(); ++i) {
             NodeSerializationPtr s(new NodeSerialization);
-            s->decode(it->second);
+            s->decode(childrenNode[i]);
             _children.push_back(s);
         }
     }
@@ -246,9 +246,9 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     
     if (node["NewLayers"]) {
         YAML_NAMESPACE::Node layersNode = node["NewLayers"];
-        for (YAML_NAMESPACE::const_iterator it = layersNode.begin(); it!=layersNode.end(); ++it) {
+        for (std::size_t i = 0; i < layersNode.size(); ++i) {
             ImageComponentsSerialization s;
-            s.decode(it->second);
+            s.decode(layersNode[i]);
             _userComponents.push_back(s);
         }
     }
@@ -288,8 +288,8 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["ViewerParamsOrder"]) {
         YAML_NAMESPACE::Node viewerParamsOrderNode = node["ViewerParamsOrder"];
-        for (YAML_NAMESPACE::const_iterator it = viewerParamsOrderNode.begin(); it!=viewerParamsOrderNode.end(); ++it) {
-            _viewerUIKnobsOrder.push_back(it->second.as<std::string>());
+        for (std::size_t i = 0; i < viewerParamsOrderNode.size(); ++i) {
+            _viewerUIKnobsOrder.push_back(viewerParamsOrderNode[i].as<std::string>());
         }
     }
 
@@ -301,7 +301,6 @@ NodePresetSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     em << YAML_NAMESPACE::BeginMap;
     em << YAML_NAMESPACE::Key << "PluginID" << YAML_NAMESPACE::Value << pluginID;
-    em << YAML_NAMESPACE::Key << "Version" << YAML_NAMESPACE::Value << version;
     em << YAML_NAMESPACE::Key << "PresetLabel" << YAML_NAMESPACE::Value << presetLabel;
     if (!presetIcon.empty()) {
         em << YAML_NAMESPACE::Key << "Icon" << YAML_NAMESPACE::Value << presetIcon;
@@ -324,7 +323,6 @@ NodePresetSerialization::decode(const YAML_NAMESPACE::Node& node)
         throw YAML_NAMESPACE::InvalidNode();
     }
     pluginID = node["PluginID"].as<std::string>();
-    version = node["Version"].as<int>();
     presetLabel = node["PresetLabel"].as<std::string>();
     if (node["Icon"]) {
         presetIcon = node["Icon"].as<std::string>();
@@ -333,7 +331,7 @@ NodePresetSerialization::decode(const YAML_NAMESPACE::Node& node)
         presetSymbol = node["Key"].as<int>();
     }
     if (node["Modifiers"]) {
-        presetSymbol = node["Modifiers"].as<int>();
+        presetModifiers = node["Modifiers"].as<int>();
     }
     presetLabel = node["PresetLabel"].as<std::string>();
     if (decodeMetaDataOnly) {

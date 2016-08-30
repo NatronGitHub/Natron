@@ -573,6 +573,7 @@ KnobGuiString::onLineChanged()
     if (oldText != newText) {
         pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), oldText, newText) );
     }
+
 }
 
 void
@@ -598,6 +599,7 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
     KnobStringPtr knob = _knob.lock();
     knob->setFontFamily(font.family().toStdString());
     updateGUI(0);
+    Q_EMIT fontPropertyChanged();
 }
 
 
@@ -608,6 +610,7 @@ KnobGuiString::onFontSizeChanged(double size)
     KnobStringPtr knob = _knob.lock();
     knob->setFontSize(size);
     updateGUI(0);
+    Q_EMIT fontPropertyChanged();
 }
 
 void
@@ -616,6 +619,7 @@ KnobGuiString::boldChanged(bool toggled)
     KnobStringPtr knob = _knob.lock();
     knob->setBoldActivated(toggled);
     updateGUI(0);
+    Q_EMIT fontPropertyChanged();
 }
 
 void
@@ -654,7 +658,7 @@ KnobGuiString::colorFontButtonClicked()
         double b = currentColor.blueF();
         knob->setFontColor(r, g, b);
         updateGUI(0);
-
+        Q_EMIT fontPropertyChanged();
 
     }
     updateFontColorIcon(currentColor);
@@ -667,6 +671,7 @@ KnobGuiString::italicChanged(bool toggled)
     KnobStringPtr knob = _knob.lock();
     knob->setItalicActivated(toggled);
     updateGUI(0);
+    Q_EMIT fontPropertyChanged();
 }
 
 
@@ -690,8 +695,8 @@ KnobGuiString::updateGUI(int /*dimension*/)
         if ( knob->isCustomHTMLText() ) {
             _textEdit->setHtml(txt);
         } else {
-            QString text = knob->decorateStringWithCurrentState(txt);
-            _textEdit->setPlainText(text);
+            //QString text = knob->decorateStringWithCurrentState(txt);
+            _textEdit->setPlainText(txt);
         }
 
         if ( pos < txt.size() ) {

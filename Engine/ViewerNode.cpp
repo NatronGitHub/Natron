@@ -46,6 +46,8 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/NodeSerialization.h"
+
 
 /*
  Below are knobs definitions that are not used by the internal ViewerInstance and just used by the Gui
@@ -882,9 +884,33 @@ ViewerNode::onKnobsLoaded()
 void
 ViewerNode::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
 {
-    if (serialization) {
+
+    // Refresh the graph edited flag. The graph is considered edited if there's no serialization or there are children in the serialization
+    setSubGraphEditedByUser(serialization && !serialization->_children.empty());
+    if (!getNode()->getCurrentNodePresets().empty()) {
+        // If this is a preset, let the preset create sub nodes
         return;
     }
+
+    // Let the serialization load nodes
+    if (serialization && !serialization->_children.empty()) {
+        return;
+    }
+
+    if (serialization) {
+        // We have a serialization with children, meaning the group was edited by user.
+        // The the sub-graph as edited only if this is a preset
+        setSubGraphEditedByUser(!serialization->_children.empty() && serialization->_presetLabel.empty());
+
+        if (!serialization->_children.empty()) {
+            return;
+        }
+    }
+
+    if (serialization && !serialization->_children.empty()) {
+        return;
+    }
+
     ViewerNodePtr thisShared = shared_from_this();
 
     NodePtr internalViewerNode;

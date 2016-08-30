@@ -351,7 +351,6 @@ class NodePresetSerialization : public SerializationObjectBase
 {
 public:
     
-    int version;
     std::string pluginID;
     std::string presetLabel;
     std::string presetIcon;
@@ -365,7 +364,6 @@ public:
 
     NodePresetSerialization()
     : SerializationObjectBase()
-    , version(0)
     , pluginID()
     , presetLabel()
     , presetIcon()

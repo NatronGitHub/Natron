@@ -755,7 +755,7 @@ DockablePanel::onKnobsInitialized()
         NodeCollectionPtr collec = isNodePanel->getNode()->getNode()->getGroup();
         NodeGroupPtr isGroup = toNodeGroup(collec);
         if (isGroup) {
-            if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
+            if ( !isGroup->isSubGraphEditedByUser() ) {
                 setEnabled(false);
             }
         }

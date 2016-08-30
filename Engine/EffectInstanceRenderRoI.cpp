@@ -2287,7 +2287,8 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
         rod.toPixelEnclosing(0, par, &pixelRoD);
         frmt.set(pixelRoD);
         frmt.setPixelAspectRatio(par);
-        self->getApp()->getProject()->setOrAddProjectFormat(frmt);
+        // Don't add if project format already set: if reading a sequence with auto-crop data we would just litterally add one format for each frame read
+        self->getApp()->getProject()->setOrAddProjectFormat(frmt, true);
     }
 
     unsigned int renderMappedMipMapLevel = 0;

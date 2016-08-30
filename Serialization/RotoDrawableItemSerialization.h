@@ -36,9 +36,16 @@ class RotoDrawableItemSerialization
 
 public:
 
+
+    KnobSerializationList _knobs;
+    double _overlayColor[4];
+
     RotoDrawableItemSerialization()
-        : RotoItemSerialization()
+    : RotoItemSerialization()
+    , _knobs()
+    , _overlayColor()
     {
+        _overlayColor[0] = _overlayColor[1] = _overlayColor[2] = _overlayColor[3] = -1;
     }
 
     virtual ~RotoDrawableItemSerialization()
@@ -111,8 +118,6 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
-    std::list<KnobSerializationPtr> _knobs;
-    double _overlayColor[4];
 };
 
 SERIALIZATION_NAMESPACE_EXIT;

@@ -206,10 +206,6 @@ struct FormatKnob
 struct PyPlugInfo
 {
     std::string pluginPythonModule; // the absolute filename of the python script
-
-    //Set to true when the user has edited a PyPlug
-    bool pyplugChangedSinceScript;
-
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
     std::string pyPlugLabel;
     std::string pyPlugDesc;
@@ -219,8 +215,7 @@ struct PyPlugInfo
     int pyPlugVersion;
 
     PyPlugInfo()
-    : pyplugChangedSinceScript(false)
-    , pyPlugVersion(0)
+    :  pyPlugVersion(0)
     {
 
     }
@@ -2163,7 +2158,8 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     serialization->_pluginID = getPluginID();
 
-    if ( !hasPyPlugBeenEdited() ) {
+    bool subGraphEdited = isSubGraphEditedByUser();
+    if (!subGraphEdited) {
         serialization->_pythonModule = getPluginPythonModule();
         serialization->_pythonModuleVersion = getMajorVersion();
     }
@@ -2198,9 +2194,9 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     }
 
 
-    // For groups, serialize its children
+    // For groups, serialize its children if the graph was edited
     NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp) {
+    if (isGrp && !subGraphEdited) {
         NodesList nodes;
         isGrp->getActiveNodes(&nodes);
 
@@ -2322,10 +2318,37 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
         }
     }
 
-    const KnobsVec& nodeKnobs = getKnobs();
-    // Load all knobs
-    for (std::size_t j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization._knobsValues);
+    {
+        // Load all knobs
+
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization._knobsValues.begin(); it!=serialization._knobsValues.end(); ++it) {
+            KnobIPtr knob = getKnobByName((*it)->_scriptName);
+            if (!knob) {
+                continue;
+                // Prior to Natron 1.2 RGBA checkboxes had simple script-names that could be already taken by
+                // plug-in declared parameters. We changed them to kNatronOfxParamProcessR/G/B/A
+                /*bool isR = (*it)->_scriptName == "r";
+                bool isG = (*it)->_scriptName == "g";
+                bool isB = (*it)->_scriptName == "b";
+                bool isA = (*it)->_scriptName == "a";
+
+                KnobBoolPtr isBoolean = toKnobBool(knob);
+                if (isBoolean && (isR || isG || isB || isA)) {
+                    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+                        if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
+                            ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
+                            ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
+                            ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
+                            knob->fromSerialization(**it);
+                        }
+                    }
+                }*/
+            }
+            knob->fromSerialization(**it);
+
+        }
+
+
     }
 
     KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
@@ -2543,6 +2566,12 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
     serialization.presetModifiers = (int)mods;
     toSerialization(&serialization.node);
 
+    // No need to save the knobs age nor node UI nor inputs
+    serialization.node._knobsAge = 0;
+    serialization.node._inputs.clear();
+    serialization.node._nodePositionCoords[0] = serialization.node._nodePositionCoords[1] = INT_MIN;
+    serialization.node._nodeSize[0] = serialization.node._nodeSize[1] = -1;
+
     SERIALIZATION_NAMESPACE::write(ofile, serialization);
 
 } // Node::saveNodeToPresets
@@ -2694,34 +2723,14 @@ Node::loadKnob(const KnobIPtr & knob,
                const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues)
 {
     // Try to find a serialized value for this knob
-    bool found = false;
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
-            found = true;
             knob->fromSerialization(**it);
             break;
         }
     }
-    if (!found) {
-        // Prior to Natron 1.2 RGBA checkboxes had simple script-names that could be already taken by
-        // plug-in declared parameters. We changed them to kNatronOfxParamProcessR/G/B/A
-        bool isR = knob->getName() == "r";
-        bool isG = knob->getName() == "g";
-        bool isB = knob->getName() == "b";
-        bool isA = knob->getName() == "a";
-        KnobBoolPtr isBoolean = toKnobBool(knob);
-        if (isBoolean && (isR || isG || isB || isA)) {
-            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-                if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
-                     ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
-                     ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
-                     ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
-                    knob->fromSerialization(**it);
-                }
-            }
-        }
-    }
+
 } // Node::loadKnob
 
 
@@ -7325,7 +7334,14 @@ bool
 Node::Implementation::isPyPlugInternal() const
 {
     assert(!pyPluginInfoMutex.tryLock());
-    return !pyPlugInfo.pyPlugID.empty() && !pyPlugInfo.pyplugChangedSinceScript;
+    if (pyPlugInfo.pyPlugID.empty()) {
+        return false;
+    }
+    NodeGroupPtr isGrp = toNodeGroup(effect);
+    if (!isGrp) {
+        return false;
+    }
+    return !isGrp->isSubGraphEditedByUser();
 }
 
 bool
@@ -8836,6 +8852,13 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
                                   const std::string& pluginPath,
                                   unsigned int version)
 {
+    // Only works for group nodes...
+    NodeGroupPtr isGroup = isEffectNodeGroup();
+    if (!isGroup) {
+        assert(false);
+        return;
+    }
+
     assert( QThread::currentThread() == qApp->thread() );
     NodeGuiIPtr nodeGui = getNodeGui();
 
@@ -8850,28 +8873,33 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
         _imp->pyPlugInfo.pyPlugIconFilePath = pluginIconFilePath;
     }
 
+    // For PyPlugs, start with the subgraph unedited
+    isGroup->setSubGraphEditedByUser(false);
+
     if (!nodeGui) {
         return;
     }
+    
 
     nodeGui->setPluginIDAndVersion(grouping, pluginLabel, pluginID, pluginDesc, pluginIconFilePath, version);
 }
 
 bool
-Node::hasPyPlugBeenEdited() const
+Node::isSubGraphEditedByUser() const
 {
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-
-    return _imp->pyPlugInfo.pyplugChangedSinceScript || _imp->pyPlugInfo.pluginPythonModule.empty();
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if (_imp->pyPlugInfo.pluginPythonModule.empty()) {
+            return true;
+        }
+    }
+    NodeGroupPtr isGroup = isEffectNodeGroup();
+    if (!isGroup) {
+        return false;
+    }
+    return isGroup->isSubGraphEditedByUser();
 }
 
-void
-Node::setPyPlugEdited(bool edited)
-{
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-
-    _imp->pyPlugInfo.pyplugChangedSinceScript = edited;
-}
 
 void
 Node::setPluginPythonModule(const std::string& pythonModule)

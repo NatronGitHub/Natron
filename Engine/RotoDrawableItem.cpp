@@ -1275,6 +1275,14 @@ RotoDrawableItem::getCompositingOperatorToolTip() const
 }
 
 void
+RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
+{
+    *r = 0.85164;
+    *g = 0.196936;
+    *b = 0.196936;
+}
+
+void
 RotoDrawableItem::getOverlayColor(double* color) const
 {
     QMutexLocker l(&itemMutex);

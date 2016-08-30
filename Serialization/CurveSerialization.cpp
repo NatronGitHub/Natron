@@ -77,7 +77,9 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
     std::string interpolation;
     KeyFrameSerialization keyframe;
     bool pushKeyFrame = false;
-    for (YAML_NAMESPACE::const_iterator it = node.begin(); it != node.end(); ++it) {
+    for (std::size_t i = 0; i < node.size(); ++i) {
+
+        YAML_NAMESPACE::Node keyNode = node[i];
 
         switch (state) {
             case eCurveDecodeStateExpectTime:
@@ -89,11 +91,11 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
                     keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
 
                 }
-                keyframe.time = it->as<double>();
+                keyframe.time = keyNode.as<double>();
                 state  = eCurveDecodeStateExpectValue;
                 break;
             case eCurveDecodeStateExpectValue:
-                keyframe.value = it->as<double>();
+                keyframe.value = keyNode.as<double>();
                 // Depending on interpolation we may expect derivatives
                 if (keyframe.interpolation == kKeyframeSerializationTypeFree || keyframe.interpolation == kKeyframeSerializationTypeBroken) {
                     state = eCurveDecodeStateMayExpectRightDerivative;
@@ -103,7 +105,7 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
                 break;
             case eCurveDecodeStateMayExpectInterpolation:
                 try {
-                    keyframe.interpolation = it->as<std::string>();
+                    keyframe.interpolation = keyNode.as<std::string>();
                 } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
                     // No interpolation, use the interpolation set previously.
                     // If interpolation is not set, set interpolation to linear
@@ -115,7 +117,7 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
                 state = eCurveDecodeStateExpectTime;
                 break;
             case eCurveDecodeStateMayExpectRightDerivative:
-                keyframe.rightDerivative = it->as<double>();
+                keyframe.rightDerivative = keyNode.as<double>();
                 if (keyframe.interpolation == kKeyframeSerializationTypeBroken) {
                     state = eCurveDecodeStateMayExpectLeftDerivative;
                 } else {
@@ -123,7 +125,7 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
                 }
                 break;
             case eCurveDecodeStateMayExpectLeftDerivative:
-                keyframe.leftDerivative = it->as<double>();
+                keyframe.leftDerivative = keyNode.as<double>();
                 state = eCurveDecodeStateMayExpectInterpolation;
                 break;
         }

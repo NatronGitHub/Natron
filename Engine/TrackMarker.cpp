@@ -355,7 +355,9 @@ TrackMarker::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* o
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         SERIALIZATION_NAMESPACE::KnobSerializationPtr k( new SERIALIZATION_NAMESPACE::KnobSerialization);
         (*it)->toSerialization(k.get());
-        s->_knobs.push_back(k);
+        if (k->_mustSerialize) {
+            s->_knobs.push_back(k);
+        }
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
         s->_userKeys.push_back(*it);

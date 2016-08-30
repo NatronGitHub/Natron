@@ -1229,7 +1229,7 @@ KnobString::KnobString(const KnobHolderPtr& holder,
     , _customHtmlText(false)
     , _isLabel(false)
     , _isCustom(false)
-    , _fontSize(6)
+    , _fontSize(getDefaultFontPointSize())
     , _boldActivated(false)
     , _italicActivated(false)
     , _fontFamily(NATRON_FONT)
@@ -1240,6 +1240,12 @@ KnobString::KnobString(const KnobHolderPtr& holder,
 
 KnobString::~KnobString()
 {
+}
+
+int
+KnobString::getDefaultFontPointSize()
+{
+    return kKnobStringDefaultFontSize;
 }
 
 bool
@@ -1385,35 +1391,6 @@ KnobString::hasContentWithoutHtmlTags()
     return true;
 }
 
-void
-KnobString::findReplaceColorName(QString& text,
-                                double r, double g, double b)
-{
-    //find the first font tag
-    QString toFind = QString::fromUtf8(kFontSizeTag);
-    int i = text.indexOf(toFind);
-
-    QString colorName = ColorParser::getColorName(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
-
-    if (i != -1) {
-        toFind = QString::fromUtf8(kFontColorTag);
-        int foundColorTag = text.indexOf(toFind, i);
-        if (foundColorTag != -1) {
-            foundColorTag += toFind.size();
-            QString currentColor;
-            int j = foundColorTag;
-            while ( j < text.size() && text.at(j) != QLatin1Char('"') ) {
-                currentColor.push_back( text.at(j) );
-                ++j;
-            }
-            text.remove( foundColorTag, currentColor.size() );
-            text.insert( foundColorTag, colorName);
-        } else {
-            text.insert( i, QString::fromUtf8(kFontColorTag) );
-            text.insert( i + toFind.size(), colorName + QString::fromUtf8("\"") );
-        }
-    }
-}
 
 QString
 KnobString::removeNatronHtmlTag(QString text)
@@ -1541,7 +1518,7 @@ KnobString::makeFontTag(const QString& family,
                         int fontSize,
                         double r, double g, double b)
 {
-    QString colorName = ColorParser::getColorName(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+    QString colorName = ColorParser::getColorName(Image::clamp(r, 0., 1.) * 255.0, Image::clamp(g, 0., 1.) * 255.0, Image::clamp(b, 0., 1.) * 255.0);
     return QString::fromUtf8(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
     .arg(fontSize)
     .arg(colorName)

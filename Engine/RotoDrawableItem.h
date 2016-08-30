@@ -76,7 +76,10 @@ public:
                      const RotoLayerPtr& parent,
                      bool isStroke);
 
+
     virtual ~RotoDrawableItem();
+
+    static void getDefaultOverlayColor(double *r, double *g, double *b);
 
     void createNodes(bool connectNodes = true);
 

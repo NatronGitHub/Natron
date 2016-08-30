@@ -1308,8 +1308,7 @@ public:
 
     void setPluginPythonModule(const std::string& pythonModule);
 
-    bool hasPyPlugBeenEdited() const;
-    void setPyPlugEdited(bool edited);
+    bool isSubGraphEditedByUser() const;
 
     std::string getPluginPythonModule() const;
 

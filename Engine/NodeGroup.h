@@ -229,6 +229,18 @@ public:
      **/
     bool isCacheIDAlreadyTaken(const std::string& name) const;
 
+    /**
+     * @brief Controls whether the user can ever edit this graph from the UI. 
+     **/
+    void setSubGraphEditable(bool editable);
+    bool isSubGraphEditable() const;
+
+    /**
+     * @brief Controls whether the sub-graph is assumed to be edited by the user
+     **/
+    void setSubGraphEditedByUser(bool edited);
+    bool isSubGraphEditedByUser() const;
+
 public:
 
 
@@ -276,6 +288,11 @@ public:
                              const QString& pluginGrouping,
                              int version,
                              QString& output);
+
+protected:
+
+
+    virtual void onGraphEditableChanged(bool /*changed*/) {}
 
 private:
     void quitAnyProcessingInternal();
@@ -402,9 +419,10 @@ public:
     bool getIsActivatingGroup() const;
     void setIsActivatingGroup(bool b);
 
-    void setSubGraphEditable(bool editable);
-    bool isSubGraphEditable() const;
-
+    /**
+     * @brief For sub-classes override to choose whether to create a node graph that will be visible by the user or not.
+     * If returning false, the nodegraph will NEVER be created.
+     **/
     virtual bool isSubGraphUserVisible() const
     {
         return true;
@@ -413,13 +431,18 @@ public:
     /**
      * @brief Callback called when the group gui has been created
      **/
-virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization);
+    virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization);
 
 Q_SIGNALS:
 
     void graphEditableChanged(bool);
 
 private:
+
+    virtual void onGraphEditableChanged(bool changed) OVERRIDE FINAL
+    {
+        Q_EMIT graphEditableChanged(changed);
+    }
 
     virtual void initializeKnobs() OVERRIDE;
     virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,

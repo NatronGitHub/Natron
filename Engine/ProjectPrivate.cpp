@@ -293,7 +293,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             mustShowErrorsLog = true;
             continue;
         } else {
-            if ( !usingPythonModule && node->getPlugin() &&
+            if ( majorVersion != -1 && !usingPythonModule && node->getPlugin() &&
                 (node->getPlugin()->getMajorVersion() != (int)majorVersion) && ( node->getPluginID() == pluginID) ) {
                 // If the node has a IOContainer don't do this check: when loading older projects that had a
                 // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead

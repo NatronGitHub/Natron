@@ -49,7 +49,9 @@ PythonPanelSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     em << YAML_NAMESPACE::BeginMap;
     em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << name;
     em << YAML_NAMESPACE::Key << "Func" << YAML_NAMESPACE::Value << pythonFunction;
-    em << YAML_NAMESPACE::Key << "Data" << YAML_NAMESPACE::Value << userData;
+    if (!userData.empty()) {
+        em << YAML_NAMESPACE::Key << "Data" << YAML_NAMESPACE::Value << userData;
+    }
     if (!knobs.empty()) {
         em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
         for (KnobSerializationList::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
@@ -68,12 +70,14 @@ PythonPanelSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     name = node["ScriptName"].as<std::string>();
     pythonFunction = node["Func"].as<std::string>();
-    userData = node["Data"].as<std::string>();
+    if (node["Data"]) {
+        userData = node["Data"].as<std::string>();
+    }
     if (node["Params"]) {
         YAML_NAMESPACE::Node paramsNode = node["Params"];
-        for (YAML_NAMESPACE::const_iterator it = paramsNode.begin(); it!=paramsNode.end(); ++it) {
+        for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
-            s->decode(it->second);
+            s->decode(paramsNode[i]);
             knobs.push_back(s);
         }
     }
@@ -85,7 +89,9 @@ TabWidgetSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
     em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << scriptName;
-    em << YAML_NAMESPACE::Key << "Current" << YAML_NAMESPACE::Value << currentIndex;
+    if (currentIndex != 0) {
+        em << YAML_NAMESPACE::Key << "Current" << YAML_NAMESPACE::Value << currentIndex;
+    }
     if (isAnchor) {
         em << YAML_NAMESPACE::Key << "Anchor" << YAML_NAMESPACE::Value << isAnchor;
     }
@@ -106,16 +112,20 @@ TabWidgetSerialization::decode(const YAML_NAMESPACE::Node& node)
         throw YAML_NAMESPACE::InvalidNode();
     }
     scriptName = node["ScriptName"].as<std::string>();
-    currentIndex = node["Current"].as<int>();
+    if (node["Current"]) {
+        currentIndex = node["Current"].as<int>();
+    } else {
+        currentIndex = 0;
+    }
     if (node["Anchor"]) {
         isAnchor = node["Anchor"].as<bool>();
     } else {
         isAnchor = false;
     }
     if (node["Tabs"]) {
-        YAML_NAMESPACE::Node tabs = node["Tabs"];
-        for (YAML_NAMESPACE::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
-            tabs.push_back(it->second.as<std::string>());
+        YAML_NAMESPACE::Node tabsNode = node["Tabs"];
+        for (std::size_t i = 0; i < tabsNode.size(); ++i) {
+            tabs.push_back(tabsNode[i].as<std::string>());
         }
     }
 }
@@ -171,7 +181,7 @@ WidgetSplitterSerialization::decode(const YAML_NAMESPACE::Node& node)
         rightChild.childIsSplitter->decode(node["RightChild"]);
     } else if (rightChild.type == kSplitterChildTypeTabWidget) {
         rightChild.childIsTabWidget.reset(new TabWidgetSerialization);
-        rightChild.childIsTabWidget->decode(node["RigthChild"]);
+        rightChild.childIsTabWidget->decode(node["RightChild"]);
     }
 
 }
@@ -231,6 +241,9 @@ WindowSerialization::decode(const YAML_NAMESPACE::Node& node)
 void
 WorkspaceSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
+    if (_histograms.empty() && _pythonPanels.empty() && !_mainWindowSerialization && _floatingWindowsSerialization.empty()) {
+        return;
+    }
     em << YAML_NAMESPACE::BeginMap;
     if (!_histograms.empty()) {
         em << YAML_NAMESPACE::Key << "Histograms" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
@@ -270,15 +283,15 @@ WorkspaceSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["Histograms"]) {
         YAML_NAMESPACE::Node n = node["Histograms"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
-            _histograms.push_back(it->second.as<std::string>());
+        for (std::size_t i = 0; i < n.size(); ++i) {
+            _histograms.push_back(n[i].as<std::string>());
         }
     }
     if (node["PyPanels"]) {
         YAML_NAMESPACE::Node n = node["PyPanels"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        for (std::size_t i = 0; i < n.size(); ++i) {
             PythonPanelSerialization p;
-            p.decode(it->second);
+            p.decode(n[i]);
             _pythonPanels.push_back(p);
         }
     }
@@ -288,9 +301,9 @@ WorkspaceSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["FloatingWindows"]) {
         YAML_NAMESPACE::Node n = node["FloatingWindows"];
-        for (YAML_NAMESPACE::const_iterator it = n.begin(); it!=n.end(); ++it) {
+        for (std::size_t i = 0; i < n[i].size(); ++i) {
             boost::shared_ptr<WindowSerialization> p(new WindowSerialization);
-            p->decode(it->second);
+            p->decode(n[i]);
             _floatingWindowsSerialization.push_back(p);
         }
     }

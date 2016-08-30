@@ -26,45 +26,34 @@ void
 RotoStrokeItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     RotoDrawableItemSerialization::encode(em);
+    bool isSolid = _brushType != kRotoStrokeItemSerializationBrushTypeSolid;
+    if (isSolid && _subStrokes.empty()) {
+        return;
+    }
     em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "Type" << YAML_NAMESPACE::Value << _brushType;
-    em << YAML_NAMESPACE::Key << "SubStrokes" << YAML_NAMESPACE::Value;
-    em << YAML_NAMESPACE::BeginSeq;
-    for (std::list<PointCurves>::const_iterator it = _subStrokes.begin(); it!= _subStrokes.end(); ++it) {
-        em << YAML_NAMESPACE::BeginMap;
-        em << YAML_NAMESPACE::Key << "x" << YAML_NAMESPACE::Value;
-        it->x->encode(em);
-        em << YAML_NAMESPACE::Key << "y" << YAML_NAMESPACE::Value;
-        it->y->encode(em);
-        em << YAML_NAMESPACE::Key << "pressure" << YAML_NAMESPACE::Value;
-        it->pressure->encode(em);
-        em << YAML_NAMESPACE::EndMap;
+    if (!isSolid) {
+        em << YAML_NAMESPACE::Key << "Type" << YAML_NAMESPACE::Value << _brushType;
     }
-    em << YAML_NAMESPACE::EndSeq;
-    em << YAML_NAMESPACE::EndMap;
-   
-}
-
-static void decodePointCurve(const YAML_NAMESPACE::Node& node, RotoStrokeItemSerialization::PointCurves* p)
-{
-    if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
-    }
-    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
-        std::string key = it->first.as<std::string>();
-
-        if (key == "x") {
-            p->x.reset(new CurveSerialization);
-            p->x->decode(it->second);
-        } else if (key == "y") {
-            p->y.reset(new CurveSerialization);
-            p->y->decode(it->second);
-        } else if (key == "pressure") {
-            p->pressure.reset(new CurveSerialization);
-            p->pressure->decode(it->second);
+    if (!_subStrokes.empty()) {
+        em << YAML_NAMESPACE::Key << "SubStrokes" << YAML_NAMESPACE::Value;
+        em << YAML_NAMESPACE::BeginSeq;
+        for (std::list<PointCurves>::const_iterator it = _subStrokes.begin(); it!= _subStrokes.end(); ++it) {
+            em << YAML_NAMESPACE::Flow;
+            em << YAML_NAMESPACE::BeginMap;
+            em << YAML_NAMESPACE::Key << "x" << YAML_NAMESPACE::Value;
+            it->x->encode(em);
+            em << YAML_NAMESPACE::Key << "y" << YAML_NAMESPACE::Value;
+            it->y->encode(em);
+            em << YAML_NAMESPACE::Key << "pressure" << YAML_NAMESPACE::Value;
+            it->pressure->encode(em);
+            em << YAML_NAMESPACE::EndMap;
         }
+        em << YAML_NAMESPACE::EndSeq;
     }
+    em << YAML_NAMESPACE::EndMap;
+    
 }
+
 
 void
 RotoStrokeItemSerialization::decode(const YAML_NAMESPACE::Node& node)
@@ -73,25 +62,28 @@ RotoStrokeItemSerialization::decode(const YAML_NAMESPACE::Node& node)
     if (!node.IsMap()) {
         throw YAML_NAMESPACE::InvalidNode();
     }
-
-
-    for (YAML_NAMESPACE::const_iterator it = node.begin(); it!=node.end(); ++it) {
-
-        std::string key = it->first.as<std::string>();
-        if (key == "Type") {
-            _brushType = it->second.as<std::string>();
-        } else if (key == "SubStrokes") {
-            if (!it->second.IsSequence()) {
-                throw YAML_NAMESPACE::InvalidNode();
-            }
-            for (YAML_NAMESPACE::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                PointCurves p;
-                decodePointCurve(it2->second, &p);
-                _subStrokes.push_back(p);
-            }
-        }
-
+    if (node["Type"]) {
+        _brushType = node["Type"].as<std::string>();
+    } else {
+        _brushType = kRotoStrokeItemSerializationBrushTypeSolid;
     }
+
+    if (node["SubStrokes"]) {
+        YAML_NAMESPACE::Node strokesNode = node["SubStrokes"];
+        for (std::size_t i = 0; i < strokesNode.size(); ++i) {
+            YAML_NAMESPACE::Node strokeN = strokesNode[i];
+            PointCurves p;
+            p.x.reset(new CurveSerialization);
+            p.y.reset(new CurveSerialization);
+            p.pressure.reset(new CurveSerialization);
+            p.x->decode(strokeN["x"]);
+            p.y->decode(strokeN["y"]);
+            p.pressure->decode(strokeN["pressure"]);
+            _subStrokes.push_back(p);
+        }
+    }
+
+
 }
 
 SERIALIZATION_NAMESPACE_EXIT

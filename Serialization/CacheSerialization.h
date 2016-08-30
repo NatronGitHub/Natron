@@ -134,9 +134,9 @@ public:
         }
         if (node["Entries"]) {
             YAML_NAMESPACE::Node entriesNode = node["Entries"];
-            for (YAML_NAMESPACE::const_iterator it = entriesNode.begin(); it!=entriesNode.end(); ++it) {
+            for (std::size_t i = 0; i < entriesNode.size(); ++i) {
                 SerializedEntry<EntryType> entry;
-                entry.decode(it->second);
+                entry.decode(entriesNode[i]);
                 entries.push_back(entry);
             }
         }
