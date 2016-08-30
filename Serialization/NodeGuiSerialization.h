@@ -34,7 +34,7 @@
 #define NODE_GUI_INTRODUCES_CHILDREN 6
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_CHILDREN
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 /**
  * @brief Deprecated, just used for backward compatibility
@@ -197,7 +197,7 @@ public:
             ar & ::boost::serialization::make_nvp("Width", _width);
             ar & ::boost::serialization::make_nvp("Height", _height);
         } else {
-            _nodeName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeName);
+            _nodeName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeName);
         }
 
         if (version >= NODE_GUI_INTRODUCES_OVERLAY_COLOR) {
@@ -226,9 +226,9 @@ public:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)
 
 #endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 

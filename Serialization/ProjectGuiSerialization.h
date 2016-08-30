@@ -25,7 +25,7 @@
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/NodeGuiSerialization.h"
 #include "Serialization/NodeBackdropSerialization.h"
-
+#include "Serialization/WorkspaceSerialization.h"
 
 
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
@@ -70,7 +70,7 @@
 #define GUI_LAYOUT_SERIALIZATION_VERSION GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
 
 
-NATRON_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER;
 struct ViewerData
 {
     double zoomLeft;
@@ -97,7 +97,7 @@ struct ViewerData
         if (version < VIEWER_DATA_MOVE_TO_ENGINE) {
             bool userRoIenabled;
             ar & ::boost::serialization::make_nvp("UserRoIEnabled", userRoIenabled);
-            RectD userRoI;
+            NATRON_NAMESPACE::RectD userRoI;
             ar & ::boost::serialization::make_nvp("UserRoI", userRoI);
             bool isClippedToProject;
             ar & ::boost::serialization::make_nvp("ClippedToProject", isClippedToProject);
@@ -550,6 +550,7 @@ public:
 
 class ProjectGuiSerialization
 {
+public:
     // Deprecated: Nodes UI data prior to Natron 2.2
     std::list< NodeGuiSerialization > _serializedNodes;
 
@@ -661,15 +662,15 @@ class ProjectGuiSerialization
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-NATRON_NAMESPACE_EXIT;
+SERIALIZATION_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::GuiLayoutSerialization, GUI_LAYOUT_SERIALIZATION_VERSION);
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ApplicationWindowSerialization, APPLICATION_WINDOW_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::SplitterSerialization, SPLITTER_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::PaneLayout, PANE_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::PythonPanelSerialization, PYTHON_PANEL_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ProjectGuiSerialization, PROJECT_GUI_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::GuiLayoutSerialization, GUI_LAYOUT_SERIALIZATION_VERSION);
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::ApplicationWindowSerialization, APPLICATION_WINDOW_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::SplitterSerialization, SPLITTER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::PaneLayout, PANE_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::PythonPanelSerialization, 1)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::ProjectGuiSerialization, PROJECT_GUI_SERIALIZATION_VERSION)
 
 #endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 

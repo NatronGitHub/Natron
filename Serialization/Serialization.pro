@@ -102,7 +102,6 @@ SOURCES += \
     RotoItemSerialization.cpp \
     RotoLayerSerialization.cpp \
     RotoStrokeItemSerialization.cpp \
-    SerializationIO.cpp \
     TextureRectSerialization.cpp \
     TrackerSerialization.cpp \
     WorkspaceSerialization.cpp

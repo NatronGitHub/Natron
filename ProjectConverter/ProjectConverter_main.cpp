@@ -32,6 +32,7 @@
 #include "Serialization/WorkspaceSerialization.h"
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
+#include "Serialization/ProjectGuiSerialization.h"
 
 NATRON_NAMESPACE_USING
 
@@ -41,8 +42,8 @@ printUsage(const std::string& programName)
 
                               /* Text must hold in 80 columns ************************************************/
     QString msg = QObject::tr("%1 usage:\n"
-                              "This program can convert Natron projects (.ntp files) made with\n"
-                              "Natron version 2.1.3 and older to the new project format used in 2.2.0.\n\n"
+                              "This program can convert Natron projects (.ntp files) or workspace (.nl files)\n"
+                              "made with Natron version 2.1.3 and older to the new project format used in 2.2\n\n"
                               "Program options:\n\n"
                               "-i <filename>: Converts a .ntp (Project) or .nl (Workspace) file to\n"
                               "               a newer version. Upon failure an error message will be printed.\n"
@@ -110,6 +111,88 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* o
 } // parseArgs
 
 
+/**
+ * @brief Attempts to read a workspace from an old layout (pre Natron 2.2) encoded with boost serialization in XML format.
+ * If the file could be read, the structure is then converted to the newer format post Natron 2.2.
+ * Upon failure an exception is thrown.
+ **/
+static void tryReadAndConvertOlderWorkspace(std::istream& stream, SERIALIZATION_NAMESPACE::WorkspaceSerialization* obj)
+{
+    try {
+        boost::archive::xml_iarchive iArchive(stream);
+        // Try first to load an old gui layout
+        SERIALIZATION_NAMESPACE::GuiLayoutSerialization s;
+        iArchive >> boost::serialization::make_nvp("Layout", s);
+        s.convertToWorkspaceSerialization(obj);
+    } catch (...) {
+        throw std::invalid_argument("Invalid workspace file");
+    }
+
+} // void tryReadAndConvertOlderWorkspace
+
+/**
+ * @brief Attempts to read a workspace from an old project (pre Natron 2.2) encoded with boost serialization in XML format.
+ * If the file could be read, the structure is then converted to the newer format post Natron 2.2.
+ * Upon failure an exception is thrown.
+ **/
+static void tryReadAndConvertOlderProject(std::istream& stream, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
+{
+    try {
+        boost::archive::xml_iarchive iArchive(stream);
+        bool bgProject;
+        iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
+        iArchive >> boost::serialization::make_nvp("Project", obj);
+
+        if (!bgProject) {
+            SERIALIZATION_NAMESPACE::ProjectGuiSerialization deprecatedGuiSerialization;
+            iArchive >> boost::serialization::make_nvp("ProjectGui", deprecatedGuiSerialization);
+
+            // Prior to this version the layout cannot be recovered (this was when Natron 1 was still in beta)
+            bool isToolOld = deprecatedGuiSerialization._version < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL;
+
+            if (!isToolOld) {
+
+                // Restore the old backdrops from old version prior to Natron 1.1
+                const std::list<SERIALIZATION_NAMESPACE::NodeBackdropSerialization> & backdrops = deprecatedGuiSerialization._backdrops;
+                for (std::list<SERIALIZATION_NAMESPACE::NodeBackdropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+
+                    // Emulate the old backdrop which was not a node to a node as it is now in newer versions
+                    SERIALIZATION_NAMESPACE::NodeSerializationPtr node(new SERIALIZATION_NAMESPACE::NodeSerialization);
+
+
+                    double x, y;
+                    it->getPos(x, y);
+                    int w, h;
+                    it->getSize(w, h);
+
+                    SERIALIZATION_NAMESPACE::KnobSerializationPtr labelSerialization = it->getLabelSerialization();
+                    /*
+                     bd->setPos(x, y);
+
+                     bd->resize(w, h);
+                     if (labelSerialization->_values[0]->_value.type == ValueSerializationStorage::eSerializationValueVariantTypeString) {
+                     bd->onLabelChanged( QString::fromUtf8( labelSerialization->_values[0]->_value.value.isString.c_str() ) );
+                     }
+                     float r, g, b;
+                     it->getColor(r, g, b);
+                     QColor c;
+                     c.setRgbF(r, g, b);
+                     bd->setCurrentColor(c);
+                     node->setLabel( it->getFullySpecifiedName() );*/
+
+                }
+
+
+                // Now convert what we can convert to our newer format...
+                deprecatedGuiSerialization.convertToProjectSerialization(obj);
+            }
+            
+        }
+    } catch (...) {
+        throw std::invalid_argument("Invalid project file");
+    }
+
+} // tryReadAndConvertOlderProject
 
 static void convertFile(const QString& filename, const QString& outputFileName)
 {
@@ -145,10 +228,10 @@ static void convertFile(const QString& filename, const QString& outputFileName)
 
         if (isProjectFile) {
             proj.reset(new SERIALIZATION_NAMESPACE::ProjectSerialization);
-            SERIALIZATION_NAMESPACE::tryReadAndConvertOlderProject(ifile, proj.get());
+            tryReadAndConvertOlderProject(ifile, proj.get());
         } else if (isWorkspaceFile) {
             workspace.reset(new SERIALIZATION_NAMESPACE::WorkspaceSerialization);
-            SERIALIZATION_NAMESPACE::tryReadAndConvertOlderWorkspace(ifile, workspace.get());
+            tryReadAndConvertOlderWorkspace(ifile, workspace.get());
         }
     }
 

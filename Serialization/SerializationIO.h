@@ -57,24 +57,6 @@ void read(std::istream& stream, T* obj)
     obj->decode(node);
 }
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-/**
- * @brief Attempts to read a workspace from an old layout (pre Natron 2.2) encoded with boost serialization in XML format.
- * If the file could be read, the structure is then converted to the newer format post Natron 2.2.
- * Upon failure an exception is thrown.
- **/
-void tryReadAndConvertOlderWorkspace(std::istream& stream, WorkspaceSerialization* obj);
-
-/**
- * @brief Attempts to read a workspace from an old project (pre Natron 2.2) encoded with boost serialization in XML format.
- * If the file could be read, the structure is then converted to the newer format post Natron 2.2.
- * Upon failure an exception is thrown.
- **/
-void tryReadAndConvertOlderProject(std::istream& stream, ProjectSerialization* obj);
-
-#endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-
-
 SERIALIZATION_NAMESPACE_EXIT
 
 #endif // SERIALIZATIONIO_H
