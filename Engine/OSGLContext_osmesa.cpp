@@ -29,6 +29,7 @@
 #include <GL/gl_mangle.h>
 #include <GL/glu_mangle.h>
 #include <GL/osmesa.h>
+#include <stdexcept>
 
 #include "Engine/OSGLFramebufferConfig.h"
 
