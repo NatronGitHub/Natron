@@ -56,11 +56,8 @@ public:
     double x2; // right
     double y2; // top
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 
     RectD()
         : x1(0), y1(0), x2(0), y2(0)

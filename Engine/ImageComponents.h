@@ -176,15 +176,8 @@ public:
     static const ImageComponents& getPairedMotionVectors();
     static const ImageComponents& getPairedStereoDisparity();
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        ar &  boost::serialization::make_nvp("Layer", _layerName);
-        ar &  boost::serialization::make_nvp("Components", _componentNames);
-        ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
-    }
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 

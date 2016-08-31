@@ -32,7 +32,9 @@
 #include "Serialization/WorkspaceSerialization.h"
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
+#include "Serialization/NodeGuiSerialization.h"
 #include "Serialization/ProjectGuiSerialization.h"
+#include "Serialization/SerializationCompat.h"
 
 NATRON_NAMESPACE_USING
 
@@ -111,6 +113,152 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* o
 } // parseArgs
 
 
+
+static void convertNodeGuiSerializationToNodeSerialization(const std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>& nodeGuis, SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
+{
+    for (std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>::const_iterator it = nodeGuis.begin(); it != nodeGuis.end(); ++it) {
+        const std::string& fullName = (it)->_nodeName;
+        std::string groupMasterName;
+        std::string nodeName;
+        {
+            std::size_t foundDot = fullName.find_last_of(".");
+            if (foundDot != std::string::npos) {
+                groupMasterName = fullName.substr(0, foundDot);
+                nodeName = fullName.substr(foundDot + 1);
+            } else {
+                nodeName = fullName;
+            }
+        }
+        if (groupMasterName == serialization->_groupFullyQualifiedScriptName && nodeName == serialization->_nodeScriptName) {
+            serialization->_nodePositionCoords[0] = it->_posX;
+            serialization->_nodePositionCoords[1] = it->_posY;
+            serialization->_nodeSize[0] = it->_width;
+            serialization->_nodeSize[1] = it->_height;
+            if (it->_colorWasFound) {
+                serialization->_nodeColor[0] = it->_r;
+                serialization->_nodeColor[1] = it->_g;
+                serialization->_nodeColor[2] = it->_b;
+            } else {
+                serialization->_nodeColor[0] = serialization->_nodeColor[1] = serialization->_nodeColor[2] = -1;
+            }
+            if (it->_hasOverlayColor) {
+                serialization->_overlayColor[0] = it->_r;
+                serialization->_overlayColor[1] = it->_g;
+                serialization->_overlayColor[2] = it->_b;
+            } else {
+                serialization->_overlayColor[0] = serialization->_overlayColor[1] = serialization->_overlayColor[2] = -1;
+            }
+            break;
+        }
+    }
+} // convertNodeGuiSerializationToNodeSerialization
+
+static void convertPaneLayoutToTabWidgetSerialization(const SERIALIZATION_NAMESPACE::PaneLayout& deprecated, SERIALIZATION_NAMESPACE::TabWidgetSerialization* serialization)
+{
+    serialization->isAnchor = deprecated.isAnchor;
+    serialization->currentIndex = deprecated.currentIndex;
+    serialization->tabs = deprecated.tabs;
+    serialization->scriptName = deprecated.name;
+} // convertPaneLayoutToTabWidgetSerialization
+
+static void convertSplitterToProjectSplitterSerialization(const SERIALIZATION_NAMESPACE::SplitterSerialization& deprecated, SERIALIZATION_NAMESPACE::WidgetSplitterSerialization* serialization)
+{
+    QStringList list = QString::fromUtf8(deprecated.sizes.c_str()).split( QLatin1Char(' ') );
+
+    assert(list.size() == 2);
+    QList<int> s;
+    s << list[0].toInt() << list[1].toInt();
+    if ( (s[0] == 0) || (s[1] == 0) ) {
+        int mean = (s[0] + s[1]) / 2;
+        s[0] = s[1] = mean;
+    }
+
+    assert(deprecated.children.size() == 2);
+    serialization->leftChildSize = s[0];
+    serialization->rightChildSize = s[1];
+    serialization->orientation = deprecated.orientation;
+
+    SERIALIZATION_NAMESPACE::WidgetSplitterSerialization::Child* children[2] = {&serialization->leftChild, &serialization->rightChild};
+    for (int i = 0; i < 2; ++i) {
+        if (deprecated.children[i]->child_asPane) {
+            children[i]->childIsTabWidget.reset(new SERIALIZATION_NAMESPACE::TabWidgetSerialization);
+            children[i]->type = kSplitterChildTypeTabWidget;
+            convertPaneLayoutToTabWidgetSerialization(*deprecated.children[i]->child_asPane, children[i]->childIsTabWidget.get());
+        } else if (deprecated.children[i]->child_asSplitter) {
+            children[i]->childIsSplitter.reset(new SERIALIZATION_NAMESPACE::WidgetSplitterSerialization);
+            children[i]->type = kSplitterChildTypeSplitter;
+            convertSplitterToProjectSplitterSerialization(*deprecated.children[i]->child_asSplitter, children[i]->childIsSplitter.get());
+        }
+
+    }
+} // convertSplitterToProjectSplitterSerialization
+
+static void
+convertWorkspaceSerialization(const SERIALIZATION_NAMESPACE::GuiLayoutSerialization& original, SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization)
+{
+    for (std::list<SERIALIZATION_NAMESPACE::ApplicationWindowSerialization*>::const_iterator it = original._windows.begin(); it != original._windows.end(); ++it) {
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> window(new SERIALIZATION_NAMESPACE::WindowSerialization);
+        window->windowPosition[0] = (*it)->x;
+        window->windowPosition[1] = (*it)->y;
+        window->windowSize[0] = (*it)->w;
+        window->windowSize[1] = (*it)->h;
+
+        if ((*it)->child_asSplitter) {
+            window->isChildSplitter.reset(new SERIALIZATION_NAMESPACE::WidgetSplitterSerialization);
+            window->childType = kSplitterChildTypeSplitter;
+            convertSplitterToProjectSplitterSerialization(*(*it)->child_asSplitter, window->isChildSplitter.get());
+        } else if ((*it)->child_asPane) {
+            window->isChildTabWidget.reset(new SERIALIZATION_NAMESPACE::TabWidgetSerialization);
+            window->childType = kSplitterChildTypeTabWidget;
+            convertPaneLayoutToTabWidgetSerialization(*(*it)->child_asPane, window->isChildTabWidget.get());
+        } else if (!(*it)->child_asDockablePanel.empty()) {
+            window->isChildSettingsPanel = (*it)->child_asDockablePanel;
+        }
+
+        if ((*it)->isMainWindow) {
+            serialization->_mainWindowSerialization = window;
+        } else {
+            serialization->_floatingWindowsSerialization.push_back(window);
+        }
+    }
+} // convertWorkspaceSerialization
+
+static void
+convertToProjectSerialization(const SERIALIZATION_NAMESPACE::ProjectGuiSerialization& original, SERIALIZATION_NAMESPACE::ProjectSerialization* serialization)
+{
+
+    if (!serialization->_projectWorkspace) {
+        serialization->_projectWorkspace.reset(new SERIALIZATION_NAMESPACE::WorkspaceSerialization);
+    }
+    for (std::map<std::string, SERIALIZATION_NAMESPACE::ViewerData >::const_iterator it = original._viewersData.begin(); it != original._viewersData.end(); ++it) {
+        SERIALIZATION_NAMESPACE::ViewportData& d = serialization->_viewportsData[it->first];
+        d.left = it->second.zoomLeft;
+        d.bottom = it->second.zoomBottom;
+        d.zoomFactor = it->second.zoomFactor;
+        d.par = 1.;
+        d.zoomOrPanSinceLastFit = it->second.zoomOrPanSinceLastFit;
+    }
+
+    for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it = serialization->_nodes.begin(); it!=serialization->_nodes.end(); ++it) {
+        convertNodeGuiSerializationToNodeSerialization(original._serializedNodes, it->get());
+        for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it2 = (*it)->_children.begin(); it2!=(*it)->_children.end(); ++it2) {
+            convertNodeGuiSerializationToNodeSerialization(original._serializedNodes, it2->get());
+        }
+    }
+
+    convertWorkspaceSerialization(original._layoutSerialization, serialization->_projectWorkspace.get());
+    serialization->_projectWorkspace->_histograms = original._histograms;
+    serialization->_projectWorkspace->_pythonPanels = original._pythonPanels;
+
+    serialization->_openedPanelsOrdered = original._openedPanelsOrdered;
+
+
+
+} // convertToProjectSerialization
+
+
+
+
 /**
  * @brief Attempts to read a workspace from an old layout (pre Natron 2.2) encoded with boost serialization in XML format.
  * If the file could be read, the structure is then converted to the newer format post Natron 2.2.
@@ -123,12 +271,13 @@ static void tryReadAndConvertOlderWorkspace(std::istream& stream, SERIALIZATION_
         // Try first to load an old gui layout
         SERIALIZATION_NAMESPACE::GuiLayoutSerialization s;
         iArchive >> boost::serialization::make_nvp("Layout", s);
-        s.convertToWorkspaceSerialization(obj);
+        convertWorkspaceSerialization(s, obj);
     } catch (...) {
         throw std::invalid_argument("Invalid workspace file");
     }
 
 } // void tryReadAndConvertOlderWorkspace
+
 
 /**
  * @brief Attempts to read a workspace from an old project (pre Natron 2.2) encoded with boost serialization in XML format.
@@ -184,7 +333,7 @@ static void tryReadAndConvertOlderProject(std::istream& stream, SERIALIZATION_NA
 
 
                 // Now convert what we can convert to our newer format...
-                deprecatedGuiSerialization.convertToProjectSerialization(obj);
+                convertToProjectSerialization(deprecatedGuiSerialization, obj);
             }
             
         }
@@ -321,6 +470,7 @@ main(int argc,
             return 1;
         }
     }
+    app.exit();
     return 0;
 } // main
 

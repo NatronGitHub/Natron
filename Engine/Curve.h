@@ -110,19 +110,9 @@ private:
     double _rightDerivative;
     KeyframeTypeEnum _interpolation;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     friend class ::boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version)
-    {
-        ar & ::boost::serialization::make_nvp("Time", _time);
-        ar & ::boost::serialization::make_nvp("Value", _value);
-        ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
-        ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
-        ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
-    }
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 };
 
 struct KeyFrame_compare_time
@@ -311,15 +301,9 @@ public:
 
 private:
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     friend class ::boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        KeyFrameSet keys = getKeyFrames_mt_safe();
-        ar & ::boost::serialization::make_nvp("KeyFrameSet", keys);
-    }
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 
     ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;

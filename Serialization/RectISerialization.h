@@ -19,10 +19,6 @@
 #ifndef Engine_RectISerialization_h
 #define Engine_RectISerialization_h
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Engine/RectI.h"
-#endif
-
 #include "Serialization/SerializationBase.h"
 
 SERIALIZATION_NAMESPACE_ENTER
@@ -51,27 +47,7 @@ public:
 };
 
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 SERIALIZATION_NAMESPACE_EXIT
-
-template<class Archive>
-void
-NATRON_NAMESPACE::RectI::serialize(Archive & ar,
-                 const unsigned int version)
-{
-    Q_UNUSED(version);
-    ar & ::boost::serialization::make_nvp("Left", x1);
-    ar & ::boost::serialization::make_nvp("Bottom", y1);
-    ar & ::boost::serialization::make_nvp("Right", x2);
-    ar & ::boost::serialization::make_nvp("Top", y2);
-}
-
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(SERIALIZATION_NAMESPACE::RectI);
-#endif // #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-
-#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
-SERIALIZATION_NAMESPACE_EXIT
-#endif
 
 
 #endif // Engine_RectISerialization_h

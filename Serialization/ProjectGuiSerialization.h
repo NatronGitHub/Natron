@@ -262,10 +262,7 @@ struct PaneLayout
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Tabs", tabs);
-        ar & ::boost::serialization::make_nvp("Index", currentIndex);
-        ar & ::boost::serialization::make_nvp("Name", name);
-        ar & ::boost::serialization::make_nvp("IsAnchor", isAnchor);
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -356,19 +353,7 @@ struct SplitterSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & ::boost::serialization::make_nvp("Sizes", sizes);
-        ar & ::boost::serialization::make_nvp("Orientation", orientation);
-
-        assert(children.size() == 2);
-        for (int i = 0; i < 2; ++i) {
-            bool isChildSplitter = children[i]->child_asSplitter != NULL;
-            ar & ::boost::serialization::make_nvp("ChildIsSplitter", isChildSplitter);
-            if (isChildSplitter) {
-                ar & ::boost::serialization::make_nvp("Child", *children[i]->child_asSplitter);
-            } else {
-                ar & ::boost::serialization::make_nvp("Child", *children[i]->child_asPane);
-            }
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -436,28 +421,7 @@ struct ApplicationWindowSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        int childrenChoice;
-
-        if (child_asSplitter) {
-            childrenChoice = 0;
-        } else if (child_asPane) {
-            childrenChoice = 1;
-        } else {
-            childrenChoice = 2;
-        }
-        ar & ::boost::serialization::make_nvp("ChildType", childrenChoice);
-        if (childrenChoice == 0) {
-            ar & ::boost::serialization::make_nvp("Child", child_asSplitter);
-        } else if (childrenChoice == 1) {
-            ar & ::boost::serialization::make_nvp("Child", child_asPane);
-        } else if (childrenChoice == 2) {
-            ar & ::boost::serialization::make_nvp("Child", child_asDockablePanel);
-        }
-        ar & ::boost::serialization::make_nvp("MainWindow", isMainWindow);
-        ar & ::boost::serialization::make_nvp("x", x);
-        ar & ::boost::serialization::make_nvp("y", y);
-        ar & ::boost::serialization::make_nvp("w", w);
-        ar & ::boost::serialization::make_nvp("h", h);
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -512,18 +476,11 @@ public:
     ///New in GUI_LAYOUT_SERIALIZATION_MAJOR_OVERHAUL
     std::list<ApplicationWindowSerialization*> _windows;
 
-    void convertToWorkspaceSerialization(WorkspaceSerialization* serialization) const;
-
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        int windowsCount = _windows.size();
-        ar & ::boost::serialization::make_nvp("NbWindows", windowsCount);
-
-        for (std::list<ApplicationWindowSerialization*>::const_iterator it = _windows.begin(); it != _windows.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("Window", **it);
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -570,7 +527,7 @@ public:
     std::list<std::string> _openedPanelsOrdered;
 
     // List of python panels
-    std::list<boost::shared_ptr<PythonPanelSerialization> > _pythonPanels;
+    std::list<PythonPanelSerialization > _pythonPanels;
 
     // The boost version passed to load(), this is not used on save
     unsigned int _version;
@@ -593,23 +550,11 @@ public:
 
 
 
-    void convertToProjectSerialization(ProjectSerialization* serialization) const;
-
     template<class Archive>
     void save(Archive & ar,
-              const unsigned int version) const
+              const unsigned int /*version*/) const
     {
-        Q_UNUSED(version);
-        ar & ::boost::serialization::make_nvp("NodesGui", _serializedNodes);
-        ar & ::boost::serialization::make_nvp("Gui_Layout", _layoutSerialization);
-        ar & ::boost::serialization::make_nvp("ViewersData", _viewersData);
-        ar & ::boost::serialization::make_nvp("Histograms", _histograms);
-        ar & ::boost::serialization::make_nvp("OpenedPanels", _openedPanelsOrdered);
-        int numPyPanels = (int)_pythonPanels.size();
-        ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
-        for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = _pythonPanels.begin(); it != _pythonPanels.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("item", **it);
-        }
+        throw std::runtime_error("Saving with boost is no longer supported");
     }
 
     template<class Archive>
@@ -649,8 +594,8 @@ public:
             int numPyPanels;
             ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
             for (int i = 0; i < numPyPanels; ++i) {
-                boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
-                ar & ::boost::serialization::make_nvp("item", *s);
+                PythonPanelSerialization s;
+                ar & ::boost::serialization::make_nvp("item", s);
                 _pythonPanels.push_back(s);
             }
         }

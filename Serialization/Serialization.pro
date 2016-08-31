@@ -75,6 +75,7 @@ HEADERS += \
     SerializationBase.h \
     SerializationFwd.h \
     SerializationIO.h \
+    SerializationCompat.h \
     TextureRectSerialization.h \
     TrackerSerialization.h \
     WorkspaceSerialization.h
@@ -82,7 +83,6 @@ HEADERS += \
 
 SOURCES += \
     KnobSerialization.cpp \
-    ProjectGuiSerialization.cpp \
     BezierCPSerialization.cpp \
     BezierSerialization.cpp \
     CurveSerialization.cpp \
