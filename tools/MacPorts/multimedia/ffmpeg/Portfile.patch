@@ -1,5 +1,5 @@
---- Portfile.orig	2016-07-31 18:49:47.000000000 +0200
-+++ Portfile	2016-08-01 15:07:37.000000000 +0200
+--- Portfile.orig	2016-08-31 17:30:21.000000000 +0200
++++ Portfile	2016-08-31 17:30:26.000000000 +0200
 @@ -100,6 +100,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
@@ -27,17 +27,7 @@
  
  
  platform darwin {
-@@ -150,7 +157,8 @@
- 
-     # filters coreimage and coreimagesrc don't build on 10.5
-     # and earlier due to use of bridged casts in Objective C (#51823)
--    if {${os.major} < 10} {
-+    # and don't build on 10.6 because CFBridgingRetain appeared in 10.7
-+    if {${os.major} < 11} {
-         configure.args-append --disable-filter=coreimage \
-                               --disable-filter=coreimagesrc
-     }
-@@ -199,6 +207,17 @@
+@@ -199,6 +206,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -55,7 +45,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -223,6 +242,15 @@
+@@ -223,6 +241,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -71,7 +61,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -248,11 +276,52 @@
+@@ -248,11 +275,52 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -124,7 +114,7 @@
  }
  
  default_variants +x11
-@@ -323,6 +392,12 @@
+@@ -323,6 +391,12 @@
                              port:samba3
  
      license                 GPL-3+
