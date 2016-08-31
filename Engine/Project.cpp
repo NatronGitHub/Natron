@@ -309,7 +309,7 @@ Project::loadProjectInternal(const QString & path,
     try {
         // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
         _imp->lastProjectLoaded.reset(new SERIALIZATION_NAMESPACE::ProjectSerialization);
-        SERIALIZATION_NAMESPACE::read(ifile, _imp->lastProjectLoaded.get());
+        appPTR->loadProjectFromFileFunction(ifile, getApp(), _imp->lastProjectLoaded.get());
 
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);

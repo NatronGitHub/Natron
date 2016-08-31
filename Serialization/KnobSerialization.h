@@ -422,6 +422,8 @@ struct ValueSerialization
         }
         
         _type = ValueSerialization::eSerializationValueVariantTypeNone;
+
+        bool loadValue = true;
         if (version >= VALUE_SERIALIZATION_INTRODUCES_DATA_TYPE) {
             ar & ::boost::serialization::make_nvp("DataType", _type);
         } else {
@@ -441,12 +443,12 @@ struct ValueSerialization
                 _type = ValueSerialization::eSerializationValueVariantTypeDouble;
             } else if (isBool) {
                 _type = ValueSerialization::eSerializationValueVariantTypeBoolean;
-            } else if (isString || isOutputFile || isPath || isLayers) {
+            } else if (isString || isOutputFile || isPath || isLayers || isFile || isChoice) {
                 _type = ValueSerialization::eSerializationValueVariantTypeString;
             }
 
             if (isChoice) {
-                _type = ValueSerialization::eSerializationValueVariantTypeNone;
+                loadValue = false;
                 ar & ::boost::serialization::make_nvp("Value", _value.isInt);
                 assert(_value.isInt >= 0);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
@@ -460,7 +462,7 @@ struct ValueSerialization
                     ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
                 }
             } else if (isFile) {
-                _type = ValueSerialization::eSerializationValueVariantTypeNone;
+                loadValue = false;
                 ar & ::boost::serialization::make_nvp("Value", _value.isString);
 
                 ///Convert the old keyframes stored in the file parameter by analysing one keyframe
@@ -478,42 +480,44 @@ struct ValueSerialization
 
         }
 
-        switch (_type) {
-            case ValueSerialization::eSerializationValueVariantTypeNone:
-                break;
+        if (loadValue) {
+            switch (_type) {
+                case ValueSerialization::eSerializationValueVariantTypeNone:
+                    break;
 
-            case ValueSerialization::eSerializationValueVariantTypeInteger:
-                ar & ::boost::serialization::make_nvp("Value", _value.isInt);
-                if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
-                }
-                break;
+                case ValueSerialization::eSerializationValueVariantTypeInteger:
+                    ar & ::boost::serialization::make_nvp("Value", _value.isInt);
+                    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                        ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
+                    }
+                    break;
 
-            case ValueSerialization::eSerializationValueVariantTypeDouble:
-                ar & ::boost::serialization::make_nvp("Value", _value.isDouble);
-                if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isDouble);
-                }
-                break;
+                case ValueSerialization::eSerializationValueVariantTypeDouble:
+                    ar & ::boost::serialization::make_nvp("Value", _value.isDouble);
+                    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                        ar & ::boost::serialization::make_nvp("Default", _defaultValue.isDouble);
+                    }
+                    break;
 
-            case ValueSerialization::eSerializationValueVariantTypeString:
-                ar & ::boost::serialization::make_nvp("Value", _value.isString);
-                if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
-                }
-                break;
+                case ValueSerialization::eSerializationValueVariantTypeString:
+                    ar & ::boost::serialization::make_nvp("Value", _value.isString);
+                    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                        ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
+                    }
+                    break;
 
-            case ValueSerialization::eSerializationValueVariantTypeBoolean:
-                ar & ::boost::serialization::make_nvp("Value", _value.isBool);
-                if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isBool);
-                }
+                case ValueSerialization::eSerializationValueVariantTypeBoolean:
+                    ar & ::boost::serialization::make_nvp("Value", _value.isBool);
+                    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                        ar & ::boost::serialization::make_nvp("Default", _defaultValue.isBool);
+                    }
 
-                break;
-
+                    break;
+                    
+            }
         }
-
-
+        
+        
         ///We cannot restore the master yet. It has to be done in another pass.
         bool hasMaster;
         ar & ::boost::serialization::make_nvp("HasMaster", hasMaster);
@@ -624,7 +628,7 @@ public:
     , _label()
     , _triggerNewLine(false)
     , _evaluatesOnChange(false)
-    , _isPersistent(false)
+    , _isPersistent(true)
     , _animatesChanged(false)
     , _hasViewerInterface(false)
     , _inViewerContextSecret(false)

@@ -258,6 +258,12 @@ AppManager::releaseNatronGIL()
     _imp->natronPythonGIL.unlock();
 }
 
+void
+AppManager::loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
+{
+    SERIALIZATION_NAMESPACE::read(ifile, obj);
+}
+
 bool
 AppManager::load(int &argc,
                  char *argv[],
@@ -266,10 +272,10 @@ AppManager::load(int &argc,
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
     char* argv0;
-    QString argv0QString = QDir::currentPath();
+    std::string argv0QString = QDir::currentPath().toStdString();
 
     if (!argv) {
-        argv0 = const_cast<char*>( argv0QString.toStdString().c_str() );
+        argv0 = const_cast<char*>( argv0QString.c_str() );
         argc = 1;
         argv = &argv0;
     }

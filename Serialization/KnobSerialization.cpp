@@ -80,7 +80,7 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
             std::list<std::string> dimensionProps;
             em << YAML_NAMESPACE::Key << "Index" << YAML_NAMESPACE::Value << s._dimension;
 
-            if (s._serializeValue && s._animationCurve.keys.empty()) {
+            if (s._serializeValue && s._animationCurve.keys.empty() && s._type != ValueSerialization::eSerializationValueVariantTypeNone) {
                 em << YAML_NAMESPACE::Key << "Value" << YAML_NAMESPACE::Value;
                 switch (s._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
@@ -95,11 +95,11 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
                     case ValueSerialization::eSerializationValueVariantTypeString:
                         em << s._value.isString;
                         break;
-                    case ValueSerialization::eSerializationValueVariantTypeNone:
+                    default:
                         break;
                 }
             }
-            if (s._serializeDefaultValue) {
+            if (s._serializeDefaultValue && s._type != ValueSerialization::eSerializationValueVariantTypeNone) {
                 em << YAML_NAMESPACE::Key << "Default" << YAML_NAMESPACE::Value;
                 switch (s._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
@@ -114,7 +114,7 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
                     case ValueSerialization::eSerializationValueVariantTypeString:
                         em << s._defaultValue.isString;
                         break;
-                    case ValueSerialization::eSerializationValueVariantTypeNone:
+                    default:
                         break;
                 }
             }
@@ -343,33 +343,27 @@ static T* getOrCreateExtraData(boost::scoped_ptr<TypeExtraData>& extraData)
 }
 
 static void decodeValueFromNode(const YAML_NAMESPACE::Node& node,
-                                SerializationValueVariant& variant)
+                                SerializationValueVariant& variant, ValueSerialization::SerializationValueVariantTypeEnum* type)
 {
     // yaml-cpp looses the original type information and does not seem to make a difference whether
     // the value was a string or a POD scalar. All functions as<T>() will succeed.
     // See https://github.com/jbeder/yaml-cpp/issues/261
-    // From comment of jbeder:
-    // *yaml-cpp adds non-specific tags, but does not resolve them.
-    // *This means that you can check the tag of a scalar node, and if it's "!", then it should be a string.
-    // *If it's "?", then it was a plain scalar, and might be resolved in various ways depending on the application.
-    if (node.Tag() == "?") {
-        /*try {
-         variant.isBool = node.as<bool>();
-         } catch (const YAML_NAMESPACE::BadConversion&) {
-         variant.isDouble = node.as<double>();
-         variant.isInt = node.as<int>();
-         }*/
 
+    try {
+        *type = ValueSerialization::eSerializationValueVariantTypeDouble;
+        variant.isDouble = node.as<double>();
+        variant.isInt = (int)variant.isDouble; //node.as<int>();
+    } catch (const YAML_NAMESPACE::BadConversion&) {
         try {
-            variant.isDouble = node.as<double>();
-            variant.isInt = (int)variant.isDouble; //node.as<int>();
-        } catch (const YAML_NAMESPACE::BadConversion&) {
             variant.isBool = node.as<bool>();
-        }
-    } else {
-        variant.isString = node.as<std::string>();
-    }
+            *type = ValueSerialization::eSerializationValueVariantTypeBoolean;
+        } catch (const YAML_NAMESPACE::BadConversion&) {
+            variant.isString = node.as<std::string>();
+            *type = ValueSerialization::eSerializationValueVariantTypeString;
 
+        }
+    }
+    
 }
 
 void
@@ -409,12 +403,12 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
             s._dimension = dim;
             if (dimNode["Value"]) {
                 YAML_NAMESPACE::Node valueNode = dimNode["Value"];
-                decodeValueFromNode(valueNode, s._value);
+                decodeValueFromNode(valueNode, s._value, &s._type);
                 s._serializeValue = true;
             }
             if (dimNode["Default"]) {
                 YAML_NAMESPACE::Node valueNode = dimNode["Default"];
-                decodeValueFromNode(valueNode, s._defaultValue);
+                decodeValueFromNode(valueNode, s._defaultValue, &s._type);
                 s._serializeDefaultValue = true;
             }
             if (dimNode["Curve"]) {

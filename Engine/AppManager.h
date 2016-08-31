@@ -652,6 +652,11 @@ protected:
 
     bool loadInternalAfterInitGui(const CLArgs& cl);
 
+    /*
+     * @brief Derived by NatronProjectConverter to load using boost serialization instead
+     */
+    virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
+
 private:
 
     void findAllScriptsRecursive(const QDir& directory,
@@ -682,6 +687,9 @@ private:
     void initPython(int argc, char* argv[]);
 
     void tearDownPython();
+
+    // To access loadProjectFromFileFunction
+    friend class Project;
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;

@@ -56,7 +56,9 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     if (hasInput) {
         em << YAML_NAMESPACE::Key << "Inputs" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
         for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-            em << YAML_NAMESPACE::Key << it->first << YAML_NAMESPACE::Value << it->second;
+            if (!it->second.empty()) {
+                em << YAML_NAMESPACE::Key << it->first << YAML_NAMESPACE::Value << it->second;
+            }
         }
         em << YAML_NAMESPACE::EndMap;
     }
@@ -82,7 +84,7 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     }
 
     if (!_pagesIndexes.empty()) {
-        em << YAML_NAMESPACE::Key << "PagesOrder" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML_NAMESPACE::Key << "PagesOrder" << YAML_NAMESPACE::Value <<  YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         for (std::list<std::string>::const_iterator it = _pagesIndexes.begin(); it!=_pagesIndexes.end(); ++it) {
             em << *it;
         }
@@ -270,7 +272,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["Color"]) {
         YAML_NAMESPACE::Node colorNode = node["Color"];
-        if (colorNode.size() != 2) {
+        if (colorNode.size() != 3) {
             throw YAML_NAMESPACE::InvalidNode();
         }
         _nodeColor[0] = colorNode[0].as<double>();
@@ -279,12 +281,12 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["OverlayColor"]) {
         YAML_NAMESPACE::Node colorNode = node["OverlayColor"];
-        if (colorNode.size() != 2) {
+        if (colorNode.size() != 3) {
             throw YAML_NAMESPACE::InvalidNode();
         }
-        _nodeColor[0] = colorNode[0].as<double>();
-        _nodeColor[1] = colorNode[1].as<double>();
-        _nodeColor[2] = colorNode[2].as<double>();
+        _overlayColor[0] = colorNode[0].as<double>();
+        _overlayColor[1] = colorNode[1].as<double>();
+        _overlayColor[2] = colorNode[2].as<double>();
     }
     if (node["ViewerParamsOrder"]) {
         YAML_NAMESPACE::Node viewerParamsOrderNode = node["ViewerParamsOrder"];
