@@ -306,19 +306,16 @@ public:
             }
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS) {
-            if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
-                ar & ::boost::serialization::make_nvp("UserComponents", _userComponents);
-            } else {
-                std::list<NATRON_NAMESPACE::ImageComponents> comps;
-                ar & ::boost::serialization::make_nvp("UserComponents", comps);
-                for (std::list<NATRON_NAMESPACE::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
-                    ImageComponentsSerialization s;
-                    s.layerName = it->getLayerName();
-                    s.globalCompsName = it->getComponentsGlobalName();
-                    s.channelNames = it->getComponentsNames();
-                    _userComponents.push_back(s);
-                }
+            std::list<NATRON_NAMESPACE::ImageComponents> comps;
+            ar & ::boost::serialization::make_nvp("UserComponents", comps);
+            for (std::list<NATRON_NAMESPACE::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
+                ImageComponentsSerialization s;
+                s.layerName = it->getLayerName();
+                s.globalCompsName = it->getComponentsGlobalName();
+                s.channelNames = it->getComponentsNames();
+                _userComponents.push_back(s);
             }
+
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_CACHE_ID) {
             ar & ::boost::serialization::make_nvp("CacheID", _cacheID);

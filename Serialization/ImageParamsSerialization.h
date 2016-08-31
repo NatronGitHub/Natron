@@ -93,20 +93,5 @@ public:
 
 SERIALIZATION_NAMESPACE_EXIT
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-/**
- * @brief Deprecated, just used for backward compatibility in NodeSerialization
- **/
-template<class Archive>
-void
-NATRON_NAMESPACE::ImageComponents::serialize(Archive & ar,
-                           const unsigned int /*version*/)
-{
-    ar &  boost::serialization::make_nvp("Layer", _layerName);
-    ar &  boost::serialization::make_nvp("Components", _componentNames);
-    ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
-}
-#endif
-
 
 #endif // IMAGEPARAMSSERIALIZATION_H

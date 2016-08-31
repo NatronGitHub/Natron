@@ -409,16 +409,13 @@ struct ValueSerialization
         ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
         bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
-            if (version >= VALUE_SERIALIZATION_CHANGES_CURVE_SERIALIZATION) {
-                ar & ::boost::serialization::make_nvp("Curve", _animationCurve);
-            } else {
-                NATRON_NAMESPACE::Curve c;
-                ar & ::boost::serialization::make_nvp("Curve", c);
-                c.toSerialization(&_animationCurve);
-            }
+            NATRON_NAMESPACE::Curve c;
+            ar & ::boost::serialization::make_nvp("Curve", c);
+            c.toSerialization(&_animationCurve);
+
             convertOldFileKeyframesToPattern = isFile && getKnobName() == kOfxImageEffectFileParamName;
         }
-
+        
         _type = ValueSerialization::eSerializationValueVariantTypeNone;
         if (version >= VALUE_SERIALIZATION_INTRODUCES_DATA_TYPE) {
             ar & ::boost::serialization::make_nvp("DataType", _type);
@@ -428,6 +425,10 @@ struct ValueSerialization
             bool isDouble = _typeName == NATRON_NAMESPACE::KnobDouble::typeNameStatic();
             bool isInt = _typeName == NATRON_NAMESPACE::KnobInt::typeNameStatic();
             bool isBool = _typeName == NATRON_NAMESPACE::KnobBool::typeNameStatic();
+            bool isOutputFile = _typeName == NATRON_NAMESPACE::KnobOutputFile::typeNameStatic();
+            bool isPath = _typeName == NATRON_NAMESPACE::KnobPath::typeNameStatic();
+            bool isLayers = _typeName == NATRON_NAMESPACE::KnobLayers::typeNameStatic();
+
 
             if (isInt) {
                 _type = ValueSerialization::eSerializationValueVariantTypeInteger;
@@ -435,12 +436,12 @@ struct ValueSerialization
                 _type = ValueSerialization::eSerializationValueVariantTypeDouble;
             } else if (isBool) {
                 _type = ValueSerialization::eSerializationValueVariantTypeBoolean;
-            } else if (isString) {
+            } else if (isString || isOutputFile || isPath || isLayers) {
                 _type = ValueSerialization::eSerializationValueVariantTypeString;
             }
 
             if (isChoice) {
-                _type = ValueSerialization::eSerializationValueVariantTypeInteger;
+                _type = ValueSerialization::eSerializationValueVariantTypeNone;
                 ar & ::boost::serialization::make_nvp("Value", _value.isInt);
                 assert(_value.isInt >= 0);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
@@ -454,7 +455,7 @@ struct ValueSerialization
                     ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
                 }
             } else if (isFile) {
-                _type = ValueSerialization::eSerializationValueVariantTypeString;
+                _type = ValueSerialization::eSerializationValueVariantTypeNone;
                 ar & ::boost::serialization::make_nvp("Value", _value.isString);
 
                 ///Convert the old keyframes stored in the file parameter by analysing one keyframe
@@ -705,7 +706,7 @@ public:
         if (isParametric && !_extraData) {
             _extraData.reset(new ParametricExtraData);
         }
-        if (isString && !_extraData) {
+        if ((isString || isFile) && !_extraData) {
             _extraData.reset(new TextExtraData);
         }
 
@@ -719,26 +720,23 @@ public:
         ////restore extra datas
         if (isParametric) {
             ParametricExtraData* extraData = dynamic_cast<ParametricExtraData*>(_extraData.get());
-            if (version >= KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION) {
-                ar & ::boost::serialization::make_nvp("ParametricCurves", extraData->parametricCurves);
-            } else {
-                std::list<NATRON_NAMESPACE::Curve> curves;
-                ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
-                for (std::list<NATRON_NAMESPACE::Curve>::iterator it = curves.begin(); it!=curves.end(); ++it) {
-                    CurveSerialization c;
-                    it->toSerialization(&c);
-                    extraData->parametricCurves.push_back(c);
-                }
+            std::list<NATRON_NAMESPACE::Curve> curves;
+            ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
+            for (std::list<NATRON_NAMESPACE::Curve>::iterator it = curves.begin(); it!=curves.end(); ++it) {
+                CurveSerialization c;
+                it->toSerialization(&c);
+                extraData->parametricCurves.push_back(c);
             }
+
             //isParametric->loadParametricCurves(extraData->parametricCurves);
-        } else if (isString) {
+        } else if (isString || isFile) {
             TextExtraData* extraData = dynamic_cast<TextExtraData*>(_extraData.get());
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraData->keyframes);
             ///Don't load animation for input image files: they no longer hold keyframes
             // in the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
             /*if ( !isFile || ( isFile && (isFile->getName() != kOfxImageEffectFileParamName) ) ) {
-                isStringAnimated->loadAnimation(extraDatas);
-            }*/
+             isStringAnimated->loadAnimation(extraDatas);
+             }*/
         }
 
         // Dead serialization code, just for backward compatibility.
