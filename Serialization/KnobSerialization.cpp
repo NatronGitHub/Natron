@@ -379,6 +379,9 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
         return;
     }
 
+    // Set the flag to true if the user use this object directly to encode after
+    _mustSerialize = true;
+
     _scriptName = node["ScriptName"].as<std::string>();
 
 
@@ -391,6 +394,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
         _values.resize(dimensionsNode.size());
         for (std::size_t i = 0; i < _values.size(); ++i) {
             _values[i]._serialization = this;
+            _values[i]._mustSerialize = true;
             _values[i]._dimension = i;
         }
         for (std::size_t i = 0; i < dimensionsNode.size(); ++i) {
@@ -406,10 +410,12 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
             if (dimNode["Value"]) {
                 YAML_NAMESPACE::Node valueNode = dimNode["Value"];
                 decodeValueFromNode(valueNode, s._value);
+                s._serializeValue = true;
             }
             if (dimNode["Default"]) {
                 YAML_NAMESPACE::Node valueNode = dimNode["Default"];
                 decodeValueFromNode(valueNode, s._defaultValue);
+                s._serializeDefaultValue = true;
             }
             if (dimNode["Curve"]) {
                 YAML_NAMESPACE::Node curveNode = dimNode["Curve"];

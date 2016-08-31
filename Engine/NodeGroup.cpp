@@ -39,6 +39,7 @@
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
@@ -1550,11 +1551,7 @@ NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
     if ( serialization && !serialization->_pythonModule.empty() ) {
         QString moduleName = QString::fromUtf8( ( serialization->_pythonModule.c_str() ) );
 
-#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
-        bool pythonModuleIsScriptFile = false;
-#else
-        bool pythonModuleIsScriptFile = serialization->_boostSerializationClassVersion < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME;
-#endif
+        bool pythonModuleIsScriptFile = FileSystemModel::startsWithDriveName(moduleName);
         AppInstance::setGroupLabelIDAndVersion(getNode(), moduleName, pythonModuleIsScriptFile);
     } else if ( !serialization && !getApp()->isCreatingPythonGroup()) {
         //if the node is a group and we're not loading the project, create one input and one output

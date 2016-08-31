@@ -5154,12 +5154,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             }
         }
 
-#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
-        bool restoreDefaultValue = true;
-#else
-        bool restoreDefaultValue = serialization->_values[k]._boostSerializationClassVersion >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES;
-#endif
-        restoreValueFromSerialization(serialization->_values[k], dimensionIndex, restoreDefaultValue);
+        restoreValueFromSerialization(serialization->_values[k], dimensionIndex, serialization->_values[k]._serializeDefaultValue);
     } // for all dims
 
     // Restore extra datas

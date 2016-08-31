@@ -125,11 +125,6 @@ public:
     // For each viewport, its projection. They are identified by their script-name
     std::map<std::string, ViewportData> _viewportsData;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    // The serialization version of the project
-    unsigned int _boostSerializationClassVersion;
-#endif
-
     ProjectSerialization()
     : SerializationObjectBase()
     , _nodes()
@@ -141,9 +136,6 @@ public:
     , _openedPanelsOrdered()
     , _projectWorkspace()
     , _viewportsData()
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    , _boostSerializationClassVersion(PROJECT_SERIALIZATION_VERSION)
-#endif
     {
         
     }
@@ -171,7 +163,6 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
-        _boostSerializationClassVersion = version;
 
         // Dead serialization code
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION && version < PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION) {

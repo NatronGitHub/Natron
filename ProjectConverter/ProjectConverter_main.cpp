@@ -290,7 +290,7 @@ static void tryReadAndConvertOlderProject(std::istream& stream, SERIALIZATION_NA
         boost::archive::xml_iarchive iArchive(stream);
         bool bgProject;
         iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
-        iArchive >> boost::serialization::make_nvp("Project", obj);
+        iArchive >> boost::serialization::make_nvp("Project", *obj);
 
         if (!bgProject) {
             SERIALIZATION_NAMESPACE::ProjectGuiSerialization deprecatedGuiSerialization;

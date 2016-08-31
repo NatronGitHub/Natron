@@ -81,9 +81,6 @@ public:
     , _nodeColor()
     , _overlayColor()
     , _viewerUIKnobsOrder()
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    , _boostSerializationClassVersion(NODE_SERIALIZATION_CURRENT_VERSION)
-#endif
     {
         _nodePositionCoords[0] = _nodePositionCoords[1] = INT_MIN;
         _nodeSize[0] = _nodeSize[1] = -1;
@@ -169,10 +166,6 @@ public:
     // If this node was built with a preset, this is the one
     std::string _presetLabel;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    unsigned int _boostSerializationClassVersion;
-#endif
-
     virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
@@ -190,8 +183,7 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
-        _boostSerializationClassVersion = version;
-        
+
         if (version > NODE_SERIALIZATION_CURRENT_VERSION) {
             throw std::invalid_argument("The project you're trying to load contains data produced by a more recent "
                                         "version of Natron, which makes it unreadable");

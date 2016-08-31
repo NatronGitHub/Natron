@@ -2797,6 +2797,8 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
         return;
     }
 
+    // In Natron 1.0 we did not have a project frame range knob, hence we need to recompute it
+    bool foundFrameRangeKnob = false;
     {
         CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(getApp());
 
@@ -2852,6 +2854,8 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
                 if (v == "Natron v1.0.0") {
                     getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
                 }
+            } else if (projectKnobs[i] == _imp->frameRange) {
+                foundFrameRangeKnob = true;
             }
         }
 
@@ -2875,11 +2879,9 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     _imp->lastAutoSave = time;
     getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    if (serialization->_boostSerializationClassVersion < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+    if (foundFrameRangeKnob) {
         recomputeFrameRangeFromReaders();
     }
-#endif
     
 } // Project::fromSerialization
 

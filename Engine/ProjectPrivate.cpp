@@ -41,6 +41,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
@@ -243,11 +244,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         bool usingPythonModule = false;
         if ( !pythonModuleName.empty() ) {
             unsigned int savedPythonModuleVersion = (*it)->_pythonModuleVersion;
-#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
-            bool moduleNameIsScriptPath = false;
-#else
-            bool moduleNameIsScriptPath = (*it)->_boostSerializationClassVersion < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME;
-#endif
+            bool moduleNameIsScriptPath = FileSystemModel::startsWithDriveName(QString::fromUtf8(pythonModuleName.c_str()));
             ProjectPrivate::checkForPyPlugNewVersion(pythonModuleName, moduleNameIsScriptPath, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
 
         } // if (!pythonModuleAbsolutePath.empty()) {

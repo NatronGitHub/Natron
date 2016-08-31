@@ -351,7 +351,6 @@ struct ValueSerialization
     bool _enabledChanged;
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    int _boostSerializationClassVersion;
     std::string _typeName;
 #endif
 
@@ -370,7 +369,6 @@ struct ValueSerialization
     , _slaveMasterLink()
     , _enabledChanged(false)
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    , _boostSerializationClassVersion(VALUE_SERIALIZATION_VERSION)
     , _typeName()
 #endif
     {
@@ -392,7 +390,14 @@ struct ValueSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
-        _boostSerializationClassVersion = version;
+        // With boost, value was always serialized
+        _serializeValue = true;
+
+        if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+            _serializeDefaultValue = false;
+        }
+
+        _mustSerialize = true;
 
         bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
         bool isChoice = _typeName == NATRON_NAMESPACE::KnobChoice::typeNameStatic();
@@ -606,10 +611,6 @@ public:
     // True if the knob has been changed since its default state or if this is a user knob
     bool _mustSerialize;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    unsigned int _boostSerializationClassVersion;
-#endif
-
 
     explicit KnobSerialization()
     : _typeName()
@@ -633,9 +634,6 @@ public:
     , _inViewerContextLabel()
     , _tooltip()
     , _mustSerialize(false)
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    , _boostSerializationClassVersion(KNOB_SERIALIZATION_VERSION)
-#endif
     {
 
     }
@@ -669,8 +667,9 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
-        _boostSerializationClassVersion = version;
-        
+
+        _mustSerialize = true;
+
         ar & ::boost::serialization::make_nvp("Name", _scriptName);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
