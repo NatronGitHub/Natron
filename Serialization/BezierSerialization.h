@@ -19,24 +19,11 @@
 #ifndef Engine_BezierSerialization_h
 #define Engine_BezierSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
-#include "Global/Macros.h"
 
 
 #include "Serialization/RotoDrawableItemSerialization.h"
 #include "Serialization/BezierCPSerialization.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#define BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE 2
-#define BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE 3
-#define BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER 4
-#define BEZIER_SERIALIZATION_VERSION BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER
-#endif
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -63,54 +50,11 @@ public:
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
     
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        throw std::runtime_error("Saving with boost is no longer supported");
-    }
 
     template<class Archive>
-    void load(Archive & ar,
-              const unsigned int version)
-    {
-        Q_UNUSED(version);
-        boost::serialization::void_cast_register<BezierSerialization, RotoDrawableItemSerialization>(
-            static_cast<BezierSerialization *>(NULL),
-            static_cast<RotoDrawableItemSerialization *>(NULL)
-            );
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
-        int numPoints;
-        ar & ::boost::serialization::make_nvp("NumPoints", numPoints);
-        if ( (version >= BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE) && (version < BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE) ) {
-            bool isStroke;
-            ar & ::boost::serialization::make_nvp("IsStroke", isStroke);
-        }
-        for (int i = 0; i < numPoints; ++i) {
-            NATRON_NAMESPACE::BezierCP cp;
-            ar & ::boost::serialization::make_nvp("CP", cp);
-            BezierCPSerialization cps;
-            cp.toSerialization(&cps);
-            _controlPoints.push_back(cps);
-
-            NATRON_NAMESPACE::BezierCP fp;
-            ar & ::boost::serialization::make_nvp("FP", fp);
-            BezierCPSerialization fps;
-            fp.toSerialization(&fps);
-            _featherPoints.push_back(fps);
-        }
-        ar & ::boost::serialization::make_nvp("Closed", _closed);
-        if (version >= BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER) {
-            ar & ::boost::serialization::make_nvp("OpenBezier", _isOpenBezier);
-        } else {
-            _isOpenBezier = false;
-        }
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
-
+    void serialize(Archive & ar,
+                   const unsigned int version);
+    
     std::list< BezierCPSerialization > _controlPoints, _featherPoints;
     bool _closed;
     bool _isOpenBezier;
@@ -118,9 +62,5 @@ public:
 
 
 SERIALIZATION_NAMESPACE_EXIT;
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::BezierSerialization, BEZIER_SERIALIZATION_VERSION)
-#endif
 
 #endif // Engine_BezierSerialization_h

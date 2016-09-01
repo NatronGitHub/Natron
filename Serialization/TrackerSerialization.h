@@ -21,13 +21,6 @@
 
 #include "Serialization/KnobSerialization.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Engine/TrackerContext.h"
-#define TRACK_SERIALIZATION_ADD_TRACKER_PM 2
-#define TRACK_SERIALIZATION_VERSION TRACK_SERIALIZATION_ADD_TRACKER_PM
-#define TRACKER_CONTEXT_SERIALIZATION_VERSION 1
-#endif
-
 SERIALIZATION_NAMESPACE_ENTER;
 
 class TrackSerialization
@@ -58,45 +51,8 @@ public:
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        throw std::runtime_error("Saving with boost is no longer supported");
-    }
-
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int version)
-    {
-        (void)version;
-        if (version >= TRACK_SERIALIZATION_ADD_TRACKER_PM) {
-            ar & boost::serialization::make_nvp("IsTrackerPM", _isPM);
-        }
-
-        ar & boost::serialization::make_nvp("Enabled", _enabled);
-        ar & boost::serialization::make_nvp("ScriptName", _scriptName);
-        ar & boost::serialization::make_nvp("Label", _label);
-        int nbItems;
-        ar & boost::serialization::make_nvp("NbItems", nbItems);
-        for (int i = 0; i < nbItems; ++i) {
-            KnobSerializationPtr s( new KnobSerialization() );
-            ar & boost::serialization::make_nvp("Item", *s);
-            _knobs.push_back(s);
-        }
-        int nbUserKeys;
-        ar & boost::serialization::make_nvp("NbUserKeys", nbUserKeys);
-        for (int i = 0; i < nbUserKeys; ++i) {
-            int key;
-            ar & boost::serialization::make_nvp("UserKeys", key);
-            _userKeys.push_back(key);
-        }
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 
 
 };
@@ -113,31 +69,9 @@ public:
     {
     }
 
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
-    void save(Archive & ar,
-              const unsigned int version) const
-    {
-        throw std::runtime_error("Saving with boost is no longer supported");
-    }
+    void serialize(Archive & ar, const unsigned int version);
 
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int version)
-    {
-        (void)version;
-        int nbItems;
-        ar & boost::serialization::make_nvp("NbItems", nbItems);
-        for (int i = 0; i < nbItems; ++i) {
-            TrackSerialization s;
-            ar & boost::serialization::make_nvp("Item", s);
-            _tracks.push_back(s);
-        }
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
 
     virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
 
@@ -147,11 +81,5 @@ public:
 };
 
 SERIALIZATION_NAMESPACE_EXIT;
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::TrackSerialization, TRACK_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
-#endif
-
 
 #endif // TRACKERSERIALIZATION_H

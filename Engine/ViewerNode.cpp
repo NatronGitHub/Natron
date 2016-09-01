@@ -768,18 +768,20 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     }
 
 
-    if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled(0)  || bCurChoice.empty() ) {
-        uiContext->setInfoBarVisible(1, false);
-    } else if (operation != eViewerCompositingOperatorNone) {
-        uiContext->setInfoBarVisible(1, true);
+    if (uiContext) {
+        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled(0)  || bCurChoice.empty() ) {
+            uiContext->setInfoBarVisible(1, false);
+        } else if (operation != eViewerCompositingOperatorNone) {
+            uiContext->setInfoBarVisible(1, true);
+        }
     }
 
     /*bool autoWipe = getInternalNode()->isInputChangeRequestedFromViewer();
 
-    if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-        && (operation == eViewerCompositingOperatorNone) ) {
-        blendingModeChoiceKnob.lock()->setValue((int)eViewerCompositingOperatorWipeUnder);
-    }*/
+     if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
+     && (operation == eViewerCompositingOperatorNone) ) {
+     blendingModeChoiceKnob.lock()->setValue((int)eViewerCompositingOperatorWipeUnder);
+     }*/
 
 } // refreshInputChoices
 

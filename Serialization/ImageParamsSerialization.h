@@ -22,10 +22,6 @@
 #include "Serialization/NonKeyParamsSerialization.h"
 #include "Serialization/RectDSerialization.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Engine/ImageComponents.h"
-#endif
-
 SERIALIZATION_NAMESPACE_ENTER;
 
 class ImageComponentsSerialization
