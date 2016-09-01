@@ -22,10 +22,6 @@
 
 #include "Serialization/SerializationBase.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Serialization/KnobSerialization.h"
-#endif
-
 #define kSplitterOrientationHorizontal "Horizontal"
 #define kSplitterOrientationVertical "Vertical"
 
@@ -115,44 +111,9 @@ public:
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        ar & ::boost::serialization::make_nvp("Label", name);
-        ar & ::boost::serialization::make_nvp("PythonFunction", pythonFunction);
-        int nKnobs = knobs.size();
-        ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
+    void serialize(Archive & ar, const unsigned int version);
 
-        for (std::list<KnobSerializationPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            ar & ::boost::serialization::make_nvp("item", **it);
-        }
-
-        ar & ::boost::serialization::make_nvp("UserData", userData);
-    }
-
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int /*version*/)
-    {
-        ar & ::boost::serialization::make_nvp("Label", name);
-        ar & ::boost::serialization::make_nvp("PythonFunction", pythonFunction);
-        int nKnobs;
-        ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
-
-        for (int i = 0; i < nKnobs; ++i) {
-            KnobSerializationPtr k(new KnobSerialization);
-            ar & ::boost::serialization::make_nvp("item", *k);
-            knobs.push_back(k);
-        }
-
-        ar & ::boost::serialization::make_nvp("UserData", userData);
-    }
-
-     BOOST_SERIALIZATION_SPLIT_MEMBER()
-
-#endif
 
 };
 

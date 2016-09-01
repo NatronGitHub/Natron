@@ -22,11 +22,6 @@
 
 #include "Serialization/SerializationBase.h"
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#define ROTO_ITEM_INTRODUCES_LABEL 2
-#define ROTO_ITEM_VERSION ROTO_ITEM_INTRODUCES_LABEL
-#endif
-
 SERIALIZATION_NAMESPACE_ENTER;
 
 class RotoItemSerialization
@@ -58,41 +53,13 @@ public:
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
     template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        throw std::runtime_error("Saving with boost is no longer supported");
-    }
-
-
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int version)
-    {
-        Q_UNUSED(version);
-        ar & ::boost::serialization::make_nvp("Name", name);
-        if (version >= ROTO_ITEM_INTRODUCES_LABEL) {
-            ar & ::boost::serialization::make_nvp("Label", label);
-        }
-        ar & ::boost::serialization::make_nvp("Activated", activated);
-        ar & ::boost::serialization::make_nvp("ParentLayer", parentLayerName);
-        ar & ::boost::serialization::make_nvp("Locked", locked);
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
-
+    void serialize(Archive & ar, const unsigned int version);
 
 };
 
 SERIALIZATION_NAMESPACE_EXIT;
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoItemSerialization, ROTO_ITEM_VERSION)
-#endif
 
 
 #endif // Engine_RotoItemSerialization_h

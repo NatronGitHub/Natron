@@ -83,6 +83,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
+#include "Global/GitVersion.h"
+#include "Global/MemoryInfo.h"
+
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
 
