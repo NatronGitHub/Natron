@@ -49,7 +49,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
 #include "Gui/Menu.h"
+#include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/Splitter.h"
+#include "Gui/TabWidget.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ToolButton.h"
 #include "Gui/RenderStatsDialog.h"
@@ -277,6 +280,12 @@ Gui::closeEvent(QCloseEvent* e)
     }
 }
 
+ProjectGui*
+Gui::getProjectGui() const
+{
+    return _imp->_projectGui;
+}
+
 NodeGuiPtr
 Gui::createNodeGUI(const NodePtr& node,
                    const CreateNodeArgs& args)
@@ -328,7 +337,7 @@ Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
 }
 
 void
-Gui::createViewerGui(const NodePtr& viewer)
+Gui::createViewerGui(const NodeGuiPtr& node)
 {
     TabWidget* where = _imp->_nextViewerTabPlace;
 
@@ -339,12 +348,12 @@ Gui::createViewerGui(const NodePtr& viewer)
     }
     assert(where);
 
-    ViewerInstancePtr v = viewer->isEffectViewerInstance();
+    ViewerNodePtr v = node->getNode()->isEffectViewerNode();
     assert(v);
 
-    ViewerTab* tab = addNewViewerTab(v, where);
+    ViewerTab* tab = addNewViewerTab(node, where);
     NodeGraph* graph = 0;
-    NodeCollectionPtr collection = viewer->getGroup();
+    NodeCollectionPtr collection = node->getNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -738,6 +747,26 @@ Gui::openHelpDocumentation()
         Dialogs::informationDialog(tr("Missing documentation").toStdString(), tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
+}
+
+
+TabWidgetI*
+Gui::isMainWidgetTab() const
+{
+    return dynamic_cast<TabWidget*>(getCentralWidget());
+}
+
+SplitterI*
+Gui::isMainWidgetSplitter() const
+{
+    return dynamic_cast<Splitter*>(getCentralWidget());
+}
+
+DockablePanelI*
+Gui::isMainWidgetPanel() const
+{
+    // Main window cannot have a panel as its main widget
+    return (DockablePanelI*)NULL;
 }
 
 NATRON_NAMESPACE_EXIT;

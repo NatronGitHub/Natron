@@ -71,7 +71,7 @@ BaseTest::registerTestPlugins()
         ///make sure the generic test plugin is present
         LibraryBinary* bin = NULL;
         try {
-            Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
+            PluginPtr p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
             if (p) {
                 bin = p->getLibraryBinary();
             }

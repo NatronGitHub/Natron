@@ -94,7 +94,7 @@ TrackerNode::getPluginDescription() const
 }
 
 void
-TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
+TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
 {
     // Viewer buttons
     shortcuts->push_back( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, Key_Z) );
@@ -367,6 +367,7 @@ TrackerNode::initializeKnobs()
     magWindow->setDefaultValue(200);
     magWindow->setMinimum(10);
     magWindow->setMaximum(10000);
+    magWindow->disableSlider();
     addOverlaySlaveParam(magWindow);
     trackingPage->addKnob(magWindow);
     _imp->ui->magWindowPxSizeKnob = magWindow;
@@ -411,7 +412,9 @@ TrackerNode::initializeKnobs()
     resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(magWindow);
     addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
-    addKnobToViewerUI(context->getDefaultMarkerSearchWinSizeKnob());
+    KnobIntPtr defMarkerSearchWinKnob = context->getDefaultMarkerSearchWinSizeKnob();
+    addKnobToViewerUI(defMarkerSearchWinKnob);
+    defMarkerSearchWinKnob->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );

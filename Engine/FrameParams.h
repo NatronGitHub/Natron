@@ -37,12 +37,17 @@
 #include "Engine/EngineFwd.h"
 #include "Global/GLIncludes.h"
 
+#include "Serialization/RectDSerialization.h"
+#include "Serialization/FrameParamsSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 class FrameParams
     : public NonKeyParams
 {
 public:
+
+    typedef SERIALIZATION_NAMESPACE::FrameParamsSerialization SerializationType;
 
     FrameParams()
         : NonKeyParams()
@@ -80,8 +85,6 @@ public:
     {
     }
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
 
     bool operator==(const FrameParams & other) const
     {
@@ -101,6 +104,26 @@ public:
     void setInternalImage(const ImagePtr& image)
     {
         _image = image;
+    }
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL
+    {
+        SERIALIZATION_NAMESPACE::FrameParamsSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::FrameParamsSerialization*>(serializationBase);
+        if (!serialization) {
+            return;
+        }
+        NonKeyParams::toSerialization(serializationBase);
+        _rod.toSerialization(&serialization->rod);
+    }
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL
+    {
+        const SERIALIZATION_NAMESPACE::FrameParamsSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::FrameParamsSerialization*>(&serializationBase);
+        if (!serialization) {
+            return;
+        }
+        NonKeyParams::fromSerialization(serializationBase);
+        _rod.fromSerialization(serialization->rod);
     }
 
 private:

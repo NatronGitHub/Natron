@@ -28,26 +28,14 @@
 #include <sstream>
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
 #include <QApplication>
 #include <QClipboard>
+#include <QDebug>
+#include <QThread>
 #include <QtCore/QMimeData>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
@@ -57,9 +45,11 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
-#include "Gui/NodeGuiSerialization.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
+#include "Serialization/SerializationIO.h"
 
 #include "Global/QtCompat.h"
 
@@ -112,7 +102,7 @@ NodeGraph::centerOnItem(QGraphicsItem* item)
 
 void
 NodeGraph::copyNodes(const NodesGuiList& nodes,
-                     NodeClipBoard& clipboard)
+                     SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard)
 {
     _imp->copyNodesInternal(nodes, clipboard);
 }
@@ -126,13 +116,13 @@ NodeGraph::copySelectedNodes()
         return;
     }
 
-    NodeClipBoard& cb = appPTR->getNodeClipBoard();
+    SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
     _imp->copyNodesInternal(_imp->_selection, cb);
 
     std::ostringstream ss;
+
     try {
-        boost::archive::xml_oarchive oArchive(ss);
-        oArchive << boost::serialization::make_nvp("Clipboard", cb);
+        SERIALIZATION_NAMESPACE::write(ss, cb);
     } catch (...) {
         qDebug() << "Failed to copy selection to system clipboard";
     }
@@ -159,7 +149,7 @@ NodeGraph::cutSelectedNodes()
 }
 
 void
-NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,
+NodeGraph::pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard,
                          std::list<std::pair<std::string, NodeGuiPtr > >* newNodes)
 {
     QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
@@ -178,12 +168,11 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
     }
     QByteArray data = mimedata->data( QLatin1String("text/plain") );
     std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    NodeClipBoard& cb = appPTR->getNodeClipBoard();
+    SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
     std::string s = QString::fromUtf8(data).toStdString();
     try {
         std::stringstream ss(s);
-        boost::archive::xml_iarchive iArchive(ss);
-        iArchive >> boost::serialization::make_nvp("Clipboard", cb);
+        SERIALIZATION_NAMESPACE::read(ss, &cb);
     } catch (...) {
         return false;
     }
@@ -211,7 +200,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     }
 
     ///Don't use the member clipboard as the user might have something copied
-    NodeClipBoard tmpClipboard;
+    SERIALIZATION_NAMESPACE::NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
     std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
     _imp->pasteNodesInternal(tmpClipboard, pos, true, &newNodes);
@@ -294,29 +283,28 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
     }
 
-    QPointF offset( scenePos.x() - ( (xmax + xmin) / 2. ), scenePos.y() -  ( (ymax + ymin) / 2. ) );
+    QPointF offset((xmax + xmin) / 2.,(ymax + ymin) / 2.);
     std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    std::list <NodeSerializationPtr > serializations;
+    SERIALIZATION_NAMESPACE::NodeSerializationList serializations;
     std::list <NodeGuiPtr > newNodesList;
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        boost::shared_ptr<NodeGuiSerialization> guiSerialization(new NodeGuiSerialization);
-        (*it)->serialize( guiSerialization.get() );
-        NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
-                                           _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr  internalSerialization( new SERIALIZATION_NAMESPACE::NodeSerialization );
+        (*it)->getNode()->toSerialization(internalSerialization.get());
+        NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset, scenePos,
+                                           _imp->group.lock(), std::string(), (*it)->getNode(), &oldNewScriptNameMapping );
 
-        newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
+        newNodes.push_back( std::make_pair(internalSerialization->_nodeScriptName, clone) );
         newNodesList.push_back(clone);
         serializations.push_back(internalSerialization);
 
-        oldNewScriptNameMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
+        oldNewScriptNameMapping[internalSerialization->_nodeScriptName] = clone->getNode()->getScriptName();
     }
 
 
     assert( serializations.size() == newNodes.size() );
     ///restore connections
-    _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
+    NodeGraphPrivate::restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
 
 
     NodesList allNodes;
@@ -324,7 +312,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
 
     //Restore links once all children are created for alias knobs/expressions
-    std::list <NodeSerializationPtr >::iterator itS = serializations.begin();
+    SERIALIZATION_NAMESPACE::NodeSerializationList::iterator itS = serializations.begin();
     for (std::list <NodeGuiPtr > ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
         (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
     }
@@ -437,7 +425,7 @@ NodeGraph::centerOnAllNodes()
         for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->getPos_mt_safe() ) );
+                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );
@@ -448,7 +436,7 @@ NodeGraph::centerOnAllNodes()
         for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             if ( /*(*it)->isActive() && */ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->getPos_mt_safe() ) );
+                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );

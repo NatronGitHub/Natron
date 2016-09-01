@@ -763,6 +763,8 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
     typedef ParamsType param_t;
+    typedef typename KeyType::SerializationType key_serialization_t;
+    typedef typename ParamsType::SerializationType params_serialization_t;
 
     /**
      * @brief Ctor

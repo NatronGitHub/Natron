@@ -66,6 +66,11 @@ public:
     virtual void redraw() = 0;
 
     /**
+     * @brief Returns infos about the OpenGL context used by this OverlaySupport
+     **/
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const = 0;
+
+    /**
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
     virtual void getViewportSize(double &width, double &height) const = 0;

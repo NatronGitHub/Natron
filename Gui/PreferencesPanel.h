@@ -65,6 +65,11 @@ public:
 
     void addShortcut(BoundAction* action);
 
+    virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL
+    {
+        return std::string();
+    }
+
 public Q_SLOTS:
 
     void restoreDefaults();

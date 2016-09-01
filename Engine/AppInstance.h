@@ -210,11 +210,7 @@ public:
         return eStandardButtonYes;
     }
 
-    virtual void loadProjectGui(bool /*isAutosave*/, boost::archive::xml_iarchive & /*archive*/) const
-    {
-    }
-
-    virtual void saveProjectGui(boost::archive::xml_oarchive & /*archive*/)
+    virtual void loadProjectGui(bool /*isAutosave*/, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& /*serialization*/) const
     {
     }
 
@@ -242,7 +238,11 @@ public:
         return false;
     }
 
+    virtual void setGuiFrozen(bool frozen) { Q_UNUSED(frozen); }
+
     virtual bool isGuiFrozen() const { return false; }
+
+    virtual void refreshAllTimeEvaluationParams(bool /*onlyTimeEvaluationKnobs*/) {}
 
     virtual void progressStart(const NodePtr& node,
                                const std::string &message,
@@ -265,6 +265,8 @@ public:
         return true;
     }
 
+    virtual void showRenderStatsWindow() {}
+
     /**
      * @brief Checks for a new version of Natron
      **/
@@ -277,6 +279,10 @@ public:
     {
     }
 
+    virtual void setMasterSyncViewer(const NodePtr& viewerNode) { Q_UNUSED(viewerNode); }
+
+    virtual NodePtr getMasterSyncViewer() const { return NodePtr(); }
+
     ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
 
     double getProjectFrameRate() const;
@@ -285,6 +291,7 @@ public:
 
     virtual std::string saveImageFileDialog() { return std::string(); }
 
+    virtual bool checkAllReadersModificationDate(bool /*errorAndWarn*/) { return true; }
 
     void onOCIOConfigPathChanged(const std::string& path);
 
@@ -340,6 +347,8 @@ public:
     virtual void abortAllViewers() {}
 
     virtual void refreshAllPreviews() {}
+
+    virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const { Q_UNUSED(bitdepthPerComponent); Q_UNUSED(hasAlpha);}
 
     virtual void declareCurrentAppVariable_Python();
 
@@ -414,9 +423,57 @@ public:
     void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
     virtual void reloadScriptEditorFonts() {}
 
-    const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
-    void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
+    const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
+    void setProjectBeingLoadedInfo(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& info);
 
+    SerializableWindow* getMainWindowSerialization() const;
+
+    std::list<SerializableWindow*> getFloatingWindowsSerialization() const;
+
+    std::list<SplitterI*> getSplittersSerialization() const;
+
+    std::list<TabWidgetI*> getTabWidgetsSerialization() const;
+
+    std::list<PyPanelI*> getPyPanelsSerialization() const;
+
+    std::list<DockablePanelI*> getOpenedSettingsPanels() const;
+
+    void registerFloatingWindow(SerializableWindow* window);
+    void unregisterFloatingWindow(SerializableWindow* window);
+    void clearFloatingWindows();
+
+
+    void registerSplitter(SplitterI* splitter);
+    void unregisterSplitter(SplitterI* splitter);
+    void clearSplitters();
+
+    void registerTabWidget(TabWidgetI* tabWidget);
+    void unregisterTabWidget(TabWidgetI* tabWidget);
+    void clearTabWidgets(); 
+
+    void registerPyPanel(PyPanelI* panel, const std::string& pythonFunction);
+    void unregisterPyPanel(PyPanelI* panel);
+
+    void registerSettingsPanel(DockablePanelI* panel, int index = -1);
+    void unregisterSettingsPanel(DockablePanelI* panel);
+    void clearSettingsPanels();
+
+    /**
+    * @brief If baseName is already used by another pane or it is empty,this function will return a new pane name that is not already
+    * used by another pane. Otherwise it will return baseName.
+    **/
+    QString getAvailablePaneName( const QString & baseName = QString() ) const;
+
+    virtual void getHistogramScriptNames(std::list<std::string>* /*histograms*/) const {}
+
+    virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* /*projections*/) const {}
+
+    void saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization);
+
+
+    static void setGroupLabelIDAndVersion(const NodePtr& node,
+                                      const QString &pythonModule,
+                                      bool pythonModuleIsAbsoluteScriptFilePath);
 public Q_SLOTS:
 
     void quit();
@@ -445,12 +502,20 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect);
+    virtual void onTabWidgetRegistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
+
+    virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
+
+    virtual void onGroupCreationFinished(const NodePtr& node, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& args);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
     {
     }
+
+    virtual void createMainWindow() { }
+
+    void setMainWindowPointer(SerializableWindow* window);
 
 private:
 
@@ -462,11 +527,8 @@ private:
 
     NodePtr createNodeInternal(CreateNodeArgs& args);
 
-    void setGroupLabelIDAndVersion(const NodePtr& node,
-                                   const QString& pythonModulePath,
-                                   const QString &pythonModule);
 
-    NodePtr createNodeFromPythonModule(Plugin* plugin,
+    NodePtr createNodeFromPythonModule(const PluginPtr& plugin,
                                        const CreateNodeArgs& args);
 
     boost::scoped_ptr<AppInstancePrivate> _imp;

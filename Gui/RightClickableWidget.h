@@ -74,6 +74,7 @@ public:
 
 Q_SIGNALS:
 
+    void clicked(const QPoint& p);
     void rightClicked(const QPoint& p);
     void escapePressed();
 

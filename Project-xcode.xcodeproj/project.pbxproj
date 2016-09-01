@@ -81,7 +81,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 7B66319A2D661600E54F0DA9;
+			remoteGlobalIDString = F82F89455E05F43CE051A79D;
 			remoteInfo = qhttpserver;
 		};
 		1E15250D1CA9CCA70056C506 /* PBXContainerItemProxy */ = {
@@ -123,35 +123,35 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524F31CA9CCA60056C506 /* ceres.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = F8CC1206D116CA04F4C59E76;
+			remoteGlobalIDString = 50E22BF77EADB308C87E78CC;
 			remoteInfo = ceres;
 		};
 		1E1525391CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524F81CA9CCA60056C506 /* gflags.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = AE1AD09FA66E17B98A648194;
+			remoteGlobalIDString = DC3A22537506A6669865251C;
 			remoteInfo = gflags;
 		};
 		1E15253B1CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524FD1CA9CCA60056C506 /* glog.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 7569DD78B40A8DF6A62CFA3E;
+			remoteGlobalIDString = 03DDCD43C74EEE647AD61A75;
 			remoteInfo = glog;
 		};
 		1E15253D1CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = C7E53A7AD172AE9320949229;
+			remoteGlobalIDString = CEC193B6F4ECB62235821F2B;
 			remoteInfo = LibMV;
 		};
 		1E15253F1CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 328590AF750A79D2CF9DFB9A;
+			remoteGlobalIDString = 6D7288D8764B97DD1E027858;
 			remoteInfo = openMVG;
 		};
 		1E189EC31C49475E00F1FD20 /* PBXContainerItemProxy */ = {
@@ -172,7 +172,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = DC7FDCA340DAC7F023377B78;
+			remoteGlobalIDString = AFEF7D68642F83E3811BB9B9;
 			remoteInfo = Tests;
 		};
 		1E306DFE1C4949BA00BAC6E3 /* PBXContainerItemProxy */ = {
@@ -193,28 +193,28 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 32D9C4266EC8DC770A644D29;
+			remoteGlobalIDString = 3B61C2EC40908C23E2918B71;
 			remoteInfo = NatronRenderer;
 		};
 		1E306E041C4949D700BAC6E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 782793A212D0A946A2611559;
+			remoteGlobalIDString = 91455CC2BC21CB91737B3DC6;
 			remoteInfo = Natron;
 		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = F82FF8B1AB092B635B8D3C44;
+			remoteGlobalIDString = 30EC256330269B7CAA1FCB17;
 			remoteInfo = Engine;
 		};
 		1E5F8F5918AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 9B38B1D5C33AF4E4B0F859F7;
+			remoteGlobalIDString = 4AE2754265AC5F6E557A903C;
 			remoteInfo = Gui;
 		};
 		1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */ = {
@@ -252,6 +252,20 @@
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
 		};
+		AC07FAD91D6F65BE00A5A9D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC07FAD61D6F65BE00A5A9D8;
+			remoteInfo = Serialization;
+		};
+		AC07FAE11D6F65D100A5A9D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC07FADE1D6F65D100A5A9D8;
+			remoteInfo = NatronProjectConverter;
+		};
 		AC4AA6371C480E8700C92E12 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
@@ -270,8 +284,15 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = AC77629C1D1ACE460006A58E /* tess.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 4CC5E6935FD17005E28F4818;
+			remoteGlobalIDString = DCE44EEBD5943F419495A13F;
 			remoteInfo = tess;
+		};
+		AC7915111D70394D00CD424C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC79150C1D70394D00CD424C;
+			remoteInfo = yamlcpp;
 		};
 		ACD67BFD1CEC9D0900DD2CFE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -284,7 +305,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 547B056CEA92922A2FCFC8AF;
+			remoteGlobalIDString = 68FEEA655C477C409D21050B;
 			remoteInfo = hoedown;
 		};
 		D7A1964518B2242500F412DA /* PBXContainerItemProxy */ = {
@@ -298,7 +319,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 0E116598542859DA9320C015;
+			remoteGlobalIDString = EA73569A7C740BC02AA20FE9;
 			remoteInfo = HostSupport;
 		};
 /* End PBXContainerItemProxy section */
@@ -397,7 +418,10 @@
 		1EEB0B911D1ADF4D00F0D43D /* LICENSE-webp.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-webp.txt"; sourceTree = "<group>"; };
 		1EEB0B921D1ADF4D00F0D43D /* LICENSE-zlib.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-zlib.txt"; sourceTree = "<group>"; };
 		1EEB0B931D1ADF4D00F0D43D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Serialization.xcodeproj; path = Serialization/Serialization.xcodeproj; sourceTree = "<group>"; };
+		AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronProjectConverter.xcodeproj; path = ProjectConverter/NatronProjectConverter.xcodeproj; sourceTree = "<group>"; };
 		AC77629C1D1ACE460006A58E /* tess.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = tess.xcodeproj; path = libs/libtess/tess.xcodeproj; sourceTree = "<group>"; };
+		AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = yamlcpp.xcodeproj; path = "libs/yaml-cpp/yamlcpp.xcodeproj"; sourceTree = "<group>"; };
 		ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = hoedown.xcodeproj; path = libs/hoedown/hoedown.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -530,9 +554,12 @@
 				1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */,
 				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
 				1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */,
+				AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */,
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
+				AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */,
+				AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
 			);
 			sourceTree = "<group>";
@@ -626,10 +653,34 @@
 			path = tools/license/components;
 			sourceTree = "<group>";
 		};
+		AC07FAD41D6F65BE00A5A9D8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC07FADA1D6F65BE00A5A9D8 /* libSerialization.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC07FADC1D6F65D100A5A9D8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC07FAE21D6F65D100A5A9D8 /* NatronProjectConverter */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		AC77629D1D1ACE460006A58E /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				AC7762A31D1ACE460006A58E /* libtess.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC79150A1D70394D00CD424C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC7915121D70394D00CD424C /* libyamlcpp.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -710,6 +761,10 @@
 					ProjectRef = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 				},
 				{
+					ProductGroup = AC07FADC1D6F65D100A5A9D8 /* Products */;
+					ProjectRef = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+				},
+				{
 					ProductGroup = 1E306DEE1C49497200BAC6E3 /* Products */;
 					ProjectRef = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
 				},
@@ -722,12 +777,20 @@
 					ProjectRef = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
 				},
 				{
+					ProductGroup = AC07FAD41D6F65BE00A5A9D8 /* Products */;
+					ProjectRef = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
+				},
+				{
 					ProductGroup = AC77629D1D1ACE460006A58E /* Products */;
 					ProjectRef = AC77629C1D1ACE460006A58E /* tess.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
+				},
+				{
+					ProductGroup = AC79150A1D70394D00CD424C /* Products */;
+					ProjectRef = AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -818,11 +881,32 @@
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		AC07FADA1D6F65BE00A5A9D8 /* libSerialization.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libSerialization.a;
+			remoteRef = AC07FAD91D6F65BE00A5A9D8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC07FAE21D6F65D100A5A9D8 /* NatronProjectConverter */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = NatronProjectConverter;
+			remoteRef = AC07FAE11D6F65D100A5A9D8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		AC7762A31D1ACE460006A58E /* libtess.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libtess.a;
 			remoteRef = AC7762A21D1ACE460006A58E /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC7915121D70394D00CD424C /* libyamlcpp.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libyamlcpp.a;
+			remoteRef = AC7915111D70394D00CD424C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		ACD67BFE1CEC9D0900DD2CFE /* libhoedown.a */ = {

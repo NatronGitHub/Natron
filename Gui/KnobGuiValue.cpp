@@ -227,7 +227,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(3);
 
-    if (getKnobsCountOnSameLine() > 1) {
+    if (getKnobsCountOnSameLine() > 1 && !isViewerUIKnob()) {
         disableSlider();
     }
 
@@ -334,6 +334,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         }
 
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), type, thisShared, i);
+        box->setAlignment(getSpinboxAlignment());
         NumericKnobValidator* validator = new NumericKnobValidator(box, thisShared);
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
@@ -425,10 +426,14 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
         _imp->slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, value0, knob->getEvaluateOnChange(),
                                                sliderType, getGui(), eScaleTypeLinear, layout->parentWidget() );
-
-        _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        if (isViewerUIKnob()) {
+            // When in horizontal layout, we don't want the slider to grow
+            _imp->slider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        } else {
+            _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        }
         if ( hasToolTip() ) {
-            _imp->slider->setToolTip( toolTip() );
+            toolTip(_imp->slider);
         }
         QObject::connect( _imp->slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
         QObject::connect( _imp->slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
@@ -1136,12 +1141,11 @@ void
 KnobGuiValue::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-            _imp->spinBoxes[i].first->setToolTip( tt );
+            toolTip(_imp->spinBoxes[i].first);
         }
         if (_imp->slider) {
-            _imp->slider->setToolTip(tt);
+            toolTip(_imp->slider);
         }
     }
 }
@@ -1289,6 +1293,18 @@ KnobGuiInt::getIncrements(std::vector<double>* increments) const
         (*increments)[i] = (double)incr[i];
     }
 }
+
+Qt::Alignment
+KnobGuiInt::getSpinboxAlignment() const 
+{
+    KnobIntPtr knob = _knob.lock();
+    if (knob->isValueCenteredInSpinBox()) {
+        return Qt::AlignVCenter | Qt::AlignHCenter;
+    } else {
+        return KnobGuiValue::getSpinboxAlignment();
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

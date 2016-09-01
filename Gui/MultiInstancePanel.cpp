@@ -1936,7 +1936,7 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     } catch (...) {
     }
 
-    newInstance->updateEffectLabelKnob(newName);
+    newInstance->updateEffectSubLabelKnob(newName);
 
     KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance );
     std::list<KnobDoublePtr > centers;

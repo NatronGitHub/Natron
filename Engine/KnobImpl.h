@@ -1986,6 +1986,16 @@ Knob<T>::getDefaultValue(int dimension) const
 }
 
 template<typename T>
+T
+Knob<T>::getInitialDefaultValue(int dimension) const
+{
+    QMutexLocker l(&_valueMutex);
+
+    return _defaultValues[dimension].initialValue;
+
+}
+
+template<typename T>
 bool
 Knob<T>::hasDefaultValueChanged(int dimension) const
 {
@@ -2016,6 +2026,7 @@ Knob<T>::setDefaultValue(const T & v,
         }
     }
     resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    computeHasModifications();
 }
 
 template <typename T>
@@ -2935,6 +2946,7 @@ template <typename T>
 void
 Knob<T>::computeHasModifications()
 {
+
     bool oneChanged = false;
 
     for (int i = 0; i < getDimension(); ++i) {
@@ -2958,7 +2970,6 @@ Knob<T>::computeHasModifications()
             }
         }
 
-        ///Check expressions too in the future
         if (!hasModif) {
             QMutexLocker k(&_valueMutex);
             if ( computeValuesHaveModifications(i, _values[i], _defaultValues[i].value) ) {

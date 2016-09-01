@@ -262,7 +262,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->mainLayout->addWidget(_imp->descriptionEdit, 5, 1, 1, 2);
     _imp->mainLayout->addWidget(_imp->fileLabel, 6, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->fileEdit, 6, 1, 1, 1);
-    _imp->mainLayout->addWidget(_imp->openButton, 7, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 6, 2, 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 3);
 
     // If this node is already a PyPlug, pre-fill the dialog with existing information
@@ -291,13 +291,18 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
                 }
             }
             int version = pyPlug->getMajorVersion();
-            std::string pluginPath = pyPlug->getPluginPythonModule();
+            std::string pythonModuleName = pyPlug->getPluginPythonModule();
+            std::string pluginPath;
             {
-                std::size_t foundLastSlash = pluginPath.find_last_of("/");
-                if (foundLastSlash != std::string::npos) {
-                    pluginPath = pluginPath.substr(0, foundLastSlash);
+                std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
+                unsigned int version;
+                bool istoolset;
+
+                if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
+                    
                 }
             }
+
             {
                 std::size_t foundLastSlash = iconFilePath.find_last_of("/");
                 if (foundLastSlash != std::string::npos) {

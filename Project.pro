@@ -32,10 +32,13 @@ SUBDIRS += \
     qhttpserver \
     hoedown \
     libtess \
+    yaml-cpp \
+    Serialization \
     Engine \
     Renderer \
     Gui \
     Tests \
+    ProjectConverter \
     App
 
 # where to find the sub projects - give the folders
@@ -47,13 +50,15 @@ openMVG.subdir     = libs/openMVG
 qhttpserver.subdir = libs/qhttpserver
 hoedown.subdir     = libs/hoedown
 libtess.subdir     = libs/libtess
+yaml-cpp.subdir     = libs/yaml-cpp
 
 # what subproject depends on others
 glog.depends = gflags
 ceres.depends = glog gflags
 libmv.depends = gflags ceres
 openMVG.depends = ceres
-Engine.depends = libmv openMVG HostSupport libtess ceres
+Serialization.depends = yaml-cpp
+Engine.depends = libmv openMVG HostSupport libtess ceres Serialization
 Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
 Tests.depends = Gui Engine

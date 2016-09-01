@@ -88,6 +88,21 @@ private:
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
+class ChannelsComboBox
+: public KnobComboBox
+{
+public:
+
+    ChannelsComboBox(const KnobGuiPtr& knob,
+                     int dimension,
+                     QWidget* parent = 0)
+    : KnobComboBox(knob, dimension, parent) {}
+
+private:
+
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+};
+
 class KnobGuiChoice
     : public KnobGui
 {
@@ -125,6 +140,8 @@ public Q_SLOTS:
     void onRefreshMenuActionTriggered();
 
 private:
+
+    QPixmap getPixmapFromFilePath(const QString& filePath) const;
 
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;

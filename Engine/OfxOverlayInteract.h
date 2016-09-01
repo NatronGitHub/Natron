@@ -82,6 +82,8 @@ public:
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();
 
+    // get props on the OpenGL context used for drawing the interact
+    void n_getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const;
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated

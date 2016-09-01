@@ -40,6 +40,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Plugin.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ColoredFrame.h"
@@ -71,11 +72,15 @@ public:
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
-    ColoredFrame* mainContainer;
+    QWidget* mainContainer;
     QHBoxLayout* mainContainerLayout;
     Label* nodeLabel;
     QWidget* widgetsContainer;
     QVBoxLayout* widgetsContainerLayout;
+
+    // This is specific to the viewer node only
+    QWidget* playerContainer;
+    QHBoxLayout* playerLayout;
 
     NodeViewerContextPrivate(NodeViewerContext* pi,
                              const NodeGuiPtr& node,
@@ -94,8 +99,15 @@ public:
         , nodeLabel(0)
         , widgetsContainer(0)
         , widgetsContainerLayout(0)
+        , playerContainer(0)
+        , playerLayout(0)
     {
     }
+
+    void createKnobInternal(const KnobIPtr& knob,
+                            QWidget*& lastRowContainer,
+                            QHBoxLayout*& lastRowLayout,
+                            KnobsVec& knobsOnSameLine);
 
     void createKnobs(const KnobsVec& knobsUi);
 
@@ -160,21 +172,29 @@ NodeViewerContext::createGui()
     QObject::connect( node.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onNodeSettingsPanelClosed(bool)), Qt::UniqueConnection );
     KnobsVec knobsOrdered = node->getNode()->getEffectInstance()->getViewerUIKnobs();
 
+    ViewerNodePtr isViewerNode = node->getNode()->isEffectViewerNode();
 
     if ( !knobsOrdered.empty() ) {
-        _imp->mainContainer = new ColoredFrame(_imp->viewer);
+        if (!isViewerNode) {
+            _imp->mainContainer = new ColoredFrame(_imp->viewer);
+        } else {
+             _imp->mainContainer = new QWidget(_imp->viewer);
+        }
         _imp->mainContainerLayout = new QHBoxLayout(_imp->mainContainer);
         _imp->mainContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->mainContainerLayout->setSpacing(0);
-        _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
-        QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
+        if (!isViewerNode) {
+            _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
+            QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
+        }
         _imp->widgetsContainer = new QWidget(_imp->mainContainer);
         _imp->widgetsContainerLayout = new QVBoxLayout(_imp->widgetsContainer);
         _imp->widgetsContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->widgetsContainerLayout->setSpacing(0);
         _imp->mainContainerLayout->addWidget(_imp->widgetsContainer);
-        _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
-        _imp->mainContainerLayout->addStretch();
+        if (_imp->nodeLabel) {
+            _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
+        }
         onNodeColorChanged( node->getCurrentColor() );
         QObject::connect( node.get(), SIGNAL(colorChanged(QColor)), this, SLOT(onNodeColorChanged(QColor)) );
         setContainerWidget(_imp->mainContainer);
@@ -247,9 +267,13 @@ void
 NodeViewerContext::onNodeColorChanged(const QColor& color)
 {
     QString labelStyle = QString::fromUtf8("Label { color: rgb(%1, %2, %3); }").arg( color.red() ).arg( color.green() ).arg( color.blue() );
-
-    _imp->nodeLabel->setStyleSheet(labelStyle);
-    _imp->mainContainer->setFrameColor(color);
+    if (_imp->nodeLabel) {
+        _imp->nodeLabel->setStyleSheet(labelStyle);
+    }
+    ColoredFrame* w = dynamic_cast<ColoredFrame*>(_imp->mainContainer);
+    if (w) {
+        w->setFrameColor(color);
+    }
 }
 
 void
@@ -274,6 +298,64 @@ NodeViewerContext::getItemsSpacingOnSameLine() const
 }
 
 void
+NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
+                                             QWidget*& lastRowContainer,
+                                             QHBoxLayout*& lastRowLayout,
+                                             KnobsVec& knobsOnSameLine)
+{
+    KnobGuiPtr ret( appPTR->createGuiForKnob(knob, publicInterface) );
+    if (!ret) {
+        assert(false);
+        return;
+    }
+    ret->initialize();
+
+    knobsMapping.insert( std::make_pair(knob, ret) );
+
+    ViewerContextLayoutTypeEnum layoutType = knob->getInViewerContextLayoutType();
+
+    KnobClickableLabel* label = 0;
+    std::string inViewerLabel = knob->getInViewerContextLabel();
+    std::string inViewerLabelIcon = knob->getInViewerContextIconFilePath(false);
+    if ( (!inViewerLabel.empty() || !inViewerLabelIcon.empty()) && ret->shouldCreateLabel() ) {
+        label = new KnobClickableLabel(QString(), ret, widgetsContainer);
+        KnobGuiContainerHelper::setLabelFromTextAndIcon(label, QString::fromUtf8(inViewerLabel.c_str()) + QString::fromUtf8(":"), QString::fromUtf8(inViewerLabelIcon.c_str()), ret->isLabelBold());
+        QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
+    }
+    if (layoutType == eViewerContextLayoutTypeStretchBefore) {
+        lastRowLayout->addStretch();
+    }
+    ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, layoutType == eViewerContextLayoutTypeAddNewLine, 0, knobsOnSameLine);
+
+    if (layoutType == eViewerContextLayoutTypeAddNewLine) {
+        knobsOnSameLine.clear();
+        lastRowLayout->addStretch();
+        lastRowContainer = new QWidget(widgetsContainer);
+        lastRowLayout = new QHBoxLayout(lastRowContainer);
+        lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
+        lastRowLayout->setSpacing(0);
+        widgetsContainerLayout->addWidget(lastRowContainer);
+    } else {
+        knobsOnSameLine.push_back(knob);
+        if ( layoutType == eViewerContextLayoutTypeSeparator ) {
+            addSpacer(lastRowLayout);
+        } else if ( layoutType == eViewerContextLayoutTypeStretchAfter ) {
+            lastRowLayout->addStretch();
+        } else if ( layoutType == eViewerContextLayoutTypeSpacing ) {
+            int spacing = knob->getInViewerContextItemSpacing();
+            lastRowLayout->addSpacing( TO_DPIX(spacing) );
+        }
+
+    } // makeNewLine
+
+
+    ret->setEnabledSlot();
+    ret->setSecret();
+
+
+}
+
+void
 NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 {
     NodeGuiPtr thisNode = getNode();
@@ -283,64 +365,39 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
     knobsMapping.clear();
 
+    {
+        QWidget* lastRowContainer = new QWidget(widgetsContainer);
+        QHBoxLayout* lastRowLayout = new QHBoxLayout(lastRowContainer);
+        lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
+        lastRowLayout->setSpacing(0);
+        widgetsContainerLayout->addWidget(lastRowContainer);
 
-    QWidget* lastRowContainer = new QWidget(widgetsContainer);
-    QHBoxLayout* lastRowLayout = new QHBoxLayout(lastRowContainer);
-    lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
-    lastRowLayout->setSpacing(0);
-    widgetsContainerLayout->addWidget(lastRowContainer);
-
-    KnobsVec knobsOnSameLine;
-    KnobsVec::const_iterator next = knobsOrdered.begin();
-
-    ++next;
-    for (KnobsVec::const_iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
-        KnobGuiPtr ret( appPTR->createGuiForKnob(*it, publicInterface) );
-        if (!ret) {
-            assert(false);
-            continue;
+        KnobsVec knobsOnSameLine;
+        for (KnobsVec::const_iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
+            createKnobInternal(*it, lastRowContainer, lastRowLayout,  knobsOnSameLine);
         }
-        ret->initialize();
 
-        knobsMapping.insert( std::make_pair(*it, ret) );
-
-        bool makeNewLine = (*it)->getInViewerContextNewLineActivated();
-        KnobClickableLabel* label = 0;
-        std::string inViewerLabel = (*it)->getInViewerContextLabel();
-        if ( !inViewerLabel.empty() ) {
-            label = new KnobClickableLabel(QString::fromUtf8( inViewerLabel.c_str() ) + QLatin1String(":"), ret, widgetsContainer);
-            QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
-        }
-        ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, makeNewLine, 0, knobsOnSameLine);
-
-        if (makeNewLine) {
-            knobsOnSameLine.clear();
-            lastRowLayout->addStretch();
-            lastRowContainer = new QWidget(widgetsContainer);
-            lastRowLayout = new QHBoxLayout(lastRowContainer);
-            lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
-            lastRowLayout->setSpacing(0);
-            widgetsContainerLayout->addWidget(lastRowContainer);
-        } else {
-            knobsOnSameLine.push_back(*it);
-            if ( next != knobsOrdered.end() ) {
-                if ( (*it)->getInViewerContextAddSeparator() ) {
-                    addSpacer(lastRowLayout);
-                } else {
-                    int spacing = (*it)->getInViewerContextItemSpacing();
-                    lastRowLayout->addSpacing( TO_DPIX(spacing) );
-                }
-            }
-        } // makeNewLine
-
-        ret->setEnabledSlot();
-        ret->setSecret();
-
-        if ( next != knobsOrdered.end() ) {
-            ++next;
-        }
     }
-    lastRowLayout->addStretch();
+
+    ViewerNodePtr isViewer = thisNode->getNode()->isEffectViewerNode();
+    if (isViewer) {
+        KnobIPtr playerKnob = thisNode->getNode()->getKnobByName(kViewerNodeParamPlayerToolBarPage);
+        KnobPagePtr playerPage = toKnobPage(playerKnob);
+        assert(playerPage);
+
+        KnobsVec playerKnobs = playerPage->getChildren();
+        assert(!playerKnobs.empty());
+        playerContainer =  new QWidget(viewerTab);
+        playerLayout =  new QHBoxLayout(playerContainer);
+        playerLayout->setContentsMargins(0, 0, 0, 0);
+        playerLayout->setSpacing(0);
+        KnobsVec knobsOnSameLine;
+        for (KnobsVec::const_iterator it = playerKnobs.begin(); it != playerKnobs.end(); ++it) {
+            createKnobInternal(*it, playerContainer, playerLayout, knobsOnSameLine);
+        }
+
+    }
+
 } // NodeViewerContextPrivate::createKnobs
 
 QAction*
@@ -412,6 +469,12 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
     return action;
 } // NodeViewerContextPrivate::addToolBarTool
 
+QWidget*
+NodeViewerContext::getPlayerToolbar() const
+{
+    return _imp->playerContainer;
+}
+
 QToolBar*
 NodeViewerContext::getToolBar() const
 {
@@ -452,7 +515,11 @@ void
 NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 {
     NodeSettingsPanel* panel = _imp->getNode()->getSettingPanel();
-
+    if (!panel) {
+        _imp->getNode()->ensurePanelCreated();
+        panel = _imp->getNode()->getSettingPanel();
+        panel->setClosed(true);
+    }
     if (panel) {
         panel->pushUndoCommand(cmd);
     }

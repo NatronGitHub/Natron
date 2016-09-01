@@ -37,9 +37,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/Gui.h"
+#include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
-
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -496,6 +498,21 @@ KnobGui::redraw()
     }
 }
 
+
+void
+KnobGui::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->getOpenGLContextFormat(depthPerComponents, hasAlpha);
+    } else {
+        // Get the viewer OpenGL format
+        ViewerTab* lastViewer = _imp->container->getGui()->getActiveViewer();
+        if (lastViewer) {
+            lastViewer->getViewer()->getOpenGLContextFormat(depthPerComponents, hasAlpha);
+        }
+    }
+}
+
 void
 KnobGui::getViewportSize(double &width,
                          double &height) const
@@ -894,7 +911,7 @@ void
 KnobGui::onHelpChanged()
 {
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setToolTip( toolTip() );
+        toolTip(_imp->descriptionLabel);
     }
     updateToolTip();
 }

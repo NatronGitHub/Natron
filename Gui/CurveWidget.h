@@ -115,6 +115,8 @@ public:
      **/
     virtual void redraw() OVERRIDE FINAL;
 
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
+
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
@@ -167,6 +169,8 @@ public:
     // The interact will be drawn after the background and before any curve
     void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc);
     boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const;
+
+    bool hasDrawnOnce() const;
 
 public Q_SLOTS:
 

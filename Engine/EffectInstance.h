@@ -88,7 +88,8 @@
 #define PLUGINID_OFX_WRITEPNG     "fr.inria.openfx.WritePNG"
 #define PLUGINID_OFX_READPDF      "fr.inria.openfx.ReadPDF"
 
-#define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
+#define PLUGINID_NATRON_VIEWER_GROUP    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
+#define PLUGINID_NATRON_VIEWER_INTERNAL    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ViewerInternal")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
 #define PLUGINID_NATRON_DOT       (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot")
 #define PLUGINID_NATRON_READQT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt")
@@ -538,7 +539,7 @@ public:
      * Make sure that within the same plug-in there are no conflicting shortcuts.
      * Each shortcut ID can then be set to KnobButton used to indicate they have a shortcut.
      **/
-    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* /*shortcuts*/) {}
+    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* /*shortcuts*/) const {}
 
 
     /**
@@ -755,8 +756,6 @@ public:
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
     bool refreshMetaDatas_public(bool recurse);
-
-    virtual void onChannelsSelectorRefreshed() {}
 
     void setDefaultMetadata();
 
@@ -1686,7 +1685,7 @@ public:
         return false;
     }
 
-    virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& /*serialization*/) {}
+    virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& /*serialization*/) {}
 
     virtual void onKnobsLoaded() {}
 

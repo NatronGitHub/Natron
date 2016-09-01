@@ -54,6 +54,14 @@ public:
 
     std::string getScriptName() const;
 
+protected:
+
+    void setScriptNameInternal(const std::string& name, bool callOnScriptNameChanged);
+
+    virtual void onScriptNameChanged() {}
+
+    virtual void onLabelChanged() {}
+    
 private:
 
     boost::scoped_ptr<ScriptObjectPrivate> _imp;

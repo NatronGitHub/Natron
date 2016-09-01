@@ -154,6 +154,7 @@ public:
                    Edge* edge,
                    const NodeGuiPtr &oldSrc,
                    const NodeGuiPtr & newSrc,
+                   int viewerInternalIndex,
                    QUndoCommand *parent = 0);
 
     virtual void undo();
@@ -164,11 +165,13 @@ protected:
     static void doConnect(const NodeGuiPtr &oldSrc,
                           const NodeGuiPtr & newSrc,
                           const NodeGuiPtr& dst,
-                          int inputNb);
+                          int inputNb,
+                          int viewerInternalIndex);
     boost::weak_ptr<NodeGui> _oldSrc, _newSrc;
     boost::weak_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
+    int _viewerInternalIndex;
 };
 
 /*
@@ -313,32 +316,6 @@ private:
 };
 
 
-class LoadNodePresetsCommand
-    : public QUndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(LoadNodePresetsCommand)
-
-public:
-
-    LoadNodePresetsCommand(const NodeGuiPtr & node,
-                           const std::list<NodeSerializationPtr >& serialization,
-                           QUndoCommand *parent = 0);
-
-    virtual ~LoadNodePresetsCommand();
-    virtual void undo();
-    virtual void redo();
-
-private:
-
-    void getListAsShared(const std::list< NodeWPtr >& original,
-                         std::list< NodePtr >& shared) const;
-
-    bool _firstRedoCalled;
-    bool _isUndone;
-    boost::weak_ptr<NodeGui> _node;
-    std::list< NodeWPtr > _oldChildren, _newChildren; //< children if multi-instance
-    std::list<NodeSerializationPtr > _newSerializations, _oldSerialization;
-};
 
 class RenameNodeUndoRedoCommand
     : public QUndoCommand
@@ -466,6 +443,32 @@ private:
     NodeGraph* _graph;
     std::list<InlinedGroup> _groupNodes;
     bool _firstRedoCalled;
+};
+
+class RestoreNodeToDefaultCommand
+: public QUndoCommand
+{
+    Q_DECLARE_TR_FUNCTIONS(RestoreNodeToDefaultCommand)
+    
+public:
+    
+    RestoreNodeToDefaultCommand(const NodesGuiList & nodes);
+    
+    virtual ~RestoreNodeToDefaultCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    struct NodeDefaults
+    {
+        NodeGuiWPtr node;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
+    };
+    
+    std::list<NodeDefaults> _nodes;
+    
 };
 
 

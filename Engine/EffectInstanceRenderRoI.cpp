@@ -32,7 +32,9 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#endif
 
 #include <QtCore/QThreadPool>
 #include <QtCore/QReadWriteLock>
@@ -1745,9 +1747,9 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &_publicInterface->getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
-                const Plugin* p = _publicInterface->getNode()->getPlugin();
+                PluginPtr p = _publicInterface->getNode()->getPlugin();
                 assert(p);
-                locker.reset( new QMutexLocker( p->getPluginLock() ) );
+                locker.reset( new QMutexLocker( p->getPluginLock().get() ) );
             } else {
                 // no need to lock
                 Q_UNUSED(locker);
@@ -2285,7 +2287,8 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
         rod.toPixelEnclosing(0, par, &pixelRoD);
         frmt.set(pixelRoD);
         frmt.setPixelAspectRatio(par);
-        self->getApp()->getProject()->setOrAddProjectFormat(frmt);
+        // Don't add if project format already set: if reading a sequence with auto-crop data we would just litterally add one format for each frame read
+        self->getApp()->getProject()->setOrAddProjectFormat(frmt, true);
     }
 
     unsigned int renderMappedMipMapLevel = 0;

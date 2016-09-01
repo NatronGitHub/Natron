@@ -393,6 +393,17 @@ enum ValueChangedReasonEnum
     eValueChangedReasonRestoreDefault,
 };
 
+
+// Used to add stretch before or after widgets
+enum ViewerContextLayoutTypeEnum
+{
+    eViewerContextLayoutTypeSpacing,
+    eViewerContextLayoutTypeSeparator,
+    eViewerContextLayoutTypeStretchAfter,
+    eViewerContextLayoutTypeStretchBefore,
+    eViewerContextLayoutTypeAddNewLine
+};
+
 enum AnimationLevelEnum
 {
     eAnimationLevelNone = 0,
@@ -438,8 +449,8 @@ enum ViewerCompositingOperatorEnum
 
 enum ViewerColorSpaceEnum
 {
-    eViewerColorSpaceSRGB = 0,
-    eViewerColorSpaceLinear,
+    eViewerColorSpaceLinear = 0,
+    eViewerColorSpaceSRGB,
     eViewerColorSpaceRec709
 };
 
@@ -488,13 +499,13 @@ enum SchedulingPolicyEnum
 
 enum DisplayChannelsEnum
 {
-    eDisplayChannelsRGB = 0,
+    eDisplayChannelsY = 0,
+    eDisplayChannelsRGB,
     eDisplayChannelsR,
     eDisplayChannelsG,
     eDisplayChannelsB,
     eDisplayChannelsA,
-    eDisplayChannelsY,
-    eDisplayChannelsMatte,
+    eDisplayChannelsMatte
 };
 
 /** @brief Enumerates the contexts a plugin can be used in */

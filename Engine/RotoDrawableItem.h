@@ -76,7 +76,10 @@ public:
                      const RotoLayerPtr& parent,
                      bool isStroke);
 
+
     virtual ~RotoDrawableItem();
+
+    static void getDefaultOverlayColor(double *r, double *g, double *b);
 
     void createNodes(bool connectNodes = true);
 
@@ -95,14 +98,14 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.

@@ -47,6 +47,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Markdown.h"
@@ -79,6 +80,7 @@ class Node
     : public QObject
     , public boost::enable_shared_from_this<Node>
     , public CacheEntryHolder
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -93,12 +95,12 @@ protected: // parent of InspectorNode
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstancePtr& app,
          const NodeCollectionPtr& group,
-         Plugin* plugin);
+         const PluginPtr& plugin);
 
 public:
     static NodePtr create(const AppInstancePtr& app,
                           const NodeCollectionPtr& group,
-                          Plugin* plugin)
+                          const PluginPtr& plugin)
     {
         return NodePtr( new Node(app, group, plugin) );
     }
@@ -113,13 +115,8 @@ public:
      **/
     bool isPartOfProject() const;
 
-    const Plugin* getPlugin() const;
+    const PluginPtr getPlugin() const;
 
-    /**
-     * @brief Used internally when instanciating a Python template, we first make a group and then pass a pointer
-     * to the real plugin.
-     **/
-    void switchInternalPlugin(Plugin* plugin);
 
     void setPrecompNode(const PrecompNodePtr& precomp);
 
@@ -133,15 +130,66 @@ public:
     void load(const CreateNodeArgs& args);
 
 
-    void initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName);
+    void initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName);
 
 
-    ///called by load() and OfxEffectInstance, do not call this!
-    void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
+    void loadKnob(const KnobIPtr & knob, const std::list<SERIALIZATION_NAMESPACE::KnobSerializationPtr> & serialization);
+
+private:
+
+    /**
+     * @brief Restores all links for the given knob if it has masters or expressions.
+     * This function cannot be called until all knobs of the node group have been created because it needs to reference other knobs
+     * from other nodes.
+     * This function throws an exception if no serialization is valid in the object
+     **/
+    void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
+                          const NodesList & allNodes,
+                          const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+
+    void restoreUserKnob(const KnobGroupPtr& group,
+                         const KnobPagePtr& page,
+                         const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase,
+                         unsigned int recursionLevel);
+
+public:
 
 
-    void loadKnob(const KnobIPtr & knob, const std::list<KnobSerializationPtr> & serialization,
-                  bool updateKnobGui = false);
+    /**
+     * @brief Implement to save the content of the object to the serialization object
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    /**
+     * @brief Implement to load the content of the serialization object onto this object
+     **/
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
+
+    void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
+
+private:
+
+    void getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization, std::string* presetsLabel);
+
+    void getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
+
+    void loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
+
+public:
+
+    /**
+     * @brief Setup the node state according to the presets file.
+     * This function throws exception in case of error.
+     **/
+    void loadPresets(const std::string& presetsLabel);
+    void loadPresetsFromFile(const std::string& presetsFile);
+
+    void saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods);
+
+    std::string getCurrentNodePresets() const;
+
+    void restoreNodeToDefaultState();
 
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const CreateNodeArgs& args);
@@ -167,15 +215,15 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization & serialization,
+    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
                            const NodesList & allNodes,
                            const std::map<std::string, std::string>& oldNewScriptNamesMapping);
-
-    void restoreUserKnobs(const NodeSerialization& serialization);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
     std::list<std::string> getPagesOrder() const;
+
+    bool hasPageOrderChangedSinceDefault() const;
 
     bool isNodeCreated() const;
 
@@ -291,6 +339,8 @@ public:
      * @brief Returns true if the node is a rotopaint node
      **/
     bool isRotoPaintingNode() const;
+
+    ViewerNodePtr isEffectViewerNode() const;
 
     ViewerInstancePtr isEffectViewerInstance() const;
 
@@ -624,15 +674,26 @@ public:
      **/
     void setPosition(double x, double y);
     void getPosition(double *x, double *y) const;
+    void onNodeUIPositionChanged(double x, double y);
 
     void setSize(double w, double h);
     void getSize(double* w, double* h) const;
+    void onNodeUISizeChanged(double x, double y);
 
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.
      **/
     bool getColor(double* r, double *g, double* b) const;
     void setColor(double r, double g, double b);
+    void onNodeUIColorChanged(double r, double g, double b);
+    bool hasColorChangedSinceDefault() const;
+
+    void setOverlayColor(double r, double g, double b);
+    bool getOverlayColor(double* r, double* g, double* b) const;
+    void onNodeUIOverlayColorChanged(double r, double g, double b);
+
+    void onNodeUISelectionChanged(bool isSelected);
+    bool getNodeIsSelected() const;
 
 
     std::string getKnobChangedCallback() const;
@@ -703,6 +764,11 @@ public:
      * @brief Returns the absolute file-path to the plug-in icon.
      **/
     std::string getPluginIconFilePath() const;
+
+    /**
+     * @brief Returns true if this node is a PyPlug
+     **/
+    bool isPyPlug() const;
 
     /*============================*/
     AppInstancePtr getApp() const;
@@ -883,10 +949,12 @@ public:
 
     NodePtr getMasterNode() const;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;
-#endif
+
+    KnobStringPtr getExtraLabelKnob() const;
+
+    KnobStringPtr getOFXSubLabelKnob() const;
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -909,7 +977,7 @@ public:
 
     void endInputEdition(bool triggerRender);
 
-    void onInputChanged(int inputNb, bool isInputA = true);
+    void onInputChanged(int inputNb);
 
     bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
 
@@ -939,12 +1007,6 @@ public:
 
     bool areKeyframesVisibleOnTimeline() const;
 
-    /**
-     * @brief The given label is appended in the node's label but will not be editable
-     * by the user from the settings panel.
-     * If a custom data tag is found, it will replace any custom data.
-     **/
-    void replaceCustomDataInlabel(const QString & data);
 
 private:
 
@@ -967,7 +1029,7 @@ public:
      * @brief Updates the sub label knob: e.g for the Merge node it corresponds to the
      * operation name currently used and visible on the node
      **/
-    void updateEffectLabelKnob(const QString & name);
+    void updateEffectSubLabelKnob(const QString & name);
 
     /**
      * @brief Returns true if an effect should be able to connect this node.
@@ -1021,10 +1083,6 @@ private:
     void createPythonPage();
 
     void createHostMixKnob(const KnobPagePtr& mainPage);
-
-#ifndef NATRON_ENABLE_IO_META_NODES
-    void createWriterFrameStepKnob(const KnobPagePtr& mainPage);
-#endif
 
     void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
@@ -1118,6 +1176,8 @@ public:
      **/
     std::string getFullyQualifiedName() const;
 
+    std::string getContainerGroupFullyQualifiedName() const;
+
     void setLabel(const std::string& label);
 
     const std::string& getLabel() const;
@@ -1135,7 +1195,6 @@ public:
 
     void computeFrameRangeForReader(const KnobIPtr& fileKnob);
 
-    bool getOverlayColor(double* r, double* g, double* b) const;
 
     bool canHandleRenderScaleForOverlays() const;
 
@@ -1244,14 +1303,20 @@ public:
                                      const std::string& pluginID,
                                      const std::string& pluginDesc,
                                      const std::string& pluginIconFilePath,
+                                     const std::string& pluginPath,
                                      unsigned int version);
 
     void setPluginPythonModule(const std::string& pythonModule);
 
-    bool hasPyPlugBeenEdited() const;
-    void setPyPlugEdited(bool edited);
+    bool isSubGraphEditedByUser() const;
 
     std::string getPluginPythonModule() const;
+
+    /**
+     * @brief If this node has been created as a PyPlug, this will return it's ID, even if the node is no longer a PyPlug and
+     * has been transformed to a Group.
+     **/
+    std::string getPyPlugID() const;
 
     //Returns true if changed
     bool refreshChannelSelectors();
@@ -1485,8 +1550,9 @@ Q_SIGNALS:
     void disabledKnobToggled(bool disabled);
 
     void streamWarningsChanged();
-    void nodeExtraLabelChanged(QString);
+    void nodeExtraLabelChanged();
 
+    void nodePresetsChanged();
 
     void mustDequeueActions();
 
@@ -1542,13 +1608,13 @@ private: // derives from Node
 
     InspectorNode(const AppInstancePtr& app,
                   const NodeCollectionPtr& group,
-                  Plugin* plugin);
+                  const PluginPtr& plugin);
 
 public:
 
     static NodePtr create(const AppInstancePtr& app,
                           const NodeCollectionPtr& group,
-                          Plugin* plugin)
+                          const PluginPtr& plugin)
     {
         return NodePtr( new InspectorNode(app, group, plugin) );
     }
@@ -1564,29 +1630,14 @@ public:
     virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
     virtual int getPreferredInput() const OVERRIDE FINAL;
 
-    void refreshActiveInputs(int inputNbChanged, bool isASide);
-
-    void setInputA(int inputNb);
-
-    void setInputB(int inputNb);
-
-    void getActiveInputs(int & a, int &b) const;
-
-    void setActiveInputAndRefresh(int inputNb, bool isASide);
-
 Q_SIGNALS:
 
     void refreshOptionalState();
-
-    void activeInputsChanged();
 
 private:
 
     int getPreferredInputInternal(bool connected) const;
 
-
-    mutable QMutex _activeInputsMutex;
-    int _activeInputs[2]; //< indexes of the inputs used for the wipe
 };
 
 inline InspectorNodePtr

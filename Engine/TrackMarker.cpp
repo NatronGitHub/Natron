@@ -27,8 +27,8 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/AbortableRenderInfo.h"
+#include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
@@ -38,8 +38,10 @@
 #include "Engine/Node.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TimeLine.h"
-#include "Engine/TrackerSerialization.h"
 #include "Engine/TLSHolder.h"
+
+#include "Serialization/TrackerSerialization.h"
+
 
 #include <ofxNatron.h>
 
@@ -310,44 +312,55 @@ TrackMarker::clone(const TrackMarker& other)
 }
 
 void
-TrackMarker::load(const TrackSerialization& serialization)
+TrackMarker::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    const SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::TrackSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
     QMutexLocker k(&_imp->trackMutex);
 
-    _imp->trackLabel = serialization._label;
-    _imp->trackScriptName = serialization._scriptName;
+    _imp->trackLabel = s->_label;
+    _imp->trackScriptName = s->_scriptName;
     const KnobsVec& knobs = getKnobs();
 
-    for (std::list<KnobSerializationPtr>::const_iterator it = serialization._knobs.begin(); it != serialization._knobs.end(); ++it) {
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->_knobs.begin(); it != s->_knobs.end(); ++it) {
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
                 (*it2)->blockValueChanges();
-                (*it2)->clone( (*it)->getKnob() );
+                (*it2)->fromSerialization(**it);
                 (*it2)->unblockValueChanges();
                 break;
             }
         }
     }
-    for (std::list<int>::const_iterator it = serialization._userKeys.begin(); it != serialization._userKeys.end(); ++it) {
+    for (std::list<int>::const_iterator it = s->_userKeys.begin(); it != s->_userKeys.end(); ++it) {
         _imp->userKeyframes.insert(*it);
     }
 }
 
 void
-TrackMarker::save(TrackSerialization* serialization) const
+TrackMarker::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
+    SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::TrackSerialization*>(obj);
+    if (!s) {
+        return;
+    }
     QMutexLocker k(&_imp->trackMutex);
 
-    serialization->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
-    serialization->_label = _imp->trackLabel;
-    serialization->_scriptName = _imp->trackScriptName;
+    s->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
+    s->_label = _imp->trackLabel;
+    s->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobSerializationPtr s( new KnobSerialization(*it) );
-        serialization->_knobs.push_back(s);
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr k( new SERIALIZATION_NAMESPACE::KnobSerialization);
+        (*it)->toSerialization(k.get());
+        if (k->_mustSerialize) {
+            s->_knobs.push_back(k);
+        }
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
-        serialization->_userKeys.push_back(*it);
+        s->_userKeys.push_back(*it);
     }
 }
 

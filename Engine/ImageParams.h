@@ -29,10 +29,6 @@
 
 #include "Global/GlobalDefines.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/serialization/version.hpp>
-#endif
-
 #include "Engine/Format.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/NonKeyParams.h"
@@ -40,9 +36,8 @@
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
-// Note: this structure is only serialized in the image cache and does not have to maintain backward compatibility
-#define IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED 2
-#define IMAGE_SERIALIZATION_VERSION IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED
+#include "Serialization/RectDSerialization.h"
+#include "Serialization/ImageParamsSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -100,6 +95,8 @@ class ImageParams
     : public NonKeyParams
 {
 public:
+
+    typedef SERIALIZATION_NAMESPACE::ImageParamsSerialization SerializationType;
 
     ImageParams()
         : NonKeyParams()
@@ -238,8 +235,39 @@ public:
         _mipMapLevel = mmlvl;
     }
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL
+    {
+        SERIALIZATION_NAMESPACE::ImageParamsSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ImageParamsSerialization*>(serializationBase);
+        if (!serialization) {
+            return;
+        }
+        NonKeyParams::toSerialization(serializationBase);
+        _rod.toSerialization(&serialization->rod);
+        serialization->isRoDProjectFormat = _isRoDProjectFormat;
+        serialization->par = _par;
+        serialization->fielding = (int)_fielding;
+        serialization->premult = (int)_premult;
+        serialization->bitdepth = (int)_bitdepth;
+        serialization->mipMapLevel = _mipMapLevel;
+        _components.toSerialization(&serialization->components);
+    }
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL
+    {
+        const SERIALIZATION_NAMESPACE::ImageParamsSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::ImageParamsSerialization*>(&serializationBase);
+        if (!serialization) {
+            return;
+        }
+        NonKeyParams::fromSerialization(serializationBase);
+        _rod.fromSerialization(serialization->rod);
+        _isRoDProjectFormat = serialization->isRoDProjectFormat;
+        _par = serialization->par;
+        _fielding = (ImageFieldingOrderEnum)serialization->fielding;
+        _bitdepth = (ImageBitDepthEnum)serialization->bitdepth;
+        _premult = (ImagePremultiplicationEnum)serialization->premult;
+        _mipMapLevel = serialization->mipMapLevel;
+        _components.fromSerialization(serialization->components);
+    }
 
     bool operator==(const ImageParams & other) const
     {
@@ -276,8 +304,6 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
-
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImageParams, IMAGE_SERIALIZATION_VERSION);
 
 
 #endif // IMAGEPARAMS_H

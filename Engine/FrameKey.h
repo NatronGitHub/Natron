@@ -33,12 +33,18 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#include "Serialization/SerializationBase.h"
+
 NATRON_NAMESPACE_ENTER;
 
 class FrameKey
     : public KeyHelper<U64>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
+
+    typedef SERIALIZATION_NAMESPACE::FrameKeySerialization SerializationType;
+
     FrameKey();
 
     FrameKey(const CacheEntryHolder* holder,
@@ -58,7 +64,7 @@ public:
              bool useShaders,
              bool draftMode);
 
-    void fillHash(Hash64* hash) const;
+    virtual void fillHash(Hash64* hash) const OVERRIDE FINAL;
 
     bool operator==(const FrameKey & other) const;
 
@@ -117,8 +123,10 @@ public:
         return _textureRect;
     }
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
 private:
     SequenceTime _time; // The frame in the sequence

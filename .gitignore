@@ -29,9 +29,12 @@ libs/glog/glog.xcodeproj/
 libs/gflags/gflags.xcodeproj/
 libs/qhttpserver/qhttpserver.xcodeproj/
 libs/qhttpserver/src/qhttpserver.xcodeproj/
+libs/yaml-cpp/yamlcpp.xcodeproj/
 Natron.xcodeproj/
 Project-xcode-breakpad.xcodeproj/
 Natron-bin.xcodeproj/
+Serialization.xcodeproj/
+NatronProjectConverter.xcodeproj/
 NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
 NatronCrashReporter.xcodeproj/

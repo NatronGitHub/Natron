@@ -450,6 +450,18 @@ QSplitter::handle::vertical {
     height: 3px;
 }
 
+QSplitterHandle:hover {}
+
+QSplitter::handle:horizontal:hover {
+     border: 1px solid white;
+}
+
+QSplitter::handle:vertical:hover {
+     border: 1px solid white;
+}
+
+
+
 /* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
 QTabBar {
     tabbar-prefer-no-arrows: false; /* allow arrows when there are many tabs */

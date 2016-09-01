@@ -40,6 +40,8 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
 
+#include "Serialization/SerializationBase.h"
+
 #define kTrackerParamSearchWndBtmLeft "searchWndBtmLeft"
 #define kTrackerParamSearchWndBtmLeftLabel "Search Window Bottom Left"
 #define kTrackerParamSearchWndBtmLeftHint "The bottom left point of the search window, relative to the center point."
@@ -101,6 +103,7 @@ NATRON_NAMESPACE_ENTER;
 struct TrackMarkerPrivate;
 class TrackMarker
     : public NamedKnobHolder
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -125,9 +128,9 @@ public:
 
     void clone(const TrackMarker& other);
 
-    void load(const TrackSerialization& serialization);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
-    void save(TrackSerialization* serialization) const;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
     TrackerContextPtr getContext() const;
 

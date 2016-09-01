@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/CurveWidget.h"
@@ -83,40 +84,39 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
 
-    boost::shared_ptr<InspectorNode> v;
+    ViewerNodePtr viewerNode;
     if (lastUsedViewer) {
-        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
-                                                        getInternalNode()->getNode() );
+        viewerNode = lastUsedViewer->getInternalNode();
     } else {
-        CreateNodeArgs args( PLUGINID_NATRON_VIEWER,
+        CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP,
                              getGroup() );
-        NodePtr viewerNode = getGui()->getApp()->createNode(args);
+        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+        NodePtr node = getGui()->getApp()->createNode(args);
 
-        if (!viewerNode) {
+        if (!node) {
             return;
         }
-        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
+        viewerNode = node->isEffectViewerNode();
     }
 
-    if (!v) {
+    if (!viewerNode) {
         return;
     }
 
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
-    if ( !v->isActivated() ) {
+    if ( !viewerNode->getNode()->isActivated() ) {
         return;
     }
 
     ///get a ptr to the NodeGui
-    NodeGuiIPtr gui_i = v->getNodeGui();
+    NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
     bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
-        v->setActiveInputAndRefresh(inputNB, isASide);
-        gui->refreshEdges();
-
+        viewerNode->connectInputToIndex(inputNB, isASide ? 0 : 1);
         return;
     }
 
@@ -133,7 +133,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     assert(foundInput);
 
     ///and push a connect command to the selected node.
-    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected) );
+    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected, isASide ? 0 : 1) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
     selectNode(gui, false);
@@ -219,6 +219,10 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const NodeGuiPtr & node)
 {
+    if (node->getNode()->isEffectViewerInstance()) {
+        Dialogs::errorDialog( tr("Delete").toStdString(), tr("Removing the internal viewer process node is not a valid action").toStdString());
+        return;
+    }
     NodeGroupPtr isGrp = node->getNode()->isEffectNodeGroup();
     const KnobsVec & knobs = node->getNode()->getKnobs();
 
@@ -288,6 +292,11 @@ NodeGraph::deleteSelection()
 
 
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+
+            if ((*it)->getNode()->isEffectViewerInstance()) {
+                Dialogs::errorDialog( tr("Delete").toStdString(), tr("Removing the internal viewer process node is not a valid action").toStdString());
+                return;
+            }
             const KnobsVec & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
             NodeGroupPtr isGrp = (*it)->getNode()->isEffectNodeGroup();

@@ -54,13 +54,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoItemSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/RotoItemSerialization.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -444,33 +445,42 @@ RotoItem::setLabel(const std::string& label)
 }
 
 void
-RotoItem::save(const RotoItemSerializationPtr& obj) const
+RotoItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) 
 {
+
+    SERIALIZATION_NAMESPACE::RotoItemSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::RotoItemSerialization*>(obj);
+    if (!serialization) {
+        return;
+    }
     RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
-        obj->activated = _imp->globallyActivated;
-        obj->name = _imp->scriptName;
-        obj->label = _imp->label;
-        obj->locked = _imp->locked;
+        serialization->activated = _imp->globallyActivated;
+        serialization->name = _imp->scriptName;
+        serialization->label = _imp->label;
+        serialization->locked = _imp->locked;
         parent = _imp->parentLayer.lock();
     }
 
     if (parent) {
-        obj->parentLayerName = parent->getScriptName();
+        serialization->parentLayerName = parent->getScriptName();
     }
 }
 
 void
-RotoItem::load(const RotoItemSerialization &obj)
+RotoItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase &obj)
 {
+    const SERIALIZATION_NAMESPACE::RotoItemSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoItemSerialization*>(&obj);
+    if (!serialization) {
+        return;
+    }
     {
         QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = obj.activated;
-        _imp->locked = obj.locked;
-        _imp->scriptName = obj.name;
-        if ( !obj.label.empty() ) {
-            _imp->label = obj.label;
+        _imp->globallyActivated = serialization->activated;
+        _imp->locked = serialization->locked;
+        _imp->scriptName = serialization->name;
+        if ( !serialization->label.empty() ) {
+            _imp->label = serialization->label;
         } else {
             _imp->label = _imp->scriptName;
         }
@@ -500,7 +510,7 @@ RotoItem::load(const RotoItemSerialization &obj)
             _imp->scriptName = name;
         }
     }
-    RotoLayerPtr parent = getContext()->getLayerByName(obj.parentLayerName);
+    RotoLayerPtr parent = getContext()->getLayerByName(serialization->parentLayerName);
 
     {
         QMutexLocker l(&itemMutex);

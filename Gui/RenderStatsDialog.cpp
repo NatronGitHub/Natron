@@ -922,7 +922,7 @@ RenderStatsDialog::~RenderStatsDialog()
 }
 
 void
-RenderStatsDialog::onSelectionChanged(const QItemSelection &selected,
+RenderStatsDialog::onKnobsTreeSelectionChanged(const QItemSelection &selected,
                                       const QItemSelection & /*deselected*/)
 {
     QModelIndexList indexes = selected.indexes();

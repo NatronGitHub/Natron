@@ -47,6 +47,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Texture.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ClickableLabel.h"
@@ -59,11 +60,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Shaders.h"
+#include "Gui/TabWidget.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/ticks.h"
+
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -167,6 +171,7 @@ public:
     Histogram* widget;
     Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+    mutable QMutex zoomContextMutex;
     ZoomContext zoomCtx;
     EventStateEnum state;
     bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
@@ -196,10 +201,11 @@ public:
     std::vector<double> viewerPickerColor;
 };
 
-Histogram::Histogram(Gui* gui,
+Histogram::Histogram(const std::string& scriptName,
+                     Gui* gui,
                      const QGLWidget* shareWidget)
     : QGLWidget(gui, shareWidget)
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new HistogramPrivate(this) )
 {
     // always running in the main thread
@@ -395,7 +401,7 @@ ImagePtr HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 
     ImagePtr image;
     if (viewer) {
-        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor() );
+        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getInternalNode()->getInternalViewerNode()->getMipMapLevelFromZoomFactor() );
     }
 
     if (!useImageRoD) {
@@ -673,9 +679,12 @@ Histogram::resizeGL(int width,
         height = 1;
     }
     GL_GPU::glViewport (0, 0, width, height);
+
+    QMutexLocker k(&_imp->zoomContextMutex);
     _imp->zoomCtx.setScreenSize(width, height);
     if (!_imp->hasBeenModifiedSinceResize) {
         _imp->zoomCtx.fill(0., 1., 0., 10.);
+        k.unlock();
         computeHistogramAndRefresh();
     }
 }
@@ -719,13 +728,16 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
 
     _imp->oldClick = e->pos();
     _imp->drawCoordinates = true;
-
+    bool caught = true;
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
 
     switch (_imp->state) {
     case eEventStateDraggingView:
-        _imp->zoomCtx.translate(dx, dy);
+        {
+            QMutexLocker k(&_imp->zoomContextMutex);
+            _imp->zoomCtx.translate(dx, dy);
+        }
         _imp->hasBeenModifiedSinceResize = true;
         computeHistogramAndRefresh();
         break;
@@ -747,19 +759,34 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
-        _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+
+        {
+            QMutexLocker k(&_imp->zoomContextMutex);
+            _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+        }
 
         _imp->hasBeenModifiedSinceResize = true;
 
         computeHistogramAndRefresh();
         break;
     }
-    case eEventStateNone:
-        _imp->updatePicker( newClick_opengl.x() );
-        update();
-        break;
+        case eEventStateNone:
+            _imp->updatePicker( newClick_opengl.x() );
+            update();
+            break;
+        default:
+            caught = false;
+            break;
     }
-    QGLWidget::mouseMoveEvent(e);
+ 
+    TabWidget* tab = getParentPane() ;
+    if (tab) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    } else {
+        QGLWidget::mouseMoveEvent(e);
+    }
+    
 } // Histogram::mouseMoveEvent
 
 void
@@ -847,6 +874,8 @@ Histogram::wheelEvent(QWheelEvent* e)
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         // Alt + Wheel: zoom time only, keep point under mouse
@@ -858,6 +887,8 @@ Histogram::wheelEvent(QWheelEvent* e)
             par = par_max;
             scaleFactor = par / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
         // Wheel: zoom values and time, keep point under mouse
@@ -869,6 +900,8 @@ Histogram::wheelEvent(QWheelEvent* e)
             zoomFactor = zoomFactor_max;
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
+
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
 
@@ -883,13 +916,15 @@ Histogram::keyPressEvent(QKeyEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     bool accept = true;
 
-    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
+    if ( key == Qt::Key_F && modCASIsNone(e) ) {
         _imp->hasBeenModifiedSinceResize = false;
-        _imp->zoomCtx.fill(0., 1., 0., 10.);
+        {
+            QMutexLocker k(&_imp->zoomContextMutex);
+            _imp->zoomCtx.fill(0., 1., 0., 10.);
+        }
         computeHistogramAndRefresh();
     } else {
         accept = false;
@@ -1477,6 +1512,25 @@ Histogram::hideViewerCursor()
     }
     _imp->showViewerPicker = false;
     update();
+}
+
+bool
+Histogram::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    data->left = _imp->zoomCtx.left();
+    data->bottom = _imp->zoomCtx.bottom();
+    data->zoomFactor = _imp->zoomCtx.factor();
+    data->par = _imp->zoomCtx.aspectRatio();
+    return true;
+}
+
+bool
+Histogram::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    _imp->zoomCtx.setZoom(data.left, data.bottom, data.zoomFactor, data.par);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

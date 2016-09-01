@@ -83,6 +83,15 @@
 #define kCreateNodeArgsPropNodeSerialization "CreateNodeArgsPropNodeSerialization"
 
 /**
+ * @brief optional x1 std::string property indicating the label of the presets to use to load the node.
+ * The preset label must correspond to a valid label of a a preset file (.nps) that was found by Natron.
+ * The preset label is NOT the filename of the preset file, but the string in the file found next to the key "PresetLabel"
+ * If the preset cannot be found, the presets will not be loaded
+ * Default value - Empty
+ **/
+#define kCreateNodeArgsPropPreset "CreateNodeArgsPropPreset"
+
+/**
  * @brief optional x1 bool property
  * Default Value - false
  * If copy/pasting, we don't want to paste a PyPlug and create copy from the Python script,
@@ -113,6 +122,14 @@
  * serialization, this property has no effect.
  **/
 #define kCreateNodeArgsPropSettingsOpened "CreateNodeArgsPropSettingsOpened"
+
+/**
+ * @brief optional x1 bool property
+ * Default Value - true
+ * If true, if the node is a group, its sub-graph panel will be visible when created. If the property kCreateNodeArgsPropNodeSerialization is set to a non null
+ * serialization, this property has no effect.
+ **/
+#define kCreateNodeArgsPropSubGraphOpened "CreateNodeArgsPropSubGraphOpened"
 
 /**
  * @brief optional x1 bool property
@@ -288,12 +305,14 @@ class CreateNodeArgs
         createProperty<int>(kCreateNodeArgsPropPluginVersion, -1, -1);
         createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
+        createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-        createProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, NodeSerializationPtr());
+        createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
         createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
+        createProperty<bool>(kCreateNodeArgsPropSubGraphOpened, true);
         createProperty<bool>(kCreateNodeArgsPropAutoConnect, true);
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);

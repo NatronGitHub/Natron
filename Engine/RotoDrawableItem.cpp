@@ -48,7 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
 #include "Engine/Format.h"
@@ -57,9 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Project.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoContext.h"
@@ -69,6 +66,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/RotoDrawableItemSerialization.h"
+#include "Serialization/NodeSerialization.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kMergeOFXParamInvertMask "maskInvert"
@@ -988,58 +988,68 @@ RotoDrawableItem::clone(const RotoItem* other)
 
 static void
 serializeRotoKnob(const KnobIPtr & knob,
-                  const KnobSerializationPtr& serialization)
+                 SERIALIZATION_NAMESPACE::KnobSerializationPtr* serialization)
 {
     std::pair<int, KnobIPtr > master = knob->getMaster(0);
-
+    serialization->reset(new SERIALIZATION_NAMESPACE::KnobSerialization);
     if (master.second) {
-        serialization->initialize(master.second);
+        master.second->toSerialization(serialization->get());
     } else {
-        serialization->initialize(knob);
+        knob->toSerialization(serialization->get());
     }
 }
 
 void
-RotoDrawableItem::save(const RotoItemSerializationPtr& obj) const
+RotoDrawableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
-    RotoDrawableItemSerializationPtr s = boost::dynamic_pointer_cast<RotoDrawableItemSerialization>(obj);
+
+    SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization*>(obj);
+    if (!s) {
+        return;
+    }
 
     assert(s);
     if (!s) {
         throw std::logic_error("RotoDrawableItem::save()");
     }
     for (std::list<KnobIPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        KnobSerializationPtr k( new KnobSerialization() );
-        serializeRotoKnob( *it, k );
-        s->_knobs.push_back(k);
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr k;
+        serializeRotoKnob( *it, &k );
+        if (k->_mustSerialize) {
+            s->_knobs.push_back(k);
+        }
     }
     {
         QMutexLocker l(&itemMutex);
         std::memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
     }
-    RotoItem::save(obj);
+    RotoItem::toSerialization(obj);
 }
 
 void
-RotoDrawableItem::load(const RotoItemSerialization &obj)
+RotoDrawableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
-    RotoItem::load(obj);
-    const RotoDrawableItemSerialization & s = dynamic_cast<const RotoDrawableItemSerialization &>(obj);
+    const SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
 
-    for (std::list<KnobSerializationPtr>::const_iterator it = s._knobs.begin(); it != s._knobs.end(); ++it) {
+    RotoItem::fromSerialization(obj);
+
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->_knobs.begin(); it != s->_knobs.end(); ++it) {
         for (std::list<KnobIPtr >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
-                boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
-                s->blockSignals(true);
-                (*it2)->clone( (*it)->getKnob() );
-                s->blockSignals(false);
+                boost::shared_ptr<KnobSignalSlotHandler> slot = (*it2)->getSignalSlotHandler();
+                slot->blockSignals(true);
+                (*it2)->fromSerialization(**it);
+                slot->blockSignals(false);
                 break;
             }
         }
     }
     {
         QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
+        std::memcpy(_imp->overlayColor, s->_overlayColor, sizeof(double) * 4);
     }
 
     RotoStrokeType type;
@@ -1262,6 +1272,14 @@ std::string
 RotoDrawableItem::getCompositingOperatorToolTip() const
 {
     return _imp->compOperator->getHintToolTipFull();
+}
+
+void
+RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
+{
+    *r = 0.85164;
+    *g = 0.196936;
+    *b = 0.196936;
 }
 
 void

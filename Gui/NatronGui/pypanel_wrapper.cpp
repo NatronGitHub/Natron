@@ -1075,29 +1075,6 @@ void PyPanelWrapper::resizeEvent(QResizeEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyPanelWrapper::restore(const QString & arg__1)
-{
-    Shiboken::GilState gil;
-    if (PyErr_Occurred())
-        return ;
-    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "restore"));
-    if (pyOverride.isNull()) {
-        gil.release();
-        return this->::PyPanel::restore(arg__1);
-    }
-
-    Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &arg__1)
-    ));
-
-    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
-    // An error happened in python code!
-    if (pyResult.isNull()) {
-        PyErr_Print();
-        return ;
-    }
-}
-
 QString PyPanelWrapper::save()
 {
     Shiboken::GilState gil;
@@ -1457,58 +1434,6 @@ static PyObject* Sbk_PyPanelFunc_addWidget(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_PyPanelFunc_getPanelLabel(PyObject* self)
-{
-    PyPanelWrapper* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = (PyPanelWrapper*)((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getPanelLabel()const
-            QString cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelLabel();
-            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyPanelFunc_getPanelScriptName(PyObject* self)
-{
-    PyPanelWrapper* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = (PyPanelWrapper*)((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getPanelScriptName()const
-            QString cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelScriptName();
-            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_PyPanelFunc_getParam(PyObject* self, PyObject* pyArg)
 {
     PyPanelWrapper* cppSelf = 0;
@@ -1677,48 +1602,6 @@ static PyObject* Sbk_PyPanelFunc_onUserDataChanged(PyObject* self)
     Py_RETURN_NONE;
 }
 
-static PyObject* Sbk_PyPanelFunc_restore(PyObject* self, PyObject* pyArg)
-{
-    PyPanelWrapper* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = (PyPanelWrapper*)((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: restore(QString)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // restore(QString)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyPanelFunc_restore_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // restore(QString)
-            Shiboken::Object::hasCppWrapper(reinterpret_cast<SbkObject*>(self)) ? cppSelf->::PyPanel::restore(cppArg0) : cppSelf->restore(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyPanelFunc_restore_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.restore", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_PyPanelFunc_save(PyObject* self)
 {
     PyPanelWrapper* cppSelf = 0;
@@ -1743,48 +1626,6 @@ static PyObject* Sbk_PyPanelFunc_save(PyObject* self)
         return 0;
     }
     return pyResult;
-}
-
-static PyObject* Sbk_PyPanelFunc_setPanelLabel(PyObject* self, PyObject* pyArg)
-{
-    PyPanelWrapper* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = (PyPanelWrapper*)((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setPanelLabel(QString)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // setPanelLabel(QString)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyPanelFunc_setPanelLabel_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setPanelLabel(QString)
-            cppSelf->setPanelLabel(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyPanelFunc_setPanelLabel_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setPanelLabel", overloads);
-        return 0;
 }
 
 static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObject* pyArg)
@@ -1831,15 +1672,11 @@ static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObjec
 
 static PyMethodDef Sbk_PyPanel_methods[] = {
     {"addWidget", (PyCFunction)Sbk_PyPanelFunc_addWidget, METH_O},
-    {"getPanelLabel", (PyCFunction)Sbk_PyPanelFunc_getPanelLabel, METH_NOARGS},
-    {"getPanelScriptName", (PyCFunction)Sbk_PyPanelFunc_getPanelScriptName, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_PyPanelFunc_getParam, METH_O},
     {"getParams", (PyCFunction)Sbk_PyPanelFunc_getParams, METH_NOARGS},
     {"insertWidget", (PyCFunction)Sbk_PyPanelFunc_insertWidget, METH_VARARGS},
     {"onUserDataChanged", (PyCFunction)Sbk_PyPanelFunc_onUserDataChanged, METH_NOARGS},
-    {"restore", (PyCFunction)Sbk_PyPanelFunc_restore, METH_O},
     {"save", (PyCFunction)Sbk_PyPanelFunc_save, METH_NOARGS},
-    {"setPanelLabel", (PyCFunction)Sbk_PyPanelFunc_setPanelLabel, METH_O},
     {"setParamChangedCallback", (PyCFunction)Sbk_PyPanelFunc_setParamChangedCallback, METH_O},
 
     {0} // Sentinel

@@ -333,6 +333,32 @@ static PyObject* Sbk_ParamFunc_getEvaluateOnChange(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ParamFunc_getHasViewerUI(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getHasViewerUI()const
+            bool cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getHasViewerUI();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ParamFunc_getHelp(PyObject* self)
 {
     ParamWrapper* cppSelf = 0;
@@ -631,6 +657,181 @@ static PyObject* Sbk_ParamFunc_getTypeName(PyObject* self)
             // getTypeName()const
             QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getTypeName();
             pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getViewerUIIconFilePath(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.getViewerUIIconFilePath(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:getViewerUIIconFilePath", &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getViewerUIIconFilePath(bool)const
+    if (numArgs == 0) {
+        overloadId = 0; // getViewerUIIconFilePath(bool)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))) {
+        overloadId = 0; // getViewerUIIconFilePath(bool)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_getViewerUIIconFilePath_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "checked");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.getViewerUIIconFilePath(): got multiple values for keyword argument 'checked'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0]))))
+                    goto Sbk_ParamFunc_getViewerUIIconFilePath_TypeError;
+            }
+        }
+        bool cppArg0 = false;
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getViewerUIIconFilePath(bool)const
+            QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getViewerUIIconFilePath(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ParamFunc_getViewerUIIconFilePath_TypeError:
+        const char* overloads[] = {"bool = false", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.getViewerUIIconFilePath", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_getViewerUIItemSpacing(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getViewerUIItemSpacing()const
+            int cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getViewerUIItemSpacing();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getViewerUILabel(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getViewerUILabel()const
+            QString cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getViewerUILabel();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getViewerUILayoutType(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getViewerUILayoutType()const
+            NATRON_NAMESPACE::ViewerContextLayoutTypeEnum cppResult = NATRON_NAMESPACE::ViewerContextLayoutTypeEnum(const_cast<const ::ParamWrapper*>(cppSelf)->getViewerUILayoutType());
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCONTEXTLAYOUTTYPEENUM_IDX]), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getViewerUIVisible(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getViewerUIVisible()const
+            bool cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getViewerUIVisible();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 
@@ -1183,7 +1384,7 @@ static PyObject* Sbk_ParamFunc_setHelp(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1191,13 +1392,33 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
         return 0;
     cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setIconFilePath(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setIconFilePath(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:setIconFilePath", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: setIconFilePath(QString)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // setIconFilePath(QString)
+    // 0: setIconFilePath(QString,bool)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // setIconFilePath(QString,bool)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
+            overloadId = 0; // setIconFilePath(QString,bool)
+        }
     }
 
     // Function signature not found.
@@ -1205,12 +1426,25 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "checked");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setIconFilePath(): got multiple values for keyword argument 'checked'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1]))))
+                    goto Sbk_ParamFunc_setIconFilePath_TypeError;
+            }
+        }
         ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1 = false;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setIconFilePath(QString)
-            cppSelf->setIconFilePath(cppArg0);
+            // setIconFilePath(QString,bool)
+            cppSelf->setIconFilePath(cppArg0, cppArg1);
         }
     }
 
@@ -1220,8 +1454,8 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setIconFilePath_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setIconFilePath", overloads);
+        const char* overloads[] = {"unicode, bool = false", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.setIconFilePath", overloads);
         return 0;
 }
 
@@ -1264,6 +1498,249 @@ static PyObject* Sbk_ParamFunc_setPersistent(PyObject* self, PyObject* pyArg)
     Sbk_ParamFunc_setPersistent_TypeError:
         const char* overloads[] = {"bool", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setPersistent", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setViewerUIIconFilePath(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setViewerUIIconFilePath(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setViewerUIIconFilePath(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:setViewerUIIconFilePath", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setViewerUIIconFilePath(QString,bool)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // setViewerUIIconFilePath(QString,bool)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
+            overloadId = 0; // setViewerUIIconFilePath(QString,bool)
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setViewerUIIconFilePath_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "checked");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setViewerUIIconFilePath(): got multiple values for keyword argument 'checked'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1]))))
+                    goto Sbk_ParamFunc_setViewerUIIconFilePath_TypeError;
+            }
+        }
+        ::QString cppArg0 = ::QString();
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1 = false;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // setViewerUIIconFilePath(QString,bool)
+            cppSelf->setViewerUIIconFilePath(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setViewerUIIconFilePath_TypeError:
+        const char* overloads[] = {"unicode, bool = false", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.setViewerUIIconFilePath", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setViewerUIItemSpacing(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setViewerUIItemSpacing(int)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // setViewerUIItemSpacing(int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setViewerUIItemSpacing_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setViewerUIItemSpacing(int)
+            cppSelf->setViewerUIItemSpacing(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setViewerUIItemSpacing_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setViewerUIItemSpacing", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setViewerUILabel(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setViewerUILabel(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setViewerUILabel(QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setViewerUILabel_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setViewerUILabel(QString)
+            cppSelf->setViewerUILabel(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setViewerUILabel_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setViewerUILabel", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setViewerUILayoutType(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCONTEXTLAYOUTTYPEENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setViewerUILayoutType_TypeError;
+
+    // Call function/method
+    {
+        ::NATRON_NAMESPACE::ViewerContextLayoutTypeEnum cppArg0 = ((::NATRON_NAMESPACE::ViewerContextLayoutTypeEnum)0);
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum)
+            cppSelf->setViewerUILayoutType(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setViewerUILayoutType_TypeError:
+        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.ViewerContextLayoutTypeEnum", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setViewerUILayoutType", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_setViewerUIVisible(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setViewerUIVisible(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setViewerUIVisible(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setViewerUIVisible_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setViewerUIVisible(bool)
+            cppSelf->setViewerUIVisible(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setViewerUIVisible_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setViewerUIVisible", overloads);
         return 0;
 }
 
@@ -1463,6 +1940,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getAddNewLine", (PyCFunction)Sbk_ParamFunc_getAddNewLine, METH_NOARGS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},
     {"getEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_getEvaluateOnChange, METH_NOARGS},
+    {"getHasViewerUI", (PyCFunction)Sbk_ParamFunc_getHasViewerUI, METH_NOARGS},
     {"getHelp", (PyCFunction)Sbk_ParamFunc_getHelp, METH_NOARGS},
     {"getIsAnimationEnabled", (PyCFunction)Sbk_ParamFunc_getIsAnimationEnabled, METH_NOARGS},
     {"getIsEnabled", (PyCFunction)Sbk_ParamFunc_getIsEnabled, METH_VARARGS|METH_KEYWORDS},
@@ -1473,6 +1951,11 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getParent", (PyCFunction)Sbk_ParamFunc_getParent, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ParamFunc_getScriptName, METH_NOARGS},
     {"getTypeName", (PyCFunction)Sbk_ParamFunc_getTypeName, METH_NOARGS},
+    {"getViewerUIIconFilePath", (PyCFunction)Sbk_ParamFunc_getViewerUIIconFilePath, METH_VARARGS|METH_KEYWORDS},
+    {"getViewerUIItemSpacing", (PyCFunction)Sbk_ParamFunc_getViewerUIItemSpacing, METH_NOARGS},
+    {"getViewerUILabel", (PyCFunction)Sbk_ParamFunc_getViewerUILabel, METH_NOARGS},
+    {"getViewerUILayoutType", (PyCFunction)Sbk_ParamFunc_getViewerUILayoutType, METH_NOARGS},
+    {"getViewerUIVisible", (PyCFunction)Sbk_ParamFunc_getViewerUIVisible, METH_NOARGS},
     {"random", (PyCFunction)Sbk_ParamFunc_random, METH_VARARGS|METH_KEYWORDS},
     {"randomInt", (PyCFunction)Sbk_ParamFunc_randomInt, METH_VARARGS},
     {"setAddNewLine", (PyCFunction)Sbk_ParamFunc_setAddNewLine, METH_O},
@@ -1482,8 +1965,13 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setEnabledByDefault", (PyCFunction)Sbk_ParamFunc_setEnabledByDefault, METH_VARARGS|METH_KEYWORDS},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
     {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
-    {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_O},
+    {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_VARARGS|METH_KEYWORDS},
     {"setPersistent", (PyCFunction)Sbk_ParamFunc_setPersistent, METH_O},
+    {"setViewerUIIconFilePath", (PyCFunction)Sbk_ParamFunc_setViewerUIIconFilePath, METH_VARARGS|METH_KEYWORDS},
+    {"setViewerUIItemSpacing", (PyCFunction)Sbk_ParamFunc_setViewerUIItemSpacing, METH_O},
+    {"setViewerUILabel", (PyCFunction)Sbk_ParamFunc_setViewerUILabel, METH_O},
+    {"setViewerUILayoutType", (PyCFunction)Sbk_ParamFunc_setViewerUILayoutType, METH_O},
+    {"setViewerUIVisible", (PyCFunction)Sbk_ParamFunc_setViewerUIVisible, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
     {"setVisibleByDefault", (PyCFunction)Sbk_ParamFunc_setVisibleByDefault, METH_O},
     {"slaveTo", (PyCFunction)Sbk_ParamFunc_slaveTo, METH_VARARGS},

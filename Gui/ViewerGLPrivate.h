@@ -40,11 +40,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
 
-
-#define WIPE_MIX_HANDLE_LENGTH 50.
-#define WIPE_ROTATE_HANDLE_LENGTH 100.
-#define WIPE_ROTATE_OFFSET 30
-
 #define MAX_MIP_MAP_LEVELS 20
 
 NATRON_NAMESPACE_ENTER;
@@ -61,32 +56,14 @@ enum MouseStateEnum
 {
     eMouseStateSelecting = 0,
     eMouseStateDraggingImage,
-    eMouseStateDraggingRoiLeftEdge,
-    eMouseStateDraggingRoiRightEdge,
-    eMouseStateDraggingRoiTopEdge,
-    eMouseStateDraggingRoiBottomEdge,
-    eMouseStateDraggingRoiTopLeft,
-    eMouseStateDraggingRoiTopRight,
-    eMouseStateDraggingRoiBottomRight,
-    eMouseStateDraggingRoiBottomLeft,
-    eMouseStateDraggingRoiCross,
-    eMouseStateBuildingUserRoI,
     eMouseStatePickingColor,
     eMouseStatePickingInputColor,
     eMouseStateBuildingPickerRectangle,
-    eMouseStateDraggingWipeCenter,
-    eMouseStateDraggingWipeMixHandle,
-    eMouseStateRotatingWipeHandle,
     eMouseStateZoomingImage,
     eMouseStateUndefined
 };
 
-enum HoverStateEnum
-{
-    eHoverStateNothing = 0,
-    eHoverStateWipeMix,
-    eHoverStateWipeRotateHandle
-};
+
 
 enum PickerStateEnum
 {
@@ -100,8 +77,6 @@ struct TextureInfo
     TextureInfo()
         : texture()
         , roiNotRoundedToTileSize()
-        , gain(1.)
-        , gamma(1.)
         , offset(0.)
         , mipMapLevel(0)
         , premult(eImagePremultiplicationOpaque)
@@ -117,8 +92,6 @@ struct TextureInfo
 
     GLTexturePtr texture;
     TextureRect roiNotRoundedToTileSize;
-    double gain;
-    double gamma;
     double offset;
     unsigned int mipMapLevel;
     ImagePremultiplicationEnum premult;
@@ -164,15 +137,12 @@ struct ViewerGL::Implementation
     QPoint oldClick;
     ViewerColorSpaceEnum displayingImageLut;
     MouseStateEnum ms; /*!< Holds the mouse state*/
-    HoverStateEnum hs;
     const QColor textRenderingColor;
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
     QFont textFont;
-    bool overlay; /*!< True if the user enabled overlay dispay*/
     bool updatingTexture;
     QColor clearColor;
-    QMenu* menu;
     QStringList persistentMessages;
     int persistentMessageType;
     bool displayPersistentMessage;
@@ -198,20 +168,9 @@ struct ViewerGL::Implementation
 
     //////////////////////////////////////////////////////////
     // The following are accessed from various threads
-    QMutex userRoIMutex;
-    bool userRoIEnabled;
-    RectD userRoI; //< in canonical coords
-    bool buildUserRoIOnNextPress;
-    RectD draggedUserRoI;
     ZoomContext zoomCtx; /*!< All zoom related variables are packed into this object. */
     mutable QMutex zoomCtxMutex; /// protectx zoomCtx*
-    QMutex clipToDisplayWindowMutex;
-    bool clipToDisplayWindow;
-    mutable QMutex wipeControlsMutex;
-    double mixAmount; /// the amount of the second input to blend, by default 1.
-    double wipeAngle; /// the angle to the X axis
-    QPointF wipeCenter; /// the center of the wipe control
-    bool wipeInitialized;
+
     QRectF selectionRectangle;
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
@@ -236,11 +195,7 @@ public:
 
     void initializeGL();
 
-    bool isNearbyWipeCenter(const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
-    bool isNearbyWipeRotateBar(const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
-    bool isNearbyWipeMixHandle(const QPointF & pos, double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
 
-    void drawArcOfCircle(const QPointF & center, double radiusX, double radiusY, double startAngle, double endAngle);
 
     void bindTextureAndActivateShader(int i,
                                       bool useShader);

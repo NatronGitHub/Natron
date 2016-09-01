@@ -72,6 +72,11 @@ public:
     virtual ~NodeViewerContext();
 
     /**
+    * @brief If this as a player toolbar (only the viewer) this will return it
+    **/
+    QWidget* getPlayerToolbar() const;
+
+    /**
      * @brief If this node's viewer context has a toolbar, this will return it
      **/
     QToolBar* getToolBar() const;

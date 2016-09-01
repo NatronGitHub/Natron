@@ -51,6 +51,7 @@ GCC_DIAG_OFF(deprecated)
 GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include "Serialization/CacheSerialization.h"
 #endif
 
 #include "Engine/AppManager.h" //for access to settings
@@ -61,6 +62,7 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/ImageLocker.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/EngineFwd.h"
+
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries
 #define NATRON_CACHE_LIMIT_PERCENT 0.9
@@ -78,7 +80,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 template <typename T>
 class DeleterThread
-    : public QThread
+        : public QThread
 {
     mutable QMutex _entriesQueueMutex;
     std::list<boost::shared_ptr<T> >_entriesQueue;
@@ -198,7 +200,7 @@ private:
  * e.g: they may have a hash that can no longer be produced
  **/
 class CacheCleanerThread
-    : public QThread
+        : public QThread
 {
     mutable QMutex _requestQueueMutex;
     struct CleanRequest
@@ -321,7 +323,7 @@ private:
 
 
 class CacheSignalEmitter
-    : public QObject
+        : public QObject
 {
     Q_OBJECT
 
@@ -379,7 +381,8 @@ Q_SIGNALS:
  */
 template<typename EntryType>
 class Cache
-    : public CacheAPI
+: public CacheAPI
+, public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     friend class CacheCleanerThread;
 public:
@@ -390,10 +393,6 @@ public:
     typedef typename EntryType::param_t param_t;
     typedef boost::shared_ptr<param_t> ParamsTypePtr;
     typedef boost::shared_ptr<EntryType> EntryTypePtr;
-
-    struct SerializedEntry;
-
-    typedef std::list< SerializedEntry > CacheTOC;
 
 public:
 
@@ -723,7 +722,7 @@ private:
         return foundAvailableFile;
     }
 
-            /**
+    /**
              * @brief Free a tile from the cache that was previously allocated with allocTile. It will be made available again for other entries.
              **/
     virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) OVERRIDE FINAL
@@ -1547,12 +1546,144 @@ public:
     }
 
     /*Saves cache to disk as a settings file.
-     */
-    void save(CacheTOC* tableOfContents);
+             */
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL
+    {
+        SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>* s = dynamic_cast<SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>*>(obj);
+        if (!s) {
+            return;
+        }
 
+        clearInMemoryPortion(false);
+        s->cacheVersion = cacheVersion();
+        {
+            QMutexLocker l(&_lock);     // must be locked
+
+            for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
+                std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
+                for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
+                    if ( (*it2)->isStoredOnDisk() ) {
+                        SERIALIZATION_NAMESPACE::SerializedEntry<EntryType> serialization;
+                        serialization.hash = (*it2)->getHashKey();
+                        (*it2)->getParams()->toSerialization(&serialization.params);
+                        key_t key = (*it2)->getKey();
+                        key.toSerialization(&serialization.key);
+                        serialization.size = (*it2)->dataSize();
+                        serialization.filePath = (*it2)->getFilePath();
+                        serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
+
+                        (*it2)->syncBackingFile();
+
+                        s->entries.push_back(serialization);
+#ifdef DEBUG
+                        if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
+                            qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+                        }
+#endif
+                    }
+                }
+            }
+        }
+    }
 
     /*Restores the cache from disk.*/
-    void restore(const CacheTOC & tableOfContents);
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& obj) OVERRIDE FINAL
+    {
+        const SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>* s = dynamic_cast<const SERIALIZATION_NAMESPACE::CacheSerialization<EntryType>*>(&obj);
+        if (!s) {
+            return;
+        }
+        ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
+        ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
+        std::list<EntryTypePtr> entriesToBeDeleted;
+
+        std::set<QString> usedFilePaths;
+        for (typename std::list<SERIALIZATION_NAMESPACE::SerializedEntry<EntryType> >::const_iterator it =
+             s->entries.begin(); it != s->entries.end(); ++it) {
+
+            key_t key;
+            key.fromSerialization(it->key);
+            if ( it->hash != key.getHash() ) {
+                /*
+                         * If this warning is printed this means that the value computed by it->key()
+                         * is different than the value stored prior to serialiazing this entry. In other words there're
+                         * 2 possibilities:
+                         * 1) The key has changed since it has been added to the cache: maybe you forgot to serialize some
+                         * members of the key or you didn't save them correctly.
+                         * 2) The hash key computation is unreliable and is depending upon changing or non-deterministic
+                         * parameters which is wrong.
+                         */
+                qDebug() << "WARNING: serialized hash key different than the restored one";
+            }
+
+#ifdef DEBUG
+            if ( !_isTiled && !checkFileNameMatchesHash(it->filePath, it->hash) ) {
+                qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+            }
+#endif
+
+            EntryType* value = NULL;
+
+            try {
+                ParamsTypePtr params(new param_t);
+                params->fromSerialization(it->params);
+                value = new EntryType(key, params, this);
+                if (it->size != getTileSizeBytes()) {
+                    continue;
+                }
+                ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
+                value->restoreMetaDataFromFile(it->size, it->filePath, it->dataOffsetInFile);
+            } catch (const std::exception & e) {
+                qDebug() << e.what();
+                continue;
+            }
+            const std::string& filePath = value->getFilePath();
+            usedFilePaths.insert(QString::fromUtf8(filePath.c_str()));
+            {
+                QMutexLocker locker(&_lock);
+                sealEntry(EntryTypePtr(value), false /*inMemory*/);
+            }
+        }
+
+        // Remove from the cache all files that are not referenced by the table of contents
+        QString cachePath = getCachePath();
+        if (isTileCache()) {
+            QDir cacheFolder(cachePath);
+            QString absolutePath = cacheFolder.absolutePath();
+            QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
+            for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {
+                QString entryFilePath = absolutePath + QLatin1Char('/') + *it;
+
+                std::set<QString>::iterator foundUsed = usedFilePaths.find(entryFilePath);
+                if (foundUsed == usedFilePaths.end()) {
+                    cacheFolder.remove(*it);
+                }
+            }
+        } else {
+            for (U32 i = 0x00; i <= 0xF; ++i) {
+                for (U32 j = 0x00; j <= 0xF; ++j) {
+                    std::ostringstream oss;
+                    oss << std::hex <<  i;
+                    oss << std::hex << j;
+                    std::string str = oss.str();
+
+
+                    QDir cacheFolder(cachePath + QLatin1Char('/') + QString::fromUtf8( str.c_str() ));
+                    QString absolutePath = cacheFolder.absolutePath();
+                    QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
+                    for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {
+                        QString entryFilePath = absolutePath + QLatin1Char('/') + *it;
+
+                        std::set<QString>::iterator foundUsed = usedFilePaths.find(entryFilePath);
+                        if (foundUsed == usedFilePaths.end()) {
+                            cacheFolder.remove(*it);
+                        }
+                    }
+                }
+            }
+
+        }
+    }
 
 
     void removeAllEntriesWithDifferentNodeHashForHolderPublic(const CacheEntryHolder* holder,

@@ -47,7 +47,8 @@ class PanelWidget
 
 public:
 
-    PanelWidget(QWidget* thisWidget,
+    PanelWidget(const std::string& scriptName,
+                QWidget* thisWidget,
                 Gui* gui);
 
     Gui* getGui() const;
@@ -87,7 +88,15 @@ public:
      */
     virtual void onPanelMadeCurrent() {}
 
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) { Q_UNUSED(data); return false; }
+
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) { Q_UNUSED(data); return false; }
+
 protected:
+
+    virtual void onScriptNameChanged() OVERRIDE;
+
+    virtual void onLabelChanged() OVERRIDE;
 
     virtual QUndoStack* getUndoStack() const { return 0; }
 

@@ -2727,7 +2727,7 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
 void
 ViewerDisplayScheduler::timelineStepOne(RenderDirectionEnum direction)
 {
-    boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
+    ViewerInstancePtr  viewer = _viewer.lock();
 
     if (direction == eRenderDirectionForward) {
         viewer->getTimeline()->incrementCurrentFrame();
@@ -2739,9 +2739,9 @@ ViewerDisplayScheduler::timelineStepOne(RenderDirectionEnum direction)
 void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
-    boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
+    ViewerInstancePtr viewer = _viewer.lock();
 
-    viewer->getTimeline()->seekFrame(time, false, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+    viewer->getTimeline()->seekFrame(time, true, viewer, eTimelineChangeReasonPlaybackSeek);
 }
 
 int
@@ -3849,7 +3849,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     }
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
-    ViewIdx view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : ViewIdx(0);
+    ViewIdx view = viewsCount > 0 ? _imp->viewer->getCurrentView() : ViewIdx(0);
     U64 viewerHash = _imp->viewer->getHash();
     ViewerInstance::ViewerRenderRetCode status[2] = {
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail

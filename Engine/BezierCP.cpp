@@ -41,6 +41,8 @@
 #include "Engine/Transform.h" // Point3D
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/BezierCPSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -928,6 +930,53 @@ BezierCP::cloneGuiCurvesToInternalCurves()
     _imp->leftY = _imp->guiLeftY;
     _imp->rightX = _imp->guiRightX;
     _imp->rightY = _imp->guiRightY;
+}
+
+void
+BezierCP::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::BezierCPSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::BezierCPSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    _imp->curveX->toSerialization(&s->xCurve);
+    _imp->curveY->toSerialization(&s->yCurve);
+    _imp->curveLeftBezierX->toSerialization(&s->leftCurveX);
+    _imp->curveLeftBezierY->toSerialization(&s->leftCurveY);
+    _imp->curveRightBezierX->toSerialization(&s->rightCurveX);
+    _imp->curveRightBezierY->toSerialization(&s->rightCurveY);
+
+    QMutexLocker k(&_imp->staticPositionMutex);
+    s->x = _imp->x;
+    s->y = _imp->y;
+    s->leftX = _imp->leftX;
+    s->leftY = _imp->leftY;
+    s->rightX = _imp->rightX;
+    s->rightY = _imp->rightY;
+}
+
+void
+BezierCP::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::BezierCPSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::BezierCPSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    _imp->curveX->fromSerialization(s->xCurve);
+    _imp->curveY->fromSerialization(s->yCurve);
+    _imp->curveLeftBezierX->fromSerialization(s->leftCurveX);
+    _imp->curveLeftBezierY->fromSerialization(s->leftCurveY);
+    _imp->curveRightBezierX->fromSerialization(s->rightCurveX);
+    _imp->curveRightBezierY->fromSerialization(s->rightCurveY);
+
+    QMutexLocker k(&_imp->staticPositionMutex);
+    _imp->x = s->x;
+    _imp->y = s->y;
+    _imp->leftX = s->leftX;
+    _imp->leftY = s->leftY;
+    _imp->rightX = s->rightX;
+    _imp->rightY = s->rightY;
+
 }
 
 NATRON_NAMESPACE_EXIT;

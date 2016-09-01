@@ -45,70 +45,40 @@
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief A node of a tree data structure representing the grouping hierarchy of plug-ins. This is mainly for the GUI so it can create its toolbuttons and menus
+ * If this node is a leaf it will have a valid plugin, otherwise it has just a name for menus
+ **/
 class PluginGroupNode
 {
-    QString _id;
-    QString _label;
-    QString _iconPath;
-    int _major, _minor;
+
     std::list<PluginGroupNodePtr> _children;
-    boost::weak_ptr<PluginGroupNode> _parent;
-    bool _notHighestMajorVersion;
-    bool _isUserCreatable;
+    PluginGroupNodeWPtr _parent;
+    PluginWPtr _plugin;
+
+    // the name of the node in the hierarchy
+    QString _name;
+
+    // the icon file path of this menu item
+    QString _iconFilePath;
 
 public:
-    PluginGroupNode(const QString & pluginID,
-                    const QString & pluginLabel,
-                    const QString & iconPath,
-                    int major,
-                    int minor,
-                    bool isUserCreatable)
-        : _id(pluginID)
-        , _label(pluginLabel)
-        , _iconPath(iconPath)
-        , _major(major)
-        , _minor(minor)
-        , _children()
+    PluginGroupNode(const PluginPtr& plugin,
+                    const QString& name,
+                    const QString& iconFilePath)
+        : _children()
         , _parent()
-        , _notHighestMajorVersion(false)
-        , _isUserCreatable(isUserCreatable)
+        , _plugin(plugin)
+        , _name(name)
+        , _iconFilePath(iconFilePath)
     {
     }
 
-    bool getIsUserCreatable() const
+    PluginPtr getPlugin() const
     {
-        return _isUserCreatable;
+        return _plugin.lock();
     }
 
-    const QString & getID() const
-    {
-        return _id;
-    }
-
-    const QString & getLabel() const
-    {
-        return _label;
-    }
-
-    const QString getLabelVersionMajorEncoded() const
-    {
-        return _label + QString::fromUtf8(" ") + QString::number(_major);
-    }
-
-    void setLabel(const QString & label)
-    {
-        _label = label;
-    }
-
-    const QString & getIconPath() const
-    {
-        return _iconPath;
-    }
-
-    void setIconPath(const QString & iconPath)
-    {
-        _iconPath = iconPath;
-    }
 
     const std::list<PluginGroupNodePtr> & getChildren() const
     {
@@ -116,6 +86,7 @@ public:
     }
 
     void tryAddChild(const PluginGroupNodePtr& plugin);
+
     void tryRemoveChild(const PluginGroupNodePtr& plugin);
 
     PluginGroupNodePtr getParent() const
@@ -128,33 +99,34 @@ public:
         _parent = parent;
     }
 
-    bool hasParent() const
+    const QString& getTreeNodeName() const
     {
-        return _parent.lock().get() != NULL;
+        return _name;
     }
 
-    int getMajorVersion() const
+    const QString& getTreeNodeIconFilePath() const
     {
-        return _major;
+        return _iconFilePath;
     }
 
-    int getMinorVersion() const
-    {
-        return _minor;
-    }
-
-    bool getNotHighestMajorVersion() const
-    {
-        return _notHighestMajorVersion;
-    }
-
-    void setNotHighestMajorVersion(bool v)
-    {
-        _notHighestMajorVersion = v;
-    }
+    // the node ID is the same as name for menu items and the pluginID if this is a leaf
+    const QString& getTreeNodeID() const;
+    
 };
 
+// Identify a preset for a node
+struct PluginPresetDescriptor
+{
+    QString presetFilePath;
+    QString presetLabel;
+    QString presetIconFile;
+    Key symbol;
+    KeyboardModifiers modifiers;
+};
 
+/**
+ * @brief A Natron plug-in that can be instantiated in nodes
+ **/
 class Plugin
 {
     LibraryBinary* _binary;
@@ -168,11 +140,11 @@ class Plugin
     QString _pythonModule;
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
-    QMutex* _lock;
+    boost::shared_ptr<QMutex> _lock;
     int _majorVersion;
     int _minorVersion;
     ContextEnum _ofxContext;
-    mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
+
     bool _isReader, _isWriter;
 
     //Deprecated are by default Disabled in the Preferences.
@@ -195,37 +167,11 @@ class Plugin
 
     PluginOpenGLRenderSupport _openglRenderSupport;
 
-public:
+    std::vector<PluginPresetDescriptor> _presetsFiles;
 
-    Plugin()
-        : _binary(NULL)
-        , _resourcesPath()
-        , _id()
-        , _label()
-        , _iconFilePath()
-        , _groupIconFilePath()
-        , _grouping()
-        , _labelWithoutSuffix()
-        , _pythonModule()
-        , _ofxPlugin(0)
-        , _ofxDescriptor(0)
-        , _lock()
-        , _majorVersion(0)
-        , _minorVersion(0)
-        , _ofxContext(eContextNone)
-        , _hasShortcutSet(false)
-        , _isReader(false)
-        , _isWriter(false)
-        , _isDeprecated(false)
-        , _isInternalOnly(false)
-        , _toolSetScript(false)
-        , _activated(true)
-        , _renderScaleEnabled(true)
-        , _multiThreadingEnabled(true)
-        , _openglActivated(true)
-        , _openglRenderSupport(ePluginOpenGLRenderSupportNone)
-    {
-    }
+    bool _isHighestVersion;
+
+public:
 
     Plugin(LibraryBinary* binary,
            const QString& resourcesPath,
@@ -234,43 +180,12 @@ public:
            const QString & iconFilePath,
            const QStringList & groupIconFilePath,
            const QStringList & grouping,
-           QMutex* lock,
+           bool mustCreateMutex,
            int majorVersion,
            int minorVersion,
            bool isReader,
            bool isWriter,
-           bool isDeprecated)
-        : _binary(binary)
-        , _resourcesPath(resourcesPath)
-        , _id(id)
-        , _label(label)
-        , _iconFilePath(iconFilePath)
-        , _groupIconFilePath(groupIconFilePath)
-        , _grouping(grouping)
-        , _labelWithoutSuffix()
-        , _pythonModule()
-        , _ofxPlugin(0)
-        , _ofxDescriptor(0)
-        , _lock(lock)
-        , _majorVersion(majorVersion)
-        , _minorVersion(minorVersion)
-        , _ofxContext(eContextNone)
-        , _hasShortcutSet(false)
-        , _isReader(isReader)
-        , _isWriter(isWriter)
-        , _isDeprecated(isDeprecated)
-        , _isInternalOnly(false)
-        , _toolSetScript(false)
-        , _activated(true)
-        , _renderScaleEnabled(true)
-        , _multiThreadingEnabled(true)
-        , _openglActivated(true)
-        , _openglRenderSupport(ePluginOpenGLRenderSupportNone)
-    {
-        if ( _resourcesPath.isEmpty() ) {
-            _resourcesPath = QLatin1String(":/Resources/");
-        }
-    }
+           bool isDeprecated);
 
     ~Plugin();
 
@@ -288,6 +203,12 @@ public:
     {
         return _resourcesPath;
     }
+
+    void addPresetFile(const QString& filePath, const QString& presetLabel, const QString& iconFilePath, Key symbol, const KeyboardModifiers& mods);
+
+    const std::vector<PluginPresetDescriptor>& getPresetFiles() const;
+
+    void sortPresetsByLabel();
 
     QString getPluginShortcutGroup() const;
 
@@ -333,16 +254,12 @@ public:
 
     bool getToolsetScript() const;
 
-    QMutex* getPluginLock() const;
+    boost::shared_ptr<QMutex> getPluginLock() const;
     LibraryBinary* getLibraryBinary() const;
 
     int getMajorVersion() const;
 
     int getMinorVersion() const;
-
-    void setHasShortcut(bool has) const;
-
-    bool getHasShortcut() const;
 
     void setPythonModule(const QString& module);
 
@@ -371,18 +288,21 @@ public:
 
     void setOpenGLRenderSupport(PluginOpenGLRenderSupport support);
     PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
+
+    void setIsHighestMajorVersion(bool isHighest);
+    bool getIsHighestMajorVersion() const;
 };
 
 struct Plugin_compare_major
 {
-    bool operator() (const Plugin* const lhs,
-                     const Plugin* const rhs) const
+    bool operator() (const PluginPtr& lhs,
+                     const PluginPtr& rhs) const
     {
         return lhs->getMajorVersion() < rhs->getMajorVersion();
     }
 };
 
-typedef std::set<Plugin*, Plugin_compare_major> PluginMajorsOrdered;
+typedef std::set<PluginPtr, Plugin_compare_major> PluginMajorsOrdered;
 typedef std::map<std::string, PluginMajorsOrdered> PluginsMap;
 
 struct IOPluginEvaluation

@@ -57,7 +57,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ProgressPanel(Gui* gui);
+    ProgressPanel(const std::string& scriptName, Gui* gui);
 
     virtual ~ProgressPanel();
 

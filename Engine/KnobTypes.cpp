@@ -47,17 +47,20 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
+#include "Engine/ColorParser.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
+
+#include "Serialization/CurveSerialization.h"
+#include "Serialization/KnobSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -73,6 +76,7 @@ KnobInt::KnobInt(const KnobHolderPtr& holder,
     , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
+    , _isValueCenteredInSpinbox(false)
 {
 }
 
@@ -131,7 +135,7 @@ KnobInt::canAnimate() const
     return true;
 }
 
-const std::string KnobInt::_typeNameStr("Int");
+const std::string KnobInt::_typeNameStr(kKnobIntTypeName);
 const std::string &
 KnobInt::typeNameStatic()
 {
@@ -160,7 +164,7 @@ KnobBool::canAnimate() const
     return canAnimateStatic();
 }
 
-const std::string KnobBool::_typeNameStr("Bool");
+const std::string KnobBool::_typeNameStr(kKnobBoolTypeName);
 const std::string &
 KnobBool::typeNameStatic()
 {
@@ -241,7 +245,7 @@ KnobDouble::canAnimate() const
     return true;
 }
 
-const std::string KnobDouble::_typeNameStr("Double");
+const std::string KnobDouble::_typeNameStr(kKnobDoubleTypeName);
 const std::string &
 KnobDouble::typeNameStatic()
 {
@@ -425,7 +429,7 @@ KnobButton::canAnimate() const
     return false;
 }
 
-const std::string KnobButton::_typeNameStr("Button");
+const std::string KnobButton::_typeNameStr(kKnobButtonTypeName);
 const std::string &
 KnobButton::typeNameStatic()
 {
@@ -458,11 +462,49 @@ KnobChoice::KnobChoice(const KnobHolderPtr& holder,
     , _currentEntryLabel()
     , _addNewChoice(false)
     , _isCascading(false)
+    , _showMissingEntryWarning(true)
+    , _isDisplayChannelKnob(false)
 {
 }
 
 KnobChoice::~KnobChoice()
 {
+}
+
+void
+KnobChoice::setMissingEntryWarningEnabled(bool enabled)
+{
+    _showMissingEntryWarning = enabled;
+}
+
+bool
+KnobChoice::isMissingEntryWarningEnabled() const
+{
+    return _showMissingEntryWarning;
+}
+
+void
+KnobChoice::setIsDisplayChannelsKnob(bool b)
+{
+    _isDisplayChannelKnob = b;
+}
+
+bool
+KnobChoice::isDisplayChannelsKnob() const
+{
+    return _isDisplayChannelKnob;
+}
+
+void
+KnobChoice::setTextToFitHorizontally(const std::string& text)
+{
+    _textToFitHorizontally = text;
+}
+
+std::string
+KnobChoice::getTextToFitHorizontally() const
+{
+    return _textToFitHorizontally;
 }
 
 void
@@ -483,7 +525,7 @@ KnobChoice::canAnimate() const
     return canAnimateStatic();
 }
 
-const std::string KnobChoice::_typeNameStr("Choice");
+const std::string KnobChoice::_typeNameStr(kKnobChoiceTypeName);
 const std::string &
 KnobChoice::typeNameStatic()
 {
@@ -706,6 +748,43 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
     return hasChanged;
 } // KnobChoice::populateChoices
 
+
+void
+KnobChoice::setShortcuts(const std::map<int, std::string>& shortcuts)
+{
+    _shortcuts = shortcuts;
+}
+
+const std::map<int, std::string>&
+KnobChoice::getShortcuts() const
+{
+    return _shortcuts;
+}
+
+void
+KnobChoice::setIcons(const std::map<int, std::string>& icons)
+{
+    _menuIcons = icons;
+}
+
+const std::map<int, std::string>&
+KnobChoice::getIcons() const
+{
+    return _menuIcons;
+}
+
+void
+KnobChoice::setSeparators(const std::vector<int>& separators)
+{
+    _separators = separators;
+}
+
+const std::vector<int>&
+KnobChoice::getSeparators() const
+{
+    return _separators;
+}
+
 void
 KnobChoice::refreshMenu()
 {
@@ -821,6 +900,16 @@ KnobChoice::getEntriesHelp_mt_safe() const
     QMutexLocker l(&_entriesMutex);
 
     return _mergedEntriesHelp;
+}
+
+void
+KnobChoice::setActiveEntry(const std::string& entry)
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        _currentEntryLabel = entry;
+    }
+    Q_EMIT populated();
 }
 
 std::string
@@ -975,45 +1064,6 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
-void
-KnobChoice::choiceRestoration(const KnobChoicePtr& knob,
-                              const ChoiceExtraData* data)
-{
-    assert(knob && data);
-
-
-    ///Clone first and then handle restoration of the static value
-    clone(knob);
-    setSecret( knob->getIsSecret() );
-    if ( getDimension() == knob->getDimension() ) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            setEnabled( i, knob->isEnabled(i) );
-        }
-    }
-
-    {
-        QMutexLocker k(&_entriesMutex);
-        _currentEntryLabel = data->_choiceString;
-    }
-
-    int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_mergedEntries.size() ) && (_mergedEntries[serializedIndex] == data->_choiceString) ) {
-        // we're lucky, entry hasn't changed
-        setValue(serializedIndex);
-    } else {
-        // try to find the same label at some other index
-        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if ( boost::iequals(_mergedEntries[i], data->_choiceString) ) {
-                setValue(i);
-
-                return;
-            }
-        }
-
-
-        //   setValue(-1);
-    }
-}
 
 void
 KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
@@ -1088,7 +1138,7 @@ KnobSeparator::canAnimate() const
     return false;
 }
 
-const std::string KnobSeparator::_typeNameStr("Separator");
+const std::string KnobSeparator::_typeNameStr(kKnobSeparatorTypeName);
 const std::string &
 KnobSeparator::typeNameStatic()
 {
@@ -1141,7 +1191,7 @@ KnobColor::canAnimate() const
 }
 
 const std::string
-KnobColor::_typeNameStr("Color");
+KnobColor::_typeNameStr(kKnobColorTypeName);
 const std::string &
 KnobColor::typeNameStatic()
 {
@@ -1179,11 +1229,23 @@ KnobString::KnobString(const KnobHolderPtr& holder,
     , _customHtmlText(false)
     , _isLabel(false)
     , _isCustom(false)
+    , _fontSize(getDefaultFontPointSize())
+    , _boldActivated(false)
+    , _italicActivated(false)
+    , _fontFamily(NATRON_FONT)
+    , _fontColor()
 {
+    _fontColor[0] = _fontColor[1] = _fontColor[2] = 0.;
 }
 
 KnobString::~KnobString()
 {
+}
+
+int
+KnobString::getDefaultFontPointSize()
+{
+    return kKnobStringDefaultFontSize;
 }
 
 bool
@@ -1192,7 +1254,7 @@ KnobString::canAnimate() const
     return canAnimateStatic();
 }
 
-const std::string KnobString::_typeNameStr("String");
+const std::string KnobString::_typeNameStr(kKnobStringTypeName);
 const std::string &
 KnobString::typeNameStatic()
 {
@@ -1204,6 +1266,84 @@ KnobString::typeName() const
 {
     return typeNameStatic();
 }
+
+bool
+KnobString::parseFont(const QString & label, int* fontSize, QString* fontFamily, bool* isBold, bool* isItalic, double* r, double *g, double* b)
+{
+    assert(isBold && isItalic && r && g && b && fontFamily && fontSize);
+
+    *isBold = false;
+    *isItalic = false;
+    *fontSize = 0;
+    *r = *g = *b = 0.;
+
+    QString toFind = QString::fromUtf8(kFontSizeTag);
+    int startFontTag = label.indexOf(toFind);
+
+    assert(startFontTag != -1);
+    if (startFontTag == -1) {
+        return false;
+    }
+    startFontTag += toFind.size();
+    int j = startFontTag;
+    QString sizeStr;
+    while ( j < label.size() && label.at(j).isDigit() ) {
+        sizeStr.push_back( label.at(j) );
+        ++j;
+    }
+
+    toFind = QString::fromUtf8(kFontFaceTag);
+    startFontTag = label.indexOf(toFind, startFontTag);
+    assert(startFontTag != -1);
+    if (startFontTag == -1) {
+        return false;
+    }
+    startFontTag += toFind.size();
+    j = startFontTag;
+    QString faceStr;
+    while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
+        faceStr.push_back( label.at(j) );
+        ++j;
+    }
+
+    *fontSize = sizeStr.toInt();
+    *fontFamily = faceStr;
+
+    {
+        toFind = QString::fromUtf8(kBoldStartTag);
+        int foundBold = label.indexOf(toFind);
+        if (foundBold != -1) {
+            *isBold = true;
+        }
+    }
+
+    {
+        toFind = QString::fromUtf8(kItalicStartTag);
+        int foundItalic = label.indexOf(toFind);
+        if (foundItalic != -1) {
+            *isItalic = true;
+        }
+    }
+    {
+        toFind = QString::fromUtf8(kFontColorTag);
+        int foundColor = label.indexOf(toFind);
+        if (foundColor != -1) {
+            foundColor += toFind.size();
+            QString currentColor;
+            int j = foundColor;
+            while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
+                currentColor.push_back( label.at(j) );
+                ++j;
+            }
+            int red, green, blue;
+            ColorParser::parseColor(currentColor, &red, &green, &blue);
+            *r = red / 255.0;
+            *g = green / 255.0;
+            *b = blue / 255.0;
+        }
+    }
+    return true;
+} // KnobString::parseFont
 
 bool
 KnobString::hasContentWithoutHtmlTags()
@@ -1249,6 +1389,189 @@ KnobString::hasContentWithoutHtmlTags()
     }
 
     return true;
+}
+
+
+QString
+KnobString::removeNatronHtmlTag(QString text)
+{
+    // We also remove any custom data added by natron so the user doesn't see it
+    int startCustomData = text.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+
+    if (startCustomData != -1) {
+
+        // Found start tag, now find end tag and remove what's in-between
+        QString endTag( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
+        int endCustomData = text.indexOf(endTag, startCustomData);
+        assert(endCustomData != -1);
+        if (endCustomData == -1) {
+            return text;
+        }
+        endCustomData += endTag.size();
+        text.remove(startCustomData, endCustomData - startCustomData);
+    }
+
+    return text;
+}
+
+QString
+KnobString::getNatronHtmlTagContent(QString text)
+{
+    QString label = removeAutoAddedHtmlTags(text, false);
+    QString startTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = label.indexOf(startTag);
+
+    if (startCustomData != -1) {
+
+        // Found start tag, now find end tag and get what's in-between
+        QString endTag = QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = label.indexOf(endTag, startCustomData);
+        assert(endCustomData != -1);
+        if (endCustomData == -1) {
+            return label;
+        }
+        label = label.remove( endCustomData, endTag.size() );
+        label = label.remove( startCustomData, startTag.size() );
+    }
+
+    return label;
+}
+
+QString
+KnobString::removeAutoAddedHtmlTags(QString text,
+                                       bool removeNatronTag)
+{
+    // Find font start tag
+    QString toFind = QString::fromUtf8(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    bool foundFontStart = i != -1;
+
+    // Remove bold tag
+    QString boldStr = QString::fromUtf8(kBoldStartTag);
+    int foundBold = text.lastIndexOf(boldStr, i);
+
+    // Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
+    //assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
+
+    if (foundBold != -1) {
+        // We found bold, remove it
+        text.remove( foundBold, boldStr.size() );
+        boldStr = QString::fromUtf8(kBoldEndTag);
+        foundBold = text.lastIndexOf(boldStr);
+        assert(foundBold != -1);
+        if (foundBold == -1) {
+            return text;
+        }
+        text.remove( foundBold, boldStr.size() );
+    }
+
+    // Refresh the index of the font start tag
+    i = text.indexOf(toFind);
+
+    // Remove italic tag
+    QString italStr = QString::fromUtf8(kItalicStartTag);
+    int foundItal = text.lastIndexOf(italStr, i);
+
+    // Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
+    // assert((_italicActivated && foundItal != -1) || (!_italicActivated && foundItal == -1));
+
+    if (foundItal != -1) {
+        // We found italic, remove it
+        text.remove( foundItal, italStr.size() );
+        italStr = QString::fromUtf8(kItalicEndTag);
+        foundItal = text.lastIndexOf(italStr);
+        assert(foundItal != -1);
+        text.remove( foundItal, italStr.size() );
+    }
+
+    // Refresh the index of the font start tag
+    i = text.indexOf(toFind);
+
+    // Find the end of the font declaration start tag
+    QString endTag = QString::fromUtf8("\">");
+    int foundEndTag = text.indexOf(endTag, i);
+    foundEndTag += endTag.size();
+    if (foundFontStart) {
+        //Remove the whole font declaration tag
+        text.remove(i, foundEndTag - i);
+    }
+
+    // Find the font end tag
+    endTag = QString::fromUtf8(kFontEndTag);
+    foundEndTag = text.lastIndexOf(endTag);
+    assert( (foundEndTag != -1 && foundFontStart) || !foundFontStart );
+    if (foundEndTag != -1) {
+        // Remove the font end tag
+        text.remove( foundEndTag, endTag.size() );
+    }
+
+    // We also remove any custom data added by natron so the user doesn't see it
+    if (removeNatronTag) {
+        return removeNatronHtmlTag(text);
+    } else {
+        return text;
+    }
+} // removeAutoAddedHtmlTags
+
+QString
+KnobString::makeFontTag(const QString& family,
+                        int fontSize,
+                        double r, double g, double b)
+{
+    QString colorName = ColorParser::getColorName(Image::clamp(r, 0., 1.) * 255.0, Image::clamp(g, 0., 1.) * 255.0, Image::clamp(b, 0., 1.) * 255.0);
+    return QString::fromUtf8(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+    .arg(fontSize)
+    .arg(colorName)
+    .arg(family);
+}
+
+QString
+KnobString::decorateTextWithFontTag(const QString& family,
+                                    int fontSize,
+                                    double r, double g, double b,
+                                    bool isBold, bool isItalic,
+                                    const QString& text)
+{
+    QString ret = makeFontTag(family, fontSize, r, g, b);
+    if (isBold) {
+        ret += QString::fromUtf8(kBoldStartTag);
+    }
+    if (isItalic) {
+        ret += QString::fromUtf8(kItalicStartTag);
+    }
+    ret += text;
+    if (isBold) {
+        ret += QString::fromUtf8(kBoldEndTag);
+    }
+    if (isItalic) {
+        ret += QString::fromUtf8(kItalicEndTag);
+    }
+
+    ret += QString::fromUtf8(kFontEndTag);
+    return ret;
+}
+
+QString
+KnobString::decorateStringWithCurrentState(const QString& str)
+{
+    QString ret = str;
+    if (!_richText) {
+        return ret;
+    }
+    ret = decorateTextWithFontTag(QString::fromUtf8(_fontFamily.c_str()), _fontSize, _fontColor[0], _fontColor[1], _fontColor[2], _boldActivated, _italicActivated, ret);
+    return ret;
+}
+
+QString
+KnobString::getValueDecorated(double time, ViewSpec view)
+{
+    QString ret;
+    if (isAnimated(0)) {
+        ret = QString::fromUtf8(getValueAtTime(time, 0 , view).c_str());
+    } else {
+        ret = QString::fromUtf8(getValue(0, view).c_str());
+    }
+    return decorateStringWithCurrentState(ret);
 }
 
 void
@@ -1313,7 +1636,7 @@ KnobGroup::canAnimate() const
     return false;
 }
 
-const std::string KnobGroup::_typeNameStr("Group");
+const std::string KnobGroup::_typeNameStr(kKnobGroupTypeName);
 const std::string &
 KnobGroup::typeNameStatic()
 {
@@ -1452,7 +1775,7 @@ KnobPage::canAnimate() const
     return false;
 }
 
-const std::string KnobPage::_typeNameStr("Page");
+const std::string KnobPage::_typeNameStr(kKnobPageTypeName);
 const std::string &
 KnobPage::typeNameStatic()
 {
@@ -1602,7 +1925,7 @@ KnobParametric::populate()
     }
 }
 
-const std::string KnobParametric::_typeNameStr("Parametric");
+const std::string KnobParametric::_typeNameStr(kKnobParametricTypeName);
 const std::string &
 KnobParametric::typeNameStatic()
 {
@@ -2025,20 +2348,22 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
 }
 
 void
-KnobParametric::saveParametricCurves(std::list< Curve >* curves) const
+KnobParametric::saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const
 {
     for (U32 i = 0; i < _curves.size(); ++i) {
-        curves->push_back(*_curves[i]);
+        SERIALIZATION_NAMESPACE::CurveSerialization c;
+        _curves[i]->toSerialization(&c);
+        curves->push_back(c);
     }
 }
 
 void
-KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
+KnobParametric::loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::CurveSerialization > & curves)
 {
     assert( !_curves.empty() );
     int i = 0;
-    for (std::list< Curve >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        _curves[i]->clone(*it);
+    for (std::list< SERIALIZATION_NAMESPACE::CurveSerialization >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+        _curves[i]->fromSerialization(*it);
         ++i;
     }
 }
@@ -2343,7 +2668,7 @@ KnobTable::removeRow(int index)
     setTable(table);
 }
 
-const std::string KnobLayers::_typeNameStr("Layers");
+const std::string KnobLayers::_typeNameStr(kKnobLayersTypeName);
 const std::string&
 KnobLayers::typeNameStatic()
 {

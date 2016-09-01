@@ -77,7 +77,7 @@ GuiApplicationManagerPrivate::removePluginToolButtonInternal(const PluginGroupNo
     const std::list<PluginGroupNodePtr>& children = n->getChildren();
     for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin();
          it != children.end(); ++it) {
-        if ( (*it)->getID() == grouping[0] ) {
+        if ( (*it)->getTreeNodeID() == grouping[0] ) {
             if (grouping.size() > 1) {
                 QStringList newGrouping;
                 for (int i = 1; i < grouping.size(); ++i) {
@@ -102,7 +102,7 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping
 
     for (std::list<PluginGroupNodePtr>::iterator it = _topLevelToolButtons.begin();
          it != _topLevelToolButtons.end(); ++it) {
-        if ( (*it)->getID() == grouping[0] ) {
+        if ( (*it)->getTreeNodeID() == grouping[0] ) {
             if (grouping.size() > 1) {
                 QStringList newGrouping;
                 for (int i = 1; i < grouping.size(); ++i) {
@@ -121,22 +121,38 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping
 }
 
 PluginGroupNodePtr
-GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<PluginGroupNodePtr>& children,
-                                                           const PluginGroupNodePtr& parent,
-                                                           const QStringList & grouping,
-                                                           const QString & name,
-                                                           const QStringList & groupingIcon,
-                                                           const QString & iconPath,
-                                                           int major,
-                                                           int minor,
-                                                           bool isUserCreatable)
+GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal(const std::list<PluginGroupNodePtr>& children,
+                                                                   const PluginGroupNodePtr& parent,
+                                                                   const PluginPtr& plugin,
+                                                                   const QStringList& grouping,
+                                                                   const QStringList& groupingIcon)
 {
-    assert(grouping.size() > 0);
-    assert( groupingIcon.size() == grouping.size() - 1 || groupingIcon.isEmpty() );
+    assert(plugin);
+    assert(groupingIcon.size() == grouping.size() || groupingIcon.isEmpty() );
+
+    // On first call of this function, children are top-level toolbuttons
+    // Otherwise this tree node has children
+    // We ensure that the path in the tree leading to the plugin in parameter is created by recursing on the children
+    // If there are no children that means we reached the wanted PluginGroupNode
+    QString nodeIDToFind;
+    if (grouping.empty()) {
+        // Look for plugin ID
+        nodeIDToFind = plugin->getPluginID();
+    } else {
+        // Look for grouping menu item
+        nodeIDToFind = grouping[0];
+    }
 
     for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
-        if ( (*it)->getID() == grouping[0] ) {
-            if (grouping.size() > 1) {
+
+        // If we find a node with the same ID, then we found it already.
+        if ( (*it)->getTreeNodeID() == nodeIDToFind ) {
+            if (grouping.empty()) {
+                // This is a leaf (plug-in), return it
+                return *it;
+            } else {
+
+                // This is an intermidiate menu item, recurse
                 QStringList newGrouping, newIconsGrouping;
                 for (int i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
@@ -145,31 +161,35 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<Plugi
                     newIconsGrouping.push_back(groupingIcon[i]);
                 }
 
-                return findPluginToolButtonInternal( (*it)->getChildren(), *it, newGrouping, name, newIconsGrouping, iconPath, major, minor, isUserCreatable );
-            }
-            if ( major == (*it)->getMajorVersion() ) {
-                return *it;
-            } else {
-                (*it)->setNotHighestMajorVersion(true);
+                return findPluginToolButtonOrCreateInternal( (*it)->getChildren(), *it, plugin, newGrouping, newIconsGrouping);
             }
         }
     }
 
-    QString iconFilePath;
-    if (grouping.size() > 1) {
-        iconFilePath = groupingIcon.isEmpty() ? QString() : groupingIcon[0];
+    // Ok the PluginGroupNode does not exist yet, create it
+    QString treeNodeName, iconFilePath;
+    if (grouping.empty()) {
+        // This is a leaf (plug-in), take the plug-in label and icon
+        treeNodeName = plugin->getLabelWithoutSuffix();
+        iconFilePath = plugin->getIconFilePath();
     } else {
-        iconFilePath = iconPath;
+        // For menu items, take from grouping
+        treeNodeName = grouping[0];
+        iconFilePath = groupingIcon.isEmpty() ? QString() : groupingIcon[0];
     }
-    PluginGroupNodePtr ret( new PluginGroupNode(grouping[0], grouping.size() == 1 ? name : grouping[0], iconFilePath, major, minor, isUserCreatable) );
+    PluginGroupNodePtr ret(new PluginGroupNode(grouping.empty() ? plugin : PluginPtr(), treeNodeName, iconFilePath));
+
+    // If there is a parent, add it as a child
     if (parent) {
         parent->tryAddChild(ret);
         ret->setParent(parent);
     } else {
+        // No parent, this is a top-level toolbutton
         _topLevelToolButtons.push_back(ret);
     }
 
-    if (grouping.size() > 1) {
+    // If we still did not reach the desired tree node, find it, advancing (removing the first item) in the grouping
+    if (!grouping.empty()) {
         QStringList newGrouping, newIconsGrouping;
         for (int i = 1; i < grouping.size(); ++i) {
             newGrouping.push_back(grouping[i]);
@@ -178,11 +198,11 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<Plugi
             newIconsGrouping.push_back(groupingIcon[i]);
         }
 
-        return findPluginToolButtonInternal(ret->getChildren(), ret, newGrouping, name, newIconsGrouping, iconPath, major, minor, isUserCreatable);
+        return findPluginToolButtonOrCreateInternal(ret->getChildren(), ret, plugin, newGrouping, newIconsGrouping);
     }
 
     return ret;
-} // GuiApplicationManagerPrivate::findPluginToolButtonInternal
+} // GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal
 
 void
 GuiApplicationManagerPrivate::createColorPickerCursor()

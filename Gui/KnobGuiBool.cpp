@@ -362,9 +362,8 @@ void
 KnobGuiBool::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
         for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
-            _checkBox->setToolTip( tt );
+            toolTip(_checkBox);
         }
     }
 }

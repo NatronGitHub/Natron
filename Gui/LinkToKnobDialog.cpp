@@ -57,7 +57,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
+#include "Serialization/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"

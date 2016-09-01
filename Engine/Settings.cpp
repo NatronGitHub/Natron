@@ -616,13 +616,11 @@ Settings::initializeKnobsUserInterface()
                                             "on the viewer. Turning this off will suspend the notification system.") );
     _uiPage->addKnob(_notifyOnFileChange);
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     _filedialogForWriters = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Prompt with file dialog when creating Write node") );
     _filedialogForWriters->setName("writeUseDialog");
     _filedialogForWriters->setDefaultValue(true);
     _filedialogForWriters->setHintToolTip( tr("When checked, opens-up a file dialog when creating a Write node") );
     _uiPage->addKnob(_filedialogForWriters);
-#endif
 
 
     _renderOnEditingFinished = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Refresh viewer only when editing is finished") );
@@ -1822,7 +1820,7 @@ Settings::restorePluginSettings()
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
 
             if ( plugin->getIsForInternalUseOnly() ) {
@@ -1879,7 +1877,7 @@ Settings::savePluginsSettings()
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
@@ -3618,13 +3616,7 @@ Settings::isRenderQueuingEnabled() const
 bool
 Settings::isFileDialogEnabledForNewWriters() const
 {
-#ifdef NATRON_ENABLE_IO_META_NODES
-
     return _filedialogForWriters->getValue();
-#else
-
-    return true;
-#endif
 }
 
 bool

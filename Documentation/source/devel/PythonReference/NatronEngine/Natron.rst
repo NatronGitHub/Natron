@@ -12,6 +12,15 @@ This class contains enumerations that are used by some functions of the API to r
 that are more complicated than a simple boolean value.
 
 
+.. attribute:: NatronEngine.Natron.ViewerContextLayoutTypeEnum
+
+    * eViewerContextLayoutTypeSpacing	// Add spacing in pixels after the item
+    * eViewerContextLayoutTypeSeparator  // Add a vertical line after the item
+    * eViewerContextLayoutTypeStretchAfter // Add layout stretch after the item
+    * eViewerContextLayoutTypeStretchBefore // Add layout stretch before the item
+    * eViewerContextLayoutTypeAddNewLine // Add a new line after the item
+
+
 .. attribute:: NatronEngine.Natron.StandardButtonEnum
 
 	Can have the following values:
@@ -37,16 +46,6 @@ that are more complicated than a simple boolean value.
     	* eStandardButtonReset              = 0x04000000,
     	* eStandardButtonRestoreDefaults    = 0x08000000
 
-.. attribute:: NatronEngine.Natron.ImageComponentsEnum
-
-	Can have the following values:
-	
-		* eImageComponentNone = 0,
-    	* eImageComponentAlpha,
-    	* eImageComponentRGB,
-    	* eImageComponentRGBA
-
-
 .. attribute:: NatronEngine.Natron.ImageBitDepthEnum
 
 	Can have the following values:
@@ -70,30 +69,6 @@ that are more complicated than a simple boolean value.
     	* eKeyframeTypeBroken = 7,
     	* eKeyframeTypeNone = 8
 
-.. attribute:: NatronEngine.Natron.ValueChangedReasonEnum
-
-	Can have the following values:
-	
-	* eValueChangedReasonUserEdited = 0,
-	A user change to the param triggered the call, gui will not be refreshed but onParamChanged will be called
-    
-    * eValueChangedReasonPluginEdited ,
-    A plugin change triggered the call, gui will be refreshed but onParamChanged not called
-    
-    * eValueChangedReasonNatronGuiEdited,
-    Natron gui called setValue itself, onParamChanged will be called (with a reason of User edited) AND param gui refreshed
-    
-    * eValueChangedReasonNatronInternalEdited,
-	 Natron engine called setValue itself, onParamChanged will be called (with a reason of plugin edited) AND param gui refreshed
-    
-    * eValueChangedReasonTimeChanged ,
-    A time-line seek changed the call, called when timeline time changes
-    
-    * eValueChangedReasonSlaveRefresh ,
-	A master parameter ordered the slave to refresh its value
-    
-    * eValueChangedReasonRestoreDefault ,
-	The param value has been restored to its defaults
 
 .. attribute:: NatronEngine.Natron.AnimationLevelEnum
 
@@ -126,34 +101,8 @@ that are more complicated than a simple boolean value.
     	* eStatusFailed = 1,
     	* eStatusReplyDefault = 14
 
-.. attribute:: NatronEngine.Natron.ViewerCompositingOperatorEnum
-
-	Can have the following values:
-	
-		* eViewerCompositingOperatorNone,
-    	* eViewerCompositingOperatorOver,
-    	* eViewerCompositingOperatorMinus,
-    	* eViewerCompositingOperatorUnder,
-    	* eViewerCompositingOperatorWipe
-
-.. attribute:: NatronEngine.Natron.PlaybackModeEnum
-
-	Can have the following values:
-	
-		* ePlaybackModeLoop = 0,
-    	* ePlaybackModeBounce,
-    	* ePlaybackModeOnce
-
 .. attribute:: NatronEngine.Natron.PixmapEnum
 
 	See `here <https://github.com/MrKepzie/Natron/blob/master/Global/Enums.h>`_	for
 	potential values of this enumeration. 
 	
-.. attribute:: NatronEngine.Natron.ViewerColorSpaceEnum
-
-	Can have the following values:
-	
-		* eViewerColorSpaceSRGB = 0,
-    	* eViewerColorSpaceLinear,
-    	* eViewerColorSpaceRec709
-

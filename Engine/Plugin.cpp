@@ -39,9 +39,99 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER;
 
+Plugin::Plugin(LibraryBinary* binary,
+       const QString& resourcesPath,
+       const QString & id,
+       const QString & label,
+       const QString & iconFilePath,
+       const QStringList & groupIconFilePath,
+       const QStringList & grouping,
+       bool mustCreateMutex,
+       int majorVersion,
+       int minorVersion,
+       bool isReader,
+       bool isWriter,
+       bool isDeprecated)
+: _binary(binary)
+, _resourcesPath(resourcesPath)
+, _id(id)
+, _label(label)
+, _iconFilePath(iconFilePath)
+, _groupIconFilePath(groupIconFilePath)
+, _grouping(grouping)
+, _labelWithoutSuffix()
+, _pythonModule()
+, _ofxPlugin(0)
+, _ofxDescriptor(0)
+, _lock()
+, _majorVersion(majorVersion)
+, _minorVersion(minorVersion)
+, _ofxContext(eContextNone)
+, _isReader(isReader)
+, _isWriter(isWriter)
+, _isDeprecated(isDeprecated)
+, _isInternalOnly(false)
+, _toolSetScript(false)
+, _activated(true)
+, _renderScaleEnabled(true)
+, _multiThreadingEnabled(true)
+, _openglActivated(true)
+, _openglRenderSupport(ePluginOpenGLRenderSupportNone)
+, _presetsFiles()
+, _isHighestVersion(false)
+{
+    if ( _resourcesPath.isEmpty() ) {
+        _resourcesPath = QString::fromUtf8(PLUGIN_DEFAULT_RESOURCES_PATH);
+    }
+
+    if (_grouping.isEmpty()) {
+        _grouping.push_back(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
+    }
+    if (_groupIconFilePath.isEmpty()) {
+        std::string iconPath;
+        const QString& mainGroup = _grouping[0];
+        if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_COLOR) ) {
+            iconPath = PLUGIN_GROUP_COLOR_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_FILTER) ) {
+            iconPath = PLUGIN_GROUP_FILTER_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) {
+            iconPath = PLUGIN_GROUP_IMAGE_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_TRANSFORM) ) {
+            iconPath = PLUGIN_GROUP_TRANSFORM_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_DEEP) ) {
+            iconPath = PLUGIN_GROUP_DEEP_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) {
+            iconPath = PLUGIN_GROUP_VIEWS_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_TIME) ) {
+            iconPath = PLUGIN_GROUP_TIME_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_PAINT) ) {
+            iconPath = PLUGIN_GROUP_PAINT_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_OTHER) ) {
+            iconPath = PLUGIN_GROUP_MISC_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_KEYER) ) {
+            iconPath = PLUGIN_GROUP_KEYER_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_TOOLSETS) ) {
+            iconPath = PLUGIN_GROUP_TOOLSETS_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_3D) ) {
+            iconPath = PLUGIN_GROUP_3D_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_CHANNEL) ) {
+            iconPath = PLUGIN_GROUP_CHANNEL_ICON_PATH;
+        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_MERGE) ) {
+            iconPath = PLUGIN_GROUP_MERGE_ICON_PATH;
+        } else {
+            iconPath = PLUGIN_GROUP_DEFAULT_ICON_PATH;
+        }
+
+        _groupIconFilePath.push_back(QString::fromUtf8(iconPath.c_str()));
+    }
+
+    if (mustCreateMutex) {
+        _lock.reset(new QMutex(QMutex::Recursive));
+    }
+}
+
 Plugin::~Plugin()
 {
-    delete _lock;
     delete _binary;
 }
 
@@ -69,10 +159,59 @@ Plugin::isWriter() const
     return _isWriter;
 }
 
+void
+Plugin::addPresetFile(const QString& filePath, const QString& presetLabel, const QString& iconFilePath, Key symbol, const KeyboardModifiers& mods)
+{
+    for (std::vector<PluginPresetDescriptor>::iterator it = _presetsFiles.begin(); it!=_presetsFiles.end(); ++it) {
+        if (it->presetLabel == presetLabel) {
+            // Another preset with the same label already exists for this plug-in, ignore it
+            return;
+        }
+    }
+    PluginPresetDescriptor s;
+    s.presetFilePath = filePath;
+    s.presetLabel = presetLabel;
+    s.presetIconFile = iconFilePath;
+    s.symbol = symbol;
+    s.modifiers = mods;
+    _presetsFiles.push_back(s);
+}
+
+struct PresetsSortByLabelFunctor
+{
+    bool operator() (const PluginPresetDescriptor& lhs,
+                     PluginPresetDescriptor& rhs)
+    {
+        return lhs.presetLabel < rhs.presetLabel;
+    }
+};
+
+void
+Plugin::sortPresetsByLabel()
+{
+    
+    std::sort(_presetsFiles.begin(), _presetsFiles.end(), PresetsSortByLabelFunctor());
+}
+
+const std::vector<PluginPresetDescriptor>&
+Plugin::getPresetFiles() const
+{
+    return _presetsFiles;
+}
+
 QString
 Plugin::getPluginShortcutGroup() const
 {
-    return getPluginLabel() + QLatin1String(" Viewer Interface");
+    QString ret = getPluginLabel();
+    bool isViewer = ret == QLatin1String("Viewer");
+    ret += QLatin1Char(' ');
+    if (!isViewer) {
+        ret +=  QLatin1String("Viewer");
+        ret += QLatin1Char(' ');
+    }
+
+    ret += QLatin1String("Interface");
+    return ret;
 }
 
 void
@@ -179,7 +318,7 @@ Plugin::getGrouping() const
     return _grouping;
 }
 
-QMutex*
+boost::shared_ptr<QMutex>
 Plugin::getPluginLock() const
 {
     return _lock;
@@ -201,18 +340,6 @@ int
 Plugin::getMinorVersion() const
 {
     return _minorVersion;
-}
-
-void
-Plugin::setHasShortcut(bool has) const
-{
-    _hasShortcutSet = has;
-}
-
-bool
-Plugin::getHasShortcut() const
-{
-    return _hasShortcutSet;
 }
 
 void
@@ -334,6 +461,29 @@ void
 Plugin::setActivated(bool b)
 {
     _activated = b;
+}
+
+void
+Plugin::setIsHighestMajorVersion(bool isHighest)
+{
+    _isHighestVersion = isHighest;
+}
+
+bool
+Plugin::getIsHighestMajorVersion() const
+{
+    return _isHighestVersion;
+}
+
+const QString&
+PluginGroupNode::getTreeNodeID() const
+{
+    PluginPtr plugin = getPlugin();
+    if (plugin) {
+        return plugin->getPluginID();
+    } else {
+        return _name;
+    }
 }
 
 void

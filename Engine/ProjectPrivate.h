@@ -99,6 +99,7 @@ public:
     TimeLinePtr timeline; // global timeline
     bool autoSetProjectFormat;
     mutable QMutex isLoadingProjectMutex;
+    SERIALIZATION_NAMESPACE::ProjectSerializationPtr lastProjectLoaded;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
@@ -108,6 +109,7 @@ public:
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
+
 
     // only used on the main-thread
     struct RenderWatcher
@@ -120,8 +122,14 @@ public:
 
     ProjectPrivate(Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
+    static void checkForPyPlugNewVersion(const std::string& pythonModuleName,
+                                  bool moduleNameIsScriptPath,
+                                  unsigned int savedPythonModuleVersion,
+                                  bool* usingPythonModule,
+                                  std::string* pluginID,
+                                  std::map<std::string, bool>* moduleUpdatesProcessed);
 
+        
     bool findFormat(int index, Format* format) const;
     bool findFormat(const std::string& formatSpec, Format* format) const;
     /**

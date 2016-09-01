@@ -43,7 +43,6 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
@@ -58,10 +57,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 #include "Global/QtCompat.h"
 
@@ -229,7 +230,7 @@ NodeGraph::renameNode()
     assert(node);
 
 
-    QPointF realPos = node->getPos_mt_safe();
+    QPointF realPos = node->pos();
     //qDebug() << "getPos" << realPos.x() << realPos.y();
     realPos = node->mapFromParent(realPos);
     //qDebug() << "fromParent" << realPos.x() << realPos.y();
@@ -626,13 +627,9 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
             oldName[i] = '_';
         }
     }
-    getGui()->unregisterTab(this);
     setScriptName(newName);
-    getGui()->registerTab(this, this);
-    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
-    if (parent) {
-        parent->onTabScriptNameChanged(this, oldName, newName);
-    }
+
+  
 }
 
 void
@@ -642,18 +639,17 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
 {
     {
         CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
-        NodeClipBoard clipboard;
+        SERIALIZATION_NAMESPACE::NodeClipBoard clipboard;
         _imp->copyNodesInternal(nodes, clipboard);
 
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        std::list<NodeSerializationPtr >::const_iterator itOther = clipboard.nodes.begin();
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-             it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            NodeGuiPtr node = _imp->pasteNode( *itOther, *it, QPointF(0, 0), group, std::string(), false, &oldNewScriptNamesMapping);
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
+             it != clipboard.nodes.end(); ++it) {
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, std::string(), NodePtr(), &oldNewScriptNamesMapping);
             assert(node);
             if (node) {
-                oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();
-                createdNodes.push_back( std::make_pair( (*itOther)->getNodeScriptName(), node ) );
+                oldNewScriptNamesMapping[(*it)->_nodeScriptName] = node->getNode()->getScriptName();
+                createdNodes.push_back( std::make_pair( (*it)->_nodeScriptName, node ) );
             }
         }
         assert( clipboard.nodes.size() == createdNodes.size() );
@@ -662,7 +658,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         }
 
         ///Now that all nodes have been duplicated, try to restore nodes connections
-        _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
+        NodeGraphPrivate::restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
 
         //Restore links once all children are created for alias knobs/expressions
         NodesList allNodes;
@@ -673,7 +669,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
             allNodes.push_back(isGroupNode->getNode());
         }
 
-        std::list<NodeSerializationPtr >::const_iterator itSerialization = clipboard.nodes.begin();
+        SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
             it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
         }

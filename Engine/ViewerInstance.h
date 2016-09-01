@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_VIEWERNODE_H
-#define NATRON_ENGINE_VIEWERNODE_H
+#ifndef NATRON_ENGINE_VIEWER_INSTANCE_H
+#define NATRON_ENGINE_VIEWER_INSTANCE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -38,6 +38,8 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+
+
 NATRON_NAMESPACE_ENTER;
 
 class UpdateViewerParams; // ViewerInstancePrivate
@@ -48,7 +50,6 @@ struct ViewerArgs
 {
     EffectInstancePtr activeInputToRender;
     bool forceRender;
-    int activeInputIndex;
     U64 activeInputHash;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
@@ -64,9 +65,6 @@ struct ViewerArgs
 class ViewerInstance
     : public OutputEffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class ViewerCurrentFrameRequestScheduler;
 
@@ -84,10 +82,9 @@ public:
 
     virtual ~ViewerInstance();
 
-    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
+    ViewerNodePtr getViewerNodeGroup() const;
 
-    ///Called upon node creation and then never changed
-    void setUiContext(OpenGLViewerI* viewer);
+    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
 
     virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL
     {
@@ -99,11 +96,6 @@ public:
         return true;
     }
 
-    /**
-     * @brief Set the uiContext pointer to NULL, preventing the gui to be deleted twice when
-     * the node is deleted.
-     **/
-    void invalidateUiContext();
     enum ViewerRenderRetCode
     {
         //The render failed and should clear to black the viewer and stop any ongoing playback
@@ -242,19 +234,9 @@ public:
 
     void disconnectTexture(int index, bool clearRod);
 
-    int getLutType() const WARN_UNUSED_RETURN;
-
-    double getGain() const WARN_UNUSED_RETURN;
-
-    int getMipMapLevel() const WARN_UNUSED_RETURN;
-
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
-
-    void setFullFrameProcessingEnabled(bool fullFrame);
-    bool isFullFrameProcessingEnabled() const;
-
 
     virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -262,38 +244,6 @@ public:
     }
 
     bool isLatestRender(int textureIndex, U64 renderAge) const;
-
-
-    void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
-
-    void setActiveLayer(const ImageComponents& layer, bool doRender);
-
-    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
-
-    bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
-
-    void onAutoContrastChanged(bool autoContrast, bool refresh);
-
-    /**
-     * @brief Returns the current view, MT-safe
-     **/
-    ViewIdx getViewerCurrentView() const;
-
-    void onGainChanged(double exp);
-
-    void onGammaChanged(double value);
-
-    double getGamma() const WARN_UNUSED_RETURN;
-
-    void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
-
-    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-
-    void getActiveInputs(int & a, int &b) const;
-
-    void setInputA(int inputNb);
-
-    void setInputB(int inputNb);
 
     int getLastRenderedTime() const;
 
@@ -305,11 +255,8 @@ public:
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
 
     bool isViewerUIVisible() const;
-
-    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
 
     struct ViewerInstancePrivate;
 
@@ -337,50 +284,33 @@ public:
 
     bool isInputChangeRequestedFromViewer() const;
 
-    void setViewerPaused(bool paused, bool allInputs);
+    void getInputsComponentsAvailables(std::set<ImageComponents>* comps) const;
 
-    bool isViewerPaused(int texIndex) const;
+    NodePtr getInputRecursive(int inputIndex) const;
 
-    unsigned int getViewerMipMapLevel() const;
+    void setCurrentLayer(const ImageComponents& layer);
 
-public Q_SLOTS:
+    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName);
 
-
-    void onMipMapLevelChanged(int level);
-
-
-    /**
-     * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
-     **/
     void redrawViewer();
 
     void redrawViewerNow();
 
+    void callRedrawOnMainThread();
 
-    void executeDisconnectTextureRequestOnMainThread(int index, bool clearRoD);
-
-
-Q_SIGNALS:
-
-    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
-
-    void s_callRedrawOnMainThread();
-
-    void viewerDisconnected();
-
-    void clipPreferencesChanged();
-
-    void availableComponentsChanged();
-
-    void disconnectTextureRequest(int index,bool clearRoD);
-
-    void viewerRenderingStarted();
-    void viewerRenderingEnded();
+    void fillGammaLut(double gamma);
 
 private:
+
+
+
+    void refreshLayerAndAlphaChannelComboBox();
+
+    
     /*******************************************
        *******OVERRIDEN FROM EFFECT INSTANCE******
      *******************************************/
+
 
     virtual bool isOutput() const OVERRIDE FINAL
     {
@@ -401,12 +331,12 @@ private:
 
     virtual std::string getPluginID() const OVERRIDE FINAL
     {
-        return PLUGINID_NATRON_VIEWER;
+        return PLUGINID_NATRON_VIEWER_INTERNAL;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL
     {
-        return "Viewer";
+        return "ViewerProcess";
     }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
@@ -415,11 +345,7 @@ private:
         return "The Viewer node can display the output of a node graph.";
     }
 
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL
-    {
-        return QString::number(inputNb + 1).toStdString();
-    }
+    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL;
 
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
@@ -460,4 +386,4 @@ toViewerInstance(const EffectInstancePtr& effect)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_VIEWERNODE_H
+#endif // NATRON_ENGINE_VIEWER_INSTANCE_H

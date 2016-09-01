@@ -4895,6 +4895,10 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
+    if (!node->isNodeCreated()) {
+#pragma message WARN("monitor this")
+        return false;
+    }
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
@@ -4917,8 +4921,10 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
+
+        // Keep it out of scope otherwise it will get destroyed as nobody holds a shared ref to it except here
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
         if (reason != eValueChangedReasonTimeChanged) {
-            AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
             const bool isRenderUserInteraction = true;
             const bool isSequentialRender = false;
             AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );

@@ -35,9 +35,9 @@
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/ChannelsComboBox.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
@@ -49,110 +49,25 @@ NATRON_NAMESPACE_ENTER;
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
-                                   const ViewerInstancePtr& node)
+                                   const NodeGuiPtr& node_ui)
     : publicInterface(publicInterface)
+    , viewerNode()
     , viewer(NULL)
     , viewerContainer(NULL)
     , viewerLayout(NULL)
     , viewerSubContainer(NULL)
     , viewerSubContainerLayout(NULL)
     , mainLayout(NULL)
-    , firstSettingsRow(NULL)
-    , secondSettingsRow(NULL)
-    , firstRowLayout(NULL)
-    , secondRowLayout(NULL)
-    , layerChoice(NULL)
-    , alphaChannelChoice(NULL)
-    , viewerChannels(NULL)
-    , viewerChannelsAutoswitchedToAlpha(false)
-    , zoomCombobox(NULL)
-    , syncViewerButton(NULL)
-    , centerViewerButton(NULL)
-    , clipToProjectFormatButton(NULL)
-    , fullFrameProcessingButton(NULL)
-    , enableViewerRoI(NULL)
-    , refreshButton(NULL)
-    , pauseButton(NULL)
-    , iconRefreshOff()
-    , iconRefreshOn()
-    , activateRenderScale(NULL)
-    , renderScaleActive(false)
-    , renderScaleCombo(NULL)
-    , firstInputLabel(NULL)
-    , firstInputImage(NULL)
-    , compositingOperatorLabel(NULL)
-    , compositingOperator(NULL)
-    , secondInputLabel(NULL)
-    , secondInputImage(NULL)
-    , toggleGainButton(NULL)
-    , gainBox(NULL)
-    , gainSlider(NULL)
-    , lastFstopValue(0.)
-    , autoContrast(NULL)
-    , gammaBox(NULL)
-    , lastGammaValue(1.)
-    , toggleGammaButton(NULL)
-    , gammaSlider(NULL)
-    , viewerColorSpace(NULL)
-    , checkerboardButton(NULL)
-    , pickerButton(NULL)
-    , viewsComboBox(NULL)
-    , currentViewIndex(0)
-    , currentViewMutex()
     , infoWidget()
-    , playerButtonsContainer(0)
-    , playerLayout(NULL)
-    , currentFrameBox(NULL)
-    , firstFrame_Button(NULL)
-    , previousKeyFrame_Button(NULL)
-    , play_Backward_Button(NULL)
-    , previousFrame_Button(NULL)
-    , nextFrame_Button(NULL)
-    , play_Forward_Button(NULL)
-    , nextKeyFrame_Button(NULL)
-    , lastFrame_Button(NULL)
-    , previousIncrement_Button(NULL)
-    , incrementSpinBox(NULL)
-    , nextIncrement_Button(NULL)
-    , playbackMode_Button(NULL)
-    , playBackInputButton(NULL)
-    , playBackInputSpinbox(NULL)
-    , playBackOutputButton(NULL)
-    , playBackOutputSpinbox(NULL)
-    , playbackModeMutex()
-    , playbackMode(ePlaybackModeLoop)
-    , tripleSyncButton(0)
-    , canEditFpsBox(NULL)
-    , canEditFpsLabel(NULL)
-    , fpsLockedMutex()
-    , fpsLocked(true)
-    , fpsBox(NULL)
-    , userFps(24)
-    , turboButton(NULL)
     , timeLineGui(NULL)
     , nodesContext()
     , currentNodeContext()
-    , inputNamesMap()
-    , compOperatorMutex()
-    , compOperator(eViewerCompositingOperatorNone)
-    , compOperatorPrevious(eViewerCompositingOperatorWipeUnder)
-    , viewerNode(node)
-    , visibleToolbarsMutex()
-    , infobarVisible(true)
-    , playerVisible(true)
-    , timelineVisible(true)
-    , leftToolbarVisible(true)
-    , rightToolbarVisible(true)
-    , topToolbarVisible(true)
     , isFileDialogViewer(false)
-    , checkerboardMutex()
-    , checkerboardEnabled(false)
-    , fpsMutex()
-    , fps(24.)
     , lastOverlayNode()
     , hasPenDown(false)
     , hasCaughtPenMotionWhileDragging(false)
 {
+    viewerNode = node_ui->getNode()->isEffectViewerNode();
     infoWidget[0] = infoWidget[1] = NULL;
 }
 
@@ -339,27 +254,6 @@ ViewerTabPrivate::getTimeTransform(double time,
 
 #endif // ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
-void
-ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
-{
-    int activeInputIdx[2];
-    ViewerInstancePtr v = viewerNode.lock();
-    
-    v->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstancePtr activeInput[2] = {EffectInstancePtr(), EffectInstancePtr()};
-    for (int i = 0; i < 2; ++i) {
-        activeInput[i] = v->getInput(activeInputIdx[i]);
-        if (activeInput[i]) {
-            EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
-            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                if ( it->second.lock() ) {
-                    comps->insert(it->first);
-                }
-            }
-        }
-    }
-}
 
 std::list<ViewerTabPrivate::PluginViewerContext>::iterator
 ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
@@ -385,6 +279,9 @@ ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
 bool
 ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node)
 {
+    if (node->isEffectViewerNode()) {
+        return false;
+    }
     std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin( node->getPluginID() );
 
     if ( found == currentNodeContext.end() ) {

@@ -384,6 +384,12 @@ public:
     NATRON_NAMESPACE::ImagePremultiplicationEnum getPremult() const;
 
     void setPagesOrder(const QStringList& pages);
+
+    void insertParamInViewerUI(Param* param, int index = -1);
+
+    void removeParamFromViewerUI(Param* param);
+
+    void clearViewerUIParameters();
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

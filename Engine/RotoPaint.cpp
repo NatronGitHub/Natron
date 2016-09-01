@@ -341,7 +341,7 @@ RotoPaint::initializeKnobs()
     showTransform->setCheckable(true);
     showTransform->setDefaultValue(true);
     showTransform->setInViewerContextCanHaveShortcut(true);
-    showTransform->setInViewerContextNewLineActivated(true);
+    showTransform->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
     showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoShowTransformOverlay.png", true);
     showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoHideTransformOverlay.png", false);
     generalPage->addKnob(showTransform);
@@ -545,7 +545,7 @@ RotoPaint::initializeKnobs()
     resetCloneOffset->setEvaluateOnChange(false);
     resetCloneOffset->setSecretByDefault(true);
     resetCloneOffset->setInViewerContextCanHaveShortcut(true);
-    resetCloneOffset->setInViewerContextNewLineActivated(true);
+    resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
     generalPage->addKnob(resetCloneOffset);
     addOverlaySlaveParam(resetCloneOffset);
     _imp->ui->resetCloneOffsetButton = resetCloneOffset;
@@ -590,7 +590,7 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(timeOffsetMode);
     addKnobToViewerUI(sourceType);
     addKnobToViewerUI(resetCloneOffset);
-
+    resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
     KnobPagePtr toolbar = AppManager::createKnob<KnobPage>( shared_from_this(), std::string(kRotoUIParamToolbar) );
     toolbar->setAsToolBar(true);
@@ -1093,7 +1093,7 @@ RotoPaint::initializeKnobs()
 } // RotoPaint::initializeKnobs
 
 void
-RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
+RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
 {
     // Viewer buttons
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamAutoKeyingEnabled, kRotoUIParamAutoKeyingEnabledLabel) );
@@ -1156,7 +1156,7 @@ void
 RotoPaint::onKnobsLoaded()
 {
     _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
-
+#pragma message WARN("Set autokeying, featherlink and rippleedit on context from buttons")
     // Figure out which toolbutton was selected last
     KnobPagePtr toolbar = _imp->ui->toolbarPage.lock();
     if (toolbar) {

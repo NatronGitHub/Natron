@@ -81,9 +81,6 @@ public:
     std::map<QUndoStack*, std::pair<QAction*, QAction*> > _undoStacksActions;
 
     ///all the splitters used to separate the "panes" of the application
-    mutable QMutex _splittersMutex;
-    std::list<Splitter*> _splitters;
-    mutable QMutex _pyPanelsMutex;
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> _userPanels;
     bool _isTripleSyncEnabled;
     mutable QMutex areRenderStatsEnabledMutex;
@@ -154,13 +151,11 @@ public:
     std::list<ViewerTab*> _viewerTabs;
 
     ///Used when all viewers are synchronized to determine which one triggered the sync
-    ViewerTab* _masterSyncViewer;
     ViewerTab* _activeViewer;
 
     ///a list of ptrs to all histograms
     mutable QMutex _histogramsMutex;
     std::list<Histogram*> _histograms;
-    int _nextHistogramIndex; //< for giving a unique name to histogram tabs
 
     ///The node graph (i.e: the view of the scene)
     NodeGraph* _nodeGraphArea;
@@ -208,13 +203,6 @@ public:
     Menu *cacheMenu;
     Menu *menuHelp;
 
-
-    ///all TabWidget's : used to know what to hide/show for fullscreen mode
-    mutable QMutex _panesMutex;
-    std::list<TabWidget*> _panes;
-    mutable QMutex _floatingWindowMutex;
-    std::list<FloatingWidget*> _floatingWindows;
-
     ///All the tabs used in the TabWidgets (used for d&d purpose)
     RegisteredTabs _registeredTabs;
 
@@ -235,8 +223,6 @@ public:
     AboutWindow* _aboutWindow;
 
     ///list of the currently opened property panels
-    mutable QMutex openedPanelsMutex;
-    std::list<DockablePanel*> openedPanels;
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;

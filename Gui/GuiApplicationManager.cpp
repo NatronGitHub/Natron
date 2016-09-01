@@ -969,34 +969,26 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 }
 
 void
-GuiApplicationManager::onPluginLoaded(Plugin* plugin)
+GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 {
     QString shortcutGrouping = QString::fromUtf8(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
     const QString pluginLabel = plugin->getLabelWithoutSuffix();
-    const QString & pluginIconPath = plugin->getIconFilePath();
-    const QStringList & groupIconPath = plugin->getGroupIconFilePath();
-    QStringList groupingWithID = groups;
 
-    groupingWithID.push_back(pluginID);
-    PluginGroupNodePtr child = findPluginToolButtonOrCreate( groupingWithID,
-                                                                             pluginLabel,
-                                                                             groupIconPath,
-                                                                             pluginIconPath,
-                                                                             plugin->getMajorVersion(),
-                                                                             plugin->getMinorVersion(),
-                                                                             plugin->getIsUserCreatable() );
     for (int i = 0; i < groups.size(); ++i) {
         shortcutGrouping.push_back( QLatin1Char('/') );
         shortcutGrouping.push_back(groups[i]);
     }
 
+    // Ensure the toolbutton is created for this plug-in with its grouping hierarchy
+    PluginGroupNodePtr child = findPluginToolButtonOrCreate(plugin);
+    Q_UNUSED(child);
+
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
-    bool hasShortcut = true;
 
-    /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
+    // These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut
     if ( pluginID == QString::fromUtf8(PLUGINID_OFX_TRANSFORM) ) {
         symbol = Qt::Key_T;
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) {
@@ -1014,21 +1006,32 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT) ) {
         symbol = Qt::Key_Period;
         modifiers |= Qt::ShiftModifier;
-    }
-#ifdef NATRON_ENABLE_IO_META_NODES
-    else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
+    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
         symbol = Qt::Key_R;
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
         symbol = Qt::Key_W;
+    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP) ) {
+        symbol = Qt::Key_I;
+        modifiers = Qt::ControlModifier;
     }
-#endif
-    else {
-        hasShortcut = false;
-    }
-    plugin->setHasShortcut(hasShortcut);
 
     if ( plugin->getIsUserCreatable() ) {
         _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), modifiers, symbol);
+    }
+
+    // If this plug-in has presets, add shortcuts as well
+    plugin->sortPresetsByLabel();
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+        std::string shortcutKey = pluginID.toStdString();
+        shortcutKey += "_preset_";
+        shortcutKey += it->presetLabel.toStdString();
+
+        std::string shortcutLabel = pluginLabel.toStdString();
+        shortcutLabel += " (";
+        shortcutLabel += it->presetLabel.toStdString();
+        shortcutLabel += ")";
+        _imp->addKeybind(shortcutGrouping.toStdString(), shortcutKey, shortcutLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->symbol));
     }
 
     const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
@@ -1039,24 +1042,16 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
 } // GuiApplicationManager::onPluginLoaded
 
 void
-GuiApplicationManager::ignorePlugin(Plugin* plugin)
+GuiApplicationManager::ignorePlugin(const PluginPtr& plugin)
 {
     _imp->removePluginToolButton( plugin->getGrouping() );
     _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID() );
 }
 
 PluginGroupNodePtr
-GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
-                                                    const QString & name,
-                                                    const QStringList& groupIconPath,
-                                                    const QString & iconPath,
-                                                    int major,
-                                                    int minor,
-                                                    bool isUserCreatable)
+GuiApplicationManager::findPluginToolButtonOrCreate(const PluginPtr& plugin)
 {
-    assert(grouping.size() > 0);
-
-    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, PluginGroupNodePtr(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+    return _imp->findPluginToolButtonOrCreateInternal(_imp->_topLevelToolButtons, PluginGroupNodePtr(), plugin, plugin->getGrouping(), plugin->getGroupIconFilePath());
 }
 
 bool

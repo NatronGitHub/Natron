@@ -72,11 +72,7 @@ public:
         return _project.lock();
     }
 
-    template<class Archive>
-    void save(Archive & ar) const;
-
-    template<class Archive>
-    void load(bool isAutosave, Archive & ar);
+    void load(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization);
 
     void registerNewColorPicker(KnobColorPtr knob);
 

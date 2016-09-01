@@ -23,9 +23,11 @@ Functions
 *    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
-*    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
+*    def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
 *    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
+*    def :meth:`redrawViewer<NatronEngine.App.redrawViewer>` (viewerNode)
+*    def :meth:`refreshViewer<NatronEngine.App.refreshViewer>` (viewerNode [, useCache])
 *    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
 *    def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
 *    def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
@@ -443,6 +445,24 @@ multiple writers.
 
 This is a blocking call only in background mode.
 
+
+.. method:: NatronEngine.App.redrawViewer(viewerNode)
+	
+	:param vieweNode: :class:`Effect<Effect>`
+	
+Just redraws the OpenGL viewer associated to the given *viewerNode*.
+The internal texture displayed will not be re-evaluated.
+If the node passed in parameter is not a viewer, this function has no effect.
+
+.. method:: NatronEngine.App.refreshViewer(viewerNode [, useCache])
+	
+	:param vieweNode: :class:`Effect<Effect>`
+	:param useCache: :class:`bool<PySide.QtCore.bool>`
+	
+Refresh the viewer texture. This causes a re-evaluation of the node-graph.
+If *useCache* is set to **True**, the render will not attempt
+to retrieve a texture from the cache if there is any.
+If the node passed in parameter is not a viewer, this function has no effect.
 
 
 .. method:: NatronEngine.App.timelineGetLeftBound()

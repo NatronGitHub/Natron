@@ -32,6 +32,7 @@
 
 #include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 #define kNatronColorPlaneName "Color"
 #define kNatronBackwardMotionVectorsPlaneName "Backward.Motion"
@@ -56,7 +57,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class ImageComponents
+class ImageComponents : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -177,6 +178,11 @@ public:
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+
 
 private:
     std::string _layerName;

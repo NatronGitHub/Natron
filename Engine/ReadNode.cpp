@@ -33,24 +33,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QProcess>
+#include <QtCore/QThread>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -61,10 +48,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
-#include "Engine/NodeSerialization.h"
-#include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Plugin.h"
 #include "Engine/Settings.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/KnobSerialization.h"
 
 //The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension
 #define READ_NODE_DEFAULT_READER PLUGINID_OFX_READOIIO
@@ -217,7 +205,7 @@ public:
     ReadNode* _publicInterface; // can not be a smart ptr
     QMutex embeddedPluginMutex;
     NodePtr embeddedPlugin;
-    std::list<KnobSerializationPtr> genericKnobsSerialization;
+    SERIALIZATION_NAMESPACE::KnobSerializationList genericKnobsSerialization;
     boost::weak_ptr<KnobFile> inputFileKnob;
 
     //Thiese are knobs owned by the ReadNode and not the Reader
@@ -253,7 +241,7 @@ public:
 
     void createReadNode(bool throwErrors,
                         const std::string& filename,
-                        const NodeSerializationPtr& serialization );
+                        const SERIALIZATION_NAMESPACE::NodeSerialization* serialization );
 
     void destroyReadNode();
 
@@ -392,28 +380,10 @@ ReadNodePrivate::cloneGenericKnobs()
 {
     const KnobsVec& knobs = _publicInterface->getKnobs();
 
-    for (std::list<KnobSerializationPtr>::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
-        KnobIPtr serializedKnob = (*it)->getKnob();
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = toKnobChoice(*it2);
-                KnobChoicePtr serializedIsChoice = toKnobChoice(serializedKnob);;
-                if (isChoice && serializedIsChoice) {
-                    const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
-                    assert(extraData);
-                    if (extraData) {
-                        isChoice->choiceRestoration(serializedIsChoice, extraData);
-                    }
-                } else {
-                    (*it2)->clone(serializedKnob);
-                }
-                (*it2)->setSecret( serializedKnob->getIsSecret() );
-                if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
-                    for (int i = 0; i < (*it2)->getDimension(); ++i) {
-                        (*it2)->setEnabled( i, serializedKnob->isEnabled(i) );
-                    }
-                }
-
+            if ( (*it2)->getName() == (*it)->getName() ) {
+                (*it2)->fromSerialization(**it);
                 break;
             }
         }
@@ -431,12 +401,7 @@ ReadNodePrivate::destroyReadNode()
 
     genericKnobsSerialization.clear();
 
-    std::string serializationString;
     try {
-        std::ostringstream ss;
-        boost::archive::xml_oarchive oArchive(ss);
-        std::list<KnobSerializationPtr> serialized;
-
 
         for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
             if ( !(*it)->isDeclaredByPlugin() ) {
@@ -474,8 +439,9 @@ ReadNodePrivate::destroyReadNode()
                     (*it)->setSecret(false);
                 }
 
-                KnobSerializationPtr s( new KnobSerialization(*it) );
-                serialized.push_back(s);
+                SERIALIZATION_NAMESPACE::KnobSerializationPtr s( new SERIALIZATION_NAMESPACE::KnobSerialization );
+                (*it)->toSerialization(s.get());
+                genericKnobsSerialization.push_back(s);
             }
             if (!isGeneric) {
                 try {
@@ -485,33 +451,9 @@ ReadNodePrivate::destroyReadNode()
                 }
             }
         }
-
-        int n = (int)serialized.size();
-        oArchive << boost::serialization::make_nvp("numItems", n);
-        for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
-            oArchive << boost::serialization::make_nvp("item", **it);
-
-        }
-        serializationString = ss.str();
     } catch (...) {
         assert(false);
     }
-
-    try {
-        std::stringstream ss(serializationString);
-        boost::archive::xml_iarchive iArchive(ss);
-        int n ;
-        iArchive >> boost::serialization::make_nvp("numItems", n);
-        for (int i = 0; i < n; ++i) {
-            KnobSerializationPtr s(new KnobSerialization);
-            iArchive >> boost::serialization::make_nvp("item", *s);
-            genericKnobsSerialization.push_back(s);
-
-        }
-    } catch (...) {
-        assert(false);
-    }
-
     
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
@@ -582,17 +524,13 @@ ReadNodePrivate::checkDecoderCreated(double time,
 }
 
 static std::string
-getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializations)
+getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationList& serializations)
 {
     std::string filePattern;
 
-    for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
-        if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = toKnobStringBase( (*it)->getKnob() );
-            assert(isString);
-            if (isString) {
-                filePattern = isString->getValue();
-            }
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
+        if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
+            filePattern = (*it)->_values[0]._value.isString;
             break;
         }
     }
@@ -603,7 +541,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 void
 ReadNodePrivate::createReadNode(bool throwErrors,
                                 const std::string& filename,
-                                const NodeSerializationPtr& serialization)
+                                const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
 {
     if (creatingReadNode) {
         return;
@@ -680,7 +618,13 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
-        args.setProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr s(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        if (serialization) {
+            *s = *serialization;
+            args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
+        }
+
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         if (serialization || wasCreatedAsHiddenNode) {
@@ -791,7 +735,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
+            PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
@@ -1111,22 +1055,21 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             pattern = args.getProperty<std::string>(propName);
         }
     }
-    _imp->createReadNode( throwErrors, pattern, NodeSerializationPtr() );
+    _imp->createReadNode( throwErrors, pattern, 0 );
     _imp->refreshPluginSelectorKnob();
 }
 
 void
-ReadNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
+ReadNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
 {
-    assert(serialization);
     NodePtr node = getNode();
 
     //Load the pluginID to create first.
-    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization->getKnobsValues() );
+    node->loadKnob( _imp->pluginIDStringKnob.lock(), serialization._knobsValues );
 
-    std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
+    std::string filename = getFileNameFromSerialization( serialization._knobsValues );
     //Create the Reader with the serialization
-    _imp->createReadNode(false, filename, serialization);
+    _imp->createReadNode(false, filename, &serialization);
     _imp->refreshPluginSelectorKnob();
 }
 
@@ -1164,7 +1107,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, 0 );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1189,7 +1132,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, 0 );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }

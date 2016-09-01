@@ -199,7 +199,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     bool groupEdited = true;
     if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
 
 
@@ -213,7 +213,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( ( e->x() >= (w - iw - 10 - offset) ) && ( e->x() <= (w - 10 + offset) ) &&
                  ( e->y() >= (10 - offset) ) && ( e->y() <= (10 + ih + offset) ) ) {
                 assert(isGroup);
-                isGroup->getNode()->setPyPlugEdited(true);
+                isGroup->setSubGraphEditedByUser(true);
                 NodesList nodes = isGroup->getNodes();
                 for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                     NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );

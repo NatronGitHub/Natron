@@ -44,6 +44,8 @@
 #include <SequenceParsing.h>
 #include "Global/QtCompat.h"
 
+#include "Serialization/KnobSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 //using std::make_pair;
@@ -82,7 +84,7 @@ KnobFile::canAnimate() const
     return true;
 }
 
-const std::string KnobFile::_typeNameStr("InputFile");
+const std::string KnobFile::_typeNameStr(kKnobFileTypeName);
 const std::string &
 KnobFile::typeNameStatic()
 {
@@ -133,7 +135,7 @@ KnobOutputFile::canAnimate() const
     return false;
 }
 
-const std::string KnobOutputFile::_typeNameStr("OutputFile");
+const std::string KnobOutputFile::_typeNameStr(kKnobOutputFileTypeName);
 const std::string &
 KnobOutputFile::typeNameStatic()
 {
@@ -174,7 +176,7 @@ KnobPath::KnobPath(const KnobHolderPtr& holder,
 {
 }
 
-const std::string KnobPath::_typeNameStr("Path");
+const std::string KnobPath::_typeNameStr(kKnobPathTypeName);
 const std::string &
 KnobPath::typeNameStatic()
 {

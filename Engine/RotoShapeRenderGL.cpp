@@ -1447,7 +1447,6 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     // If we were to copy exactly the portion in prevCenter, the smear would leave traces
     // too long. To dampen the effect of the smear, we clamp the spacing
     Point prevPoint = RotoShapeRenderNodePrivate::dampenSmearEffect(prevCenter, center, *spacing);
-    qDebug() << "Prev: " << prevPoint.x <<prevPoint.y<< "next: " << center.x <<center.y;
     const OSGLContextPtr& glContext = myData->glContext;
     const ImagePtr& dstImage = myData->dstImage;
     RectI dstBounds = dstImage->getBounds();
@@ -1466,11 +1465,13 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     GL::glBindTexture( target, dstImage->getGLTextureID() );
     setupTexParams<GL>(target);
 
-
     // Specifies the src and dst rectangle
     RectI prevDotBounds(prevPoint.x - brushSizePixels / 2., prevPoint.y - brushSizePixels / 2., prevPoint.x + brushSizePixels / 2. + 1, prevPoint.y + brushSizePixels / 2. + 1);
     RectI nextDotBounds(center.x - brushSizePixels / 2., center.y - brushSizePixels / 2., center.x + brushSizePixels / 2. + 1, center.y + brushSizePixels / 2.+ 1);
-    
+
+    qDebug() << "Prev:" << prevDotBounds.x1<<prevDotBounds.y1<<prevDotBounds.x2<<prevDotBounds.y2;
+    qDebug() << "Next:" << nextDotBounds.x1<<nextDotBounds.y1<<nextDotBounds.x2<<nextDotBounds.y2;
+
     int nbVertices = myData->nbPointsPerSegment + 2;
     double shapeColor[3] = {1., 1., 1.};
 

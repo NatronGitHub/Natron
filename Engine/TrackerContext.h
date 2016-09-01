@@ -50,6 +50,8 @@
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/SerializationBase.h"
+
 namespace mv {
 class AutoTrack;
 }
@@ -109,7 +111,8 @@ class TrackerContextPrivate;
 class TrackerContext
     : public QObject
     , public boost::enable_shared_from_this<TrackerContext>
-, public TrackerParamsProvider
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    , public TrackerParamsProvider
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -137,9 +140,9 @@ public:
 
     virtual ~TrackerContext();
 
-    void load(const TrackerContextSerialization& serialization);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
-    void save(TrackerContextSerialization* serialization) const;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
 
     NodePtr getNode() const;
@@ -165,6 +168,8 @@ public:
     void insertMarker(const TrackMarkerPtr& marker, int index);
 
     void removeMarker(const TrackMarkerPtr& marker);
+
+    void clearMarkers();
 
     TrackMarkerPtr getMarkerByName(const std::string & name) const;
 

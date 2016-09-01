@@ -1119,5 +1119,43 @@ Effect::setPagesOrder(const QStringList& pages)
     getInternalNode()->setPagesOrder(order);
 }
 
+void
+Effect::insertParamInViewerUI(Param* param, int index)
+{
+    NodePtr node = getInternalNode();
+    if (!node || !param) {
+        return;
+    }
+    KnobIPtr knob = param->getInternalKnob();
+    if (!knob) {
+        return;
+    }
+    node->getEffectInstance()->insertKnobToViewerUI(knob, index);
+}
+
+void
+Effect::removeParamFromViewerUI(Param* param)
+{
+    NodePtr node = getInternalNode();
+    if (!node || !param) {
+        return;
+    }
+    KnobIPtr knob = param->getInternalKnob();
+    if (!knob) {
+        return;
+    }
+    node->getEffectInstance()->removeKnobViewerUI(knob);
+}
+
+void
+Effect::clearViewerUIParameters()
+{
+    NodePtr node = getInternalNode();
+    if (!node) {
+        return;
+    }
+    node->getEffectInstance()->setViewerUIKnobs(KnobsVec());
+}
+
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

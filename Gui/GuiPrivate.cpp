@@ -39,6 +39,7 @@
 #include <QtCore/QThread>
 #include <QCheckBox>
 #include <QtCore/QTimer>
+#include <QWidgetAction>
 #include <QTextEdit>
 
 
@@ -77,7 +78,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -110,7 +110,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"
@@ -143,10 +142,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _currentRedoAction(0)
     , _undoStacksGroup(0)
     , _undoStacksActions()
-    , _splittersMutex()
-    , _splitters()
-    , _pyPanelsMutex()
-    , _userPanels()
     , _isTripleSyncEnabled(false)
     , areRenderStatsEnabledMutex()
     , areRenderStatsEnabled(false)
@@ -199,11 +194,9 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _leftRightSplitter(0)
     , _viewerTabsMutex()
     , _viewerTabs()
-    , _masterSyncViewer(0)
     , _activeViewer(0)
     , _histogramsMutex()
     , _histograms()
-    , _nextHistogramIndex(1)
     , _nodeGraphArea(0)
     , _lastFocusedGraph(0)
     , _groups()
@@ -233,18 +226,12 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , viewersViewMenu(0)
     , cacheMenu(0)
     , menuHelp(0)
-    , _panesMutex()
-    , _panes()
-    , _floatingWindowMutex()
-    , _floatingWindows()
     , _settingsGui(0)
     , _projectGui(0)
     , _errorLog(0)
     , _currentlyDraggedPanel(0)
     , _currentlyDraggedPanelInitialSize()
     , _aboutWindow(0)
-    , openedPanelsMutex()
-    , openedPanels()
     , _toolButtonMenuOpened(NULL)
     , aboutToCloseMutex()
     , _aboutToClose(false)
@@ -278,16 +265,16 @@ GuiPrivate::notifyGuiClosing()
 {
     ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
     ///cause bad pointer dereference to the Gui object since we're destroying it.
-    std::list<TabWidget*> tabs;
-    {
-        QMutexLocker k(&_panesMutex);
-        tabs = _panes;
-    }
+    std::list<TabWidgetI*> tabs = _gui->getApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        (*it)->discardGuiPointer();
-        for (int i = 0; i < (*it)->count(); ++i) {
-            (*it)->tabAt(i)->notifyGuiClosingPublic();
+    for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* tab = dynamic_cast<TabWidget*>(*it);
+        if (!tab) {
+            continue;
+        }
+        tab->discardGuiPointer();
+        for (int i = 0; i < tab->count(); ++i) {
+            tab->tabAt(i)->notifyGuiClosingPublic();
         }
     }
 
@@ -305,8 +292,7 @@ GuiPrivate::notifyGuiClosing()
 void
 GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesBin = new PropertiesBinWrapper(_gui);
-    _propertiesBin->setScriptName(kPropertiesBinName);
+    _propertiesBin = new PropertiesBinWrapper(kPropertiesBinName, _gui);
     _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
@@ -383,7 +369,6 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
     _propertiesBin->setVisible(false);
-    _gui->registerTab(_propertiesBin, _propertiesBin);
 } // createPropertiesBinGui
 
 void
@@ -392,66 +377,61 @@ GuiPrivate::createNodeGraphGui()
     QGraphicsScene* scene = new QGraphicsScene(_gui);
 
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), scene, _gui);
-    _nodeGraphArea->setScriptName(kNodeGraphObjectName);
+    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), kNodeGraphObjectName, scene, _gui);
     _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
-    _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
 
 void
 GuiPrivate::createCurveEditorGui()
 {
-    _curveEditor = new CurveEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
-    _curveEditor->setScriptName(kCurveEditorObjectName);
+    _curveEditor = new CurveEditor(kCurveEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
     _curveEditor->setLabel( tr("Curve Editor").toStdString() );
     _curveEditor->setVisible(false);
-    _gui->registerTab(_curveEditor, _curveEditor);
 }
 
 void
 GuiPrivate::createDopeSheetGui()
 {
-    _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
-    _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
+    _dopeSheetEditor = new DopeSheetEditor(kDopeSheetEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
     _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
     _dopeSheetEditor->setVisible(false);
-    _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
 
 void
 GuiPrivate::createScriptEditorGui()
 {
-    _scriptEditor = new ScriptEditor(_gui);
-    _scriptEditor->setScriptName("scriptEditor");
+    _scriptEditor = new ScriptEditor("scriptEditor", _gui);
     _scriptEditor->setLabel( tr("Script Editor").toStdString() );
     _scriptEditor->setVisible(false);
-    _gui->registerTab(_scriptEditor, _scriptEditor);
 }
 
 void
 GuiPrivate::createProgressPanelGui()
 {
-    _progressPanel = new ProgressPanel(_gui);
-    _progressPanel->setScriptName("progress");
+    _progressPanel = new ProgressPanel("progress", _gui);
     _progressPanel->setLabel( tr("Progress").toStdString() );
     _progressPanel->setVisible(false);
-    _gui->registerTab(_progressPanel, _progressPanel);
 }
 
 TabWidget*
 GuiPrivate::getOnly1NonFloatingPane(int & count) const
 {
-    assert( !_panesMutex.tryLock() );
     count = 0;
-    if ( _panes.empty() ) {
+    std::list<TabWidgetI*> tabs = _gui->getApp()->getTabWidgetsSerialization();
+    if ( tabs.empty() ) {
         return NULL;
     }
     TabWidget* firstNonFloating = 0;
-    for (std::list<TabWidget*>::const_iterator it = _panes.begin(); it != _panes.end(); ++it) {
-        if ( !(*it)->isFloatingWindowChild() ) {
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* isWidget = dynamic_cast<TabWidget*>(*it);
+        assert(isWidget);
+        if (!isWidget) {
+            continue;
+        }
+        if ( !isWidget->isFloatingWindowChild() ) {
             if (!firstNonFloating) {
-                firstNonFloating = *it;
+                firstNonFloating = isWidget;
             }
             ++count;
         }
@@ -541,24 +521,58 @@ private:
     }
 };
 
+/**
+ * @brief From http://doc.qt.io/qt-4.8/qtoolbar.html
+ When a QToolBar is not a child of a QMainWindow, it loses the ability to populate the extension pop up with widgets added to the toolbar using addWidget(). 
+ Please use widget actions created by inheriting QWidgetAction and implementing QWidgetAction::createWidget() instead.
+ **/
+class AutoRaiseToolButtonAction : public QWidgetAction
+{
+    Gui* _gui;
+    ToolButton* _tool;
+public:
+
+    AutoRaiseToolButtonAction(Gui* gui, ToolButton* tool, QObject *parent)
+    : QWidgetAction(parent)
+    , _gui(gui)
+    , _tool(tool)
+    {
+
+    }
+
+    virtual ~AutoRaiseToolButtonAction()
+    {
+        
+    }
+
+private:
+
+    virtual QWidget *createWidget(QWidget *parent) OVERRIDE FINAL
+    {
+        QToolButton* button = new AutoRaiseToolButton(_gui, parent);
+
+        //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
+        //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
+        button->setIcon( _tool->getToolButtonIcon() );
+        button->setMenu( _tool->getMenu() );
+
+        const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
+        button->setFixedSize(toolButtonSize);
+        button->setPopupMode(QToolButton::InstantPopup);
+        button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_tool->getLabel().trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        return button;
+    }
+
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
 GuiPrivate::addToolButton(ToolButton* tool)
 {
-    QToolButton* button = new AutoRaiseToolButton(_gui, _toolBox);
-
-    //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
-    //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
-    button->setIcon( tool->getToolButtonIcon() );
-    button->setMenu( tool->getMenu() );
-
-    const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
-    button->setFixedSize(toolButtonSize);
-    button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tool->getLabel().trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _toolBox->addWidget(button);
+    AutoRaiseToolButtonAction* action = new AutoRaiseToolButtonAction(_gui, tool, _toolBox);
+    _toolBox->addAction(action);
 }
 
 void
