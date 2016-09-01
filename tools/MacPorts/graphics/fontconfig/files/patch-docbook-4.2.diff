@@ -1,0 +1,17 @@
+Update content to docbook-4.x since we do not have 3.x available in MacPorts
+--- doc/fontconfig-devel.sgml.orig	2012-07-23 21:01:32.000000000 -0500
++++ doc/fontconfig-devel.sgml	2012-11-28 21:42:04.000000000 -0600
+@@ -1,4 +1,4 @@
+-<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
++<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V4.2//EN" [
+ <!ENTITY fcatomic SYSTEM "fcatomic.sgml">
+ <!ENTITY fcblanks SYSTEM "fcblanks.sgml">
+ <!ENTITY fccache SYSTEM "fccache.sgml">
+--- doc/fontconfig-user.sgml.orig	2012-07-23 21:01:32.000000000 -0500
++++ doc/fontconfig-user.sgml	2012-11-28 21:42:04.000000000 -0600
+@@ -1,4 +1,4 @@
+-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
++<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.2//EN" [
+ <!ENTITY version SYSTEM "version.sgml">
+ <!ENTITY confdir SYSTEM "confdir.sgml">
+ ]>

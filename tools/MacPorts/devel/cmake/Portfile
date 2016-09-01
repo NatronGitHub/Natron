@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 150938 2016-08-02 18:24:20Z michaelld@macports.org $
+# $Id: Portfile 152005 2016-08-26 15:37:40Z michaelld@macports.org $
 
 PortSystem          1.0
 universal_variant no
@@ -43,8 +43,8 @@ if {${subport} eq ${name}} {
     patchfiles-append \
         patch-Modules-FindQt4.cmake.release.diff \
         patch-Modules-FindFreetype.cmake.release.diff \
-        patch-Modules-noArchCheck.release.diff
-
+        patch-Modules-noArchCheck.release.diff \
+        patch-CMakeFindFrameworks.cmake.release.diff
 
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
@@ -54,12 +54,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160801
+    version         20160824
     set dist_branch 3.6
-    set dist_date   20160801
-    set dist_hash   g62452
-    checksums       rmd160 f56ce4926d0082255b52615c238c2db3dd8e13fe \
-                    sha256 caad99c3864bd019ffc2d9a7e8cf76aae99588f71dd4e65b56f046c023e4c61f
+    set dist_date   20160824
+    set dist_hash   g96199
+    checksums       rmd160 da159d833c5cfcfb468135f8c2fc4ab1c521166b \
+                    sha256 c5287cf153c0d68b56375da89b4f5beb1850b92fd890ab4bdd48dcb3ba8792d9
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -72,7 +72,9 @@ if {${subport} eq ${name}} {
     patchfiles-append \
         patch-Modules-FindQt4.cmake.devel.diff \
         patch-Modules-FindFreetype.cmake.devel.diff \
-        patch-Modules-noArchCheck.devel.diff
+        patch-Modules-noArchCheck.devel.diff \
+        patch-CMakeFindFrameworks.cmake.devel.diff \
+        patch-Source_CMakeVersionCompute.cmake.devel.diff
 
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
@@ -92,8 +94,7 @@ depends_lib-append  port:curl \
 # jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
 # use its internal jsoncpp until a better solution comes about.
 
-patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
-                    patch-Modules-Platform-Darwin.cmake.diff
+patchfiles-append   patch-Modules-Platform-Darwin.cmake.diff
 
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
@@ -172,10 +173,18 @@ post-destroot {
     xinstall -d -m 0755 ${destroot}${prefix}/share/emacs/site-lisp
     xinstall -m 0644 ${worksrcpath}/Auxiliary/cmake-mode.el \
         ${destroot}${prefix}/share/emacs/site-lisp
-    foreach type {syntax indent} {
-        xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
-        xinstall -m 0644 -W ${worksrcpath}/Auxiliary cmake-${type}.vim \
-            ${destroot}${prefix}/share/vim/vimfiles/${type}
+    if {${subport} eq ${name}} {
+        foreach type {syntax indent} {
+            xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
+            xinstall -m 0644 -W ${worksrcpath}/Auxiliary cmake-${type}.vim \
+                ${destroot}${prefix}/share/vim/vimfiles/${type}
+        }
+    } else {
+        foreach type {syntax indent} {
+            xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
+            xinstall -m 0644 -W ${worksrcpath}/Auxiliary/vim/${type} cmake.vim \
+                ${destroot}${prefix}/share/vim/vimfiles/${type}
+        }
     }
     if ([variant_isset gui]) {
         set app CMake

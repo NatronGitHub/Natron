@@ -32,10 +32,12 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
 #include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(uninitialized)
 
 
 #ifdef NATRON_USE_BREAKPAD
