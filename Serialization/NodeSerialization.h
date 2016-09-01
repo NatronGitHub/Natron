@@ -19,6 +19,7 @@
 #ifndef NODESERIALIZATION_H
 #define NODESERIALIZATION_H
 
+#include <climits>
 
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/TrackerSerialization.h"
