@@ -805,6 +805,11 @@ Settings::initializeKnobsGuiColors()
     _exprColor->setName("exprColor");
     _exprColor->setSimplified(true);
     _guiColorsTab->addKnob(_exprColor);
+
+    _sliderColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Slider"), 3);
+    _sliderColor->setName("slider");
+    _sliderColor->setSimplified(true);
+    _guiColorsTab->addKnob(_sliderColor);
 } // Settings::initializeKnobsGuiColors
 
 void
@@ -1695,6 +1700,10 @@ Settings::setDefaultValues()
     _curLineColor->setDefaultValue(0.35, 1);
     _curLineColor->setDefaultValue(0.35, 2);
 
+    _sliderColor->setDefaultValue(0.33, 0);
+    _sliderColor->setDefaultValue(0.45, 1);
+    _sliderColor->setDefaultValue(0.44, 2);
+
     _scriptEditorFontChoice->setDefaultValue(0);
     _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
 
@@ -2269,6 +2278,7 @@ Settings::onKnobValueChanged(KnobI* k,
                   ( k == _stringsColor.get() ) ||
                   ( k == _commentsColor.get() ) ||
                   ( k == _selfColor.get() ) ||
+                  ( k == _sliderColor.get() ) ||
                   ( k == _numbersColor.get() ) ) ) {
         appPTR->reloadStylesheets();
     } else if ( k == _qssFile.get() ) {
@@ -3463,6 +3473,16 @@ Settings::getSECurLineColor(double* r,
     *r = _curLineColor->getValue(0);
     *g = _curLineColor->getValue(1);
     *b = _curLineColor->getValue(2);
+}
+
+void
+Settings::getSliderColor(double* r,
+                            double* g,
+                            double* b) const
+{
+    *r = _sliderColor->getValue(0);
+    *g = _sliderColor->getValue(1);
+    *b = _sliderColor->getValue(2);
 }
 
 int

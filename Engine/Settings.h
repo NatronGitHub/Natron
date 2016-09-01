@@ -322,6 +322,7 @@ public:
     void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getDopeSheetEditorScaleColor(double* r, double* g, double* b) const;
     void getDopeSheetEditorGridColor(double* r, double* g, double* b) const;
+    void getSliderColor(double* r, double* g, double* b) const;
 
 
     void getSEKeywordColor(double* r, double* g, double* b) const;
@@ -570,6 +571,7 @@ private:
     boost::shared_ptr<KnobColor> _exprColor;
     boost::shared_ptr<KnobColor> _cachedFrameColor;
     boost::shared_ptr<KnobColor> _diskCachedFrameColor;
+    boost::shared_ptr<KnobColor> _sliderColor;
 
     // Apprance/Curve Editor
     boost::shared_ptr<KnobPage> _curveEditorColorsTab;
