@@ -594,8 +594,8 @@ public:
     int _dimension; // the number of dimensions held by the knob
     bool _visibilityChanged; // true if the secretness of the knob is different than default
     bool _masterIsAlias; // is the master/slave link an alias ?
-    mutable std::vector<ValueSerialization> _values; // serialized value for each dimension
-    mutable boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
+    std::vector<ValueSerialization> _values; // serialized value for each dimension
+    boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
     bool _isUserKnob; // is this knob created by the user or was this created by a plug-in ?
     std::string _label; // only serialized for user knobs
@@ -677,7 +677,6 @@ public:
         ar & ::boost::serialization::make_nvp("Name", _scriptName);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
-        _values.resize(_dimension);
 
         bool secret;
         ar & ::boost::serialization::make_nvp("Secret", secret);
@@ -713,7 +712,8 @@ public:
             _extraData.reset(new TextExtraData);
         }
 
-        for (int i = 0; i < _dimension; ++i) {
+        _values.resize(_dimension);
+        for (std::size_t i = 0; i < _values.size(); ++i) {
             _values[i]._typeName = _typeName;
             _values[i]._dimension = i;
             _values[i]._serialization = this;

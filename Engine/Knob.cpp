@@ -5137,24 +5137,23 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     // The number of serialized dimension does not necessarily equals the number of dimensions of the knob because some dimensions
     // may had no modification to serialize.
-    for (std::size_t k = 0; k < serialization->_values.size(); ++k) {
-
-        int dimensionIndex = serialization->_values[k]._dimension;
+    for (std::size_t d = 0; d < serialization->_values.size(); ++d) {
+        int dimensionIndex = serialization->_values[d]._dimension;
 
         // Restore enabled state
-        if (serialization->_values[k]._enabledChanged) {
+        if (serialization->_values[d]._enabledChanged) {
             setEnabled(dimensionIndex, isDefaultEnabled(dimensionIndex));
         }
 
         // Clone animation
-        if (!serialization->_values[k]._animationCurve.keys.empty()) {
+        if (!serialization->_values[d]._animationCurve.keys.empty()) {
             CurvePtr curve = getCurve(ViewIdx(0), dimensionIndex);
             if (curve) {
-                curve->fromSerialization(serialization->_values[k]._animationCurve);
+                curve->fromSerialization(serialization->_values[d]._animationCurve);
             }
         }
 
-        restoreValueFromSerialization(serialization->_values[k], dimensionIndex, serialization->_values[k]._serializeDefaultValue);
+        restoreValueFromSerialization(serialization->_values[d], dimensionIndex, serialization->_values[d]._serializeDefaultValue);
     } // for all dims
 
     // Restore extra datas

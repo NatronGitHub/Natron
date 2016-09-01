@@ -2836,28 +2836,25 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
         _imp->formatKnob->populateChoices(entries);
         _imp->autoSetProjectFormat = false;
 
-        const KnobsVec& projectKnobs = getKnobs();
-
         // Restore project's knobs
-        for (std::size_t i = 0; i < projectKnobs.size(); ++i) {
-            // Try to find a serialized value for this knob
-            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
-                if ( (*it)->getName() == projectKnobs[i]->getName() ) {
-                    projectKnobs[i]->fromSerialization(**it);
-                    break;
-                }
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
+            KnobIPtr foundKnob = getKnobByName((*it)->getName());
+            if (!foundKnob) {
+                continue;
             }
-            if (projectKnobs[i] == _imp->envVars) {
+            foundKnob->fromSerialization(**it);
+            if (foundKnob == _imp->envVars) {
                 onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
-            } else if (projectKnobs[i] == _imp->natronVersion) {
+            } else if (foundKnob == _imp->natronVersion) {
                 std::string v = _imp->natronVersion->getValue();
                 if (v == "Natron v1.0.0") {
                     getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
                 }
-            } else if (projectKnobs[i] == _imp->frameRange) {
+            } else if (foundKnob == _imp->frameRange) {
                 foundFrameRangeKnob = true;
             }
         }
+
 
         // Restore the timeline
         _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);

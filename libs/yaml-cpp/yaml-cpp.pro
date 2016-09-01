@@ -15,9 +15,9 @@ include(../../config.pri)
 DEFINES += YAML_CPP_NO_CONTRIB
 #DEFINES += LABEL_SUFFIX="static"
 
-# hoedown has too many "unused parameter" warnings
+# yamlcpp has too many "unused" warnings
 *clang*|*g++*|*xcode {
-  QMAKE_CFLAGS_WARN_ON += -Wno-unused-parameter -Wno-missing-declarations -pedantic -Wno-long-long
+  QMAKE_CFLAGS_WARN_ON += -Wno-unused-parameter -Wno-unused-local-typedef  -Wno-missing-declarations -pedantic -Wno-long-long
 }
 
 INCLUDEPATH += $$PWD/src

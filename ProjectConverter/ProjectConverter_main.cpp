@@ -270,17 +270,31 @@ private:
 
                     // Now convert what we can convert to our newer format...
                     convertToProjectSerialization(deprecatedGuiSerialization, obj);
-                }
+        }
                 
-                }
-                } catch (...) {
-                    throw std::invalid_argument("Invalid project file");
-                }
-                
-                }
-                };
+        }
+        } catch (...) {
+            throw std::invalid_argument("Invalid project file");
+        }
+
+    }
+};
 
 static boost::scoped_ptr<ConverterAppManager> app;
+
+static void initializeAppOnce()
+{
+    // Create Natron instance
+    if (app) {
+        return;
+    }
+    app.reset(new ConverterAppManager);
+    int nArgc = 0;
+    app->load(nArgc, 0, CLArgs());
+    assert(app->getTopLevelInstance());
+
+
+}
 
 
 static void
@@ -288,7 +302,7 @@ printUsage(const std::string& programName)
 {
 
                               /* Text must hold in 80 columns ************************************************/
-    QString msg = QObject::tr("%1 usage:\n"
+    QString msg = QString::fromUtf8("%1 usage:\n"
                               "This program can convert Natron projects (.ntp files) or workspace (.nl files)\n"
                               "made with Natron version 2.1.3 and older to the new project format used in 2.2\n\n"
                               "Program options:\n\n"
@@ -321,14 +335,14 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* o
     {
         QStringList::iterator foundInput = hasToken(localArgs, QLatin1String("-i"));
         if (foundInput == localArgs.end()) {
-            throw std::invalid_argument(QObject::tr("Missing -i switch").toStdString());
+            throw std::invalid_argument(QString::fromUtf8("Missing -i switch").toStdString());
         } else {
             ++foundInput;
             if ( foundInput != localArgs.end() ) {
                 *inputPath = *foundInput;
                 localArgs.erase(foundInput);
             } else {
-                throw std::invalid_argument(QObject::tr("-i switch without a file/directory name").toStdString());
+                throw std::invalid_argument(QString::fromUtf8("-i switch without a file/directory name").toStdString());
             }
         }
     }
@@ -340,7 +354,7 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* o
                 *outputPath = *foundInput;
                 localArgs.erase(foundInput);
             } else {
-                throw std::invalid_argument(QObject::tr("-o switch without a file/directory name").toStdString());
+                throw std::invalid_argument(QString::fromUtf8("-o switch without a file/directory name").toStdString());
             }
         }
 
@@ -392,7 +406,7 @@ static void tryReadAndConvertOlderWorkspace(std::istream& stream, SERIALIZATION_
  **/
 static void tryReadAndConvertOlderProject(const QString& filename, const QString& outFileName)
 {
-
+    initializeAppOnce();
     AppInstancePtr instance = app->getTopLevelInstance();
     assert(instance);
     if (!instance) {
@@ -410,7 +424,7 @@ static void convertFile(const QString& filename, const QString& outputFileName)
     bool isWorkspaceFile = filename.endsWith(QLatin1String(".nl"));
 
     if (!isProjectFile && !isWorkspaceFile) {
-        QString message = QObject::tr("%1 does not appear to be a .ntp or .nl file.");
+        QString message = QString::fromUtf8("%1 does not appear to be a .ntp or .nl file.");
         throw std::invalid_argument(message.toStdString());
     }
 
@@ -433,7 +447,7 @@ static void convertFile(const QString& filename, const QString& outputFileName)
             FStreamsSupport::ifstream ifile;
             FStreamsSupport::open(&ifile, filename.toStdString());
             if (!ifile) {
-                QString message = QObject::tr("Could not open %1").arg(filename);
+                QString message = QString::fromUtf8("Could not open %1").arg(filename);
                 throw std::invalid_argument(message.toStdString());
             }
 
@@ -447,7 +461,7 @@ static void convertFile(const QString& filename, const QString& outputFileName)
             FStreamsSupport::ofstream ofile;
             FStreamsSupport::open(&ofile, outFileName.toStdString());
             if (!ofile) {
-                QString message = QObject::tr("Could not open %1").arg(outFileName);
+                QString message = QString::fromUtf8("Could not open %1").arg(outFileName);
                 throw std::invalid_argument(message.toStdString());
             }
 
@@ -464,7 +478,7 @@ static void convertDirectory(const QString& dirPath, const QString& outputDirPat
 {
     QDir d(dirPath);
     if (!d.exists()) {
-        QString message = QObject::tr("%1: No such file or directory").arg(dirPath);
+        QString message = QString::fromUtf8("%1: No such file or directory").arg(dirPath);
         throw std::invalid_argument(message.toStdString());
     }
 
@@ -511,17 +525,10 @@ main(int argc,
     try {
         parseArgs(arguments, & inputPath, &outputPath, &recurse);
     } catch (const std::exception &e) {
-        std::cerr << QObject::tr("Error while parsing command line arguments: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
+        std::cerr << QString::fromUtf8("Error while parsing command line arguments: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
         printUsage(argv[0]);
         return 1;
     }
-
-    // Create Natron instance
-    app.reset(new ConverterAppManager);
-    int nArgc = 0;
-    app->load(nArgc, 0, CLArgs());
-    assert(app->getTopLevelInstance());
-
 
 
     QDir d(inputPath);
@@ -530,13 +537,13 @@ main(int argc,
         convertDirectory(inputPath, outputPath, recurse, 0);
     } else {
         if (!QFile::exists(inputPath)) {
-            std::cerr << QObject::tr("%1: No such file or directory").arg(inputPath).toStdString() << std::endl;
+            std::cerr << QString::fromUtf8("%1: No such file or directory").arg(inputPath).toStdString() << std::endl;
             return 1;
         }
         try {
             convertFile(inputPath, outputPath);
         } catch (const std::exception& e) {
-            std::cerr << QObject::tr("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
+            std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
             return 1;
         }
     }
