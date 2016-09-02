@@ -299,6 +299,7 @@ typedef boost::shared_ptr<Image> ImagePtr;
 typedef std::list<ImagePtr> ImageList;
 typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
+typedef boost::shared_ptr<Settings> SettingsPtr;
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h

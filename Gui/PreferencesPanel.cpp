@@ -1171,7 +1171,7 @@ void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
     if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) ) {
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         if ( !_imp->changedKnobs.empty() ) {
             settings->beginChanges();
             settings->restoreKnobsFromSettings(_imp->changedKnobs);

@@ -881,7 +881,7 @@ void
 KnobGuiValue::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert( _imp->knob.lock()->isEnabled(0) );
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
     bool autoProxyEnabled = settings->isAutoProxyEnabled();
     if (onEditingFinishedOnly) {

@@ -2179,7 +2179,7 @@ AppManager::getOrActivateViewerCacheSignalEmitter() const
     return _imp->_viewerCache->activateSignalEmitter();
 }
 
-boost::shared_ptr<Settings> AppManager::getCurrentSettings() const
+SettingsPtr AppManager::getCurrentSettings() const
 {
     return _imp->_settings;
 }

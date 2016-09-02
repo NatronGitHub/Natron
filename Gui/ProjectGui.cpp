@@ -281,7 +281,7 @@ static
 void
 loadNodeGuiSerialization(Gui* gui,
                          const std::map<std::string, ViewerData > & viewersProjections,
-                         const boost::shared_ptr<Settings>& settings,
+                         const SettingsPtr& settings,
                          double leftBound,
                          double rightBound,
                          const NodeGuiSerialization& serialization)
@@ -449,7 +449,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
 
 
     ///default color for nodes
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     const std::list<NodeGuiSerialization> & nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
         loadNodeGuiSerialization(_gui, viewersProjections, settings, leftBound, rightBound,  *it);

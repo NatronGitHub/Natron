@@ -166,7 +166,7 @@ to_qcolor(double r,
 void
 Gui::loadStyleSheet()
 {
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
 
     //settings->

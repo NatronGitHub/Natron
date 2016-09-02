@@ -272,7 +272,7 @@ PySyntaxHighlighterPrivate::reload()
     basicStyles.clear();
 
     double r, g, b;
-    boost::shared_ptr<Settings> s = appPTR->getCurrentSettings();
+    SettingsPtr s = appPTR->getCurrentSettings();
     s->getSEKeywordColor(&r, &g, &b);
     basicStyles.insert( QString::fromUtf8("keyword"), getTextCharFormat( r, g, b, QString::fromUtf8("bold") ) );
 

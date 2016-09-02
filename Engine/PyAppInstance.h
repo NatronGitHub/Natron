@@ -49,7 +49,7 @@ class AppSettings
 {
 public:
 
-    AppSettings(const boost::shared_ptr<Settings>& settings);
+    AppSettings(const SettingsPtr& settings);
 
     Param* getParam(const QString& scriptName) const;
     std::list<Param*> getParams() const;
@@ -60,7 +60,7 @@ public:
 
 private:
 
-    boost::shared_ptr<Settings> _settings;
+    SettingsPtr _settings;
 };
 
 

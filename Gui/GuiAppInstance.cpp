@@ -276,7 +276,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     _imp->_gui->show();
 
 
-    boost::shared_ptr<Settings> nSettings = appPTR->getCurrentSettings();
+    SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
     {

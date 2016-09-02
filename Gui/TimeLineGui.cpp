@@ -353,7 +353,7 @@ TimeLineGui::paintGL()
     double top = bottom +  h / (double)_imp->tlZoomCtx.zoomFactor;
     double right = left +  (w / (double)_imp->tlZoomCtx.zoomFactor);
     double clearR, clearG, clearB;
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelineBGColor(&clearR, &clearG, &clearB);
 
     if ( (left == right) || (top == bottom) ) {
@@ -997,7 +997,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
         }
         _imp->gui->refreshAllPreviews();
 
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
         bool autoProxyEnabled = settings->isAutoProxyEnabled();
 

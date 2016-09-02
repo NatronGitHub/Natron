@@ -876,7 +876,7 @@ DopeSheetViewPrivate::drawScale() const
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
 
     // Retrieve the appropriate settings for drawing
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double scaleR, scaleG, scaleB;
     settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
 
@@ -1055,7 +1055,7 @@ DopeSheetViewPrivate::drawNodeRow(const boost::shared_ptr<DSNode> dsNode) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double rootR, rootG, rootB, rootA;
 
     settings->getDopeSheetEditorRootRowBackgroundColor(&rootR, &rootG, &rootB, &rootA);
@@ -1085,7 +1085,7 @@ DopeSheetViewPrivate::drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsKnob->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double bkR, bkG, bkB, bkA;
     if ( dsKnob->isMultiDimRoot() ) {
         settings->getDopeSheetEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
@@ -1219,7 +1219,7 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
         }
 
         if ( isSelected && (dsNode->getItemType() == eDopeSheetItemTypeReader) ) {
-            boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+            SettingsPtr settings = appPTR->getCurrentSettings();
             double selectionColorRGB[3];
             settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
             QColor selectionColor;
@@ -1253,7 +1253,7 @@ DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) con
 {
     running_in_main_thread_and_context(q_ptr);
 
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double selectionColorRGB[3];
     settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
     QColor selectionColor;
@@ -1496,7 +1496,7 @@ DopeSheetViewPrivate::drawProjectBounds() const
     }
     app->getFrameRange(&projectStart, &projectEnd);
 
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double colorR, colorG, colorB;
     settings->getTimelineBoundsColor(&colorR, &colorG, &colorB);
 
@@ -1538,7 +1538,7 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
     int currentFrame = timeline->currentFrame();
 
     // Retrieve settings for drawing
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double colorR, colorG, colorB;
     settings->getTimelinePlayheadColor(&colorR, &colorG, &colorB);
 
@@ -3228,7 +3228,7 @@ DopeSheetView::paintGL()
     zoomTop = _imp->zoomContext.top();
 
     // Retrieve the appropriate settings for drawing
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double bgR, bgG, bgB;
     settings->getDopeSheetEditorBackgroundColor(&bgR, &bgG, &bgB);
 

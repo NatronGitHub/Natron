@@ -234,7 +234,7 @@ public:
 
     void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
-    boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
+    SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
     template <class K>

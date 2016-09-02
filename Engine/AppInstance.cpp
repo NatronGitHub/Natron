@@ -1200,7 +1200,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     {
         ///Furnace plug-ins don't handle using the thread pool
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
@@ -1469,7 +1469,7 @@ AppInstance::exportDocs(const QString path)
         }
 
         // Generate MD for settings
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         QString prefsMD = settings->makeHTMLDocumentation(false);
         QFile prefsFile( path + QString::fromUtf8("/_prefs.md") );
         if ( prefsFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {

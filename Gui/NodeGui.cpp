@@ -329,7 +329,7 @@ NodeGui::setColorFromGrouping()
 {
     NodePtr internalNode = getNode();
     EffectInstPtr iseffect = internalNode->getEffectInstance();
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     float r, g, b;
     Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
     std::list<std::string> grouping;
@@ -3526,7 +3526,7 @@ NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
         getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, pluginDesc, version);
     }
 
-    boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
+    SettingsPtr currentSettings = appPTR->getCurrentSettings();
     QPixmap p( QString::fromUtf8( pluginIconFilePath.c_str() ) );
 
     if ( p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph() ) {

@@ -235,7 +235,7 @@ App::timelineGetRightBound() const
     return right;
 }
 
-AppSettings::AppSettings(const boost::shared_ptr<Settings>& settings)
+AppSettings::AppSettings(const SettingsPtr& settings)
     : _settings(settings)
 {
 }

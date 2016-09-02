@@ -359,7 +359,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
 
     double cursorR, cursorG, cursorB;
     double boundsR, boundsG, boundsB;
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
     settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
@@ -446,7 +446,7 @@ CurveWidgetPrivate::drawScale()
     const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 500.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
-    boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
+    SettingsPtr sett = appPTR->getCurrentSettings();
     sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
 
 
