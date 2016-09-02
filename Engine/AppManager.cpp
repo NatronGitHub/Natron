@@ -1542,6 +1542,9 @@ AppManager::getAllNonOFXPluginsPaths() const
         }
     }
 
+    ///look-in the global system wide plugin path
+    templatesSearchPath.push_back( QString::fromUtf8(NATRON_SYSTEM_PLUGIN_PATH) );
+
     ///look-in extra search path set in the preferences
     for (std::list<std::string>::iterator it = userSearchPaths.begin(); it != userSearchPaths.end(); ++it) {
         if ( !it->empty() ) {
