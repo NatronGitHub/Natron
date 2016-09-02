@@ -238,7 +238,7 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         if (cdata) {
             if (!cdata->_entries.empty()) {
                 em << YAML_NAMESPACE::Key << "Entries" << YAML_NAMESPACE::Value;
-                em << YAML_NAMESPACE::BeginSeq;
+                em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
                 for (std::size_t i = 0; i < cdata->_entries.size(); ++i) {
                     em << cdata->_entries[i];
                 }
@@ -246,7 +246,7 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
             }
             if (!cdata->_helpStrings.empty()) {
                 em << YAML_NAMESPACE::Key << "Hints" << YAML_NAMESPACE::Value;
-                em << YAML_NAMESPACE::BeginSeq;
+                em <<  YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
                 for (std::size_t i = 0; i < cdata->_helpStrings.size(); ++i) {
                     em << cdata->_helpStrings[i];
                 }

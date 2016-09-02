@@ -342,7 +342,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (mergeOp) {
         mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
     }
-    compOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    compOp->setDefaultValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
         if (type == eRotoStrokeTypeBlur) {

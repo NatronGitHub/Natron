@@ -1551,7 +1551,7 @@ NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
     if ( serialization && !serialization->_pythonModule.empty() ) {
         QString moduleName = QString::fromUtf8( ( serialization->_pythonModule.c_str() ) );
 
-        bool pythonModuleIsScriptFile = FileSystemModel::startsWithDriveName(moduleName);
+        bool pythonModuleIsScriptFile = FileSystemModel::startsWithDriveName(moduleName, true);
         AppInstance::setGroupLabelIDAndVersion(getNode(), moduleName, pythonModuleIsScriptFile);
     } else if ( !serialization && !getApp()->isCreatingPythonGroup()) {
         //if the node is a group and we're not loading the project, create one input and one output

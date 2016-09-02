@@ -37,6 +37,7 @@
 #include "Engine/BezierCP.h"
 #include "Engine/BezierCPPrivate.h"
 #include "Engine/ColorParser.h"
+#include "Engine/CurvePrivate.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Curve.h"
@@ -228,15 +229,20 @@ SERIALIZATION_NAMESPACE::BezierSerialization::serialize(Archive & ar, const unsi
     for (int i = 0; i < numPoints; ++i) {
         NATRON_NAMESPACE::BezierCP cp;
         ar & ::boost::serialization::make_nvp("CP", cp);
-        SERIALIZATION_NAMESPACE::BezierCPSerialization cps;
-        cp.toSerialization(&cps);
-        _controlPoints.push_back(cps);
-
         NATRON_NAMESPACE::BezierCP fp;
         ar & ::boost::serialization::make_nvp("FP", fp);
-        SERIALIZATION_NAMESPACE::BezierCPSerialization fps;
-        fp.toSerialization(&fps);
-        _featherPoints.push_back(fps);
+
+        ControlPoint controlPoint;
+        cp.toSerialization(&controlPoint.innerPoint);
+
+        if (fp != cp) {
+            controlPoint.featherPoint.reset(new BezierCPSerialization);
+            fp.toSerialization(controlPoint.featherPoint.get());
+        }
+
+        _controlPoints.push_back(controlPoint);
+
+
     }
     ar & ::boost::serialization::make_nvp("Closed", _closed);
     if (version >= BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER) {
@@ -423,8 +429,8 @@ void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
 template<class Archive>
 void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int version)
 {
-    KeyFrameSet keys = getKeyFrames_mt_safe();
-    ar & ::boost::serialization::make_nvp("KeyFrameSet", keys);
+    QMutexLocker k(&_imp->_lock);
+    ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
 }
 
 

@@ -890,6 +890,50 @@ BezierCP::equalsAtTime(bool useGuiCurves,
     return false;
 }
 
+bool
+BezierCP::operator==(const BezierCP& other) const
+{
+    if (*_imp->curveX != *other._imp->curveX) {
+        return false;
+    }
+    if (*_imp->curveY != *other._imp->curveY) {
+        return false;
+    }
+    if (*_imp->curveLeftBezierX != *other._imp->curveLeftBezierX) {
+        return false;
+    }
+    if (*_imp->curveLeftBezierY != *other._imp->curveLeftBezierY) {
+        return false;
+    }
+    if (*_imp->curveRightBezierX != *other._imp->curveRightBezierX) {
+        return false;
+    }
+    if (*_imp->curveRightBezierY != *other._imp->curveRightBezierY) {
+        return false;
+    }
+
+    if (_imp->x != other._imp->x) {
+        return false;
+    }
+    if (_imp->y != other._imp->y) {
+        return false;
+    }
+    if (_imp->leftX != other._imp->leftX) {
+        return false;
+    }
+    if (_imp->leftY != other._imp->leftY) {
+        return false;
+    }
+    if (_imp->rightX != other._imp->rightX) {
+        return false;
+    }
+    if (_imp->rightY != other._imp->rightY) {
+        return false;
+    }
+    return true;
+    
+}
+
 void
 BezierCP::cloneInternalCurvesToGuiCurves()
 {

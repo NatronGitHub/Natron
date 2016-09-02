@@ -36,7 +36,6 @@ public:
     BezierSerialization()
         : RotoDrawableItemSerialization()
         , _controlPoints()
-        , _featherPoints()
         , _closed(false)
         , _isOpenBezier(false)
     {
@@ -54,8 +53,17 @@ public:
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version);
-    
-    std::list< BezierCPSerialization > _controlPoints, _featherPoints;
+
+    struct ControlPoint
+    {
+        BezierCPSerialization innerPoint;
+
+        // Serialize feather only if different
+        boost::shared_ptr<BezierCPSerialization> featherPoint;
+    };
+    std::list< ControlPoint > _controlPoints;
+
+
     bool _closed;
     bool _isOpenBezier;
 };

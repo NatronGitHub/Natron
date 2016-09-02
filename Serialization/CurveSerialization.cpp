@@ -82,6 +82,40 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
         YAML_NAMESPACE::Node keyNode = node[i];
 
         switch (state) {
+            case eCurveDecodeStateMayExpectInterpolation:
+                if (pushKeyFrame) {
+                    keys.push_back(keyframe);
+
+                    // Reset keyframe
+                    keyframe.interpolation.clear();
+                    keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
+
+                }
+                try {
+                    // First try to get a time. Conversion of a string to double always fails but string to double does not
+                    keyframe.time = keyNode.as<double>();
+
+                    // OK we read a valid time, assume the interpolation is the same as the previous
+
+                    // No interpolation, use the interpolation set previously.
+                    // If interpolation is not set, set interpolation to linear
+                    if (interpolation.empty()) {
+                        interpolation = kKeyframeSerializationTypeLinear;
+                    }
+                    keyframe.interpolation = interpolation;
+                    state = eCurveDecodeStateExpectValue;
+                } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
+                    // OK we read an interpolation and set the curve interpolation so far if needed
+                    keyframe.interpolation = keyNode.as<std::string>();
+                    // No interpolation, use the interpolation set previously.
+                    // If interpolation is not set, set interpolation to linear
+                    if (interpolation.empty()) {
+                        interpolation = keyframe.interpolation;
+                    }
+                    state = eCurveDecodeStateExpectTime;
+                }
+
+                break;
             case eCurveDecodeStateExpectTime:
                 keyframe.time = keyNode.as<double>();
                 state  = eCurveDecodeStateExpectValue;
@@ -94,27 +128,6 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
                 } else {
                     state = eCurveDecodeStateMayExpectInterpolation;
                 }
-                break;
-            case eCurveDecodeStateMayExpectInterpolation:
-                if (pushKeyFrame) {
-                    keys.push_back(keyframe);
-
-                    // Reset keyframe
-                    keyframe.interpolation.clear();
-                    keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
-                    
-                }
-                try {
-                    keyframe.interpolation = keyNode.as<std::string>();
-                } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
-                    // No interpolation, use the interpolation set previously.
-                    // If interpolation is not set, set interpolation to linear
-                    if (interpolation.empty()) {
-                        interpolation = kKeyframeSerializationTypeLinear;
-                    }
-                    keyframe.interpolation = interpolation;
-                }
-                state = eCurveDecodeStateExpectTime;
                 break;
             case eCurveDecodeStateMayExpectRightDerivative:
                 keyframe.rightDerivative = keyNode.as<double>();

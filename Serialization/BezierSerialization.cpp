@@ -30,16 +30,15 @@ BezierSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     if (!_controlPoints.empty()) {
         em << YAML_NAMESPACE::Key << "Shape" << YAML_NAMESPACE::Value;
         em << YAML_NAMESPACE::BeginSeq;
-        for (std::list< BezierCPSerialization >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
-            it->encode(em);
-        }
-        em << YAML_NAMESPACE::EndSeq;
-    }
-    if (!_featherPoints.empty()) {
-        em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
-        em << YAML_NAMESPACE::BeginSeq;
-        for (std::list< BezierCPSerialization >::const_iterator it = _featherPoints.begin(); it != _featherPoints.end(); ++it) {
-            it->encode(em);
+        for (std::list< ControlPoint >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
+            em << YAML_NAMESPACE::BeginMap;
+            em << YAML_NAMESPACE::Key << "Inner" << YAML_NAMESPACE::Value;
+            it->innerPoint.encode(em);
+            if (it->featherPoint) {
+                em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
+                it->featherPoint->encode(em);
+            }
+            em << YAML_NAMESPACE::EndMap;
         }
         em << YAML_NAMESPACE::EndSeq;
     }
@@ -57,17 +56,16 @@ BezierSerialization::decode(const YAML_NAMESPACE::Node& node)
     if (node["Shape"]) {
         YAML_NAMESPACE::Node shapeNode = node["Shape"];
         for (std::size_t i = 0; i < shapeNode.size(); ++i) {
-            BezierCPSerialization s;
-            s.decode(shapeNode[i]);
-            _controlPoints.push_back(s);
-        }
-    }
-    if (node["Feather"]) {
-        YAML_NAMESPACE::Node shapeNode = node["Feather"];
-        for (std::size_t i = 0; i < shapeNode.size(); ++i) {
-            BezierCPSerialization s;
-            s.decode(shapeNode[i]);
-            _featherPoints.push_back(s);
+            ControlPoint c;
+            YAML_NAMESPACE::Node pointNode = shapeNode[i];
+            if (pointNode["Inner"]) {
+                c.innerPoint.decode(pointNode["Inner"]);
+            }
+            if (pointNode["Feather"]) {
+                c.featherPoint.reset(new BezierCPSerialization);
+                c.featherPoint->decode(pointNode["Feather"]);
+            }
+            _controlPoints.push_back(c);
         }
     }
     if (node["Closed"]) {

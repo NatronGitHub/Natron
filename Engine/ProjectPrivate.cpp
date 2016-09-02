@@ -105,7 +105,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
 void
 ProjectPrivate::checkForPyPlugNewVersion(const std::string& pythonModuleName,
                                          bool moduleNameIsScriptPath,
-                                         unsigned int savedPythonModuleVersion,
+                                         int savedPythonModuleVersion,
                                          bool* usingPythonModule,
                                          std::string* pluginID,
                                          std::map<std::string, bool>* moduleUpdatesProcessed)
@@ -122,17 +122,19 @@ ProjectPrivate::checkForPyPlugNewVersion(const std::string& pythonModuleName,
         if (foundSlash != -1) {
             moduleName = qPyModulePath.mid(foundSlash + 1).toStdString();
         }
+    } else {
+        moduleName = pythonModuleName;
     }
 
     std::string pythonPluginID, pluginLabel, iconFilePath, pluginGrouping, description, pluginPath;
     unsigned int version;
     bool istoolset;
 
-    if ( !NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pythonPluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
+    if ( !NATRON_PYTHON_NAMESPACE::getGroupInfos(moduleName, &pythonPluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
         return;
     }
 
-    if (version != savedPythonModuleVersion) {
+    if ((int)version != savedPythonModuleVersion && (int)savedPythonModuleVersion != -1) {
         std::map<std::string, bool>::iterator found = moduleUpdatesProcessed->find(moduleName);
         if ( found != moduleUpdatesProcessed->end() ) {
             if (found->second) {
@@ -243,8 +245,8 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         NodePtr node;
         bool usingPythonModule = false;
         if ( !pythonModuleName.empty() ) {
-            unsigned int savedPythonModuleVersion = (*it)->_pythonModuleVersion;
-            bool moduleNameIsScriptPath = FileSystemModel::startsWithDriveName(QString::fromUtf8(pythonModuleName.c_str()));
+            int savedPythonModuleVersion = (*it)->_pythonModuleVersion;
+            bool moduleNameIsScriptPath = FileSystemModel::startsWithDriveName(QString::fromUtf8(pythonModuleName.c_str()), true);
             ProjectPrivate::checkForPyPlugNewVersion(pythonModuleName, moduleNameIsScriptPath, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
 
         } // if (!pythonModuleAbsolutePath.empty()) {
@@ -320,9 +322,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         if ( !children.empty() && !usingPythonModule) {
             NodeGroupPtr isGrp = node->isEffectNodeGroup();
             if (isGrp) {
-                EffectInstancePtr sharedEffect = isGrp->shared_from_this();
-                NodeGroupPtr sharedGrp = toNodeGroup(sharedEffect);
-                Project::restoreGroupFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
+                Project::restoreGroupFromSerialization(children, isGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 // For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
                 assert( node->isMultiInstance() );

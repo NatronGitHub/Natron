@@ -2194,7 +2194,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // For groups, serialize its children if the graph was edited
     NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp && !subGraphEdited) {
+    if (isGrp && subGraphEdited) {
         NodesList nodes;
         isGrp->getActiveNodes(&nodes);
 
