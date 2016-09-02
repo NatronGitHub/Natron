@@ -457,6 +457,8 @@ public:
 
     QStringList getAllNonOFXPluginsPaths() const;
 
+    QString getPyPlugsGlobalPath() const;
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;
