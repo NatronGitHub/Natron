@@ -144,6 +144,9 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
         pushKeyFrame = true;
     }
+    if (pushKeyFrame) {
+        keys.push_back(keyframe);
+    }
 }
 
 
