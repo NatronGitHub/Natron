@@ -7,6 +7,8 @@
 
 ## Version 2.1.3
 
+- SeExprSimple: new simple expression plugin with one expression per channel
+- DenoiseSharpen: new wavelet-based denoising plugin
 - Gui: sliders have a cleaner look with less ticks and a round handle 231c7f7
 - fix bug where the OFX plugin cache could be wrong if OpenGL was disabled 32c1532
 - fix dynamic kOfxSupportsTiles handling
