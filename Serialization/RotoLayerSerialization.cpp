@@ -26,9 +26,9 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 RotoLayerSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
+    em << YAML_NAMESPACE::BeginMap;
     RotoItemSerialization::encode(em);
     if (!children.empty()) {
-        em << YAML_NAMESPACE::BeginMap;
         em << YAML_NAMESPACE::Key << "Children" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
         for (std::list<RotoItemSerializationPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
             em << YAML_NAMESPACE::BeginMap;
@@ -53,8 +53,8 @@ RotoLayerSerialization::encode(YAML_NAMESPACE::Emitter& em) const
             em << YAML_NAMESPACE::EndMap;
         }
         em << YAML_NAMESPACE::EndSeq;
-        em << YAML_NAMESPACE::EndMap;
     }
+    em << YAML_NAMESPACE::EndMap;
 }
 
 void

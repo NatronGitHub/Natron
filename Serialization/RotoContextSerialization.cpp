@@ -23,13 +23,18 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 RotoContextSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
+    em << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "BaseLayer" << YAML_NAMESPACE::Value;
     _baseLayer.encode(em);
+    em << YAML_NAMESPACE::EndMap;
 }
 
 void
 RotoContextSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    _baseLayer.decode(node);
+    if (node["BaseLayer"]) {
+        _baseLayer.decode(node["BaseLayer"]);
+    }
 }
 
 SERIALIZATION_NAMESPACE_EXIT

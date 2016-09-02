@@ -1628,7 +1628,7 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                 k.setLeftDerivative(-it->rightDerivative);
             }
         }
-        std::pair<KeyFrameSet::iterator,bool> ret = _imp->keyFrames.insert(k);
+        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(k);
         if (ret.second) {
             (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
         }

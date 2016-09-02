@@ -83,14 +83,6 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
 
         switch (state) {
             case eCurveDecodeStateExpectTime:
-                if (pushKeyFrame) {
-                    keys.push_back(keyframe);
-
-                    // Reset keyframe
-                    keyframe.interpolation.clear();
-                    keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
-
-                }
                 keyframe.time = keyNode.as<double>();
                 state  = eCurveDecodeStateExpectValue;
                 break;
@@ -104,6 +96,14 @@ CurveSerialization::decode(const YAML_NAMESPACE::Node& node)
                 }
                 break;
             case eCurveDecodeStateMayExpectInterpolation:
+                if (pushKeyFrame) {
+                    keys.push_back(keyframe);
+
+                    // Reset keyframe
+                    keyframe.interpolation.clear();
+                    keyframe.time = keyframe.value = keyframe.leftDerivative = keyframe.rightDerivative = 0.;
+                    
+                }
                 try {
                     keyframe.interpolation = keyNode.as<std::string>();
                 } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {

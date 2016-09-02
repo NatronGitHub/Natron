@@ -36,6 +36,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/BezierCPPrivate.h"
+#include "Engine/ColorParser.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Curve.h"
@@ -213,11 +214,11 @@ template<class Archive>
 void
 SERIALIZATION_NAMESPACE::BezierSerialization::serialize(Archive & ar, const unsigned int version)
 {
-    boost::serialization::void_cast_register<SERIALIZATION_NAMESPACE::BezierSerialization, SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization>(
-                                                                                                 static_cast<SERIALIZATION_NAMESPACE::BezierSerialization *>(NULL),
-                                                                                                 static_cast<SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization *>(NULL)
+    boost::serialization::void_cast_register<BezierSerialization, RotoDrawableItemSerialization>(
+                                                                                                 static_cast<BezierSerialization *>(NULL),
+                                                                                                 static_cast<RotoDrawableItemSerialization *>(NULL)
                                                                                                  );
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
     int numPoints;
     ar & ::boost::serialization::make_nvp("NumPoints", numPoints);
     if ( (version >= BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE) && (version < BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE) ) {
@@ -746,6 +747,93 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         _values[i]._dimension = i;
         _values[i]._serialization = this;
         ar & ::boost::serialization::make_nvp("item", _values[i]);
+    }
+
+    // If the knob is a multi-line rich-text knob, parse the font since now font properties are not encoded in the text directly
+    if (isString && _values.size() > 0) {
+        QString str = QString::fromUtf8(_values[0]._value.isString.c_str());
+
+        bool italicActivated = false;
+        bool boldActivated = false;
+        QString fontSizeString;
+        QString fontColorString;
+        QString fontFamily;
+
+        // Find italic
+        QString toFind = QString::fromUtf8(kItalicStartTag);
+        int foundItalic = str.indexOf(toFind);
+        int i = foundItalic;
+        if (i != -1) {
+            italicActivated = true;
+        } else {
+            italicActivated = false;
+        }
+
+        // Find bold
+        toFind = QString::fromUtf8(kBoldStartTag);
+        int foundBold = str.indexOf(toFind);
+        i = foundBold;
+        if (i != -1) {
+            boldActivated = true;
+        } else {
+            boldActivated = false;
+        }
+
+        // Find size
+        toFind = QString::fromUtf8(kFontSizeTag);
+        int foundSize = str.indexOf(toFind);
+        i = foundSize;
+        if (i != -1) {
+            i += toFind.size();
+            while ( i < str.size() && str.at(i).isDigit() ) {
+                fontSizeString.append( str.at(i) );
+                ++i;
+            }
+        }
+
+        // Find color
+        toFind = QString::fromUtf8(kFontColorTag);
+        int foundColor = str.indexOf(toFind, i);
+        i = foundColor;
+        if (i != -1) {
+            i += toFind.size();
+            while ( i < str.size() && str.at(i) != QLatin1Char('"') ) {
+                fontColorString.append( str.at(i) );
+                ++i;
+            }
+        }
+
+        // Find family
+        toFind = QString::fromUtf8(kFontFaceTag);
+        int foundFamily = str.indexOf(toFind, i);
+        i = foundFamily;
+        if (i != -1) {
+            i += toFind.size();
+            while ( i < str.size() && str.at(i) != QLatin1Char('"') ) {
+                fontFamily.append( str.at(i) );
+                ++i;
+            }
+        }
+
+        TextExtraData* data = dynamic_cast<TextExtraData*>(_extraData.get());
+        if (!fontFamily.isEmpty()) {
+            data->fontFamily = fontFamily.toStdString();
+        }
+        if (!fontSizeString.isEmpty()) {
+            data->fontSize = fontSizeString.toInt();
+        }
+        if (!fontColorString.isEmpty()) {
+            int r,g,b;
+            NATRON_NAMESPACE::ColorParser::parseColor(fontColorString, &r, &g, &b);
+            data->fontColor[0] = r / 255.0;
+            data->fontColor[1] = g / 255.0;
+            data->fontColor[2] = b / 255.0;
+        }
+        data->boldActivated = boldActivated;
+        data->italicActivated = italicActivated;
+
+        str = NATRON_NAMESPACE::KnobString::removeAutoAddedHtmlTags(str);
+        _values[0]._value.isString = str.toStdString();
     }
 
     ////restore extra datas

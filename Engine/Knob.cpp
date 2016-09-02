@@ -4774,9 +4774,9 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     } else if (isColor || isDouble) {
         serialization->_value.isDouble = isDoubleBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeDouble;
-        serialization->_defaultValue.isDouble = isDouble->getDefaultValue(dimension);
+        serialization->_defaultValue.isDouble = isDoubleBase->getDefaultValue(dimension);
         serialization->_serializeValue = (serialization->_value.isDouble != serialization->_defaultValue.isDouble);
-        serialization->_serializeDefaultValue = isDouble->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
     } else if (isStringBase) {
         serialization->_value.isString = isStringBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
@@ -5165,7 +5165,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             isString->loadAnimation(data->keyframes);
             isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
             isString->setFontFamily(data->fontFamily);
-            isString->setFontSize(data->fontSize);
+            isString->setFontSize(std::max(data->fontSize,1));
             isString->setItalicActivated(data->italicActivated);
             isString->setBoldActivated(data->boldActivated);
         }

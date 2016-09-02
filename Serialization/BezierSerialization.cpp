@@ -25,24 +25,24 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 BezierSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
+    em << YAML_NAMESPACE::BeginMap;
     RotoDrawableItemSerialization::encode(em);
     if (!_controlPoints.empty()) {
-        em << YAML_NAMESPACE::BeginMap;
         em << YAML_NAMESPACE::Key << "Shape" << YAML_NAMESPACE::Value;
         em << YAML_NAMESPACE::BeginSeq;
         for (std::list< BezierCPSerialization >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
             it->encode(em);
         }
+        em << YAML_NAMESPACE::EndSeq;
     }
     if (!_featherPoints.empty()) {
-        em << YAML_NAMESPACE::EndSeq;
         em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
         em << YAML_NAMESPACE::BeginSeq;
         for (std::list< BezierCPSerialization >::const_iterator it = _featherPoints.begin(); it != _featherPoints.end(); ++it) {
             it->encode(em);
         }
+        em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML_NAMESPACE::EndSeq;
     em << YAML_NAMESPACE::Key << "CanClose" << YAML_NAMESPACE::Value << !_isOpenBezier;
     if (!_isOpenBezier) {
         em << YAML_NAMESPACE::Key << "Closed" << YAML_NAMESPACE::Value << _closed;

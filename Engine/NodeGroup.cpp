@@ -2312,6 +2312,10 @@ exportUserKnob(int indentLevel,
                                                  NUM_INT( isParametric->getDimension() ) + QString::fromUtf8(")") );
     }
 
+    if (isDouble && isDouble->getHasHostOverlayHandle()) {
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setUsePointInteract(True)"));
+    }
+
     WRITE_STATIC_LINE("");
 
     if (group) {

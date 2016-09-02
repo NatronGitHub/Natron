@@ -393,7 +393,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                     index = -1;
                 }
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
                                                     tr("Could not find input named %1")
                                                     .arg( QString::fromUtf8( it2->first.c_str() ) ) );
                 }
@@ -458,7 +458,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                     index = -1;
                 }
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
+                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(it->first->getScriptName_mt_safe().c_str()), QDateTime::currentDateTime(),
                                                     tr("Could not find input named %1").arg( QString::fromUtf8( it2->first.c_str() ) ) );
                 }
                 continue;

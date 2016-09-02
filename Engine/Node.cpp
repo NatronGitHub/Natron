@@ -1840,7 +1840,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
     } else if (isKnobSerialization) {
         KnobIPtr knob =  getKnobByName(isKnobSerialization->_scriptName);
         if (!knob) {
-            throw std::invalid_argument(tr("Could not find a parameter named %1").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
+            throw std::invalid_argument(tr("Could not find a parameter named \"%1\"").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
 
             return;
         }
@@ -1859,7 +1859,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                 }
 
             } else {
-                for (int i = 0; i < isKnobSerialization->_dimension; ++i) {
+                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
                     if (isKnobSerialization->_values[i]._slaveMasterLink.masterDimension != -1) {
                         KnobIPtr master = findMasterKnob(knob,
                                                          allNodes,
@@ -1868,7 +1868,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                                                          isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName,
                                                          oldNewScriptNamesMapping);
                         if (master) {
-                            knob->slaveTo(i, master, isKnobSerialization->_values[i]._slaveMasterLink.masterDimension);
+                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, isKnobSerialization->_values[i]._slaveMasterLink.masterDimension);
                         }
                     }
                 }
@@ -1878,11 +1878,9 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
 
         // Restore expressions
         {
-            // The number of dimensions may have changed
-            int dims = std::min( knob->getDimension(), isKnobSerialization->_dimension );
 
             try {
-                for (int i = 0; i < dims; ++i) {
+                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
                     if ( !isKnobSerialization->_values[i]._expression.empty() ) {
                         QString expr( QString::fromUtf8( isKnobSerialization->_values[i]._expression.c_str() ) );
 
@@ -1891,7 +1889,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                              it != oldNewScriptNamesMapping.end(); ++it) {
                             expr.replace( QString::fromUtf8( it->first.c_str() ), QString::fromUtf8( it->second.c_str() ) );
                         }
-                        knob->restoreExpression(i, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
+                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
                     }
                 }
             } catch (const std::exception& e) {

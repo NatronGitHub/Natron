@@ -413,7 +413,7 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
         return;
     }
     instance->loadProject(filename.toStdString());
-    instance->save(outFileName.toStdString());
+    instance->saveTemp(outFileName.toStdString());
 
 
 } // tryReadAndConvertOlderProject

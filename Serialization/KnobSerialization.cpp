@@ -254,16 +254,16 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
             }
         } else if (vdata) {
             if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
-                em << YAML_NAMESPACE::Key << "Min" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::Key << "Min" << YAML_NAMESPACE::Value << vdata->min;
             }
             if (vdata->min != INT_MAX && vdata->min != DBL_MAX) {
-                em << YAML_NAMESPACE::Key << "Max" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::Key << "Max" << YAML_NAMESPACE::Value << vdata->max;
             }
             if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
-                em << YAML_NAMESPACE::Key << "DisplayMin" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::Key << "DisplayMin" << YAML_NAMESPACE::Value << vdata->dmin;
             }
             if (vdata->min != INT_MAX && vdata->min != DBL_MAX) {
-                em << YAML_NAMESPACE::Key << "DisplayMax" << YAML_NAMESPACE::Value;
+                em << YAML_NAMESPACE::Key << "DisplayMax" << YAML_NAMESPACE::Value << vdata->dmax;
             }
         } else if (tdata) {
             if (tdata->label) {
@@ -455,8 +455,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 
     if (node["ParametricCurves"]) {
         YAML_NAMESPACE::Node curveNode = node["ParametricCurves"];
-        ParametricExtraData *data = new ParametricExtraData;
-        _extraData.reset(data);
+        ParametricExtraData *data = getOrCreateExtraData<ParametricExtraData>(_extraData);
         for (std::size_t i = 0; i < curveNode.size(); ++i) {
             CurveSerialization s;
             s.decode(curveNode[i]);
@@ -663,14 +662,16 @@ GroupKnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << _label;
     }
 
-    em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
-    for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = _children.begin(); it!=_children.end(); ++it) {
-        (*it)->encode(em);
+    if (!_children.empty()) {
+        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = _children.begin(); it!=_children.end(); ++it) {
+            (*it)->encode(em);
+        }
+        em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML_NAMESPACE::EndSeq;
 
-
-
+    
+    
     std::list<std::string> props;
     if (_isOpened) {
         props.push_back("Opened");
@@ -702,16 +703,18 @@ GroupKnobSerialization::decode(const YAML_NAMESPACE::Node& node)
         _label = _name;
     }
 
-    YAML_NAMESPACE::Node paramsNode = node["Params"];
-    for (std::size_t i = 0; i < paramsNode.size(); ++i) {
-        if (paramsNode[i].Tag() != "GroupParam") {
-            GroupKnobSerializationPtr s(new GroupKnobSerialization);
-            s->decode(paramsNode[i]);
-            _children.push_back(s);
-        } else {
-            KnobSerializationPtr s (new KnobSerialization);
-            s->decode(paramsNode[i]);
-            _children.push_back(s);
+    if (node["Params"]) {
+        YAML_NAMESPACE::Node paramsNode = node["Params"];
+        for (std::size_t i = 0; i < paramsNode.size(); ++i) {
+            if (paramsNode[i].Tag() == "GroupParam") {
+                GroupKnobSerializationPtr s(new GroupKnobSerialization);
+                s->decode(paramsNode[i]);
+                _children.push_back(s);
+            } else {
+                KnobSerializationPtr s (new KnobSerialization);
+                s->decode(paramsNode[i]);
+                _children.push_back(s);
+            }
         }
     }
 
