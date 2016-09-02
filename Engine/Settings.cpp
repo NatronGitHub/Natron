@@ -806,7 +806,7 @@ Settings::initializeKnobsGuiColors()
     _exprColor->setSimplified(true);
     _guiColorsTab->addKnob(_exprColor);
 
-    _sliderColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Slider"), 3);
+    _sliderColor =  AppManager::createKnob<KnobColor>(this, tr("Slider"), 3);
     _sliderColor->setName("slider");
     _sliderColor->setSimplified(true);
     _guiColorsTab->addKnob(_sliderColor);
