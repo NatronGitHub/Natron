@@ -1569,10 +1569,12 @@ AppManager::getPyPlugsGlobalPath() const
 {
     QString path;
 
-#ifdef __NATRON_LINUX__
-    path = QString::fromUtf8("/usr/share/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-#elif defined(__NATRON_OSX__)
+#ifdef __NATRON_UNIX__
+#ifdef __NATRON_OSX__
     path = QString::fromUtf8("/Library/Application Support/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+#else
+    path = QString::fromUtf8("/usr/share/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+#endif
 #elif defined(__NATRON_WIN32__)
     wchar_t buffer[MAX_PATH];
     SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, buffer);
