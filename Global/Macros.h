@@ -209,14 +209,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH "natronIcon256_linux.png"
 
-#ifdef __NATRON_OSX___
-#define NATRON_SYSTEM_PLUGIN_PATH "/Library/" NATRON_APPLICATION_NAME "/Plugins"
-#elif  defined(__NATRON_WIN32__)
-#define NATRON_SYSTEM_PLUGIN_PATH "C:/Program Files/Common Files/" NATRON_APPLICATION_NAME "/Plugins"
-#elif defined(__NATRON_LINUX__)
-#define NATRON_SYSTEM_PLUGIN_PATH "/usr/share/" NATRON_APPLICATION_NAME "/Plugins"
-#endif
-
 ///Natron will load all icons that are associated to a group toolbutton with the following icon set number, i.e:
 ///if it is 2, then it will load color_grouping_2.png , filter_grouping_2.png , etc... this way you can compile
 ///with different icons set easily.
