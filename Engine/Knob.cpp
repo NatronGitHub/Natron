@@ -4871,7 +4871,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
             if (foundDefault) {
                 isChoice->setValueFromLabel(obj._defaultValue.isString, 0);
             } else {
-                isChoice->setActiveEntry(obj._defaultValue.isString);
+                isChoice->setActiveEntry(obj._value.isString);
             }
         }
     }

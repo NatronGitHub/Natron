@@ -1447,14 +1447,6 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
     appPTR->clearErrorLog_mt_safe();
     fromSerialization(obj);
 
-
-    // Now that all knobs are loaded, call autosetProjectDirectory
-    // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
-    // by the main GUI process
-    if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-        _imp->autoSetProjectDirectory(path);
-    }
-
     std::list<LogEntry> log;
     appPTR->getErrorLog_mt_safe(&log);
     if (!log.empty()) {
@@ -2848,6 +2840,11 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
             foundKnob->fromSerialization(**it);
             if (foundKnob == _imp->envVars) {
                 onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+                // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+                // by the main GUI process
+                if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+                    _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
+                }
             } else if (foundKnob == _imp->natronVersion) {
                 std::string v = _imp->natronVersion->getValue();
                 if (v == "Natron v1.0.0") {
