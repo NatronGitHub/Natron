@@ -184,7 +184,7 @@ GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
     // Context-sharing disabled as it is not needed
     OSGLContextPtr shareContext;// _imp->cpuGLShareContext.lock();
     OSGLContextPtr newContext;
-    boost::shared_ptr<Settings> settings =  appPTR->getCurrentSettings();
+    SettingsPtr settings =  appPTR->getCurrentSettings();
     GLRendererID rendererID;
     if (settings) {
         rendererID = settings->getOpenGLCPUDriver();
