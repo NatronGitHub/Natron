@@ -2312,7 +2312,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                   ( k == _stringsColor ) ||
                   ( k == _commentsColor ) ||
                   ( k == _selfColor ) ||
-                  ( k == _sliderColor) ||
+                  ( k == _sliderColor ) ||
                   ( k == _numbersColor ) ) ) {
         appPTR->reloadStylesheets();
     } else if ( k == _qssFile ) {
