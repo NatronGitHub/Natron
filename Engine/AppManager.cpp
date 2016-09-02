@@ -50,6 +50,9 @@
 #endif
 #endif
 
+#ifdef Q_OS_WIN
+#include <shlobj.h>
+#endif
 
 #include <cairo/cairo.h>
 #include <boost/version.hpp>
@@ -1517,6 +1520,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     ///look-in the main system wide plugin path
     templatesSearchPath.push_back(mainPath);
 
+    ///look-in the global system wide plugin path
+    templatesSearchPath.push_back( getPyPlugsGlobalPath() );
+
     ///look-in the locations indicated by NATRON_PLUGIN_PATH
     Q_FOREACH(const QString &splitDir, splitDirs) {
         if ( !splitDir.isEmpty() ) {
@@ -1538,6 +1544,28 @@ AppManager::getAllNonOFXPluginsPaths() const
 
     return templatesSearchPath;
 } // AppManager::getAllNonOFXPluginsPaths
+
+QString
+AppManager::getPyPlugsGlobalPath() const
+{
+    QString path;
+
+#ifdef __NATRON_LINUX__
+    path = QString::fromUtf8("/usr/share/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+#elif defined(__NATRON_OSX__)
+    path = QString::fromUtf8("/Library/Application Support/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+#elif defined(__NATRON_WIN32__)
+    wchar_t buffer[MAX_PATH];
+    SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, buffer);
+    std::wstring str;
+    str.append(L"\\");
+    str.append( QString::fromUtf8("%1\\Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdWString() );
+    wcscat_s(buffer, MAX_PATH, str.c_str());
+    path = QString::fromStdWString( std::wstring(buffer) );
+#endif
+
+    return path;
+}
 
 typedef void (*NatronPathFunctor)(const QDir&);
 static void
