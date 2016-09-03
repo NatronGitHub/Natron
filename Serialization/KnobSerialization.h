@@ -74,16 +74,14 @@ SERIALIZATION_NAMESPACE_ENTER;
  **/
 struct MasterSerialization
 {
-    int masterDimension; // The dimension the knob is slaved to in the master knob
+    std::string masterDimensionName; // The dimension the knob is slaved to in the master knob
     std::string masterNodeName; // the node script-name holding this knob
     std::string masterTrackName; // if the master knob is part of a track this is the track name
     std::string masterKnobName; // the script-name of the master knob
+    bool hasLink;
 
     MasterSerialization()
-        : masterDimension(-1)
-        , masterNodeName()
-        , masterTrackName()
-        , masterKnobName()
+    : hasLink(false)
     {
     }
     template<class Archive>
@@ -285,9 +283,6 @@ struct ValueSerialization
     // Slave/Master link
     MasterSerialization _slaveMasterLink;
 
-    // Enabled state is serialized per-dimension
-    bool _enabledChanged;
-
     // Just used for backward compatibility when loading with boost, do not use
     std::string _typeName;
 
@@ -304,12 +299,12 @@ struct ValueSerialization
     , _expression()
     , _expresionHasReturnVariable(false)
     , _slaveMasterLink()
-    , _enabledChanged(false)
     , _typeName()
     {
         
     }
 
+    void setEnabledChanged(bool b);
 
     const std::string& getKnobName() const;
 
@@ -346,6 +341,7 @@ public:
     std::string _scriptName; // the unique script-name of the knob
     int _dimension; // the number of dimensions held by the knob
     bool _visibilityChanged; // true if the secretness of the knob is different than default
+    bool _enabledChanged; // true if the enabledness of the knob  is different than default
     bool _masterIsAlias; // is the master/slave link an alias ?
     std::vector<ValueSerialization> _values; // serialized value for each dimension
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
@@ -374,6 +370,7 @@ public:
     , _scriptName()
     , _dimension(0)
     , _visibilityChanged(false)
+    , _enabledChanged(false)
     , _masterIsAlias(false)
     , _values()
     , _extraData()

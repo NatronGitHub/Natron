@@ -517,7 +517,11 @@ void
 SERIALIZATION_NAMESPACE::MasterSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
-    ar & ::boost::serialization::make_nvp("MasterDimension", masterDimension);
+    int mDim;
+    ar & ::boost::serialization::make_nvp("MasterDimension", mDim);
+    std::stringstream ss;
+    ss << mDim;
+    masterDimensionName = ss.str();
     ar & ::boost::serialization::make_nvp("MasterNodeName", masterNodeName);
     ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
 
@@ -545,10 +549,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
     bool enabled;
     ar & ::boost::serialization::make_nvp("Enabled", enabled);
 
-    // Assume that by default the knob is enabled
-    if (!enabled) {
-        _enabledChanged = true;
-    }
+
 
     bool hasAnimation;
     ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
@@ -698,6 +699,11 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
             std::map<int, std::string> exprValues;
             ar & ::boost::serialization::make_nvp("ExprResults", exprValues);
         }
+    }
+
+    // Assume that by default the knob is enabled
+    if (!hasMaster && !enabled) {
+        setEnabledChanged(false);
     }
 }
 

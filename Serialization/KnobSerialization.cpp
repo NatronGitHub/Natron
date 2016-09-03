@@ -33,6 +33,14 @@ ValueSerialization::getKnobName() const
     return _serialization->getName();
 }
 
+void
+ValueSerialization::setEnabledChanged(bool b)
+{
+    KnobSerialization* isKnob = dynamic_cast<KnobSerialization*>(_serialization);
+    if (isKnob) {
+        isKnob->_enabledChanged = b;
+    }
+}
 
 void
 KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
@@ -50,111 +58,135 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     if (_visibilityChanged && _isPersistent) {
         propNames.push_back("VisibilityChanged");
     }
+
+    if (_enabledChanged && _isPersistent) {
+        // Only serialize enabled changed if all dimensions are changed
+        propNames.push_back("EnabledChanged");
+    }
+
     if (_masterIsAlias) {
         propNames.push_back("MasterIsAlias");
     }
     assert((int)_values.size() == _dimension);
 
-    bool hasDimensionToSerialize = false;
+
+    int nDimsToSerialize = 0;
+    int nDimsWithValue = 0;
+    int nDimsWithDefValue = 0;
     for (std::size_t i = 0; i < _values.size(); ++i) {
         if (_values[i]._mustSerialize && _isPersistent) {
-            hasDimensionToSerialize = true;
-            break;
+            ++nDimsToSerialize;
+            if (_values[i]._serializeValue || !_values[i]._animationCurve.keys.empty()) {
+                ++nDimsWithValue;
+            }
+            if (_values[i]._serializeDefaultValue) {
+                ++nDimsWithDefValue;
+            }
         }
     }
-    if (hasDimensionToSerialize) {
+
+
+    if (nDimsToSerialize > 0) {
         // We serialize a value, we need to know which type of knob this is because at the time of deserialization the
         // application may not have created the corresponding knob already and may not know to what type it corresponds
-        em << YAML_NAMESPACE::Key << "Dimensions" << YAML_NAMESPACE::Value;
-        // Starting dimensions
-        em << YAML_NAMESPACE::BeginSeq;
-        for (std::size_t i = 0; i < _values.size(); ++i) {
-            const ValueSerialization& s = _values[i];
-
-            if (!s._mustSerialize) {
-                continue;
+        if (nDimsWithValue > 0) {
+            em << YAML_NAMESPACE::Key << "Value" << YAML_NAMESPACE::Value;
+            // Starting dimensions
+            if (_values.size() > 1) {
+                em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
             }
+            for (std::size_t i = 0; i < _values.size(); ++i) {
+                if (_values[i]._slaveMasterLink.hasLink) {
+                    // Wrap the link in a sequence of 1 element to distinguish with regular string knobs values
+                    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
+                    std::stringstream ss;
+                    // Encode the hard-link into a single string
+                    if (!_values[i]._slaveMasterLink.masterNodeName.empty()) {
+                        em << YAML_NAMESPACE::Key << "N";
+                        em << YAML_NAMESPACE::Value << _values[i]._slaveMasterLink.masterNodeName;
+                    }
+                    if (!_values[i]._slaveMasterLink.masterTrackName.empty()) {
+                        em << YAML_NAMESPACE::Key << "T";
+                        em << YAML_NAMESPACE::Value << _values[i]._slaveMasterLink.masterTrackName;
+                    }
+                    if (!_values[i]._slaveMasterLink.masterKnobName.empty()) {
+                        em << YAML_NAMESPACE::Key << "K";
+                        em << YAML_NAMESPACE::Value << _values[i]._slaveMasterLink.masterKnobName;
+                    }
+                    if (!_values[i]._slaveMasterLink.masterDimensionName.empty()) {
+                        em << YAML_NAMESPACE::Key << "D";
+                        em << YAML_NAMESPACE::Value << _values[i]._slaveMasterLink.masterDimensionName;
+                    }
+                    em << YAML_NAMESPACE::EndMap;
+                } else if (!_values[i]._expression.empty()) {
+                    // Wrap the expression in a sequence of 1 element to distinguish with regular string knobs values
+                    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
+                    if (_values[i]._expresionHasReturnVariable) {
+                        // Multi-line expr
+                        em << YAML_NAMESPACE::Key << "MultiExpr";
+                    } else {
+                        // single line expr
+                        em << YAML_NAMESPACE::Key << "Expr";
+                    }
+                    em << YAML_NAMESPACE::Value << _values[i]._expression;
+                    em << YAML_NAMESPACE::EndMap;
+                } else if (!_values[i]._animationCurve.keys.empty()) {
+                    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
+                    em << YAML_NAMESPACE::Key << "Curve" << YAML_NAMESPACE::Value;
+                    _values[i]._animationCurve.encode(em);
+                    em << YAML_NAMESPACE::EndMap;
+                } else {
+                    assert(_values[i]._type != ValueSerialization::eSerializationValueVariantTypeNone);
+                    switch (_values[i]._type) {
+                        case ValueSerialization::eSerializationValueVariantTypeBoolean:
+                            em << _values[i]._value.isBool;
+                            break;
+                        case ValueSerialization::eSerializationValueVariantTypeInteger:
+                            em << _values[i]._value.isInt;
+                            break;
+                        case ValueSerialization::eSerializationValueVariantTypeDouble:
+                            em << _values[i]._value.isDouble;
+                            break;
+                        case ValueSerialization::eSerializationValueVariantTypeString:
+                            em << _values[i]._value.isString;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            if (_values.size() > 1) {
+                em << YAML_NAMESPACE::EndSeq;
+            }
+        }
 
-            em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
 
-            std::list<std::string> dimensionProps;
-            em << YAML_NAMESPACE::Key << "Index" << YAML_NAMESPACE::Value << s._dimension;
-
-            if (s._serializeValue && s._animationCurve.keys.empty() && s._type != ValueSerialization::eSerializationValueVariantTypeNone) {
-                em << YAML_NAMESPACE::Key << "Value" << YAML_NAMESPACE::Value;
-                switch (s._type) {
+        if (nDimsWithDefValue) {
+            em << YAML_NAMESPACE::Key << "Default" << YAML_NAMESPACE::Value;
+            // Starting dimensions
+            em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+            for (std::size_t i = 0; i < _values.size(); ++i) {
+                switch (_values[i]._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
-                        em << s._value.isBool;
+                        em << _values[i]._defaultValue.isBool;
                         break;
                     case ValueSerialization::eSerializationValueVariantTypeInteger:
-                        em << s._value.isInt;
+                        em << _values[i]._defaultValue.isInt;
                         break;
                     case ValueSerialization::eSerializationValueVariantTypeDouble:
-                        em << s._value.isDouble;
+                        em << _values[i]._defaultValue.isDouble;
                         break;
                     case ValueSerialization::eSerializationValueVariantTypeString:
-                        em << s._value.isString;
+                        em << _values[i]._defaultValue.isString;
                         break;
                     default:
                         break;
                 }
-            }
-            if (s._serializeDefaultValue && s._type != ValueSerialization::eSerializationValueVariantTypeNone) {
-                em << YAML_NAMESPACE::Key << "Default" << YAML_NAMESPACE::Value;
-                switch (s._type) {
-                    case ValueSerialization::eSerializationValueVariantTypeBoolean:
-                        em << s._defaultValue.isBool;
-                        break;
-                    case ValueSerialization::eSerializationValueVariantTypeInteger:
-                        em << s._defaultValue.isInt;
-                        break;
-                    case ValueSerialization::eSerializationValueVariantTypeDouble:
-                        em << s._defaultValue.isDouble;
-                        break;
-                    case ValueSerialization::eSerializationValueVariantTypeString:
-                        em << s._defaultValue.isString;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (!s._animationCurve.keys.empty()) {
-                // Serialize only if non empty
-                em << YAML_NAMESPACE::Key << "Curve" << YAML_NAMESPACE::Value;
-                s._animationCurve.encode(em);
-            }
-            if (!s._expression.empty()) {
-                // Serialize only if non empty
-                em << YAML_NAMESPACE::Key << "Expr" << YAML_NAMESPACE::Value << s._expression;
-                if (s._expresionHasReturnVariable) {
-                    // Serialize only if true because otherwise we assume false by default
-                    dimensionProps.push_back("ExprHasRet");
-                }
-            }
-            if (s._enabledChanged) {
-                dimensionProps.push_back("EnabledChanged");
-            }
-            if (!s._slaveMasterLink.masterKnobName.empty()) {
-                em << YAML_NAMESPACE::Key << "Master" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
-                em << s._slaveMasterLink.masterKnobName;
-                em << s._slaveMasterLink.masterDimension;
-                em << s._slaveMasterLink.masterNodeName;
-                if (!s._slaveMasterLink.masterTrackName.empty()) {
-                    em << s._slaveMasterLink.masterTrackName;
-                }
-                em << YAML_NAMESPACE::EndSeq;
-            }
-            if (!dimensionProps.empty()) {
-                em << YAML_NAMESPACE::Key << "DimProps" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
-                for (std::list<std::string>::const_iterator it2 = dimensionProps.begin(); it2 != dimensionProps.end(); ++it2) {
-                    em << *it2;
-                }
-                em << YAML_NAMESPACE::EndSeq;
-            }
 
-            em << YAML_NAMESPACE::EndMap;
-        } // for each dimension
-        em << YAML_NAMESPACE::EndSeq;
+            }
+            em << YAML_NAMESPACE::EndSeq;
+        }
+
     } // hasDimensionToSerialize
 
     TextExtraData* textData = dynamic_cast<TextExtraData*>(_extraData.get());
@@ -366,6 +398,26 @@ static void decodeValueFromNode(const YAML_NAMESPACE::Node& node,
     
 }
 
+static void initValuesVec(KnobSerialization* serialization, int nDims)
+{
+    if ((int)serialization->_values.size() != nDims) {
+        serialization->_values.resize(nDims);
+        for (std::size_t i = 0; i < serialization->_values.size(); ++i) {
+            serialization->_values[i]._serialization = serialization;
+            serialization->_values[i]._mustSerialize = true;
+            serialization->_values[i]._dimension = i;
+        }
+    }
+}
+
+static bool startsWith(const std::string& str,
+                       const std::string& prefix)
+{
+    return str.substr(0,prefix.size()) == prefix;
+    // case insensitive version:
+    //return ci_string(str.substr(0,prefix.size()).c_str()) == prefix.c_str();
+}
+
 void
 KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
@@ -378,80 +430,49 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 
     _scriptName = node["ScriptName"].as<std::string>();
 
+    if (node["Value"]) {
+        YAML_NAMESPACE::Node valueNode = node["Value"];
+        initValuesVec(this, valueNode.size());
 
-    if (node["Dimensions"]) {
+        int nDims = valueNode.IsSequence() ? valueNode.size() : 1;
 
-        YAML_NAMESPACE::Node dimensionsNode = node["Dimensions"];
-        if (!dimensionsNode.IsSequence()) {
-            throw YAML_NAMESPACE::InvalidNode();
-        }
-        _values.resize(dimensionsNode.size());
-        for (std::size_t i = 0; i < _values.size(); ++i) {
-            _values[i]._serialization = this;
-            _values[i]._mustSerialize = true;
-            _values[i]._dimension = i;
-        }
-        for (std::size_t i = 0; i < dimensionsNode.size(); ++i) {
+        for (int i = 0; i < nDims; ++i) {
 
-            YAML_NAMESPACE::Node dimNode = dimensionsNode[i];
+            YAML_NAMESPACE::Node dimNode = valueNode.IsSequence() ? valueNode[i] : valueNode;
 
             if (!dimNode.IsMap()) {
-                throw YAML_NAMESPACE::InvalidNode();
-            }
-            int dim = dimNode["Index"].as<int>();
-            ValueSerialization& s = _values[i];
-            s._dimension = dim;
-            if (dimNode["Value"]) {
-                YAML_NAMESPACE::Node valueNode = dimNode["Value"];
-                decodeValueFromNode(valueNode, s._value, &s._type);
-                s._serializeValue = true;
-            }
-            if (dimNode["Default"]) {
-                YAML_NAMESPACE::Node valueNode = dimNode["Default"];
-                decodeValueFromNode(valueNode, s._defaultValue, &s._type);
-                s._serializeDefaultValue = true;
-            }
-            if (dimNode["Curve"]) {
-                YAML_NAMESPACE::Node curveNode = dimNode["Curve"];
-                s._animationCurve.decode(curveNode);
-            }
-            if (dimNode["Expr"]) {
-                s._expression = dimNode["Expr"].as<std::string>();
-        
-            }
-            if (dimNode["Master"]) {
-                YAML_NAMESPACE::Node masterNode = dimNode["Master"];
-                if (!masterNode.IsSequence() || (masterNode.size() != 3 && masterNode.size() != 4)) {
-                    throw YAML_NAMESPACE::InvalidNode();
-                }
-
-                s._slaveMasterLink.masterKnobName = masterNode[0].as<std::string>();
-                s._slaveMasterLink.masterDimension = masterNode[1].as<int>();
-                s._slaveMasterLink.masterNodeName = masterNode[2].as<std::string>();
-                if (masterNode.size() == 4) {
-                    s._slaveMasterLink.masterTrackName = masterNode[3].as<std::string>();
-                }
-
-
-            }
-
-            if (dimNode["DimProps"]) {
-                YAML_NAMESPACE::Node propsNode = dimNode["DimProps"];
-                for (std::size_t j = 0; j < propsNode.size(); ++j) {
-                    std::string prop = propsNode[j].as<std::string>();
-                    if (prop == "EnabledChanged") {
-                        s._enabledChanged = true;
-                    } else if (prop == "ExprHasRet") {
-                        s._expresionHasReturnVariable = true;
-                    } else {
-                        assert(false);
-                        std::cerr << "WARNING: Unknown parameter property " << prop << std::endl;
+                // This is a value
+                decodeValueFromNode(valueNode, _values[i]._value, &_values[i]._type);
+                _values[i]._serializeValue = true;
+            } else { // if (dimNode[i].isMap())
+                if (dimNode["Curve"]) {
+                    // Curve
+                    _values[i]._animationCurve.decode(dimNode["Curve"]);
+                } else if (dimNode["MultiExpr"]) {
+                    _values[i]._expression = dimNode["MultiExpr"].as<std::string>();
+                    _values[i]._expresionHasReturnVariable = true;
+                } else if (dimNode["Expr"]) {
+                    _values[i]._expression = dimNode["MultiExpr"].as<std::string>();
+                } else {
+                    // This is most likely a regular slavr/master link
+                    if (dimNode["N"]) {
+                        _values[i]._slaveMasterLink.masterNodeName = dimNode["N"].as<std::string>();
                     }
-                }
-            }
+                    if (dimNode["T"]) {
+                        _values[i]._slaveMasterLink.masterTrackName = dimNode["T"].as<std::string>();
+                    }
+                    if (dimNode["K"]) {
+                        _values[i]._slaveMasterLink.masterKnobName = dimNode["K"].as<std::string>();
+                    }
+                    if (dimNode["D"]) {
+                        _values[i]._slaveMasterLink.masterDimensionName = dimNode["D"].as<std::string>();
+                    }
 
-        } // for all serialized dimensions
-    } // has dimension serialized
+                }
+
+            } // if (!valueNode[i].IsSequence())
+        }
+    }
 
     if (node["ParametricCurves"]) {
         YAML_NAMESPACE::Node curveNode = node["ParametricCurves"];
@@ -599,6 +620,8 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
             std::string prop = propsNode[i].as<std::string>();
             if (prop == "VisibilityChanged") {
                 _visibilityChanged = true;
+            } else if (prop == "EnabledChanged") {
+                _enabledChanged = true;
             } else if (prop == "MasterIsAlias") {
                 _masterIsAlias = true;
             } else if (prop == "NoNewLine") {

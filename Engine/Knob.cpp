@@ -4724,25 +4724,32 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     std::pair< int, KnobIPtr > master = knob->getMaster(dimension);
 
     if ( master.second && !knob->isMastersPersistenceIgnored() ) {
-        serialization->_slaveMasterLink.masterDimension = master.first;
-
-        NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
-        assert(holder);
-
-        TrackMarkerPtr isMarker = toTrackMarker(holder);
-        if (isMarker) {
-            serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
-            serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
-        } else {
-            // coverity[dead_error_line]
-            serialization->_slaveMasterLink.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
+        if (master.second->getDimension() > 1) {
+            serialization->_slaveMasterLink.masterDimensionName = master.second->getDimensionName(master.first);
         }
-        serialization->_slaveMasterLink.masterKnobName = master.second->getName();
-    } else {
-        serialization->_slaveMasterLink.masterDimension = -1;
+        serialization->_slaveMasterLink.hasLink = true;
+        if (master.second != knob) {
+            NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
+            assert(holder);
+
+            TrackMarkerPtr isMarker = toTrackMarker(holder);
+            if (isMarker) {
+                if (isMarker) {
+                    serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
+                    if (isMarker->getContext()->getNode()->getEffectInstance() != holder) {
+                        serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+                    }
+                }
+            } else {
+                // coverity[dead_error_line]
+                if (holder && holder != knob->getHolder()) {
+                    serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
+                }
+            }
+            serialization->_slaveMasterLink.masterKnobName = master.second->getName();
+        }
     }
 
-    serialization->_enabledChanged = (knob->isEnabled(dimension) != knob->isDefaultEnabled(dimension));
 
     KnobBoolBasePtr isBoolBase = toKnobBoolBase(knob);
     KnobIntPtr isInt = toKnobInt(knob);
@@ -4803,7 +4810,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     // Check if we need to serialize this dimension
     serialization->_mustSerialize = true;
 
-    if (serialization->_expression.empty() && !serialization->_enabledChanged && serialization->_slaveMasterLink.masterKnobName.empty() && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
+    if (serialization->_expression.empty() && !serialization->_slaveMasterLink.hasLink && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
         serialization->_mustSerialize = false;
     }
 
@@ -4943,6 +4950,17 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_dimension = getDimension();
         serialization->_scriptName = getName();
         serialization->_visibilityChanged = (getIsSecret() != getDefaultIsSecret());
+
+        int nDimsDisabled = 0;
+        for (int i = 0; i < serialization->_dimension; ++i) {
+            // If the knob is slaved, it will be disabled so do not take it into account
+            if (!isSlave(i) && (isEnabled(i) != isDefaultEnabled(i))) {
+                ++nDimsDisabled;
+            }
+        }
+        if (nDimsDisabled == serialization->_dimension) {
+            serialization->_enabledChanged = true;
+        }
 
         // Values bits
         serialization->_values.resize(serialization->_dimension);
@@ -5125,7 +5143,10 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     if (serialization->_visibilityChanged) {
         setSecret(!getDefaultIsSecret());
     }
-
+    // Restore enabled state
+    if (serialization->_enabledChanged) {
+        setAllDimensionsEnabled(!isDefaultEnabled(0));
+    }
 
     // There is a case where the dimension of a parameter might have changed between versions, e.g:
     // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
@@ -5140,10 +5161,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     for (std::size_t d = 0; d < serialization->_values.size(); ++d) {
         int dimensionIndex = serialization->_values[d]._dimension;
 
-        // Restore enabled state
-        if (serialization->_values[d]._enabledChanged) {
-            setEnabled(dimensionIndex, isDefaultEnabled(dimensionIndex));
-        }
+
 
         // Clone animation
         if (!serialization->_values[d]._animationCurve.keys.empty()) {
@@ -5151,10 +5169,12 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             if (curve) {
                 curve->fromSerialization(serialization->_values[d]._animationCurve);
             }
+        } else if (serialization->_values[d]._expression.empty() && !serialization->_values[d]._slaveMasterLink.hasLink) {
+            restoreValueFromSerialization(serialization->_values[d], dimensionIndex, serialization->_values[d]._serializeDefaultValue);
         }
 
-        restoreValueFromSerialization(serialization->_values[d], dimensionIndex, serialization->_values[d]._serializeDefaultValue);
     } // for all dims
+
 
     // Restore extra datas
     KnobFile* isInFile = dynamic_cast<KnobFile*>(this);

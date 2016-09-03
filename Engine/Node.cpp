@@ -38,6 +38,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -1860,17 +1861,55 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
 
             } else {
                 for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
-                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterDimension != -1) {
-                        KnobIPtr master = findMasterKnob(knob,
-                                                         allNodes,
-                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName,
-                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName,
-                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName,
-                                                         oldNewScriptNamesMapping);
-                        if (master) {
-                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, isKnobSerialization->_values[i]._slaveMasterLink.masterDimension);
+                    if (!isKnobSerialization->_values[i]._slaveMasterLink.hasLink) {
+                        continue;
+                    }
+
+                    std::string masterKnobName, masterNodeName, masterTrackName;
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName.empty()) {
+                         // Node name empty, assume this is the same node
+                        masterNodeName = getScriptName_mt_safe();
+                    }
+
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.empty()) {
+                        // Knob name empty, assume this is the same knob unless it has a single dimension
+                        if (knob->getDimension() == 1) {
+                            continue;
+                        }
+                        masterKnobName = knob->getName();
+                    }
+
+                    masterTrackName = isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName;
+                    KnobIPtr master = findMasterKnob(knob,
+                                                     allNodes,
+                                                     masterKnobName,
+                                                     masterNodeName,
+                                                     masterTrackName,
+                                                     oldNewScriptNamesMapping);
+                    if (master) {
+                        // Find dimension in master by name
+                        int dimIndex = -1;
+                        if (master->getDimension() == 1) {
+                            dimIndex = 0;
+                        } else {
+                            for (int d = 0; d < master->getDimension(); ++d) {
+                                if ( boost::iequals(master->getDimensionName(d), isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName) ) {
+                                    dimIndex = d;
+                                    break;
+                                }
+                            }
+                            if (dimIndex == -1) {
+                                // Before Natron 2.2 we serialized the dimension index. Try converting to an int
+                                dimIndex = QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
+                            }
+                        }
+                        if (dimIndex >=0 && dimIndex < master->getDimension()) {
+                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, dimIndex);
+                        } else {
+                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
                         }
                     }
+
                 }
 
             }
