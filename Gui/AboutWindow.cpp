@@ -38,11 +38,13 @@ CLANG_DIAG_OFF(deprecated)
 #include <QHeaderView>
 #include <QtCore/QDir>
 CLANG_DIAG_ON(deprecated)
+#include <qhttpserver.h>
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
 
 #include "Engine/AppManager.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
@@ -339,27 +341,37 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
 void
 AboutWindow::updateLibrariesVersions()
 {
-
-    QString pythonStr = QString::fromUtf8("<p> Python %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
-    QString qtStr = QString::fromUtf8("<p> Qt %1 </p>").arg( appPTR->getQtVersion() );
-    QString boostStr = QString::fromUtf8("<p> Boost %1 </p>").arg( appPTR->getBoostVersion() );
-    QString openglStr = QString::fromUtf8("<p> OpenGL %1 </p>").arg( appPTR->getOpenGLVersion() );
+    QString libsText;
+    libsText += QString::fromUtf8("<p> Python %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+    libsText += QString::fromUtf8("<p> Qt %1 </p>").arg( appPTR->getQtVersion() );
+    libsText += QString::fromUtf8("<p> Boost %1 </p>").arg( appPTR->getBoostVersion() );
 
     QString cairoVersionStr = appPTR->getCairoVersion();
-    QString cairoStr;
     if (!cairoVersionStr.isEmpty()) {
-        cairoStr = QString::fromUtf8("<p> Cairo %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+        libsText += QString::fromUtf8("<p> Cairo %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
     }
+    libsText += QString::fromUtf8("<p> Hoedown %1 </p>").arg( appPTR->getHoedownVersion() );
+    libsText += QString::fromUtf8("<p> Ceres %1 </p>").arg( appPTR->getCeresVersion() );
+    libsText += QString::fromUtf8("<p> OpenMVG %1 </p>").arg( appPTR->getOpenMVGVersion() );
 
-
-    QString libsText;
-    libsText += pythonStr;
-    libsText += qtStr;
-    libsText += boostStr;
-    libsText += openglStr;
-    if (!cairoStr.isEmpty()) {
-        libsText += cairoStr;
+    std::list<OpenGLRendererInfo> openGLRenderers;
+    OSGLContext::getGPUInfos(openGLRenderers);
+    if ( !openGLRenderers.empty() ) {
+        libsText += (QLatin1String("<h3>") +
+                     tr("OpenGL renderers:") +
+                     QLatin1String("</h3>"));
+        for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
+            libsText += (QLatin1String("<p>") +
+                         tr("%1 from %2").arg( QString::fromUtf8( it->rendererName.c_str() ) )
+                         .arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
+                         QLatin1String("<br />") +
+                         tr("OpenGL version %1 with GLSL version %2")
+                         .arg( QString::fromUtf8( it->glVersionString.c_str() ) )
+                         .arg( QString::fromUtf8( it->glslVersionString.c_str() ) ) +
+                         QLatin1String("</p>") );
+        }
     }
+#pragma message WARN("TODO: print Mesa OpenGL renderer info")
     _libsText->setText(libsText);
 }
 
