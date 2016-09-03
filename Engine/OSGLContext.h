@@ -129,6 +129,7 @@ struct OpenGLRendererInfo
     std::string rendererName;
     std::string vendorName;
     std::string glVersionString;
+    std::string glslVersionString;
     int maxTextureSize;
     GLRendererID rendererID;
 };

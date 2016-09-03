@@ -537,9 +537,10 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             continue;
         }
         // get renderer strings
-        info.rendererName = std::string( (char*)glGetString (GL_RENDERER) );
-        info.vendorName = std::string( (char*)glGetString (GL_VENDOR) );
-        info.glVersionString = std::string( (char*)glGetString (GL_VERSION) );
+        info.rendererName = std::string( (const char*)glGetString (GL_RENDERER) );
+        info.vendorName = std::string( (const char*)glGetString (GL_VENDOR) );
+        info.glVersionString = std::string( (const char*)glGetString (GL_VERSION) );
+        info.glslVersionString = std::string( (const char*)glGetString (GL_SHADING_LANGUAGE_VERSION) );
         //std::string strExt((char*)glGetString (GL_EXTENSIONS));
 
         glGetIntegerv (GL_MAX_TEXTURE_SIZE,

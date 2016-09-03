@@ -759,6 +759,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
             info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
             info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
+            info.glslVersionString = std::string( (const char*)glGetString (GL_SHADING_LANGUAGE_VERSION) );
             info.maxMemBytes = nvx_get_GPU_mem_info();
             glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
             renderers.push_back(info);
@@ -796,6 +797,8 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 if (info.glVersionString.empty()) {
                     continue;
                 }
+
+                // note: cannot retrieve GL_SHADING_LANGUAGE_VERSION
 
                 info.maxMemBytes = 0;
                 if (!isApplication32Bits()) {
@@ -869,6 +872,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
         info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
         info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
+        info.glslVersionString = std::string( (const char *) glGetString (GL_SHADING_LANGUAGE_VERSION) );
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = nvx_get_GPU_mem_info();

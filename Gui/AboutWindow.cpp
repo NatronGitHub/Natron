@@ -38,11 +38,13 @@ CLANG_DIAG_OFF(deprecated)
 #include <QHeaderView>
 #include <QtCore/QDir>
 CLANG_DIAG_ON(deprecated)
+#include <qhttpserver.h>
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
 
 #include "Engine/AppManager.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
@@ -339,16 +341,38 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
 void
 AboutWindow::updateLibrariesVersions()
 {
-    QString libsText = QString::fromUtf8("<p> Python %1 </p>"
-                                         "<p> Qt %2 </p>"
-                                         "<p> Boost %3 </p>"
-                                         "<p> OpenGL %5 </p>"
-                                         "<p> Cairo %6 </p>")
+    QString libsText = QString::fromUtf8("<p>Python %1</p>"
+                                         "<p>Qt %2</p>"
+                                         "<p>Boost %3</p>"
+                                         "<p>Cairo %4</p>"
+                                         "<p>Hoedown %5</p>"
+                                         "<p>Ceres %6</p>"
+                                         "<p>OpenMVG %7</p>"
+                                         )
                        .arg( QString::fromUtf8(PY_VERSION) )
                        .arg( appPTR->getQtVersion() )
                        .arg( appPTR->getBoostVersion() )
-                       .arg( appPTR->getOpenGLVersion() )
-                       .arg( appPTR->getCairoVersion() );
+                       .arg( appPTR->getCairoVersion() )
+                       .arg( appPTR->getHoedownVersion() )
+                       .arg( appPTR->getCeresVersion() )
+                       .arg( appPTR->getOpenMVGVersion() );
+    std::list<OpenGLRendererInfo> openGLRenderers;
+    OSGLContext::getGPUInfos(openGLRenderers);
+    if ( !openGLRenderers.empty() ) {
+        libsText += (QLatin1String("<h3>") +
+                     tr("OpenGL renderers:") +
+                     QLatin1String("</h3>"));
+        for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
+            libsText += (QLatin1String("<p>") +
+                         tr("%1 from %2").arg( QString::fromUtf8( it->rendererName.c_str() ) )
+                                        .arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
+                         QLatin1String("<br />") +
+                         tr("OpenGL version %1 with GLSL version %2")
+                         .arg( QString::fromUtf8( it->glVersionString.c_str() ) )
+                         .arg( QString::fromUtf8( it->glslVersionString.c_str() ) ) +
+                         QLatin1String("</p>") );
+        }
+    }
 
     _libsText->setText(libsText);
 }

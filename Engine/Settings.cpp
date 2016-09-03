@@ -2035,7 +2035,21 @@ Settings::restoreSettings()
             for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
                 if (i == curIndex) {
                     QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
-                    QString curRenderer = tr("<p><h2>OpenGL Renderer Infos:</h2></p><p><b>Vendor:</b> %1</p><p><b>Renderer:</b> %2</p><p><b>OpenGL Version:</b> %3</p><p><b>Max. Memory:</b> %4</p><p><b>Max. Texture Size (px):</b> %5</p<").arg( QString::fromUtf8( it->vendorName.c_str() ) ).arg( QString::fromUtf8( it->rendererName.c_str() ) ).arg( QString::fromUtf8( it->glVersionString.c_str() ) ).arg(maxMemoryString).arg(it->maxTextureSize);
+                    QString curRenderer = (QString::fromUtf8("<p><h2>") +
+                                           tr("OpenGL Renderer Infos:") +
+                                           QString::fromUtf8("</h2></p><p><b>") +
+                                           tr("Vendor:") +
+                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
+                                           tr("Renderer:") +
+                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->rendererName.c_str() ) ) +
+                                           tr("OpenGL Version:") +
+                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->glVersionString.c_str() ) ) +
+                                           tr("GLSL Version:") +
+                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->glslVersionString.c_str() ) ) +
+                                           tr("Max. Memory:") +
+                                           QString::fromUtf8("</b> %1</p><p><b>").arg(maxMemoryString) +
+                                           tr("Max. Texture Size (px):") +
+                                           QString::fromUtf8("</b> %5</p<").arg(it->maxTextureSize));
                     _openglRendererString->setValue( curRenderer.toStdString() );
                     break;
                 }

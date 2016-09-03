@@ -56,6 +56,9 @@
 
 #include <cairo/cairo.h>
 #include <boost/version.hpp>
+#include <libs/hoedown/src/version.h>
+#include <ceres/version.h>
+#include <openMVG/version.hpp>
 
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
@@ -3294,24 +3297,13 @@ AppManager::getWriterPluginIDForFileType(const std::string & extension) const
     return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
 }
 
+
 AppTLS*
 AppManager::getAppTLS() const
 {
     return &_imp->globalTLS;
 }
 
-
-QString
-AppManager::getOpenGLVersion() const
-{
-    if (!glad_glGetString) {
-        return QString();
-    }
-    QString glslVer = QString::fromUtf8( (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION) );
-    QString openglVer = QString::fromUtf8( (const char*)glGetString(GL_VERSION) );
-
-    return openglVer + QString::fromUtf8(", GLSL ") + glslVer;
-}
 
 QString
 AppManager::getBoostVersion() const
@@ -3330,6 +3322,30 @@ AppManager::getCairoVersion() const
 {
     return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
 }
+
+
+QString
+AppManager::getHoedownVersion() const
+{
+    int major, minor, revision;
+    hoedown_version(&major, &minor, &revision);
+    return QString::fromUtf8(HOEDOWN_VERSION) + QString::fromUtf8(" / ") + QString::fromUtf8("%1.%2.%3").arg(major).arg(minor).arg(revision);
+}
+
+
+QString
+AppManager::getCeresVersion() const
+{
+    return QString::fromUtf8(CERES_VERSION_STRING);
+}
+
+
+QString
+AppManager::getOpenMVGVersion() const
+{
+    return QString::fromUtf8(OPENMVG_VERSION_STRING);
+}
+
 
 QString
 AppManager::getPySideVersion() const

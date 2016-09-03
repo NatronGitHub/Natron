@@ -526,13 +526,19 @@ public:
     void setPluginsUseInputImageCopyToRender(bool b);
     bool isCopyInputImageForPluginRenderEnabled() const;
 
-    QString getOpenGLVersion() const;
-
     QString getBoostVersion() const;
 
     QString getQtVersion() const;
 
     QString getCairoVersion() const;
+
+    QString getHoedownVersion() const;
+
+    QString getCeresVersion() const;
+
+    QString getOpenMVGVersion() const;
+
+    QString getQHTTPServerVersion() const;
 
     QString getPySideVersion() const;
 
