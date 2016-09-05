@@ -295,6 +295,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defPatternWinSizeKnob->setName(kTrackerParamDefaultMarkerPatternWinSize);
     defPatternWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerPatternWinSizeLabel));
     defPatternWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerPatternWinSizeHint) );
+    defPatternWinSizeKnob->setIconLabel(NATRON_IMAGES_PATH "patternSize.png");
     defPatternWinSizeKnob->setAnimationEnabled(false);
     defPatternWinSizeKnob->setMinimum(1);
     defPatternWinSizeKnob->disableSlider();
@@ -308,6 +309,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defSearchWinSizeKnob->setName(kTrackerParamDefaultMarkerSearchWinSize);
     defSearchWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerSearchWinSizeLabel));
     defSearchWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerSearchWinSizeHint) );
+    defSearchWinSizeKnob->setIconLabel(NATRON_IMAGES_PATH "searchSize.png");
     defSearchWinSizeKnob->setAnimationEnabled(false);
     defSearchWinSizeKnob->setMinimum(1);
     defSearchWinSizeKnob->disableSlider();
@@ -315,6 +317,20 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defSearchWinSizeKnob->setDefaultValue(71);
     settingsPage->addKnob(defSearchWinSizeKnob);
     defaultSearchWinSize = defSearchWinSizeKnob;
+
+    boost::shared_ptr<KnobChoice> defMotionModelKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamDefaultMotionModelLabel), 1, false);
+    defMotionModelKnob->setName(kTrackerParamDefaultMotionModel);
+    defMotionModelKnob->setAnimationEnabled(false);
+    {
+        std::vector<std::string> choices, helps;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        defMotionModelKnob->populateChoices(choices, helps);
+
+    }
+    defMotionModelKnob->setAnimationEnabled(false);
+    defMotionModelKnob->setEvaluateOnChange(false);
+    settingsPage->addKnob(defMotionModelKnob);
+    defaultMotionModel = defMotionModelKnob;
 
 
     boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), tr(kTrackerParamPerTrackParamsSeparatorLabel), 3);

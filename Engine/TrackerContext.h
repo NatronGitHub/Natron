@@ -150,6 +150,8 @@ public:
 
     boost::shared_ptr<KnobInt> getDefaultMarkerSearchWinSizeKnob() const;
 
+    boost::shared_ptr<KnobChoice> getDefaultMotionModelKnob() const;
+
     bool isTrackerPMEnabled() const;
 
     TrackMarkerPtr createMarker();

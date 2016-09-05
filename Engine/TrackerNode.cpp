@@ -361,10 +361,10 @@ TrackerNode::initializeKnobs()
     magWindow->setName(kTrackerUIParamMagWindowSize);
     magWindow->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
     magWindow->setEvaluateOnChange(false);
-    magWindow->setSecretByDefault(true);
     magWindow->setDefaultValue(200);
     magWindow->setMinimum(10);
     magWindow->setMaximum(10000);
+    magWindow->disableSlider();
     addOverlaySlaveParam(magWindow);
     trackingPage->addKnob(magWindow);
     _imp->ui->magWindowPxSizeKnob = magWindow;
@@ -407,9 +407,9 @@ TrackerNode::initializeKnobs()
     resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
     resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(magWindow);
     addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
     addKnobToViewerUI(context->getDefaultMarkerSearchWinSizeKnob());
+    addKnobToViewerUI(context->getDefaultMotionModelKnob());
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );
