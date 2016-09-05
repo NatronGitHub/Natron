@@ -5416,7 +5416,7 @@ Node::connectInput(const NodePtr & input,
 
     ///For effects that do not support multi-resolution, make sure the input effect is correct
     ///otherwise the rendering might crash
-    if ( !_imp->effect->supportsMultiResolution() ) {
+    if ( !_imp->effect->supportsMultiResolution() && !getApp()->getProject()->isLoadingProject() ) {
         CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
         if (ret != eCanConnectInput_ok) {
             return false;

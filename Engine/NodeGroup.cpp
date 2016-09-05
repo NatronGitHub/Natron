@@ -540,7 +540,19 @@ NodeCollection::connectNodes(int inputNumber,
     Node::CanConnectInputReturnValue ret = output->canConnectInput(input, inputNumber);
     bool connectionOk = ret == Node::eCanConnectInput_ok ||
                         ret == Node::eCanConnectInput_differentFPS ||
-                        ret == Node::eCanConnectInput_differentPars;
+                        ret == Node::eCanConnectInput_differentPars ||
+                        ret == Node::eCanConnectInput_multiResNotSupported;
+
+    if (ret == Node::eCanConnectInput_multiResNotSupported) {
+        LogEntry::LogEntryColor c;
+        if (output->getColor(&c.r, &c.g, &c.b)) {
+            c.colorSet = true;
+        }
+
+        QString err = tr("Warning: %1 does not support inputs of different sizes but its inputs produce different output size. Please check this.").arg( QString::fromUtf8( output->getScriptName().c_str() ) );
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( output->getScriptName().c_str() ) , QDateTime::currentDateTime(), err, false, c);
+
+    }
 
     if ( !connectionOk || !output->connectInput(input, inputNumber) ) {
         return false;

@@ -272,6 +272,9 @@ ViewerTabPrivate::getTimeTransform(double time,
                                    EffectInstance* currentNode,
                                    double *newTime) const
 {
+    if (!currentNode) {
+        return false;
+    }
     if ( currentNode == target->getEffectInstance().get() ) {
         *newTime = time;
 
