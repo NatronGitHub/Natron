@@ -3276,15 +3276,17 @@ Bezier::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
         bool useFeather = useFeatherPoints();
         BezierCPs::const_iterator fp = _imp->featherPoints.begin();
         for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-            SERIALIZATION_NAMESPACE::BezierCPSerialization c;
-            (*it)->toSerialization(&c);
-            s->_controlPoints.push_back(c);
+            SERIALIZATION_NAMESPACE::BezierSerialization::ControlPoint c;
+            (*it)->toSerialization(&c.innerPoint);
             if (useFeather) {
-                SERIALIZATION_NAMESPACE::BezierCPSerialization f;
-                (*fp)->toSerialization(&f);
-                s->_featherPoints.push_back(f);
+                if (**it != **fp) {
+                    c.featherPoint.reset(new SERIALIZATION_NAMESPACE::BezierCPSerialization);
+                    (*fp)->toSerialization(c.featherPoint.get());
+                }
                 ++fp;
             }
+            s->_controlPoints.push_back(c);
+
         }
 
     }
@@ -3308,17 +3310,20 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
         _imp->finished = s->_closed && !_imp->isOpenBezier;
 
         bool useFeather = useFeatherPoints();
-        std::list<SERIALIZATION_NAMESPACE::BezierCPSerialization>::const_iterator itF = s->_featherPoints.begin();
-        for (std::list<SERIALIZATION_NAMESPACE::BezierCPSerialization>::const_iterator it = s->_controlPoints.begin(); it != s->_controlPoints.end(); ++it) {
+
+        for (std::list<SERIALIZATION_NAMESPACE::BezierSerialization::ControlPoint>::const_iterator it = s->_controlPoints.begin(); it != s->_controlPoints.end(); ++it) {
             BezierCPPtr cp( new BezierCP(this_shared) );
-            cp->fromSerialization(*it);
+            cp->fromSerialization(it->innerPoint);
             _imp->points.push_back(cp);
 
             if (useFeather) {
                 BezierCPPtr fp( new FeatherPoint(this_shared) );
-                fp->fromSerialization(*itF);
+                if (it->featherPoint) {
+                    fp->fromSerialization(*it->featherPoint);
+                } else {
+                    fp->fromSerialization(it->innerPoint);
+                }
                 _imp->featherPoints.push_back(fp);
-                ++itF;
             }
         }
         copyInternalPointsToGuiPoints();

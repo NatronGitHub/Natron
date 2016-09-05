@@ -51,7 +51,7 @@ FrameKey::FrameKey()
 {
 }
 
-FrameKey::FrameKey(const CacheEntryHolder* holder,
+FrameKey::FrameKey(const std::string& pluginID,
                    SequenceTime time,
                    U64 treeVersion,
                    double gain,
@@ -67,7 +67,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
                    const std::string& alphaChannelFullName,
                    bool useShaders,
                    bool draftMode)
-    : KeyHelper<U64>(holder)
+    : KeyHelper<U64>(pluginID)
     , _time(time)
     , _treeVersion(treeVersion)
     , _gain(gain)
@@ -105,16 +105,16 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.y2);
     hash->append(_textureRect.closestPo2);
     hash->append(_mipMapLevel);
-    Hash64_appendQString( hash, QString::fromUtf8( _layer.getLayerName().c_str() ) );
+    Hash64::appendQString(QString::fromUtf8( _layer.getLayerName().c_str() ), hash );
     const std::vector<std::string>& channels = _layer.getComponentsNames();
     for (std::size_t i = 0; i < channels.size(); ++i) {
-        Hash64_appendQString( hash, QString::fromUtf8( channels[i].c_str() ) );
+        Hash64::appendQString(QString::fromUtf8( channels[i].c_str() ), hash );
     }
     if ( !_alphaChannelFullName.empty() ) {
-        Hash64_appendQString( hash, QString::fromUtf8( _alphaChannelFullName.c_str() ) );
+        Hash64::appendQString(QString::fromUtf8( _alphaChannelFullName.c_str() ), hash );
     }
 
-    Hash64_appendQString( hash, QString::fromUtf8( _inputName.c_str() ) );
+    Hash64::appendQString(QString::fromUtf8( _inputName.c_str() ), hash );
     hash->append(_draftMode);
 }
 

@@ -147,7 +147,7 @@ ScaleSliderQWidget::sizeHint() const
 QSize
 ScaleSliderQWidget::minimumSizeHint() const
 {
-    return QSize( TO_DPIX(150), TO_DPIY(20) );
+    return QSize( TO_DPIX(150), TO_DPIY(30) );
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
@@ -569,6 +569,17 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         }
     }
     double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value, 0).x();
+
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    double sliderColorRGB[3];
+    settings->getSliderColor(&sliderColorRGB[0], &sliderColorRGB[1], &sliderColorRGB[2]);
+    _imp->sliderColor.setRgbF(sliderColorRGB[0], sliderColorRGB[1], sliderColorRGB[2]);
+
+    double selectionColorRGB[3];
+    settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
+    QColor selectionColor;
+    selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
+
 #ifdef SLIDER_RECTANGLE
     QPointF sliderBottomLeft(positionValue - TO_DPIX(SLIDER_WIDTH) / 2, height() - 1 - fontM.height() / 2);
     QPointF sliderTopRight( positionValue + TO_DPIX(SLIDER_WIDTH) / 2, height() - 1 - fontM.height() / 2 - TO_DPIY(SLIDER_HEIGHT) );
@@ -582,7 +593,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         p.setPen(Qt::black);
     } else {
         QPen pen = p.pen();
-        pen.setColor( QColor(243, 137, 0) );
+        pen.setColor(selectionColor)
         QVector<qreal> dashStyle;
         qreal space = 2;
         dashStyle << 1 << space;
@@ -605,7 +616,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         p.setPen(Qt::black);
     } else {
         QPen pen = p.pen();
-        pen.setColor( QColor(243, 137, 0) ); // alpha could be set too, if required
+        pen.setColor(selectionColor); // alpha could be set too, if required
         //QVector<qreal> dashStyle;
         //qreal space = 2;
         //dashStyle << 1 << space;

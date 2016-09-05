@@ -38,6 +38,7 @@
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -112,7 +113,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-#define NATRON_NODE_PRESETS_SERIALIZATION_VERSION 1
 
 NATRON_NAMESPACE_ENTER;
 
@@ -237,7 +237,7 @@ public:
         , group(collection)
         , precomp()
         , app(app_)
-        , isPartOfProject(true)
+        , isPersistent(true)
         , knobsInitialized(false)
         , inputsInitialized(false)
         , outputsMutex()
@@ -253,7 +253,6 @@ public:
         , inputLabels()
         , scriptName()
         , label()
-        , cacheID()
         , deactivatedState()
         , activatedMutex()
         , activated(true)
@@ -269,8 +268,6 @@ public:
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
         , renderInstancesSharedMutex(QMutex::Recursive)
-        , knobsAge(0)
-        , knobsAgeMutex()
         , masterNodeMutex()
         , masterNode()
         , nodeLinks()
@@ -377,8 +374,6 @@ public:
         computingPreview = v;
     }
 
-    void ifGroupForceHashChangeOfInputs();
-
     void runOnNodeCreatedCB(bool userEdited);
 
     void runOnNodeDeleteCB();
@@ -406,11 +401,22 @@ public:
 
     void refreshDefaultViewerKnobsOrder();
 
-    Node* _publicInterface; // can not be a smart ptr
+    ////////////////////////////////////////////////
+
+    // Ptr to public interface, can not be a smart ptr
+    Node* _publicInterface;
+
+    // The group containing this node
     boost::weak_ptr<NodeCollection> group;
+
+    // If this node is part of a precomp, this is a pointer to it
     boost::weak_ptr<PrecompNode> precomp;
-    AppInstanceWPtr app; // pointer to the app: needed to access the application's default-project's format
-    bool isPartOfProject;
+
+    // pointer to the app: needed to access project stuff
+    AppInstanceWPtr app;
+
+    // If true, the node is serialized
+    bool isPersistent;
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
@@ -437,11 +443,6 @@ public:
     std::string scriptName; //node name internally and as visible to python
     std::string label; // node label as visible in the GUI
 
-    ///The cacheID is the first script name that was given to a node
-    ///it is then used in the cache to identify images that belong to this node
-    ///In order for the cache to be persistent, the cacheID is serialized with the node
-    ///and 2 nodes cannot have the same cacheID.
-    std::string cacheID;
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
@@ -457,10 +458,6 @@ public:
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
-    //only 1 clone can render at any time
-    U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the effect has its evaluate() function called.
-    mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
-    Hash64 hash; //< recomputed everytime knobsAge is changed.
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
     NodeWPtr masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
@@ -646,7 +643,6 @@ Node::Node(const AppInstancePtr& app,
 {
     QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
-    QObject::connect( this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 
     if (plugin && plugin->getPluginID().startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
@@ -661,9 +657,9 @@ Node::isGLFinishRequiredBeforeRender() const
 }
 
 bool
-Node::isPartOfProject() const
+Node::isPersistent() const
 {
-    return _imp->isPartOfProject;
+    return _imp->isPersistent;
 }
 
 void
@@ -743,10 +739,7 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
         setScriptName_no_error_check(name);
 
     } else if (serialization) {
-        if ( group && !group->isCacheIDAlreadyTaken( serialization->_cacheID ) ) {
-            QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = serialization->_cacheID;
-        }
+
         const std::string& baseName = serialization->_nodeScriptName;
         std::string name = baseName;
         int no = 1;
@@ -802,7 +795,7 @@ Node::load(const CreateNodeArgs& args)
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPartOfProject = !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
+    _imp->isPersistent = !args.getProperty<bool>(kCreateNodeArgsPropVolatile);
 
     _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 
@@ -858,7 +851,7 @@ Node::load(const CreateNodeArgs& args)
             hasDefaultFilename = !args.getProperty<std::string>(propName).empty();
         }
     }
-    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
+    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
 
     std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
@@ -962,10 +955,6 @@ Node::load(const CreateNodeArgs& args)
     //won't be able to paint the alpha channel
     if ( isRotoPaintingNode() ) {
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
-    }
-
-    if (!serialization) {
-        computeHash();
     }
 
     assert(_imp->effect);
@@ -1510,138 +1499,28 @@ Node::getChildrenMultiInstance(NodesList* children) const
     }
 }
 
-U64
-Node::getHashValue() const
-{
-    QReadLocker l(&_imp->knobsAgeMutex);
-
-    return _imp->hash.value();
-}
-
-std::string
-Node::getCacheID() const
-{
-    QMutexLocker k(&_imp->nameMutex);
-
-    return _imp->cacheID;
-}
-
-bool
-Node::computeHashInternal()
-{
-    if (!_imp->effect) {
-        return false;
-    }
-    ///Always called in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!_imp->inputsInitialized) {
-        qDebug() << "Node::computeHash(): inputs not initialized";
-    }
-
-    U64 oldHash, newHash;
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-
-        oldHash = _imp->hash.value();
-
-        ///reset the hash value
-        _imp->hash.reset();
-
-        ///append the effect's own age
-        _imp->hash.append(_imp->knobsAge);
-
-        ///append all inputs hash
-
-
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr input = getInput(i);
-            if (input) {
-
-                ///Add the index of the input to its hash.
-                ///Explanation: if we didn't add this, just switching inputs would produce a similar
-                ///hash.
-                _imp->hash.append(input->getHashValue() + i);
-            }
-        }
-
-
-
-        // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
-        // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
-        // node respecitively have their hash correctly set.
-
-        ///Also append the effect's label to distinguish 2 instances with the same parameters
-        Hash64_appendQString( &_imp->hash, QString::fromUtf8( getScriptName().c_str() ) );
-
-        ///Also append the project's creation time in the hash because 2 projects openend concurrently
-        ///could reproduce the same (especially simple graphs like Viewer-Reader)
-        qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
-        _imp->hash.append(creationTime);
-
-        _imp->hash.computeHash();
-
-        newHash = _imp->hash.value();
-    } // QWriteLocker l(&_imp->knobsAgeMutex);
-    bool hashChanged = oldHash != newHash;
-
-    if (hashChanged) {
-        _imp->effect->onNodeHashChanged(newHash);
-        if ( _imp->nodeCreated && !getApp()->getProject()->isProjectClosing() ) {
-            /*
-             * We changed the node hash. That means all cache entries for this node with a different hash
-             * are impossible to re-create again. Just discard them all. This is done in a separate thread.
-             */
-            removeAllImagesFromCacheWithMatchingIDAndDifferentKey(newHash);
-        }
-    }
-
-    return hashChanged;
-} // Node::computeHashInternal
-
 void
-Node::computeHashRecursive(std::list<NodePtr>& marked)
+Node::appendKnobsToFrameViewHash(double time, ViewIdx view, Hash64* hash) const
 {
-    if ( std::find(marked.begin(), marked.end(), shared_from_this()) != marked.end() ) {
-        return;
-    }
-
-    bool hasChanged = computeHashInternal();
-    marked.push_back( shared_from_this() );
-    if (!hasChanged) {
-        //Nothing changed, no need to recurse on outputs
-        return;
-    }
-
-
-    bool isRotoPaint = _imp->effect->isRotoPaintNode();
-
-    ///call it on all the outputs
-    NodesList outputs;
-    getOutputsWithGroupRedirection(outputs);
-    for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        assert(*it);
-
-        //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-        RotoDrawableItemPtr attachedStroke = (*it)->getAttachedRotoItem();
-        if ( isRotoPaint && attachedStroke && (attachedStroke->getContext()->getNode().get() == this) ) {
+    KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if (!(*it)->getEvaluateOnChange()) {
             continue;
         }
-        (*it)->computeHashRecursive(marked);
+        (*it)->appendToFrameViewHash(time, view, hash);
     }
+} // Node::appendKnobsToFrameViewHash
 
-
-    ///If the node has a rotopaint tree, compute the hash of the nodes in the tree
-    if (_imp->rotoContext) {
-        NodesList allItems;
-        _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
-        for (NodesList::iterator it = allItems.begin(); it != allItems.end(); ++it) {
-            (*it)->computeHashRecursive(marked);
-        }
-    }
-}
 
 void
-Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
+Node::onActionEvaluated()
+{
+
+}
+
+
+void
+Node::removeAllImagesFromCache()
 {
     AppInstancePtr app = getApp();
 
@@ -1653,49 +1532,9 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
     }
-    appPTR->removeAllImagesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
-    appPTR->removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
-    ViewerInstancePtr isViewer = isEffectViewerInstance();
-    if (isViewer) {
-        //Also remove from viewer cache
-        appPTR->removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
-    }
+    appPTR->removeAllCacheEntriesForPlugin(getPluginID());
 }
 
-void
-Node::removeAllImagesFromCache(bool blocking)
-{
-    AppInstancePtr app = getApp();
-
-    if (!app) {
-        return;
-    }
-    ProjectPtr proj = app->getProject();
-
-    if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
-        return;
-    }
-    appPTR->removeAllCacheEntriesForHolder(this, blocking);
-}
-
-void
-Node::doComputeHashOnMainThread()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    computeHash();
-}
-
-void
-Node::computeHash()
-{
-    if ( QThread::currentThread() != qApp->thread() ) {
-        Q_EMIT mustComputeHashOnMainThread();
-
-        return;
-    }
-    std::list<NodePtr> marked;
-    computeHashRecursive(marked);
-} // computeHash
 
 void
 Node::setValuesFromSerialization(const CreateNodeArgs& args)
@@ -1840,7 +1679,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
     } else if (isKnobSerialization) {
         KnobIPtr knob =  getKnobByName(isKnobSerialization->_scriptName);
         if (!knob) {
-            throw std::invalid_argument(tr("Could not find a parameter named %1").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
+            throw std::invalid_argument(tr("Could not find a parameter named \"%1\"").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
 
             return;
         }
@@ -1859,18 +1698,56 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                 }
 
             } else {
-                for (int i = 0; i < isKnobSerialization->_dimension; ++i) {
-                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterDimension != -1) {
-                        KnobIPtr master = findMasterKnob(knob,
-                                                         allNodes,
-                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName,
-                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName,
-                                                         isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName,
-                                                         oldNewScriptNamesMapping);
-                        if (master) {
-                            knob->slaveTo(i, master, isKnobSerialization->_values[i]._slaveMasterLink.masterDimension);
+                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
+                    if (!isKnobSerialization->_values[i]._slaveMasterLink.hasLink) {
+                        continue;
+                    }
+
+                    std::string masterKnobName, masterNodeName, masterTrackName;
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName.empty()) {
+                         // Node name empty, assume this is the same node
+                        masterNodeName = getScriptName_mt_safe();
+                    }
+
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.empty()) {
+                        // Knob name empty, assume this is the same knob unless it has a single dimension
+                        if (knob->getDimension() == 1) {
+                            continue;
+                        }
+                        masterKnobName = knob->getName();
+                    }
+
+                    masterTrackName = isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName;
+                    KnobIPtr master = findMasterKnob(knob,
+                                                     allNodes,
+                                                     masterKnobName,
+                                                     masterNodeName,
+                                                     masterTrackName,
+                                                     oldNewScriptNamesMapping);
+                    if (master) {
+                        // Find dimension in master by name
+                        int dimIndex = -1;
+                        if (master->getDimension() == 1) {
+                            dimIndex = 0;
+                        } else {
+                            for (int d = 0; d < master->getDimension(); ++d) {
+                                if ( boost::iequals(master->getDimensionName(d), isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName) ) {
+                                    dimIndex = d;
+                                    break;
+                                }
+                            }
+                            if (dimIndex == -1) {
+                                // Before Natron 2.2 we serialized the dimension index. Try converting to an int
+                                dimIndex = QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
+                            }
+                        }
+                        if (dimIndex >=0 && dimIndex < master->getDimension()) {
+                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, dimIndex);
+                        } else {
+                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
                         }
                     }
+
                 }
 
             }
@@ -1878,11 +1755,9 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
 
         // Restore expressions
         {
-            // The number of dimensions may have changed
-            int dims = std::min( knob->getDimension(), isKnobSerialization->_dimension );
 
             try {
-                for (int i = 0; i < dims; ++i) {
+                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
                     if ( !isKnobSerialization->_values[i]._expression.empty() ) {
                         QString expr( QString::fromUtf8( isKnobSerialization->_values[i]._expression.c_str() ) );
 
@@ -1891,7 +1766,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                              it != oldNewScriptNamesMapping.end(); ++it) {
                             expr.replace( QString::fromUtf8( it->first.c_str() ), QString::fromUtf8( it->second.c_str() ) );
                         }
-                        knob->restoreExpression(i, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
+                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
                     }
                 }
             } catch (const std::exception& e) {
@@ -2148,13 +2023,9 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     serialization->_groupFullyQualifiedScriptName = getContainerGroupFullyQualifiedName();
 
-    serialization->_knobsAge = getKnobsAge();
-
     serialization->_nodeLabel = getLabel_mt_safe();
 
     serialization->_nodeScriptName = getScriptName_mt_safe();
-
-    serialization->_cacheID = getCacheID();
 
     serialization->_pluginID = getPluginID();
 
@@ -2196,12 +2067,12 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // For groups, serialize its children if the graph was edited
     NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp && !subGraphEdited) {
+    if (isGrp && subGraphEdited) {
         NodesList nodes;
         isGrp->getActiveNodes(&nodes);
 
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if ( (*it)->isPartOfProject() ) {
+            if ( (*it)->isPersistent() ) {
                 SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
                 (*it)->toSerialization(state.get());
                 serialization->_children.push_back(state);
@@ -2275,8 +2146,6 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
     }
 
     loadKnobsFromSerialization(*serialization);
-
-    setKnobsAge( serialization->_knobsAge );
 
     {
         QMutexLocker k(&_imp->nodePresetMutex);
@@ -2563,8 +2432,7 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
     serialization.presetModifiers = (int)mods;
     toSerialization(&serialization.node);
 
-    // No need to save the knobs age nor node UI nor inputs
-    serialization.node._knobsAge = 0;
+    // No need to save node UI nor inputs
     serialization.node._inputs.clear();
     serialization.node._nodePositionCoords[0] = serialization.node._nodePositionCoords[1] = INT_MIN;
     serialization.node._nodeSize[0] = serialization.node._nodeSize[1] = -1;
@@ -2845,71 +2713,6 @@ Node::hasPageOrderChangedSinceDefault() const
         }
     }
     return false;
-}
-
-void
-Node::setKnobsAge(U64 newAge)
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool changed;
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-        changed = _imp->knobsAge != newAge || !_imp->hash.value();
-        if (changed) {
-            _imp->knobsAge = newAge;
-        }
-    }
-    if (changed) {
-        Q_EMIT knobsAgeChanged(newAge);
-        computeHash();
-    }
-}
-
-void
-Node::incrementKnobsAge_internal()
-{
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
-    }
-}
-
-void
-Node::incrementKnobsAge()
-{
-    U32 newAge;
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
-        newAge = _imp->knobsAge;
-    }
-    Q_EMIT knobsAgeChanged(newAge);
-
-    computeHash();
-}
-
-U64
-Node::getKnobsAge() const
-{
-    QReadLocker l(&_imp->knobsAgeMutex);
-
-    return _imp->knobsAge;
 }
 
 bool
@@ -3583,11 +3386,9 @@ Node::setNameInternal(const std::string& name,
         }
     }
 
-    bool mustSetCacheID;
     {
         QMutexLocker l(&_imp->nameMutex);
         _imp->scriptName = newName;
-        mustSetCacheID = _imp->cacheID.empty();
         ///Set the label at the same time if the label is empty
         if ( _imp->label.empty() ) {
             _imp->label = newName;
@@ -3595,20 +3396,6 @@ Node::setNameInternal(const std::string& name,
     }
     std::string fullySpecifiedName = getFullyQualifiedName();
 
-    if (mustSetCacheID) {
-        std::string baseName = fullySpecifiedName;
-        std::string cacheID = fullySpecifiedName;
-        int i = 1;
-        while ( getGroup() && getGroup()->isCacheIDAlreadyTaken(cacheID) ) {
-            std::stringstream ss;
-            ss << baseName;
-            ss << i;
-            cacheID = ss.str();
-            ++i;
-        }
-        QMutexLocker l(&_imp->nameMutex);
-        _imp->cacheID = cacheID;
-    }
 
     if (collection) {
         if ( !oldName.empty() ) {
@@ -3645,6 +3432,7 @@ Node::setNameInternal(const std::string& name,
     Q_EMIT scriptNameChanged(qnewName);
     Q_EMIT labelChanged(qnewName);
 } // Node::setNameInternal
+
 
 void
 Node::setScriptName(const std::string& name)
@@ -3686,7 +3474,7 @@ Node::makeCacheInfo() const
 {
     std::size_t ram, disk;
 
-    appPTR->getMemoryStatsForCacheEntryHolder(this, &ram, &disk);
+    appPTR->getMemoryStatsForPlugin(getPluginID(), &ram, &disk);
     QString ramSizeStr = printAsRAM( (U64)ram );
     QString diskSizeStr = printAsRAM( (U64)disk );
     std::stringstream ss;
@@ -3783,14 +3571,14 @@ Node::makeInfoForInput(int inputNumber) const
     }
     {
         double first = 1., last = 1.;
-        input->getFrameRange_public(getHashValue(), &first, &last);
+        input->getFrameRange_public(0, &first, &last);
         ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
         RenderScale scale(1.);
         RectD rod;
         bool isProjectFormat;
-        StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
+        StatusEnum stat = input->getRegionOfDefinition_public(0,
                                                               time,
                                                               scale, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
@@ -3916,6 +3704,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
+    _imp->effect->addOverlaySlaveParam(disableNodeKnob);
     disableNodeKnob->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
@@ -5722,7 +5511,7 @@ checkCanConnectNoMultiRes(const Node* output,
     RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(),
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0,
                                                                                output->getApp()->getTimeLine()->currentFrame(),
                                                                                scale,
                                                                                ViewIdx(0),
@@ -5739,7 +5528,7 @@ checkCanConnectNoMultiRes(const Node* output,
     // with a RoD different from the input
 
     /*RectD outputRod;
-       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
+       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getCacheID(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
        Q_UNUSED(stat);
 
        if ( !outputRod.isNull() && (rod != outputRod) ) {
@@ -5750,7 +5539,7 @@ checkCanConnectNoMultiRes(const Node* output,
         NodePtr inputNode = output->getInput(i);
         if (inputNode) {
             RectD inputRod;
-            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(),
+            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(0,
                                                                                 output->getApp()->getTimeLine()->currentFrame(),
                                                                                 scale,
                                                                                 ViewIdx(0),
@@ -5897,11 +5686,8 @@ Node::connectInput(const NodePtr & input,
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        onActionEvaluated();
     }
-
-    _imp->ifGroupForceHashChangeOfInputs();
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
@@ -5915,21 +5701,6 @@ Node::connectInput(const NodePtr & input,
     return true;
 } // Node::connectInput
 
-void
-Node::Implementation::ifGroupForceHashChangeOfInputs()
-{
-    ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
-    NodeGroupPtr isGrp = toNodeGroup(effect);
-
-    if ( isGrp && !isGrp->getApp()->isCreatingNodeTree() ) {
-        NodesList inputsOutputs;
-        isGrp->getInputsOutputs(&inputsOutputs, false);
-        for (NodesList::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
-            (*it)->incrementKnobsAge_internal();
-            (*it)->computeHash();
-        }
-    }
-}
 
 bool
 Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
@@ -5958,6 +5729,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
             return false;
         }
     }
+
 
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5997,11 +5769,10 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        // Notify cache
+        onActionEvaluated();
     }
 
-    _imp->ifGroupForceHashChangeOfInputs();
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
@@ -6075,19 +5846,22 @@ Node::switchInput0And1()
     {
         QMutexLocker l(&_imp->inputsMutex);
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
-        NodePtr input0;
+        NodePtr input0, input1;
 
         if (!useGuiInputs) {
             input0 = _imp->inputs[inputAIndex].lock();
+            input1 = _imp->inputs[inputBIndex].lock();
             _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
             _imp->inputs[inputBIndex] = input0;
             _imp->guiInputs[inputAIndex] = _imp->inputs[inputAIndex];
             _imp->guiInputs[inputBIndex] = _imp->inputs[inputBIndex];
         } else {
             input0 = _imp->guiInputs[inputAIndex].lock();
+            input1 = _imp->guiInputs[inputBIndex].lock();
             _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
             _imp->guiInputs[inputBIndex] = input0;
         }
+
     }
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
@@ -6100,8 +5874,9 @@ Node::switchInput0And1()
     }
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        // Notify cache
+        onActionEvaluated();
+
     }
 
     std::string inputChangedCB = getInputChangedCallback();
@@ -6110,8 +5885,6 @@ Node::switchInput0And1()
         _imp->runInputChangedCallback(inputBIndex, inputChangedCB);
     }
 
-
-    _imp->ifGroupForceHashChangeOfInputs();
 
     if (mustCallEnd) {
         endInputEdition(true);
@@ -6219,11 +5992,10 @@ Node::disconnectInput(int inputNumber)
     }
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        // Notify cache
+        onActionEvaluated();
     }
 
-    _imp->ifGroupForceHashChangeOfInputs();
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
@@ -6286,12 +6058,11 @@ Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
         if (!creatingNodeTree) {
             ///Recompute the hash
             if ( !getApp()->getProject()->isProjectClosing() ) {
-                computeHash();
+                onActionEvaluated();
             }
         }
 
 
-        _imp->ifGroupForceHashChangeOfInputs();
 
         std::string inputChangedCB = getInputChangedCallback();
         if ( !inputChangedCB.empty() ) {
@@ -6780,7 +6551,7 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
 
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
-    removeAllImagesFromCache(false);
+    removeAllImagesFromCache();
 
     AppInstancePtr app = getApp();
     if (app) {
@@ -7020,7 +6791,7 @@ Node::makePreviewImage(SequenceTime time,
     RectD rod;
     bool isProjectFormat;
     RenderScale scale(1.);
-    U64 nodeHash = getHashValue();
+    U64 nodeHash = getCacheID();
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
@@ -7515,7 +7286,7 @@ Node::message(MessageTypeEnum type,
         return true;
     }
     // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
-    if ( !isPartOfProject() && getGroup() ) {
+    if ( !isPersistent() && getGroup() ) {
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
         if (isGroup) {
             isGroup->message(type, content);
@@ -7561,7 +7332,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
             return;
         }
         // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
-        if ( !isPartOfProject() && getGroup() ) {
+        if ( !isPersistent() && getGroup() ) {
             NodeGroupPtr isGroup = toNodeGroup(getGroup());
             if (isGroup) {
                 isGroup->setPersistentMessage(type, content);
@@ -7901,13 +7672,11 @@ Node::onAllKnobsSlaved(bool isSlave,
                 _imp->masterNode = masterNode;
             }
             QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-            QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
             QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         }
     } else {
         NodePtr master = getMasterNode();
         QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-        QObject::disconnect( master.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
         QObject::disconnect( master.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
@@ -8372,14 +8141,12 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         computeFrameRangeForReader(fileKnob);
 
         ///Refresh the preview automatically if the filename changed
-        incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-        //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
 
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
             double leftBound = INT_MIN, rightBound = INT_MAX;
-            _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
+            _imp->effect->getFrameRange_public(getCacheID(), &leftBound, &rightBound, true);
 
             if ( (leftBound != INT_MIN) && (rightBound != INT_MAX) ) {
                 if ( getGroup() || getIOContainer() ) {
@@ -8518,7 +8285,7 @@ Node::shouldDrawOverlay() const
         return false;
     }
 
-    if (!_imp->isPartOfProject) {
+    if (!_imp->isPersistent) {
         return false;
     }
 
@@ -9095,7 +8862,7 @@ Node::onRefreshIdentityStateRequestReceived()
     double time = project->currentFrame();
     RenderScale scale(1.);
     double inputTime = 0;
-    U64 hash = getHashValue();
+    U64 hash = getCacheID();
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
     Format frmt;
@@ -9197,21 +8964,6 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         }
     } else if ( ( what == _imp->disableNodeKnob.lock() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
-        if ( QThread::currentThread() == qApp->thread() ) {
-            getApp()->redrawAllViewers();
-        }
-        NodeGroupPtr isGroup = isEffectNodeGroup();
-        if (isGroup) {
-            ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
-
-            NodesList nodes = isGroup->getNodes();
-            std::list<NodePtr> markedNodes;
-            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                //This will not trigger a hash recomputation
-                (*it)->incrementKnobsAge_internal();
-                (*it)->computeHashRecursive(markedNodes);
-            }
-        }
     } else if ( what == _imp->nodeLabelKnob.lock() || what == _imp->ofxSubLabelKnob.lock() ) {
         Q_EMIT nodeExtraLabelChanged();
     } else if ( what == _imp->hideInputs.lock() ) {
@@ -10131,7 +9883,7 @@ Node::dequeueActions()
         endInputEdition(true);
     }
     if (hasChanged) {
-        computeHash();
+        onActionEvaluated();
         refreshIdentityState();
     }
 
@@ -10181,9 +9933,8 @@ addIdentityNodesRecursively(NodeConstPtr caller,
             double inputTimeId;
             ViewIdx identityView;
             int inputNbId;
-            U64 renderHash;
+            U64 renderHash = 0;
 
-            renderHash = node->getEffectInstance()->getRenderHash();
 
             Format f;
             node->getEffectInstance()->getRenderFormat(&f);
@@ -10473,10 +10224,10 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scaleOne, ViewIdx(0), &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(getCacheID(), time, scaleOne, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
                 RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scale, ViewIdx(0), &rod);
+                stat = _imp->effect->getRegionOfDefinition(getCacheID(), time, scale, ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {
@@ -10490,12 +10241,6 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     hasChanged |= refreshChannelSelectors();
 
     refreshIdentityState();
-
-    if (loadingProject) {
-        //When loading the project, refresh the hash of the nodes in a recursive manner in the proper order
-        //for the disk cache to work
-        hasChanged |= computeHashInternal();
-    }
 
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
@@ -11329,9 +11074,7 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 void
 Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 {
-    if (!isPartOfProject) {
-        return;
-    }
+
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
     NodeCollectionPtr group = _publicInterface->getGroup();
 
@@ -11357,9 +11100,6 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 void
 Node::Implementation::runOnNodeDeleteCB()
 {
-    if (!isPartOfProject) {
-        return;
-    }
 
     if (_publicInterface->getScriptName_mt_safe().empty()) {
         return;
@@ -12218,8 +11958,7 @@ InspectorNode::connectInput(const NodePtr& input,
     if ( !Node::connectInput(input, inputNumber) ) {
         bool creatingNodeTree = getApp()->isCreatingNodeTree();
         if (!creatingNodeTree) {
-            ///Recompute the hash
-            computeHash();
+            onActionEvaluated();
         }
     }
 

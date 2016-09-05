@@ -1,5 +1,5 @@
---- Portfile.orig	2016-06-23 14:14:42.000000000 +0200
-+++ Portfile	2016-06-23 14:16:33.000000000 +0200
+--- Portfile.orig	2016-08-31 17:34:56.000000000 +0200
++++ Portfile	2016-08-31 17:35:42.000000000 +0200
 @@ -66,6 +66,8 @@
                              port:expat \
                              port:libxml2
@@ -61,8 +61,8 @@
 +    configure.args-replace  --enable-shared --disable-shared
 +    configure.args-replace  --with-modules --without-modules
 +    pre-extract {
-+        if {${version} != "6.9.4-9"} {
-+            ui_msg "Natron variant requires ImageMagick version 6.9.4-9 (this is ${version}), please modify the Portfile."
++        if {${version} != "6.9.5-4"} {
++            ui_msg "Natron variant requires ImageMagick version 6.9.5-4 (this is ${version}), please modify the Portfile."
 +            return -code error "incompatible ImageMagick version"
 +        }
 +    }

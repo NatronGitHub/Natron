@@ -35,9 +35,6 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         fullyQualifiedName += ".";
     }
     fullyQualifiedName += _nodeScriptName;
-    if (_cacheID != fullyQualifiedName) {
-        em << YAML_NAMESPACE::Key << "CacheID" << YAML_NAMESPACE::Value << _cacheID;
-    }
 
     // If version is 1.0 do not serialize
     if ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1)) {
@@ -56,13 +53,11 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     if (hasInput) {
         em << YAML_NAMESPACE::Key << "Inputs" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
         for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-            em << YAML_NAMESPACE::Key << it->first << YAML_NAMESPACE::Value << it->second;
+            if (!it->second.empty()) {
+                em << YAML_NAMESPACE::Key << it->first << YAML_NAMESPACE::Value << it->second;
+            }
         }
         em << YAML_NAMESPACE::EndMap;
-    }
-
-    if (_knobsAge != 0) {
-        em << YAML_NAMESPACE::Key << "Age" << YAML_NAMESPACE::Value << _knobsAge;
     }
 
     if (!_knobsValues.empty()) {
@@ -82,7 +77,7 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     }
 
     if (!_pagesIndexes.empty()) {
-        em << YAML_NAMESPACE::Key << "PagesOrder" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML_NAMESPACE::Key << "PagesOrder" << YAML_NAMESPACE::Value <<  YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         for (std::list<std::string>::const_iterator it = _pagesIndexes.begin(); it!=_pagesIndexes.end(); ++it) {
             em << *it;
         }
@@ -113,7 +108,7 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 
     if (!_pythonModule.empty()) {
         em << YAML_NAMESPACE::Key << "PyPlug" << YAML_NAMESPACE::Value << _pythonModule;
-        if (((int)_pythonModuleVersion != 1) && ((int)_pythonModuleVersion != -1)) {
+        if ((int)_pythonModuleVersion != 1) {
             em << YAML_NAMESPACE::Key << "PyPlugVersion" << YAML_NAMESPACE::Value << _pythonModuleVersion;
         }
     }
@@ -167,11 +162,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     } else {
         _nodeLabel = _nodeScriptName;
     }
-    if (node["CacheID"]) {
-        _cacheID = node["CacheID"].as<std::string>();
-    } else {
-        _cacheID = _nodeScriptName;
-    }
+
     if (node["Version"]) {
         YAML_NAMESPACE::Node versionNode = node["Version"];
         if (versionNode.size() != 2) {
@@ -187,11 +178,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
             _inputs.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
         }
     }
-
-    if (node["Age"]) {
-        _knobsAge = node["Age"].as<unsigned long long>();
-    }
-
+    
     if (node["Params"]) {
         YAML_NAMESPACE::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
@@ -270,7 +257,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["Color"]) {
         YAML_NAMESPACE::Node colorNode = node["Color"];
-        if (colorNode.size() != 2) {
+        if (colorNode.size() != 3) {
             throw YAML_NAMESPACE::InvalidNode();
         }
         _nodeColor[0] = colorNode[0].as<double>();
@@ -279,12 +266,12 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     if (node["OverlayColor"]) {
         YAML_NAMESPACE::Node colorNode = node["OverlayColor"];
-        if (colorNode.size() != 2) {
+        if (colorNode.size() != 3) {
             throw YAML_NAMESPACE::InvalidNode();
         }
-        _nodeColor[0] = colorNode[0].as<double>();
-        _nodeColor[1] = colorNode[1].as<double>();
-        _nodeColor[2] = colorNode[2].as<double>();
+        _overlayColor[0] = colorNode[0].as<double>();
+        _overlayColor[1] = colorNode[1].as<double>();
+        _overlayColor[2] = colorNode[2].as<double>();
     }
     if (node["ViewerParamsOrder"]) {
         YAML_NAMESPACE::Node viewerParamsOrderNode = node["ViewerParamsOrder"];

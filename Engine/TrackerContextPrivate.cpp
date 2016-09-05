@@ -119,7 +119,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
             output = node->getApp()->createNode(args);
@@ -132,7 +132,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         }
         {
             CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
@@ -143,7 +143,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         {
             QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
             CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
             NodePtr cpNode = node->getApp()->createNode(args);
@@ -157,7 +157,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         {
             QString transformName = fixedNamePrefix + QLatin1String("Transform");
             CreateNodeArgs args(PLUGINID_OFX_TRANSFORM, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);

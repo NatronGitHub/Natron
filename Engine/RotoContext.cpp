@@ -2127,7 +2127,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
 
     CreateNodeArgs args( PLUGINID_OFX_MERGE,  NodeCollectionPtr() );
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
     
     NodePtr mergeNode = node->getApp()->createNode(args);
@@ -2162,6 +2162,33 @@ RotoContext::canConcatenatedRotoPaintTree() const
     std::list<RotoDrawableItemPtr > items = getCurvesByRenderOrder();
     int blendingOperator;
     return isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
+}
+
+bool
+RotoContext::isAnimated() const
+{
+    std::list<RotoDrawableItemPtr> items = getCurvesByRenderOrder();
+    for (std::list<RotoDrawableItemPtr>::iterator it = items.begin(); it!=items.end(); ++it) {
+
+        const std::list<KnobIPtr>& knobs = (*it)->getKnobs();
+        for (std::list<KnobIPtr>::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
+            for (int i = 0; i < (*it2)->getDimension(); ++i) {
+                if ((*it2)->isAnimated(i)) {
+                    return true;
+                }
+            }
+        }
+
+
+        BezierPtr isBezier = toBezier(*it);
+        if (isBezier) {
+            int keys = isBezier->getKeyframesCount();
+            if (keys > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void

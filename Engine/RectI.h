@@ -60,12 +60,10 @@ public:
     int x2; // right
     int y2; // top
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version);
-#endif
-    
+
     RectI()
         : x1(0), y1(0), x2(0), y2(0)
     {

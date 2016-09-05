@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 150937 2016-08-02 16:43:53Z michaelld@macports.org $
+# $Id: Portfile 151803 2016-08-22 12:55:56Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           cmake 1.0
@@ -18,16 +18,13 @@ if {${subport} eq ${name}} {
 
     # release
 
-    github.setup    glfw glfw 3.2
-    revision        1
+    github.setup    glfw glfw 3.2.1
+    checksums       rmd160 5fb5988736a0a2812426907ab8d64b94eeacc010 \
+                    sha256 34bc25f8111501eec35a52fd39fa50336a0c2e812d4a14454c7c946458ab015c
+
     # bump the epoch because I moved the version from 20151012 to 3.1.2
+
     epoch           1
-    checksums       rmd160 0b0e400f47b965af9fe6eb3eb7e373cb6efa105f \
-                    sha256 2d98746893b55a332d2861bfc525d91b557894318dc79de015c854a0ee818ed6
-
-    # patch to fix install directory for cmake files and docs
-
-    patchfiles-append patch-CMakeLists.txt.release.diff
 
     conflicts       glfw-devel
     long_description ${description}: \
@@ -37,14 +34,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    github.setup    glfw glfw 7be62631aebfb9dae515e95b9c92b3979e65988c
-    version         20160801
-    checksums       rmd160 893dd8de1cfe79d31df5f8d6b213154b05ab847d \
-                    sha256 539afeaf9599159b7b5b03970de55780edc1e283fa679c9ad1061fa0c685ce6f
-
-    # patch to fix install directory for cmake files and docs
-
-    patchfiles-append patch-CMakeLists.txt.devel.diff
+    github.setup    glfw glfw 9cd0c101f09ca1085d8e09536b20d7695827c937
+    version         20160818
+    checksums       rmd160 8cf8dd1f88a0786e95beb3ee97e0bea62f77ec37 \
+                    sha256 60317f02698b1170e525d932178578152f1727c86e8299bd311ac68d5658e42d
 
     conflicts       glfw
     long_description ${description}: \
@@ -55,6 +48,10 @@ if {${subport} eq ${name}} {
 # patch to fix install name of library
 
 patchfiles-append   patch-src_CMakeLists.txt.diff
+
+# patch to fix install directory for cmake files and docs
+
+patchfiles-append patch-CMakeLists.txt.diff
 
 # use the real home page, not github's
 

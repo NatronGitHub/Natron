@@ -36,6 +36,7 @@
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
@@ -44,15 +45,18 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QtCore/QDebug>
 #include <QtCore/QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
+CLANG_DIAG_ON(uninitialized)
+
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+#endif // OFX_SUPPORTS_MULTITHREAD
 
 //ofx
 #include <ofxParametricParam.h>

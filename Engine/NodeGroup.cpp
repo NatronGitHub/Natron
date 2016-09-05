@@ -39,6 +39,7 @@
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
@@ -253,7 +254,7 @@ NodeCollection::getWriters(std::list<OutputEffectInstancePtr>* writers) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPartOfProject() ) {
+        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
             OutputEffectInstancePtr out = (*it)->isEffectOutput();
             assert(out);
             writers->push_back(out);
@@ -290,20 +291,6 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 }
 
 bool
-NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getCacheID() == name ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
 NodeCollection::hasNodeRendering() const
 {
     QMutexLocker k(&_imp->nodesMutex);
@@ -331,6 +318,7 @@ NodeCollection::hasNodeRendering() const
 
     return false;
 }
+
 
 void
 NodeCollection::refreshViewersAndPreviews()
@@ -1550,11 +1538,7 @@ NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
     if ( serialization && !serialization->_pythonModule.empty() ) {
         QString moduleName = QString::fromUtf8( ( serialization->_pythonModule.c_str() ) );
 
-#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
-        bool pythonModuleIsScriptFile = false;
-#else
-        bool pythonModuleIsScriptFile = serialization->_boostSerializationClassVersion < NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME;
-#endif
+        bool pythonModuleIsScriptFile = FileSystemModel::startsWithDriveName(moduleName, true);
         AppInstance::setGroupLabelIDAndVersion(getNode(), moduleName, pythonModuleIsScriptFile);
     } else if ( !serialization && !getApp()->isCreatingPythonGroup()) {
         //if the node is a group and we're not loading the project, create one input and one output
@@ -2313,6 +2297,10 @@ exportUserKnob(int indentLevel,
                                                  ESC( isParametric->getName() ) +
                                                  QString::fromUtf8(", ") + ESC( isParametric->getLabel() ) +  QString::fromUtf8(", ") +
                                                  NUM_INT( isParametric->getDimension() ) + QString::fromUtf8(")") );
+    }
+
+    if (isDouble && isDouble->getHasHostOverlayHandle()) {
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setUsePointInteract(True)"));
     }
 
     WRITE_STATIC_LINE("");

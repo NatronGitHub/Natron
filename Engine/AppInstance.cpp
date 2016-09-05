@@ -879,7 +879,7 @@ AppInstance::createNodeFromPythonModule(const PluginPtr& plugin,
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
-            bool createGui = !args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI) && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
+            bool createGui = !args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI) && !args.getProperty<bool>(kCreateNodeArgsPropVolatile);
             _imp->_creatingInternalNode = !createGui;
         }
         CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
@@ -1340,7 +1340,7 @@ AppInstance::exportDocs(const QString path)
                         plugins << plugList;
                         CreateNodeArgs args( pluginID.toStdString(), NodeCollectionPtr() );
                         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-                        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+                        args.setProperty(kCreateNodeArgsPropVolatile, true);
                         args.setProperty(kCreateNodeArgsPropSilent, true);
                         qDebug() << pluginID;
                         NodePtr node = createNode(args);
@@ -1707,7 +1707,7 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
     ///validate the frame range to render
     if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
         double firstFrameD, lastFrameD;
-        w.writer->getFrameRange_public(w.writer->getHash(), &firstFrameD, &lastFrameD, true);
+        w.writer->getFrameRange_public(0, &firstFrameD, &lastFrameD);
         if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
             _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
         }

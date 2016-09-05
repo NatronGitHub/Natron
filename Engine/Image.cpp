@@ -720,7 +720,7 @@ Image::Image(const ImageComponents& components,
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
 {
-    setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
+    setCacheEntry(ImageKey(std::string(), 0, 0, ViewIdx(0), false),
                   ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
@@ -778,18 +778,6 @@ Image::setBitmapDirtyZone(const RectI& zone)
     QWriteLocker k(&_entryLock);
 
     _bitmap.setDirtyZone(zone);
-}
-
-ImageKey
-Image::makeKey(const CacheEntryHolder* holder,
-               U64 nodeHashKey,
-               bool frameVaryingOrAnimated,
-               double time,
-               ViewIdx view,
-               bool draftMode,
-               bool fullScaleWithDownscaleInputs)
-{
-    return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
 ImageParamsPtr

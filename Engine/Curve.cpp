@@ -1628,7 +1628,7 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
                 k.setLeftDerivative(-it->rightDerivative);
             }
         }
-        std::pair<KeyFrameSet::iterator,bool> ret = _imp->keyFrames.insert(k);
+        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(k);
         if (ret.second) {
             (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
         }
@@ -1682,6 +1682,24 @@ Curve::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
         k.rightDerivative = it->getRightDerivative();
         s->keys.push_back(k);
     }
+}
+
+bool
+Curve::operator==(const Curve & other) const
+{
+    KeyFrameSet keys = getKeyFrames_mt_safe();
+    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    if (keys.size() != otherKeys.size()) {
+        return false;
+    }
+
+    KeyFrameSet::const_iterator itOther = otherKeys.begin();
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it, ++itOther) {
+        if (*it != *itOther) {
+            return false;
+        }
+    }
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

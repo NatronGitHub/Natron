@@ -112,16 +112,7 @@ private:
 
     friend class ::boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version)
-    {
-        ar & ::boost::serialization::make_nvp("Time", _time);
-        ar & ::boost::serialization::make_nvp("Value", _value);
-        ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
-        ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
-        ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
-
-    }
+    void serialize(Archive & ar, const unsigned int version);
 };
 
 struct KeyFrame_compare_time
@@ -132,6 +123,8 @@ struct KeyFrame_compare_time
         return lhs.getTime() < rhs.getTime();
     }
 };
+
+
 
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
@@ -178,6 +171,13 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serialization) OVERRIDE FINAL;
 
     void operator=(const Curve & other);
+
+    bool operator==(const Curve & other) const;
+
+    bool operator!=(const Curve & other) const
+    {
+        return !(*this == other);
+    }
 
     /**
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
@@ -308,15 +308,9 @@ public:
 
 private:
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
     friend class ::boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        KeyFrameSet keys = getKeyFrames_mt_safe();
-        ar & ::boost::serialization::make_nvp("KeyFrameSet", keys);
-    }
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 
     ///////The following functions are not thread-safe
     KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;

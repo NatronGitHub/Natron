@@ -235,6 +235,7 @@ public:
         _mipMapLevel = mmlvl;
     }
 
+
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL
     {
         SERIALIZATION_NAMESPACE::ImageParamsSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ImageParamsSerialization*>(serializationBase);
@@ -301,6 +302,7 @@ private:
     /// the caller should update the rod to the current project format.
     /// This is because the project format might have changed since this image was cached.
     bool _isRoDProjectFormat;
+
 };
 
 NATRON_NAMESPACE_EXIT;

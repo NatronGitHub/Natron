@@ -44,7 +44,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
-#include "Engine/CacheEntryHolder.h"
 #include "Engine/RotoItem.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
@@ -62,7 +61,6 @@ NATRON_NAMESPACE_ENTER;
 struct RotoDrawableItemPrivate;
 class RotoDrawableItem
     : public RotoItem
-      , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -205,8 +203,6 @@ public:
     void deactivateNodes();
     void activateNodes();
     void disconnectNodes();
-
-    virtual std::string getCacheID() const OVERRIDE FINAL;
 
     void resetTransformCenter();
 

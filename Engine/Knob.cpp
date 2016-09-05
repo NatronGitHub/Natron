@@ -249,6 +249,8 @@ struct KnobHelperPrivate
     // The holder containing this knob. This may be null if the knob is not in a collection
     KnobHolderWPtr holder;
 
+    KnobFrameViewHashingStrategyEnum cacheInvalidationStrategy;
+
     // Protects the label
     mutable QMutex labelMutex;
 
@@ -439,6 +441,7 @@ struct KnobHelperPrivate
                       bool declaredByPlugin_)
         : publicInterface(publicInterface_)
         , holder(holder_)
+        , cacheInvalidationStrategy(eKnobHashingStrategyValue)
         , labelMutex()
         , label(label_)
         , iconFilePath()
@@ -580,6 +583,18 @@ KnobHelper::getExpressionRecursionLevel() const
     }
 
     return tls->expressionRecursionLevel;
+}
+
+void
+KnobHelper::setHashingStrategy(KnobFrameViewHashingStrategyEnum strategy)
+{
+    _imp->cacheInvalidationStrategy = strategy;
+}
+
+KnobFrameViewHashingStrategyEnum
+KnobHelper::getHashingStrategy() const
+{
+    return _imp->cacheInvalidationStrategy;
 }
 
 void
@@ -2445,7 +2460,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
+            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() && (*it)->isPersistent() ) {
                 std::string scriptName = (*it)->getScriptName_mt_safe();
                 std::string fullName = (*it)->getFullyQualifiedName();
 
@@ -4243,6 +4258,7 @@ KnobHelper::getCurrentView() const
     return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
 }
 
+
 double
 KnobHelper::random(double time,
                    unsigned int seed) const
@@ -4303,7 +4319,10 @@ KnobHelper::randomSeed(double time,
     if (holder) {
         EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
-            hash = effect->getHash();
+            Hash64 h;
+            effect->getNode()->appendKnobsToFrameViewHash(time, ViewIdx(0), &h);
+            h.computeHash();
+            hash = h.value();
         }
     }
     U32 hash32 = (U32)hash;
@@ -4527,6 +4546,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     output->setEvaluateOnChange( getEvaluateOnChange() );
     output->setHintToolTip(newToolTip);
     output->setAddNewLine(true);
+    output->setHashingStrategy(getHashingStrategy());
     if (group) {
         if (indexInParent == -1) {
             group->addKnob(output);
@@ -4724,25 +4744,32 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     std::pair< int, KnobIPtr > master = knob->getMaster(dimension);
 
     if ( master.second && !knob->isMastersPersistenceIgnored() ) {
-        serialization->_slaveMasterLink.masterDimension = master.first;
-
-        NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
-        assert(holder);
-
-        TrackMarkerPtr isMarker = toTrackMarker(holder);
-        if (isMarker) {
-            serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
-            serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
-        } else {
-            // coverity[dead_error_line]
-            serialization->_slaveMasterLink.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
+        if (master.second->getDimension() > 1) {
+            serialization->_slaveMasterLink.masterDimensionName = master.second->getDimensionName(master.first);
         }
-        serialization->_slaveMasterLink.masterKnobName = master.second->getName();
-    } else {
-        serialization->_slaveMasterLink.masterDimension = -1;
+        serialization->_slaveMasterLink.hasLink = true;
+        if (master.second != knob) {
+            NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
+            assert(holder);
+
+            TrackMarkerPtr isMarker = toTrackMarker(holder);
+            if (isMarker) {
+                if (isMarker) {
+                    serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
+                    if (isMarker->getContext()->getNode()->getEffectInstance() != holder) {
+                        serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+                    }
+                }
+            } else {
+                // coverity[dead_error_line]
+                if (holder && holder != knob->getHolder()) {
+                    serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
+                }
+            }
+            serialization->_slaveMasterLink.masterKnobName = master.second->getName();
+        }
     }
 
-    serialization->_enabledChanged = (knob->isEnabled(dimension) != knob->isDefaultEnabled(dimension));
 
     KnobBoolBasePtr isBoolBase = toKnobBoolBase(knob);
     KnobIntPtr isInt = toKnobInt(knob);
@@ -4774,9 +4801,9 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     } else if (isColor || isDouble) {
         serialization->_value.isDouble = isDoubleBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeDouble;
-        serialization->_defaultValue.isDouble = isDouble->getDefaultValue(dimension);
+        serialization->_defaultValue.isDouble = isDoubleBase->getDefaultValue(dimension);
         serialization->_serializeValue = (serialization->_value.isDouble != serialization->_defaultValue.isDouble);
-        serialization->_serializeDefaultValue = isDouble->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
     } else if (isStringBase) {
         serialization->_value.isString = isStringBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
@@ -4803,7 +4830,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     // Check if we need to serialize this dimension
     serialization->_mustSerialize = true;
 
-    if (serialization->_expression.empty() && !serialization->_enabledChanged && serialization->_slaveMasterLink.masterKnobName.empty() && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
+    if (serialization->_expression.empty() && !serialization->_slaveMasterLink.hasLink && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
         serialization->_mustSerialize = false;
     }
 
@@ -4871,7 +4898,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
             if (foundDefault) {
                 isChoice->setValueFromLabel(obj._defaultValue.isString, 0);
             } else {
-                isChoice->setActiveEntry(obj._defaultValue.isString);
+                isChoice->setActiveEntry(obj._value.isString);
             }
         }
     }
@@ -4943,6 +4970,17 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_dimension = getDimension();
         serialization->_scriptName = getName();
         serialization->_visibilityChanged = (getIsSecret() != getDefaultIsSecret());
+
+        int nDimsDisabled = 0;
+        for (int i = 0; i < serialization->_dimension; ++i) {
+            // If the knob is slaved, it will be disabled so do not take it into account
+            if (!isSlave(i) && (isEnabled(i) != isDefaultEnabled(i))) {
+                ++nDimsDisabled;
+            }
+        }
+        if (nDimsDisabled == serialization->_dimension) {
+            serialization->_enabledChanged = true;
+        }
 
         // Values bits
         serialization->_values.resize(serialization->_dimension);
@@ -5125,7 +5163,10 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     if (serialization->_visibilityChanged) {
         setSecret(!getDefaultIsSecret());
     }
-
+    // Restore enabled state
+    if (serialization->_enabledChanged) {
+        setAllDimensionsEnabled(!isDefaultEnabled(0));
+    }
 
     // There is a case where the dimension of a parameter might have changed between versions, e.g:
     // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
@@ -5137,30 +5178,23 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     // The number of serialized dimension does not necessarily equals the number of dimensions of the knob because some dimensions
     // may had no modification to serialize.
-    for (std::size_t k = 0; k < serialization->_values.size(); ++k) {
+    for (std::size_t d = 0; d < serialization->_values.size(); ++d) {
+        int dimensionIndex = serialization->_values[d]._dimension;
 
-        int dimensionIndex = serialization->_values[k]._dimension;
 
-        // Restore enabled state
-        if (serialization->_values[k]._enabledChanged) {
-            setEnabled(dimensionIndex, isDefaultEnabled(dimensionIndex));
-        }
 
         // Clone animation
-        if (!serialization->_values[k]._animationCurve.keys.empty()) {
+        if (!serialization->_values[d]._animationCurve.keys.empty()) {
             CurvePtr curve = getCurve(ViewIdx(0), dimensionIndex);
             if (curve) {
-                curve->fromSerialization(serialization->_values[k]._animationCurve);
+                curve->fromSerialization(serialization->_values[d]._animationCurve);
             }
+        } else if (serialization->_values[d]._expression.empty() && !serialization->_values[d]._slaveMasterLink.hasLink) {
+            restoreValueFromSerialization(serialization->_values[d], dimensionIndex, serialization->_values[d]._serializeDefaultValue);
         }
 
-#ifndef NATRON_BOOST_SERIALIZATION_COMPAT
-        bool restoreDefaultValue = true;
-#else
-        bool restoreDefaultValue = serialization->_values[k]._boostSerializationClassVersion >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES;
-#endif
-        restoreValueFromSerialization(serialization->_values[k], dimensionIndex, restoreDefaultValue);
     } // for all dims
+
 
     // Restore extra datas
     KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
@@ -5171,7 +5205,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             isString->loadAnimation(data->keyframes);
             isString->setFontColor(data->fontColor[0], data->fontColor[1], data->fontColor[2]);
             isString->setFontFamily(data->fontFamily);
-            isString->setFontSize(data->fontSize);
+            isString->setFontSize(std::max(data->fontSize,1));
             isString->setItalicActivated(data->italicActivated);
             isString->setBoldActivated(data->boldActivated);
         }
@@ -6212,7 +6246,7 @@ void
 KnobHolder::incrHashAndEvaluate(bool isSignificant,
                                 bool refreshMetadatas)
 {
-    onSignificantEvaluateAboutToBeCalled(KnobIPtr());
+    onSignificantEvaluateAboutToBeCalled(KnobIPtr(), eValueChangedReasonNatronInternalEdited, -1, 0, ViewSpec(0));
     evaluate(isSignificant, refreshMetadatas);
 }
 
@@ -6263,9 +6297,18 @@ KnobHolder::endChanges(bool discardRendering)
     }
     KnobIPtr firstKnobChanged;
     ValueChangedReasonEnum firstKnobReason = eValueChangedReasonNatronGuiEdited;
+    int firstKnobDimension = -1;
+    ViewSpec firstKnobView(0);
+    double firstKnobTime = 0;
     if ( !knobChanged.empty() ) {
-        firstKnobChanged = knobChanged.begin()->knob;
-        firstKnobReason = knobChanged.begin()->reason;
+        KnobChange& first = knobChanged.front();
+        firstKnobChanged = first.knob;
+        firstKnobReason = first.reason;
+        if (!first.dimensionChanged.empty()) {
+            firstKnobDimension = *(first.dimensionChanged.begin());
+        }
+        firstKnobTime = first.time;
+        firstKnobView = first.view;
     }
     bool isChangeDueToTimeChange = firstKnobReason == eValueChangedReasonTimeChanged;
     bool isLoadingProject = false;
@@ -6288,7 +6331,7 @@ KnobHolder::endChanges(bool discardRendering)
 
     // Increment hash only if significant
     if (thisChangeSignificant && thisBracketHadChange && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange) {
-        onSignificantEvaluateAboutToBeCalled(firstKnobChanged);
+        onSignificantEvaluateAboutToBeCalled(firstKnobChanged, firstKnobReason, firstKnobDimension, firstKnobTime, firstKnobView);
     }
 
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
@@ -6763,28 +6806,6 @@ KnobHolder::checkIfOverlayRedrawNeeded()
     }
 }
 
-void
-KnobHolder::restoreDefaultValues()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    aboutToRestoreDefaultValues();
-
-    beginChanges();
-
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        KnobButtonPtr isBtn = toKnobButton(_imp->knobs[i]);
-        KnobSeparatorPtr isSeparator = toKnobSeparator(_imp->knobs[i]);
-
-        ///Don't restore buttons and the node label
-        if ( ( !isBtn || isBtn->getIsCheckable() ) && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
-            for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
-                _imp->knobs[i]->resetToDefaultValue(d);
-            }
-        }
-    }
-    endChanges();
-}
 
 void
 KnobHolder::setKnobsFrozen(bool frozen)

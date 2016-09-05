@@ -25,12 +25,10 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 RotoStrokeItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
+    em << YAML_NAMESPACE::BeginMap;
     RotoDrawableItemSerialization::encode(em);
     bool isSolid = _brushType != kRotoStrokeItemSerializationBrushTypeSolid;
-    if (isSolid && _subStrokes.empty()) {
-        return;
-    }
-    em << YAML_NAMESPACE::BeginMap;
+
     if (!isSolid) {
         em << YAML_NAMESPACE::Key << "Type" << YAML_NAMESPACE::Value << _brushType;
     }
@@ -58,10 +56,11 @@ RotoStrokeItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 void
 RotoStrokeItemSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    RotoItemSerialization::decode(node);
     if (!node.IsMap()) {
         throw YAML_NAMESPACE::InvalidNode();
     }
+    RotoItemSerialization::decode(node);
+
     if (node["Type"]) {
         _brushType = node["Type"].as<std::string>();
     } else {

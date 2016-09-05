@@ -659,6 +659,11 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setAddSeparator(true);
     }
 
+    std::string cachingInvalidation = descriptor.getProperties().getStringProperty(kOfxParamPropCacheInvalidation);
+    if (cachingInvalidation == kOfxParamInvalidateValueChangeToEnd ||
+        cachingInvalidation == kOfxParamInvalidateAll) {
+        knob->setHashingStrategy(eKnobHashingStrategyAnimation);
+    }
 
     knob->setInViewerContextItemSpacing( descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextLayoutPadWidth) );
 

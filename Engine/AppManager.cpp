@@ -258,6 +258,12 @@ AppManager::releaseNatronGIL()
     _imp->natronPythonGIL.unlock();
 }
 
+void
+AppManager::loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
+{
+    SERIALIZATION_NAMESPACE::read(ifile, obj);
+}
+
 bool
 AppManager::load(int &argc,
                  char *argv[],
@@ -266,10 +272,10 @@ AppManager::load(int &argc,
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
     char* argv0;
-    QString argv0QString = QDir::currentPath();
+    std::string argv0QString = QDir::currentPath().toStdString();
 
     if (!argv) {
-        argv0 = const_cast<char*>( argv0QString.toStdString().c_str() );
+        argv0 = const_cast<char*>( argv0QString.c_str() );
         argc = 1;
         argv = &argv0;
     }
@@ -2093,13 +2099,32 @@ AppManager::removeFromViewerCache(U64 hash)
     _imp->_viewerCache->removeEntry(hash);
 }
 
+
 void
-AppManager::getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
+AppManager::removeAllCacheEntriesForPlugin(const std::string& pluginID)
+{
+    _imp->_nodeCache->removeAllEntriesForPluginPublic(pluginID, false);
+    _imp->_diskCache->removeAllEntriesForPluginPublic(pluginID, false);
+    _imp->_viewerCache->removeAllEntriesForPluginPublic(pluginID, false);
+}
+
+void
+AppManager::queueEntriesForDeletion(const std::list<ImagePtr>& images)
+{
+    _imp->_nodeCache->appendToQueue(images);
+}
+
+void
+AppManager::queueEntriesForDeletion(const std::list<FrameEntryPtr>& images)
+{
+    _imp->_viewerCache->appendToQueue(images);
+}
+
+void
+AppManager::getMemoryStatsForPlugin(const std::string& pluginID,
                                               std::size_t* ramOccupied,
                                               std::size_t* diskOccupied) const
 {
-    assert(holder);
-
     *ramOccupied = 0;
     *diskOccupied = 0;
 
@@ -2109,49 +2134,19 @@ AppManager::getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
     std::size_t diskCacheDisk = 0;
     std::size_t nodeCacheMem = 0;
     std::size_t nodeCacheDisk = 0;
-    const Node* isNode = dynamic_cast<const Node*>(holder);
-    if (isNode) {
-        ViewerInstancePtr isViewer = isNode->isEffectViewerInstance();
-        if (isViewer) {
-            _imp->_viewerCache->getMemoryStatsForCacheEntryHolder(holder, &viewerCacheMem, &viewerCacheDisk);
-        }
+
+    if (pluginID == PLUGINID_NATRON_VIEWER_GROUP) {
+        _imp->_viewerCache->getMemoryStatsForPlugin(pluginID, &viewerCacheMem, &viewerCacheDisk);
+    } else {
+        _imp->_diskCache->getMemoryStatsForPlugin(pluginID, &diskCacheMem, &diskCacheDisk);
+        _imp->_nodeCache->getMemoryStatsForPlugin(pluginID, &nodeCacheMem, &nodeCacheDisk);
     }
-    _imp->_diskCache->getMemoryStatsForCacheEntryHolder(holder, &diskCacheMem, &diskCacheDisk);
-    _imp->_nodeCache->getMemoryStatsForCacheEntryHolder(holder, &nodeCacheMem, &nodeCacheDisk);
 
     *ramOccupied = diskCacheMem + viewerCacheMem + nodeCacheMem;
     *diskOccupied = diskCacheDisk + viewerCacheDisk + nodeCacheDisk;
 }
 
-void
-AppManager::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder,
-                                                                  U64 treeVersion)
-{
-    _imp->_nodeCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
-}
 
-void
-AppManager::removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder,
-                                                                      U64 treeVersion)
-{
-    _imp->_diskCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
-}
-
-void
-AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder,
-                                                                    U64 treeVersion)
-{
-    _imp->_viewerCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
-}
-
-void
-AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,
-                                           bool blocking)
-{
-    _imp->_nodeCache->removeAllEntriesForHolderPublic(holder, blocking);
-    _imp->_diskCache->removeAllEntriesForHolderPublic(holder, blocking);
-    _imp->_viewerCache->removeAllEntriesForHolderPublic(holder, blocking);
-}
 
 const QString &
 AppManager::getApplicationBinaryPath() const

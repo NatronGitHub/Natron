@@ -39,7 +39,6 @@ template <typename T>
 void write(std::ostream& stream, const T& obj)
 {
     YAML_NAMESPACE::Emitter em;
-    em.SetStringFormat(YAML_NAMESPACE::DoubleQuoted);
     obj.encode(em);
     stream << em.c_str();
 }

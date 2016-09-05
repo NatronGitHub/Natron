@@ -2801,7 +2801,7 @@ NodeGui::onOutputLayerChanged()
 void
 NodeGui::refreshNodeText()
 {
-    if ( !_graph->getGui() ) {
+    if ( !_graph->getGui() || !_nameItem) {
         return;
     }
     NodePtr node = getNode();
@@ -2823,19 +2823,23 @@ NodeGui::refreshNodeText()
     // For the merge node, set its operator icon
     if ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
         assert(_presetIcon);
-        QPixmap pix;
-        getPixmapForMergeOperator(subLabelContent, &pix);
-        if ( pix.isNull() ) {
-            _presetIcon->setVisible(false);
-        } else {
-            _presetIcon->setVisible(true);
-            _presetIcon->setPixmap(pix);
+        if (_presetIcon) {
+            QPixmap pix;
+            getPixmapForMergeOperator(subLabelContent, &pix);
+            if ( pix.isNull() ) {
+                _presetIcon->setVisible(false);
+            } else {
+                _presetIcon->setVisible(true);
+                _presetIcon->setPixmap(pix);
+            }
+            subLabelContent.clear();
         }
-        subLabelContent.clear();
     } else {
 
         if (presetsLabel.isEmpty()) {
-            _presetIcon->setVisible(false);
+            if (_presetIcon) {
+                _presetIcon->setVisible(false);
+            }
         } else {
             const std::vector<PluginPresetDescriptor>& presetDesc = plugin->getPresetFiles();
             for (std::size_t i = 0; i < presetDesc.size(); ++i) {
@@ -2843,7 +2847,7 @@ NodeGui::refreshNodeText()
                     QPixmap pix;
                     Gui::getPresetIcon(presetDesc[i].presetFilePath, presetDesc[i].presetIconFile, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), &pix);
                     
-                    if (!pix.isNull()) {
+                    if (!pix.isNull() && _presetIcon) {
                         _presetIcon->setVisible(true);
                         _presetIcon->setPixmap(pix);
                         presetsIconSet = true;

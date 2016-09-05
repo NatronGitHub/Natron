@@ -74,10 +74,10 @@ ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
 
-    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getLayerName().c_str() ) );
+    h.append(QString::fromUtf8( layer._comps->getLayerName().c_str() ) );
     const std::vector<std::string>& comps = layer._comps->getComponentsNames();
     for (std::size_t i = 0; i < comps.size(); ++i) {
-        Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
+        h.append(QString::fromUtf8( comps[i].c_str() ) );
     }
 
     return (int)h.value();

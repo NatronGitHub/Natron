@@ -342,6 +342,9 @@ public:
 
     bool canConcatenatedRotoPaintTree() const;
 
+    // It is animated if at least one of the item is animated
+    bool isAnimated() const;
+
     /**
      * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
      * To be called whenever changes position in the hierarchy or when one gets removed/inserted

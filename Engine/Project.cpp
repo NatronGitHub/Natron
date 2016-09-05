@@ -83,6 +83,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
+#include "Global/GitVersion.h"
+#include "Global/MemoryInfo.h"
+
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
 
@@ -309,7 +312,7 @@ Project::loadProjectInternal(const QString & path,
     try {
         // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
         _imp->lastProjectLoaded.reset(new SERIALIZATION_NAMESPACE::ProjectSerialization);
-        SERIALIZATION_NAMESPACE::read(ifile, _imp->lastProjectLoaded.get());
+        appPTR->loadProjectFromFileFunction(ifile, getApp(), _imp->lastProjectLoaded.get());
 
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
@@ -578,6 +581,9 @@ Project::saveProjectInternal(const QString & path,
             removeLockFile();
         }
         {
+            // The project file was modified, update the cache because the ID of all nodes have changed
+            refreshCacheIDRecursive();
+
             _imp->setProjectFilename( name.toStdString() );
             _imp->setProjectPath( path.toStdString() );
             QMutexLocker l(&_imp->projectLock);
@@ -1444,14 +1450,6 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
     appPTR->clearErrorLog_mt_safe();
     fromSerialization(obj);
 
-
-    // Now that all knobs are loaded, call autosetProjectDirectory
-    // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
-    // by the main GUI process
-    if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-        _imp->autoSetProjectDirectory(path);
-    }
-
     std::list<LogEntry> log;
     appPTR->getErrorLog_mt_safe(&log);
     if (!log.empty()) {
@@ -2012,6 +2010,22 @@ Project::getProjectCreationTime() const
     QMutexLocker l(&_imp->projectLock);
 
     return _imp->projectCreationTime.toMSecsSinceEpoch();
+}
+
+QDateTime
+Project::getProjectFileLastModDate() const
+{
+    QString path = QString::fromUtf8(_imp->projectPath->getValue().c_str());
+    Global::ensureLastPathSeparator(path);
+    path += QString::fromUtf8(_imp->projectName->getValue().c_str());
+
+    QFileInfo info(path);
+    if (!info.exists()) {
+        assert(false);
+        return QDateTime::currentDateTime();
+    } else {
+        return info.lastModified();
+    }
 }
 
 ViewerColorSpaceEnum
@@ -2797,6 +2811,8 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
         return;
     }
 
+    // In Natron 1.0 we did not have a project frame range knob, hence we need to recompute it
+    bool foundFrameRangeKnob = false;
     {
         CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(getApp());
 
@@ -2834,26 +2850,30 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
         _imp->formatKnob->populateChoices(entries);
         _imp->autoSetProjectFormat = false;
 
-        const KnobsVec& projectKnobs = getKnobs();
-
         // Restore project's knobs
-        for (std::size_t i = 0; i < projectKnobs.size(); ++i) {
-            // Try to find a serialized value for this knob
-            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
-                if ( (*it)->getName() == projectKnobs[i]->getName() ) {
-                    projectKnobs[i]->fromSerialization(**it);
-                    break;
-                }
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
+            KnobIPtr foundKnob = getKnobByName((*it)->getName());
+            if (!foundKnob) {
+                continue;
             }
-            if (projectKnobs[i] == _imp->envVars) {
+            foundKnob->fromSerialization(**it);
+            if (foundKnob == _imp->envVars) {
                 onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
-            } else if (projectKnobs[i] == _imp->natronVersion) {
+                // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+                // by the main GUI process
+                if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+                    _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
+                }
+            } else if (foundKnob == _imp->natronVersion) {
                 std::string v = _imp->natronVersion->getValue();
                 if (v == "Natron v1.0.0") {
                     getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
                 }
+            } else if (foundKnob == _imp->frameRange) {
+                foundFrameRangeKnob = true;
             }
         }
+
 
         // Restore the timeline
         _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
@@ -2875,11 +2895,9 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     _imp->lastAutoSave = time;
     getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-    if (serialization->_boostSerializationClassVersion < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+    if (foundFrameRangeKnob) {
         recomputeFrameRangeFromReaders();
     }
-#endif
     
 } // Project::fromSerialization
 

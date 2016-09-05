@@ -46,7 +46,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
-#include "Engine/CacheEntryHolder.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -79,7 +78,6 @@ NATRON_NAMESPACE_ENTER;
 class Node
     : public QObject
     , public boost::enable_shared_from_this<Node>
-    , public CacheEntryHolder
     , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -113,7 +111,7 @@ public:
      * @brief Returns true if this node is a "user" node. For internal invisible node, this would return false.
      * If this function returns false, the node will not be serialized.
      **/
-    bool isPartOfProject() const;
+    bool isPersistent() const;
 
     const PluginPtr getPlugin() const;
 
@@ -268,12 +266,6 @@ public:
 
     void getChildrenMultiInstance(NodesList* children) const;
 
-    /**
-     * @brief Returns the hash value of the node, or 0 if it has never been computed.
-     **/
-    U64 getHashValue() const;
-
-    virtual std::string getCacheID() const OVERRIDE FINAL;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -934,14 +926,7 @@ public:
 
     void refreshPreviewsRecursivelyUpstream(double time);
 
-    void incrementKnobsAge();
-
-    void incrementKnobsAge_internal();
-
 public:
-
-
-    U64 getKnobsAge() const;
 
     void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master);
 
@@ -1337,8 +1322,17 @@ public:
 
     double getHostMixingValue(double time, ViewIdx view) const;
 
-    void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
-    void removeAllImagesFromCache(bool blocking);
+    /**
+     * @brief Removes all images from the cache associated to this node
+     **/
+    void removeAllImagesFromCache();
+
+    void appendKnobsToFrameViewHash(double time, ViewIdx view, Hash64* hash) const;
+
+    void onActionEvaluated();
+
+public:
+
 
     bool isDraftModeUsed() const;
     bool isInputRelatedDataDirty() const;
@@ -1390,14 +1384,6 @@ private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
-    void computeHashRecursive(std::list<NodePtr>& marked);
-
-    /**
-     * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
-     * @return True if the hash has changed, false otherwise
-     **/
-    bool computeHashInternal() WARN_UNUSED_RETURN;
-
     void refreshEnabledKnobsLabel(const ImageComponents& layer);
 
     void refreshCreatedViews(const KnobIPtr& knob);
@@ -1435,8 +1421,6 @@ public Q_SLOTS:
 
     void onRefreshIdentityStateRequestReceived();
 
-    void setKnobsAge(U64 newAge);
-
 
     void doRefreshEdgesGUI()
     {
@@ -1468,8 +1452,6 @@ public Q_SLOTS:
 
     void onParentMultiInstanceInputChanged(int input);
 
-    void doComputeHashOnMainThread();
-
 Q_SIGNALS:
 
     void rightClickMenuKnobPopulated();
@@ -1484,11 +1466,7 @@ Q_SIGNALS:
 
     void outputLayerChanged();
 
-    void mustComputeHashOnMainThread();
-
     void settingsPanelClosed(bool);
-
-    void knobsAgeChanged(U64 age);
 
     void persistentMessageChanged();
 
@@ -1556,13 +1534,6 @@ Q_SIGNALS:
 
     void mustDequeueActions();
 
-protected:
-
-    /**
-     * @brief Recompute the hash value of this node and notify all the clone effects that the values they store in their
-     * knobs is dirty and that they should refresh it by cloning the live instance.
-     **/
-    void computeHash();
 
 private:
 

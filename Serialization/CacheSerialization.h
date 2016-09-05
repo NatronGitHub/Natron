@@ -62,6 +62,10 @@ public:
     // but for a Tile cache, it is an offset in the cache memory files.
     std::size_t dataOffsetInFile;
 
+    // The plugin ID of the node holding this image
+    std::string pluginID;
+
+
     SerializedEntry()
     : hash(0)
     , key()
@@ -69,6 +73,7 @@ public:
     , size(0)
     , filePath()
     , dataOffsetInFile(0)
+    , pluginID()
     {
     }
 
@@ -80,6 +85,7 @@ public:
         em << dataOffsetInFile;
         em << size;
         em << hash;
+        em << pluginID;
         key.encode(em);
         params.encode(em);
         em << YAML_NAMESPACE::EndSeq;
@@ -88,15 +94,16 @@ public:
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE FINAL
     {
-        if (!node.IsSequence() || node.size() != 6) {
+        if (!node.IsSequence() || node.size() != 7) {
             throw YAML_NAMESPACE::InvalidNode();
         }
         filePath = node[0].as<std::string>();
         dataOffsetInFile = node[1].as<std::size_t>();
         size = node[2].as<std::size_t>();
         hash = node[3].as<hash_type>();
-        key.decode(node[4]);
-        params.decode(node[5]);
+        pluginID = node[4].as<std::string>();
+        key.decode(node[5]);
+        params.decode(node[6]);
     }
 
 
@@ -111,6 +118,7 @@ public:
 
     int cacheVersion;
     std::list<SerializedEntry<EntryType> > entries;
+
 
     virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE FINAL
     {

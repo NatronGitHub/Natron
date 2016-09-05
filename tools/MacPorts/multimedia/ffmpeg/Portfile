@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 150068 2016-07-11 05:21:46Z devans@macports.org $
+# $Id: Portfile 151192 2016-08-09 19:36:50Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -10,7 +10,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.1.1
+version             3.1.2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
@@ -52,8 +52,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_bzip2           yes
 
-checksums           rmd160  1b2b8e480d7140e43ff6f61ac4b05f2234b5681a \
-                    sha256  a5bca50a90a37b983eaa17c483a387189175f37ca678ae7e51d43e7610b4b3b4
+checksums           rmd160  569cb08fa70d36ac4a68e66dab4ad5fb7c21b659 \
+                    sha256  62eb8d810b93c1ffc23739c0824a91eabfe5e7be81fab34ce740736a110b70f7
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -155,9 +155,8 @@ platform darwin {
         configure.args-append --disable-asm
     }
 
-    # filters coreimage and coreimagesrc don't build on 10.5
+    # filters coreimage and coreimagesrc don't build on 10.6
     # and earlier due to use of bridged casts in Objective C (#51823)
-    # and don't build on 10.6 because CFBridgingRetain appeared in 10.7
     if {${os.major} < 11} {
         configure.args-append --disable-filter=coreimage \
                               --disable-filter=coreimagesrc

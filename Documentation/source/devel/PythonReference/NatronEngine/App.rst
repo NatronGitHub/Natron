@@ -260,7 +260,7 @@ Here is an example on how to pass properties to the createNode function::
   the parameter (e.g: int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).
   
   
-- *Name*: **CreateNodeArgsPropOutOfProject**
+- *Name*: **CreateNodeArgsPropVolatile**
 
   	*Dimension*: 1
   	
@@ -268,10 +268,23 @@ Here is an example on how to pass properties to the createNode function::
 	
 	*Default*: False
 	
-	*Description*: When True the node will not be part of the project. The node can be used for internal used, e.g in a Python script but will
-  not appear to the user. It will also not be saved in the project.
-  
-  
+	*Description*: When True the node will not be part visible and not saved into any project.
+    The node can be used for internal use, e.g in a Python script.
+
+
+- *Name*: **CreateNodeArgsPropPreset**
+
+    *Dimension*: 1
+
+    *Type*: string
+
+    *Default*: None
+
+    *Description*: Indicates the name of the presets to use when loading the node.
+    The preset name must correspond to a valid label of a preset file (.nps) that was found by Natron.
+    The preset name is NOT the filename of the preset file, but the string in the file found next to the key "PresetLabel"
+    If the preset cannot be found, the presets will not be loaded and the node will have its default state.
+
 - *Name*: **CreateNodeArgsPropNoNodeGUI**
 
 	*Dimension*: 1
@@ -280,7 +293,7 @@ Here is an example on how to pass properties to the createNode function::
 	
 	*Default*: False
 	
-	*Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropOutOfProject set to True implies this.
+	*Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropVolatile set to True implies this.
 
 
 - *Name*: **CreateNodeArgsPropSettingsOpened**
@@ -292,7 +305,7 @@ Here is an example on how to pass properties to the createNode function::
 	*Default*: False
 	
 	*Description*:  * If True, the node settings panel will not be opened by default when created.
-  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effet.
 
 
@@ -305,7 +318,7 @@ Here is an example on how to pass properties to the createNode function::
 	*Default*: False
 	
 	*Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection. 
-  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effet.
 
 
@@ -318,7 +331,7 @@ Here is an example on how to pass properties to the createNode function::
   	  *Default*: False
   	  
  	  *Description*:  Natron will push a undo/redo command to the stack when creating this node. 
-  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effect.
     
     

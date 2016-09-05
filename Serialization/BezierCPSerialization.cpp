@@ -29,9 +29,9 @@ BezierCPSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     if (xCurve.keys.empty()) {
         em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         em << x << y << leftX << leftY << rightX << rightY;
-        em << YAML_NAMESPACE::EndMap;
+        em << YAML_NAMESPACE::EndSeq;
     } else {
-        em << YAML_NAMESPACE::BeginSeq;
+        em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
         xCurve.encode(em);
         yCurve.encode(em);
         leftCurveX.encode(em);

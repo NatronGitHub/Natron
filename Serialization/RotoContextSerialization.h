@@ -19,22 +19,11 @@
 #ifndef Engine_RotoContextSerialization_h
 #define Engine_RotoContextSerialization_h
 
-// ***** BEGIN PYTHON BLOCK *****
-// from <https://docs.python.org/3/c-api/intro.html#include-files>:
-// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#include <Python.h>
-// ***** END PYTHON BLOCK *****
-
 
 #include "Serialization/RotoLayerSerialization.h"
 
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#define ROTO_CTX_REMOVE_COUNTERS 2
-#define ROTO_CTX_VERSION ROTO_CTX_REMOVE_COUNTERS
-#endif
-
-SERIALIZATION_NAMESPACE_ENTER;
+SERIALIZATION_NAMESPACE_ENTER
 
 class RotoContextSerialization
 : public SerializationObjectBase
@@ -55,46 +44,12 @@ public:
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-
     template<class Archive>
-    void save(Archive & ar,
-              const unsigned int /*version*/) const
-    {
-        throw std::runtime_error("Saving with boost is no longer supported");
-    }
-
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int version)
-    {
-        ar & ::boost::serialization::make_nvp("BaseLayer", _baseLayer);
-
-        bool autoKeying, rippleEdit, featherLink;
-        ar & ::boost::serialization::make_nvp("AutoKeying", autoKeying);
-        ar & ::boost::serialization::make_nvp("RippleEdit", rippleEdit);
-        ar & ::boost::serialization::make_nvp("FeatherLink", featherLink);
-
-        std::list<std::string> selectedItems;
-        ar & ::boost::serialization::make_nvp("Selection", selectedItems);
-
-        if (version < ROTO_CTX_REMOVE_COUNTERS) {
-            std::map<std::string, int> _itemCounters;
-            ar & ::boost::serialization::make_nvp("Counters", _itemCounters);
-        }
-    }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
+    void serialize(Archive & ar, const unsigned int version);
 
     RotoLayerSerialization _baseLayer;
 };
 
-SERIALIZATION_NAMESPACE_EXIT;
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoContextSerialization, ROTO_CTX_VERSION)
-#endif
-
+SERIALIZATION_NAMESPACE_EXIT
 
 #endif // Engine_RotoContextSerialization_h

@@ -20,13 +20,6 @@
 #define NATRON_ENGINE_CURVESERIALIZATION_H
 
 
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-#include "Global/Macros.h"
-
-#include "Engine/Curve.h"
-#include "Engine/CurvePrivate.h"
-#endif // NATRON_BOOST_SERIALIZATION_COMPAT
-
 #include "Serialization/SerializationBase.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
@@ -77,7 +70,10 @@ struct KeyFrameSerialization
 
 };
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/viewer-group
 class CurveSerialization
 : public SerializationObjectBase
 {

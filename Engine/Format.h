@@ -37,6 +37,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 /*This class is used to hold the format of a frame (its resolution).
@@ -143,6 +144,9 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
 
 private:
     double _par;

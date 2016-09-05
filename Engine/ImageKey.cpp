@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "Engine/ViewIdx.h"
+#include "Serialization/ImageKeySerialization.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -36,32 +37,22 @@ ImageKey::ImageKey()
     : KeyHelper<U64>()
     , _nodeHashKey(0)
     , _time(0)
-//, _mipMapLevel(0)
-    , _pixelAspect(1)
     , _view(0)
     , _draftMode(false)
-    , _frameVaryingOrAnimated(false)
-    , _fullScaleWithDownscaleInputs(false)
 {
 }
 
-ImageKey::ImageKey(const CacheEntryHolder* holder,
+ImageKey::ImageKey(const std::string& pluginID,
                    U64 nodeHashKey,
-                   bool frameVaryingOrAnimated,
                    double time,
                    //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
                    ViewIdx view,
-                   double pixelAspect,
-                   bool draftMode,
-                   bool fullScaleWithDownscaleInputs)
-    : KeyHelper<U64>(holder)
+                   bool draftMode)
+    : KeyHelper<U64>(pluginID)
     , _nodeHashKey(nodeHashKey)
     , _time(time)
-    , _pixelAspect(pixelAspect)
     , _view(view)
     , _draftMode(draftMode)
-    , _frameVaryingOrAnimated(frameVaryingOrAnimated)
-    , _fullScaleWithDownscaleInputs(fullScaleWithDownscaleInputs)
 {
 }
 
@@ -69,32 +60,16 @@ void
 ImageKey::fillHash(Hash64* hash) const
 {
     hash->append(_nodeHashKey);
-    if (_frameVaryingOrAnimated) {
-        hash->append(_time);
-    }
-    hash->append(_view);
-    hash->append(_pixelAspect);
     hash->append(_draftMode);
-    hash->append(_fullScaleWithDownscaleInputs);
 }
 
 bool
 ImageKey::operator==(const ImageKey & other) const
 {
-    if (_frameVaryingOrAnimated) {
-        return _nodeHashKey == other._nodeHashKey &&
-               _time == other._time &&
-               _view == other._view &&
-               _pixelAspect == other._pixelAspect &&
-               _draftMode == other._draftMode &&
-               _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
-    } else {
-        return _nodeHashKey == other._nodeHashKey &&
-               _view == other._view &&
-               _pixelAspect == other._pixelAspect &&
-               _draftMode == other._draftMode &&
-               _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
-    }
+    // Do not compare view & time as they are already encoded into the hash
+    return _nodeHashKey == other._nodeHashKey &&
+    _draftMode == other._draftMode;
+
 }
 
 void
@@ -106,10 +81,8 @@ ImageKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seri
     }
     serialization->nodeHashKey = _nodeHashKey;
     serialization->time = _time;
-    serialization->view = _view;
+    serialization->view = (int)_view;
     serialization->draft = _draftMode;
-    serialization->par = _pixelAspect;
-    serialization->frameVaryingOrAnimated = _frameVaryingOrAnimated;
 }
 
 void
@@ -120,11 +93,8 @@ ImageKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBa
         return;
     }
     _nodeHashKey = serialization->nodeHashKey;
-    _time = serialization->time;
-    _view = serialization->view;
+    _view = ViewIdx(serialization->view);
     _draftMode = serialization->draft;
-    _pixelAspect = serialization->par;
-    _frameVaryingOrAnimated = serialization->frameVaryingOrAnimated;
 }
 
 NATRON_NAMESPACE_EXIT;

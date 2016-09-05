@@ -103,15 +103,16 @@
 /**
  * @brief optional x1 bool property
  * Default Value - false
- * When set the node will not be part of the project. The node can be used for internal used, e.g in a Python script.
+ * When set to true the node will not be visible and will not be serialized into the user project.
+ * The node can be used for internal use, e.g in a Python script.
  **/
-#define kCreateNodeArgsPropOutOfProject "CreateNodeArgsPropOutOfProject"
+#define kCreateNodeArgsPropVolatile "CreateNodeArgsPropVolatile"
 
 /**
  * @brief optional x1 bool property
  * Default Value - false
  * If true, the node will not have any GUI created.
- * By default Natron will always create the GUI for a node, except if the property kCreateNodeArgsPropOutOfProject is set to true
+ * By default Natron will always create the GUI for a node, except if the property kCreateNodeArgsPropVolatile is set to true
  **/
 #define kCreateNodeArgsPropNoNodeGUI "CreateNodeArgsPropNoNodeGUI"
 
@@ -141,7 +142,7 @@
 /**
  * @brief optional x1 bool property
  * Default Value - true
- * If true, Natron will push a undo/redo command to the stack when creating this node. If the property kCreateNodeArgsPropNoNodeGUI is set to true or kCreateNodeArgsPropOutOfProject
+ * If true, Natron will push a undo/redo command to the stack when creating this node. If the property kCreateNodeArgsPropNoNodeGUI is set to true or kCreateNodeArgsPropVolatile
  * is set to true, this property has no effet
  **/
 #define kCreateNodeArgsPropAddUndoRedoCommand "CreateNodeArgsPropAddUndoRedoCommand"
@@ -309,7 +310,7 @@ class CreateNodeArgs
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
         createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
-        createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
+        createProperty<bool>(kCreateNodeArgsPropVolatile, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
         createProperty<bool>(kCreateNodeArgsPropSubGraphOpened, true);

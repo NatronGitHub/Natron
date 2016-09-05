@@ -129,7 +129,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
             if (isInt) {
                 args->setPropertyN<int>(prop, isInt->getValues(), fail);
             } else if (isBool) {
-                if (prop == kCreateNodeArgsPropOutOfProject) {
+                if (prop == kCreateNodeArgsPropVolatile) {
                     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
                     skipNoNodeGuiProp = true;
                 } else if (skipNoNodeGuiProp && prop == kCreateNodeArgsPropNoNodeGUI) {

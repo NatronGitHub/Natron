@@ -275,27 +275,12 @@ public:
         return _node.lock();
     }
 
-    /**
-     * @brief Returns the "real" hash of the node synchronized with the gui state
-     **/
-    U64 getHash() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
      * at any time during the same render call.
-     * @returns This function returns true if case of success, false otherwise.
      **/
-    U64 getRenderHash() const WARN_UNUSED_RETURN;
-
-    U64 getKnobsAge() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Set the knobs age of this node to be 'age'. Note that this can be called
-     * for 2 reasons:
-     * - loading a project
-     * - If this node is a clone and the master node changed its hash.
-     **/
-    void setKnobsAge(U64 age);
+    U64 getRenderHash(double time, ViewIdx view) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node's name
@@ -646,7 +631,6 @@ public:
         ViewIdx view;
         bool isRenderUserInteraction;
         bool isSequential;
-        U64 nodeHash;
         AbortableRenderInfoPtr abortInfo;
         NodePtr treeRoot;
         int visitsCount;
@@ -694,7 +678,8 @@ public:
                                            const NodePtr& callerNode,
                                            const NodePtr & treeRoot,
                                            const RectD & canonicalRenderWindow,
-                                           FrameRequestMap & requests);
+                                           FrameRequestMap & requests,
+                                           U64* nodeHash);
 
     /**
      * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
@@ -721,6 +706,8 @@ public:
                                                                ViewIdx view,
                                                                const NodePtr & treeRoot,
                                                                FrameRequestMap* requests,          // roi functor specific
+                                                               Hash64* nodeHash,                    // roi functor specific
+                                                               FrameViewRequest* frameViewRequestData,        // roi functor specific
                                                                EffectInstance::InputImagesMap* inputImages,         // render functor specific
                                                                const EffectInstance::ComponentsNeededMap* neededComps,         // render functor specific
                                                                bool useScaleOneInputs,         // render functor specific
@@ -806,11 +793,7 @@ public:
      **/
     bool isFrameVarying() const;
 
-    /**
-     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
-     * It is frame varying/animated if at least one of the node is animated/varying
-     **/
-    bool isFrameVaryingOrAnimated_Recursive() const;
+    bool isFrameVaryingOrAnimated() const;
 
     /**
      * @brief Returns the preferred output frame rate to render with
@@ -852,6 +835,8 @@ public:
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    void getCurrentTimeView(double* time, ViewIdx* view) const;
+
     virtual bool getCanTransform() const
     {
         return false;
@@ -1026,18 +1011,17 @@ public:
      * converted to pixel coordinates
      */
     ImagePtr getImage(int inputNb,
-                                      const double time,
-                                      const RenderScale & scale,
-                                      const ViewIdx view,
-                                      const RectD *optionalBounds, //!< optional region in canonical coordinates
-                                      const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
-                                      const bool mapToClipPrefs,
-                                      const bool dontUpscale,
-                                      const StorageModeEnum returnStorage,
-                                      const ImageBitDepthEnum* textureDepth,
-                                      RectI* roiPixel,
-                                      boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
-    virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
+                      const double time,
+                      const RenderScale & scale,
+                      const ViewIdx view,
+                      const RectD *optionalBounds, //!< optional region in canonical coordinates
+                      const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
+                      const bool mapToClipPrefs,
+                      const bool dontUpscale,
+                      const StorageModeEnum returnStorage,
+                      const ImageBitDepthEnum* textureDepth,
+                      RectI* roiPixel,
+                      boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
@@ -1122,7 +1106,9 @@ public:
 
     FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
 
-    void getFrameRange_public(U64 hash, double *first, double *last, bool bypasscache = false);
+    void getFrameRange_public(U64 hash, double *first, double *last);
+
+    void cacheActionResults(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded, const RectD& rod, int identityInputNb, double identityTime, ViewIdx identityView);
 
     /**
      * @brief Override to initialize the overlay interact. It is called only on the
@@ -2105,6 +2091,7 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
+                                                 const FrameViewRequest* request,
                                                  const OSGLContextPtr& glContext,
                                                  double time,
                                                  const ParallelRenderArgsPtr & frameArgs,
@@ -2116,7 +2103,6 @@ private:
                                                  const ImagePlanesToRenderPtr & planes,
                                                  bool isSequentialRender,
                                                  bool isRenderMadeInResponseToUserInteraction,
-                                                 U64 nodeHash,
                                                  bool renderFullScaleThenDownscale,
                                                  bool byPassCache,
                                                  ImageBitDepthEnum outputClipPrefDepth,
@@ -2162,7 +2148,6 @@ private:
                                          const ViewIdx view,
                                          const RenderScale & scale,
                                          const RectD* optionalBoundsParam,
-                                         U64* nodeHash_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
                                          ViewIdx *inputView,
@@ -2192,7 +2177,7 @@ private:
                             ImagePtr* downscaleImage);
 
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob) OVERRIDE FINAL;
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE FINAL;
     virtual void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master) OVERRIDE FINAL;
 
 public:

@@ -115,7 +115,6 @@ class BezierCP;
 class BlockingBackgroundRender;
 class BufferableObject;
 class CLArgs;
-class CacheEntryHolder;
 class CacheSignalEmitter;
 class CreateNodeArgs;
 class Curve;

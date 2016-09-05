@@ -30,11 +30,8 @@ class ImageKeySerialization
 public:
 
     unsigned long long nodeHashKey;
-    std::string holderID;
-    bool frameVaryingOrAnimated;
     double time;
     int view;
-    double par;
     bool draft;
 
     ImageKeySerialization()

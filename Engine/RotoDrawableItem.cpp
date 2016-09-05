@@ -233,7 +233,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         fixedNamePrefix.append( QString::fromUtf8("Effect") );
 
         CreateNodeArgs args( pluginId.toStdString(), NodeCollectionPtr() );
-        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -258,7 +258,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
                 CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, NodeCollectionPtr() );
-                args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                 args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
@@ -272,7 +272,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
                 CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, NodeCollectionPtr() );
-                args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+                args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                 args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
                 _imp->frameHoldNode = app->createNode(args);
@@ -288,7 +288,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
     CreateNodeArgs args( PLUGINID_OFX_MERGE, NodeCollectionPtr() );
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
@@ -305,7 +305,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             fixedNamePrefix = baseFixedName;
             fixedNamePrefix.append( QString::fromUtf8("Mask") );
             CreateNodeArgs args( maskPluginID.toStdString(), NodeCollectionPtr() );
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
@@ -342,7 +342,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (mergeOp) {
         mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
     }
-    compOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    compOp->setDefaultValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
         if (type == eRotoStrokeTypeBlur) {
@@ -386,14 +386,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
 } // RotoDrawableItem::createNodes
 
-std::string
-RotoDrawableItem::getCacheID() const
-{
-    assert(_imp->mergeNode);
-
-    //The cache iD is the one of the internal merge node + RotoDrawableItem
-    return _imp->mergeNode->getCacheID() + ".RotoDrawableItem";
-}
 
 void
 RotoDrawableItem::disconnectNodes()

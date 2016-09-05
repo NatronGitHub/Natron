@@ -1,0 +1,10 @@
+--- Modules/CMakeFindFrameworks.cmake.orig
++++ Modules/CMakeFindFrameworks.cmake
+@@ -28,6 +28,7 @@
+     if(APPLE)
+       foreach(dir
+           ~/Library/Frameworks/${fwk}.framework
++          __PREFIX__/Library/Frameworks/${fwk}.framework
+           /usr/local/Frameworks/${fwk}.framework
+           /Library/Frameworks/${fwk}.framework
+           /System/Library/Frameworks/${fwk}.framework

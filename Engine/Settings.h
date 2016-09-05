@@ -330,6 +330,7 @@ public:
     void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getDopeSheetEditorScaleColor(double* r, double* g, double* b) const;
     void getDopeSheetEditorGridColor(double* r, double* g, double* b) const;
+    void getSliderColor(double* r, double* g, double* b) const;
 
 
     void getSEKeywordColor(double* r, double* g, double* b) const;
@@ -580,6 +581,7 @@ private:
     KnobColorPtr _exprColor;
     KnobColorPtr _cachedFrameColor;
     KnobColorPtr _diskCachedFrameColor;
+    KnobColorPtr _sliderColor;
 
     // Apprance/Curve Editor
     KnobPagePtr _curveEditorColorsTab;

@@ -217,20 +217,40 @@ public:
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
 
+    /**
+     * @brief Removes from the node cache the given image.
+     **/
     void removeFromNodeCache(const ImagePtr & image);
+
+    /**
+     * @brief Removes from the texture cache the given texture.
+     **/
     void removeFromViewerCache(const FrameEntryPtr & texture);
 
-    void removeFromNodeCache(U64 hash);
-    void removeFromViewerCache(U64 hash);
     /**
-     * @brief Given the following tree version, removes all images from the node cache with a matching
-     * tree version. This is useful to wipe the cache for one particular node.
+     * @brief Removes from the node cache all images matching the same hash
      **/
-    void  removeAllImagesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-    void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-    void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
+    void removeFromNodeCache(U64 hash);
 
-    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
+    /**
+     * @brief Removes from the texture cache all textures matching the same hash
+     **/
+    void removeFromViewerCache(U64 hash);
+
+    /**
+     * @brief Removes from the cache all entries associated to the given holder.
+     * The entries are destroyed in a separate thread.
+     **/
+    void removeAllCacheEntriesForPlugin(const std::string& pluginID);
+
+
+    /**
+     * @brief Adds images to delete in a separate thread
+     **/
+    void queueEntriesForDeletion(const std::list<ImagePtr>& images);
+    void queueEntriesForDeletion(const std::list<FrameEntryPtr>& images);
+
+
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
@@ -471,7 +491,7 @@ public:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
 
-    void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
+    void getMemoryStatsForPlugin(const std::string& holder,
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const;
 
@@ -652,6 +672,11 @@ protected:
 
     bool loadInternalAfterInitGui(const CLArgs& cl);
 
+    /*
+     * @brief Derived by NatronProjectConverter to load using boost serialization instead
+     */
+    virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
+
 private:
 
     void findAllScriptsRecursive(const QDir& directory,
@@ -682,6 +707,9 @@ private:
     void initPython(int argc, char* argv[]);
 
     void tearDownPython();
+
+    // To access loadProjectFromFileFunction
+    friend class Project;
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
