@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "Engine/ViewIdx.h"
+#include "Serialization/ImageKeySerialization.h"
 
 
 NATRON_NAMESPACE_ENTER;
