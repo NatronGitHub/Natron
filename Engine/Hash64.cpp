@@ -34,6 +34,7 @@
 #include <QtCore/QString>
 
 #include "Engine/Node.h"
+#include "Engine/Curve.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -58,12 +59,23 @@ Hash64::reset()
 }
 
 void
-Hash64_appendQString(Hash64* hash,
-                     const QString & str)
+Hash64::appendQString(const QString & str, Hash64* hash)
 {
     Q_FOREACH (QChar ch, str) {
         hash->append<unsigned short>( ch.unicode() );
     }
 }
+
+void hash64AppendCurve(const CurvePtr& curve, Hash64* hash)
+{
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+        hash->append(it->getTime());
+        hash->append(it->getValue());
+        hash->append(it->getLeftDerivative());
+        hash->append(it->getRightDerivative());
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT;

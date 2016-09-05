@@ -286,7 +286,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
                 effect->abortAnyEvaluation();
             }
             effect->purgeCaches();
-            effect->getNode()->removeAllImagesFromCache(true);
+            effect->getNode()->removeAllImagesFromCache();
             _lastModificationDates.clear();
             ret = true;
         } else {

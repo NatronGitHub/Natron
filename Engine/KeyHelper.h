@@ -30,7 +30,6 @@
 #include <string>
 
 #include "Engine/Hash64.h"
-#include "Engine/CacheEntryHolder.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -63,16 +62,14 @@ public:
      * @brief Constructs an empty key. This constructor is used by boost::serialization.
      **/
     KeyHelper()
-        : _holderID(), _hash(), _hashComputed(false)
+        : _pluginID(), _hash(), _hashComputed(false)
     {
     }
 
-    KeyHelper(const CacheEntryHolder* holder)
-        : _holderID(), _hash(), _hashComputed(false)
+    KeyHelper(const std::string& pluginID)
+        : _pluginID(pluginID), _hash(), _hashComputed(false)
     {
-        if (holder) {
-            _holderID = holder->getCacheID();
-        }
+
     }
 
     /**
@@ -85,7 +82,7 @@ public:
      * constructor above but takes in parameter another key.
      **/
     KeyHelper(const KeyHelper & other)
-        : _holderID( other.getCacheHolderID() )
+        : _pluginID( other._pluginID )
         , _hash( other.getHash() )
         , _hashComputed(true)
     {
@@ -93,8 +90,8 @@ public:
 
     KeyHelper& operator=(const KeyHelper & other)
     {
-        _holderID = other.getCacheHolderID();
-        _hash = other.getHash();
+        _pluginID = other._pluginID;
+        _hash = other._hash;
         _hashComputed = true;
 
         return *this;
@@ -119,9 +116,13 @@ public:
         _hashComputed = false;
     }
 
-    const std::string& getCacheHolderID() const
+    const std::string& getHolderPluginID() const
     {
-        return _holderID;
+        return _pluginID;
+    }
+
+    void setHolderPluginID(const std::string& holderID) {
+        _pluginID = holderID;
     }
 
 protected:
@@ -141,7 +142,9 @@ private:
     }
 
 protected:
-    std::string _holderID;
+
+    // Plugin ID
+    std::string _pluginID;
 
 private:
     mutable hash_type _hash;

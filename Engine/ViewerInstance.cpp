@@ -562,6 +562,7 @@ public:
     }
 };
 
+#pragma message WARN("This functino should not be needed anymore")
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
@@ -773,7 +774,6 @@ ViewerInstance::renderViewer(ViewIdx view,
                              const NodePtr& rotoPaintNode,
                              const RotoStrokeItemPtr& strokeItem,
                              bool isDoingRotoNeatRender,
-                             bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                              const RenderStatsPtr& stats)
@@ -814,7 +814,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, strokeItem, isDoingRotoNeatRender, useTLS, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, strokeItem, isDoingRotoNeatRender, true, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 

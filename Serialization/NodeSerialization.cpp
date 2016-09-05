@@ -35,9 +35,6 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         fullyQualifiedName += ".";
     }
     fullyQualifiedName += _nodeScriptName;
-    if (_cacheID != fullyQualifiedName) {
-        em << YAML_NAMESPACE::Key << "CacheID" << YAML_NAMESPACE::Value << _cacheID;
-    }
 
     // If version is 1.0 do not serialize
     if ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1)) {
@@ -61,10 +58,6 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
             }
         }
         em << YAML_NAMESPACE::EndMap;
-    }
-
-    if (_knobsAge != 0) {
-        em << YAML_NAMESPACE::Key << "Age" << YAML_NAMESPACE::Value << _knobsAge;
     }
 
     if (!_knobsValues.empty()) {
@@ -169,11 +162,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     } else {
         _nodeLabel = _nodeScriptName;
     }
-    if (node["CacheID"]) {
-        _cacheID = node["CacheID"].as<std::string>();
-    } else {
-        _cacheID = _nodeScriptName;
-    }
+
     if (node["Version"]) {
         YAML_NAMESPACE::Node versionNode = node["Version"];
         if (versionNode.size() != 2) {
@@ -189,11 +178,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
             _inputs.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
         }
     }
-
-    if (node["Age"]) {
-        _knobsAge = node["Age"].as<unsigned long long>();
-    }
-
+    
     if (node["Params"]) {
         YAML_NAMESPACE::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {

@@ -1333,7 +1333,7 @@ TrackMarkerPM::initializeKnobs()
     NodePtr node;
     {
         CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, NodeCollectionPtr() );
-        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
 

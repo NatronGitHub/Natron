@@ -410,13 +410,6 @@ static void initValuesVec(KnobSerialization* serialization, int nDims)
     }
 }
 
-static bool startsWith(const std::string& str,
-                       const std::string& prefix)
-{
-    return str.substr(0,prefix.size()) == prefix;
-    // case insensitive version:
-    //return ci_string(str.substr(0,prefix.size()).c_str()) == prefix.c_str();
-}
 
 void
 KnobSerialization::decode(const YAML_NAMESPACE::Node& node)

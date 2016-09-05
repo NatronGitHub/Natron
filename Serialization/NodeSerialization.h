@@ -37,11 +37,9 @@ public:
     ///Used to serialize
     explicit NodeSerialization()
     : _knobsValues()
-    , _knobsAge(0)
     , _groupFullyQualifiedScriptName()
     , _nodeLabel()
     , _nodeScriptName()
-    , _cacheID()
     , _pluginID()
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
@@ -79,9 +77,6 @@ public:
     // Knobs serialization
     KnobSerializationList _knobsValues;
 
-    // The age of the knobs. Used for caching
-    unsigned long long _knobsAge;
-
     // The group full script-name or empty if the node is part of the top-level group
     std::string _groupFullyQualifiedScriptName;
 
@@ -90,9 +85,6 @@ public:
 
     // The node script-name as used in Python
     std::string _nodeScriptName;
-
-    // The cache ID is the first script name of the node and is ensured to be unique for caching. It cannot be changed.
-    std::string _cacheID;
 
     // The ID of the plug-in embedded into the node
     std::string _pluginID;

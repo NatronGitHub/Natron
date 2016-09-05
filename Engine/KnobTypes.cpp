@@ -52,6 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Hash64.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/RotoContext.h"
@@ -1932,6 +1933,7 @@ KnobParametric::typeNameStatic()
     return _typeNameStr;
 }
 
+
 bool
 KnobParametric::canAnimate() const
 {
@@ -2420,6 +2422,21 @@ KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
             _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
             _curvesColor[i] = isParametric->_curvesColor[i];
         }
+    }
+}
+
+void
+KnobParametric::appendToFrameViewHash(double /*time*/, ViewIdx /*view*/, Hash64* hash)
+{
+
+    for (std::size_t i = 0; i < _curves.size(); ++i) {
+        // Parametric params are a corner case: the only way to know the value
+        // is to serialize the whole curve
+        CurvePtr curve = _curves[i];
+        if (curve) {
+            Hash64::appendCurve(curve, hash);
+        }
+
     }
 }
 

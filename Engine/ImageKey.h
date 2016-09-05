@@ -45,26 +45,18 @@ public:
 
     U64 _nodeHashKey;
     double _time;
-    double _pixelAspect;
-    int /*ViewIdx*/ _view; // store it locally as an int for easier serialization
+    ViewIdx _view; 
     bool _draftMode;
-    bool _frameVaryingOrAnimated;
 
-    //When true that means the image has been computed based on inputs using a mipmaplevel != 0
-    //hence it is probably not very high quality, even though the mipmap level is 0
-    bool _fullScaleWithDownscaleInputs;
 
-#pragma message WARN("_pixelAspect, _frameVaryingOrAnimated, _fullScaleWithDownscaleInputs should go in ImageParams are they are not useful for the key")
+
     ImageKey();
 
-    ImageKey(const CacheEntryHolder* holder,
+    ImageKey(const std::string& pluginID,
              U64 nodeHashKey,
-             bool frameVaryingOrAnimated,
              double time,
              ViewIdx view,
-             double pixelAspect,
-             bool draftMode,
-             bool fullScaleWithDownscaleInputs);
+             bool draftMode);
 
     virtual void fillHash(Hash64* hash) const OVERRIDE FINAL;
 
@@ -82,7 +74,7 @@ public:
 
     ViewIdx getView() const
     {
-        return ViewIdx(_view);
+        return _view;
     }
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;

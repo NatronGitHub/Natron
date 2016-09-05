@@ -205,9 +205,7 @@ class CacheCleanerThread
     mutable QMutex _requestQueueMutex;
     struct CleanRequest
     {
-        std::string holderID;
-        U64 nodeHash;
-        bool removeAll;
+        std::string pluginID;
     };
 
     std::list<CleanRequest> _requestsQueues;
@@ -236,16 +234,12 @@ public:
     {
     }
 
-    void appendToQueue(const std::string & holderID,
-                       U64 nodeHash,
-                       bool removeAll)
+    void appendToQueue(const std::string& pluginID)
     {
         {
             QMutexLocker k(&_requestQueueMutex);
             CleanRequest r;
-            r.holderID = holderID;
-            r.nodeHash = nodeHash;
-            r.removeAll = removeAll;
+            r.pluginID = pluginID;
             _requestsQueues.push_back(r);
         }
         if ( !isRunning() ) {
@@ -315,7 +309,7 @@ private:
                     front = _requestsQueues.front();
                     _requestsQueues.pop_front();
                 }
-                cache->removeAllEntriesWithDifferentNodeHashForHolderPrivate(front.holderID, front.nodeHash, front.removeAll);
+                cache->removeAllEntriesForPluginPrivate(front.pluginID, 0);
             }
         }
     }
@@ -1571,7 +1565,7 @@ public:
                         serialization.size = (*it2)->dataSize();
                         serialization.filePath = (*it2)->getFilePath();
                         serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
-
+                        serialization.pluginID = key.getHolderPluginID();
                         (*it2)->syncBackingFile();
 
                         s->entries.push_back(serialization);
@@ -1603,6 +1597,7 @@ public:
 
             key_t key;
             key.fromSerialization(it->key);
+            key.setHolderPluginID(it->pluginID);
             if ( it->hash != key.getHash() ) {
                 /*
                          * If this warning is printed this means that the value computed by it->key()
@@ -1686,30 +1681,27 @@ public:
     }
 
 
-    void removeAllEntriesWithDifferentNodeHashForHolderPublic(const CacheEntryHolder* holder,
-                                                              U64 nodeHash)
-    {
-        _cleanerThread.appendToQueue(holder->getCacheID(), nodeHash, false);
+    void  appendToQueue(const std::list<EntryTypePtr>& entries) {
+        _deleterThread.appendToQueue(entries);
     }
 
-    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder,
-                                         bool blocking)
+    void removeAllEntriesForPluginPublic(const std::string& holder,
+                                                 bool blocking)
     {
         if (blocking) {
-            removeAllEntriesWithDifferentNodeHashForHolderPrivate(holder->getCacheID(), 0, true);
+            removeAllEntriesForPluginPrivate(holder, 0);
         } else {
-            _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+            _cleanerThread.appendToQueue(holder);
         }
     }
 
-    void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
+    void getMemoryStatsForPlugin(const std::string& pluginID,
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const
     {
         *ramOccupied = 0;
         *diskOccupied = 0;
 
-        std::string holderID = holder->getCacheID();
         QMutexLocker locker(&_lock);
 
         for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
@@ -1717,7 +1709,7 @@ public:
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
-                if (front->getKey().getCacheHolderID() == holderID) {
+                if (front->getKey().getHolderPluginID() == pluginID) {
                     for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                         *ramOccupied += (*it)->size();
                     }
@@ -1730,7 +1722,7 @@ public:
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
-                if (front->getKey().getCacheHolderID() == holderID) {
+                if (front->getKey().getHolderPluginID() == pluginID) {
                     for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                         *diskOccupied += (*it)->size();
                     }
@@ -1739,11 +1731,10 @@ public:
         }
     }
 
+
 private:
 
-    virtual void removeAllEntriesWithDifferentNodeHashForHolderPrivate(const std::string & holderID,
-                                                                       U64 nodeHash,
-                                                                       bool removeAll) OVERRIDE FINAL
+    virtual void removeAllEntriesForPluginPrivate(const std::string& pluginID, std::list<AbstractCacheEntryBasePtr> *removedEntriesList = 0) OVERRIDE FINAL
     {
         std::list<EntryTypePtr> toDelete;
         CacheContainer newMemCache, newDiskCache;
@@ -1755,8 +1746,7 @@ private:
                 if ( !entries.empty() ) {
                     const EntryTypePtr & front = entries.front();
 
-                    if ( (front->getKey().getCacheHolderID() == holderID) &&
-                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
+                    if ( front->getKey().getHolderPluginID() == pluginID ) {
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                             toDelete.push_back(*it);
                         }
@@ -1772,8 +1762,7 @@ private:
                 if ( !entries.empty() ) {
                     const EntryTypePtr & front = entries.front();
 
-                    if ( (front->getKey().getCacheHolderID() == holderID) &&
-                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
+                    if ( front->getKey().getHolderPluginID() == pluginID ) {
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                             toDelete.push_back(*it);
                         }
@@ -1789,11 +1778,17 @@ private:
         } // QMutexLocker locker(&_lock);
 
         if ( !toDelete.empty() ) {
-            _deleterThread.appendToQueue(toDelete);
+            if (removedEntriesList) {
+                for (typename  std::list<EntryTypePtr>::const_iterator it = toDelete.begin(); it!=toDelete.end(); ++it) {
+                    removedEntriesList->push_back(*it);
+                }
+            } else {
+                _deleterThread.appendToQueue(toDelete);
 
-            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
-            ///that the separate thread will delete
-            toDelete.clear();
+                ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+                ///that the separate thread will delete
+                toDelete.clear();
+            }
         }
     } // removeAllEntriesWithDifferentNodeHashForHolderPrivate
 

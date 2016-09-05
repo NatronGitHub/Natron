@@ -24,23 +24,20 @@ void
 ImageKeySerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
     em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
-    em << nodeHashKey << time << view << draft << holderID << frameVaryingOrAnimated  << par;
+    em << nodeHashKey << time << view << draft;
     em << YAML_NAMESPACE::EndSeq;
 }
 
 void
 ImageKeySerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    if (!node.IsSequence() || node.size() != 7) {
+    if (!node.IsSequence() || node.size() != 4) {
         throw YAML_NAMESPACE::InvalidNode();
     }
     nodeHashKey = node[0].as<unsigned long long>();
     time = node[1].as<double>();
     view = node[2].as<int>();
     draft = node[3].as<bool>();
-    holderID = node[4].as<std::string>();
-    frameVaryingOrAnimated = node[5].as<bool>();
-    par = node[6].as<double>();
 }
 
 SERIALIZATION_NAMESPACE_EXIT

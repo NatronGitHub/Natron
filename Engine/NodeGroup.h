@@ -100,6 +100,7 @@ public:
      **/
     void clearNodes(bool emitSignal);
 
+
     /**
      * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
      **/
@@ -223,11 +224,6 @@ public:
      * @brief Get all Writers in the group and sub groups
      **/
     void getWriters(std::list<OutputEffectInstancePtr>* writers) const;
-
-    /**
-     * @brief Checks if a node in the project already has this cacheID
-     **/
-    bool isCacheIDAlreadyTaken(const std::string& name) const;
 
     /**
      * @brief Controls whether the user can ever edit this graph from the UI. 

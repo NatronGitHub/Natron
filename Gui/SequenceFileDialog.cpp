@@ -2919,7 +2919,7 @@ SequenceFileDialog::createViewerPreviewNode()
 {
     CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP, NodeCollectionPtr() );
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
@@ -2971,7 +2971,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
     }
     Q_UNUSED(filetype);
     CreateNodeArgs args( PLUGINID_NATRON_READ, NodeCollectionPtr() );
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_READER_NAME);

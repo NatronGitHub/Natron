@@ -254,7 +254,7 @@ NodeCollection::getWriters(std::list<OutputEffectInstancePtr>* writers) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPartOfProject() ) {
+        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
             OutputEffectInstancePtr out = (*it)->isEffectOutput();
             assert(out);
             writers->push_back(out);
@@ -291,20 +291,6 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 }
 
 bool
-NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getCacheID() == name ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
 NodeCollection::hasNodeRendering() const
 {
     QMutexLocker k(&_imp->nodesMutex);
@@ -332,6 +318,7 @@ NodeCollection::hasNodeRendering() const
 
     return false;
 }
+
 
 void
 NodeCollection::refreshViewersAndPreviews()

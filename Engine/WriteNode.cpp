@@ -436,7 +436,7 @@ WriteNodePrivate::createDefaultWriteNode()
     NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
     CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isGrp );
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty(kCreateNodeArgsPropVolatile, true);
     args.setProperty(kCreateNodeArgsPropSilent, true);
     args.setProperty(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultWriteNodeWriter");
@@ -551,7 +551,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
     if ( !readerPluginID.empty() ) {
         CreateNodeArgs args(readerPluginID, isGrp );
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty(kCreateNodeArgsPropVolatile, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
@@ -614,7 +614,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     if (!output) {
         CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty(kCreateNodeArgsPropVolatile, true);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         output = _publicInterface->getApp()->createNode(args);
         try {
@@ -628,7 +628,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     if (!input) {
         CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty(kCreateNodeArgsPropVolatile, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         input = _publicInterface->getApp()->createNode(args);
@@ -680,7 +680,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
         CreateNodeArgs args(writerPluginID, isGrp );
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty(kCreateNodeArgsPropVolatile, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalEncoderNode");
         SERIALIZATION_NAMESPACE::NodeSerializationPtr s(new SERIALIZATION_NAMESPACE::NodeSerialization);
         if (serialization) {

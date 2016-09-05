@@ -276,7 +276,6 @@ HEADERS += \
     CLArgs.h \
     Cache.h \
     CacheEntry.h \
-    CacheEntryHolder.h \
     CoonsRegularization.h \
     ColorParser.h \
     CreateNodeArgs.h \

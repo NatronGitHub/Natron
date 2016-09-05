@@ -469,7 +469,7 @@ ReadNodePrivate::createDefaultReadNode()
 
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty(kCreateNodeArgsPropSilent, true);
-    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty(kCreateNodeArgsPropVolatile, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
     args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
     args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -615,7 +615,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         CreateNodeArgs args(readerPluginID, NodeCollectionPtr() );
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty(kCreateNodeArgsPropVolatile, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
 

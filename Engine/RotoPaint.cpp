@@ -1398,7 +1398,7 @@ RotoPaint::getRegionOfDefinition(U64 hash,
     bool isprojFormat;
     StatusEnum stat = eStatusOK;
     if (bottomMerge) {
-        stat =  bottomMerge->getEffectInstance()->getRegionOfDefinition_public(bottomMerge->getEffectInstance()->getRenderHash(), time, scale, view, rod, &isprojFormat);
+        stat =  bottomMerge->getEffectInstance()->getRegionOfDefinition_public(bottomMerge->getEffectInstance()->getRenderHash(time, view), time, scale, view, rod, &isprojFormat);
     } else {
         stat = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     }
@@ -1452,7 +1452,7 @@ RotoPaint::isIdentity(double time,
     if (maskInput) {
         RectD maskRod;
         bool isProjectFormat;
-        StatusEnum s = maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
+        StatusEnum s = maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(time, view), time, scale, view, &maskRod, &isProjectFormat);
         Q_UNUSED(s);
         RectI maskPixelRod;
         maskRod.toPixelEnclosing(scale, getAspectRatio(ROTOPAINT_MASK_INPUT_INDEX), &maskPixelRod);

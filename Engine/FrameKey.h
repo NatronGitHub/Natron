@@ -47,7 +47,7 @@ public:
 
     FrameKey();
 
-    FrameKey(const CacheEntryHolder* holder,
+    FrameKey(const std::string& pluginID,
              SequenceTime time,
              U64 treeVersion,
              double gain,

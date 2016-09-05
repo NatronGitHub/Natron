@@ -203,7 +203,6 @@ public:
                                      const NodePtr& rotoPaintNode,
                                      const RotoStrokeItemPtr& strokeItem,
                                      bool isDoingRotoNeatRender,
-                                     bool useTLS,
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                      const RenderStatsPtr& stats) WARN_UNUSED_RETURN;

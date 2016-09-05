@@ -416,7 +416,13 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 }
                 bool isProjectFormat;
                 ParallelRenderArgsPtr inputFrameArgs = input->getParallelRenderArgsTLS();
-                U64 inputHash = (inputFrameArgs) ? inputFrameArgs->nodeHash : input->getHash();
+                U64 inputHash = 0;
+                if (inputFrameArgs && inputFrameArgs->request) {
+                    const FrameViewRequest* inputFrameViewData = inputFrameArgs->request->getFrameViewRequest(time, view);
+                    if (inputFrameViewData) {
+                        inputHash = inputFrameViewData->globalData.nodeHash;
+                    }
+                }
                 StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, argsScale, view, &inputRod, &isProjectFormat);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
@@ -552,7 +558,6 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                                                      SupportsEnum supportsRS,
                                                      double par,
                                                      unsigned int mipMapLevel,
-                                                     U64 nodeHash,
                                                      ImagePremultiplicationEnum thisEffectOutputPremult,
                                                      const RectD& rod,
                                                      const std::list<ImageComponents> &requestedComponents,
@@ -572,6 +577,10 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     rod.toPixelEnclosing(args.mipMapLevel, par, &pixelRod);
     ViewInvarianceLevel viewInvariance = _publicInterface->isViewInvariant();
 
+    U64 nodeHash = 0;
+    if (requestPassData) {
+        nodeHash = requestPassData->globalData.nodeHash;
+    }
     if ( (args.view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
         *isIdentity = true;
         inputNbIdentity = -2;
@@ -740,7 +749,6 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
                                                      ParallelRenderArgsPtr* frameArgs,
                                                      OSGLContextPtr *glGpuContext,
                                                      OSGLContextPtr *glCpuContext,
-                                                     U64 *nodeHash,
                                                      double *par,
                                                      ImageFieldingOrderEnum *fieldingOrder,
                                                      ImagePremultiplicationEnum *thisEffectOutputPremult,
@@ -781,7 +789,6 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
             (*frameArgs)->visitsCount = (int)outputs.size();
         }
         (*frameArgs)->time = args.time;
-        (*frameArgs)->nodeHash = _publicInterface->getHash();
         (*frameArgs)->view = args.view;
         (*frameArgs)->isSequentialRender = false;
         (*frameArgs)->isRenderResponseToUserInteraction = true;
@@ -797,12 +804,9 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
             glGpuContext->reset();
             glCpuContext->reset();
         }
-        assert(!(*frameArgs)->request || (*frameArgs)->nodeHash == (*frameArgs)->request->nodeHash);
     }
 
-    // Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
-    // through all the rendering of this frame.
-    *nodeHash = (*frameArgs)->nodeHash;
+
 
     *par = _publicInterface->getAspectRatio(-1);
     *fieldingOrder = _publicInterface->getFieldingOrder();
@@ -813,7 +817,6 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     *renderMappedScale = ( Image::getScaleFromMipMapLevel(*renderMappedMipMapLevel) );
     assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
 
-    *requestPassData = 0;
     if ((*frameArgs)->request) {
         *requestPassData = (*frameArgs)->request->getFrameViewRequest(args.time, args.view);
     }
@@ -832,7 +835,11 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
                 *isProjectFormat = (*requestPassData)->globalData.isProjectFormat;
             } else {
                 assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
-                StatusEnum stat = _publicInterface->getRegionOfDefinition_public(*nodeHash, args.time, *renderMappedScale, args.view, rod, isProjectFormat);
+                U64 nodeHash = 0;
+                if (*requestPassData) {
+                    nodeHash = (*requestPassData)->globalData.nodeHash;
+                }
+                StatusEnum stat = _publicInterface->getRegionOfDefinition_public(nodeHash, args.time, *renderMappedScale, args.view, rod, isProjectFormat);
 
                 // The rod might be NULL for a roto that has no beziers and no input
                 if (stat == eStatusFailed) {
@@ -1081,6 +1088,7 @@ EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
 bool
 EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstance::RenderRoIArgs & args,
                                                               const ParallelRenderArgsPtr& frameArgs,
+                                                              const FrameViewRequest* requestPassData,
                                                               StorageModeEnum storage,
                                                               const OSGLContextPtr& glRenderContext,
                                                               const OSGLContextAttacherPtr& glContextLocker,
@@ -1092,7 +1100,6 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
                                                               const RectI& upscaledImageBounds,
                                                               const RectI& downscaledImageBounds,
                                                               bool renderFullScaleThenDownscale,
-                                                              U64 nodeHash,
                                                               unsigned int renderMipMapLevel,
                                                               bool* createInCache,
                                                               bool *renderScaleOneUpstreamIfRenderScaleSupportDisabled,
@@ -1100,7 +1107,15 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
                                                               boost::scoped_ptr<ImageKey>* key,
                                                               std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
-    const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVaryingOrAnimated_Recursive();
+    bool isFrameVaryingOrAnimated;
+    U64 nodeHash = 0;
+    if (requestPassData) {
+        isFrameVaryingOrAnimated = requestPassData->globalData.isFrameVaryingRecursive;
+        nodeHash = requestPassData->globalData.nodeHash;
+    } else {
+        isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
+    }
+    //_publicInterface->isFrameVaryingOrAnimated_Recursive();
 
     // Do not use the cache for OpenGL rendering
     if (storage == eStorageModeGLTex && glRenderContext->isGPUContext()) {
@@ -1124,22 +1139,17 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
 
 
     const bool draftModeSupported = _publicInterface->getNode()->isDraftModeUsed();
-    key->reset( new ImageKey(_publicInterface->getNode().get(),
+    std::string pluginID = _publicInterface->getNode()->getPluginID();
+    key->reset( new ImageKey(pluginID,
                              nodeHash,
-                             isFrameVaryingOrAnimated,
                              args.time,
                              args.view,
-                             1.,
-                             draftModeSupported && frameArgs->draftMode,
-                             renderMipMapLevel == 0 && args.mipMapLevel != 0 && !*renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
-    boost::scoped_ptr<ImageKey> nonDraftKey( new ImageKey(_publicInterface->getNode().get(),
+                             draftModeSupported && frameArgs->draftMode ) );
+    boost::scoped_ptr<ImageKey> nonDraftKey( new ImageKey(pluginID,
                                                           nodeHash,
-                                                          isFrameVaryingOrAnimated,
                                                           args.time,
                                                           args.view,
-                                                          1.,
-                                                          false,
-                                                          renderMipMapLevel == 0 && args.mipMapLevel != 0 && !*renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                          false) );
 
 
 
@@ -1287,7 +1297,6 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
                                                            ImagePremultiplicationEnum thisEffectOutputPremult,
                                                            const RectD& rod,
                                                            double par,
-                                                           U64 nodeHash,
                                                            bool renderFullScaleThenDownscale,
                                                            unsigned int renderMappedMipMapLevel,
                                                            const RenderScale& renderMappedScale,
@@ -1298,7 +1307,7 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
     if (requestPassData) {
         **framesNeeded = requestPassData->globalData.frameViewsNeeded;
     } else {
-        **framesNeeded = _publicInterface->getFramesNeeded_public(nodeHash, args.time, args.view, renderMappedMipMapLevel);
+        **framesNeeded = _publicInterface->getFramesNeeded_public(0, args.time, args.view, renderMappedMipMapLevel);
     }
 
 
@@ -1689,7 +1698,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
                                                               const ImageComponents &outputClipPrefComps,
                                                               bool hasSomethingToRender,
                                                               StorageModeEnum storage,
-                                                              U64 nodeHash,
+                                                              const FrameViewRequest* requestPassData,
                                                               const RectD& rod,
                                                               const RectI& roi,
                                                               unsigned int renderMappedMipMapLevel,
@@ -1794,6 +1803,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
             }
             if (attachGLOK) {
                 renderRetCode = _publicInterface->renderRoIInternal(renderInstance,
+                                                                    requestPassData,
                                                                     glRenderContext,
                                                                     args.time,
                                                                     frameArgs,
@@ -1805,7 +1815,6 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
                                                                     planesToRender,
                                                                     frameArgs->isSequentialRender,
                                                                     frameArgs->isRenderResponseToUserInteraction,
-                                                                    nodeHash,
                                                                     renderFullScaleThenDownscale,
                                                                     args.byPassCache,
                                                                     outputDepth,
@@ -2064,7 +2073,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     OSGLContextPtr glGpuContext, glCpuContext;
     AbortableRenderInfoPtr abortInfo;
     ParallelRenderArgsPtr  frameArgs;
-    U64 nodeHash;
     SupportsEnum supportsRS;
 
     // This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
@@ -2082,7 +2090,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ComponentsNeededMapPtr neededComps;
     std::bitset<4> processChannels;
     const std::vector<ImageComponents>* outputComponents;
-    if (!_imp->setupRenderRoIParams(args, &tls, &abortInfo, &frameArgs, &glGpuContext, &glCpuContext, &nodeHash, &par, &fieldingOrder, &thisEffectOutputPremult, &supportsRS, &renderFullScaleThenDownscale, &renderMappedMipMapLevel, &renderMappedScale, &requestPassData, &rod, &roi, &isProjectFormat, &neededComps, &processChannels, &outputComponents)) {
+    if (!_imp->setupRenderRoIParams(args, &tls, &abortInfo, &frameArgs, &glGpuContext, &glCpuContext, &par, &fieldingOrder, &thisEffectOutputPremult, &supportsRS, &renderFullScaleThenDownscale, &renderMappedMipMapLevel, &renderMappedScale, &requestPassData, &rod, &roi, &isProjectFormat, &neededComps, &processChannels, &outputComponents)) {
         return eRenderRoIRetCodeOk;
     }
 
@@ -2105,7 +2113,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Check if effect is identity /////////////////////////////////////////////////////////////
     {
         bool isIdentity;
-        RenderRoIRetCode upstreamRetCode = _imp->handleIdentityEffect(args, frameArgs, requestPassData, supportsRS, par, args.mipMapLevel, nodeHash, thisEffectOutputPremult, rod, requestedComponents, *outputComponents, neededComps, renderMappedScale, renderMappedMipMapLevel, renderFullScaleThenDownscale, outputPlanes, &isIdentity);
+        RenderRoIRetCode upstreamRetCode = _imp->handleIdentityEffect(args, frameArgs, requestPassData, supportsRS, par, args.mipMapLevel, thisEffectOutputPremult, rod, requestedComponents, *outputComponents, neededComps, renderMappedScale, renderMappedMipMapLevel, renderFullScaleThenDownscale, outputPlanes, &isIdentity);
         if (isIdentity) {
             return upstreamRetCode;
         }
@@ -2163,7 +2171,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     boost::scoped_ptr<ImageKey> key;
 
     {
-        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, storage, glRenderContext, glContextLocker, planesToRender, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, nodeHash, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
+        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, requestPassData, storage, glRenderContext, glContextLocker, planesToRender, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
             return eRenderRoIRetCodeFailed;
         }
     }
@@ -2185,7 +2193,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////
     boost::shared_ptr<FramesNeededMap> framesNeeded;
     {
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, nodeHash, renderFullScaleThenDownscale, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, renderFullScaleThenDownscale, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2211,7 +2219,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Launch actual internal render ///////////////////////////////////////////////////////////
     bool renderAborted;
-    RenderRoIStatusEnum renderRetCode = _imp->renderRoILaunchInternalRender(args, frameArgs, planesToRender, neededComps, glRenderContext, outputDepth, outputClipPrefComps, hasSomethingToRender, storage, nodeHash, rod, roi, renderMappedMipMapLevel, processChannels, par, renderFullScaleThenDownscale, &renderAborted);
+    RenderRoIStatusEnum renderRetCode = _imp->renderRoILaunchInternalRender(args, frameArgs, planesToRender, neededComps, glRenderContext, outputDepth, outputClipPrefComps, hasSomethingToRender, storage, requestPassData, rod, roi, renderMappedMipMapLevel, processChannels, par, renderFullScaleThenDownscale, &renderAborted);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check for failure or abortion ///////////////////////////////////////////////////////////
@@ -2220,7 +2228,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         if (frameArgs->isDuringPaintStrokeCreation) {
             //We know the image will never be used ever again
-            getNode()->removeAllImagesFromCache(false);
+            getNode()->removeAllImagesFromCache();
         }
 
         return eRenderRoIRetCodeAborted;
@@ -2251,6 +2259,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
+                                  const FrameViewRequest* request,
                                   const OSGLContextPtr& glContext,
                                   double time,
                                   const ParallelRenderArgsPtr & frameArgs,
@@ -2262,7 +2271,6 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
                                   const ImagePlanesToRenderPtr & planesToRender,
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
-                                  U64 nodeHash,
                                   bool renderFullScaleThenDownscale,
                                   bool byPassCache,
                                   ImageBitDepthEnum outputClipPrefDepth,
@@ -2326,9 +2334,9 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
         ///but if the effect doesn't support tiles it won't work.
         ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
         if ( !frameArgs->tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
-             ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
-             ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
-             self->isRotoPaintNode() ) {
+            ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
+            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
+            self->isRotoPaintNode() ) {
             safety = eRenderSafetyFullySafe;
         }
     }
@@ -2344,6 +2352,10 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
         self->getApp()->getProject()->getParallelRenderArgs(*tlsCopy);
     }
 
+    U64 nodeHash = 0;
+    if (request) {
+        nodeHash = request->globalData.nodeHash;
+    }
     double firstFrame, lastFrame;
     self->getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
 
@@ -2361,7 +2373,7 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
     if (callBegin) {
         assert( !( (self->supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         if (self->beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
-                                       isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
+                                             isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
     }

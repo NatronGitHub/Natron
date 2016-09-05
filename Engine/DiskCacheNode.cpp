@@ -182,7 +182,11 @@ DiskCacheNode::getFrameRange(double *first,
     case 0: {
         EffectInstancePtr input = getInput(0);
         if (input) {
-            input->getFrameRange_public(input->getHash(), first, last);
+            double time;
+            ViewIdx view;
+            input->getCurrentTimeView(&time, &view);
+            U64 hash = input->getRenderHash(time, view);
+            input->getFrameRange_public(hash, first, last);
         }
         break;
     }

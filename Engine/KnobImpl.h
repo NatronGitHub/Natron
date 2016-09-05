@@ -56,8 +56,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Hash64.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/StringAnimationManager.h"
 
 
 #define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
@@ -2999,6 +3001,56 @@ Knob<T>::copyValuesFromCurve(int dim)
     QMutexLocker l(&_valueMutex);
     _guiValues[dim] = _values[dim] = v;
 
+}
+
+template <typename T>
+void handleAnimatedHashing(Knob<T>* knob, ViewIdx view, int dimension, Hash64* hash)
+{
+    CurvePtr curve = knob->getCurve(view, dimension);
+    assert(curve);
+    Hash64::appendCurve(curve, hash);
+
+}
+
+template <>
+void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, int dimension, Hash64* hash)
+{
+    AnimatingKnobStringHelper* isAnimated = dynamic_cast<AnimatingKnobStringHelper*>(knob);
+    assert(isAnimated);
+    if (isAnimated) {
+        const StringAnimationManager& mng = isAnimated->getAnimation();
+        std::map<int, std::string> keys;
+        mng.save(&keys);
+        for (std::map<int, std::string>::iterator it = keys.begin(); it!=keys.end(); ++it) {
+            Hash64::appendQString(it->second, hash);
+        }
+    } else {
+        CurvePtr curve = knob->getCurve(view, dimension);
+        assert(curve);
+        Hash64::appendCurve(curve, hash);
+    }
+
+}
+
+template <typename T>
+void
+Knob<T>::appendToFrameViewHash(double time, ViewIdx view, Hash64* hash)
+{
+    int nDims = getDimension();
+
+    KnobFrameViewHashingStrategyEnum hashingStrat = getHashingStrategy();
+
+
+    for (int i = 0; i < nDims; ++i) {
+        if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(i)) {
+            CurvePtr curve = getCurve(view, i);
+            assert(curve);
+            Hash64::appendCurve(curve, hash);
+        } else {
+            T v = getValueAtTime(time, i, view);
+            hash->append(v);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

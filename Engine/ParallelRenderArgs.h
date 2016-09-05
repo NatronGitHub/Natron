@@ -41,9 +41,9 @@
 #include "Engine/EngineFwd.h"
 
 
-//This controls how many frames a plug-in can pre-fetch (per view and per input)
-//This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
-//do not all stick altogether in memory
+// This controls how many frames a plug-in can pre-fetch (per view and per input)
+// This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
+// do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
 
 NATRON_NAMESPACE_ENTER;
@@ -86,9 +86,6 @@ public:
 
     ///To check the current time on the timeline
     TimeLinePtr timeline;
-
-    ///The hash of the node at the time we started rendering
-    U64 nodeHash;
 
     ///If set, contains data for all frame/view pair that are going to be computed
     ///for this frame/view pair with the overall RoI to avoid rendering several times with this node.
@@ -183,6 +180,11 @@ struct FrameViewRequestGlobalData
     int identityInputNb;
     ViewIdx identityView;
     double inputIdentityTime;
+
+    U64 nodeHash;
+
+    // If this node or one of its inputs is frame varying, this is set to true
+    bool isFrameVaryingRecursive;
 };
 
 struct FrameViewRequestFinalData
@@ -235,8 +237,7 @@ class NodeFrameRequest
 public:
     NodeFrameViewRequestData frames;
 
-    ///Set on first request
-    U64 nodeHash;
+    // Set on first request
     RenderScale mappedScale;
 
     bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;

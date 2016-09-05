@@ -826,6 +826,13 @@ public:
     virtual KnobHolderPtr getHolder() const = 0;
     virtual void setHolder(const KnobHolderPtr& holder) = 0;
 
+
+    /**
+     * @brief Controls the knob hashing stragey. @See KnobFrameViewHashingStrategyEnum
+     **/
+    virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) = 0;
+    virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const = 0;
+
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
      **/
@@ -1141,6 +1148,9 @@ public:
      **/
     virtual ViewIdx getCurrentView() const = 0;
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
+
+
+    virtual void appendToFrameViewHash(double time, ViewIdx view, Hash64* hash) = 0;
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
@@ -1493,6 +1503,8 @@ public:
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolderPtr getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHolder(const KnobHolderPtr& holder) OVERRIDE FINAL;
+    virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) OVERRIDE FINAL;
+    virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const OVERRIDE FINAL;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAddNewLine(bool newLine) OVERRIDE FINAL;
     virtual void setAddSeparator(bool addSep) OVERRIDE FINAL;
@@ -1847,6 +1859,8 @@ private:
 
 public:
 
+    virtual void appendToFrameViewHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
+
 
     /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
@@ -2111,7 +2125,6 @@ public:
 
     virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
 
-    
 protected:
 
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
@@ -2479,13 +2492,6 @@ public:
         return true;
     }
 
-    /**
-     * @brief Restore all knobs to their default values
-     **/
-    void restoreDefaultValues();
-    virtual void aboutToRestoreDefaultValues()
-    {
-    }
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
@@ -2749,7 +2755,7 @@ protected:
         return false;
     }
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& /*knob*/) {}
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& /*knob*/, ValueChangedReasonEnum /*reason*/, int /*dimension*/, double /*time*/, ViewSpec /*view*/) {}
 
     /**
      * @brief Called when the knobHolder is made slave or unslaved.

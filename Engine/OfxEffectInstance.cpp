@@ -1725,8 +1725,14 @@ OfxEffectInstance::getFrameRange(double *first,
                 //if (!isInputOptional(i)) {
                 EffectInstancePtr inputEffect = getInput(i);
                 if (inputEffect) {
+
+                    double time;
+                    ViewIdx view;
+                    inputEffect->getCurrentTimeView(&time, &view);
+                    U64 hash = inputEffect->getRenderHash(time, view);
+
                     double f, l;
-                    inputEffect->getFrameRange_public(inputEffect->getRenderHash(), &f, &l);
+                    inputEffect->getFrameRange_public(hash, &f, &l);
                     if (!firstValidInput) {
                         if ( (f < *first) && (f != INT_MIN) ) {
                             *first = f;

@@ -249,6 +249,8 @@ struct KnobHelperPrivate
     // The holder containing this knob. This may be null if the knob is not in a collection
     KnobHolderWPtr holder;
 
+    KnobFrameViewHashingStrategyEnum cacheInvalidationStrategy;
+
     // Protects the label
     mutable QMutex labelMutex;
 
@@ -439,6 +441,7 @@ struct KnobHelperPrivate
                       bool declaredByPlugin_)
         : publicInterface(publicInterface_)
         , holder(holder_)
+        , cacheInvalidationStrategy(eKnobHashingStrategyValue)
         , labelMutex()
         , label(label_)
         , iconFilePath()
@@ -580,6 +583,18 @@ KnobHelper::getExpressionRecursionLevel() const
     }
 
     return tls->expressionRecursionLevel;
+}
+
+void
+KnobHelper::setHashingStrategy(KnobFrameViewHashingStrategyEnum strategy)
+{
+    _imp->cacheInvalidationStrategy = strategy;
+}
+
+KnobFrameViewHashingStrategyEnum
+KnobHelper::getHashingStrategy() const
+{
+    return _imp->cacheInvalidationStrategy;
 }
 
 void
@@ -2445,7 +2460,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
+            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() && (*it)->isPersistent() ) {
                 std::string scriptName = (*it)->getScriptName_mt_safe();
                 std::string fullName = (*it)->getFullyQualifiedName();
 
@@ -4243,6 +4258,7 @@ KnobHelper::getCurrentView() const
     return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
 }
 
+
 double
 KnobHelper::random(double time,
                    unsigned int seed) const
@@ -4303,7 +4319,10 @@ KnobHelper::randomSeed(double time,
     if (holder) {
         EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
-            hash = effect->getHash();
+            Hash64 h;
+            effect->getNode()->appendKnobsToFrameViewHash(time, ViewIdx(0), &h);
+            h.computeHash();
+            hash = h.value();
         }
     }
     U32 hash32 = (U32)hash;
@@ -4527,6 +4546,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     output->setEvaluateOnChange( getEvaluateOnChange() );
     output->setHintToolTip(newToolTip);
     output->setAddNewLine(true);
+    output->setHashingStrategy(getHashingStrategy());
     if (group) {
         if (indexInParent == -1) {
             group->addKnob(output);
@@ -6226,7 +6246,7 @@ void
 KnobHolder::incrHashAndEvaluate(bool isSignificant,
                                 bool refreshMetadatas)
 {
-    onSignificantEvaluateAboutToBeCalled(KnobIPtr());
+    onSignificantEvaluateAboutToBeCalled(KnobIPtr(), eValueChangedReasonNatronInternalEdited, -1, 0, ViewSpec(0));
     evaluate(isSignificant, refreshMetadatas);
 }
 
@@ -6277,9 +6297,18 @@ KnobHolder::endChanges(bool discardRendering)
     }
     KnobIPtr firstKnobChanged;
     ValueChangedReasonEnum firstKnobReason = eValueChangedReasonNatronGuiEdited;
+    int firstKnobDimension = -1;
+    ViewSpec firstKnobView(0);
+    double firstKnobTime = 0;
     if ( !knobChanged.empty() ) {
-        firstKnobChanged = knobChanged.begin()->knob;
-        firstKnobReason = knobChanged.begin()->reason;
+        KnobChange& first = knobChanged.front();
+        firstKnobChanged = first.knob;
+        firstKnobReason = first.reason;
+        if (!first.dimensionChanged.empty()) {
+            firstKnobDimension = *(first.dimensionChanged.begin());
+        }
+        firstKnobTime = first.time;
+        firstKnobView = first.view;
     }
     bool isChangeDueToTimeChange = firstKnobReason == eValueChangedReasonTimeChanged;
     bool isLoadingProject = false;
@@ -6302,7 +6331,7 @@ KnobHolder::endChanges(bool discardRendering)
 
     // Increment hash only if significant
     if (thisChangeSignificant && thisBracketHadChange && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange) {
-        onSignificantEvaluateAboutToBeCalled(firstKnobChanged);
+        onSignificantEvaluateAboutToBeCalled(firstKnobChanged, firstKnobReason, firstKnobDimension, firstKnobTime, firstKnobView);
     }
 
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
@@ -6777,28 +6806,6 @@ KnobHolder::checkIfOverlayRedrawNeeded()
     }
 }
 
-void
-KnobHolder::restoreDefaultValues()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    aboutToRestoreDefaultValues();
-
-    beginChanges();
-
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        KnobButtonPtr isBtn = toKnobButton(_imp->knobs[i]);
-        KnobSeparatorPtr isSeparator = toKnobSeparator(_imp->knobs[i]);
-
-        ///Don't restore buttons and the node label
-        if ( ( !isBtn || isBtn->getIsCheckable() ) && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
-            for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
-                _imp->knobs[i]->resetToDefaultValue(d);
-            }
-        }
-    }
-    endChanges();
-}
 
 void
 KnobHolder::setKnobsFrozen(bool frozen)

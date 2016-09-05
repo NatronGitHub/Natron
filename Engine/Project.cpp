@@ -581,6 +581,9 @@ Project::saveProjectInternal(const QString & path,
             removeLockFile();
         }
         {
+            // The project file was modified, update the cache because the ID of all nodes have changed
+            refreshCacheIDRecursive();
+
             _imp->setProjectFilename( name.toStdString() );
             _imp->setProjectPath( path.toStdString() );
             QMutexLocker l(&_imp->projectLock);
@@ -2007,6 +2010,22 @@ Project::getProjectCreationTime() const
     QMutexLocker l(&_imp->projectLock);
 
     return _imp->projectCreationTime.toMSecsSinceEpoch();
+}
+
+QDateTime
+Project::getProjectFileLastModDate() const
+{
+    QString path = QString::fromUtf8(_imp->projectPath->getValue().c_str());
+    Global::ensureLastPathSeparator(path);
+    path += QString::fromUtf8(_imp->projectName->getValue().c_str());
+
+    QFileInfo info(path);
+    if (!info.exists()) {
+        assert(false);
+        return QDateTime::currentDateTime();
+    } else {
+        return info.lastModified();
+    }
 }
 
 ViewerColorSpaceEnum
