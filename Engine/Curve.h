@@ -172,6 +172,13 @@ public:
 
     void operator=(const Curve & other);
 
+    bool operator==(const Curve & other) const;
+
+    bool operator!=(const Curve & other) const
+    {
+        return !(*this == other);
+    }
+
     /**
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
      **/

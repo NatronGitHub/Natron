@@ -115,7 +115,7 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 
     if (!_pythonModule.empty()) {
         em << YAML_NAMESPACE::Key << "PyPlug" << YAML_NAMESPACE::Value << _pythonModule;
-        if (((int)_pythonModuleVersion != 1) && ((int)_pythonModuleVersion != -1)) {
+        if ((int)_pythonModuleVersion != 1) {
             em << YAML_NAMESPACE::Key << "PyPlugVersion" << YAML_NAMESPACE::Value << _pythonModuleVersion;
         }
     }

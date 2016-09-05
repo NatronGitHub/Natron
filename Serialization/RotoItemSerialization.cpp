@@ -23,7 +23,8 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 RotoItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
+    // This assumes that a map is already created
+
     em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << name;
     if (label != name) {
         em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << label;
@@ -43,9 +44,8 @@ RotoItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         for (std::list<std::string>::const_iterator it = props.begin(); it!=props.end(); ++it) {
             em << *it;
         }
-        em <<YAML_NAMESPACE::EndSeq;
+        em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
 
 }
 

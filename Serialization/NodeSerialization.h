@@ -54,7 +54,7 @@ public:
     , _pagesIndexes()
     , _children()
     , _pythonModule()
-    , _pythonModuleVersion(0)
+    , _pythonModuleVersion(-1)
     , _userComponents()
     , _nodePositionCoords()
     , _nodeSize()
@@ -129,7 +129,7 @@ public:
     std::string _pythonModule;
 
     // If this node is a PyPlug, this is the PyPlug version
-    unsigned int _pythonModuleVersion;
+    int _pythonModuleVersion;
 
     // This is the user created components on the node
     std::list<ImageComponentsSerialization> _userComponents;

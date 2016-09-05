@@ -1029,10 +1029,16 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
 
     _imp->wasCreatedAsHiddenNode = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
 
+
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
+    if (serialization) {
+        return;
+    }
+
     bool throwErrors = false;
     KnobStringPtr pluginIdParam = _imp->pluginIDStringKnob.lock();
     std::string pattern;
-
+    
     if (mayCreateFileDialog) {
         if ( !getApp()->isBackground() ) {
             pattern = getApp()->openImageFileDialog();
@@ -1055,7 +1061,8 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             pattern = args.getProperty<std::string>(propName);
         }
     }
-    _imp->createReadNode( throwErrors, pattern, 0 );
+
+    _imp->createReadNode( throwErrors, pattern, serialization.get() );
     _imp->refreshPluginSelectorKnob();
 }
 

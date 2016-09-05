@@ -87,6 +87,9 @@ static void convertNodeGuiSerializationToNodeSerialization(const std::list<SERIA
             break;
         }
     }
+    for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it2 = serialization->_children.begin(); it2!=serialization->_children.end(); ++it2) {
+        convertNodeGuiSerializationToNodeSerialization(nodeGuis, it2->get());
+    }
 } // convertNodeGuiSerializationToNodeSerialization
 
 static void convertPaneLayoutToTabWidgetSerialization(const SERIALIZATION_NAMESPACE::PaneLayout& deprecated, SERIALIZATION_NAMESPACE::TabWidgetSerialization* serialization)
@@ -184,9 +187,6 @@ convertToProjectSerialization(const SERIALIZATION_NAMESPACE::ProjectGuiSerializa
 
     for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it = serialization->_nodes.begin(); it!=serialization->_nodes.end(); ++it) {
         convertNodeGuiSerializationToNodeSerialization(original._serializedNodes, it->get());
-        for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it2 = (*it)->_children.begin(); it2!=(*it)->_children.end(); ++it2) {
-            convertNodeGuiSerializationToNodeSerialization(original._serializedNodes, it2->get());
-        }
     }
 
     convertWorkspaceSerialization(original._layoutSerialization, serialization->_projectWorkspace.get());
@@ -413,7 +413,7 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
         return;
     }
     instance->loadProject(filename.toStdString());
-    instance->save(outFileName.toStdString());
+    instance->saveTemp(outFileName.toStdString());
 
 
 } // tryReadAndConvertOlderProject

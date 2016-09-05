@@ -124,7 +124,7 @@ public:
 
     static void checkForPyPlugNewVersion(const std::string& pythonModuleName,
                                   bool moduleNameIsScriptPath,
-                                  unsigned int savedPythonModuleVersion,
+                                 int savedPythonModuleVersion,
                                   bool* usingPythonModule,
                                   std::string* pluginID,
                                   std::map<std::string, bool>* moduleUpdatesProcessed);

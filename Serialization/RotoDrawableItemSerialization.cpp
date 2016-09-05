@@ -25,12 +25,11 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 RotoDrawableItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
+    // This assumes that a map is already created
+
     RotoItemSerialization::encode(em);
     bool hasOverlayColor = _overlayColor[0] != -1 || _overlayColor[1] != -1 || _overlayColor[2] != -1 || _overlayColor[3] != -1;
-    if (_knobs.empty() && !hasOverlayColor) {
-        return;
-    }
-    em << YAML_NAMESPACE::BeginMap;
+
     if (!_knobs.empty()) {
         em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
         em << YAML_NAMESPACE::BeginSeq;
@@ -47,7 +46,6 @@ RotoDrawableItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         em << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << _overlayColor[3];
         em << YAML_NAMESPACE::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
 
 }
 

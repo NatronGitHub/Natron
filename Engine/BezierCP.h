@@ -137,6 +137,13 @@ public:
 
     bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
 
+    bool operator==(const BezierCP& other) const;
+
+    bool operator!=(const BezierCP& other) const
+    {
+        return !(*this == other);
+    }
+
     bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
 
     bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
