@@ -903,7 +903,7 @@ NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
         if ( (*it)->isActivated() ) {
             if ( (*it)->getEffectInstance()->isReader() ) {
                 double thisFirst, thislast;
-                (*it)->getEffectInstance()->getFrameRange_public( (*it)->getHashValue(), &thisFirst, &thislast );
+                (*it)->getEffectInstance()->getFrameRange_public( 0, &thisFirst, &thislast );
                 if (thisFirst != INT_MIN) {
                     *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
                 }

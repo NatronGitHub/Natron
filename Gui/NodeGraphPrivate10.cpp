@@ -222,9 +222,6 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
     }
 
 
-    // We don't want the clone to have the same hash as the original
-    duplicateNode->incrementKnobsAge();
-
     QPointF offset =  averageNodesPosition - duplicateNodeUI->pos();
     QPointF newPos = position + offset;
     duplicateNodeUI->setPosition( newPos.x(), newPos.y() );

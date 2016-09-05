@@ -974,7 +974,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         bool isSequential,
                                                         ViewIdx view,
                                                         int textureIndex,
-                                                        U64 viewerHash,
                                                         bool canAbort,
                                                         const NodePtr& rotoPaintNode,
                                                         const bool isDoingRotoNeatRender,
@@ -1128,7 +1127,6 @@ ViewerInstance::fillGammaLut(double gamma)
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
-                                       const U64 viewerHash,
                                        const bool useCache,
                                        const bool isDraftMode,
                                        const unsigned int mipmapLevel,
@@ -1302,7 +1300,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
-                                     const U64 viewerHash,
                                      const NodePtr& rotoPaintNode,
                                      const bool isDoingRotoNeatRender,
                                      const RenderStatsPtr& stats,
@@ -1393,7 +1390,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
                                                  ViewIdx view,
                                                  int textureIndex,
-                                                 U64 viewerHash,
                                                  const NodePtr& rotoPaintNode,
                                                  const bool isDoingRotoNeatRender,
                                                  const AbortableRenderInfoPtr& abortInfo,
@@ -1895,7 +1891,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     assert(!it->ramBuffer);
 
 
-                    FrameKey key(getNode().get(),
+                    FrameKey key(PLUGINID_NATRON_VIEWER_GROUP,
                                  inArgs.params->time,
                                  viewerHash,
                                  inArgs.params->gain,

@@ -117,7 +117,6 @@ public:
                                                                 bool isSequential,
                                                                 ViewIdx view,
                                                                 int textureIndex,
-                                                                U64 viewerHash,
                                                                 bool canAbort,
                                                                 const NodePtr& rotoPaintNode,
                                                                 const bool isDoingRotoNeatRender,
@@ -132,7 +131,6 @@ private:
                                                          bool isSequential,
                                                          ViewIdx view,
                                                          int textureIndex,
-                                                         U64 viewerHash,
                                                          const NodePtr& rotoPaintNode,
                                                          const bool isDoingRotoNeatRender,
                                                          const AbortableRenderInfoPtr& abortInfo,
@@ -160,7 +158,6 @@ private:
      * code.
      **/
     ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
-                                               const U64 viewerHash,
                                                const bool useCache,
                                                const bool isDraftMode,
                                                const unsigned int mipmapLevel,
@@ -176,7 +173,6 @@ private:
      * useOnlyRoDCache to false.
      **/
     ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
-                                             const U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
                                              const bool isDoingRotoNeatRender,
                                              const RenderStatsPtr& stats,

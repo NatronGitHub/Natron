@@ -70,10 +70,7 @@ struct KeyFrameSerialization
 
 };
 
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/viewer-group
 class CurveSerialization
 : public SerializationObjectBase
 {

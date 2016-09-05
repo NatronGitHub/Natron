@@ -3022,7 +3022,7 @@ void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, int dimension,
         std::map<int, std::string> keys;
         mng.save(&keys);
         for (std::map<int, std::string>::iterator it = keys.begin(); it!=keys.end(); ++it) {
-            Hash64::appendQString(it->second, hash);
+            Hash64::appendQString(QString::fromUtf8(it->second.c_str()), hash);
         }
     } else {
         CurvePtr curve = knob->getCurve(view, dimension);
@@ -3030,6 +3030,18 @@ void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, int dimension,
         Hash64::appendCurve(curve, hash);
     }
 
+}
+
+template <typename T>
+void appendValueToHash(const T& v, Hash64* hash)
+{
+    hash->append(v);
+}
+
+template <>
+void appendValueToHash(const std::string& v, Hash64* hash)
+{
+    Hash64::appendQString(QString::fromUtf8(v.c_str()), hash);
 }
 
 template <typename T>
@@ -3048,7 +3060,7 @@ Knob<T>::appendToFrameViewHash(double time, ViewIdx view, Hash64* hash)
             Hash64::appendCurve(curve, hash);
         } else {
             T v = getValueAtTime(time, i, view);
-            hash->append(v);
+            appendValueToHash(v, hash);
         }
     }
 }

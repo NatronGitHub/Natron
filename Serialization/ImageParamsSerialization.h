@@ -89,8 +89,5 @@ public:
 
 SERIALIZATION_NAMESPACE_EXIT
 
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/viewer-group
 #endif // IMAGEPARAMSSERIALIZATION_H

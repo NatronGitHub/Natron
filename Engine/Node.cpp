@@ -6791,7 +6791,6 @@ Node::makePreviewImage(SequenceTime time,
     RectD rod;
     bool isProjectFormat;
     RenderScale scale(1.);
-    U64 nodeHash = getCacheID();
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
@@ -6809,7 +6808,7 @@ Node::makePreviewImage(SequenceTime time,
 
     effect->clearPersistentMessage(false);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
+    StatusEnum stat = effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -8146,7 +8145,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
             double leftBound = INT_MIN, rightBound = INT_MAX;
-            _imp->effect->getFrameRange_public(getCacheID(), &leftBound, &rightBound, true);
+            _imp->effect->getFrameRange_public(0, &leftBound, &rightBound);
 
             if ( (leftBound != INT_MIN) && (rightBound != INT_MAX) ) {
                 if ( getGroup() || getIOContainer() ) {
@@ -8862,7 +8861,7 @@ Node::onRefreshIdentityStateRequestReceived()
     double time = project->currentFrame();
     RenderScale scale(1.);
     double inputTime = 0;
-    U64 hash = getCacheID();
+    U64 hash = 0;
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
     Format frmt;
@@ -10224,10 +10223,10 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(getCacheID(), time, scaleOne, ViewIdx(0), &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(0, time, scaleOne, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
                 RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(getCacheID(), time, scale, ViewIdx(0), &rod);
+                stat = _imp->effect->getRegionOfDefinition(0, time, scale, ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {

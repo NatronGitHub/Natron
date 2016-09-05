@@ -2257,13 +2257,12 @@ private:
             }
             assert(activeInputToRender);
             NodePtr activeInputNode = activeInputToRender->getNode();
-            U64 activeInputToRenderHash = activeInputToRender->getHash();
             const double par = activeInputToRender->getAspectRatio(-1);
             const bool isRenderDueToRenderInteraction = false;
             const bool isSequentialRender = true;
 
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
-                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
+                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(0, time, scale, viewsToRender[view], &rod, &isProjectFormat);
                 if (stat == eStatusFailed) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
 
@@ -2407,7 +2406,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     ///Writers render to scale 1 always
     RenderScale scale(1.);
     OutputEffectInstancePtr effect = _effect.lock();
-    U64 hash = effect->getHash();
     bool isProjectFormat;
     RectD rod;
     RectI roi;
@@ -2440,7 +2438,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         tlsArgs->stats = it->stats;
         ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
-        ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
+        ignore_result( effect->getRegionOfDefinition_public(0, it->time, scale, it->view, &rod, &isProjectFormat) );
         rod.toPixelEnclosing(0, par, &roi);
 
 
@@ -2814,7 +2812,6 @@ private:
         assert(viewsToRender.size() == 1);
         ViewIdx view = viewsToRender.front();
         boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
-        U64 viewerHash = viewer->getHash();
         boost::shared_ptr<ViewerArgs> args[2];
         ViewerInstance::ViewerRenderRetCode status[2] = {
             ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
@@ -3850,7 +3847,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
     ViewIdx view = viewsCount > 0 ? _imp->viewer->getCurrentView() : ViewIdx(0);
-    U64 viewerHash = _imp->viewer->getHash();
     ViewerInstance::ViewerRenderRetCode status[2] = {
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
     };
