@@ -43,6 +43,7 @@ struct PluginMemory::Implementation
         , locked(0)
         , mutex()
         , effect(effect_)
+        , unregisterOnExit(true)
     {
     }
 
@@ -50,6 +51,7 @@ struct PluginMemory::Implementation
     int locked;
     QMutex mutex;
     EffectInstWPtr effect;
+    bool unregisterOnExit;
 };
 
 PluginMemory::PluginMemory(const EffectInstPtr& effect)
@@ -59,11 +61,20 @@ PluginMemory::PluginMemory(const EffectInstPtr& effect)
 
 PluginMemory::~PluginMemory()
 {
-    EffectInstPtr e = _imp->effect.lock();
+    if (_imp->unregisterOnExit) {
+        EffectInstPtr e = _imp->effect.lock();
 
-    if (e) {
-        e->removePluginMemoryPointer(this);
+        if (e) {
+            e->removePluginMemoryPointer(this);
+        }
     }
+}
+
+void
+PluginMemory::setUnregisterOnDestructor(bool unregister)
+{
+    QMutexLocker l(&_imp->mutex);
+    _imp->unregisterOnExit = unregister;
 }
 
 bool
