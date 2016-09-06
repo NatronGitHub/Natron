@@ -436,6 +436,10 @@ chooseFBConfig(const OSGLContext_glx_data* glxInfo,
                const FramebufferConfig& desired,
                GLXFBConfig* result)
 {
+    if (!glxInfo->_imp->x11.display) {
+        throw std::runtime_error("GLX: No DISPLAY available");
+    }
+
     bool trustWindowBit = true;
     // HACK: This is a (hopefully temporary) workaround for Chromium
     //       (VirtualBox GL) not setting the window bit on any GLXFBConfigs
@@ -856,6 +860,9 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
     assert(glxInfo);
     if (!glxInfo) {
+        return;
+    }
+    if (!glxInfo->_imp->x11.display) {
         return;
     }
     if (!glxInfo->_imp->MESA_query_renderer) {
