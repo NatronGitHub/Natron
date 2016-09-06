@@ -3,7 +3,6 @@
 ## Bugs
 
 - Viewer is not refreshing when the reader's paths contain unicode characters https://github.com/MrKepzie/Natron/issues/1416
-- Natron sometimes hangs in EffectInstance::clearPluginMemoryChunks() on exit 3d1b9c3
 
 ## Version 2.1.3
 
