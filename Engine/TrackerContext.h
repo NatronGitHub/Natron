@@ -151,6 +151,8 @@ public:
 
     KnobIntPtr getDefaultMarkerSearchWinSizeKnob() const;
 
+    KnobChoicePtr getDefaultMotionModelKnob() const;
+
     bool isTrackerPMEnabled() const;
 
     TrackMarkerPtr createMarker();

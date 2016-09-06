@@ -121,6 +121,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTrackerParamDefaultMarkerSearchWinSizeLabel "Default Search Area Size"
 #define kTrackerParamDefaultMarkerSearchWinSizeHint "The size in pixels of the search window that created markers will have by default"
 
+#define kTrackerParamDefaultMotionModel "defMotionModel"
+#define kTrackerParamDefaultMotionModelLabel "Default Motion Model"
+#define kTrackerParamDefaultMotionModelHint "The motion model that new tracks have by default"
+
 #define kTrackerParamMaximumIteration "maxIterations"
 #define kTrackerParamMaximumIterationLabel "Maximum iterations"
 #define kTrackerParamMaximumIterationHint "Maximum number of iterations the algorithm will run for the inner minimization " \
@@ -369,6 +373,7 @@ public:
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
     boost::weak_ptr<KnobInt> defaultSearchWinSize, defaultPatternWinSize;
+    boost::weak_ptr<KnobChoice> defaultMotionModel;
     boost::weak_ptr<KnobBool> bruteForcePreTrack, useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
     boost::weak_ptr<KnobSeparator> perTrackParamsSeparator;

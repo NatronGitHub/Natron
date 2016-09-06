@@ -652,7 +652,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
 
     RampTypeEnum type;
     {
-        boost::shared_ptr<KnobChoice> typeKnob = bezier->getFallOffRampTypeKnob();
+        KnobChoicePtr typeKnob = bezier->getFallOffRampTypeKnob();
         type = (RampTypeEnum)typeKnob->getValue();
     }
     GLShaderBasePtr rampShader = glData->getOrCreateFeatherRampShader(type);

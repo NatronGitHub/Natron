@@ -1408,7 +1408,7 @@ public:
         featherFallOff = featherFallOffKnob;
 
 
-        boost::shared_ptr<KnobChoice> fallOffRampTypeKnob = AppManager::createKnob<KnobChoice>(effect, tr(kRotoFeatherFallOffTypeLabel), 1, true);
+        KnobChoicePtr fallOffRampTypeKnob = AppManager::createKnob<KnobChoice>(effect, tr(kRotoFeatherFallOffTypeLabel), 1, true);
         fallOffRampTypeKnob->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
         fallOffRampTypeKnob->setName(kRotoFeatherFallOffType);
         fallOffRampTypeKnob->populate();

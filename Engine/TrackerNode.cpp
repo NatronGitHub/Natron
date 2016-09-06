@@ -363,10 +363,10 @@ TrackerNode::initializeKnobs()
     magWindow->setName(kTrackerUIParamMagWindowSize);
     magWindow->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
     magWindow->setEvaluateOnChange(false);
-    magWindow->setSecretByDefault(true);
     magWindow->setDefaultValue(200);
     magWindow->setMinimum(10);
     magWindow->setMaximum(10000);
+    magWindow->disableSlider();
     addOverlaySlaveParam(magWindow);
     trackingPage->addKnob(magWindow);
     _imp->ui->magWindowPxSizeKnob = magWindow;
@@ -409,9 +409,9 @@ TrackerNode::initializeKnobs()
     resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
     resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(magWindow);
     addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
     addKnobToViewerUI(context->getDefaultMarkerSearchWinSizeKnob());
+    addKnobToViewerUI(context->getDefaultMotionModelKnob());
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );
@@ -1236,7 +1236,7 @@ TrackerNode::drawOverlay(double time,
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-        if (_imp->ui->showMarkerTexture && selectedFound && !getApp()->isDraftRenderEnabled()) {
+        if (_imp->ui->showMarkerTexture && selectedFound) {
             _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);

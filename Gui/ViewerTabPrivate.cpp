@@ -276,8 +276,6 @@ ViewerTabPrivate::getTimeTransform(double time,
         return false;
     }
     if ( currentNode == target->getEffectInstance() ) {
-
-
         *newTime = time;
 
         return true;

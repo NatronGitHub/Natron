@@ -153,24 +153,15 @@ void
 EffectInstance::clearPluginMemoryChunks()
 {
     // This will remove the mem from the pluginMemoryChunks list
-    PluginMemoryPtr mem;
-    do {
-        mem.reset();
-        {
-            QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-            if ( !_imp->pluginMemoryChunks.empty() ) {
-                mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-#pragma message WARN("BUG: if mem is not NULL, it is never removed from the list and this goes into an infinite loop!!! should the following condition (!mem) be reversed?")
-                while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
-                    _imp->pluginMemoryChunks.pop_front();
-                    mem.reset();
-                    if ( !_imp->pluginMemoryChunks.empty() ) {
-                        mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-                    }
-                }
-            }
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it!=_imp->pluginMemoryChunks.end(); ++it) {
+        PluginMemoryPtr mem = it->lock();
+        if (!mem) {
+            continue;
         }
-    } while (mem);
+        mem->setUnregisterOnDestructor(false);
+    }
+    _imp->pluginMemoryChunks.clear();
 }
 
 #ifdef DEBUG

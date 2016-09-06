@@ -409,6 +409,12 @@ TrackerContext::getDefaultMarkerSearchWinSizeKnob() const
     return _imp->defaultSearchWinSize.lock();
 }
 
+KnobChoicePtr
+TrackerContext::getDefaultMotionModelKnob() const
+{
+    return _imp->defaultMotionModel.lock();
+}
+
 bool
 TrackerContext::isTrackerPMEnabled() const
 {

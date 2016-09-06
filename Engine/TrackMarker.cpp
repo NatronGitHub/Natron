@@ -143,9 +143,12 @@ TrackMarker::initializeKnobs()
     TrackerContextPtr context = _imp->context.lock();
     KnobIntPtr defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
     KnobIntPtr defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
+    KnobChoicePtr defMotionModelKnob = context->getDefaultMotionModelKnob();
 
     double patternHalfSize = defPatternSizeKnob->getValue() / 2.;
     double searchHalfSize = defSearchSizeKnob->getValue() / 2.;
+
+    int defMotionModel_i = defMotionModelKnob->getValue();
 
     KnobDoublePtr swbbtmLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
 
@@ -220,7 +223,8 @@ TrackMarker::initializeKnobs()
         TrackerContext::getMotionModelsAndHelps(true, &choices, &helps);
         mmodelKnob->populateChoices(choices, helps);
     }
-    mmodelKnob->setDefaultValue(0);
+
+    mmodelKnob->setDefaultValue(defMotionModel_i);
     _imp->motionModel = mmodelKnob;
 
     KnobDoublePtr errKnob = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamErrorLabel), 1, false);
