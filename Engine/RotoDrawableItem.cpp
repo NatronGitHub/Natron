@@ -181,9 +181,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
 
     RotoContextPtr context = getContext();
-    NodePtr node = context->getNode();
-    AppInstancePtr app = node->getApp();
-    QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(context->getNode()->getEffectInstance());
+    AppInstancePtr app = rotoPaintEffect->getApp();
+    QString fixedNamePrefix = QString::fromUtf8( rotoPaintEffect->getNode()->getScriptName_mt_safe().c_str() );
     fixedNamePrefix.append( QLatin1Char('_') );
     fixedNamePrefix.append( QString::fromUtf8( getScriptName().c_str() ) );
     fixedNamePrefix.append( QLatin1Char('_') );
@@ -298,6 +298,21 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     assert(_imp->mergeNode);
 
+    {
+        // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
+        KnobBoolPtr rotoPaintRGBA[4];
+        KnobBoolPtr mergeRGBA[4];
+        rotoPaintEffect->getEnabledChannelKnobs(&rotoPaintRGBA[0], &rotoPaintRGBA[1], &rotoPaintRGBA[2], &rotoPaintRGBA[3]);
+        mergeRGBA[0] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsR));
+        mergeRGBA[1] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsG));
+        mergeRGBA[2] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsB));
+        mergeRGBA[3] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsA));
+        for (int i = 0; i < 4; ++i) {
+            mergeRGBA[i]->slaveTo(0, rotoPaintRGBA[i], 0);
+        }
+
+    }
+
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
         // Create the mask plug-in
 
@@ -365,19 +380,19 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     ///Attach this stroke to the underlying nodes used
     if (_imp->effectNode) {
-        attachStrokeToNode(_imp->effectNode, node, thisShared);
+        attachStrokeToNode(_imp->effectNode, rotoPaintEffect->getNode(), thisShared);
     }
     if (_imp->maskNode) {
-        attachStrokeToNode(_imp->maskNode, node, thisShared);
+        attachStrokeToNode(_imp->maskNode, rotoPaintEffect->getNode(), thisShared);
     }
     if (_imp->mergeNode) {
-        attachStrokeToNode(_imp->mergeNode, node, thisShared);
+        attachStrokeToNode(_imp->mergeNode, rotoPaintEffect->getNode(), thisShared);
     }
     if (_imp->timeOffsetNode) {
-        attachStrokeToNode(_imp->timeOffsetNode, node, thisShared);
+        attachStrokeToNode(_imp->timeOffsetNode, rotoPaintEffect->getNode(), thisShared);
     }
     if (_imp->frameHoldNode) {
-        attachStrokeToNode(_imp->frameHoldNode, node, thisShared);
+        attachStrokeToNode(_imp->frameHoldNode, rotoPaintEffect->getNode(), thisShared);
     }
 
 
@@ -694,31 +709,8 @@ RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
     }
 
 
-    incrementNodesAge();
 } // RotoDrawableItem::rotoKnobChanged
 
-void
-RotoDrawableItem::incrementNodesAge()
-{
-    if ( getContext()->getNode()->getApp()->getProject()->isLoadingProject() ) {
-        return;
-    }
-    if (_imp->effectNode) {
-        _imp->effectNode->incrementKnobsAge();
-    }
-    if (_imp->maskNode) {
-        _imp->maskNode->incrementKnobsAge();
-    }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->incrementKnobsAge();
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->incrementKnobsAge();
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->incrementKnobsAge();
-    }
-}
 
 NodePtr
 RotoDrawableItem::getEffectNode() const
@@ -776,8 +768,13 @@ void
 RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
 {
     RotoDrawableItemPtr previous = findPreviousInHierarchy();
-    NodePtr rotoPaintInput =  getContext()->getNode()->getInput(0);
-    NodePtr upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
+
+    RotoPaintPtr rotoPaintNode = boost::dynamic_pointer_cast<RotoPaint>(getContext()->getNode()->getEffectInstance());
+    assert(rotoPaintNode);
+
+    NodePtr rotoPaintInput0 = rotoPaintNode->getInternalInputNode(0);
+
+    NodePtr upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput0;
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     RotoStrokeType type;
 
@@ -844,7 +841,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
         if ( ( (type == eRotoStrokeTypeReveal) ||
                ( type == eRotoStrokeTypeClone) ) && ( reveal_i > 0) ) {
             shouldUseUpstreamForReveal = false;
-            revealInput = getContext()->getNode()->getInput(reveal_i - 1);
+            revealInput = rotoPaintNode->getInternalInputNode(reveal_i - 1);
         }
         if (!revealInput && shouldUseUpstreamForReveal) {
             if (type != eRotoStrokeTypeSolid) {
@@ -878,7 +875,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
              */
 
 
-            NodePtr eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
+            NodePtr eraserInput = rotoPaintInput0 ? rotoPaintInput0 : _imp->effectNode;
             if (_imp->mergeNode->getInput(1) != eraserInput) {
                 _imp->mergeNode->disconnectInput(1);
                 if (eraserInput) {

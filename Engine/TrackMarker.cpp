@@ -696,7 +696,7 @@ TrackMarker::resetCenter()
         scale.x = scale.y = 1;
         RectD rod;
         bool isProjectFormat;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod, &isProjectFormat);
         Point center;
         center.x = 0;
         center.y = 0;
@@ -1152,9 +1152,39 @@ TrackMarker::getMarkerImage(int time,
     tlsArgs->isAnalysis = true;
     tlsArgs->draftMode = true;
     tlsArgs->stats = RenderStatsPtr();
-    ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
+    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+    try {
+        frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+    } catch (...) {
+        return std::make_pair(ImagePtr(), roi);
+    }
+
+    EffectInstancePtr effectToRender = input->getEffectInstance();
+
+    U64 effectHash = effectToRender->getRenderHash(time, ViewIdx(0));
+
     RenderScale scale;
     scale.x = scale.y = 1.;
+    unsigned int mipMapLevel = 0;
+    RectD precomputedRoD;
+    double par = effectToRender->getAspectRatio(-1);
+
+    {
+        bool isProjectFormat;
+
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
+        if (stat == eStatusFailed) {
+            return std::make_pair(ImagePtr(), roi);
+        }
+    }
+
+    RectD canonicalRoi;
+    roi.toCanonical(mipMapLevel, par, precomputedRoD, &canonicalRoi);
+    if (frameRenderArgs->computeRequestPass(mipmapLevel, canonicalRoi) != eStatusOK) {
+        return std::make_pair(ImagePtr(), roi);
+    }
+
+
     EffectInstance::RenderRoIArgs args( time,
                                         scale,
                                         mipmapLevel, //mipmaplevel
@@ -1169,7 +1199,7 @@ TrackMarker::getMarkerImage(int time,
                                         eStorageModeRAM /*returnOpenGlTex*/,
                                         time);
     std::map<ImageComponents, ImagePtr> planes;
-    EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
+    EffectInstance::RenderRoIRetCode stat = effectToRender->renderRoI(args, &planes);
 
     appPTR->getAppTLS()->cleanupTLSForThread();
 

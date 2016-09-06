@@ -31,7 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/EffectInstance.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -39,7 +39,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;
 class RotoPaint
-    : public EffectInstance
+    : public NodeGroup
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -78,10 +78,6 @@ public:
         return 0;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 11;
-    }
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
@@ -93,15 +89,6 @@ public:
         grouping->push_back(PLUGIN_GROUP_PAINT);
     }
 
-    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -127,7 +114,6 @@ public:
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-    virtual void clearLastRenderedImage() OVERRIDE FINAL;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
@@ -143,6 +129,14 @@ public:
     void setIsDoingNeatRender(bool doing);
 
     bool isDoingNeatRender() const;
+
+    virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization) OVERRIDE FINAL;
+
+    NodePtr getPremultNode() const;
+
+    NodePtr getInternalInputNode(int index) const;
+
+    void getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b, KnobBoolPtr *a) const;
     
 public Q_SLOTS:
 
@@ -190,22 +184,7 @@ private:
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getRegionsOfInterest(double time,
-                                      const RenderScale & scale,
-                                      const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
-                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                      ViewIdx view,
-                                      RoIMap* ret) OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL;
-    virtual bool isIdentity(double time,
-                            const RenderScale & scale,
-                            const RectI & roi,
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
 
 

@@ -435,6 +435,12 @@ Q_SIGNALS:
 
 private:
 
+    // A group render function should never get called
+    virtual StatusEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return eStatusOK;
+    }
+
     virtual void onGraphEditableChanged(bool changed) OVERRIDE FINAL
     {
         Q_EMIT graphEditableChanged(changed);

@@ -46,6 +46,50 @@
 
 NATRON_NAMESPACE_ENTER;
 
+static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstancePtr& thisEffect, const InputMatrixMapPtr& reroutesMap)
+{
+    // Check if the input is a mask
+    bool inputIsMask = thisEffect->isInputMask(inputNb);
+
+    // If the mask is disabled, don't even bother
+    if ( inputIsMask && !thisEffect->isMaskEnabled(inputNb) ) {
+        return EffectInstancePtr();
+    }
+
+    ImageComponents maskComps;
+    NodePtr maskInput;
+    int channelForAlphaInput = thisEffect->getMaskChannel(inputNb, &maskComps, &maskInput);
+
+    // No mask or no layer selected for the mask
+    if ( inputIsMask && ( (channelForAlphaInput == -1) || (maskComps.getNumComponents() == 0) ) ) {
+        return EffectInstancePtr();
+    }
+
+    // Redirect for transforms if needed
+    EffectInstancePtr inputEffect;
+    if (reroutesMap) {
+        InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
+        if ( foundReroute != reroutesMap->end() ) {
+            inputEffect = foundReroute->second.newInputEffect->getInput(foundReroute->second.newInputNbToFetchFrom);
+        }
+    }
+
+    // We still did not get an effect, then get the real input
+    if (!inputEffect) {
+        inputEffect = thisEffect->getInput(inputNb);
+    }
+
+    // Redirect the mask input
+    if (maskInput) {
+        inputEffect = maskInput->getEffectInstance();
+    }
+
+    return inputEffect;
+}
+
+//Same as FramesNeededMap but we also get a pointer to EffectInstancePtr as key
+typedef std::map<EffectInstancePtr, std::pair</*inputNb*/ int, FrameRangesMap> > PreRenderFrames;
+
 EffectInstance::RenderRoIRetCode
 EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const NodePtr& node,
@@ -56,10 +100,9 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    StorageModeEnum renderStorageMode, // if the render of this node is in OpenGL
                                    unsigned int originalMipMapLevel, // roi functor specific
                                    double time,
-                                   ViewIdx view,
+                                   ViewIdx /*view*/,
                                    const NodePtr& treeRoot,
                                    FrameRequestMap* requests,  // roi functor specific
-                                   Hash64* nodeHash,                    // roi functor specific
                                    FrameViewRequest* frameViewRequestData, // roi functor specific
                                    EffectInstance::InputImagesMap* inputImages, // render functor specific
                                    const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
@@ -69,55 +112,14 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
     ///For all frames/views needed, call recursively on inputs with the appropriate RoI
 
     EffectInstancePtr effect = node->getEffectInstance();
-    bool isRoto = node->isRotoPaintingNode();
-
-    //Same as FramesNeededMap but we also get a pointer to EffectInstancePtr as key
-    typedef std::map<EffectInstancePtr, std::pair</*inputNb*/ int, FrameRangesMap> > PreRenderFrames;
 
     PreRenderFrames framesToRender;
+
+
     //Add frames needed to the frames to render
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         int inputNb = it->first;
-        bool inputIsMask = effect->isInputMask(inputNb);
-        ImageComponents maskComps;
-        int channelForAlphaInput;
-        NodePtr maskInput;
-        // if (inputIsMask) {
-        if ( !effect->isMaskEnabled(inputNb) ) {
-            continue;
-        }
-        channelForAlphaInput = effect->getMaskChannel(inputNb, &maskComps, &maskInput);
-        // } else {
-        //}
-
-        //No mask
-        if ( inputIsMask && ( (channelForAlphaInput == -1) || (maskComps.getNumComponents() == 0) ) ) {
-            continue;
-        }
-
-        //Redirect for transforms if needed
-        EffectInstancePtr inputEffect;
-        if (reroutesMap) {
-            InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
-            if ( foundReroute != reroutesMap->end() ) {
-                inputEffect = foundReroute->second.newInputEffect->getInput(foundReroute->second.newInputNbToFetchFrom);
-            }
-        }
-
-        if (!inputEffect) {
-            inputEffect = node->getEffectInstance()->getInput(inputNb);
-        }
-
-        //Redirect the mask input
-        if (maskInput) {
-            inputEffect = maskInput->getEffectInstance();
-        }
-
-        //Never pre-render the mask if we are rendering a node of the rotopaint tree
-        if ( node->getAttachedRotoItem() && inputEffect && inputEffect->isRotoPaintNode() ) {
-            continue;
-        }
-
+        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect, reroutesMap);
         if (inputEffect) {
 
             // If this input is frame varying, the node is also frame varying
@@ -129,19 +131,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         }
     }
 
-    if (isRoto && !isRenderFunctor) {
-        //Also add internal rotopaint tree RoIs
-        NodePtr btmMerge = effect->getNode()->getRotoContext()->getRotoPaintBottomMergeNode();
-        if (btmMerge) {
-            FrameRangesMap frames;
-            std::vector<OfxRangeD> vec;
-            OfxRangeD r;
-            r.min = r.max = time;
-            vec.push_back(r);
-            frames[view] = vec;
-            framesToRender[btmMerge->getEffectInstance()] = std::make_pair(-1, frames);
-        }
-    }
 
     for (PreRenderFrames::const_iterator it = framesToRender.begin(); it != framesToRender.end(); ++it) {
         const EffectInstancePtr& inputEffect = it->first;
@@ -241,7 +230,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         if (!isRenderFunctor) {
 
-                            U64 inputFrameViewHash;
                             StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
                                                                                    f,
                                                                                    viewIt->first,
@@ -250,15 +238,10 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                    node,
                                                                                    treeRoot,
                                                                                    roi,
-                                                                                   *requests,
-                                                                                   &inputFrameViewHash);
+                                                                                   *requests);
 
                             if (stat == eStatusFailed) {
                                 return EffectInstance::eRenderRoIRetCodeFailed;
-                            }
-
-                            if (nodeHash) {
-                                nodeHash->append(inputFrameViewHash);
                             }
 
                             ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
@@ -354,8 +337,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                      const NodePtr& /*callerNode*/,
                                      const NodePtr& treeRoot,
                                      const RectD& canonicalRenderWindow,
-                                     FrameRequestMap& requests,
-                                     U64* nodeHash)
+                                     FrameRequestMap& requests)
 {
     NodeFrameRequestPtr nodeRequest;
     EffectInstancePtr effect = node->getEffectInstance();
@@ -388,7 +370,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     }
     assert(nodeRequest);
 
-    ///Okay now we concentrate on this particular frame/view pair
+    // Okay now we concentrate on this particular frame/view pair
 
     FrameViewPair frameView;
     frameView.time = time;
@@ -399,7 +381,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     double par = effect->getAspectRatio(-1);
     ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
 
-
     if ( foundFrameView != nodeRequest->frames.end() ) {
         fvRequest = &foundFrameView->second;
     } else {
@@ -408,6 +389,8 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         fvRequest = &nodeRequest->frames[frameView];
 
+        // Get the hash from the thread local storage
+        U64 frameViewHash = effect->getRenderHash(time, view);
 
         ///Check identity
         fvRequest->globalData.identityInputNb = -1;
@@ -425,7 +408,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         } else {
             try {
                 // Pass a null hash because we cannot know the hash as of yet since we did not recurse on inputs already, meaning the action will not be cached.
-                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, 0, time, nodeRequest->mappedScale, identityRegionPixel, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityView, &fvRequest->globalData.identityInputNb);
+                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, frameViewHash, time, nodeRequest->mappedScale, identityRegionPixel, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityView, &fvRequest->globalData.identityInputNb);
             } catch (...) {
                 return eStatusFailed;
             }
@@ -439,7 +422,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ViewIdx rodView = view; //fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
 
         // Get the RoD
-        StatusEnum stat = effect->getRegionOfDefinition_public(0, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(frameViewHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
         // If failed it should have failed earlier
         if ( (stat == eStatusFailed) && !fvRequest->globalData.rod.isNull() ) {
             return stat;
@@ -454,13 +437,10 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         // Get the frame/views needed for this frame/view
         // Pass a null hash because we cannot know the hash as of yet since we did not recurse on inputs already, meaning the action will not be cached.
-        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(0, time, view, mappedLevel);
+        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(frameViewHash, time, view);
     } // if (foundFrameView != nodeRequest->frames.end()) {
 
     assert(fvRequest);
-
-    // Initialize node frame/view hash at 0. If Identity we should not even need it since we don't cache anything.
-    fvRequest->globalData.nodeHash = 0;
 
     if (fvRequest->globalData.identityInputNb == -2) {
         assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
@@ -477,8 +457,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                    node,
                                                    treeRoot,
                                                    canonicalRenderWindow,
-                                                   requests,
-                                                   0);
+                                                   requests);
 
             return stat;
         }
@@ -499,8 +478,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                    node,
                                                    treeRoot,
                                                    canonicalRenderWindow,
-                                                   requests,
-                                                   0);
+                                                   requests);
 
             return stat;
         }
@@ -543,24 +521,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     ///Append the request
     fvRequest->requests.push_back( std::make_pair(canonicalRenderWindow, fvPerRequestData) );
 
-    // Compute the hash for this frame/view
-    // First append the knobs to the hash then the hash of the inputs
-    Hash64 hashObj;
-    node->appendKnobsToFrameViewHash(time, view, &hashObj);
 
-    // Append the plug-in ID in case for there is a coincidence of all parameter values (and ordering!) between 2 plug-ins
-    hashObj.append(node->getPluginID());
-
-
-    // If the node is frame varying, append the time to its hash.
-    // Do so as well if it is view varying
-    if (effect->isFrameVarying()) {
-        hashObj.append(time);
-    }
-
-    if (effect->isViewInvariant() == eViewInvarianceAllViewsVariant) {
-        hashObj.append((int)view);
-    }
 
 
     EffectInstance::RenderRoIRetCode ret = treeRecurseFunctor(false,
@@ -575,7 +536,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                               view,
                                                               treeRoot,
                                                               &requests,
-                                                              &hashObj,
                                                               fvRequest,
                                                               0,
                                                               0,
@@ -583,17 +543,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                               false);
     if (ret == EffectInstance::eRenderRoIRetCodeFailed) {
         return eStatusFailed;
-    }
-
-
-    hashObj.computeHash();
-    fvRequest->globalData.nodeHash = hashObj.value();
-
-    // Now that we have the hash for this frame/view, cache actions results
-    effect->cacheActionResults(time, view, fvRequest->globalData.nodeHash,  fvRequest->globalData.frameViewsNeeded, fvRequest->globalData.rod, fvRequest->globalData.identityInputNb, fvRequest->globalData.inputIdentityTime, fvRequest->globalData.identityView);
-
-    if (nodeHash) {
-        *nodeHash = fvRequest->globalData.nodeHash;
     }
 
     return eStatusOK;
@@ -616,8 +565,7 @@ EffectInstance::computeRequestPass(double time,
                                            treeRoot,
                                            treeRoot,
                                            renderWindow,
-                                           request,
-                                           0);
+                                           request);
 
     if (stat == eStatusFailed) {
         return stat;
@@ -676,13 +624,16 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time,
     return true;
 }
 
+
+
 struct FindDependenciesNode
 {
     bool recursed;
     int visitCounter;
+    FrameViewHashMap frameViewHash;
 
     FindDependenciesNode()
-        : recursed(false), visitCounter(0) {}
+        : recursed(false), visitCounter(0), frameViewHash() {}
 };
 
 
@@ -691,48 +642,63 @@ typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
 
 /**
  * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
- * also may be recursive)
+ * also may be recursive).
+ * The hash is also computed for each frame/view pair of each node.
+ * This function throw exceptions upon error.
  **/
 static void
-getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
-                                                      FindDependenciesMap& finalNodes)
+getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view, FindDependenciesMap& finalNodes, U64* nodeHash)
 {
-    //There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
-    //want to recurse upstream for them too
-    bool foundButDidntRecursivelyCallUpstream = false;
+    // There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
+    // want to recurse upstream for them too
+    bool foundInMap = false;
+    bool alreadyRecursedUpstream = false;
 
+    // Sanity check
     if ( !node || !node->isNodeCreated() ) {
         return;
     }
 
+    EffectInstancePtr effect = node->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+
+    FindDependenciesNode *nodeData = 0;
+
+    // Check if we visited the node already
     {
         FindDependenciesMap::iterator found = finalNodes.find(node);
         if (found != finalNodes.end()) {
+            nodeData = &found->second;
+            foundInMap = true;
             if (found->second.recursed) {
+                // We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
+                // Increment the number of time we visited this node
                 ++found->second.visitCounter;
-                //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
-                return;
+                alreadyRecursedUpstream = true;
             } else {
-                //Now we set the recurse flag below
-                finalNodes.erase(found);
-                foundButDidntRecursivelyCallUpstream = true;
+                // Now we set the recurse flag
+                nodeData->recursed = true;
+                nodeData->visitCounter = 1;
             }
 
         }
     }
-    
-    {
+
+    if (!nodeData) {
         //Add this node to the set
-        FindDependenciesNode n;
-        n.recursed = true;
-        n.visitCounter = 1;
-        finalNodes.insert(std::make_pair(node,n));
+        nodeData = &finalNodes[node];
+        nodeData->recursed = true;
+        nodeData->visitCounter = 1;
     }
 
-    //If we already called it, don't do it again
-    if (!foundButDidntRecursivelyCallUpstream) {
+
+    //If we already got this node from expressions dependencies it, don't do it again
+    if (!foundInMap || !alreadyRecursedUpstream) {
+
         std::set<NodePtr> expressionsDeps;
-        node->getEffectInstance()->getAllExpressionDependenciesRecursive(expressionsDeps);
+        effect->getAllExpressionDependenciesRecursive(expressionsDeps);
 
         //Also add all expression dependencies but mark them as we did not recursed on them yet
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
@@ -743,25 +709,210 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
         }
     }
 
-    int maxInputs = node->getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr inputNode = node->getInput(i);
-        if (inputNode) {
-            getAllUpstreamNodesRecursiveWithDependencies_internal(inputNode, finalNodes);
+#pragma message WARN("TODO: cache the hash against frame/view and invalidate when something that triggers a render changes")
+
+    // Compute the hash for this frame/view
+    // First append the knobs to the hash then the hash of the inputs.
+    // This function is virtual so derived implementation can influence the hash.
+    Hash64 hashObj;
+    effect->appendToHash(time, view, &hashObj);
+
+    // Append the plug-in ID in case for there is a coincidence of all parameter values (and ordering!) between 2 plug-ins
+    hashObj.append(node->getPluginID());
+
+
+    // If the node is frame varying, append the time to its hash.
+    // Do so as well if it is view varying
+    if (effect->isFrameVarying()) {
+        hashObj.append(time);
+    }
+
+    if (effect->isViewInvariant() == EffectInstance::eViewInvarianceAllViewsVariant) {
+        hashObj.append((int)view);
+    }
+
+
+
+    // Use getFramesNeeded to know where to recurse
+    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(0, time, view);
+    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+
+        // No need to use transform redirections to compute the hash
+        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, effect, InputMatrixMapPtr());
+        if (!inputEffect) {
+            if (!effect->isInputOptional(it->first)) {
+                effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is required to render").arg(QString::fromUtf8(effect->getInputLabel(it->first).c_str())).toStdString());
+                throw std::invalid_argument("Input disconnected");
+            }
+            continue;
+        }
+
+        // For all views requested in input
+        for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+
+            // For all ranges in this view
+            for (U32 range = 0; range < viewIt->second.size(); ++range) {
+
+                // For all frames in the range
+                for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+                    U64 inputHash;
+                    getDependenciesRecursive_internal(inputEffect->getNode(), f, viewIt->first, finalNodes, &inputHash);
+                    hashObj.append(inputHash);
+                }
+            }
+
         }
     }
-} // getAllUpstreamNodesRecursiveWithDependencies_internal
 
-static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs, bool doNansHandling, const NodePtr& node, int visitsCounter, const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext)
+    hashObj.computeHash();
+    FrameViewPair fv = {time, view};
+    nodeData->frameViewHash[fv] = hashObj.value();
+    
+    if (nodeHash) {
+        *nodeHash = hashObj.value();
+    }
+
+
+    // Now that we have the hash for this frame/view, cache actions results
+    effect->cacheFramesNeeded(time, view, hashObj.value(), framesNeeded);
+
+
+} // getDependenciesRecursive_internal
+
+#if 0
+static bool
+isRotoPaintNodeInputRecursive(const NodePtr& node,
+                              const NodePtr& rotoPaintNode)
+{
+    if ( node == rotoPaintNode ) {
+        return true;
+    }
+    int maxInputs = node->getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        NodePtr input = node->getInput(i);
+        if (input) {
+            if (input == rotoPaintNode) {
+                return true;
+            } else {
+                bool ret = isRotoPaintNodeInputRecursive(input, rotoPaintNode);
+                if (ret) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @brief The following is to flag that we are drawing on nodes in-between the Viewer and the RotoPaint node.
+ * It is no longer needed since now we automatically connect the Viewer node to the RotoPaint when drawing.
+ **/
+static void
+updateLastStrokeDataRecursively(const NodePtr& node,
+                                const NodePtr& rotoPaintNode,
+                                const RectD& lastStrokeBbox,
+                                bool invalidate)
+{
+    if ( isRotoPaintNodeInputRecursive(node, rotoPaintNode) ) {
+        if (invalidate) {
+            node->invalidateLastPaintStrokeDataNoRotopaint();
+        } else {
+            node->setLastPaintStrokeDataNoRotopaint();
+        }
+
+        if ( node == rotoPaintNode ) {
+            return;
+        }
+        int maxInputs = node->getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            NodePtr input = node->getInput(i);
+            if (input) {
+                updateLastStrokeDataRecursively(input, rotoPaintNode, lastStrokeBbox, invalidate);
+            }
+        }
+    }
+}
+#endif
+
+/**
+ * @brief While drawing, extract once all changes made by the user recently and keep this set of changes
+ * throughout the render to keep things mt-safe.
+ **/
+static bool
+setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
+                          const RotoStrokeItemPtr& activeStroke,
+                          const NodePtr& /*treeRoot*/,
+                          double time)
+{
+    NodesList rotoPaintNodes;
+    EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
+    assert(rotoLive);
+    bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
+    assert(ok);
+    if (!ok) {
+        throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
+    }
+
+    /*
+     Take from the stroke all the points that were input by the user so far on the main thread and set them globally to the
+     application. These data are the ones that are going to be used by any Roto related tool. We ensure that they all access
+     the same data so we only access the real Roto datas now.
+     */
+    std::list<std::pair<Point, double> > lastStrokePoints;
+
+    //The stroke RoD so far
+    RectD wholeStrokeRod;
+
+    //The bbox of the lastStrokePoints
+    RectD lastStrokeBbox;
+
+    //The index in the stroke of the last point we have rendered and up to the new point we have rendered
+    int lastAge, newAge;
+
+    //get on the app object the last point index we have rendered on this stroke
+    lastAge = rotoPaintNode->getApp()->getStrokeLastIndex();
+
+    //Get the active paint stroke so far and its multi-stroke index
+    RotoStrokeItemPtr currentlyPaintedStroke;
+    int currentlyPaintedStrokeMultiIndex;
+    rotoPaintNode->getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
+
+
+    //If this crashes here that means the user could start a new stroke while this one is not done rendering.
+    assert(currentlyPaintedStroke == activeStroke);
+
+    //the multi-stroke index in case of a stroke containing multiple strokes from the user
+    int strokeIndex;
+    bool isStrokeFirstTick;
+    if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
+        rotoPaintNode->getApp()->updateLastPaintStrokeData(isStrokeFirstTick, newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
+
+        for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
+            (*it)->prepareForNextPaintStrokeRender();
+        }
+        //updateLastStrokeDataRecursively(treeRoot, rotoPaintNode, lastStrokeBbox, false);
+        return true;
+
+    } else {
+        return false;
+    }
+    
+} // void setupRotoPaintDrawingData
+
+
+static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                               bool doNansHandling,
+                               const NodePtr& node,
+                               int visitsCounter,
+                               const FrameViewHashMap& frameViewHashes,
+                               const OSGLContextPtr& gpuContext,
+                               const OSGLContextPtr& cpuContext)
 {
     EffectInstancePtr liveInstance = node->getEffectInstance();
     assert(liveInstance);
 
-    NodesList rotoPaintNodes;
-    RotoContextPtr roto = node->getRotoContext();
-    if (roto) {
-        roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-    }
 
     {
         bool duringPaintStrokeCreation = !inArgs->isDoingRotoNeatRender && inArgs->activeRotoPaintNode && ((inArgs->activeRotoDrawableItem && node->getAttachedRotoItem() == inArgs->activeRotoDrawableItem) || node->isDuringPaintStrokeCreation()) ;
@@ -774,6 +925,7 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         tlsArgs->isRenderUserInteraction = inArgs->isRenderUserInteraction;
         tlsArgs->isSequential = inArgs->isSequential;
         tlsArgs->abortInfo = inArgs->abortInfo;
+        tlsArgs->frameViewHash = frameViewHashes;
         tlsArgs->treeRoot = inArgs->treeRoot;
         tlsArgs->visitsCount = visitsCounter;
         tlsArgs->nodeRequest = NodeFrameRequestPtr();
@@ -783,7 +935,6 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         tlsArgs->timeline = inArgs->timeline;
         tlsArgs->isAnalysis = inArgs->isAnalysis;
         tlsArgs->isDuringPaintStrokeCreation = duringPaintStrokeCreation;
-        tlsArgs->rotoPaintNodes = rotoPaintNodes;
         tlsArgs->currentThreadSafety = safety;
         tlsArgs->currentOpenGLSupport = glSupport;
         tlsArgs->doNanHandling = doNansHandling;
@@ -792,31 +943,25 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         liveInstance->setParallelRenderArgsTLS(tlsArgs);
 
     }
-
-    // If this is a rotopaint node, also set its internal nodes TLS
-    for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-
-        // For rotopaint nodes, since the tree internally is always the same for all renders (it does'nt depend where the viewer is connected) the visits count is the  number of output nodes
-        NodesWList outputs;
-        (*it2)->getOutputs_mt_safe(outputs);
-        int visitsCounter = (int)outputs.size();
-
-        setNodeTLSInternal(inArgs, doNansHandling, *it2 , visitsCounter, gpuContext, cpuContext);
-    }
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
-    :  argsMap()
+void
+ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
 {
-    assert(inArgs->treeRoot);
-
     bool isPainting = false;
     if (inArgs->treeRoot) {
         isPainting = inArgs->treeRoot->getApp()->isDuringPainting();
     }
+
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext, cpuContext;
     if (inArgs->activeRotoDrawableItem && (isPainting || inArgs->isDoingRotoNeatRender)) {
+
+        if (isPainting) {
+            assert(inArgs->activeRotoDrawableItem && inArgs->activeRotoPaintNode);
+            setupRotoPaintDrawingData(inArgs->activeRotoPaintNode, boost::dynamic_pointer_cast<RotoStrokeItem>(inArgs->activeRotoDrawableItem), inArgs->treeRoot, inArgs->time);
+        }
+
         // When painting, always use the same context since we paint over the same texture
         assert(inArgs->activeRotoDrawableItem);
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(inArgs->activeRotoDrawableItem.get());
@@ -844,29 +989,52 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
 
     _openGLContext = glContext;
     _cpuOpenGLContext = cpuContext;
+}
+
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
+: argsMap()
+, nodes()
+, _treeRoot(inArgs->treeRoot)
+, _time(inArgs->time)
+, _view(inArgs->view)
+{
+    assert(inArgs->treeRoot);
+
+
+
+
+    fetchOpenGLContext(inArgs);
+    OSGLContextPtr glContext = _openGLContext.lock(), cpuContext = _cpuOpenGLContext.lock();
+
+    // Get dependencies node tree where to apply TLS
+    FindDependenciesMap dependenciesMap;
+    getDependenciesRecursive_internal(inArgs->treeRoot, inArgs->time, inArgs->view, dependenciesMap, 0);
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-
-    FindDependenciesMap dependenciesMap;
-    getAllUpstreamNodesRecursiveWithDependencies_internal(inArgs->treeRoot, dependenciesMap);
-
-
     for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
 
         const NodePtr& node = it->first;
         nodes.push_back(node);
 
-        setNodeTLSInternal(inArgs, doNanHandling, node, it->second.visitCounter, glContext, cpuContext);
+        setNodeTLSInternal(inArgs, doNanHandling, node, it->second.visitCounter, it->second.frameViewHash, glContext, cpuContext);
     }
 }
 
-void
-ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
+
+StatusEnum
+ParallelRenderArgsSetter::computeRequestPass(unsigned int mipMapLevel, const RectD& canonicalRoI)
 {
+    FrameRequestMap requestData;
+    NodePtr treeRoot = _treeRoot.lock();
+    assert(treeRoot);
+    StatusEnum stat = EffectInstance::computeRequestPass(_time, _view, mipMapLevel, canonicalRoI, treeRoot, requestData);
+    if (stat != eStatusOK) {
+        return stat;
+    }
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         {
-            FrameRequestMap::const_iterator foundRequest = request.find(*it);
-            if ( foundRequest != request.end() ) {
+            FrameRequestMap::const_iterator foundRequest = requestData.find(*it);
+            if ( foundRequest != requestData.end() ) {
                 (*it)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
             }
         }
@@ -878,8 +1046,8 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
         }
 
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            FrameRequestMap::const_iterator foundRequest = request.find(*it2);
-            if ( foundRequest != request.end() ) {
+            FrameRequestMap::const_iterator foundRequest = requestData.find(*it2);
+            if ( foundRequest != requestData.end() ) {
                 (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
             }
         }
@@ -890,22 +1058,28 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
             NodesList children;
             (*it)->getChildrenMultiInstance(&children);
             for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                FrameRequestMap::const_iterator foundRequest = request.find(*it2);
-                if ( foundRequest != request.end() ) {
+                FrameRequestMap::const_iterator foundRequest = requestData.find(*it2);
+                if ( foundRequest != requestData.end() ) {
                     (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
                 }
             }
         }
     }
+    return stat;
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args)
-    : argsMap(args)
+: argsMap(args)
+, nodes()
+, _treeRoot()
+, _time(0)
+, _view(0)
 {
     bool isPainting = false;
     if (args && !args->empty()) {
         isPainting = args->begin()->first->getApp()->isDuringPainting();
     }
+
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext;
 
@@ -961,6 +1135,10 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
         }
     }
 
+    /*if (rotoNode) {
+        updateLastStrokeDataRecursively(viewerNode, rotoNode, RectD(), true);
+    }*/
+
     OSGLContextPtr glContext = _openGLContext.lock();
     if (glContext) {
         // This render is going to end, release the OpenGL context so that another frame render may use it
@@ -982,7 +1160,6 @@ ParallelRenderArgs::ParallelRenderArgs()
     , abortInfo()
     , treeRoot()
     , visitsCount(0)
-    , rotoPaintNodes()
     , stats()
     , openGLContext()
     , textureIndex(0)
@@ -1004,6 +1181,19 @@ ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
     AbortableRenderInfoPtr info = abortInfo.lock();
 
     return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
+}
+
+U64
+ParallelRenderArgs::getFrameViewHash(double time, ViewIdx view) const
+{
+    for (FrameViewHashMap::const_iterator it = frameViewHash.begin(); it != frameViewHash.end(); ++it) {
+        if (it->first.time == time) {
+            if ( (it->first.view == -1) || (it->first.view == view) ) {
+                return it->second;
+            }
+        }
+    }
+    return 0;
 }
 
 NATRON_NAMESPACE_EXIT;

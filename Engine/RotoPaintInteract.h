@@ -43,6 +43,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
+#define ROTOPAINT_MAX_INPUTS_COUNT 11
+
 
 #define kControlPointMidSize 3
 #define kBezierSelectionTolerance 8
@@ -403,6 +405,10 @@ struct RotoPaintPrivate
     bool mustDoNeatRender;
 
     boost::shared_ptr<RotoPaintInteract> ui;
+
+    // The group internal input nodes
+    std::vector<NodeWPtr> inputNodes;
+    NodeWPtr premultNode;
 
     RotoPaintPrivate(RotoPaint* publicInterface,
                      bool isPaintByDefault);

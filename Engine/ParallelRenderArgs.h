@@ -67,6 +67,38 @@ typedef boost::shared_ptr<ReRoutesMap> ReRoutesMapPtr;
 
 class NodeFrameRequest;
 
+struct FrameViewPair
+{
+    double time;
+    ViewIdx view;
+};
+
+
+struct FrameView_compare_less
+{
+    bool operator() (const FrameViewPair & lhs,
+                     const FrameViewPair & rhs) const
+    {
+        if (lhs.time < rhs.time) {
+            return true;
+        } else if (lhs.time > rhs.time) {
+            return false;
+        } else {
+            if (lhs.view < rhs.view) {
+                return true;
+            } else if (lhs.view > rhs.view) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+};
+
+typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;
+
+
+
 /**
  * @brief Thread-local arguments given to render a frame by the tree.
  * This is different than the RenderArgs because it is not local to a
@@ -107,11 +139,12 @@ public:
     ///if we should cache the output and whether we should do GPU rendering or not
     int visitsCount;
 
-    ///List of the nodes in the rotopaint tree
-    NodesList rotoPaintNodes;
 
     ///Various stats local to the render of a frame
     RenderStatsPtr stats;
+
+    // Hash of this node for a frame/view pair
+    FrameViewHashMap frameViewHash;
 
     ///The OpenGL context to use for the render of this frame
     boost::weak_ptr<OSGLContext> openGLContext;
@@ -154,13 +187,10 @@ public:
     ParallelRenderArgs();
 
     bool isCurrentFrameRenderNotAbortable() const;
+
+    U64 getFrameViewHash(double time, ViewIdx view) const;
 };
 
-struct FrameViewPair
-{
-    double time;
-    ViewIdx view;
-};
 
 struct FrameViewRequestGlobalData
 {
@@ -180,8 +210,6 @@ struct FrameViewRequestGlobalData
     int identityInputNb;
     ViewIdx identityView;
     double inputIdentityTime;
-
-    U64 nodeHash;
 
     // If this node or one of its inputs is frame varying, this is set to true
     bool isFrameVaryingRecursive;
@@ -209,27 +237,6 @@ struct FrameViewRequest
     FrameViewRequestGlobalData globalData;
 };
 
-struct FrameView_compare_less
-{
-    bool operator() (const FrameViewPair & lhs,
-                     const FrameViewPair & rhs) const
-    {
-        if (lhs.time < rhs.time) {
-            return true;
-        } else if (lhs.time > rhs.time) {
-            return false;
-        } else {
-            if (lhs.view < rhs.view) {
-                return true;
-            } else if (lhs.view > rhs.view) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-};
-
 typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFrameViewRequestData;
 
 class NodeFrameRequest
@@ -248,13 +255,19 @@ public:
 typedef std::map<NodePtr, NodeFrameRequestPtr > FrameRequestMap;
 
 
+/**
+ * @brief Setup thread local storage through a render tree starting from the tree root.
+ * This is mandatory to create an instance of this class before calling renderRoI on the treeRoot. 
+ * Without this a lot of the compositing engine intelligence cannot work properly.
+ * Dependencies are computed recursively. The constructor may throw an exception upon failure.
+ **/
 class ParallelRenderArgsSetter
 {
     boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > > argsMap;
     NodesList nodes;
-
-protected:
-
+    NodeWPtr _treeRoot;
+    double _time;
+    ViewIdx _view;
     boost::weak_ptr<OSGLContext> _openGLContext, _cpuOpenGLContext;
 
 public:
@@ -293,9 +306,13 @@ public:
 
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args);
 
-    void updateNodesRequest(const FrameRequestMap& request);
+    StatusEnum computeRequestPass(unsigned int mipMapLevel, const RectD& canonicalRoI);
 
     virtual ~ParallelRenderArgsSetter();
+
+private:
+
+    void fetchOpenGLContext(const CtorArgsPtr& inArgs);
 };
 
 NATRON_NAMESPACE_EXIT;

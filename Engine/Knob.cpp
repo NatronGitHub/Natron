@@ -4317,6 +4317,7 @@ KnobHelper::randomSeed(double time,
     KnobHolderPtr holder = getHolder();
 
     if (holder) {
+#pragma message WARN("Urgent: Find a better way to get a hash for randomSeed because this too heavy!")
         EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
             Hash64 h;
@@ -6924,6 +6925,20 @@ KnobHolder::updateHasAnimation()
 
     _imp->hasAnimation = hasAnimation;
 }
+
+void
+KnobHolder::appendKnobsToFrameViewHash(double time, ViewIdx view, Hash64* hash) const
+{
+    KnobsVec knobs = getKnobs_mt_safe();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if (!(*it)->getEvaluateOnChange()) {
+            continue;
+        }
+        (*it)->appendToFrameViewHash(time, view, hash);
+    }
+} // Node::appendKnobsToFrameViewHash
+
+
 
 /***************************STRING ANIMATION******************************************/
 void

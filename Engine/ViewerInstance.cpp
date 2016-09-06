@@ -486,293 +486,11 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
 
 
-
-static bool
-isRotoPaintNodeInputRecursive(const NodePtr& node,
-                              const NodePtr& rotoPaintNode)
-{
-    if ( node == rotoPaintNode ) {
-        return true;
-    }
-    int maxInputs = node->getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr input = node->getInput(i);
-        if (input) {
-            if (input == rotoPaintNode) {
-                return true;
-            } else {
-                bool ret = isRotoPaintNodeInputRecursive(input, rotoPaintNode);
-                if (ret) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-static void
-updateLastStrokeDataRecursively(const NodePtr& node,
-                                const NodePtr& rotoPaintNode,
-                                const RectD& lastStrokeBbox,
-                                bool invalidate)
-{
-    if ( isRotoPaintNodeInputRecursive(node, rotoPaintNode) ) {
-        if (invalidate) {
-            node->invalidateLastPaintStrokeDataNoRotopaint();
-        } else {
-            node->setLastPaintStrokeDataNoRotopaint();
-        }
-
-        if ( node == rotoPaintNode ) {
-            return;
-        }
-        int maxInputs = node->getMaxInputCount();
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = node->getInput(i);
-            if (input) {
-                updateLastStrokeDataRecursively(input, rotoPaintNode, lastStrokeBbox, invalidate);
-            }
-        }
-    }
-}
-
-class ViewerParallelRenderArgsSetter
-    : public ParallelRenderArgsSetter
-{
-    NodePtr rotoNode;
-    NodePtr viewerNode;
-
-public:
-
-    ViewerParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
-        : ParallelRenderArgsSetter(inArgs)
-        , rotoNode(inArgs->activeRotoPaintNode)
-        , viewerNode(inArgs->treeRoot)
-    {
-
-    }
-
-    virtual ~ViewerParallelRenderArgsSetter()
-    {
-        if (rotoNode) {
-            updateLastStrokeDataRecursively(viewerNode, rotoNode, RectD(), true);
-        }
-    }
-};
-
-#pragma message WARN("This functino should not be needed anymore")
-ViewerInstance::ViewerRenderRetCode
-ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
-                                             bool canAbort,
-                                             ViewIdx view,
-                                             U64 viewerHash,
-                                             const NodePtr& rotoPaintNode,
-                                             const RotoStrokeItemPtr& activeStroke,
-                                             const RenderStatsPtr& stats,
-                                             boost::shared_ptr<ViewerArgs>* argsA,
-                                             boost::shared_ptr<ViewerArgs>* argsB)
-{
-    ///This is used only by the rotopaint while drawing. We must clear the action cache of the rotopaint node before calling
-    ///getRoD or this will not work
-    assert(rotoPaintNode);
-    if ( !rotoPaintNode->getEffectInstance() ) {
-        return eViewerRenderRetCodeFail;
-    }
-
-    assert(getApp()->isDuringPainting());
-    
-    rotoPaintNode->getEffectInstance()->clearActionsCache();
-
-    ViewerRenderRetCode status[2] = {
-        eViewerRenderRetCodeFail, eViewerRenderRetCodeFail
-    };
-    NodePtr thisNode = getNode();
-    ViewerNodePtr viewerGroup = getViewerNodeGroup();
-    boost::shared_ptr<ViewerArgs> args[2];
-    for (int i = 0; i < 2; ++i) {
-        args[i].reset(new ViewerArgs);
-        if ( (i == 1) && (viewerGroup->getCurrentOperator() == eViewerCompositingOperatorNone) ) {
-            break;
-        }
-
-        AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(i, canAbort);
-
-
-        /*FrameRequestMap request;
-           RectI roi;
-           {
-            roi.x1 = args[i]->params->textureRect.x1;
-            roi.y1 = args[i]->params->textureRect.y1;
-            roi.x2 = args[i]->params->textureRect.x2;
-            roi.y2 = args[i]->params->textureRect.y2;
-           }
-           status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipMapLevel, roi, thisNode, request);
-           if (status[i] == eStatusFailed) {
-            continue;
-           }*/
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = time;
-        tlsArgs->view = view;
-        tlsArgs->isRenderUserInteraction = true;
-        tlsArgs->isSequential = false;
-        tlsArgs->abortInfo = abortInfo;
-        tlsArgs->treeRoot = thisNode;
-        tlsArgs->textureIndex = i;
-        tlsArgs->timeline = getTimeline();
-        tlsArgs->activeRotoPaintNode = rotoPaintNode;
-        tlsArgs->activeRotoDrawableItem = activeStroke;
-        tlsArgs->isDoingRotoNeatRender = false;
-        tlsArgs->isAnalysis = false;
-        tlsArgs->draftMode = false;
-        tlsArgs->stats = stats;
-        ViewerParallelRenderArgsSetter tls(tlsArgs);
-        if (rotoPaintNode) {
-            if (activeStroke) {
-                NodesList rotoPaintNodes;
-                EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
-                assert(rotoLive);
-                bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
-                assert(ok);
-                if (!ok) {
-                    throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
-                }
-
-                /*
-                   Take from the stroke all the points that were input by the user so far on the main thread and set them globally to the
-                   application. These data are the ones that are going to be used by any Roto related tool. We ensure that they all access
-                   the same data so we only access the real Roto datas now.
-                 */
-
-                //The last points input by the user
-                std::list<std::pair<Point, double> > lastStrokePoints;
-
-                //The stroke RoD so far
-                RectD wholeStrokeRod;
-
-                //The bbox of the lastStrokePoints
-                RectD lastStrokeBbox;
-
-                //The index in the stroke of the last point we have rendered and up to the new point we have rendered
-                int lastAge, newAge;
-
-                //get on the app object the last point index we have rendered on this stroke
-                lastAge = getApp()->getStrokeLastIndex();
-
-                //Get the active paint stroke so far and its multi-stroke index
-                RotoStrokeItemPtr currentlyPaintedStroke;
-                int currentlyPaintedStrokeMultiIndex;
-                getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
-
-
-                //If this crashes here that means the user could start a new stroke while this one is not done rendering.
-                assert(currentlyPaintedStroke == activeStroke);
-
-                //the multi-stroke index in case of a stroke containing multiple strokes from the user
-                int strokeIndex;
-                bool isStrokeFirstTick;
-                if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
-                    getApp()->updateLastPaintStrokeData(isStrokeFirstTick, newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
-                    for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
-                        (*it)->prepareForNextPaintStrokeRender();
-                    }
-                    updateLastStrokeDataRecursively(thisNode, rotoPaintNode, lastStrokeBbox, false);
-                } else {
-                    ///The drawing is already up to date: all changes have been taken into account for this event
-                    args[i].reset();
-
-                    return eViewerRenderRetCodeRedraw;
-                }
-            }
-        }
-
-
-        if (args[i]) {
-            status[i] = getRenderViewerArgsAndCheckCache( time, false, view, i, viewerHash, rotoPaintNode, false, abortInfo, stats,  args[i].get() );
-        }
-
-
-        if (status[i] != eViewerRenderRetCodeRender) {
-            /*
-               Either failure, black or nothing, the texture is junk, remove it from the cache
-             */
-            if (args[i] && args[i]->params) {
-                for (std::list<UpdateViewerParams::CachedTile>::iterator it = args[i]->params->tiles.begin(); it != args[i]->params->tiles.end(); ++it) {
-                    if (it->cachedData) {
-                        //it->cachedData->setAborted(true);
-                        //appPTR->removeFromViewerCache(it->cachedData);
-                        it->cachedData.reset();
-                    }
-                }
-                args[i]->params->tiles.clear();
-            }
-        }
-
-
-        if ( (status[i] == eViewerRenderRetCodeFail) || (status[i] == eViewerRenderRetCodeBlack) ) {
-            viewerGroup->s_disconnectTextureRequest(i, status[i] == eViewerRenderRetCodeFail);
-        } else {
-            assert(args[i] && args[i]->params);
-            assert(args[i]->params->textureIndex == i);
-
-
-            if ( !_imp->addOngoingRender(args[i]->params->textureIndex, abortInfo) ) {
-                /*
-                   This may fail if another thread already pushed a more recent render in the render ages queue
-                 */
-                status[i] = eViewerRenderRetCodeRedraw;
-                args[i].reset();
-            }
-
-            if (args[i]) {
-                status[i] = renderViewer_internal(view,
-                                                  QThread::currentThread() == qApp->thread(), // singleThreaded
-                                                  false, // isSequentialRender
-                                                  viewerHash,
-                                                  canAbort,
-                                                  rotoPaintNode,
-                                                  activeStroke,
-                                                  false,
-                                                  false, //useTLS
-                                                  boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(),
-                                                  stats,
-                                                  *args[i]);
-                args[i]->isRenderingFlag.reset();
-            }
-
-            if (args[i] && args[i]->params) {
-                if ( (status[i] == eViewerRenderRetCodeFail) || (status[i] == eViewerRenderRetCodeBlack) ) {
-                    _imp->checkAndUpdateDisplayAge( args[i]->params->textureIndex, abortInfo->getRenderAge() );
-                }
-                _imp->removeOngoingRender( args[i]->params->textureIndex, abortInfo->getRenderAge() );
-            }
-
-
-            if (status[i] == eViewerRenderRetCodeRedraw) {
-                args[i].reset();
-            }
-        }
-    }
-
-    if ( (status[0] == eViewerRenderRetCodeFail) && (status[1] == eViewerRenderRetCodeFail) ) {
-        return eViewerRenderRetCodeFail;
-    }
-
-    *argsA = args[0];
-    *argsB = args[1];
-
-    return eViewerRenderRetCodeRender;
-} // ViewerInstance::getViewerArgsAndRenderViewer
-
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer(ViewIdx view,
                              bool singleThreaded,
                              bool isSequentialRender,
-                             U64 viewerHash,
-                             bool canAbort,
                              const NodePtr& rotoPaintNode,
-                             const RotoStrokeItemPtr& strokeItem,
                              bool isDoingRotoNeatRender,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
@@ -814,7 +532,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, strokeItem, isDoingRotoNeatRender, true, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, rotoPaintNode, isDoingRotoNeatRender, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
@@ -823,17 +541,9 @@ ViewerInstance::renderViewer(ViewIdx view,
             }
 
             if (ret[i] != eViewerRenderRetCodeRender) {
-                /*
-                   Either failure, black or nothing, the texture is junk, remove it from the cache
-                 */
+
+                // Don't hold tiles anymore since we are not going to update the texture
                 if (args[i] && args[i]->params) {
-                    for (std::list<UpdateViewerParams::CachedTile>::iterator it = args[i]->params->tiles.begin(); it != args[i]->params->tiles.end(); ++it) {
-                        if (it->cachedData) {
-                            //it->cachedData->setAborted(true);
-                            //appPTR->removeFromViewerCache(it->cachedData);
-                            it->cachedData.reset();
-                        }
-                    }
                     args[i]->params->tiles.clear();
                 }
             }
@@ -863,48 +573,6 @@ ViewerInstance::renderViewer(ViewIdx view,
     return eViewerRenderRetCodeRender;
 } // ViewerInstance::renderViewer
 
-static bool
-checkTreeCanRender_internal(const NodePtr& node,
-                            std::list<NodePtr>& marked)
-{
-    if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
-        return true;
-    }
-
-    marked.push_back(node);
-
-    // check that the nodes upstream have all their nonoptional inputs connected
-    int maxInput = node->getMaxInputCount();
-    for (int i = 0; i < maxInput; ++i) {
-        NodePtr input = node->getInput(i);
-        bool optional = node->getEffectInstance()->isInputOptional(i);
-        if (optional) {
-            continue;
-        }
-        if (!input) {
-            return false;
-        } else {
-            bool ret = checkTreeCanRender_internal(input, marked);
-            if (!ret) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-/**
- * @brief Returns false if the tree has unconnected mandatory inputs
- **/
-static bool
-checkTreeCanRender(const NodePtr& node)
-{
-    std::list<NodePtr> marked;
-    bool ret = checkTreeCanRender_internal(node, marked);
-
-    return ret;
-}
 
 static unsigned char*
 getTexPixel(int x,
@@ -976,12 +644,38 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         int textureIndex,
                                                         bool canAbort,
                                                         const NodePtr& rotoPaintNode,
+                                                        const RotoStrokeItemPtr& activeStrokeItem,
                                                         const bool isDoingRotoNeatRender,
                                                         const RenderStatsPtr& stats,
                                                         ViewerArgs* outArgs)
 {
     AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
-    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, isDoingRotoNeatRender, abortInfo, stats, outArgs);
+
+    {
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = view;
+        tlsArgs->isRenderUserInteraction = !isSequential;
+        tlsArgs->isSequential = isSequential;
+        tlsArgs->abortInfo = abortInfo;
+        tlsArgs->treeRoot = getNode();
+        tlsArgs->textureIndex = textureIndex;
+        tlsArgs->timeline = getTimeline();
+        tlsArgs->activeRotoPaintNode = rotoPaintNode;
+        tlsArgs->activeRotoDrawableItem = activeStrokeItem;
+        tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = outArgs->draftModeEnabled;
+        tlsArgs->stats = stats;
+        try {
+            outArgs->frameArgs.reset( new ParallelRenderArgsSetter(tlsArgs) );
+        } catch (const std::exception& /*e*/) {
+            return eViewerRenderRetCodeFail;
+        }
+    }
+
+
+    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, rotoPaintNode, isDoingRotoNeatRender, abortInfo, stats, outArgs);
 
     if ( (stat == eViewerRenderRetCodeFail) || (stat == eViewerRenderRetCodeBlack) ) {
         _imp->checkAndUpdateDisplayAge( textureIndex, abortInfo->getRenderAge() );
@@ -1046,9 +740,6 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
         outArgs->mipMapLevelWithDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)autoProxyLevel );
     }
 
-
-    // The hash of the node to render, we store it and make sure we never call getHash() again for the render of this frame
-    outArgs->activeInputHash = outArgs->activeInputToRender->getHash();
 
     // Initialize the flag
     outArgs->mustComputeRoDAndLookupCache = true;
@@ -1127,7 +818,6 @@ ViewerInstance::fillGammaLut(double gamma)
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
-                                       const bool useCache,
                                        const bool isDraftMode,
                                        const unsigned int mipmapLevel,
                                        const RenderStatsPtr& stats,
@@ -1144,7 +834,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     outArgs->params->tiles.clear();
     outArgs->params->nbCachedTile = 0;
-    if (!useCache || outArgs->forceRender) {
+    if (!outArgs->useViewerCache || outArgs->forceRender) {
         outArgs->params->roi = uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
         outArgs->params->roiNotRoundedToTileSize = outArgs->params->roi;
 
@@ -1216,15 +906,15 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
 
+    if (outArgs->useViewerCache) {
+        RectI tilesBbox;
+        bool tilesBboxSet = false;
 
-    // Texture rect contains the pixel coordinates in the image to be rendered
-
-    if (useCache) {
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
-            FrameKey key(getNode().get(),
+            FrameKey key(PLUGINID_NATRON_VIEWER_GROUP,
                          outArgs->params->time,
-                         viewerHash,
+                         outArgs->params->frameViewHash,
                          outArgs->params->gain,
                          outArgs->params->gamma,
                          outArgs->params->lut,
@@ -1270,19 +960,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 // If the tile is cached and we got it that means rendering is done
                 entryLocker.lock(foundCachedEntry);
 
-                /*if ( !entryLocker.tryLock(foundCachedEntry) ) {
-                    // Another thread is rendering it, just return it is not useful to keep this thread waiting.
-                    return eViewerRenderRetCodeRedraw;
-                }*/
-
-                /*if ( foundCachedEntry->getAborted() ) {
-                    // The thread rendering the frame entry might have been aborted and the entry removed from the cache
-                    // but another thread might successfully have found it in the cache. This flag is to notify it the frame
-
-                    // is invalid.
-                    return eViewerRenderRetCodeRedraw;
-                }*/
-
 
                 // The data will be valid as long as the cachedFrame shared pointer use_count is gt 1
                 it->cachedData = foundCachedEntry;
@@ -1290,7 +967,22 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 it->ramBuffer = foundCachedEntry->data();
                 assert(it->ramBuffer);
                 ++outArgs->params->nbCachedTile;
+            } else {
+                // Uncached tile, add it to the bbox
+                if (!tilesBboxSet) {
+                    tilesBboxSet = true;
+                    tilesBbox.x1 = it->rectRounded.x1;
+                    tilesBbox.x2 = it->rectRounded.x2;
+                    tilesBbox.y1 = it->rectRounded.y1;
+                    tilesBbox.y2 = it->rectRounded.y2;
+                } else {
+                    tilesBbox.merge(it->rectRounded.x1, it->rectRounded.y1, it->rectRounded.x2, it->rectRounded.y2);
+                }
             }
+        }
+
+        if ( outArgs->params->roi.contains(tilesBbox) ) {
+            outArgs->params->roi = tilesBbox;
         }
     }
 
@@ -1298,16 +990,14 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     return eViewerRenderRetCodeRender;
 } // ViewerInstance::getViewerRoIAndTexture
 
+
+
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
-                                     const NodePtr& rotoPaintNode,
-                                     const bool isDoingRotoNeatRender,
                                      const RenderStatsPtr& stats,
                                      ViewerArgs* outArgs)
 {
-    // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
-    // zillions of textures in the cache, each a few pixels different.
-    const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingRotoNeatRender && !outArgs->isDoingPartialUpdates;
+
 
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
@@ -1315,6 +1005,14 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
     // This may be eSupportsMaybe
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
+
+
+    // The hash of the node to render, we store it and make sure we never call getHash() again for the render of this frame
+    outArgs->activeInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view);
+
+    // Now that we have computed the request pass, get the viewer hash
+    outArgs->params->frameViewHash = getRenderHash(outArgs->params->time, outArgs->params->view);
+
 
 
     // When in draft mode first try to get a texture without draft and then try with draft
@@ -1368,7 +1066,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         Q_UNUSED(isRodProjectFormat);
 
         // Ok we go the RoD, we can actually compute the RoI and look-up the cache
-        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipMapLevel, stats, outArgs);
+        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, lookup == 1, mipMapLevel, stats, outArgs);
         if (retCode != eViewerRenderRetCodeRender) {
             return retCode;
         }
@@ -1417,62 +1115,43 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
 
     // Before rendering we check that all mandatory inputs in the graph are connected else we fail
-    if ( !outArgs->activeInputToRender || !checkTreeCanRender( outArgs->activeInputToRender->getNode() ) ) {
+    if (!outArgs->activeInputToRender) {
         return eViewerRenderRetCodeFail;
     }
 
     // Fetch the render parameters from the Viewer UI
     setupMinimalUpdateViewerParams(time, view, textureIndex, abortInfo, isSequential, outArgs);
 
+    // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
+    // zillions of textures in the cache, each a few pixels different.
+    outArgs->useViewerCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingRotoNeatRender && !outArgs->isDoingPartialUpdates;
+
+
     // Try to look-up the cache but do so only if we have a RoD valid in the cache because
 
     // we are on the main-thread here, it would be expensive to compute the RoD now.
-    return getRoDAndLookupCache(true, viewerHash, rotoPaintNode, isDoingRotoNeatRender, stats, outArgs);
+    return getRoDAndLookupCache(true, stats, outArgs);
 }
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      U64 viewerHash,
-                                      bool /*canAbort*/,
                                       const NodePtr& rotoPaintNode,
-                                      const RotoStrokeItemPtr& strokeItem,
                                       bool isDoingRotoNeatRender,
-                                      bool useTLS,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                       const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
 {
     // We are in the render thread, we may not have computed the RoD and lookup the cache yet
 
-    boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
-
-    if (useTLS) {
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = inArgs.params->time;
-        tlsArgs->view = inArgs.params->view;
-        tlsArgs->isRenderUserInteraction = !isSequentialRender;
-        tlsArgs->isSequential = isSequentialRender;
-        tlsArgs->abortInfo = inArgs.params->abortInfo;
-        tlsArgs->treeRoot = getNode();
-        tlsArgs->textureIndex = inArgs.params->textureIndex;
-        tlsArgs->timeline = getTimeline();
-        tlsArgs->activeRotoPaintNode = rotoPaintNode;
-        tlsArgs->activeRotoDrawableItem = strokeItem;
-        tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
-        tlsArgs->isAnalysis = false;
-        tlsArgs->draftMode = inArgs.draftModeEnabled;
-        tlsArgs->stats = stats;
-        frameArgs.reset( new ViewerParallelRenderArgsSetter(tlsArgs) );
-    }
-
-
+    // Since we need to compute the RoD now, we MUST setup the thread local
+    // storage otherwise functions like EffectInstance::aborted() would not work.
     if (inArgs.mustComputeRoDAndLookupCache) {
         // Since we will most likely need to compute the RoD now, we MUST setup the thread local
         // storage otherwise functions like EffectInstance::aborted() would not work.
 
-        ViewerRenderRetCode retcode = getRoDAndLookupCache(false, viewerHash, rotoPaintNode, isDoingRotoNeatRender, stats, &inArgs);
+        ViewerRenderRetCode retcode = getRoDAndLookupCache(false, stats, &inArgs);
         if (retcode != eViewerRenderRetCodeRender) {
             return retcode;
         }
@@ -1483,6 +1162,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             return eViewerRenderRetCodeRender;
         }
     }
+
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( !isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance() );
@@ -1504,58 +1184,23 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
      * correspond to the GUI state anymore.
      * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false.
      */
-
-    const bool useTextureCache = !inArgs.forceRender && !inArgs.userRoIEnabled && !inArgs.autoContrast && rotoPaintNode.get() == 0 && !isDoingRotoNeatRender && !inArgs.isDoingPartialUpdates;
     RectI roi = inArgs.params->roi;
-
-    // We might already have some tiles cached, get their bounding box to see if it is less than the actual RoI
-    if (useTextureCache) {
-        RectI tilesBbox;
-        bool tilesBboxSet = false;
-        for (std::list<UpdateViewerParams::CachedTile>::const_iterator it = inArgs.params->tiles.begin(); it != inArgs.params->tiles.end(); ++it) {
-            if (it->ramBuffer) {
-                continue;
-            }
-            if (!tilesBboxSet) {
-                tilesBboxSet = true;
-                tilesBbox.x1 = it->rectRounded.x1;
-                tilesBbox.x2 = it->rectRounded.x2;
-                tilesBbox.y1 = it->rectRounded.y1;
-                tilesBbox.y2 = it->rectRounded.y2;
-            } else {
-                tilesBbox.merge(it->rectRounded.x1, it->rectRounded.y1, it->rectRounded.x2, it->rectRounded.y2);
-            }
-        }
-        if ( roi.contains(tilesBbox) ) {
-            roi = tilesBbox;
-        }
-    }
 
     assert(inArgs.activeInputToRender);
 
-    ///Check that we were not aborted already
-    if ( !isSequentialRender && ( (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash) ||
-                                  ( inArgs.params->time != getTimeline()->currentFrame() ) ) ) {
-        return eViewerRenderRetCodeRedraw;
+
+    // Compute the request pass to optimize the RoI
+    {
+        RectD canonicalRoi;
+        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
+        if (inArgs.frameArgs->computeRequestPass(inArgs.params->mipMapLevel, canonicalRoi) != eStatusOK) {
+            return eViewerRenderRetCodeFail;
+        }
     }
 
     ///Notify the gui we're rendering.
     EffectInstance::NotifyRenderingStarted_RAII renderingNotifier( getNode().get() );
 
-
-    if (useTLS) {
-        RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
-
-        FrameRequestMap requestPassData;
-        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), requestPassData);
-        if (stat == eStatusFailed) {
-            return eViewerRenderRetCodeFail;
-        }
-
-
-        frameArgs->updateNodesRequest(requestPassData);
-    }
 
     const double par = inArgs.activeInputToRender->getAspectRatio(-1);
 
@@ -1733,7 +1378,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             return eViewerRenderRetCodeRedraw;
         }
 
-        const bool viewerRenderRoiOnly = !useTextureCache;
+        const bool viewerRenderRoiOnly = !inArgs.useViewerCache;
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
 
         if ( ( (inArgs.channels == eDisplayChannelsA) && ( (alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)colorImage->getComponentsCount() ) ) ) ||
@@ -1776,7 +1421,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         FrameEntryLocker entryLocker( _imp.get() );
         RectI lastPaintBboxPixel;
         std::list<UpdateViewerParams::CachedTile> unCachedTiles;
-        if (!useTextureCache) {
+        if (!inArgs.useViewerCache) {
             assert(updateParams->tiles.size() == 1);
 
             UpdateViewerParams::CachedTile& tile = updateParams->tiles.front();
@@ -1841,19 +1486,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         return eViewerRenderRetCodeFail;
                     }
 
-                    /*UpdateViewerParams::CachedTile tileCopy = tile;
-                       //If we are painting, only render the portion needed
-                       if ( !lastPaintBboxPixel.isNull() ) {
-                        tileCopy.rect.intersect(lastPaintBboxPixel, &tileCopy.rect);
-                        std::size_t pixelSize = 4;
-                        if (updateParams->depth == eImageBitDepthFloat) {
-                            pixelSize *= sizeof(float);
-                        }
-                        std::size_t dstRowSize = tileCopy.rect.width() * pixelSize;
-                        tileCopy.bytesCount = tileCopy.rect.height() * dstRowSize;
-                       }
-
-                       unCachedTiles.push_back(tileCopy);*/
                     unCachedTiles.push_back(tile);
                 }
                 _imp->lastRenderParams[updateParams->textureIndex] = updateParams;
@@ -1866,7 +1498,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
                 unCachedTiles.push_back(tile);
             }
-        } else { // useTextureCache
+        } else { // useViewerCache
             //Look up the cache for a texture or create one
             {
                 QMutexLocker k(&_imp->lastRenderParamsMutex);
@@ -1893,7 +1525,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
                     FrameKey key(PLUGINID_NATRON_VIEWER_GROUP,
                                  inArgs.params->time,
-                                 viewerHash,
+                                 updateParams->frameViewHash,
                                  inArgs.params->gain,
                                  inArgs.params->gamma,
                                  inArgs.params->lut,
@@ -1947,7 +1579,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     it->cachedData->setInternalImage(colorImage);
                 }
             }
-        } // !useTextureCache
+        } // !useViewerCache
 
         /*
            If we are not using the texture cache, there is a unique tile which has the required texture size on the viewer, so we render the RoI instead

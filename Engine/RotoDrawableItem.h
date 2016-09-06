@@ -49,6 +49,12 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#define kMergeParamOutputChannelsR      "OutputChannelsR"
+#define kMergeParamOutputChannelsG      "OutputChannelsG"
+#define kMergeParamOutputChannelsB      "OutputChannelsB"
+#define kMergeParamOutputChannelsA      "OutputChannelsA"
+
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -82,8 +88,6 @@ public:
     void createNodes(bool connectNodes = true);
 
     void setNodesThreadSafetyForRotopainting();
-
-    void incrementNodesAge();
 
     void refreshNodesConnections(bool isTreeConcatenated);
 

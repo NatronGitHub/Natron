@@ -1327,8 +1327,6 @@ public:
      **/
     void removeAllImagesFromCache();
 
-    void appendKnobsToFrameViewHash(double time, ViewIdx view, Hash64* hash) const;
-
     void onActionEvaluated();
 
 public:

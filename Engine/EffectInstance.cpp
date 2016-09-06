@@ -237,6 +237,7 @@ EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inAr
     args->isRenderResponseToUserInteraction = inArgs->isRenderUserInteraction;
     args->isSequentialRender = inArgs->isSequential;
     args->request = inArgs->nodeRequest;
+    args->frameViewHash = inArgs->frameViewHash;
     assert(inArgs->abortInfo);
     args->abortInfo = inArgs->abortInfo;
     args->treeRoot = inArgs->treeRoot;
@@ -246,7 +247,6 @@ EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inAr
     args->isDuringPaintStrokeCreation = inArgs->isDuringPaintStrokeCreation;
     args->currentThreadSafety = inArgs->currentThreadSafety;
     args->currentOpenglSupport = inArgs->currentOpenGLSupport;
-    args->rotoPaintNodes = inArgs->rotoPaintNodes;
     args->doNansHandling = inArgs->isAnalysis ? false : inArgs->doNanHandling;
     args->draftMode = inArgs->draftMode;
     args->tilesSupported = getNode()->getCurrentSupportTiles();
@@ -256,21 +256,6 @@ EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inAr
     argsList.push_back(args);
 }
 
-bool
-EffectInstance::getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return false;
-    }
-    if ( tls->frameArgs.empty() ) {
-        return false;
-    }
-    *nodes = tls->frameArgs.back()->rotoPaintNodes;
-
-    return true;
-}
 
 void
 EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
@@ -299,10 +284,6 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     }
 
     assert( !tls->frameArgs.empty() );
-    const ParallelRenderArgsPtr& back = tls->frameArgs.back();
-    for (NodesList::iterator it = back->rotoPaintNodes.begin(); it != back->rotoPaintNodes.end(); ++it) {
-        (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
-    }
     tls->frameArgs.pop_back();
 }
 
@@ -329,15 +310,8 @@ EffectInstance::getRenderHash(double time, ViewIdx view) const
     }
 
     const ParallelRenderArgsPtr &args = tls->frameArgs.back();
-
-    if (args->request) {
-        const FrameViewRequest* frameViewData = args->request->getFrameViewRequest(time, view);
-        if (frameViewData) {
-            return frameViewData->globalData.nodeHash;
-        }
-    }
-
-    return 0;
+    assert(args);
+    return args->getFrameViewHash(time, view);
 }
 
 bool
@@ -509,88 +483,6 @@ EffectInstance::getInputHint(int /*inputNb*/) const
     return std::string();
 }
 
-bool
-EffectInstance::retrieveGetImageDataUponFailure(const double time,
-                                                const ViewIdx view,
-                                                const RenderScale & scale,
-                                                const RectD* optionalBoundsParam,
-                                                bool* isIdentity_p,
-                                                double* identityTime,
-                                                ViewIdx* inputView,
-                                                EffectInstancePtr* identityInput_p,
-                                                bool* duringPaintStroke_p,
-                                                RectD* rod_p,
-                                                RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
-                                                RectD* optionalBounds_p) //!< output, only set if optionalBoundsParam != NULL
-{
-    /////Update 09/02/14
-    /// We now AUTHORIZE GetRegionOfDefinition and isIdentity and getRegionsOfInterest to be called recursively.
-    /// It didn't make much sense to forbid them from being recursive.
-
-//#ifdef DEBUG
-//    if (QThread::currentThread() != qApp->thread()) {
-//        ///This is a bad plug-in
-//        qDebug() << getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
-//        "Developers of that plug-in should fix it. \n Reminder from the OpenFX spec: \n "
-//        "Images may be fetched from an attached clip in the following situations... \n"
-//        "- in the kOfxImageEffectActionRender action\n"
-//        "- in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason or kOfxChangeUserEdited";
-//    }
-//#endif
-
-    ///Try to compensate for the mistake
-
-    *duringPaintStroke_p = getNode()->isDuringPaintStrokeCreation();
-
-    U64 hash = 0;
-    {
-        RECURSIVE_ACTION();
-        StatusEnum stat = getRegionOfDefinition(hash, time, scale, view, rod_p);
-        if (stat == eStatusFailed) {
-            return false;
-        }
-    }
-    const RectD & rod = *rod_p;
-
-    ///OptionalBoundsParam is the optional rectangle passed to getImage which may be NULL, in which case we use the RoD.
-    if (!optionalBoundsParam) {
-        ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
-        *optionalBounds_p = rod;
-        ifInfiniteApplyHeuristic(hash, time, scale, view, optionalBounds_p);
-        const RectD & optionalBounds = *optionalBounds_p;
-
-        /// If the region parameter is not set to NULL, then it will be clipped to the clip's
-        /// Region of Definition for the given time. The returned image will be m at m least as big as this region.
-        /// If the region parameter is not set, then the region fetched will be at least the Region of Interest
-        /// the effect has previously specified, clipped the clip's Region of Definition.
-        /// (renderRoI will do the clipping for us).
-
-
-        ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
-        ///// should never happen.
-        getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, ViewIdx(0), inputRois_p);
-    }
-
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-    RectI pixelRod;
-    rod.toPixelEnclosing(scale, getAspectRatio(-1), &pixelRod);
-    try {
-        int identityInputNb;
-        *isIdentity_p = isIdentity_public(true, hash, time, scale, pixelRod, view, identityTime, inputView, &identityInputNb);
-        if (*isIdentity_p) {
-            if (identityInputNb >= 0) {
-                *identityInput_p = getInput(identityInputNb);
-            } else if (identityInputNb == -2) {
-                *identityInput_p = shared_from_this();
-            }
-        }
-    } catch (...) {
-        return false;
-    }
-
-    return true;
-} // EffectInstance::retrieveGetImageDataUponFailure
-
 void
 EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
 {
@@ -646,12 +538,19 @@ EffectInstance::getImage(int inputNb,
         return ImagePtr();
     }
 
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+
+
     ///The input we want the image from
     EffectInstancePtr inputEffect;
 
     // Check for transform redirections
     InputMatrixMapPtr transformRedirections;
+
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    // Use transform redirections from TLS to find input effect if possible
+    // For a similar code see resolveInputEffectForFrameNeeded
     if (tls && tls->currentRenderArgs.validArgs) {
         transformRedirections = tls->currentRenderArgs.transformRedirections;
         if (transformRedirections) {
@@ -665,6 +564,7 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
+    // Get regular input
     if (!inputEffect) {
         inputEffect = getInput(inputNb);
     }
@@ -701,33 +601,93 @@ EffectInstance::getImage(int inputNb,
         return ImagePtr();
     }
 
-    ///If optionalBounds have been set, use this for the RoI instead of the data int the TLS
+    // If optionalBounds have been set, use this for the RoI instead of the data int the TLS
     RectD optionalBounds;
     if (optionalBoundsParam) {
         optionalBounds = *optionalBoundsParam;
     }
 
+
+    AbortableRenderInfoPtr renderInfo;
+
+
+    /*
+     If getImage() was called during the knobChanged action, this is an analysis effect trying to pull images.
+     We did not apply any TLS to the node tree, so do it now.
+     */
+    boost::shared_ptr<ParallelRenderArgsSetter> tlsSetter;
+    if ( !tls || ( !tls->currentRenderArgs.validArgs && tls->frameArgs.empty() ) ) {
+
+        // We set the thread storage render args so that if the instance changed action
+        // tries to call getImage it can render with good parameters.
+
+        // Keep it out of scope otherwise it will get destroyed as nobody holds a shared ref to it except here
+        renderInfo = AbortableRenderInfo::create(false, 0);
+        const bool isRenderUserInteraction = true;
+        const bool isSequentialRender = false;
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
+        if (isAbortable) {
+            isAbortable->setAbortInfo( isRenderUserInteraction, renderInfo, inputEffect );
+        }
+
+
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = time;
+        tlsArgs->view = view;
+        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = renderInfo;
+        tlsArgs->treeRoot = inputEffect->getNode();
+        tlsArgs->textureIndex = 0;
+        tlsArgs->timeline = getApp()->getTimeLine();
+        tlsArgs->activeRotoPaintNode = NodePtr();
+        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+        tlsArgs->isDoingRotoNeatRender = false;
+        tlsArgs->isAnalysis = true;
+        tlsArgs->draftMode = false;
+        tlsArgs->stats = RenderStatsPtr();
+        try {
+            tlsSetter.reset( new ParallelRenderArgsSetter(tlsArgs) );
+        } catch (...) {
+            // The tree cannot render
+            return ImagePtr();
+        }
+
+        RectD canonicalRoi;
+        if (optionalBoundsParam) {
+            canonicalRoi = *optionalBoundsParam;
+        } else {
+            // Go for RoD
+            U64 inputHash = inputEffect->getRenderHash(time, view);
+            RectD rod;
+            bool isProjectFormat;
+            StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputHash, time, scale, view, &rod, &isProjectFormat);
+            if ( (stat == eStatusFailed) || rod.isNull() ) {
+                return ImagePtr();
+            }
+            canonicalRoi = rod;
+        }
+
+        if (tlsSetter->computeRequestPass(mipMapLevel, canonicalRoi) != eStatusOK) {
+            return ImagePtr();
+        }
+
+        // Refresh tls variable
+        tls = _imp->tlsData->getTLSData();
+
+    }
+
     /*
      * These are the data fields stored in the TLS from the on-going render action or instance changed action
      */
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     bool isIdentity = false;
     EffectInstancePtr identityInput;
     double inputIdentityTime = 0.;
-    ViewIdx inputIdentityView(view);
     bool duringPaintStroke;
-    /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
-    /// re-computing of the same image many many times
+    // Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
+    // re-computing of the same image many many times
     bool byPassCache = false;
-
-    ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
-    ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
-
-    /// From http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectsImagesAndClipsUsingClips
-    //    Images may be fetched from an attached clip in the following situations...
-    //    in the kOfxImageEffectActionRender action
-    //    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
     RectD roi;
     bool roiWasInRequestPass = false;
     bool isAnalysisPass = false;
@@ -738,57 +698,51 @@ EffectInstance::getImage(int inputNb,
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     OSGLContextPtr gpuGlContext, cpuGlContext;
-    AbortableRenderInfoPtr renderInfo;
-    if ( !tls || ( !tls->currentRenderArgs.validArgs && tls->frameArgs.empty() ) ) {
-        /*
-           This is either a huge bug or an unknown thread that called clipGetImage from the OpenFX plug-in.
-           Make-up some reasonable arguments
-         */
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &isIdentity, &inputIdentityTime, &inputIdentityView, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds) ) {
-            return ImagePtr();
-        }
-    } else {
-        assert( tls->currentRenderArgs.validArgs || !tls->frameArgs.empty() );
 
-        if (inputEffect) {
-            //When analysing we do not compute a request pass so we do not enter this condition
-            ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
-            const FrameViewRequest* request = 0;
-            if (inputFrameArgs && inputFrameArgs->request) {
-                request = inputFrameArgs->request->getFrameViewRequest(time, view);
-            }
-            if (request) {
-                roiWasInRequestPass = true;
-                roi = request->finalData.finalRoi;
-                frameViewHash = request->globalData.nodeHash;
-            }
-        }
+    assert(tls && (tls->currentRenderArgs.validArgs || !tls->frameArgs.empty()));
 
-        if ( !tls->frameArgs.empty() ) {
-            const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
-            duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
-            isAnalysisPass = frameRenderArgs->isAnalysis;
-            gpuGlContext = frameRenderArgs->openGLContext.lock();
-            cpuGlContext = frameRenderArgs->cpuOpenGLContext.lock();
-            renderInfo = frameRenderArgs->abortInfo.lock();
-        } else {
-            //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
-            duringPaintStroke = false;
+
+    if (inputEffect) {
+        //When analysing we do not compute a request pass so we do not enter this condition
+        ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
+        if (inputFrameArgs) {
+            frameViewHash = inputFrameArgs->getFrameViewHash(time, view);
         }
-        if (tls->currentRenderArgs.validArgs) {
-            //This will only be valid for render pass, not analysis
-            const RenderArgs& renderArgs = tls->currentRenderArgs;
-            if (!roiWasInRequestPass) {
-                inputsRoI = renderArgs.regionOfInterestResults;
-            }
-            thisEffectRenderTime = renderArgs.time;
-            isIdentity = renderArgs.isIdentity;
-            inputIdentityTime = renderArgs.identityTime;
-            identityInput = renderArgs.identityInput;
-            inputImagesThreadLocal = renderArgs.inputImages;
-            thisRod = renderArgs.rod;
+        const FrameViewRequest* request = 0;
+        if (inputFrameArgs && inputFrameArgs->request) {
+            request = inputFrameArgs->request->getFrameViewRequest(time, view);
+        }
+        if (request) {
+            roiWasInRequestPass = true;
+            roi = request->finalData.finalRoi;
         }
     }
+
+    if ( !tls->frameArgs.empty() ) {
+        const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
+        duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
+        isAnalysisPass = frameRenderArgs->isAnalysis;
+        gpuGlContext = frameRenderArgs->openGLContext.lock();
+        cpuGlContext = frameRenderArgs->cpuOpenGLContext.lock();
+        renderInfo = frameRenderArgs->abortInfo.lock();
+    } else {
+        //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
+        duringPaintStroke = false;
+    }
+    if (tls->currentRenderArgs.validArgs) {
+        //This will only be valid for render pass, not analysis
+        const RenderArgs& renderArgs = tls->currentRenderArgs;
+        if (!roiWasInRequestPass) {
+            inputsRoI = renderArgs.regionOfInterestResults;
+        }
+        thisEffectRenderTime = renderArgs.time;
+        isIdentity = renderArgs.isIdentity;
+        inputIdentityTime = renderArgs.identityTime;
+        identityInput = renderArgs.identityInput;
+        inputImagesThreadLocal = renderArgs.inputImages;
+        thisRod = renderArgs.rod;
+    }
+
 
     if ( ((!gpuGlContext && !cpuGlContext) || !renderInfo) && returnStorage == eStorageModeGLTex ) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
@@ -2116,7 +2070,6 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                               time,
                               view,
                               NodePtr(),
-                              0,
                               0,
                               0,
                               inputImages,
@@ -4054,24 +4007,22 @@ EffectInstance::getRegionsOfInterest_public(double time,
 }
 
 void
-EffectInstance::cacheActionResults(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded, const RectD& rod, int identityInputNb, double identityTime, ViewIdx identityView)
+EffectInstance::cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded)
 {
-    _imp->actionsCache->setRoDResult(hash, time, view, 0, rod);
-    _imp->actionsCache->setIdentityResult(hash, time, view, identityInputNb, identityView, identityTime);
+
     _imp->actionsCache->setFramesNeededResult(hash, time, view, 0, framesNeeded);
 }
 
 FramesNeededMap
 EffectInstance::getFramesNeeded_public(U64 hash,
                                        double time,
-                                       ViewIdx view,
-                                       unsigned int mipMapLevel)
+                                       ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
     FramesNeededMap framesNeeded;
     bool foundInCache = false;
     if (hash != 0) {
-        foundInCache = _imp->actionsCache->getFramesNeededResult(hash, time, view, mipMapLevel, &framesNeeded);
+        foundInCache = _imp->actionsCache->getFramesNeededResult(hash, time, view, 0, &framesNeeded);
     }
     if (foundInCache) {
         return framesNeeded;
@@ -4086,7 +4037,7 @@ EffectInstance::getFramesNeeded_public(U64 hash,
     }
 
     if (hash != 0) {
-        _imp->actionsCache->setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
+        _imp->actionsCache->setFramesNeededResult(hash, time, view, 0, framesNeeded);
     }
 
     return framesNeeded;
@@ -4909,38 +4860,6 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     KnobHelperPtr kh = boost::dynamic_pointer_cast<KnobHelper>(k);
     assert(kh);
     if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
-        // We set the thread storage render args so that if the instance changed action
-        // tries to call getImage it can render with good parameters.
-        boost::shared_ptr<ParallelRenderArgsSetter> setter;
-
-        // Keep it out of scope otherwise it will get destroyed as nobody holds a shared ref to it except here
-        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-        if (reason != eValueChangedReasonTimeChanged) {
-            const bool isRenderUserInteraction = true;
-            const bool isSequentialRender = false;
-            AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-            if (isAbortable) {
-                isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
-            }
-
-
-            ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-            tlsArgs->time = time;
-            tlsArgs->view = viewIdx;
-            tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
-            tlsArgs->isSequential = isSequentialRender;
-            tlsArgs->abortInfo = abortInfo;
-            tlsArgs->treeRoot = node;
-            tlsArgs->textureIndex = 0;
-            tlsArgs->timeline = getApp()->getTimeLine();
-            tlsArgs->activeRotoPaintNode = NodePtr();
-            tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-            tlsArgs->isDoingRotoNeatRender = false;
-            tlsArgs->isAnalysis = true;
-            tlsArgs->draftMode = false;
-            tlsArgs->stats = RenderStatsPtr();
-            setter.reset( new ParallelRenderArgsSetter(tlsArgs) );
-        }
         {
             RECURSIVE_ACTION();
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );

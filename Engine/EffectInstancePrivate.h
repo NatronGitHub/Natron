@@ -324,6 +324,7 @@ public:
                                                           const ParallelRenderArgsPtr& frameArgs,
                                                           const FrameViewRequest* requestPassData,
                                                           SupportsEnum supportsRS,
+                                                          U64 frameViewHash,
                                                           double par,
                                                           unsigned int mipMapLevel,
                                                           ImagePremultiplicationEnum thisEffectOutputPremult,
@@ -339,6 +340,7 @@ public:
 
     bool setupRenderRoIParams(const RenderRoIArgs & args,
                               EffectDataTLSPtr* tls,
+                              U64 *frameViewHash,
                               AbortableRenderInfoPtr *abortInfo,
                               ParallelRenderArgsPtr* frameArgs,
                               OSGLContextPtr *glGpuContext,
@@ -376,6 +378,7 @@ public:
 
     bool renderRoILookupCacheFirstTime(const RenderRoIArgs & args,
                                        const ParallelRenderArgsPtr& frameArgs,
+                                       const U64 frameViewHash,
                                        const FrameViewRequest* requestPassData,
                                        StorageModeEnum storage,
                                        const OSGLContextPtr& glRenderContext,
@@ -398,6 +401,7 @@ public:
 
     EffectInstance::RenderRoIRetCode renderRoIRenderInputImages(const RenderRoIArgs & args,
                                                                 const EffectDataTLSPtr& tls,
+                                                                const U64 frameViewHash,
                                                                 const ComponentsNeededMapPtr& neededComps,
                                                                 const FrameViewRequest* requestPassData,
                                                                 const ImagePlanesToRenderPtr &planesToRender,
@@ -469,7 +473,7 @@ public:
                                                                       const ImageComponents &outputClipPrefComps,
                                                                       bool hasSomethingToRender,
                                                                       StorageModeEnum storage,
-                                                                      const FrameViewRequest* requestPassData,
+                                                                      const U64 frameViewHash,
                                                                       const RectD& rod,
                                                                       const RectI& roi,
                                                                       unsigned int renderMappedMipMapLevel,

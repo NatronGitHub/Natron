@@ -129,30 +129,6 @@ RotoContext::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
     }
 }
 
-NodePtr
-RotoContext::getRotoPaintBottomMergeNode() const
-{
-    std::list<RotoDrawableItemPtr > items = getCurvesByRenderOrder();
-
-    if ( items.empty() ) {
-        return NodePtr();
-    }
-
-    int bop;
-    if ( isRotoPaintTreeConcatenatableInternal(items, &bop) ) {
-        QMutexLocker k(&_imp->rotoContextMutex);
-        if ( !_imp->globalMergeNodes.empty() ) {
-            return _imp->globalMergeNodes.front();
-        }
-    }
-
-    const RotoDrawableItemPtr& firstStrokeItem = items.back();
-    assert(firstStrokeItem);
-    NodePtr bottomMerge = firstStrokeItem->getMergeNode();
-    assert(bottomMerge);
-
-    return bottomMerge;
-}
 
 void
 RotoContext::getRotoPaintTreeNodes(NodesList* nodes) const
@@ -2089,19 +2065,28 @@ RotoContext::removeItemAsPythonField(const RotoItemPtr& item)
     }
 }
 
+static void setOperationKnob(const NodePtr& node, int blendingOperator)
+{
+    KnobIPtr mergeOperatorKnob = node->getKnobByName(kMergeOFXParamOperation);
+    KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
+    if (mergeOp) {
+        mergeOp->setValue(blendingOperator);
+    }
+}
+
 NodePtr
-RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
+RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex)
 {
     {
         QMutexLocker k(&_imp->rotoContextMutex);
         for (NodesList::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
             const std::vector<NodeWPtr > &inputs = (*it)->getInputs();
 
-            //Merge node goes like this: B, A, Mask, A2, A3, A4 ...
+            // Merge node goes like this: B, A, Mask, A2, A3, A4 ...
             assert( inputs.size() >= 3 && (*it)->getEffectInstance()->isInputMask(2) );
             if ( !inputs[1].lock() ) {
                 *availableInputIndex = 1;
-
+                setOperationKnob(*it, blendingOperator);
                 return *it;
             }
 
@@ -2109,7 +2094,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
             for (std::size_t i = 3; i < inputs.size(); ++i) {
                 if ( !inputs[i].lock() ) {
                     *availableInputIndex = (int)i;
-
+                    setOperationKnob(*it, blendingOperator);
                     return *it;
                 }
             }
@@ -2149,6 +2134,24 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
         }
     }
     *availableInputIndex = 1;
+    setOperationKnob(mergeNode, blendingOperator);
+
+    {
+        RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
+        // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
+        KnobBoolPtr rotoPaintRGBA[4];
+        KnobBoolPtr mergeRGBA[4];
+        rotoPaintEffect->getEnabledChannelKnobs(&rotoPaintRGBA[0], &rotoPaintRGBA[1], &rotoPaintRGBA[2], &rotoPaintRGBA[3]);
+        mergeRGBA[0] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsR));
+        mergeRGBA[1] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsG));
+        mergeRGBA[2] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsB));
+        mergeRGBA[3] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsA));
+        for (int i = 0; i < 4; ++i) {
+            mergeRGBA[i]->slaveTo(0, rotoPaintRGBA[i], 0);
+        }
+
+    }
+
 
     QMutexLocker k(&_imp->rotoContextMutex);
     _imp->globalMergeNodes.push_back(mergeNode);
@@ -2199,6 +2202,8 @@ RotoContext::refreshRotoPaintTree()
     }
 
     std::list<RotoDrawableItemPtr > items = getCurvesByRenderOrder();
+
+    // Check if the tree can be concatenated into a single merge node
     int blendingOperator;
     bool canConcatenate = isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     NodePtr globalMerge;
@@ -2208,17 +2213,21 @@ RotoContext::refreshRotoPaintTree()
         QMutexLocker k(&_imp->rotoContextMutex);
         mergeNodes = _imp->globalMergeNodes;
     }
-    //ensure that all global merge nodes are disconnected
+
+    // Ensure that all global merge nodes are disconnected
     for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
         int maxInputs = (*it)->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
         }
     }
-    globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+    globalMerge = getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
+    assert(rotoPaintEffect);
 
     if (canConcatenate) {
-        NodePtr rotopaintNodeInput = getNode()->getInput(0);
+        NodePtr rotopaintNodeInput = rotoPaintEffect->getInternalInputNode(0);
         //Connect the rotopaint node input to the B input of the Merge
         if (rotopaintNodeInput) {
             globalMerge->connectInput(rotopaintNodeInput, 0);
@@ -2231,17 +2240,13 @@ RotoContext::refreshRotoPaintTree()
         }
     }
 
+    // Refresh each item separately
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
         (*it)->refreshNodesConnections(canConcatenate);
 
         if (canConcatenate) {
-            {
-                KnobIPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
-                KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
-                if (mergeOp) {
-                    mergeOp->setValue(blendingOperator);
-                }
-            }
+
+            // If we concatenate the tree, connect the global merge to the effect
 
             NodePtr effectNode = (*it)->getEffectNode();
             assert(effectNode);
@@ -2249,8 +2254,8 @@ RotoContext::refreshRotoPaintTree()
             //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
             globalMerge->connectInput(effectNode, globalMergeIndex);
 
-            ///Refresh for next node
-            NodePtr nextMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+            // Refresh for next node
+            NodePtr nextMerge = getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
             if (nextMerge != globalMerge) {
                 assert( !nextMerge->getInput(0) );
                 nextMerge->connectInput(globalMerge, 0);
@@ -2258,6 +2263,23 @@ RotoContext::refreshRotoPaintTree()
             }
         }
     }
+
+
+    NodePtr treeBottomNode = rotoPaintEffect->getPremultNode();
+    assert(treeBottomNode);
+
+    NodePtr bottomTreeInput;
+    if (canConcatenate) {
+        bottomTreeInput = globalMerge;
+    } else {
+        if (!items.empty()) {
+            bottomTreeInput = items.front()->getMergeNode();
+        }
+    }
+
+    treeBottomNode->disconnectInput(0);
+    treeBottomNode->connectInput(bottomTreeInput, 0);
+
 } // RotoContext::refreshRotoPaintTree
 
 void

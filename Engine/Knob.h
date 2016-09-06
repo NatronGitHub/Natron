@@ -2575,6 +2575,13 @@ public:
 
     void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
 
+
+    /**
+     * @brief To implement if you need to make the hash vary at a specific time/view
+     **/
+
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) const;
+
 protected:
 
     //////////////////////////////////////////////////////////////////////////////////////////

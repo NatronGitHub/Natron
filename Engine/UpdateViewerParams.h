@@ -92,6 +92,7 @@ public:
         , isViewerPaused(false)
         , recenterViewport(false)
         , viewportCenter()
+        , frameViewHash(0)
     {
     }
 
@@ -115,21 +116,40 @@ public:
     }
 
     bool mustFreeRamBuffer; // set to true when !cachedFrame, in this case we have only 1 tile
+
     int textureIndex; // The texture index (for input A or B)
-    int time; // the frame
+
+    double time; // the frame
+
     ViewIdx view; // the view
+
     ImagePremultiplicationEnum srcPremult; // the image premult
+
     ImageBitDepthEnum depth; // bitdepth of the texture
+
     double gain; // viewer gain
+
     double gamma; // viewer gamma
+
     double offset; // viewer offset
+
     unsigned int mipMapLevel; // viewer mipmaplevel
+
     ViewerColorSpaceEnum lut; // the viewer colorspace lut
+
     ImageComponents layer; // the image layer
+
     ImageComponents alphaLayer; // the alpha layer
+
     std::string alphaChannelName; // the alpha channel name
+
+    // List of tiles for this frame
     std::list<CachedTile> tiles;
+
+    // Size of a tile
     int tileSize;
+
+    // Count of the cached tiles
     int nbCachedTile;
 
     // The image which was used to make the texture
@@ -159,6 +179,9 @@ public:
     // Should we center the viewer on the viewportCenter
     bool recenterViewport;
     Point viewportCenter;
+
+    // The hash of the viewer for this frame/view
+    U64 frameViewHash;
 };
 
 

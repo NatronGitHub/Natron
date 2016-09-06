@@ -1432,7 +1432,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
         if (!renderFinished) {
             assert(state == eThreadStateActive);
             QMutexLocker bufLocker (&_imp->bufMutex);
-            // Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
+            // Wait here for more frames to be rendered, we will be woken up once appendToBuffer is called
             _imp->bufEmptyCondition.wait(&_imp->bufMutex);
         } else {
             if ( !_imp->engine->isPlaybackAutoRestartEnabled() ) {
@@ -2168,6 +2168,60 @@ public:
 
 private:
 
+    void runBeforeFrameRenderCallback(const NodePtr& outputNode)
+    {
+        std::string cb = outputNode->getBeforeFrameRenderCallback();
+        if ( cb.empty() ) {
+            return;
+        }
+        std::vector<std::string> args;
+        std::string error;
+        try {
+            NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
+        } catch (const std::exception& e) {
+            outputNode->getApp()->appendToScriptEditor( std::string("Failed to run beforeFrameRendered callback: ")
+                                                   + e.what() );
+
+            return;
+        }
+
+        if ( !error.empty() ) {
+            outputNode->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + error);
+
+            return;
+        }
+
+        std::string signatureError;
+        signatureError.append("The before frame render callback supports the following signature(s):\n");
+        signatureError.append("- callback(frame, thisNode, app)");
+        if (args.size() != 3) {
+            outputNode->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
+
+            return;
+        }
+
+        if ( (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
+            outputNode->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
+
+            return;
+        }
+
+        std::stringstream ss;
+        std::string appStr = outputNode->getApp()->getAppIDString();
+        std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
+        ss << cb << "(" << time << ", " << outputNodeName << ", " << appStr << ")";
+        std::string script = ss.str();
+        try {
+            _imp->scheduler->runCallbackWithVariables( QString::fromUtf8( script.c_str() ) );
+        } catch (const std::exception &e) {
+            _imp->scheduler->notifyRenderFailure( e.what() );
+
+            return;
+        }
+
+
+    }
+
 
     virtual void renderFrame(int time,
                              const std::vector<ViewIdx>& viewsToRender,
@@ -2183,71 +2237,26 @@ private:
 
         AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>( QThread::currentThread() );
 
-        ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
-        ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
+        // Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
+        // Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
         RenderStatsPtr stats( new RenderStats(enableRenderStats) );
+
         NodePtr outputNode = output->getNode();
-        std::string cb = outputNode->getBeforeFrameRenderCallback();
-        if ( !cb.empty() ) {
-            std::vector<std::string> args;
-            std::string error;
-            try {
-                NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
-            } catch (const std::exception& e) {
-                output->getApp()->appendToScriptEditor( std::string("Failed to run beforeFrameRendered callback: ")
-                                                        + e.what() );
 
-                return;
-            }
-
-            if ( !error.empty() ) {
-                output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + error);
-
-                return;
-            }
-
-            std::string signatureError;
-            signatureError.append("The before frame render callback supports the following signature(s):\n");
-            signatureError.append("- callback(frame, thisNode, app)");
-            if (args.size() != 3) {
-                output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
-
-                return;
-            }
-
-            if ( (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-                output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
-
-                return;
-            }
-
-            std::stringstream ss;
-            std::string appStr = outputNode->getApp()->getAppIDString();
-            std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
-            ss << cb << "(" << time << ", " << outputNodeName << ", " << appStr << ")";
-            std::string script = ss.str();
-            try {
-                _imp->scheduler->runCallbackWithVariables( QString::fromUtf8( script.c_str() ) );
-            } catch (const std::exception &e) {
-                _imp->scheduler->notifyRenderFailure( e.what() );
-
-                return;
-            }
-        }
+        // Notify we start rendering a frame to Python
+        runBeforeFrameRenderCallback(outputNode);
 
         try {
-            ////Writers always render at scale 1.
+            // Writers always render at scale 1 (for now)
             int mipMapLevel = 0;
             RenderScale scale(1.);
+
             RectD rod;
             bool isProjectFormat;
 
-            // Do not catch exceptions: if an exception occurs here it is probably fatal, since
-            // it comes from Natron itself. All exceptions from plugins are already caught
-            // by the HostSupport library.
-            EffectInstancePtr activeInputToRender;
-            //if (renderDirectly) {
-            activeInputToRender = output;
+            EffectInstancePtr activeInputToRender = output;
+
+            // If the output is a Write node, actually write is the internal write node encoder
             WriteNodePtr isWrite = toWriteNode(output);
             if (isWrite) {
                 NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
@@ -2256,18 +2265,59 @@ private:
                 }
             }
             assert(activeInputToRender);
+
             NodePtr activeInputNode = activeInputToRender->getNode();
             const double par = activeInputToRender->getAspectRatio(-1);
             const bool isRenderDueToRenderInteraction = false;
             const bool isSequentialRender = true;
 
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
-                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(0, time, scale, viewsToRender[view], &rod, &isProjectFormat);
+
+
+                // Setup frame TLS args
+                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
+                if (isAbortableThread) {
+                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
+                }
+
+                ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+                tlsArgs->time = time;
+                tlsArgs->view = viewsToRender[view];
+                tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
+                tlsArgs->isSequential = isSequentialRender;
+                tlsArgs->abortInfo = abortInfo;
+                tlsArgs->treeRoot = activeInputToRender;
+                tlsArgs->textureIndex = 0;
+                tlsArgs->timeline = output->getApp()->getTimeLine();
+                tlsArgs->activeRotoPaintNode = NodePtr();
+                tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+                tlsArgs->isDoingRotoNeatRender = false;
+                tlsArgs->isAnalysis = false;
+                tlsArgs->draftMode = false;
+                tlsArgs->stats = RenderStatsPtr();
+                boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+                try {
+                    frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+                } catch (...) {
+                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+
+                    return;
+
+                }
+
+                // Get the hash now that we applied TLS
+                U64 activeInputHash = activeInputToRender->getRenderHash(time, tlsArgs->view);
+
+                // Call getRoD to know where to render
+                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
                 if (stat == eStatusFailed) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
 
                     return;
                 }
+
+
+                // Get layers to render
                 std::list<ImageComponents> components;
                 ImageBitDepthEnum imageDepth;
 
@@ -2291,51 +2341,28 @@ private:
                         components.push_back(foundOutput->second[j]);
                     }
                 }
+
+                // The render window is the RoD in pixel coordinates in our case
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, par, &renderWindow);
 
+                // Optimize roi
+                stat = frameRenderArgs->computeRequestPass(mipMapLevel, rod);
+                if (stat == eStatusFailed) {
+                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
 
-                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
-                if (isAbortableThread) {
-                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
+                    return;
                 }
 
-                ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-                tlsArgs->time = time;
-                tlsArgs->view = viewsToRender[view];
-                tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
-                tlsArgs->isSequential = isSequentialRender;
-                tlsArgs->abortInfo = abortInfo;
-                tlsArgs->treeRoot = activeInputNode;
-                tlsArgs->textureIndex = 0;
-                tlsArgs->timeline = output->getApp()->getTimeLine();
-                tlsArgs->activeRotoPaintNode = NodePtr();
-                tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-                tlsArgs->isDoingRotoNeatRender = false;
-                tlsArgs->isAnalysis = false;
-                tlsArgs->draftMode = false;
-                tlsArgs->stats = RenderStatsPtr();
-
-                ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
-
-                {
-                    FrameRequestMap request;
-                    stat = EffectInstance::computeRequestPass(time, viewsToRender[view], mipMapLevel, rod, activeInputNode, request);
-                    if (stat == eStatusFailed) {
-                        _imp->scheduler->notifyRenderFailure("Error caught while rendering");
-
-                        return;
-                    }
-                    frameRenderArgs.updateNodesRequest(request);
-                }
+                // Launch render
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImageComponents, ImagePtr> planes;
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                                                scale, //< the scale at which to render
                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                                                viewsToRender[view], //< the view to render
-                                                                                                               false,
-                                                                                                               renderWindow, //< the region of interest (in pixel coordinates)
+                                                                                                               false, //< byPassCache
+                                                                                                               renderWindow, //< the render window (in pixel coordinates)
                                                                                                                rod, // < any precomputed rod ? in canonical coordinates
                                                                                                                components,
                                                                                                                imageDepth,
@@ -2343,8 +2370,9 @@ private:
                                                                                                                activeInputToRender,
                                                                                                                eStorageModeRAM,
                                                                                                                time) );
-                EffectInstance::RenderRoIRetCode retCode;
-                retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
+
+                EffectInstance::RenderRoIRetCode retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
+
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
                     if (retCode == EffectInstance::eRenderRoIRetCodeAborted) {
                         _imp->scheduler->notifyRenderFailure("Render aborted");
@@ -2355,14 +2383,8 @@ private:
                     return;
                 }
 
-                ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
-                /*if (!renderDirectly) {
-                    for (std::map<ImageComponents,ImagePtr>::iterator it = planes.begin(); it != planes.end(); ++it) {
-                        _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, boost::dynamic_pointer_cast<BufferableObject>(it->second));
-                    }
-                   } else {*/
+                // If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                 _imp->scheduler->notifyFrameRendered(time, viewsToRender[view], viewsToRender, stats, eSchedulingPolicyFFA);
-                //}
             }
         } catch (const std::exception& e) {
             _imp->scheduler->notifyRenderFailure( std::string("Error while rendering: ") + e.what() );
@@ -2399,6 +2421,10 @@ DefaultScheduler::createRunnable(int frame,
 void
 DefaultScheduler::processFrame(const BufferedFrames& frames)
 {
+    // We don't have anymore writer that need to process things in order. WriteFFMPEG is doing it for us
+#if 0
+    assert(false);
+
     assert( !frames.empty() );
     //Only consider the first frame, we shouldn't have multiple view here anyway.
     const BufferedFrame& frame = frames.front();
@@ -2436,9 +2462,17 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = false;
         tlsArgs->stats = it->stats;
-        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
+        boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+        try {
+            frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+        } catch (...) {
+            continue;
+        }
 
-        ignore_result( effect->getRegionOfDefinition_public(0, it->time, scale, it->view, &rod, &isProjectFormat) );
+
+        U64 hash = effect->getRenderHash(it->time, it->view);
+
+        ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
         rod.toPixelEnclosing(0, par, &roi);
 
 
@@ -2472,6 +2506,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
             notifyRenderFailure( e.what() );
         }
     }
+#endif
 } // DefaultScheduler::processFrame
 
 void
@@ -2804,8 +2839,8 @@ private:
         if (enableRenderStats) {
             stats.reset( new RenderStats(enableRenderStats) );
         }
-        ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
-        ///it calls appendToBuffer by itself
+        // The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
+        // it calls appendToBuffer by itself
         ViewerInstance::ViewerRenderRetCode stat = ViewerInstance::eViewerRenderRetCodeRedraw;
 
         //Viewer can only render 1 view for now
@@ -2821,7 +2856,7 @@ private:
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), false, stats, args[i].get() );
+            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true /*isSequential*/, view, i /*inputIndex (A or B)*/, true /*canAbort*/, NodePtr() /*activeRoto*/, RotoStrokeItemPtr() /*activeStroke*/, false /*isRotoNeatRender*/, stats, args[i].get());
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (status[i] == ViewerInstance::eViewerRenderRetCodeFail) {
                 //Just clear the viewer, nothing to do
@@ -2866,7 +2901,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false, true, viewerHash, true, NodePtr(), RotoStrokeItemPtr(), false,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/,  NodePtr(),  false /*rotoNeatRender*/,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3383,10 +3418,8 @@ public:
     int time;
     RenderStatsPtr stats;
     ViewerInstancePtr viewer;
-    U64 viewerHash;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
-    bool canAbort;
     NodePtr isRotoPaintRequest;
     boost::weak_ptr<RotoStrokeItem> strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
@@ -3398,10 +3431,8 @@ public:
         , time(0)
         , stats()
         , viewer()
-        , viewerHash(0)
         , request()
         , scheduler(0)
-        , canAbort(true)
         , isRotoPaintRequest()
         , strokeItem()
         , args()
@@ -3413,9 +3444,7 @@ public:
                             int time,
                             const RenderStatsPtr& stats,
                             const ViewerInstancePtr& viewer,
-                            U64 viewerHash,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
-                            bool canAbort,
                             const NodePtr& isRotoPaintRequest,
                             const RotoStrokeItemPtr& strokeItem,
                             bool isRotoNeatRender)
@@ -3424,10 +3453,8 @@ public:
         , time(time)
         , stats(stats)
         , viewer(viewer)
-        , viewerHash(viewerHash)
         , request()
         , scheduler(scheduler)
-        , canAbort(canAbort)
         , isRotoPaintRequest(isRotoPaintRequest)
         , strokeItem(strokeItem)
         , args()
@@ -3563,12 +3590,8 @@ public:
             qDebug() << "Exec roto render: " << _args->isRotoNeatRender;
         }
         try {
-            if (!_args->isRotoPaintRequest || _args->isRotoNeatRender) {
-                stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
-                                                   _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
-            } else {
-                stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->stats, &_args->args[0], &_args->args[1]);
-            }
+            stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false,
+                                               _args->isRotoPaintRequest, _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
         } catch (...) {
             stat = ViewerInstance::eViewerRenderRetCodeFail;
         }
@@ -3577,7 +3600,6 @@ public:
             ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
             ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
             _args->viewer->disconnectViewer();
-            ret.clear();
         } else {
             for (int i = 0; i < 2; ++i) {
                 if (_args->args[i] && _args->args[i]->params) {
@@ -3841,32 +3863,42 @@ void
 ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                        bool canAbort)
 {
-    if (!_imp->viewer || !_imp->viewer->getNode()) {
+    // Sanity check, also do not render viewer that are not made visible by the user
+    if (!_imp->viewer || !_imp->viewer->getNode() || !_imp->viewer->isViewerUIVisible() ) {
         return;
     }
-    int frame = _imp->viewer->getTimeline()->currentFrame();
-    int viewsCount = _imp->viewer->getRenderViewsCount();
-    ViewIdx view = viewsCount > 0 ? _imp->viewer->getCurrentView() : ViewIdx(0);
+
+    // Get the frame/view to render
+    double frame;
+    ViewIdx view;
+    {
+        frame = _imp->viewer->getTimeline()->currentFrame();
+        int viewsCount = _imp->viewer->getRenderViewsCount();
+        view = viewsCount > 0 ? _imp->viewer->getCurrentView() : ViewIdx(0);
+    }
+
+    // Init ret code
     ViewerInstance::ViewerRenderRetCode status[2] = {
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
     };
 
-    // Do not render viewer that are not made visible by the user
-    if ( !_imp->viewer->isViewerUIVisible() ) {
-        return;
-    }
 
+    // Create stats object if we want statistics
     RenderStatsPtr stats;
     if (enableRenderStats) {
         stats.reset( new RenderStats(enableRenderStats) );
     }
 
+    // Are we tracking ?
     bool isTracking = _imp->viewer->isDoingPartialUpdates();
+
+    // Are we painting ?
     NodePtr rotoPaintNode;
     RotoStrokeItemPtr curStroke;
     bool isDrawing;
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
+    // While drawing, use a single render thread and always the same.
     bool rotoUse1Thread = false;
     bool isRotoNeatRender = false;
     if (rotoPaintNode) {
@@ -3876,96 +3908,108 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         }
     }
     if (isDrawing || (rotoPaintNode && isRotoNeatRender)) {
-        qDebug() << "Queing roto render, neat= " << isRotoNeatRender;
         rotoUse1Thread = true;
     } else {
         rotoPaintNode.reset();
         curStroke.reset();
     }
 
+    // For each A and B inputs, the viewer render args
     boost::shared_ptr<ViewerArgs> args[2];
-    if (!rotoPaintNode || isRotoNeatRender) {
-        bool clearTexture[2] = {false, false};
 
-        for (int i = 0; i < 2; ++i) {
-            args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, isRotoNeatRender, stats, args[i].get() );
+    // Check if we need to clear viewer to black
+    bool clearTexture[2] = {false, false};
 
-            clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
-            if (clearTexture[i] || args[i]->params->isViewerPaused) {
-                //Just clear the viewer, nothing to do
-                args[i]->params.reset();
-            }
+    // For each input get the render args
+    for (int i = 0; i < 2; ++i) {
+        args[i].reset(new ViewerArgs);
+        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false /*sequential*/, view, i /*input (A or B)*/, canAbort, rotoPaintNode, curStroke, isRotoNeatRender, stats, args[i].get() );
 
-            if ( (status[i] == ViewerInstance::eViewerRenderRetCodeRedraw) && args[i]->params ) {
-                //We must redraw (re-render) don't hold a pointer to the cached frame
-                args[i]->params->tiles.clear();
-            }
+        clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
+
+        // Fail black or paused, reset the params so that we don't launch the render thread
+        if (clearTexture[i] || args[i]->params->isViewerPaused) {
+            //Just clear the viewer, nothing to do
+            args[i]->params.reset();
         }
 
-        if (status[0] == ViewerInstance::eViewerRenderRetCodeFail && status[1] == ViewerInstance::eViewerRenderRetCodeFail) {
-            _imp->viewer->disconnectViewer();
-            return;
-        }
-        if (clearTexture[0]) {
-            _imp->viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
-        }
-        if (clearTexture[0]) {
-            _imp->viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
-        }
-
-        if ( (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw) && (status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) ) {
-            _imp->viewer->redrawViewer();
-
-            return;
-        }
-
-        bool hasTextureCached = false;
-        for (int i = 0; i < 2; ++i) {
-            if ( args[i]->params && (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) {
-                hasTextureCached = true;
-                break;
-            }
-        }
-        if (hasTextureCached) {
-            _imp->viewer->aboutToUpdateTextures();
-        }
-
-        for (int i = 0; i < 2; ++i) {
-            if ( args[i]->params && (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) {
-                /*
-                   The texture was cached
-                 */
-                if ( stats && (i == 0) ) {
-                    double timeSpent;
-                    std::map<NodePtr, NodeRenderStats > statResults = stats->getStats(&timeSpent);
-                    _imp->viewer->reportStats(frame, view, timeSpent, statResults);
-                }
-                _imp->viewer->updateViewer(args[i]->params);
-                args[i].reset();
-            }
-        }
-        if ( (!args[0] && !args[1]) ||
-             ( !args[0] && ( status[0] == ViewerInstance::eViewerRenderRetCodeRender) && args[1] && ( status[1] == ViewerInstance::eViewerRenderRetCodeFail) ) ||
-             ( !args[1] && ( status[1] == ViewerInstance::eViewerRenderRetCodeRender) && args[0] && ( status[0] == ViewerInstance::eViewerRenderRetCodeFail) ) ) {
-            _imp->viewer->redrawViewer();
-
-            return;
+        if ( (status[i] == ViewerInstance::eViewerRenderRetCodeRedraw) && args[i]->params ) {
+            //We must redraw (re-render) don't hold a pointer to the cached frame
+            args[i]->params->tiles.clear();
         }
     }
 
+    // Both inputs are failed ? Clear viewer
+    if (status[0] == ViewerInstance::eViewerRenderRetCodeFail && status[1] == ViewerInstance::eViewerRenderRetCodeFail) {
+        _imp->viewer->disconnectViewer();
+        return;
+    }
+
+    // Clear each input individually
+    if (clearTexture[0]) {
+        _imp->viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
+    }
+    if (clearTexture[0]) {
+        _imp->viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
+    }
+
+    // If both just needs a redraw don't render
+    if ( (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw) && (status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) ) {
+        _imp->viewer->redrawViewer();
+        return;
+    }
+
+    // Report cached frames in the viewer
+    bool hasTextureCached = false;
+    for (int i = 0; i < 2; ++i) {
+        if ( args[i]->params && (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) {
+            hasTextureCached = true;
+            break;
+        }
+    }
+
+    // If any frame is cached it means we are about to display a new texture
+    if (hasTextureCached) {
+        _imp->viewer->aboutToUpdateTextures();
+    }
+
+    for (int i = 0; i < 2; ++i) {
+        if ( args[i]->params && (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) {
+            // The texture was cached
+            // Report stats from input A only
+            if ( stats && (i == 0) ) {
+                double timeSpent;
+                std::map<NodePtr, NodeRenderStats > statResults = stats->getStats(&timeSpent);
+                _imp->viewer->reportStats(frame, view, timeSpent, statResults);
+            }
+            _imp->viewer->updateViewer(args[i]->params);
+            args[i].reset();
+        }
+    }
+
+    // Nothing left to render
+    if ( (!args[0] && !args[1]) ||
+        ( !args[0] && ( status[0] == ViewerInstance::eViewerRenderRetCodeRender) && args[1] && ( status[1] == ViewerInstance::eViewerRenderRetCodeFail) ) ||
+        ( !args[1] && ( status[1] == ViewerInstance::eViewerRenderRetCodeRender) && args[0] && ( status[0] == ViewerInstance::eViewerRenderRetCodeFail) ) ) {
+        _imp->viewer->redrawViewer();
+
+        return;
+    }
+
+
+    // Ok we have to render at least one of A or B input
     boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs( new CurrentFrameFunctorArgs(view,
                                                                                         frame,
                                                                                         stats,
                                                                                         _imp->viewer,
-                                                                                        viewerHash,
                                                                                         _imp.get(),
-                                                                                        canAbort,
                                                                                         rotoPaintNode,
                                                                                         curStroke,
                                                                                         isRotoNeatRender) );
     functorArgs->args[0] = args[0];
     functorArgs->args[1] = args[1];
+
+    // If we need roto to make a neat render force the render to happen even if other renders are queued behind
     if (isRotoNeatRender) {
         functorArgs->setCanSkip(false);
     }

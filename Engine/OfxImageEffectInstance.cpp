@@ -1287,7 +1287,7 @@ OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
             ///Output clip should not have the property set.
             assert( !it->second->isOutput() );
             if ( it->second->isOutput() ) {
-                return false;
+                continue;
             }
 
 

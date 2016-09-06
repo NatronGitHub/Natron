@@ -53,6 +53,7 @@ struct ViewerArgs
     U64 activeInputHash;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
+    boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     bool draftModeEnabled;
     unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
     bool autoContrast;
@@ -60,7 +61,9 @@ struct ViewerArgs
     bool userRoIEnabled;
     bool mustComputeRoDAndLookupCache;
     bool isDoingPartialUpdates;
+    bool useViewerCache;
 };
+
 
 class ViewerInstance
     : public OutputEffectInstance
@@ -119,6 +122,7 @@ public:
                                                                 int textureIndex,
                                                                 bool canAbort,
                                                                 const NodePtr& rotoPaintNode,
+                                                                const RotoStrokeItemPtr& activeStrokeItem,
                                                                 const bool isDoingRotoNeatRender,
                                                                 const RenderStatsPtr& stats,
                                                                 ViewerArgs* outArgs);
@@ -158,7 +162,6 @@ private:
      * code.
      **/
     ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
-                                               const bool useCache,
                                                const bool isDraftMode,
                                                const unsigned int mipmapLevel,
                                                const RenderStatsPtr& stats,
@@ -173,8 +176,6 @@ private:
      * useOnlyRoDCache to false.
      **/
     ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
-                                             const NodePtr& rotoPaintNode,
-                                             const bool isDoingRotoNeatRender,
                                              const RenderStatsPtr& stats,
                                              ViewerArgs* outArgs);
 
@@ -194,24 +195,13 @@ public:
     ViewerRenderRetCode renderViewer(ViewIdx view,
                                      bool singleThreaded,
                                      bool isSequentialRender,
-                                     U64 viewerHash,
-                                     bool canAbort,
                                      const NodePtr& rotoPaintNode,
-                                     const RotoStrokeItemPtr& strokeItem,
                                      bool isDoingRotoNeatRender,
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                      const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
 
-    ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
-                                                     bool canAbort,
-                                                     ViewIdx view,
-                                                     U64 viewerHash,
-                                                     const NodePtr& rotoPaintNode,
-                                                     const RotoStrokeItemPtr& strokeItem,
-                                                     const RenderStatsPtr& stats,
-                                                     boost::shared_ptr<ViewerArgs>* argsA,
-                                                     boost::shared_ptr<ViewerArgs>* argsB);
+
 
     void aboutToUpdateTextures();
 
@@ -355,12 +345,8 @@ private:
     ViewerRenderRetCode renderViewer_internal(ViewIdx view,
                                               bool singleThreaded,
                                               bool isSequentialRender,
-                                              U64 viewerHash,
-                                              bool canAbort,
                                               const NodePtr& rotoPaintNode,
-                                              const RotoStrokeItemPtr& strokeItem,
                                               bool isDoingRotoNeatRender,
-                                              bool useTLS,
                                               const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                               const RenderStatsPtr& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;

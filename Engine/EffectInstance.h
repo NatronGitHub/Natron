@@ -69,6 +69,8 @@
 #define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
 #define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"
 #define PLUGINID_OFX_FRAMEHOLD    "net.sf.openfx.FrameHold"
+#define PLUGINID_OFX_PREMULT      "net.sf.openfx.Premult"
+#define PLUGINID_OFX_UNPREMULT    "net.sf.openfx.Unpremult"
 #define PLUGINID_OFX_RETIME       "net.sf.openfx.Retime"
 #define PLUGINID_OFX_FRAMERANGE   "net.sf.openfx.FrameRange"
 #define PLUGINID_OFX_RUNSCRIPT    "fr.inria.openfx.RunScript"
@@ -632,6 +634,7 @@ public:
         bool isRenderUserInteraction;
         bool isSequential;
         AbortableRenderInfoPtr abortInfo;
+        FrameViewHashMap frameViewHash;
         NodePtr treeRoot;
         int visitsCount;
         NodeFrameRequestPtr nodeRequest;
@@ -641,7 +644,6 @@ public:
         TimeLinePtr timeline;
         bool isAnalysis;
         bool isDuringPaintStrokeCreation;
-        NodesList  rotoPaintNodes;
         RenderSafetyEnum currentThreadSafety;
         PluginOpenGLRenderSupport currentOpenGLSupport;
         bool doNanHandling;
@@ -678,8 +680,7 @@ public:
                                            const NodePtr& callerNode,
                                            const NodePtr & treeRoot,
                                            const RectD & canonicalRenderWindow,
-                                           FrameRequestMap & requests,
-                                           U64* nodeHash);
+                                           FrameRequestMap & requests);
 
     /**
      * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
@@ -692,6 +693,7 @@ public:
                                          const RectD & renderWindow,
                                          const NodePtr & treeRoot,
                                          FrameRequestMap & request);
+
 
     // Implem is in ParallelRenderArgs.cpp
     static EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
@@ -706,7 +708,6 @@ public:
                                                                ViewIdx view,
                                                                const NodePtr & treeRoot,
                                                                FrameRequestMap* requests,          // roi functor specific
-                                                               Hash64* nodeHash,                    // roi functor specific
                                                                FrameViewRequest* frameViewRequestData,        // roi functor specific
                                                                EffectInstance::InputImagesMap* inputImages,         // render functor specific
                                                                const EffectInstance::ComponentsNeededMap* neededComps,         // render functor specific
@@ -860,8 +861,6 @@ public:
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
     void addThreadLocalInputImageTempPointer(int inputNb, const ImagePtr & img);
-
-    bool getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const;
 
 
     virtual bool isMultiPlanar() const
@@ -1104,11 +1103,12 @@ public:
                                      ViewIdx view,
                                      RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view) WARN_UNUSED_RETURN;
+
+    void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 
     void getFrameRange_public(U64 hash, double *first, double *last);
 
-    void cacheActionResults(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded, const RectD& rod, int identityInputNb, double identityTime, ViewIdx identityView);
 
     /**
      * @brief Override to initialize the overlay interact. It is called only on the
@@ -2091,7 +2091,7 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
-                                                 const FrameViewRequest* request,
+                                                 const U64 frameViewHash,
                                                  const OSGLContextPtr& glContext,
                                                  double time,
                                                  const ParallelRenderArgsPtr & frameArgs,
@@ -2139,23 +2139,6 @@ private:
                                                                  int channelForAlpha);
 
 
-    /**
-     * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
-     * a thread controlled by Natron).
-     **/
-    // TODO: shouldn't this be documented a bit more? (parameters?)
-    bool retrieveGetImageDataUponFailure(const double time,
-                                         const ViewIdx view,
-                                         const RenderScale & scale,
-                                         const RectD* optionalBoundsParam,
-                                         bool* isIdentity_p,
-                                         double* identityTime,
-                                         ViewIdx *inputView,
-                                         EffectInstancePtr* identityInput_p,
-                                         bool* duringPaintStroke_p,
-                                         RectD* rod_p,
-                                         RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
-                                         RectD* optionalBounds_p); //!< output, only set if optionalBoundsParam != NULL
 
 
     bool allocateImagePlane(const ImageKey & key,

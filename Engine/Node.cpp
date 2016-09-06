@@ -1499,18 +1499,6 @@ Node::getChildrenMultiInstance(NodesList* children) const
     }
 }
 
-void
-Node::appendKnobsToFrameViewHash(double time, ViewIdx view, Hash64* hash) const
-{
-    KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
-    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if (!(*it)->getEvaluateOnChange()) {
-            continue;
-        }
-        (*it)->appendToFrameViewHash(time, view, hash);
-    }
-} // Node::appendKnobsToFrameViewHash
-
 
 void
 Node::onActionEvaluated()
@@ -6788,9 +6776,7 @@ Node::makePreviewImage(SequenceTime time,
 
     /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
-    RectD rod;
-    bool isProjectFormat;
-    RenderScale scale(1.);
+
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
@@ -6808,24 +6794,9 @@ Node::makePreviewImage(SequenceTime time,
 
     effect->clearPersistentMessage(false);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod, &isProjectFormat);
-    if ( (stat == eStatusFailed) || rod.isNull() ) {
-        return false;
-    }
-    assert( !rod.isNull() );
-    double yZoomFactor = (double)*height / (double)rod.height();
-    double xZoomFactor = (double)*width / (double)rod.width();
-    double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
-    double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
-    int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
-    unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
-
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
 
     const double par = effect->getAspectRatio(-1);
-    RectI renderWindow;
-    rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
+
 
     NodePtr thisNode = shared_from_this();
     RenderingFlagSetter flagIsRendering(thisNode);
@@ -6857,14 +6828,41 @@ Node::makePreviewImage(SequenceTime time,
         tlsArgs->draftMode = true;
         tlsArgs->stats = RenderStatsPtr();
 
-        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
-        FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
-        if (stat == eStatusFailed) {
+        boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+        try {
+            frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+        } catch (...) {
             return false;
         }
 
-        frameRenderArgs.updateNodesRequest(request);
+        U64 nodeHash = effect->getRenderHash(time, ViewIdx(0));
+
+        RenderScale scale(1.);
+        RectD rod;
+        bool isProjectFormat;
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        if ( (stat == eStatusFailed) || rod.isNull() ) {
+            return false;
+        }
+        assert( !rod.isNull() );
+
+        double yZoomFactor = (double)*height / (double)rod.height();
+        double xZoomFactor = (double)*width / (double)rod.width();
+        double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
+        double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
+        int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
+        unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
+        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.y = scale.x;
+
+
+        RectI renderWindow;
+        rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
+
+        stat = frameRenderArgs->computeRequestPass(mipMapLevel, rod);
+        if (stat == eStatusFailed) {
+            return false;
+        }
 
         std::list<ImageComponents> requestedComps;
         ImageBitDepthEnum depth = effect->getBitDepth(-1);
@@ -10282,15 +10280,6 @@ Node::refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes)
     markedNodes.push_back(shared_from_this());
 
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
-
-    if ( isRotoPaintingNode() ) {
-        RotoContextPtr roto = getRotoContext();
-        assert(roto);
-        NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
-        if (bottomMerge) {
-            bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
-        }
-    }
 
     return hasChanged;
 }

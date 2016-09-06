@@ -355,8 +355,6 @@ public:
 
     void getRotoPaintTreeNodes(NodesList* nodes) const;
 
-    NodePtr getRotoPaintBottomMergeNode() const;
-
     void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
 
     /**
@@ -417,7 +415,7 @@ public Q_SLOTS:
 private:
 
 
-    NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
+    NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
 
     void selectInternal(const RotoItemPtr& b);
     void deselectInternal(RotoItemPtr b);
