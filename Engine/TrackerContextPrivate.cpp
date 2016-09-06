@@ -1024,8 +1024,8 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
     omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
 #endif
 
-    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
-    const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
+    const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
+    const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
     boost::shared_ptr<mv::AutoTrack> autoTrack = args.getLibMVAutoTrack();
     QMutex* autoTrackMutex = args.getAutoTrackMutex();
     bool enabledChans[3];
@@ -1170,7 +1170,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
     boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(this, enabledChannels, formatHeight) );
     boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
-    std::vector<boost::shared_ptr<TrackMarkerAndOptions> > trackAndOptions;
+    std::vector<TrackMarkerAndOptionsPtr > trackAndOptions;
     mv::TrackRegionOptions mvOptions;
     /*
        Get the global parameters for the LivMV track: pre-blur sigma, No iterations, normalized intensities, etc...
@@ -1190,7 +1190,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             (*it)->setEnabledAtTime(start, true);
         }
         
-        boost::shared_ptr<TrackMarkerAndOptions> t(new TrackMarkerAndOptions);
+        TrackMarkerAndOptionsPtr t(new TrackMarkerAndOptions);
         t->natronMarker = *it;
 
         // Set a keyframe on the marker to initialize its position

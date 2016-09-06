@@ -107,7 +107,7 @@ public:
     /**
      * @brief Add a default viewer overlay
      **/
-    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) = 0;
+    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) = 0;
     virtual void drawHostOverlay(double time,
                                  const RenderScale& renderScale,
                                  ViewIdx view)  = 0;

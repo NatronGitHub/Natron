@@ -193,9 +193,9 @@ struct OfxEffectInstancePrivate
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
-    boost::weak_ptr<KnobInt> selectionRectangleStateKnob;
+    KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
-    boost::weak_ptr<KnobBool> undoRedoStateKnob;
+    KnobBoolWPtr undoRedoStateKnob;
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
@@ -393,7 +393,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->effect.reset( new OfxImageEffectInstance(plugin, *desc, mapContextToString(context), false) );
         assert(_imp->effect);
 
-        boost::shared_ptr<OfxEffectInstance> thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
+        OfxEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
         _imp->effect->setOfxEffectInstance(thisShared);
 
         _imp->natronPluginID = plugin->getIdentifier();
@@ -630,7 +630,7 @@ OfxEffectInstance::~OfxEffectInstance()
 EffectInstancePtr
 OfxEffectInstance::createRenderClone()
 {
-    boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
+    OfxEffectInstancePtr clone( new OfxEffectInstance(*this) );
 
     clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
     assert(clone->_imp->effect);
@@ -766,7 +766,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 #pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
+        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -2469,7 +2469,7 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
 class OfxUndoCommand : public UndoCommand
 {
     KnobStringWPtr _textKnob;
-    boost::weak_ptr<KnobBool> _stateKnob;
+    KnobBoolWPtr _stateKnob;
 public:
 
     OfxUndoCommand(const KnobStringPtr& textKnob, const KnobBoolPtr &stateKnob)

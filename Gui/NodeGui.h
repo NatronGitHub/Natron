@@ -355,7 +355,7 @@ public:
     }
 
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
-    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) OVERRIDE FINAL;
+    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) OVERRIDE FINAL;
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     virtual void drawHostOverlay(double time,
                                  const RenderScale& renderScale,

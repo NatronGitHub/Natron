@@ -67,7 +67,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstance(const boost::shared_ptr<OfxEffectInstance>& node)
+    void setOfxEffectInstance(const OfxEffectInstancePtr& node)
     {
         _ofxEffectInstance = node;
     }
@@ -227,7 +227,7 @@ public:
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
-    boost::shared_ptr<OfxEffectInstance> getOfxEffectInstance() const WARN_UNUSED_RETURN
+    OfxEffectInstancePtr getOfxEffectInstance() const WARN_UNUSED_RETURN
     {
         return _ofxEffectInstance.lock();
     }

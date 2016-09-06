@@ -1052,8 +1052,8 @@ public:
     /**
      * @brief Call this to set a custom interact entry point, replacing any existing gui.
      **/
-    virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) = 0;
-    virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const = 0;
+    virtual void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc) = 0;
+    virtual OfxParamOverlayInteractPtr getCustomInteract() const = 0;
     virtual void swapOpenGLBuffers() OVERRIDE = 0;
     virtual void redraw() OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
@@ -1514,8 +1514,8 @@ public:
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHintInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintIsMarkdown(bool b) OVERRIDE FINAL;
-    virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
-    virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc) OVERRIDE FINAL;
+    virtual OfxParamOverlayInteractPtr getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;

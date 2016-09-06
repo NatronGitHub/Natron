@@ -177,7 +177,7 @@ private:
 class KnobGuiDouble
     : public KnobGuiValue
 {
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 
 public:
 
@@ -210,7 +210,7 @@ private:
 class KnobGuiInt
     : public KnobGuiValue
 {
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 
 public:
 

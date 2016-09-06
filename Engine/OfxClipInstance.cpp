@@ -69,7 +69,7 @@ struct OfxClipInstancePrivate
     boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
 
     OfxClipInstancePrivate(OfxClipInstance* publicInterface,
-                           const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
+                           const OfxEffectInstancePtr& nodeInstance,
                            OfxImageEffectInstance* effect)
         : _publicInterface(publicInterface)
         , nodeInstance(nodeInstance)
@@ -84,7 +84,7 @@ struct OfxClipInstancePrivate
     const std::vector<std::string>& getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const;
 };
 
-OfxClipInstance::OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
+OfxClipInstance::OfxClipInstance(const OfxEffectInstancePtr& nodeInstance,
                                  OfxImageEffectInstance* effect,
                                  int /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
@@ -104,7 +104,7 @@ OfxClipInstance::~OfxClipInstance()
 void
 OfxClipInstance::setLabel()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
     if (effect) {
         int inputNb = getInputNb();
         if (inputNb >= 0) {
@@ -116,7 +116,7 @@ OfxClipInstance::setLabel()
 // callback which should set secret state as appropriate
 void OfxClipInstance::setSecret()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
     if (effect) {
         int inputNb = getInputNb();
         if (inputNb >= 0) {
@@ -128,7 +128,7 @@ void OfxClipInstance::setSecret()
 // callback which should update hint
 void OfxClipInstance::setHint()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
     if (effect) {
         int inputNb = getInputNb();
         if (inputNb >= 0) {
@@ -227,7 +227,7 @@ OfxClipInstance::getUnmappedComponents() const
         ///The node is not connected but optional, return the closest supported components
         ///of the first connected non optional input.
         if (_imp->optional) {
-            boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+            OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
             assert(effect);
             int nInputs = effect->getMaxInputCount();
             for (int i  = 0; i < nInputs; ++i) {
@@ -1595,7 +1595,7 @@ OfxClipInstance::getInputNb() const
 EffectInstancePtr
 OfxClipInstance::getEffectHolder() const
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
 
     if (!effect) {
         return effect;

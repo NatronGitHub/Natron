@@ -27,9 +27,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
-#include "Engine/EngineFwd.h"
+
 #include "Global/GlobalDefines.h"
 #include "Engine/EffectOpenGLContextData.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -113,7 +115,7 @@ public:
 
 
     static void renderStroke_gl(const OSGLContextPtr& glContext,
-                                const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const ImagePtr& dstImage,
                                 const std::list<std::list<std::pair<Point, double> > >& strokes,
@@ -128,7 +130,7 @@ public:
                                 Point* lastCenterPointOut);
 
     static bool renderSmear_gl(const OSGLContextPtr& glContext,
-                               const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                               const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                const RectI& roi,
                                const ImagePtr& dstImage,
                                const std::list<std::list<std::pair<Point, double> > >& strokes,
@@ -145,7 +147,7 @@ public:
 
 
     static void renderBezier_gl(const OSGLContextPtr& glContext,
-                                const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const Bezier* bezier,
                                 double opacity,

@@ -304,7 +304,7 @@ class IntParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobInt> _intKnob;
+    KnobIntWPtr _intKnob;
 
 public:
 
@@ -452,7 +452,7 @@ class DoubleParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobDouble> _doubleKnob;
+    KnobDoubleWPtr _doubleKnob;
 
 public:
 
@@ -602,7 +602,7 @@ class ColorParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobColor> _colorKnob;
+    KnobColorWPtr _colorKnob;
 
 public:
 
@@ -718,7 +718,7 @@ class ChoiceParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobChoice> _choiceKnob;
+    KnobChoiceWPtr _choiceKnob;
 
 public:
 
@@ -825,7 +825,7 @@ class BooleanParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobBool> _boolKnob;
+    KnobBoolWPtr _boolKnob;
 
 public:
 
@@ -995,7 +995,7 @@ public:
 class FileParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobFile> _sKnob;
+    KnobFileWPtr _sKnob;
 
 public:
 
@@ -1024,7 +1024,7 @@ public:
 class OutputFileParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobOutputFile> _sKnob;
+    KnobOutputFileWPtr _sKnob;
 
 public:
 
@@ -1048,7 +1048,7 @@ public:
 class PathParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobPath> _sKnob;
+    KnobPathWPtr _sKnob;
 
 public:
 
@@ -1070,7 +1070,7 @@ class ButtonParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobButton> _buttonKnob;
+    KnobButtonWPtr _buttonKnob;
 
 public:
 
@@ -1087,7 +1087,7 @@ class SeparatorParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobSeparator> _separatorKnob;
+    KnobSeparatorWPtr _separatorKnob;
 
 public:
 
@@ -1100,7 +1100,7 @@ class GroupParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobGroup> _groupKnob;
+    KnobGroupWPtr _groupKnob;
 
 public:
 

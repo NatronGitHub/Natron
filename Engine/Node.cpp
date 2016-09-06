@@ -123,7 +123,7 @@ class ChannelSelector
 {
 public:
 
-    boost::weak_ptr<KnobChoice> layer;
+    KnobChoiceWPtr layer;
     bool hasAllChoice;     // if true, the layer has a "all" entry
     mutable QMutex compsMutex;
 
@@ -156,8 +156,8 @@ class MaskSelector
 {
 public:
 
-    boost::weak_ptr<KnobBool> enabled;
-    boost::weak_ptr<KnobChoice> channel;
+    KnobBoolWPtr enabled;
+    KnobChoiceWPtr channel;
     mutable QMutex compsMutex;
     //Stores the components available at build time of the choice menu
     std::vector<std::pair<ImageComponents, NodeWPtr > > compsAvailable;
@@ -187,9 +187,9 @@ public:
 
 struct FormatKnob
 {
-    boost::weak_ptr<KnobInt> size;
-    boost::weak_ptr<KnobDouble> par;
-    boost::weak_ptr<KnobChoice> formatChoice;
+    KnobIntWPtr size;
+    KnobDoubleWPtr par;
+    KnobChoiceWPtr formatChoice;
 };
 
 struct PyPlugInfo
@@ -457,32 +457,32 @@ public:
     NodeWPtr ioContainer;
 #endif
 
-    boost::weak_ptr<KnobInt> frameIncrKnob;
+    KnobIntWPtr frameIncrKnob;
     KnobPageWPtr nodeSettingsPage;
     KnobStringWPtr nodeLabelKnob;
-    boost::weak_ptr<KnobBool> previewEnabledKnob;
-    boost::weak_ptr<KnobBool> disableNodeKnob;
-    boost::weak_ptr<KnobChoice> openglRenderingEnabledKnob;
-    boost::weak_ptr<KnobInt> lifeTimeKnob;
-    boost::weak_ptr<KnobBool> enableLifeTimeKnob;
+    KnobBoolWPtr previewEnabledKnob;
+    KnobBoolWPtr disableNodeKnob;
+    KnobChoiceWPtr openglRenderingEnabledKnob;
+    KnobIntWPtr lifeTimeKnob;
+    KnobBoolWPtr enableLifeTimeKnob;
     KnobStringWPtr knobChangedCallback;
     KnobStringWPtr inputChangedCallback;
     KnobStringWPtr nodeCreatedCallback;
     KnobStringWPtr nodeRemovalCallback;
     KnobPageWPtr infoPage;
     KnobStringWPtr nodeInfos;
-    boost::weak_ptr<KnobButton> refreshInfoButton;
-    boost::weak_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported;
-    boost::weak_ptr<KnobBool> forceCaching;
-    boost::weak_ptr<KnobBool> hideInputs;
+    KnobButtonWPtr refreshInfoButton;
+    KnobBoolWPtr useFullScaleImagesWhenRenderScaleUnsupported;
+    KnobBoolWPtr forceCaching;
+    KnobBoolWPtr hideInputs;
     KnobStringWPtr beforeFrameRender;
     KnobStringWPtr beforeRender;
     KnobStringWPtr afterFrameRender;
     KnobStringWPtr afterRender;
-    boost::weak_ptr<KnobBool> enabledChan[4];
+    KnobBoolWPtr enabledChan[4];
     KnobStringWPtr premultWarning;
-    boost::weak_ptr<KnobDouble> mixWithSource;
-    boost::weak_ptr<KnobButton> renderButton; //< render button for writers
+    KnobDoubleWPtr mixWithSource;
+    KnobButtonWPtr renderButton; //< render button for writers
     FormatKnob pluginFormatKnobs;
     std::map<int, ChannelSelector> channelsSelectors;
     std::map<int, MaskSelector> maskSelectors;
@@ -522,7 +522,7 @@ public:
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
     boost::weak_ptr<NodeGuiI> guiPointer;
-    std::list<boost::shared_ptr<HostOverlayKnobs> > nativeOverlays;
+    std::list<HostOverlayKnobsPtr> nativeOverlays;
     bool nodeCreated;
     bool wasCreatedSilently;
     mutable QMutex createdComponentsMutex;
@@ -1698,8 +1698,8 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
             if (nodeKnobs[j]->getName() == params[i]) {
                 
                 KnobBoolBasePtr isBool = toKnobBoolBase(nodeKnobs[j]);
-                boost::shared_ptr<KnobIntBase > isInt = toKnobIntBase(nodeKnobs[j]);
-                boost::shared_ptr<KnobDoubleBase > isDbl = toKnobDoubleBase(nodeKnobs[j]);
+                KnobIntBasePtr isInt = toKnobIntBase(nodeKnobs[j]);
+                KnobDoubleBasePtr isDbl = toKnobDoubleBase(nodeKnobs[j]);
                 KnobStringBasePtr isStr = toKnobStringBase(nodeKnobs[j]);
                 int nDims = nodeKnobs[j]->getDimension();
 
@@ -8352,7 +8352,7 @@ Node::initializeHostOverlays()
     if (!nodeGui) {
         return;
     }
-    for (std::list<boost::shared_ptr<HostOverlayKnobs> > ::iterator it = _imp->nativeOverlays.begin(); it != _imp->nativeOverlays.end(); ++it) {
+    for (std::list<HostOverlayKnobsPtr> ::iterator it = _imp->nativeOverlays.begin(); it != _imp->nativeOverlays.end(); ++it) {
         nodeGui->addDefaultInteract(*it);
     }
     _imp->nativeOverlays.clear();

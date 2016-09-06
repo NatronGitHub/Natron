@@ -1122,7 +1122,7 @@ OfxHost::fetchSuite(const char *suiteName,
 OFX::Host::Memory::Instance*
 OfxHost::newMemoryInstance(size_t nBytes)
 {
-    OfxMemory* ret = new OfxMemory( boost::shared_ptr<OfxEffectInstance>() );
+    OfxMemory* ret = new OfxMemory( OfxEffectInstancePtr() );
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {

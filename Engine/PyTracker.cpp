@@ -121,7 +121,7 @@ Tracker::~Tracker()
 Track*
 Tracker::getTrackByName(const QString& name) const
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    TrackerContextPtr ctx = getInternalContext();
     if (!ctx) {
         return 0;
     }
@@ -140,7 +140,7 @@ Tracker::startTracking(const std::list<Track*>& marks,
                        int end,
                        bool forward)
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    TrackerContextPtr ctx = getInternalContext();
     if (!ctx) {
         return;
     }
@@ -156,7 +156,7 @@ Tracker::startTracking(const std::list<Track*>& marks,
 void
 Tracker::stopTracking()
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    TrackerContextPtr ctx = getInternalContext();
     if (!ctx) {
         return;
     }
@@ -166,7 +166,7 @@ Tracker::stopTracking()
 void
 Tracker::getAllTracks(std::list<Track*>* tracks) const
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    TrackerContextPtr ctx = getInternalContext();
     if (!ctx) {
         return;
     }
@@ -181,7 +181,7 @@ Tracker::getAllTracks(std::list<Track*>* tracks) const
 void
 Tracker::getSelectedTracks(std::list<Track*>* tracks) const
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    TrackerContextPtr ctx = getInternalContext();
     if (!ctx) {
         return;
     }
@@ -196,7 +196,7 @@ Tracker::getSelectedTracks(std::list<Track*>* tracks) const
 Track*
 Tracker::createTrack()
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
+    TrackerContextPtr ctx = getInternalContext();
     if (!ctx) {
         return 0;
     }

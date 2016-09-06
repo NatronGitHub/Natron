@@ -1505,7 +1505,7 @@ struct TrackArgsPrivate
     ViewerInstancePtr viewer;
     boost::shared_ptr<mv::AutoTrack> libmvAutotrack;
     boost::shared_ptr<TrackerFrameAccessor> fa;
-    std::vector<boost::shared_ptr<TrackMarkerAndOptions> > tracks;
+    std::vector<TrackMarkerAndOptionsPtr > tracks;
 
     //Store the format size because LibMV internally has a top-down Y axis
     double formatWidth, formatHeight;
@@ -1541,7 +1541,7 @@ TrackArgs::TrackArgs(int start,
                      const ViewerInstancePtr& viewer,
                      const boost::shared_ptr<mv::AutoTrack>& autoTrack,
                      const boost::shared_ptr<TrackerFrameAccessor>& fa,
-                     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
+                     const std::vector<TrackMarkerAndOptionsPtr >& tracks,
                      double formatWidth,
                      double formatHeight,
                      bool autoKeyEnabled)
@@ -1648,7 +1648,7 @@ TrackArgs::getNumTracks() const
     return (int)_imp->tracks.size();
 }
 
-const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >&
+const std::vector<TrackMarkerAndOptionsPtr >&
 TrackArgs::getTracks() const
 {
     return _imp->tracks;
@@ -1672,7 +1672,7 @@ void
 TrackArgs::getRedrawAreasNeeded(int time,
                                 std::list<RectD>* canonicalRects) const
 {
-    for (std::vector<boost::shared_ptr<TrackMarkerAndOptions> >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
+    for (std::vector<TrackMarkerAndOptionsPtr >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
         if ( !(*it)->natronMarker->isEnabled(time) ) {
             continue;
         }
@@ -1747,8 +1747,8 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
                                         int time)
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
-    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
-    const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
+    const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
+    const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
 
     if ( !track->natronMarker->isEnabled(time) ) {
         return false;
@@ -1841,7 +1841,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
     }
 
 
-    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args->getTracks();
+    const std::vector<TrackMarkerAndOptionsPtr >& tracks = args->getTracks();
     const int numTracks = (int)tracks.size();
     std::vector<int> trackIndexes( tracks.size() );
     for (std::size_t i = 0; i < tracks.size(); ++i) {

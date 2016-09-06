@@ -1789,7 +1789,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             lastPaintBboxPixel.intersect(viewerRenderRoI, &viewerRenderRoI);
         }
 
-        boost::shared_ptr<TimeLapse> viewerRenderTimeRecorder;
+        TimeLapsePtr viewerRenderTimeRecorder;
         if (stats) {
             viewerRenderTimeRecorder.reset( new TimeLapse() );
         }

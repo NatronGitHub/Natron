@@ -3306,7 +3306,7 @@ NodeGui::setColor(double r,
 }
 
 void
-NodeGui::addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
+NodeGui::addDefaultInteract(const HostOverlayKnobsPtr& knobs)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (!_hostOverlay) {

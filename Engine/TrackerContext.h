@@ -446,7 +446,7 @@ public:
               const ViewerInstancePtr& viewer,
               const boost::shared_ptr<mv::AutoTrack>& autoTrack,
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
-              const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
+              const std::vector<TrackMarkerAndOptionsPtr >& tracks,
               double formatWidth,
               double formatHeight,
               bool autoKeyEnabled);
@@ -472,7 +472,7 @@ public:
     ViewerInstancePtr getViewer() const;
 
     int getNumTracks() const;
-    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const;
+    const std::vector<TrackMarkerAndOptionsPtr >& getTracks() const;
     boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const;
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;

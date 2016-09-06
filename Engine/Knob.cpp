@@ -285,7 +285,7 @@ struct KnobHelperPrivate
     bool userKnob; //< true if it was created by the user and should be put into the "User" page
 
     ///Pointer to the ofx param overlay interact
-    boost::shared_ptr<OfxParamOverlayInteract> customInteract;
+    OfxParamOverlayInteractPtr customInteract;
 
     ///Pointer to the knobGui interface if it has any
     KnobGuiIWPtr gui;
@@ -3179,13 +3179,13 @@ KnobHelper::setHintIsMarkdown(bool b)
 }
 
 void
-KnobHelper::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc)
+KnobHelper::setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->customInteract = interactDesc;
 }
 
-boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
+OfxParamOverlayInteractPtr KnobHelper::getCustomInteract() const
 {
     assert( QThread::currentThread() == qApp->thread() );
 

@@ -58,7 +58,7 @@ typedef std::list<SelectedCp> SelectedCpList;
 typedef BezierPtr BezierPtr;
 typedef std::list<BezierPtr> BezierList;
 
-MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const RotoPaintInteractPtr& roto,
                                                            const std::list< std::pair<BezierCPPtr, BezierCPPtr > > & toDrag
                                                            ,
                                                            double dx,
@@ -136,7 +136,7 @@ MoveControlPointsUndoCommand::undo()
         (*it)->incrementNodesAge();
     }
 
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
     roto->evaluate(true);
     roto->setCurrentTool( _selectedTool.lock() );
     roto->setSelection(_selectedCurves, _selectedPoints);
@@ -149,7 +149,7 @@ MoveControlPointsUndoCommand::redo()
 
     assert( _pointsToDrag.size() == _indexesToMove.size() );
 
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
     if (!roto) {
         return;
     }
@@ -214,7 +214,7 @@ MoveControlPointsUndoCommand::mergeWith(const UndoCommandPtr& other)
 
 ////////////////////////
 
-TransformUndoCommand::TransformUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+TransformUndoCommand::TransformUndoCommand(const RotoPaintInteractPtr& roto,
                                            double centerX,
                                            double centerY,
                                            double rot,
@@ -283,7 +283,7 @@ TransformUndoCommand::undo()
         }
     }
 
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
     if (!roto) {
         return;
     }
@@ -309,7 +309,7 @@ TransformUndoCommand::redo()
         }
     }
 
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
     if (!roto) {
         return;
     }
@@ -354,7 +354,7 @@ TransformUndoCommand::mergeWith(const UndoCommandPtr& other)
 ////////////////////////
 
 
-AddPointUndoCommand::AddPointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+AddPointUndoCommand::AddPointUndoCommand(const RotoPaintInteractPtr& roto,
                                          const BezierPtr & curve,
                                          int index,
                                          double t)
@@ -375,7 +375,7 @@ AddPointUndoCommand::~AddPointUndoCommand()
 void
 AddPointUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -390,7 +390,7 @@ AddPointUndoCommand::redo()
 {
     BezierCPPtr cp = _curve->addControlPointAfterIndex(_index, _t);
     BezierCPPtr newFp = _curve->getFeatherPointAtIndex(_index + 1);
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -405,7 +405,7 @@ AddPointUndoCommand::redo()
 
 ////////////////////////
 
-RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
                                                const BezierPtr & curve,
                                                const BezierCPPtr & cp)
     : UndoCommand()
@@ -428,7 +428,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
     _curves.push_back(desc);
 }
 
-RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
                                                const SelectedCpList & points)
     : UndoCommand()
     , _roto(roto)
@@ -492,7 +492,7 @@ RemovePointUndoCommand::~RemovePointUndoCommand()
 void
 RemovePointUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -517,7 +517,7 @@ RemovePointUndoCommand::undo()
 void
 RemovePointUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -565,7 +565,7 @@ RemovePointUndoCommand::redo()
 
 //////////////////////////
 
-RemoveCurveUndoCommand::RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+RemoveCurveUndoCommand::RemoveCurveUndoCommand(const RotoPaintInteractPtr& roto,
                                                const std::list<RotoDrawableItemPtr > & curves)
     : UndoCommand()
     , _roto(roto)
@@ -591,7 +591,7 @@ RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
 void
 RemoveCurveUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -616,7 +616,7 @@ RemoveCurveUndoCommand::undo()
 void
 RemoveCurveUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -633,7 +633,7 @@ RemoveCurveUndoCommand::redo()
 ////////////////////////////////
 
 
-AddStrokeUndoCommand::AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+AddStrokeUndoCommand::AddStrokeUndoCommand(const RotoPaintInteractPtr& roto,
                                            const RotoStrokeItemPtr& item)
     : UndoCommand()
     , _roto(roto)
@@ -653,7 +653,7 @@ AddStrokeUndoCommand::~AddStrokeUndoCommand()
 void
 AddStrokeUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -666,7 +666,7 @@ AddStrokeUndoCommand::undo()
 void
 AddStrokeUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -681,7 +681,7 @@ AddStrokeUndoCommand::redo()
     _firstRedoCalled = true;
 }
 
-AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(const RotoPaintInteractPtr& roto,
                                                      const RotoStrokeItemPtr& item)
     : UndoCommand()
     , _roto(roto)
@@ -702,7 +702,7 @@ AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
 void
 AddMultiStrokeUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -719,7 +719,7 @@ AddMultiStrokeUndoCommand::undo()
 void
 AddMultiStrokeUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -738,7 +738,7 @@ AddMultiStrokeUndoCommand::redo()
     _firstRedoCalled = true;
 }
 
-MoveTangentUndoCommand::MoveTangentUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+MoveTangentUndoCommand::MoveTangentUndoCommand(const RotoPaintInteractPtr& roto,
                                                double dx,
                                                double dy,
                                                double time,
@@ -858,7 +858,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 void
 MoveTangentUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -890,7 +890,7 @@ MoveTangentUndoCommand::undo()
 void
 MoveTangentUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -955,7 +955,7 @@ MoveTangentUndoCommand::mergeWith(const UndoCommandPtr &other)
 //////////////////////////
 
 
-MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const RotoPaintInteractPtr& roto,
                                                      double dx,
                                                      double dy,
                                                      const std::pair<BezierCPPtr, BezierCPPtr > & point,
@@ -985,7 +985,7 @@ MoveFeatherBarUndoCommand::~MoveFeatherBarUndoCommand()
 void
 MoveFeatherBarUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1000,7 +1000,7 @@ MoveFeatherBarUndoCommand::undo()
 void
 MoveFeatherBarUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1117,7 +1117,7 @@ MoveFeatherBarUndoCommand::mergeWith(const UndoCommandPtr& other)
 
 /////////////////////////
 
-RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(const RotoPaintInteractPtr& roto,
                                                    const std::list<RemoveFeatherData> & datas)
     : UndoCommand()
     , _roto(roto)
@@ -1147,7 +1147,7 @@ RemoveFeatherUndoCommand::undo()
         }
         it->curve->incrementNodesAge();
     }
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
     if (!roto) {
         return;
     }
@@ -1170,7 +1170,7 @@ RemoveFeatherUndoCommand::redo()
             }
         }
     }
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
     if (!roto) {
         return;
     }
@@ -1184,7 +1184,7 @@ RemoveFeatherUndoCommand::redo()
 ////////////////////////////
 
 
-OpenCloseUndoCommand::OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+OpenCloseUndoCommand::OpenCloseUndoCommand(const RotoPaintInteractPtr& roto,
                                            const BezierPtr & curve)
     : UndoCommand()
     , _roto(roto)
@@ -1202,7 +1202,7 @@ OpenCloseUndoCommand::~OpenCloseUndoCommand()
 void
 OpenCloseUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1221,7 +1221,7 @@ OpenCloseUndoCommand::undo()
 void
 OpenCloseUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1237,7 +1237,7 @@ OpenCloseUndoCommand::redo()
 
 ////////////////////////////
 
-SmoothCuspUndoCommand::SmoothCuspUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+SmoothCuspUndoCommand::SmoothCuspUndoCommand(const RotoPaintInteractPtr& roto,
                                              const std::list<SmoothCuspCurveData> & data,
                                              double time,
                                              bool cusp,
@@ -1272,7 +1272,7 @@ SmoothCuspUndoCommand::~SmoothCuspUndoCommand()
 void
 SmoothCuspUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1293,7 +1293,7 @@ SmoothCuspUndoCommand::undo()
 void
 SmoothCuspUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1357,7 +1357,7 @@ SmoothCuspUndoCommand::mergeWith(const UndoCommandPtr& other)
 
 /////////////////////////
 
-MakeBezierUndoCommand::MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+MakeBezierUndoCommand::MakeBezierUndoCommand(const RotoPaintInteractPtr& roto,
                                              const BezierPtr & curve,
                                              bool isOpenBezier,
                                              bool createPoint,
@@ -1397,7 +1397,7 @@ MakeBezierUndoCommand::~MakeBezierUndoCommand()
 void
 MakeBezierUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1425,7 +1425,7 @@ MakeBezierUndoCommand::undo()
 void
 MakeBezierUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1508,7 +1508,7 @@ MakeBezierUndoCommand::mergeWith(const UndoCommandPtr& other)
 //////////////////////////////
 
 
-MakeEllipseUndoCommand::MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+MakeEllipseUndoCommand::MakeEllipseUndoCommand(const RotoPaintInteractPtr& roto,
                                                bool create,
                                                bool fromCenter,
                                                bool constrained,
@@ -1544,7 +1544,7 @@ MakeEllipseUndoCommand::~MakeEllipseUndoCommand()
 void
 MakeEllipseUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1557,7 +1557,7 @@ MakeEllipseUndoCommand::undo()
 void
 MakeEllipseUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1663,7 +1663,7 @@ MakeEllipseUndoCommand::mergeWith(const UndoCommandPtr &other)
 ////////////////////////////////////
 
 
-MakeRectangleUndoCommand::MakeRectangleUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+MakeRectangleUndoCommand::MakeRectangleUndoCommand(const RotoPaintInteractPtr& roto,
                                                    bool create,
                                                    bool fromCenter,
                                                    bool constrained,
@@ -1700,7 +1700,7 @@ MakeRectangleUndoCommand::~MakeRectangleUndoCommand()
 void
 MakeRectangleUndoCommand::undo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;
@@ -1713,7 +1713,7 @@ MakeRectangleUndoCommand::undo()
 void
 MakeRectangleUndoCommand::redo()
 {
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    RotoPaintInteractPtr roto = _roto.lock();
 
     if (!roto) {
         return;

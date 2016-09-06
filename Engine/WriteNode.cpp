@@ -193,15 +193,15 @@ public:
     WriteNode* _publicInterface; // can not be a smart ptr
     NodeWPtr embeddedPlugin, readBackNode, inputNode, outputNode;
     std::list<KnobSerializationPtr> genericKnobsSerialization;
-    boost::weak_ptr<KnobOutputFile> outputFileKnob;
+    KnobOutputFileWPtr outputFileKnob;
 
     //Thiese are knobs owned by the ReadNode and not the Reader
-    boost::weak_ptr<KnobInt> frameIncrKnob;
-    boost::weak_ptr<KnobBool> readBackKnob;
-    boost::weak_ptr<KnobChoice> pluginSelectorKnob;
+    KnobIntWPtr frameIncrKnob;
+    KnobBoolWPtr readBackKnob;
+    KnobChoiceWPtr pluginSelectorKnob;
     KnobStringWPtr pluginIDStringKnob;
-    boost::weak_ptr<KnobSeparator> separatorKnob;
-    boost::weak_ptr<KnobButton> renderButtonKnob;
+    KnobSeparatorWPtr separatorKnob;
+    KnobButtonWPtr renderButtonKnob;
     std::list<KnobIWPtr > writeNodeKnobs;
 
     //MT only

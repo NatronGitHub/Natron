@@ -165,8 +165,8 @@ public:
     void pushUndoCommand(QUndoCommand* cmd);
 
     // The interact will be drawn after the background and before any curve
-    void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc);
-    boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const;
+    void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
+    OfxParamOverlayInteractPtr getCustomInteract() const;
 
 public Q_SLOTS:
 

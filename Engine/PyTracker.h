@@ -76,7 +76,7 @@ public:
 
     ~Tracker();
 
-    boost::shared_ptr<TrackerContext> getInternalContext() const
+    TrackerContextPtr getInternalContext() const
     {
         return _ctx.lock();
     }
