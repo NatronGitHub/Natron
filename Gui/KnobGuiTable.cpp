@@ -95,7 +95,7 @@ class KnobTableItemDelegate
     : public QStyledItemDelegate
 {
     TableView* _view;
-    KnobTableWPtr> _knob;
+    KnobTableWPtr _knob;
 
 public:
 
