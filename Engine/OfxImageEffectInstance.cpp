@@ -212,7 +212,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 OfxStatus
 OfxImageEffectInstance::clearPersistentMessage()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
         return kOfxStatFailed;
     }
@@ -231,7 +231,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     assert(format);
     std::string message = string_format(format, args);
     std::string type(msgtype);
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
         return kOfxStatFailed;
     }
@@ -697,23 +697,30 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     return instance;
 } // newParam
 
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 struct PageOrdered
 {
     KnobPagePtr page;
     std::list<OfxParamToKnob*> paramsOrdered;
 };
 
-typedef std::list<boost::shared_ptr<PageOrdered> > PagesOrdered;
+typedef boost::shared_ptr<PageOrdered> PageOrderedPtr;
+typedef std::list<PageOrderedPtr> PageOrderedPtrList;
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 void
 OfxImageEffectInstance::addParamsToTheirParents()
 {
     //All parameters in their order of declaration by the plug-in
     const std::list<OFX::Host::Param::Instance*> & params = getParamList();
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     //Extract pages and their children and add knobs to groups
-    PagesOrdered finalPages;
+    PageOrderedPtrList finalPages;
 
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
@@ -728,7 +735,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
+            PageOrderedPtr pageData( new PageOrdered() );
             pageData->page = toKnobPage(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
@@ -778,12 +785,12 @@ OfxImageEffectInstance::addParamsToTheirParents()
     }
 
     //Extract the "Main" page, i.e: the first page declared, if no page were created, create one
-    PagesOrdered::iterator mainPage = finalPages.end();
+    PageOrderedPtrList::iterator mainPage = finalPages.end();
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
         KnobPagePtr page = AppManager::createKnob<KnobPage>( effect, tr("Settings") );
-        boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
+        PageOrderedPtr pageData( new PageOrdered() );
         pageData->page = page;
         finalPages.push_back(pageData);
         mainPage = finalPages.begin();
@@ -827,7 +834,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         }
         if (!foundPage) {
             // param not found in main page, try in other pages
-            PagesOrdered::iterator itPage = mainPage;
+            PageOrderedPtrList::iterator itPage = mainPage;
             ++itPage;
             for (; itPage != finalPages.end(); ++itPage) {
                 for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
@@ -853,7 +860,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
 
 
     // For all pages, append their knobs in order
-    for (PagesOrdered::iterator itPage = finalPages.begin(); itPage != finalPages.end(); ++itPage) {
+    for (PageOrderedPtrList::iterator itPage = finalPages.begin(); itPage != finalPages.end(); ++itPage) {
         KnobPagePtr pageKnob = (*itPage)->page;
 
         for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
@@ -933,7 +940,7 @@ OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 {
     ///Don't push undo/redo actions while creating a group
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -949,7 +956,7 @@ OfxStatus
 OfxImageEffectInstance::editEnd()
 {
     ///Don't push undo/redo actions while creating a group
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -970,7 +977,7 @@ void
 OfxImageEffectInstance::progressStart(const std::string & message,
                                       const std::string &messageid)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     effect->getApp()->progressStart(effect->getNode(), message, messageid);
 }
@@ -979,7 +986,7 @@ OfxImageEffectInstance::progressStart(const std::string & message,
 void
 OfxImageEffectInstance::progressEnd()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     effect->getApp()->progressEnd( effect->getNode() );
 }
@@ -994,7 +1001,7 @@ OfxImageEffectInstance::progressEnd()
 bool
 OfxImageEffectInstance::progressUpdate(double t)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     return effect->getApp()->progressUpdate(effect->getNode(), t);
 }
@@ -1011,7 +1018,7 @@ OfxImageEffectInstance::progressUpdate(double t)
 double
 OfxImageEffectInstance::timeLineGetTime()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     return effect->getApp()->getTimeLine()->currentFrame();
 }
@@ -1020,7 +1027,7 @@ OfxImageEffectInstance::timeLineGetTime()
 void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     effect->updateThreadLocalRenderTime(t);
 
@@ -1053,7 +1060,7 @@ OfxImageEffectInstance::abort()
 OFX::Host::Memory::Instance*
 OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
     OfxMemory* ret = new OfxMemory(effect);
     bool allocated = ret->alloc(nBytes);
 
@@ -1150,7 +1157,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     std::map<OfxClipInstance*, int> clipInputs;
 
     setupClipPreferencesArgsFromMetadata(defaultPrefs, outArgs, clipInputs);

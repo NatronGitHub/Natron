@@ -767,35 +767,23 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
         return false;
     }
 
-    // Create the TLS data for this node if it did not exist yet
     *tls = tlsData->getOrCreateTLSData();
-    assert(*tls);
-    if ( (*tls)->frameArgs.empty() ) {
-        qDebug() << QThread::currentThread() << "[BUG]:" << _publicInterface->getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
-
-        frameArgs->reset(new ParallelRenderArgs);
-        {
-            NodesWList outputs;
-            _publicInterface->getNode()->getOutputs_mt_safe(outputs);
-            (*frameArgs)->visitsCount = (int)outputs.size();
-        }
-        (*frameArgs)->time = args.time;
-        (*frameArgs)->view = args.view;
-        (*frameArgs)->isSequentialRender = false;
-        (*frameArgs)->isRenderResponseToUserInteraction = true;
-        (*tls)->frameArgs.push_back(*frameArgs);
-    } else {
-        // The hash must not have changed if we did a pre-pass.
-        (*frameArgs) = (*tls)->frameArgs.back();
-        *glGpuContext = (*frameArgs)->openGLContext.lock();
-        *glCpuContext = (*frameArgs)->cpuOpenGLContext.lock();
-        *abortInfo = (*frameArgs)->abortInfo.lock();
-        if (!*abortInfo) {
-            // If we don't have info to identify the render, we cannot manage the OpenGL context properly, so don't try to render with OpenGL.
-            glGpuContext->reset();
-            glCpuContext->reset();
-        }
+    assert(*tls && !(*tls)->frameArgs.empty());
+    if ((*tls)->frameArgs.empty()) {
+        // TLS must have been set via ParallelRenderArgsSetter! Calling renderRoI without this is a bug.
+        return eRenderRoIRetCodeFailed;
     }
+
+    (*frameArgs) = (*tls)->frameArgs.back();
+    *glGpuContext = (*frameArgs)->openGLContext.lock();
+    *glCpuContext = (*frameArgs)->cpuOpenGLContext.lock();
+    *abortInfo = (*frameArgs)->abortInfo.lock();
+    if (!*abortInfo) {
+        // If we don't have info to identify the render, we cannot manage the OpenGL context properly, so don't try to render with OpenGL.
+        glGpuContext->reset();
+        glCpuContext->reset();
+    }
+
 
 
     *frameViewHash = (*frameArgs)->getFrameViewHash(args.time, args.view);

@@ -50,7 +50,14 @@
 #endif
 #endif
 
+#ifdef Q_OS_WIN
+#include <shlobj.h>
+#endif
+
 #include <boost/version.hpp>
+#include <libs/hoedown/src/version.h>
+#include <ceres/version.h>
+#include <openMVG/version.hpp>
 
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
@@ -1545,6 +1552,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     ///look-in the main system wide plugin path
     templatesSearchPath.push_back(mainPath);
 
+    ///look-in the global system wide plugin path
+    templatesSearchPath.push_back( getPyPlugsGlobalPath() );
+
     ///look-in the locations indicated by NATRON_PLUGIN_PATH
     Q_FOREACH(const QString &splitDir, splitDirs) {
         if ( !splitDir.isEmpty() ) {
@@ -1566,6 +1576,30 @@ AppManager::getAllNonOFXPluginsPaths() const
 
     return templatesSearchPath;
 } // AppManager::getAllNonOFXPluginsPaths
+
+QString
+AppManager::getPyPlugsGlobalPath() const
+{
+    QString path;
+
+#ifdef __NATRON_UNIX__
+#ifdef __NATRON_OSX__
+    path = QString::fromUtf8("/Library/Application Support/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+#else
+    path = QString::fromUtf8("/usr/share/%1/Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+#endif
+#elif defined(__NATRON_WIN32__)
+    wchar_t buffer[MAX_PATH];
+    SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, buffer);
+    std::wstring str;
+    str.append(L"\\");
+    str.append( QString::fromUtf8("%1\\Plugins").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdWString() );
+    wcscat_s(buffer, MAX_PATH, str.c_str());
+    path = QString::fromStdWString( std::wstring(buffer) );
+#endif
+
+    return path;
+}
 
 typedef void (*NatronPathFunctor)(const QDir&);
 static void
@@ -3324,25 +3358,13 @@ AppManager::getWriterPluginIDForFileType(const std::string & extension) const
     return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
 }
 
+
 AppTLS*
 AppManager::getAppTLS() const
 {
     return &_imp->globalTLS;
 }
 
-
-QString
-AppManager::getOpenGLVersion() const
-{
-
-    if (!_imp->hasInitializedOpenGLFunctions) {
-        return QString();
-    }
-    QString glslVer = QString::fromUtf8( (const char*)GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
-    QString openglVer = QString::fromUtf8( (const char*)GL_GPU::glGetString(GL_VERSION) );
-
-    return openglVer + QString::fromUtf8(", GLSL ") + glslVer;
-}
 
 QString
 AppManager::getBoostVersion() const
@@ -3365,6 +3387,30 @@ AppManager::getCairoVersion() const
     return QString();
 #endif
 }
+
+
+QString
+AppManager::getHoedownVersion() const
+{
+    int major, minor, revision;
+    hoedown_version(&major, &minor, &revision);
+    return QString::fromUtf8(HOEDOWN_VERSION) + QString::fromUtf8(" / ") + QString::fromUtf8("%1.%2.%3").arg(major).arg(minor).arg(revision);
+}
+
+
+QString
+AppManager::getCeresVersion() const
+{
+    return QString::fromUtf8(CERES_VERSION_STRING);
+}
+
+
+QString
+AppManager::getOpenMVGVersion() const
+{
+    return QString::fromUtf8(OPENMVG_VERSION_STRING);
+}
+
 
 QString
 AppManager::getPySideVersion() const

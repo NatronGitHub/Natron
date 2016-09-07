@@ -43,7 +43,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define ROTOPAINT_MAX_INPUTS_COUNT 11
 
 
 #define kControlPointMidSize 3
@@ -392,19 +391,19 @@ NATRON_NAMESPACE_ENTER;
 #define kShortcutIDActionRotoLockCurve "lock"
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
 
-struct RotoPaintInteract;
+class RotoPaintInteract;
 struct RotoPaintPrivate
 {
     RotoPaint* publicInterface; // can not be a smart ptr
     bool isPaintByDefault;
-    boost::weak_ptr<KnobBool> premultKnob;
-    boost::weak_ptr<KnobBool> enabledKnobs[4];
+    KnobBoolWPtr premultKnob;
+    KnobBoolWPtr enabledKnobs[4];
 
     mutable QMutex doingNeatRenderMutex;
     bool doingNeatRender;
     bool mustDoNeatRender;
 
-    boost::shared_ptr<RotoPaintInteract> ui;
+    RotoPaintInteractPtr ui;
 
     // The group internal input nodes
     std::vector<NodeWPtr> inputNodes;
@@ -510,9 +509,10 @@ enum RotoToolEnum
     eRotoToolBurn
 };
 
-struct RotoPaintInteract
+class RotoPaintInteract
     : public boost::enable_shared_from_this<RotoPaintInteract>
 {
+public:
     RotoPaintPrivate* p;
     SelectedItems selectedItems;
     SelectedCPs selectedCps;
@@ -534,7 +534,7 @@ struct RotoPaintInteract
     QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
     RotoToolEnum selectedTool;
     RotoRoleEnum selectedRole;
-    boost::weak_ptr<KnobButton> lastPaintToolAction;
+    KnobButtonWPtr lastPaintToolAction;
     EventStateEnum state;
     HoverStateEnum hoverState;
     QPointF lastClickPos;
@@ -551,80 +551,80 @@ struct RotoPaintInteract
 
     //////// Toolbar
     KnobPageWPtr toolbarPage;
-    boost::weak_ptr<KnobGroup> selectedToolRole;
-    boost::weak_ptr<KnobButton> selectedToolAction;
-    boost::weak_ptr<KnobGroup> selectToolGroup;
-    boost::weak_ptr<KnobButton> selectAllAction;
-    boost::weak_ptr<KnobButton> selectPointsAction;
-    boost::weak_ptr<KnobButton> selectCurvesAction;
-    boost::weak_ptr<KnobButton> selectFeatherPointsAction;
-    boost::weak_ptr<KnobGroup> pointsEditionToolGroup;
-    boost::weak_ptr<KnobButton> addPointsAction;
-    boost::weak_ptr<KnobButton> removePointsAction;
-    boost::weak_ptr<KnobButton> cuspPointsAction;
-    boost::weak_ptr<KnobButton> smoothPointsAction;
-    boost::weak_ptr<KnobButton> openCloseCurveAction;
-    boost::weak_ptr<KnobButton> removeFeatherAction;
-    boost::weak_ptr<KnobGroup> bezierEditionToolGroup;
-    boost::weak_ptr<KnobButton> drawBezierAction;
-    boost::weak_ptr<KnobButton> drawEllipseAction;
-    boost::weak_ptr<KnobButton> drawRectangleAction;
-    boost::weak_ptr<KnobGroup> paintBrushToolGroup;
-    boost::weak_ptr<KnobButton> brushAction;
-    boost::weak_ptr<KnobButton> pencilAction;
-    boost::weak_ptr<KnobButton> eraserAction;
-    boost::weak_ptr<KnobGroup> cloneBrushToolGroup;
-    boost::weak_ptr<KnobButton> cloneAction;
-    boost::weak_ptr<KnobButton> revealAction;
-    boost::weak_ptr<KnobGroup> effectBrushToolGroup;
-    boost::weak_ptr<KnobButton> blurAction;
-    boost::weak_ptr<KnobButton> smearAction;
-    boost::weak_ptr<KnobGroup> mergeBrushToolGroup;
-    boost::weak_ptr<KnobButton> dodgeAction;
-    boost::weak_ptr<KnobButton> burnAction;
+    KnobGroupWPtr selectedToolRole;
+    KnobButtonWPtr selectedToolAction;
+    KnobGroupWPtr selectToolGroup;
+    KnobButtonWPtr selectAllAction;
+    KnobButtonWPtr selectPointsAction;
+    KnobButtonWPtr selectCurvesAction;
+    KnobButtonWPtr selectFeatherPointsAction;
+    KnobGroupWPtr pointsEditionToolGroup;
+    KnobButtonWPtr addPointsAction;
+    KnobButtonWPtr removePointsAction;
+    KnobButtonWPtr cuspPointsAction;
+    KnobButtonWPtr smoothPointsAction;
+    KnobButtonWPtr openCloseCurveAction;
+    KnobButtonWPtr removeFeatherAction;
+    KnobGroupWPtr bezierEditionToolGroup;
+    KnobButtonWPtr drawBezierAction;
+    KnobButtonWPtr drawEllipseAction;
+    KnobButtonWPtr drawRectangleAction;
+    KnobGroupWPtr paintBrushToolGroup;
+    KnobButtonWPtr brushAction;
+    KnobButtonWPtr pencilAction;
+    KnobButtonWPtr eraserAction;
+    KnobGroupWPtr cloneBrushToolGroup;
+    KnobButtonWPtr cloneAction;
+    KnobButtonWPtr revealAction;
+    KnobGroupWPtr effectBrushToolGroup;
+    KnobButtonWPtr blurAction;
+    KnobButtonWPtr smearAction;
+    KnobGroupWPtr mergeBrushToolGroup;
+    KnobButtonWPtr dodgeAction;
+    KnobButtonWPtr burnAction;
 
     //////Right click menu
-    boost::weak_ptr<KnobChoice> rightClickMenuKnob;
+    KnobChoiceWPtr rightClickMenuKnob;
 
     //Right click on point
-    boost::weak_ptr<KnobButton> removeItemsMenuAction;
-    boost::weak_ptr<KnobButton> cuspItemMenuAction;
-    boost::weak_ptr<KnobButton> smoothItemMenuAction;
-    boost::weak_ptr<KnobButton> removeItemFeatherMenuAction;
-    boost::weak_ptr<KnobButton> nudgeLeftMenuAction, nudgeRightMenuAction, nudgeBottomMenuAction, nudgeTopMenuAction;
+    KnobButtonWPtr removeItemsMenuAction;
+    KnobButtonWPtr cuspItemMenuAction;
+    KnobButtonWPtr smoothItemMenuAction;
+    KnobButtonWPtr removeItemFeatherMenuAction;
+    KnobButtonWPtr nudgeLeftMenuAction, nudgeRightMenuAction, nudgeBottomMenuAction, nudgeTopMenuAction;
 
     // Right click on curve
-    boost::weak_ptr<KnobButton> selectAllMenuAction;
-    boost::weak_ptr<KnobButton> openCloseMenuAction;
-    boost::weak_ptr<KnobButton> lockShapeMenuAction;
+    KnobButtonWPtr selectAllMenuAction;
+    KnobButtonWPtr openCloseMenuAction;
+    KnobButtonWPtr lockShapeMenuAction;
 
     // Roto buttons
-    boost::weak_ptr<KnobButton> autoKeyingEnabledButton;
-    boost::weak_ptr<KnobButton> featherLinkEnabledButton;
-    boost::weak_ptr<KnobButton> displayFeatherEnabledButton;
-    boost::weak_ptr<KnobButton> stickySelectionEnabledButton;
-    boost::weak_ptr<KnobButton> bboxClickAnywhereButton;
-    boost::weak_ptr<KnobButton> rippleEditEnabledButton;
-    boost::weak_ptr<KnobButton> addKeyframeButton;
-    boost::weak_ptr<KnobButton> removeKeyframeButton;
-    boost::weak_ptr<KnobButton> showTransformHandle;
+    KnobButtonWPtr autoKeyingEnabledButton;
+    KnobButtonWPtr featherLinkEnabledButton;
+    KnobButtonWPtr displayFeatherEnabledButton;
+    KnobButtonWPtr stickySelectionEnabledButton;
+    KnobButtonWPtr bboxClickAnywhereButton;
+    KnobButtonWPtr rippleEditEnabledButton;
+    KnobButtonWPtr addKeyframeButton;
+    KnobButtonWPtr removeKeyframeButton;
+    KnobButtonWPtr showTransformHandle;
 
     // RotoPaint buttons
-    boost::weak_ptr<KnobColor> colorWheelButton;
-    boost::weak_ptr<KnobChoice> compositingOperatorChoice;
-    boost::weak_ptr<KnobDouble> opacitySpinbox;
-    boost::weak_ptr<KnobButton> pressureOpacityButton;
-    boost::weak_ptr<KnobDouble> sizeSpinbox;
-    boost::weak_ptr<KnobButton> pressureSizeButton;
-    boost::weak_ptr<KnobDouble> hardnessSpinbox;
-    boost::weak_ptr<KnobButton> pressureHardnessButton;
-    boost::weak_ptr<KnobButton> buildUpButton;
-    boost::weak_ptr<KnobDouble> effectSpinBox;
-    boost::weak_ptr<KnobInt> timeOffsetSpinBox;
-    boost::weak_ptr<KnobChoice> timeOffsetModeChoice;
-    boost::weak_ptr<KnobChoice> sourceTypeChoice;
-    boost::weak_ptr<KnobButton> resetCloneOffsetButton;
-    boost::weak_ptr<KnobBool> multiStrokeEnabled;
+    KnobColorWPtr colorWheelButton;
+    KnobChoiceWPtr compositingOperatorChoice;
+    KnobDoubleWPtr opacitySpinbox;
+    KnobButtonWPtr pressureOpacityButton;
+    KnobDoubleWPtr sizeSpinbox;
+    KnobButtonWPtr pressureSizeButton;
+    KnobDoubleWPtr hardnessSpinbox;
+    KnobButtonWPtr pressureHardnessButton;
+    KnobButtonWPtr buildUpButton;
+    KnobDoubleWPtr effectSpinBox;
+    KnobIntWPtr timeOffsetSpinBox;
+    KnobChoiceWPtr timeOffsetModeChoice;
+    KnobChoiceWPtr sourceTypeChoice;
+    KnobButtonWPtr resetCloneOffsetButton;
+    KnobBoolWPtr multiStrokeEnabled;
 
 
 private:
@@ -633,9 +633,9 @@ private:
     RotoPaintInteract(RotoPaintPrivate* p);
 
 public:
-    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p) WARN_UNUSED_RETURN
+    static RotoPaintInteractPtr create(RotoPaintPrivate* p) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<RotoPaintInteract>( new RotoPaintInteract(p) );
+        return RotoPaintInteractPtr( new RotoPaintInteract(p) );
     }
 
     bool isFeatherVisible() const;

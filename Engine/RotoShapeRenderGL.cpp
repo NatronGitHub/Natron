@@ -626,7 +626,7 @@ void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsign
 
 void
 RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
-                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                   const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
                                    const Bezier* bezier,
                                    double opacity,
@@ -652,7 +652,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
 
     RampTypeEnum type;
     {
-        boost::shared_ptr<KnobChoice> typeKnob = bezier->getFallOffRampTypeKnob();
+        KnobChoicePtr typeKnob = bezier->getFallOffRampTypeKnob();
         type = (RampTypeEnum)typeKnob->getValue();
     }
     GLShaderBasePtr rampShader = glData->getOrCreateFeatherRampShader(type);
@@ -835,7 +835,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
 struct RenderStrokeGLData
 {
     OSGLContextPtr glContext;
-    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
+    RotoShapeRenderNodeOpenGLDataPtr glData;
 
     ImagePtr dstImage;
 
@@ -1323,7 +1323,7 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
 
 void
 RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
-                                   const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                   const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
                                    const ImagePtr& dstImage,
                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
@@ -1362,7 +1362,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
 struct RenderSmearGLData
 {
     OSGLContextPtr glContext;
-    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
+    RotoShapeRenderNodeOpenGLDataPtr glData;
 
     ImagePtr dstImage;
 
@@ -1654,7 +1654,7 @@ renderSmearEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData*/)
 
 bool
 RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
-                                  const boost::shared_ptr<RotoShapeRenderNodeOpenGLData>& glData,
+                                  const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                   const RectI& roi,
                                   const ImagePtr& dstImage,
                                   const std::list<std::list<std::pair<Point, double> > >& strokes,

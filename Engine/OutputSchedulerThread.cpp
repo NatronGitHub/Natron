@@ -2286,7 +2286,7 @@ private:
                 tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
                 tlsArgs->isSequential = isSequentialRender;
                 tlsArgs->abortInfo = abortInfo;
-                tlsArgs->treeRoot = activeInputToRender;
+                tlsArgs->treeRoot = activeInputNode;
                 tlsArgs->textureIndex = 0;
                 tlsArgs->timeline = output->getApp()->getTimeLine();
                 tlsArgs->activeRotoPaintNode = NodePtr();
@@ -2419,7 +2419,7 @@ DefaultScheduler::createRunnable(int frame,
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-DefaultScheduler::processFrame(const BufferedFrames& frames)
+DefaultScheduler::processFrame(const BufferedFrames& /*frames*/)
 {
     // We don't have anymore writer that need to process things in order. WriteFFMPEG is doing it for us
 #if 0

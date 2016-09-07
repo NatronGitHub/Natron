@@ -77,8 +77,7 @@ public:
 
     RotoDrawableItem(const RotoContextPtr& context,
                      const std::string & name,
-                     const RotoLayerPtr& parent,
-                     bool isStroke);
+                     const RotoLayerPtr& parent);
 
 
     virtual ~RotoDrawableItem();
@@ -182,10 +181,6 @@ public:
 
     void setKeyframeOnAllTransformParameters(double time);
 
-    const std::list<KnobIPtr >& getKnobs() const;
-
-    KnobIPtr getKnobByName(const std::string& name) const;
-
     virtual RectD getBoundingBox(double time) const = 0;
 
     void getTransformAtTime(double time, Transform::Matrix3x3* matrix) const;
@@ -212,6 +207,7 @@ public:
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
 
+    void initializeKnobs() OVERRIDE;
 
 Q_SIGNALS:
 
@@ -223,18 +219,18 @@ Q_SIGNALS:
 
     void compositingOperatorChanged(ViewSpec, int, int);
 
-public Q_SLOTS:
-
 
     void onRotoKnobChanged(ViewSpec, int, int);
 
 protected:
 
-    void rotoKnobChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
+                                    bool originatedFromMainThread) OVERRIDE;
 
     virtual void onTransformSet(double /*time*/) {}
-
-    void addKnob(const KnobIPtr& knob);
 
 private:
 

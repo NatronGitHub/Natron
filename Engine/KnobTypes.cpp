@@ -2426,7 +2426,7 @@ KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
 }
 
 void
-KnobParametric::appendToFrameViewHash(double /*time*/, ViewIdx /*view*/, Hash64* hash)
+KnobParametric::appendToHash(double /*time*/, ViewIdx /*view*/, Hash64* hash)
 {
 
     for (std::size_t i = 0; i < _curves.size(); ++i) {
@@ -2438,6 +2438,7 @@ KnobParametric::appendToFrameViewHash(double /*time*/, ViewIdx /*view*/, Hash64*
         }
 
     }
+
 }
 
 /******************************KnobTable**************************************/

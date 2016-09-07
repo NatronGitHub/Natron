@@ -557,7 +557,7 @@ OfxParamToKnob::onMinMaxChanged(double min,
 
 ////////////////////////// OfxPushButtonInstance /////////////////////////////////////////////////
 
-OfxPushButtonInstance::OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxPushButtonInstance::OfxPushButtonInstance(const OfxEffectInstancePtr& node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
@@ -627,7 +627,7 @@ OfxPushButtonInstance::getKnob() const
 ////////////////////////// OfxIntegerInstance /////////////////////////////////////////////////
 
 
-OfxIntegerInstance::OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxIntegerInstance::OfxIntegerInstance(const OfxEffectInstancePtr& node,
                                        OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::IntegerInstance( descriptor, node->effectInstance() )
@@ -831,7 +831,7 @@ OfxIntegerInstance::setRange()
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
 
-OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxDoubleInstance::OfxDoubleInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::DoubleInstance( descriptor, node->effectInstance() )
@@ -1101,7 +1101,7 @@ OfxDoubleInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
 
-OfxBooleanInstance::OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxBooleanInstance::OfxBooleanInstance(const OfxEffectInstancePtr& node,
                                        OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::BooleanInstance( descriptor, node->effectInstance() )
@@ -1269,7 +1269,7 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
-OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::ChoiceInstance( descriptor, node->effectInstance() )
@@ -1531,7 +1531,7 @@ OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
 
-OfxRGBAInstance::OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxRGBAInstance::OfxRGBAInstance(const OfxEffectInstancePtr& node,
                                  OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::RGBAInstance( descriptor, node->effectInstance() )
@@ -1795,7 +1795,7 @@ OfxRGBAInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
-OfxRGBInstance::OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxRGBInstance::OfxRGBInstance(const OfxEffectInstancePtr& node,
                                OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::RGBInstance( descriptor, node->effectInstance() )
@@ -2047,7 +2047,7 @@ OfxRGBInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
-OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
                                          OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::Double2DInstance( descriptor, node->effectInstance() )
@@ -2395,7 +2395,7 @@ OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
-OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxInteger2DInstance::OfxInteger2DInstance(const OfxEffectInstancePtr& node,
                                            OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::Integer2DInstance( descriptor, node->effectInstance() )
@@ -2656,7 +2656,7 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
-OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxDouble3DInstance::OfxDouble3DInstance(const OfxEffectInstancePtr& node,
                                          OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::Double3DInstance( descriptor, node->effectInstance() )
@@ -2980,7 +2980,7 @@ OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
-OfxInteger3DInstance::OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>&node,
+OfxInteger3DInstance::OfxInteger3DInstance(const OfxEffectInstancePtr&node,
                                            OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::Integer3DInstance( descriptor, node->effectInstance() )
@@ -3218,7 +3218,7 @@ OfxInteger3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
 
-OfxGroupInstance::OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxGroupInstance::OfxGroupInstance(const OfxEffectInstancePtr& node,
                                    OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::GroupInstance( descriptor, node->effectInstance() )
@@ -3307,7 +3307,7 @@ OfxGroupInstance::setOpen()
 ////////////////////////// OfxPageInstance /////////////////////////////////////////////////
 
 
-OfxPageInstance::OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxPageInstance::OfxPageInstance(const OfxEffectInstancePtr& node,
                                  OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::PageInstance( descriptor, node->effectInstance() )
@@ -3376,10 +3376,10 @@ OfxPageInstance::getKnob() const
 
 struct OfxStringInstancePrivate
 {
-    boost::weak_ptr<KnobFile> fileKnob;
-    boost::weak_ptr<KnobOutputFile> outputFileKnob;
+    KnobFileWPtr fileKnob;
+    KnobOutputFileWPtr outputFileKnob;
     KnobStringWPtr stringKnob;
-    boost::weak_ptr<KnobPath> pathKnob;
+    KnobPathWPtr pathKnob;
     boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxStringInstancePrivate()
@@ -3392,7 +3392,7 @@ struct OfxStringInstancePrivate
     }
 };
 
-OfxStringInstance::OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::StringInstance( descriptor, node->effectInstance() )
@@ -3941,7 +3941,7 @@ struct OfxCustomInstancePrivate
     }
 };
 
-OfxCustomInstance::OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::Param::CustomInstance( descriptor, node->effectInstance() )
@@ -4148,7 +4148,7 @@ OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
 
-OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxParametricInstance::OfxParametricInstance(const OfxEffectInstancePtr& node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::ParametricParam::ParametricInstance( descriptor, node->effectInstance() )

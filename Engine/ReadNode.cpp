@@ -206,13 +206,14 @@ public:
     QMutex embeddedPluginMutex;
     NodePtr embeddedPlugin;
     SERIALIZATION_NAMESPACE::KnobSerializationList genericKnobsSerialization;
-    boost::weak_ptr<KnobFile> inputFileKnob;
+    KnobFileWPtr inputFileKnob;
+
 
     //Thiese are knobs owned by the ReadNode and not the Reader
-    boost::weak_ptr<KnobChoice> pluginSelectorKnob;
+    KnobChoiceWPtr pluginSelectorKnob;
     KnobStringWPtr pluginIDStringKnob;
-    boost::weak_ptr<KnobSeparator> separatorKnob;
-    boost::weak_ptr<KnobButton> fileInfosKnob;
+    KnobSeparatorWPtr separatorKnob;
+    KnobButtonWPtr fileInfosKnob;
     std::list<KnobIWPtr > readNodeKnobs;
 
     //MT only

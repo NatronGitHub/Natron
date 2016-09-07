@@ -1,9 +1,8 @@
-# History
-
-## Bugs
+# Bugs
 
 - Viewer is not refreshing when the reader's paths contain unicode characters https://github.com/MrKepzie/Natron/issues/1416
-- Natron sometimes hangs in EffectInstance::clearPluginMemoryChunks() on exit 3d1b9c3
+
+# History
 
 ## Version 2.1.3
 
@@ -12,6 +11,12 @@
 - fix dynamic kOfxSupportsTiles handling
 - add more properties to the "Info" node panel
 - the log window now becomes visible whenever a message is sent
+
+### Plugins
+
+- (beta feature) SeExprSimple: new simple expression plugin with one expression per channel
+- (beta feature) DenoiseSharpen: new wavelet-based denoising plugin
+- ImageStatistics: can now extract the pixels with the maximum and minimum luminance, as well as their values
 
 ## Version 2.1.2
 

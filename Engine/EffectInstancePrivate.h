@@ -48,6 +48,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
+typedef std::list<PluginMemoryWPtr> PluginMemoryWPtrList;
+
 struct ActionKey
 {
     double time;
@@ -166,7 +168,7 @@ public:
 
     ///Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
-    std::list<boost::weak_ptr<PluginMemory> > pluginMemoryChunks;
+    PluginMemoryWPtrList pluginMemoryChunks;
 
     ///Does this plug-in supports render scale ?
     QMutex supportsRenderScaleMutex;
@@ -200,7 +202,7 @@ public:
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    std::list< KnobIWPtr > overlaySlaves;
+    std::list<KnobIWPtr> overlaySlaves;
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
     bool runningClipPreferences; //only used on main thread
@@ -579,7 +581,7 @@ public:
                                                   const double time,
                                                   const ViewIdx view,
                                                   const unsigned int mipMapLevel,
-                                                  const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                                  const TimeLapsePtr& timeRecorder,
                                                   ImagePlanesToRender & planes);
 
     RenderingFunctorRetEnum renderHandlerInternal(const EffectDataTLSPtr& tls,
@@ -604,7 +606,7 @@ public:
                          const std::bitset<4>& processChannels,
                          EffectInstance::RenderActionArgs &actionArgs,
                          boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
-                         boost::shared_ptr<TimeLapse> *timeRecorder);
+                         TimeLapsePtr *timeRecorder);
 
     void renderHandlerPostProcess(const EffectDataTLSPtr& tls,
                                   const RectToRender & rectToRender,
@@ -613,7 +615,7 @@ public:
                                   const EffectInstance::RenderActionArgs &actionArgs,
                                   const ImagePlanesToRender & planes,
                                   const RectI& downscaledRectToRender,
-                                  const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                  const TimeLapsePtr& timeRecorder,
                                   bool renderFullScaleThenDownscale,
                                   unsigned int mipMapLevel,
                                   const std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,

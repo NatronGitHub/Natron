@@ -285,6 +285,13 @@ public:
      **/
     U64 getRenderHash(double time, ViewIdx view) const WARN_UNUSED_RETURN;
 
+    void invalidateHashNotRecursive();
+
+    /**
+     * @brief Recursively invalidates the hash of this node and the nodes downstream.
+     **/
+    virtual void invalidateHashCache() OVERRIDE FINAL;
+
     /**
      * @brief Forwarded to the node's name
      **/

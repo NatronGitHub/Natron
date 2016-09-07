@@ -436,6 +436,10 @@ chooseFBConfig(const OSGLContext_glx_data* glxInfo,
                const FramebufferConfig& desired,
                GLXFBConfig* result)
 {
+    if (!glxInfo->_imp->x11.display) {
+        throw std::runtime_error("GLX: No DISPLAY available");
+    }
+
     bool trustWindowBit = true;
     // HACK: This is a (hopefully temporary) workaround for Chromium
     //       (VirtualBox GL) not setting the window bit on any GLXFBConfigs
@@ -858,6 +862,9 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!glxInfo) {
         return;
     }
+    if (!glxInfo->_imp->x11.display) {
+        return;
+    }
     if (!glxInfo->_imp->MESA_query_renderer) {
         boost::scoped_ptr<OSGLContext_x11> context;
         try {
@@ -884,6 +891,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
         info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
         info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
+        info.glslVersionString = std::string( (const char *) GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
         GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = 0;
@@ -989,6 +997,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
                     info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
                     info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
+                    info.glslVersionString = std::string( (const char *) GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
                     GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
 
                     renderers.push_back(info);

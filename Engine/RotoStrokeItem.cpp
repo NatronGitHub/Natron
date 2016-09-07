@@ -97,7 +97,7 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
                                const std::string & name,
                                const RotoLayerPtr& parent)
 
-    : RotoDrawableItem(context, name, parent, true)
+    : RotoDrawableItem(context, name, parent)
     , _imp( new RotoStrokeItemPrivate(type) )
 {
 }
@@ -321,21 +321,21 @@ RotoStrokeItem::setStrokeFinished()
 
     if (effectNode) {
         effectNode->setWhileCreatingPaintStroke(false);
-        effectNode->incrementKnobsAge();
+        effectNode->getEffectInstance()->invalidateHashCache();
     }
     mergeNode->setWhileCreatingPaintStroke(false);
-    mergeNode->incrementKnobsAge();
+    mergeNode->getEffectInstance()->invalidateHashCache();
     if (timeOffsetNode) {
         timeOffsetNode->setWhileCreatingPaintStroke(false);
-        timeOffsetNode->incrementKnobsAge();
+        timeOffsetNode->getEffectInstance()->invalidateHashCache();
     }
     if (frameHoldNode) {
         frameHoldNode->setWhileCreatingPaintStroke(false);
-        frameHoldNode->incrementKnobsAge();
+        frameHoldNode->getEffectInstance()->invalidateHashCache();
     }
     if (maskNode) {
         maskNode->setWhileCreatingPaintStroke(false);
-        maskNode->incrementKnobsAge();
+        maskNode->getEffectInstance()->invalidateHashCache();
     }
 
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(false);
@@ -515,7 +515,7 @@ RotoStrokeItem::addStroke(const CurvePtr& xCurve,
         QMutexLocker k(&itemMutex);
         _imp->strokes.push_back(s);
     }
-    incrementNodesAge();
+    invalidateHashCache();
 }
 
 bool
@@ -537,7 +537,7 @@ RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
         empty =  _imp->strokes.empty();
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
 
     return empty;
 }
@@ -727,7 +727,7 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->finished = true;
     }
     RotoDrawableItem::clone(other);
-    incrementNodesAge();
+    invalidateHashCache();
     resetNodesThreadSafety();
 }
 

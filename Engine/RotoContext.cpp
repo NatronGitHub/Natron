@@ -1129,8 +1129,8 @@ RotoContext::selectInternal(const RotoItemPtr & item)
             }
         }
 
-        const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const KnobsVec& drawableKnobs = isDrawable->getKnobs();
+        for (KnobsVec::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             for (std::list<KnobIWPtr >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
                 KnobIPtr thisKnob = it2->lock();
                 if ( thisKnob->getName() == (*it)->getName() ) {
@@ -1285,8 +1285,8 @@ RotoContext::deselectInternal(RotoItemPtr b)
     if (isDrawable) {
         ///first-off set the context knobs to the value of this bezier
 
-        const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const KnobsVec& drawableKnobs = isDrawable->getKnobs();
+        for (KnobsVec::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             for (std::list<KnobIWPtr >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
                 KnobIPtr knob = it2->lock();
                 if ( knob->getName() == (*it)->getName() ) {
@@ -2173,8 +2173,8 @@ RotoContext::isAnimated() const
     std::list<RotoDrawableItemPtr> items = getCurvesByRenderOrder();
     for (std::list<RotoDrawableItemPtr>::iterator it = items.begin(); it!=items.end(); ++it) {
 
-        const std::list<KnobIPtr>& knobs = (*it)->getKnobs();
-        for (std::list<KnobIPtr>::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
+        const KnobsVec& knobs = (*it)->getKnobs();
+        for (KnobsVec::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
             for (int i = 0; i < (*it2)->getDimension(); ++i) {
                 if ((*it2)->isAnimated(i)) {
                     return true;

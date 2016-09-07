@@ -52,6 +52,9 @@ public:
 
     ~PluginMemory();
 
+    // If unregister is true, the destructor will attempt to remove this memory instance from the effect
+    void setUnregisterOnDestructor(bool unregister);
+
     ///throws std::bad_alloc if the allocation failed. Returns false if the memory is already locked.
     ///Returns true on success.
     bool alloc(size_t nBytes);

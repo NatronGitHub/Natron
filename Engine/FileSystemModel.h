@@ -53,7 +53,7 @@ private:
                     bool isDir,
                     const QString& filename,
                     const QString& userFriendlySequenceName,
-                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                    const SequenceParsing::SequenceFromFilesPtr& sequence,
                     const QDateTime& dateModified,
                     quint64 size,
                     const FileSystemItemPtr& parent = FileSystemItemPtr() );
@@ -70,7 +70,7 @@ public:
                                                      bool isDir,
                                                      const QString& filename,
                                                      const QString& userFriendlySequenceName,
-                                                     const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                                                     const SequenceParsing::SequenceFromFilesPtr& sequence,
                                                      const QDateTime& dateModified,
                                                      quint64 size,
                                                      const FileSystemItemPtr& parent = FileSystemItemPtr() ) WARN_UNUSED_RETURN
@@ -99,7 +99,7 @@ public:
 
     bool isDir() const;
 
-    boost::shared_ptr<SequenceParsing::SequenceFromFiles> getSequence() const;
+    SequenceParsing::SequenceFromFilesPtr getSequence() const;
 
     /**
      * @brief Returns the fileName without path.
@@ -117,7 +117,7 @@ public:
      **/
     void addChild(const FileSystemItemPtr& child);
 
-    void addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+    void addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
                   const QFileInfo& info);
 
     /**

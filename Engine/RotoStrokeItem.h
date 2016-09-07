@@ -161,7 +161,7 @@ private:
 };
 
 inline RotoStrokeItemPtr
-toRotoStrokeItem(const RotoItemPtr& item)
+toRotoStrokeItem(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<RotoStrokeItem>(item);
 }

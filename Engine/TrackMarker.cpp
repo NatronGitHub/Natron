@@ -83,19 +83,19 @@ struct TrackMarkerPrivate
     boost::weak_ptr<TrackerContext> context;
 
     // Defines the rectangle of the search window, this is in coordinates relative to the marker center point
-    boost::weak_ptr<KnobDouble> searchWindowBtmLeft, searchWindowTopRight;
+    KnobDoubleWPtr searchWindowBtmLeft, searchWindowTopRight;
 
     // The pattern Quad defined by 4 corners relative to the center
-    boost::weak_ptr<KnobDouble> patternTopLeft, patternTopRight, patternBtmRight, patternBtmLeft;
-    boost::weak_ptr<KnobDouble> center, offset, error;
+    KnobDoubleWPtr patternTopLeft, patternTopRight, patternBtmRight, patternBtmLeft;
+    KnobDoubleWPtr center, offset, error;
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    boost::weak_ptr<KnobDouble> weight;
+    KnobDoubleWPtr weight;
 #endif
-    boost::weak_ptr<KnobChoice> motionModel;
+    KnobChoiceWPtr motionModel;
     mutable QMutex trackMutex;
     std::set<int> userKeyframes;
     std::string trackScriptName, trackLabel;
-    boost::weak_ptr<KnobBool> enabled;
+    KnobBoolWPtr enabled;
 
     // Only used by the TrackScheduler thread
     int trackingStartedCount;
@@ -145,9 +145,12 @@ TrackMarker::initializeKnobs()
     TrackerContextPtr context = _imp->context.lock();
     KnobIntPtr defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
     KnobIntPtr defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
+    KnobChoicePtr defMotionModelKnob = context->getDefaultMotionModelKnob();
 
     double patternHalfSize = defPatternSizeKnob->getValue() / 2.;
     double searchHalfSize = defSearchSizeKnob->getValue() / 2.;
+
+    int defMotionModel_i = defMotionModelKnob->getValue();
 
     KnobDoublePtr swbbtmLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
 
@@ -222,7 +225,8 @@ TrackMarker::initializeKnobs()
         TrackerContext::getMotionModelsAndHelps(true, &choices, &helps);
         mmodelKnob->populateChoices(choices, helps);
     }
-    mmodelKnob->setDefaultValue(0);
+
+    mmodelKnob->setDefaultValue(defMotionModel_i);
     _imp->motionModel = mmodelKnob;
 
     KnobDoublePtr errKnob = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamErrorLabel), 1, false);

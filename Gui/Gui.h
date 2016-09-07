@@ -507,7 +507,7 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
-    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
+    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< SequenceParsing::SequenceFromFilesPtr >* sequences);
 
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
 

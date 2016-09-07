@@ -178,7 +178,7 @@ struct FileSystemItemPrivate
     QString userFriendlySequenceName;
 
     ///This will be set when the file system model is in sequence mode and this is a file
-    boost::shared_ptr<SequenceParsing::SequenceFromFiles> sequence;
+    SequenceParsing::SequenceFromFilesPtr sequence;
     QDateTime dateModified;
     quint64 size;
     QString fileExtension;
@@ -188,7 +188,7 @@ struct FileSystemItemPrivate
                           bool isDir,
                           const QString& filename,
                           const QString& userFriendlySequenceName,
-                          const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                          const SequenceParsing::SequenceFromFilesPtr& sequence,
                           const QDateTime& dateModified,
                           quint64 size,
                           const FileSystemItemPtr &parent)
@@ -234,7 +234,7 @@ FileSystemItem::FileSystemItem(const FileSystemModelPtr& model,
                                bool isDir,
                                const QString& filename,
                                const QString& userFriendlySequenceName,
-                               const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                               const SequenceParsing::SequenceFromFilesPtr& sequence,
                                const QDateTime& dateModified,
                                quint64 size,
                                const FileSystemItemPtr& parent)
@@ -323,7 +323,7 @@ FileSystemItem::getUserFriendlyFilename() const
     return _imp->userFriendlySequenceName;
 }
 
-boost::shared_ptr<SequenceParsing::SequenceFromFiles>
+SequenceParsing::SequenceFromFilesPtr
 FileSystemItem::getSequence() const
 {
     return _imp->sequence;
@@ -356,7 +356,7 @@ FileSystemItem::addChild(const FileSystemItemPtr& child)
 }
 
 void
-FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
                          const QFileInfo& info)
 {
     FileSystemModelPtr model = _imp->getModel();
@@ -1028,7 +1028,7 @@ FileSystemModel::resetCompletly(bool rebuild)
     FileSystemModelPtr model = shared_from_this();
 
     if (rebuild) {
-        _imp->rootItem = FileSystemItem::create(model, true, QString(), QString(), boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), QDateTime(), 0);
+        _imp->rootItem = FileSystemItem::create(model, true, QString(), QString(), SequenceParsing::SequenceFromFilesPtr(), QDateTime(), 0);
         _imp->registerItem(_imp->rootItem);
 
         QFileInfoList drives = QDir::drives();
@@ -1047,7 +1047,7 @@ FileSystemModel::resetCompletly(bool rebuild)
             FileSystemItemPtr child = FileSystemItem::create(model, true, //isDir
                                                                         driveName, //drives have canonical path
                                                                         driveName,
-                                                                        boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
+                                                                        SequenceParsing::SequenceFromFilesPtr(),
                                                                         drive.lastModified(),
                                                                         drive.size(),
                                                                         _imp->rootItem);
@@ -1087,7 +1087,7 @@ FileSystemModel::mkPathInternal(const FileSystemItemPtr& item,
         child = FileSystemItem::create(shared_from_this(), true, //isDir
                                         path[index], //name
                                         path[index], //name
-                                        boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
+                                        SequenceParsing::SequenceFromFilesPtr(),
                                         info.lastModified(),
                                         0, //0 for directories
                                         item);
@@ -1553,7 +1553,7 @@ isVideoFileExtension(const std::string& ext)
     return false;
 }
 
-typedef std::list< std::pair< boost::shared_ptr<SequenceParsing::SequenceFromFiles>, QFileInfo > > FileSequences;
+typedef std::list< std::pair< SequenceParsing::SequenceFromFilesPtr, QFileInfo > > FileSequences;
 
 #define KERNEL_INCR() \
     switch (viewOrder) \
@@ -1627,7 +1627,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
 
         if ( all[i].isDir() ) {
             ///This is a directory
-            sequences.push_back( std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]) );
+            sequences.push_back( std::make_pair(SequenceParsing::SequenceFromFilesPtr(), all[i]) );
         } else {
             QString filename = all[i].fileName();
 
@@ -1639,7 +1639,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
 
             /// If file sequence fetching is disabled, accept it
             if ( !model->isSequenceModeEnabled() ) {
-                sequences.push_back( std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]) );
+                sequences.push_back( std::make_pair(SequenceParsing::SequenceFromFilesPtr(), all[i]) );
                 KERNEL_INCR();
                 continue;
             }
@@ -1662,7 +1662,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
             }
 
             if (!foundMatchingSequence) {
-                boost::shared_ptr<SequenceParsing::SequenceFromFiles> newSequence( new SequenceParsing::SequenceFromFiles(fileContent, true) );
+                SequenceParsing::SequenceFromFilesPtr newSequence( new SequenceParsing::SequenceFromFiles(fileContent, true) );
                 sequences.push_back( std::make_pair(newSequence, all[i]) );
             }
         }

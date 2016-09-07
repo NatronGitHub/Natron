@@ -337,8 +337,9 @@ public:
         return _wasBeginEditCalled;
     }
 
+;
+    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) OVERRIDE FINAL;
 
-    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) OVERRIDE FINAL;
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     virtual void drawHostOverlay(double time,
                                  const RenderScale& renderScale,

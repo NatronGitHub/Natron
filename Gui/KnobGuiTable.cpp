@@ -95,7 +95,7 @@ class KnobTableItemDelegate
     : public QStyledItemDelegate
 {
     TableView* _view;
-    boost::weak_ptr<KnobTable> _knob;
+    KnobTableWPtr _knob;
 
 public:
 

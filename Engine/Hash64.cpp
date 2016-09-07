@@ -67,7 +67,7 @@ Hash64::appendQString(const QString & str, Hash64* hash)
 }
 
 void
-Hash64::hash64AppendCurve(const CurvePtr& curve, Hash64* hash)
+Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
 {
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
     for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {

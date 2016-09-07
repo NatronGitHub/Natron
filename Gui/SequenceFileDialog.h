@@ -392,7 +392,7 @@ public:
      * @brief Append all files in the current directory and all its sub-directories recursively.
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir, QStringList* files);
-    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
+    static std::vector< SequenceParsing::SequenceFromFilesPtr >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
 
     /**
      * @brief Get the user preference regarding how the file should be fetched.

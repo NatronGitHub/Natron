@@ -35,6 +35,9 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#define ROTOPAINT_MAX_INPUTS_COUNT 11
+
+
 NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;

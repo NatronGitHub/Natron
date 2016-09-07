@@ -221,8 +221,8 @@ enum PositionInteractState
 class PositionInteract
     : public DefaultInteractI
 {
-    boost::weak_ptr<KnobDouble> _param;
-    boost::weak_ptr<KnobBool> _interactive;
+    KnobDoubleWPtr _param;
+    KnobBoolWPtr _interactive;
     QPointF _dragPos;
     bool _interactiveDrag;
     PositionInteractState _state;
@@ -349,16 +349,16 @@ class TransformInteract
         eOrientationVertical
     };
 
-    boost::weak_ptr<KnobDouble> _translate;
-    boost::weak_ptr<KnobDouble> _scale;
-    boost::weak_ptr<KnobBool> _scaleUniform;
-    boost::weak_ptr<KnobDouble> _rotate;
-    boost::weak_ptr<KnobDouble> _center;
-    boost::weak_ptr<KnobDouble> _skewX;
-    boost::weak_ptr<KnobDouble> _skewY;
-    boost::weak_ptr<KnobChoice> _skewOrder;
-    boost::weak_ptr<KnobBool> _invert;
-    boost::weak_ptr<KnobBool> _interactive;
+    KnobDoubleWPtr _translate;
+    KnobDoubleWPtr _scale;
+    KnobBoolWPtr _scaleUniform;
+    KnobDoubleWPtr _rotate;
+    KnobDoubleWPtr _center;
+    KnobDoubleWPtr _skewX;
+    KnobDoubleWPtr _skewY;
+    KnobChoiceWPtr _skewOrder;
+    KnobBoolWPtr _invert;
+    KnobBoolWPtr _interactive;
     DrawStateEnum _drawState;
     MouseStateEnum _mouseState;
     int _modifierStateCtrl;
@@ -596,11 +596,11 @@ public:
 class CornerPinInteract
     : public DefaultInteractI
 {
-    std::vector<boost::weak_ptr<KnobDouble> > _from, _to;
-    std::vector<boost::weak_ptr<KnobBool> > _enable;
-    boost::weak_ptr<KnobBool> _invert;
-    boost::weak_ptr<KnobChoice> _overlayPoints;
-    boost::weak_ptr<KnobBool> _interactive;
+    std::vector<KnobDoubleWPtr > _from, _to;
+    std::vector<KnobBoolWPtr > _enable;
+    KnobBoolWPtr _invert;
+    KnobChoiceWPtr _overlayPoints;
+    KnobBoolWPtr _interactive;
     int _dragging; // -1: idle, else dragging point number
     int _hovering; // -1: idle, else hovering point number
     Point _toDrag[4];
@@ -871,7 +871,7 @@ HostOverlay::getNode() const
 }
 
 bool
-HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
+HostOverlay::addInteract(const HostOverlayKnobsPtr& knobs)
 {
     assert( QThread::currentThread() == qApp->thread() );
 

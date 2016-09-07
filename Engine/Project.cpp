@@ -581,8 +581,6 @@ Project::saveProjectInternal(const QString & path,
             removeLockFile();
         }
         {
-            // The project file was modified, update the cache because the ID of all nodes have changed
-            refreshCacheIDRecursive();
 
             _imp->setProjectFilename( name.toStdString() );
             _imp->setProjectPath( path.toStdString() );
@@ -1515,7 +1513,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             if (reason == eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
                 for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                    (*it)->incrementKnobsAge();
+                    (*it)->getEffectInstance()->invalidateHashNotRecursive();
                 }
 
                 ///Format change, hence probably the PAR so run getClipPreferences again
@@ -2696,7 +2694,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         NodesList nodes;
         getActiveNodes(&nodes);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
+            if ( !(*it)->getParentMultiInstance() && (*it)->isPersistent() ) {
                 SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
                 (*it)->toSerialization(state.get());
                 serialization->_nodes.push_back(state);

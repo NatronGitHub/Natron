@@ -583,7 +583,7 @@ CurveWidget::paintGL()
         GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
-        boost::shared_ptr<OfxParamOverlayInteract> customInteract = getCustomInteract();
+        OfxParamOverlayInteractPtr customInteract = getCustomInteract();
         if (customInteract) {
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
@@ -2295,12 +2295,12 @@ CurveWidget::importCurveFromAscii()
 } // importCurveFromAscii
 
 void
-CurveWidget::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc)
+CurveWidget::setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc)
 {
     _imp->_customInteract = interactDesc;
 }
 
-boost::shared_ptr<OfxParamOverlayInteract>
+OfxParamOverlayInteractPtr
 CurveWidget::getCustomInteract() const
 {
     return _imp->_customInteract.lock();

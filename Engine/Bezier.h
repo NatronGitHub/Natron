@@ -669,7 +669,7 @@ private:
 };
 
 inline BezierPtr
-toBezier(const RotoItemPtr& item)
+toBezier(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<Bezier>(item);
 }

@@ -949,14 +949,14 @@ Bezier::Bezier(const RotoContextPtr& ctx,
                const std::string & name,
                const RotoLayerPtr& parent,
                bool isOpenBezier)
-    : RotoDrawableItem(ctx, name, parent, false)
+    : RotoDrawableItem(ctx, name, parent)
     , _imp( new BezierPrivate(isOpenBezier) )
 {
 }
 
 Bezier::Bezier(const Bezier & other,
                const RotoLayerPtr& parent)
-    : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
+    : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer() )
     , _imp( new BezierPrivate(false) )
 {
     clone(&other);
@@ -993,7 +993,7 @@ Bezier::dequeueGuiActions()
 
         _imp->isClockwiseOriented = _imp->guiIsClockwiseOriented;
         _imp->isClockwiseOrientedStatic = _imp->guiIsClockwiseOrientedStatic;
-        incrementNodesAge();
+        invalidateHashCache();
     }
 
     return mustCopy;
@@ -1076,7 +1076,7 @@ Bezier::clone(const RotoItem* other)
         _imp->isOpenBezier = otherBezier->_imp->isOpenBezier;
         _imp->finished = otherBezier->_imp->finished && !_imp->isOpenBezier;
     }
-    incrementNodesAge();
+    invalidateHashCache();
     RotoDrawableItem::clone(other);
     Q_EMIT cloned();
 }
@@ -1153,7 +1153,7 @@ Bezier::addControlPoint(double x,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
 
     return p;
 } // Bezier::addControlPoint
@@ -1359,7 +1359,7 @@ Bezier::addControlPointAfterIndex(int index,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
 
     return p;
 } // addControlPointAfterIndex
@@ -1471,7 +1471,7 @@ Bezier::setCurveFinished(bool finished)
 
     resetTransformCenter();
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(false);
 }
 
@@ -1509,7 +1509,7 @@ Bezier::removeControlPointByIndex(int index)
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(false);
 
     Q_EMIT controlPointRemoved();
@@ -1684,7 +1684,7 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(useGuiCurve, time);
     if (autoKeying) {
         setKeyframe(time);
@@ -1987,7 +1987,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(useGuiCurve, time);
     if (!useGuiCurve) {
         QMutexLocker k(&itemMutex);
@@ -2129,7 +2129,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(useGuiCurve, time);
     if (!useGuiCurve) {
         QMutexLocker k(&itemMutex);
@@ -2224,7 +2224,7 @@ Bezier::transformPoint(const BezierCPPtr & point,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(useGuiCurve, time);
     if (!useGuiCurve) {
         QMutexLocker k(&itemMutex);
@@ -2258,7 +2258,7 @@ Bezier::removeFeatherAtIndex(int index)
 
     (*fp)->clone(**cp);
 
-    incrementNodesAge();
+    invalidateHashCache();
 }
 
 void
@@ -2306,7 +2306,7 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
         }
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     refreshPolygonOrientation(useGuiCurve, time);
     if (autoKeying) {
         setKeyframe(time);
@@ -2415,7 +2415,7 @@ Bezier::removeKeyframe(double time)
         copyInternalPointsToGuiPoints();
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     getContext()->evaluateChange();
     Q_EMIT keyframeRemoved(time);
 }
@@ -2447,7 +2447,7 @@ Bezier::removeAnimation()
         copyInternalPointsToGuiPoints();
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     Q_EMIT animationRemoved();
 }
 
@@ -2503,7 +2503,7 @@ Bezier::moveKeyframe(double oldTime,
         copyInternalPointsToGuiPoints();
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
     Q_EMIT keyframeRemoved(oldTime);
     Q_EMIT keyframeSet(newTime);
 } // Bezier::moveKeyframe

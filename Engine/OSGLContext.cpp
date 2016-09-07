@@ -305,10 +305,10 @@ struct OSGLContextPrivate
     // The main FBO onto which we do all renders
     unsigned int fboID;
 
-    boost::shared_ptr<GLShaderBase> fillImageShader;
-    boost::shared_ptr<GLShaderBase> copyTexShader;
-    std::vector<boost::shared_ptr<GLShaderBase> > applyMaskMixShader;
-    std::vector<boost::shared_ptr<GLShaderBase> > copyUnprocessedChannelsShader;
+    GLShaderBasePtr fillImageShader;
+    GLShaderBasePtr copyTexShader;
+    std::vector<GLShaderBasePtr> applyMaskMixShader;
+    std::vector<GLShaderBasePtr> copyUnprocessedChannelsShader;
 
     OSGLContextPrivate(bool useGPUContext)
         : useGPUContext(useGPUContext)

@@ -1825,7 +1825,7 @@ SequenceFileDialog::selectedFiles()
         if (!item) {
             return selection;
         }
-        boost::shared_ptr<SequenceParsing::SequenceFromFiles> sequence = item->getSequence();
+        SequenceParsing::SequenceFromFilesPtr sequence = item->getSequence();
         if (sequence) {
             selection = sequence->generateValidSequencePattern();
         } else {
@@ -2815,11 +2815,11 @@ FileDialogComboBox::paintEvent(QPaintEvent* /*e*/)
     painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
 
-std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >
+std::vector< SequenceParsing::SequenceFromFilesPtr >
 SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
                                                const QStringList & supportedFileTypes)
 {
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    std::vector< SequenceParsing::SequenceFromFilesPtr > sequences;
 
     for (int i = 0; i < files.size(); ++i) {
         SequenceParsing::FileNameContent fileContent( files.at(i).toStdString() );
@@ -2837,7 +2837,7 @@ SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
             }
         }
         if (!found) {
-            boost::shared_ptr<SequenceParsing::SequenceFromFiles> seq( new SequenceParsing::SequenceFromFiles(fileContent, false) );
+            SequenceParsing::SequenceFromFilesPtr seq( new SequenceParsing::SequenceFromFiles(fileContent, false) );
             sequences.push_back(seq);
         }
     }
@@ -3012,7 +3012,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         _preview->viewerNode->getNode()->connectInput(reader, 0);
 
         double firstFrame, lastFrame;
-        reader->getEffectInstance()->getFrameRange_public(reader->getHashValue(), &firstFrame, &lastFrame);
+        reader->getEffectInstance()->getFrameRange_public(0, &firstFrame, &lastFrame);
         _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
         _preview->viewerUI->centerOn(firstFrame, lastFrame);
     }

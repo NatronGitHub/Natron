@@ -47,6 +47,14 @@ struct OSGLContext_osmesaPrivate
     }
 };
 
+void
+OSGLContext_osmesa::getOSMesaVersion(int* major, int* minor, int* rev)
+{
+    *major = OSMESA_MAJOR_VERSION;
+    *minor = OSMESA_MINOR_VERSION;
+    *rev = OSMESA_PATCH_VERSION;
+}
+
 OSGLContext_osmesa::OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs,
                                        int /*major*/,
                                        int /*minor*/,

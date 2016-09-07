@@ -97,6 +97,7 @@ class Descriptor;
 // SequenceParsing
 namespace SequenceParsing {
 class SequenceFromFiles;
+typedef boost::shared_ptr<SequenceFromFiles> SequenceFromFilesPtr;
 }
 
 // Natron Engine
@@ -226,7 +227,9 @@ class RotoItem;
 class RotoLayer;
 class RotoNode;
 class RotoPaint;
+class RotoPaintInteract;
 class RotoPoint;
+class RotoShapeRenderNodeOpenGLData;
 class RotoStrokeItem;
 class SerializableWindow;
 class Settings;
@@ -289,6 +292,7 @@ typedef boost::shared_ptr<GLShaderBase> GLShaderBasePtr;
 typedef boost::shared_ptr<GroupInput> GroupInputPtr;
 typedef boost::shared_ptr<GroupOutput> GroupOutputPtr;
 typedef boost::shared_ptr<HashableObject> HashableObjectPtr;
+typedef boost::shared_ptr<HostOverlayKnobs> HostOverlayKnobsPtr;
 typedef boost::shared_ptr<Image> ImagePtr;
 typedef boost::shared_ptr<ImageParams> ImageParamsPtr;
 typedef boost::shared_ptr<InspectorNode> InspectorNodePtr;
@@ -325,6 +329,7 @@ typedef boost::shared_ptr<NodeFrameRequest> NodeFrameRequestPtr;
 typedef boost::shared_ptr<NodeGroup> NodeGroupPtr;
 typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
 typedef boost::shared_ptr<OfxEffectInstance> OfxEffectInstancePtr;
+typedef boost::shared_ptr<OfxParamOverlayInteract> OfxParamOverlayInteractPtr;
 typedef boost::shared_ptr<OneViewNode> OneViewNodePtr;
 typedef boost::shared_ptr<OpenGLViewerI> OpenGLViewerIPtr;
 typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
@@ -347,13 +352,17 @@ typedef boost::shared_ptr<const RotoItem> RotoItemConstPtr;
 typedef boost::shared_ptr<RotoLayer> RotoLayerPtr;
 typedef boost::shared_ptr<RotoNode> RotoNodePtr;
 typedef boost::shared_ptr<RotoPaint> RotoPaintPtr;
+typedef boost::shared_ptr<RotoPaintInteract> RotoPaintInteractPtr;
+typedef boost::shared_ptr<RotoShapeRenderNodeOpenGLData> RotoShapeRenderNodeOpenGLDataPtr;
 typedef boost::shared_ptr<RotoStrokeItem> RotoStrokeItemPtr;
 typedef boost::shared_ptr<Settings> SettingsPtr;
 typedef boost::shared_ptr<Texture> GLTexturePtr;
+typedef boost::shared_ptr<TimeLapse> TimeLapsePtr;
 typedef boost::shared_ptr<TimeLine> TimeLinePtr;
 typedef boost::shared_ptr<TrackerContext> TrackerContextPtr;
 typedef boost::shared_ptr<TrackerNode> TrackerNodePtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;
+typedef boost::shared_ptr<TrackMarkerAndOptions> TrackMarkerAndOptionsPtr;
 typedef boost::shared_ptr<TrackMarkerPM> TrackMarkerPMPtr;
 typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<UpdateViewerParams> UpdateViewerParamsPtr;
@@ -367,17 +376,31 @@ typedef boost::weak_ptr<EffectInstance> EffectInstanceWPtr;
 typedef boost::weak_ptr<HashableObject> HashableObjectWPtr;
 typedef boost::weak_ptr<OSGLContext> OSGLContextWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;
+typedef boost::weak_ptr<KnobBool> KnobBoolWPtr;
+typedef boost::weak_ptr<KnobButton> KnobButtonWPtr;
+typedef boost::weak_ptr<KnobChoice> KnobChoiceWPtr;
+typedef boost::weak_ptr<KnobColor> KnobColorWPtr;
+typedef boost::weak_ptr<KnobDouble> KnobDoubleWPtr;
+typedef boost::weak_ptr<KnobFile> KnobFileWPtr;
+typedef boost::weak_ptr<KnobGroup> KnobGroupWPtr;
 typedef boost::weak_ptr<KnobGuiI> KnobGuiIWPtr;
 typedef boost::weak_ptr<KnobHolder> KnobHolderWPtr;
 typedef boost::weak_ptr<KnobI> KnobIWPtr;
 typedef boost::weak_ptr<KnobI const> KnobIConstWPtr;
+typedef boost::weak_ptr<KnobInt> KnobIntWPtr;
+typedef boost::weak_ptr<KnobOutputFile> KnobOutputFileWPtr;
 typedef boost::weak_ptr<KnobPage> KnobPageWPtr;
+typedef boost::weak_ptr<KnobPath> KnobPathWPtr;
 typedef boost::weak_ptr<KnobParametric> KnobParametricWPtr;
+typedef boost::weak_ptr<KnobSeparator> KnobSeparatorWPtr;
 typedef boost::weak_ptr<KnobString> KnobStringWPtr;
+typedef boost::weak_ptr<KnobTable> KnobTableWPtr;
 typedef boost::weak_ptr<Node> NodeWPtr;
 typedef boost::weak_ptr<Plugin> PluginWPtr;
 typedef boost::weak_ptr<PluginGroupNode> PluginGroupNodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;
+typedef boost::weak_ptr<PluginMemory> PluginMemoryWPtr;
+typedef boost::weak_ptr<RotoPaintInteract> RotoPaintInteractWPtr;
 typedef boost::weak_ptr<ViewerInstance> ViewerInstanceWPtr;
 typedef boost::weak_ptr<ViewerNode> ViewerNodeWPtr;
 typedef std::list<ImagePtr> ImageList;
@@ -421,7 +444,6 @@ class Tracker;
 class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
-
 
 NATRON_NAMESPACE_EXIT;
 

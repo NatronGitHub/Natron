@@ -160,8 +160,8 @@ static double
 transformTimeForNode(const EffectInstancePtr& currentNode,
                      double inTime)
 {
-    U64 nodeHash = currentNode->getHash();
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, ViewIdx(0), 0);
+    U64 nodeHash = currentNode->findCachedHash(inTime, ViewIdx(0));
+    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, ViewIdx(0));
     FramesNeededMap::iterator foundInput0 = framesNeeded.find(0 /*input*/);
 
     if ( foundInput0 == framesNeeded.end() ) {
@@ -191,8 +191,6 @@ ViewerTabPrivate::getTimeTransform(double time,
         return false;
     }
     if ( currentNode == target->getEffectInstance() ) {
-
-
         *newTime = time;
 
         return true;

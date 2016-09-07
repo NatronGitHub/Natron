@@ -85,8 +85,10 @@ public:
     
     /**
      * @brief Invalidate the hash cache and invalidate recursively the parent as well.
+     * This should be called after anything that the hash computation relies on has changed.
+     * Derived implementations must call the base class version.
      **/
-    void invalidateHashCache();
+    virtual void invalidateHashCache();
 
 protected:
 

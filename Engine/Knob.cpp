@@ -373,7 +373,7 @@ struct KnobHelperPrivate
 
     // Pointer to the ofx param overlay interact for ofx parameter which have a custom interact
     // This is only supported OpenFX-wise
-    boost::shared_ptr<OfxParamOverlayInteract> customInteract;
+    OfxParamOverlayInteractPtr customInteract;
 
     // Pointer to the knobGui interface if it has any
     KnobGuiIWPtr gui;
@@ -3342,13 +3342,13 @@ KnobHelper::setHintIsMarkdown(bool b)
 }
 
 void
-KnobHelper::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc)
+KnobHelper::setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->customInteract = interactDesc;
 }
 
-boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
+OfxParamOverlayInteractPtr KnobHelper::getCustomInteract() const
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -4320,13 +4320,17 @@ KnobHelper::randomSeed(double time,
     KnobHolderPtr holder = getHolder();
 
     if (holder) {
-#pragma message WARN("Urgent: Find a better way to get a hash for randomSeed because this too heavy!")
         EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
-            Hash64 h;
-            effect->getNode()->appendKnobsToFrameViewHash(time, ViewIdx(0), &h);
-            h.computeHash();
-            hash = h.value();
+            U64 cachedHash = effect->findCachedHash(time, ViewIdx(0));
+            if (cachedHash == 0) {
+                // Not cached.. compute a hash for the effect that does not depend on its inputs
+                Hash64 hashObj;
+                effect->computeHash_noCache(time, ViewIdx(0), &hashObj);
+                hashObj.computeHash();
+                cachedHash = hashObj.value();
+            }
+            hash = cachedHash;
         }
     }
     U32 hash32 = (U32)hash;

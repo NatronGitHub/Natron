@@ -62,7 +62,7 @@ class OfxClipInstance
     : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxClipInstance(const OfxEffectInstancePtr& node,
                     OfxImageEffectInstance* effect,
                     int index,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);

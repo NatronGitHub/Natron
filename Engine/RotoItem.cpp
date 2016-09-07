@@ -193,7 +193,7 @@ RotoItem::setGloballyActivated(bool a,
     if (c) {
         RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
         if (isDrawable) {
-            isDrawable->incrementNodesAge();
+            isDrawable->invalidateHashCache();
         }
         c->evaluateChange();
     }

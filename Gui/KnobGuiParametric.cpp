@@ -116,7 +116,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     KnobParametricPtr knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
-    boost::shared_ptr<OfxParamOverlayInteract> interact = knob->getCustomInteract();
+    OfxParamOverlayInteractPtr interact = knob->getCustomInteract();
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     treeColumn = new QWidget( layout->parentWidget() );

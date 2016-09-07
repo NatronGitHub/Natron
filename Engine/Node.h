@@ -1327,8 +1327,6 @@ public:
      **/
     void removeAllImagesFromCache();
 
-    void onActionEvaluated();
-
 public:
 
 

@@ -36,14 +36,11 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
+#include "Engine/EngineFwd.h"
 
 
 NATRON_NAMESPACE_ENTER;
-
-struct RotoPaintInteract;
-
 
 class MoveControlPointsUndoCommand
     : public UndoCommand
@@ -52,7 +49,7 @@ class MoveControlPointsUndoCommand
 
 public:
 
-    MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    MoveControlPointsUndoCommand(const RotoPaintInteractPtr& roto,
                                  const std::list< std::pair<BezierCPPtr, BezierCPPtr > > & toDrag
                                  ,
                                  double dx,
@@ -68,11 +65,11 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
+    KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     double _time; //< the time at which the change was made
     std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
@@ -96,7 +93,7 @@ public:
         eTransformMidTop
     };
 
-    TransformUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    TransformUndoCommand(const RotoPaintInteractPtr& roto,
                          double centerX,
                          double centerY,
                          double rot,
@@ -119,9 +116,9 @@ private:
     void transformPoint(const BezierCPPtr & point);
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _rippleEditEnabled;
-    boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
+    KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     double _time; //< the time at which the change was made
     std::list<RotoDrawableItemPtr > _selectedCurves;
@@ -135,7 +132,7 @@ class AddPointUndoCommand
 
 public:
 
-    AddPointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    AddPointUndoCommand(const RotoPaintInteractPtr& roto,
                         const BezierPtr & curve,
                         int index,
                         double t);
@@ -148,7 +145,7 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     BezierPtr _curve;
     int _index;
     double _t;
@@ -172,11 +169,11 @@ private:
 
 public:
 
-    RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
                            const BezierPtr & curve,
                            const BezierCPPtr & cp);
 
-    RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
                            const std::list< std::pair < BezierCPPtr, BezierCPPtr > > & points);
 
     virtual ~RemovePointUndoCommand();
@@ -185,7 +182,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     struct CurveOrdering
     {
         bool operator() (const CurveDesc & lhs,
@@ -216,7 +213,7 @@ private:
 public:
 
 
-    RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    RemoveCurveUndoCommand(const RotoPaintInteractPtr& roto,
                            const std::list<RotoDrawableItemPtr > & curves);
 
     virtual ~RemoveCurveUndoCommand();
@@ -225,7 +222,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     std::list<RemovedCurve> _curves;
 };
@@ -237,7 +234,7 @@ class AddStrokeUndoCommand
 
 public:
 
-    AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    AddStrokeUndoCommand(const RotoPaintInteractPtr& roto,
                          const RotoStrokeItemPtr& item);
 
     virtual ~AddStrokeUndoCommand();
@@ -246,7 +243,7 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     RotoStrokeItemPtr _item;
     RotoLayerPtr _layer;
@@ -260,7 +257,7 @@ class AddMultiStrokeUndoCommand
 
 public:
 
-    AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    AddMultiStrokeUndoCommand(const RotoPaintInteractPtr& roto,
                               const RotoStrokeItemPtr& item);
 
     virtual ~AddMultiStrokeUndoCommand();
@@ -269,7 +266,7 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     RotoStrokeItemPtr _item;
     RotoLayerPtr _layer;
@@ -286,7 +283,7 @@ class MoveTangentUndoCommand
 
 public:
 
-    MoveTangentUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    MoveTangentUndoCommand(const RotoPaintInteractPtr& roto,
                            double dx,
                            double dy,
                            double time,
@@ -303,7 +300,7 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
@@ -323,7 +320,7 @@ class MoveFeatherBarUndoCommand
 
 public:
 
-    MoveFeatherBarUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    MoveFeatherBarUndoCommand(const RotoPaintInteractPtr& roto,
                               double dx,
                               double dy,
                               const std::pair<BezierCPPtr, BezierCPPtr > & point,
@@ -337,7 +334,7 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     double _dx, _dy;
     bool _rippleEditEnabled;
@@ -361,7 +358,7 @@ public:
     };
 
 
-    RemoveFeatherUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    RemoveFeatherUndoCommand(const RotoPaintInteractPtr& roto,
                              const std::list<RemoveFeatherData> & datas);
 
     virtual ~RemoveFeatherUndoCommand();
@@ -370,7 +367,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedocalled;
     std::list<RemoveFeatherData> _datas;
 };
@@ -382,7 +379,7 @@ class OpenCloseUndoCommand
 
 public:
 
-    OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    OpenCloseUndoCommand(const RotoPaintInteractPtr& roto,
                          const BezierPtr & curve);
 
     virtual ~OpenCloseUndoCommand();
@@ -392,9 +389,9 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
-    boost::weak_ptr<KnobButton> _selectedTool;
+    KnobButtonWPtr _selectedTool;
     BezierPtr _curve;
 };
 
@@ -413,7 +410,7 @@ public:
         SelectedPointList newPoints, oldPoints;
     };
 
-    SmoothCuspUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    SmoothCuspUndoCommand(const RotoPaintInteractPtr& roto,
                           const std::list<SmoothCuspCurveData> & data,
                           double time,
                           bool cusp,
@@ -426,7 +423,7 @@ public:
     virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     double _time;
     int _count;
@@ -443,7 +440,7 @@ class MakeBezierUndoCommand
 
 public:
 
-    MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    MakeBezierUndoCommand(const RotoPaintInteractPtr& roto,
                           const BezierPtr & curve,
                           bool isOpenBezier,
                           bool createPoint,
@@ -463,7 +460,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     RotoLayerPtr _parentLayer;
     int _indexInLayer;
     BezierPtr _oldCurve, _newCurve;
@@ -484,7 +481,7 @@ class MakeEllipseUndoCommand
 
 public:
 
-    MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    MakeEllipseUndoCommand(const RotoPaintInteractPtr& roto,
                            bool create,
                            bool fromCenter,
                            bool constrained,
@@ -502,7 +499,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     RotoLayerPtr _parentLayer;
     int _indexInLayer;
     BezierPtr _curve;
@@ -522,7 +519,7 @@ class MakeRectangleUndoCommand
 
 public:
 
-    MakeRectangleUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+    MakeRectangleUndoCommand(const RotoPaintInteractPtr& roto,
                              bool create,
                              bool fromCenter,
                              bool constrained,
@@ -540,7 +537,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     RotoLayerPtr _parentLayer;
     int _indexInLayer;
     BezierPtr _curve;

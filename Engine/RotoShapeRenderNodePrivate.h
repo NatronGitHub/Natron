@@ -38,7 +38,7 @@ class RotoShapeRenderNodePrivate
 {
 public:
 
-    boost::weak_ptr<KnobChoice> outputComponents, renderType;
+    KnobChoiceWPtr outputComponents, renderType;
 
     // When drawing a smear with OSMesa we cannot use the output image directly
     // because the first draw done by OSMesa will clear the framebuffer instead

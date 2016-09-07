@@ -63,7 +63,7 @@ struct KnobGuiContainerHelperPrivate
 
     // Stores our KnobGui refered to by the internal Knob
     KnobsGuiMapping knobsMap;
-    boost::weak_ptr<KnobPageGui> currentPage;
+    KnobPageGuiWPtr currentPage;
     PagesMap pages;
     boost::shared_ptr<QUndoStack> undoStack; /*!< undo/redo stack*/
     QUndoCommand* cmdBeingPushed;

@@ -181,15 +181,16 @@ public:
     WriteNode* _publicInterface; // can not be a smart ptr
     NodeWPtr embeddedPlugin, readBackNode, inputNode, outputNode;
     SERIALIZATION_NAMESPACE::KnobSerializationList genericKnobsSerialization;
-    boost::weak_ptr<KnobOutputFile> outputFileKnob;
+    KnobOutputFileWPtr outputFileKnob;
+
 
     //Thiese are knobs owned by the ReadNode and not the Reader
-    boost::weak_ptr<KnobInt> frameIncrKnob;
-    boost::weak_ptr<KnobBool> readBackKnob;
-    boost::weak_ptr<KnobChoice> pluginSelectorKnob;
+    KnobIntWPtr frameIncrKnob;
+    KnobBoolWPtr readBackKnob;
+    KnobChoiceWPtr pluginSelectorKnob;
     KnobStringWPtr pluginIDStringKnob;
-    boost::weak_ptr<KnobSeparator> separatorKnob;
-    boost::weak_ptr<KnobButton> renderButtonKnob;
+    KnobSeparatorWPtr separatorKnob;
+    KnobButtonWPtr renderButtonKnob;
     std::list<KnobIWPtr > writeNodeKnobs;
 
     //MT only
@@ -510,7 +511,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         return;
     }
     double first, last;
-    writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
+    writeNode->getEffectInstance()->getFrameRange_public(0, &first, &last);
 
     {
         KnobIPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
@@ -562,7 +563,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 
         if (writeNode) {
             double first, last;
-            writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
+            writeNode->getEffectInstance()->getFrameRange_public(0, &first, &last);
             std::vector<int> originalRange(2);
             originalRange[0] = (int)first;
             originalRange[1] = (int)last;

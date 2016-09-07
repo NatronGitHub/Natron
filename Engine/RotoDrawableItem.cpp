@@ -96,35 +96,17 @@ NATRON_NAMESPACE_ENTER;
 
 RotoDrawableItem::RotoDrawableItem(const RotoContextPtr& context,
                                    const std::string & name,
-                                   const RotoLayerPtr& parent,
-                                   bool isStroke)
+                                   const RotoLayerPtr& parent)
     : RotoItem(context, name, parent)
-    , _imp( new RotoDrawableItemPrivate(isStroke) )
+    , _imp( new RotoDrawableItemPrivate() )
 {
-#ifdef NATRON_ROTO_INVERTIBLE
-    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(invertedStateChanged()) );
-#endif
     QObject::connect( this, SIGNAL(overlayColorChanged()), context.get(), SIGNAL(refreshViewerOverlays()) );
-    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
-    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this,
-                      SIGNAL(compositingOperatorChanged(ViewSpec,int,int)) );
-    std::vector<std::string> operators;
-    std::vector<std::string> tooltips;
-    Merge::getOperatorStrings(&operators, &tooltips);
-
-    _imp->compOperator->populateChoices(operators, tooltips);
-    _imp->compOperator->setDefaultValueFromLabel( Merge::getOperatorString(eMergeCopy) );
 }
 
 RotoDrawableItem::~RotoDrawableItem()
 {
 }
 
-void
-RotoDrawableItem::addKnob(const KnobIPtr& knob)
-{
-    _imp->knobs.push_back(knob);
-}
 
 void
 RotoDrawableItem::setNodesThreadSafetyForRotopainting()
@@ -174,11 +156,6 @@ static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode
 void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
-    const std::list<KnobIPtr >& knobs = getKnobs();
-
-    for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onRotoKnobChanged(ViewSpec,int,int)) );
-    }
 
     RotoContextPtr context = getContext();
     RotoPaintPtr rotoPaintEffect = toRotoPaint(context->getNode()->getEffectInstance());
@@ -202,7 +179,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         type = eRotoStrokeTypeSolid;
     }
 
-    QString maskPluginID = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
+    const QString maskPluginID = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
 
     switch (type) {
     case eRotoStrokeTypeBlur:
@@ -244,6 +221,57 @@ RotoDrawableItem::createNodes(bool connectNodes)
         }
         assert(_imp->effectNode);
 
+        if (type == eRotoStrokeTypeBlur) {
+            // Link effect knob to size
+            KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                knob->slaveTo(i, _imp->effectStrength.lock(), 0);
+            }
+        } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
+            // Link transform knobs
+            KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+            for (int i = 0; i < translateKnob->getDimension(); ++i) {
+                translateKnob->slaveTo(i, _imp->cloneTranslate.lock(), i);
+            }
+            KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+            for (int i = 0; i < rotateKnob->getDimension(); ++i) {
+                rotateKnob->slaveTo(i, _imp->cloneRotate.lock(), i);
+            }
+            KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+            for (int i = 0; i < scaleKnob->getDimension(); ++i) {
+                scaleKnob->slaveTo(i, _imp->cloneScale.lock(), i);
+            }
+            KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+            for (int i = 0; i < uniformKnob->getDimension(); ++i) {
+                uniformKnob->slaveTo(i, _imp->cloneScaleUniform.lock(), i);
+            }
+            KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+            for (int i = 0; i < skewxKnob->getDimension(); ++i) {
+                skewxKnob->slaveTo(i, _imp->cloneSkewX.lock(), i);
+            }
+            KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+            for (int i = 0; i < skewyKnob->getDimension(); ++i) {
+                skewyKnob->slaveTo(i, _imp->cloneSkewY.lock(), i);
+            }
+            KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+            for (int i = 0; i < skewOrderKnob->getDimension(); ++i) {
+                skewOrderKnob->slaveTo(i, _imp->cloneSkewOrder.lock(), i);
+            }
+            KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+            for (int i = 0; i < centerKnob->getDimension(); ++i) {
+                centerKnob->slaveTo(i, _imp->cloneCenter.lock(), i);
+            }
+            KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+            for (int i = 0; i < filterKnob->getDimension(); ++i) {
+                filterKnob->slaveTo(i, _imp->cloneFilter.lock(), i);
+            }
+            KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+            for (int i = 0; i < boKnob->getDimension(); ++i) {
+                boKnob->slaveTo(i, _imp->cloneBlackOutside.lock(), i);
+            }
+
+        }
+
         if (type == eRotoStrokeTypeSmear) {
             // For smear setup the type parameter
             KnobIPtr knob = _imp->effectNode->getKnobByName(kRotoShapeRenderNodeParamType);
@@ -263,10 +291,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
                 _imp->timeOffsetNode = app->createNode(args);
+                assert(_imp->timeOffsetNode);
                 if (!_imp->timeOffsetNode) {
                     throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_TIMEOFFSET " in order to work");
                 }
-                assert(_imp->timeOffsetNode);
+
+                // Link time offset knob
+                KnobIPtr offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+                offsetKnob->slaveTo(0, _imp->timeOffset.lock(), 0);
             }
             {
                 fixedNamePrefix = baseFixedName;
@@ -276,10 +308,13 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
                 _imp->frameHoldNode = app->createNode(args);
+                assert(_imp->frameHoldNode);
                 if (!_imp->frameHoldNode) {
                     throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_FRAMEHOLD " in order to work");
                 }
-                assert(_imp->frameHoldNode);
+                // Link time offset knob
+                KnobIPtr offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+                offsetKnob->slaveTo(0, _imp->timeOffset.lock(), 0);
             }
         }
     }
@@ -293,10 +328,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
+    assert(_imp->mergeNode);
     if (!_imp->mergeNode) {
         throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_MERGE " in order to work");
     }
-    assert(_imp->mergeNode);
 
     {
         // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
@@ -311,6 +346,15 @@ RotoDrawableItem::createNodes(bool connectNodes)
             mergeRGBA[i]->slaveTo(0, rotoPaintRGBA[i], 0);
         }
 
+        // Link the compositing operator to this knob
+        KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+        mergeOperatorKnob->slaveTo(0, _imp->compOperator.lock(), 0);
+
+#ifdef NATRON_ROTO_INVERTIBLE
+        // Link mask invert knob
+        KnobIPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
+        mergeMaskInvertKnob->slaveTo(0, _imp->invertKnob.lock(), 0);
+#endif
     }
 
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
@@ -325,10 +369,13 @@ RotoDrawableItem::createNodes(bool connectNodes)
             args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
             _imp->maskNode = app->createNode(args);
+            assert(_imp->maskNode);
             if (!_imp->maskNode) {
                 throw std::runtime_error("Rotopaint requires the plug-in " + maskPluginID.toStdString() + " in order to work");
             }
-            assert(_imp->maskNode);
+
+            // For drawn masks, the hash depend on the draw bezier/stroke, hence we need to add this item as a child of the RotoShapeRenderNode
+            setHashParent(_imp->maskNode->getEffectInstance());
             {
                 // For masks set the output components to alpha
                 KnobIPtr knob = _imp->maskNode->getKnobByName(kRotoShapeRenderNodeParamOutputComponents);
@@ -360,16 +407,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     compOp->setDefaultValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
-        if (type == eRotoStrokeTypeBlur) {
-            double strength = isStroke->getBrushEffectKnob()->getValue();
-            KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            KnobDoublePtr isDbl = toKnobDouble(knob);
-            if (isDbl) {
-                isDbl->setValues(strength, strength, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
-            }
-        } else if (type == eRotoStrokeTypeSharpen) {
-            //todo
-        } else if (type == eRotoStrokeTypeSmear) {
+        if (type == eRotoStrokeTypeSmear) {
             KnobDoublePtr spacingKnob = isStroke->getBrushSpacingKnob();
             assert(spacingKnob);
             spacingKnob->setValue(0.05);
@@ -537,179 +575,47 @@ RotoDrawableItem::findPreviousInHierarchy()
         return RotoDrawableItemPtr();
     }
 
-    return findPreviousOfItemInLayer(layer, shared_from_this());
+    return findPreviousOfItemInLayer(layer, toRotoItem(shared_from_this()));
 }
 
-void
-RotoDrawableItem::onRotoKnobChanged(ViewSpec /*view*/,
-                                    int /*dimension*/,
-                                    int reason)
+
+bool
+RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
+                        ValueChangedReasonEnum reason,
+                        double /*time*/,
+                        ViewSpec /*view*/,
+                        bool /*originatedFromMainThread*/)
 {
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    if (!handler) {
-        return;
-    }
-
-    KnobIPtr triggerKnob = handler->getKnob();
-    assert(triggerKnob);
-    rotoKnobChanged(triggerKnob, (ValueChangedReasonEnum)reason);
-}
-
-void
-RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
-                                  ValueChangedReasonEnum reason)
-{
-    KnobChoicePtr compKnob = getOperatorKnob();
-
-#ifdef NATRON_ROTO_INVERTIBLE
-    KnobBoolPtr invertKnob = getInvertedKnob();
-#endif
-
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    RotoStrokeType type;
-
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
-    }
-
-    if ( (reason == eValueChangedReasonSlaveRefresh) && (knob != _imp->center) && (knob != _imp->cloneCenter) ) {
+    // Any knob except transform center should break the multi-stroke into a new stroke
+    if ( (reason == eValueChangedReasonSlaveRefresh) && (knob != _imp->center.lock()) && (knob != _imp->cloneCenter.lock()) ) {
+#pragma message WARN("Check if the reason is correct here, shouldn't it be user edited?")
         getContext()->s_breakMultiStroke();
     }
 
-    if (knob == compKnob) {
-        KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        KnobChoicePtr mergeOp = toKnobChoice(mergeOperatorKnob);
-        if (mergeOp) {
-            mergeOp->setValueFromLabel(compKnob->getEntry( compKnob->getValue() ), 0);
-        }
-
+    if (knob == _imp->compOperator.lock()) {
         ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
         if (reason == eValueChangedReasonUserEdited) {
             getContext()->refreshRotoPaintTree();
         }
     }
 #ifdef NATRON_ROTO_INVERTIBLE
-    else if (knob == invertKnob) {
-        KnobIPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
-        KnobBoolPtr mergeMaskInv = toKnobBool( mergeMaskInvertKnob );
-        if (mergeMaskInv) {
-            mergeMaskInv->setValue( invertKnob->getValue() );
-        }
-
-        ///Since the invert state might have changed, we may have to change the rotopaint tree layout
+    else if (knob == _imp->invertKnob.lock()) {
+        // Since the invert state might have changed, we may have to change the rotopaint tree layout
         if (reason == eValueChangedReasonUserEdited) {
             getContext()->refreshRotoPaintTree();
         }
     }
 #endif
-    else if (knob == _imp->sourceColor) {
+    else if (knob == _imp->sourceColor.lock()) {
         refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
-    } else if (knob == _imp->effectStrength) {
-        double strength = _imp->effectStrength->getValue();
-        switch (type) {
-        case eRotoStrokeTypeBlur: {
-            KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            KnobDoublePtr isDbl = toKnobDouble(knob);
-            if (isDbl) {
-                isDbl->setValues(strength, strength, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-            }
-            break;
-        }
-        case eRotoStrokeTypeSharpen: {
-            //todo
-            break;
-        }
-        default:
-            //others don't have a control
-            break;
-        }
-    } else if ( (knob == _imp->timeOffset) && _imp->timeOffsetNode ) {
-        int offsetMode_i = _imp->timeOffsetMode->getValue();
-        KnobIPtr offsetKnob;
-
-        if (offsetMode_i == 0) {
-            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-        } else {
-            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-        }
-        KnobIntPtr offset = toKnobInt(offsetKnob);
-        if (offset) {
-            double value = _imp->timeOffset->getValue();
-            offset->setValue(value);
-        }
-    } else if ( (knob == _imp->timeOffsetMode) && _imp->timeOffsetNode ) {
+    } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
         refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
     }
 
-    if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
-        if (knob == _imp->cloneTranslate) {
-            KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            KnobDoublePtr translate = toKnobDouble(translateKnob);
-            if (translate) {
-                translate->clone(_imp->cloneTranslate);
-            }
-        } else if (knob == _imp->cloneRotate) {
-            KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            KnobDoublePtr rotate = toKnobDouble(rotateKnob);
-            if (rotate) {
-                rotate->clone(_imp->cloneRotate);
-            }
-        } else if (knob == _imp->cloneScale) {
-            KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            KnobDoublePtr scale = toKnobDouble(scaleKnob);
-            if (scale) {
-                scale->clone(_imp->cloneScale);
-            }
-        } else if (knob == _imp->cloneScaleUniform) {
-            KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            KnobBoolPtr uniform = toKnobBool(uniformKnob);
-            if (uniform) {
-                uniform->clone(_imp->cloneScaleUniform);
-            }
-        } else if (knob == _imp->cloneSkewX) {
-            KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            KnobDoublePtr skewX = toKnobDouble(skewxKnob);
-            if (skewX) {
-                skewX->clone(_imp->cloneSkewX);
-            }
-        } else if (knob == _imp->cloneSkewY) {
-            KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            KnobDoublePtr skewY = toKnobDouble(skewyKnob);
-            if (skewY) {
-                skewY->clone(_imp->cloneSkewY);
-            }
-        } else if (knob == _imp->cloneSkewOrder) {
-            KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            KnobChoicePtr skewOrder = toKnobChoice(skewOrderKnob);
-            if (skewOrder) {
-                skewOrder->clone(_imp->cloneSkewOrder);
-            }
-        } else if (knob == _imp->cloneCenter) {
-            KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            KnobDoublePtr center = toKnobDouble(centerKnob);
-            if (center) {
-                center->clone(_imp->cloneCenter);
-            }
-        } else if (knob == _imp->cloneFilter) {
-            KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            KnobChoicePtr filter = toKnobChoice(filterKnob);
-            if (filter) {
-                filter->clone(_imp->cloneFilter);
-            }
-        } else if (knob == _imp->cloneBlackOutside) {
-            KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            KnobBoolPtr bo = toKnobBool(boKnob);
-            if (bo) {
-                bo->clone(_imp->cloneBlackOutside);
-            }
-        }
-    }
 
+    return true;
+} // RotoDrawableItem::onKnobValueChanged
 
-} // RotoDrawableItem::rotoKnobChanged
 
 
 NodePtr
@@ -799,7 +705,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
         if (!_imp->timeOffsetNode) {
             effectInput = _imp->effectNode;
         } else {
-            double timeOffsetMode_i = _imp->timeOffsetMode->getValue();
+            double timeOffsetMode_i = _imp->timeOffsetMode.lock()->getValue();
             if (timeOffsetMode_i == 0) {
                 //relative
                 effectInput = _imp->timeOffsetNode;
@@ -835,7 +741,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
         }
 
 
-        int reveal_i = _imp->sourceColor->getValue();
+        int reveal_i = _imp->sourceColor.lock()->getValue();
         NodePtr revealInput;
         bool shouldUseUpstreamForReveal = true;
         if ( ( (type == eRotoStrokeTypeReveal) ||
@@ -958,14 +864,14 @@ RotoDrawableItem::clone(const RotoItem* other)
     if (!otherDrawable) {
         return;
     }
-    const std::list<KnobIPtr >& otherKnobs = otherDrawable->getKnobs();
-    assert( otherKnobs.size() == _imp->knobs.size() );
-    if ( otherKnobs.size() != _imp->knobs.size() ) {
+    const KnobsVec& otherKnobs = otherDrawable->getKnobs();
+    const KnobsVec& knobs = getKnobs();
+    if (knobs.size() != otherKnobs.size()) {
         return;
     }
-    std::list<KnobIPtr >::iterator it = _imp->knobs.begin();
-    std::list<KnobIPtr >::const_iterator otherIt = otherKnobs.begin();
-    for (; it != _imp->knobs.end(); ++it, ++otherIt) {
+    KnobsVec::const_iterator it = knobs.begin();
+    KnobsVec::const_iterator otherIt = otherKnobs.begin();
+    for (; it != knobs.end(); ++it, ++otherIt) {
         (*it)->clone(*otherIt);
     }
     {
@@ -1001,7 +907,8 @@ RotoDrawableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBa
     if (!s) {
         throw std::logic_error("RotoDrawableItem::save()");
     }
-    for (std::list<KnobIPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         SERIALIZATION_NAMESPACE::KnobSerializationPtr k;
         serializeRotoKnob( *it, &k );
         if (k->_mustSerialize) {
@@ -1025,8 +932,9 @@ RotoDrawableItem::fromSerialization(const SERIALIZATION_NAMESPACE::Serialization
 
     RotoItem::fromSerialization(obj);
 
+    const KnobsVec& knobs = getKnobs();
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->_knobs.begin(); it != s->_knobs.end(); ++it) {
-        for (std::list<KnobIPtr >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
                 boost::shared_ptr<KnobSignalSlotHandler> slot = (*it2)->getSignalSlotHandler();
                 slot->blockSignals(true);
@@ -1041,92 +949,6 @@ RotoDrawableItem::fromSerialization(const SERIALIZATION_NAMESPACE::Serialization
         std::memcpy(_imp->overlayColor, s->_overlayColor, sizeof(double) * 4);
     }
 
-    RotoStrokeType type;
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
-    }
-
-    KnobChoicePtr compKnob = getOperatorKnob();
-    KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
-    if (mergeOp) {
-        mergeOp->setValueFromLabel(compKnob->getEntry( compKnob->getValue() ), 0);
-    }
-
-    if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
-        KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-        KnobDoublePtr translate = toKnobDouble( translateKnob );
-        if (translate) {
-            translate->clone( _imp->cloneTranslate );
-        }
-        KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-        KnobDoublePtr rotate = toKnobDouble( rotateKnob );
-        if (rotate) {
-            rotate->clone( _imp->cloneRotate );
-        }
-        KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-        KnobDoublePtr scale = toKnobDouble( scaleKnob );
-        if (scale) {
-            scale->clone( _imp->cloneScale );
-        }
-        KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-        KnobBoolPtr uniform = toKnobBool( uniformKnob );
-        if (uniform) {
-            uniform->clone( _imp->cloneScaleUniform );
-        }
-        KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-        KnobDoublePtr skewX = toKnobDouble( skewxKnob );
-        if (skewX) {
-            skewX->clone( _imp->cloneSkewX );
-        }
-        KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-        KnobDoublePtr skewY = toKnobDouble( skewyKnob );
-        if (skewY) {
-            skewY->clone( _imp->cloneSkewY );
-        }
-        KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-        KnobChoicePtr skewOrder = toKnobChoice( skewOrderKnob );
-        if (skewOrder) {
-            skewOrder->clone( _imp->cloneSkewOrder );
-        }
-        KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-        KnobDoublePtr center = toKnobDouble( centerKnob );
-        if (center) {
-            center->clone( _imp->cloneCenter );
-        }
-        KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-        KnobChoicePtr filter = toKnobChoice( filterKnob );
-        if (filter) {
-            filter->clone( _imp->cloneFilter );
-        }
-        KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-        KnobBoolPtr bo = toKnobBool( boKnob );
-        if (bo) {
-            bo->clone( _imp->cloneBlackOutside );
-        }
-
-        int offsetMode_i = _imp->timeOffsetMode->getValue();
-        KnobIPtr offsetKnob;
-
-        if (offsetMode_i == 0) {
-            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-        } else {
-            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-        }
-        KnobIntPtr offset = toKnobInt( offsetKnob );
-        if (offset) {
-            offset->clone( _imp->timeOffset );
-        }
-    } else if (type == eRotoStrokeTypeBlur) {
-        KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        KnobDoublePtr isDbl = toKnobDouble(knob);
-        if (isDbl) {
-            isDbl->clone( _imp->effectStrength );
-        }
-    }
 } // RotoDrawableItem::load
 
 bool
@@ -1136,15 +958,15 @@ RotoDrawableItem::isActivated(double time) const
         return false;
     }
     try {
-        int lifetime_i = _imp->lifeTime->getValue();
+        int lifetime_i = _imp->lifeTime.lock()->getValue();
         if (lifetime_i == 0) {
-            return time == _imp->lifeTimeFrame->getValue();
+            return time == _imp->lifeTimeFrame.lock()->getValue();
         } else if (lifetime_i == 1) {
-            return time <= _imp->lifeTimeFrame->getValue();
+            return time <= _imp->lifeTimeFrame.lock()->getValue();
         } else if (lifetime_i == 2) {
-            return time >= _imp->lifeTimeFrame->getValue();
+            return time >= _imp->lifeTimeFrame.lock()->getValue();
         } else {
-            return _imp->activated->getValueAtTime(time);
+            return _imp->activated.lock()->getValueAtTime(time);
         }
     } catch (std::runtime_error) {
         return false;
@@ -1155,7 +977,7 @@ void
 RotoDrawableItem::setActivated(bool a,
                                double time)
 {
-    _imp->activated->setValueAtTime(time, a, ViewSpec::all(), 0);
+    _imp->activated.lock()->setValueAtTime(time, a, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1163,14 +985,14 @@ double
 RotoDrawableItem::getOpacity(double time) const
 {
     ///MT-safe thanks to Knob
-    return _imp->opacity->getValueAtTime(time);
+    return _imp->opacity.lock()->getValueAtTime(time);
 }
 
 void
 RotoDrawableItem::setOpacity(double o,
                              double time)
 {
-    _imp->opacity->setValueAtTime(time, o, ViewSpec::all(), 0);
+    _imp->opacity.lock()->setValueAtTime(time, o, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1178,28 +1000,28 @@ double
 RotoDrawableItem::getFeatherDistance(double time) const
 {
     ///MT-safe thanks to Knob
-    return _imp->feather->getValueAtTime(time);
+    return _imp->feather.lock()->getValueAtTime(time);
 }
 
 void
 RotoDrawableItem::setFeatherDistance(double d,
                                      double time)
 {
-    _imp->feather->setValueAtTime(time, d, ViewSpec::all(), 0);
+    _imp->feather.lock()->setValueAtTime(time, d, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
 int
 RotoDrawableItem::getNumKeyframesFeatherDistance() const
 {
-    return _imp->feather->getKeyFramesCount(ViewSpec::current(), 0);
+    return _imp->feather.lock()->getKeyFramesCount(ViewSpec::current(), 0);
 }
 
 void
 RotoDrawableItem::setFeatherFallOff(double f,
                                     double time)
 {
-    _imp->featherFallOff->setValueAtTime(time, f, ViewSpec::all(), 0);
+    _imp->featherFallOff.lock()->setValueAtTime(time, f, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1207,7 +1029,7 @@ double
 RotoDrawableItem::getFeatherFallOff(double time) const
 {
     ///MT-safe thanks to Knob
-    return _imp->featherFallOff->getValueAtTime(time);
+    return _imp->featherFallOff.lock()->getValueAtTime(time);
 }
 
 bool
@@ -1228,9 +1050,10 @@ void
 RotoDrawableItem::getColor(double time,
                            double* color) const
 {
-    color[0] = _imp->color->getValueAtTime(time, 0);
-    color[1] = _imp->color->getValueAtTime(time, 1);
-    color[2] = _imp->color->getValueAtTime(time, 2);
+    KnobColorPtr colorKnob = _imp->color.lock();
+    color[0] = colorKnob->getValueAtTime(time, 0);
+    color[1] = colorKnob->getValueAtTime(time, 1);
+    color[2] = colorKnob->getValueAtTime(time, 2);
 }
 
 void
@@ -1239,28 +1062,29 @@ RotoDrawableItem::setColor(double time,
                            double g,
                            double b)
 {
-    _imp->color->setValueAtTime(time, r, ViewSpec::all(), 0);
-    _imp->color->setValueAtTime(time, g, ViewSpec::all(), 1);
-    _imp->color->setValueAtTime(time, b, ViewSpec::all(), 2);
+    KnobColorPtr colorKnob = _imp->color.lock();
+    colorKnob->setValueAtTime(time, r, ViewSpec::all(), 0);
+    colorKnob->setValueAtTime(time, g, ViewSpec::all(), 1);
+    colorKnob->setValueAtTime(time, b, ViewSpec::all(), 2);
     getContext()->onItemKnobChanged();
 }
 
 int
 RotoDrawableItem::getCompositingOperator() const
 {
-    return _imp->compOperator->getValue();
+    return _imp->compOperator.lock()->getValue();
 }
 
 void
 RotoDrawableItem::setCompositingOperator(int op)
 {
-    _imp->compOperator->setValue( op);
+    _imp->compOperator.lock()->setValue( op);
 }
 
 std::string
 RotoDrawableItem::getCompositingOperatorToolTip() const
 {
-    return _imp->compOperator->getHintToolTipFull();
+    return _imp->compOperator.lock()->getHintToolTipFull();
 }
 
 void
@@ -1292,29 +1116,29 @@ RotoDrawableItem::setOverlayColor(const double *color)
 
 KnobBoolPtr RotoDrawableItem::getActivatedKnob() const
 {
-    return _imp->activated;
+    return _imp->activated.lock();
 }
 
 KnobDoublePtr RotoDrawableItem::getFeatherKnob() const
 {
-    return _imp->feather;
+    return _imp->feather.lock();
 }
 
 KnobDoublePtr RotoDrawableItem::getFeatherFallOffKnob() const
 {
-    return _imp->featherFallOff;
+    return _imp->featherFallOff.lock();
 }
 
 KnobDoublePtr RotoDrawableItem::getOpacityKnob() const
 {
-    return _imp->opacity;
+    return _imp->opacity.lock();
 }
 
 KnobBoolPtr RotoDrawableItem::getInvertedKnob() const
 {
 #ifdef NATRON_ROTO_INVERTIBLE
 
-    return _imp->inverted;
+    return _imp->inverted.lock();
 #else
 
     return KnobBoolPtr();
@@ -1323,108 +1147,108 @@ KnobBoolPtr RotoDrawableItem::getInvertedKnob() const
 
 KnobChoicePtr RotoDrawableItem::getOperatorKnob() const
 {
-    return _imp->compOperator;
+    return _imp->compOperator.lock();
 }
 
 KnobColorPtr RotoDrawableItem::getColorKnob() const
 {
-    return _imp->color;
+    return _imp->color.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getBrushSizeKnob() const
 {
-    return _imp->brushSize;
+    return _imp->brushSize.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getBrushHardnessKnob() const
 {
-    return _imp->brushHardness;
+    return _imp->brushHardness.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getBrushSpacingKnob() const
 {
-    return _imp->brushSpacing;
+    return _imp->brushSpacing.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getBrushEffectKnob() const
 {
-    return _imp->effectStrength;
+    return _imp->effectStrength.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getBrushVisiblePortionKnob() const
 {
-    return _imp->visiblePortion;
+    return _imp->visiblePortion.lock();
 }
 
 KnobBoolPtr
 RotoDrawableItem::getPressureOpacityKnob() const
 {
-    return _imp->pressureOpacity;
+    return _imp->pressureOpacity.lock();
 }
 
 KnobBoolPtr
 RotoDrawableItem::getPressureSizeKnob() const
 {
-    return _imp->pressureSize;
+    return _imp->pressureSize.lock();
 }
 
 KnobBoolPtr
 RotoDrawableItem::getPressureHardnessKnob() const
 {
-    return _imp->pressureHardness;
+    return _imp->pressureHardness.lock();
 }
 
 KnobBoolPtr
 RotoDrawableItem::getBuildupKnob() const
 {
-    return _imp->buildUp;
+    return _imp->buildUp.lock();
 }
 
 KnobIntPtr
 RotoDrawableItem::getTimeOffsetKnob() const
 {
-    return _imp->timeOffset;
+    return _imp->timeOffset.lock();
 }
 
 KnobChoicePtr
 RotoDrawableItem::getTimeOffsetModeKnob() const
 {
-    return _imp->timeOffsetMode;
+    return _imp->timeOffsetMode.lock();
 }
 
 KnobChoicePtr
 RotoDrawableItem::getBrushSourceTypeKnob() const
 {
-    return _imp->sourceColor;
+    return _imp->sourceColor.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getBrushCloneTranslateKnob() const
 {
-    return _imp->cloneTranslate;
+    return _imp->cloneTranslate.lock();
 }
 
 KnobDoublePtr
 RotoDrawableItem::getCenterKnob() const
 {
-    return _imp->center;
+    return _imp->center.lock();
 }
 
 KnobIntPtr
 RotoDrawableItem::getLifeTimeFrameKnob() const
 {
-    return _imp->lifeTimeFrame;
+    return _imp->lifeTimeFrame.lock();
 }
 
 KnobChoicePtr
 RotoDrawableItem::getFallOffRampTypeKnob() const
 {
-    return _imp->fallOffRampType;
+    return _imp->fallOffRampType.lock();
 }
 
 
@@ -1445,7 +1269,7 @@ RotoDrawableItem::getShutterOffsetKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
 
-    return _imp->customOffset;
+    return _imp->customOffset.lock();
 #else
 
     return KnobDoublePtr();
@@ -1457,7 +1281,7 @@ RotoDrawableItem::getShutterKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
 
-    return _imp->shutter;
+    return _imp->shutter.lock();
 #else
 
     return KnobDoublePtr();
@@ -1469,7 +1293,7 @@ RotoDrawableItem::getShutterTypeKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
 
-    return _imp->shutterType;
+    return _imp->shutterType.lock();
 #else
 
     return KnobChoicePtr();
@@ -1479,58 +1303,56 @@ RotoDrawableItem::getShutterTypeKnob() const
 void
 RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 {
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), ViewSpec::all(), 0);
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), ViewSpec::all(), 1);
+    KnobDoublePtr translate = _imp->translate.lock();
+    translate->setValueAtTime(time, translate->getValue(0), ViewSpec::all(), 0);
+    translate->setValueAtTime(time, translate->getValue(1), ViewSpec::all(), 1);
 
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), ViewSpec::all(), 0);
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), ViewSpec::all(), 1);
+    KnobDoublePtr scale = _imp->scale.lock();
+    scale->setValueAtTime(time, scale->getValue(0), ViewSpec::all(), 0);
+    scale->setValueAtTime(time, scale->getValue(1), ViewSpec::all(), 1);
 
-    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), ViewSpec::all(), 0);
+    KnobDoublePtr rotate = _imp->rotate.lock();
+    rotate->setValueAtTime(time, rotate->getValue(0), ViewSpec::all(), 0);
 
-    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), ViewSpec::all(), 0);
-    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), ViewSpec::all(), 0);
+    KnobDoublePtr skewX = _imp->skewX.lock();
+    KnobDoublePtr skewY = _imp->skewY.lock();
+    skewX->setValueAtTime(time, skewX->getValue(0), ViewSpec::all(), 0);
+    skewY->setValueAtTime(time, skewY->getValue(0), ViewSpec::all(), 0);
 }
 
-const std::list<KnobIPtr >&
-RotoDrawableItem::getKnobs() const
-{
-    return _imp->knobs;
-}
-
-KnobIPtr
-RotoDrawableItem::getKnobByName(const std::string& name) const
-{
-    for (std::list<KnobIPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if ( (*it)->getName() == name ) {
-            return *it;
-        }
-    }
-
-    return KnobIPtr();
-}
 
 void
 RotoDrawableItem::getTransformAtTime(double time,
                                      Transform::Matrix3x3* matrix) const
 {
-    double tx = _imp->translate->getValueAtTime(time, 0);
-    double ty = _imp->translate->getValueAtTime(time, 1);
-    double sx = _imp->scale->getValueAtTime(time, 0);
-    double sy = _imp->scaleUniform->getValueAtTime(time) ? sx : _imp->scale->getValueAtTime(time, 1);
-    double skewX = _imp->skewX->getValueAtTime(time, 0);
-    double skewY = _imp->skewY->getValueAtTime(time, 0);
-    double rot = _imp->rotate->getValueAtTime(time, 0);
+    KnobDoublePtr translate = _imp->translate.lock();
+    KnobDoublePtr rotate = _imp->rotate.lock();
+    KnobBoolPtr scaleUniform = _imp->scaleUniform.lock();
+    KnobDoublePtr scale = _imp->scale.lock();
+    KnobDoublePtr skewXKnob = _imp->skewX.lock();
+    KnobDoublePtr skewYKnob = _imp->skewY.lock();
+    KnobDoublePtr centerKnob = _imp->center.lock();
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    KnobChoicePtr skewOrder = _imp->skewOrder.lock();
+
+    double tx = translate->getValueAtTime(time, 0);
+    double ty = translate->getValueAtTime(time, 1);
+    double sx = scale->getValueAtTime(time, 0);
+    double sy = scaleUniform->getValueAtTime(time) ? sx : scale->getValueAtTime(time, 1);
+    double skewX = skewXKnob->getValueAtTime(time, 0);
+    double skewY = skewYKnob->getValueAtTime(time, 0);
+    double rot = rotate->getValueAtTime(time, 0);
 
     rot = Transform::toRadians(rot);
-    double centerX = _imp->center->getValueAtTime(time, 0);
-    double centerY = _imp->center->getValueAtTime(time, 1);
-    bool skewOrderYX = _imp->skewOrder->getValueAtTime(time) == 1;
+    double centerX = centerKnob->getValueAtTime(time, 0);
+    double centerY = centerKnob->getValueAtTime(time, 1);
+    bool skewOrderYX = skewOrder->getValueAtTime(time) == 1;
     *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
 
     Transform::Matrix3x3 extraMat;
-    extraMat.a = _imp->extraMatrix->getValueAtTime(time, 0); extraMat.b = _imp->extraMatrix->getValueAtTime(time, 1); extraMat.c = _imp->extraMatrix->getValueAtTime(time, 2);
-    extraMat.d = _imp->extraMatrix->getValueAtTime(time, 3); extraMat.e = _imp->extraMatrix->getValueAtTime(time, 4); extraMat.f = _imp->extraMatrix->getValueAtTime(time, 5);
-    extraMat.g = _imp->extraMatrix->getValueAtTime(time, 6); extraMat.h = _imp->extraMatrix->getValueAtTime(time, 7); extraMat.i = _imp->extraMatrix->getValueAtTime(time, 8);
+    extraMat.a = extraMatrix->getValueAtTime(time, 0); extraMat.b = extraMatrix->getValueAtTime(time, 1); extraMat.c = extraMatrix->getValueAtTime(time, 2);
+    extraMat.d = extraMatrix->getValueAtTime(time, 3); extraMat.e = extraMatrix->getValueAtTime(time, 4); extraMat.f = extraMatrix->getValueAtTime(time, 5);
+    extraMat.g = extraMatrix->getValueAtTime(time, 6); extraMat.h = extraMatrix->getValueAtTime(time, 7); extraMat.i = extraMatrix->getValueAtTime(time, 8);
     *matrix = Transform::matMul(*matrix, extraMat);
 }
 
@@ -1549,36 +1371,45 @@ RotoDrawableItem::setTransform(double time,
                                double skewX,
                                double skewY)
 {
+    KnobDoublePtr translate = _imp->translate.lock();
+    KnobDoublePtr rotate = _imp->rotate.lock();
+    KnobBoolPtr scaleUniform = _imp->scaleUniform.lock();
+    KnobDoublePtr scale = _imp->scale.lock();
+    KnobDoublePtr skewXKnob = _imp->skewX.lock();
+    KnobDoublePtr skewYKnob = _imp->skewY.lock();
+    KnobDoublePtr centerKnob = _imp->center.lock();
+    KnobChoicePtr skewOrder = _imp->skewOrder.lock();
+
     bool autoKeying = getContext()->isAutoKeyingEnabled();
 
     if (autoKeying) {
-        _imp->translate->setValueAtTime(time, tx, ViewSpec::all(), 0);
-        _imp->translate->setValueAtTime(time, ty, ViewSpec::all(), 1);
+        translate->setValueAtTime(time, tx, ViewSpec::all(), 0);
+        translate->setValueAtTime(time, ty, ViewSpec::all(), 1);
 
-        _imp->scale->setValueAtTime(time, sx, ViewSpec::all(), 0);
-        _imp->scale->setValueAtTime(time, sy, ViewSpec::all(), 1);
+        scale->setValueAtTime(time, sx, ViewSpec::all(), 0);
+        scale->setValueAtTime(time, sy, ViewSpec::all(), 1);
 
-        _imp->center->setValueAtTime(time, centerX, ViewSpec::all(), 0);
-        _imp->center->setValueAtTime(time, centerY, ViewSpec::all(), 1);
+        centerKnob->setValueAtTime(time, centerX, ViewSpec::all(), 0);
+        centerKnob->setValueAtTime(time, centerY, ViewSpec::all(), 1);
 
-        _imp->rotate->setValueAtTime(time, rot, ViewSpec::all(), 0);
+        rotate->setValueAtTime(time, rot, ViewSpec::all(), 0);
 
-        _imp->skewX->setValueAtTime(time, skewX, ViewSpec::all(), 0);
-        _imp->skewY->setValueAtTime(time, skewY, ViewSpec::all(), 0);
+        skewXKnob->setValueAtTime(time, skewX, ViewSpec::all(), 0);
+        skewYKnob->setValueAtTime(time, skewY, ViewSpec::all(), 0);
     } else {
-        _imp->translate->setValue(tx, ViewSpec::all(), 0);
-        _imp->translate->setValue(ty, ViewSpec::all(), 1);
+        translate->setValue(tx, ViewSpec::all(), 0);
+        translate->setValue(ty, ViewSpec::all(), 1);
 
-        _imp->scale->setValue(sx, ViewSpec::all(), 0);
-        _imp->scale->setValue(sy, ViewSpec::all(), 1);
+        scale->setValue(sx, ViewSpec::all(), 0);
+        scale->setValue(sy, ViewSpec::all(), 1);
 
-        _imp->center->setValue(centerX, ViewSpec::all(), 0);
-        _imp->center->setValue(centerY, ViewSpec::all(), 1);
+        centerKnob->setValue(centerX, ViewSpec::all(), 0);
+        centerKnob->setValue(centerY, ViewSpec::all(), 1);
 
-        _imp->rotate->setValue(rot, ViewSpec::all(), 0);
+        rotate->setValue(rot, ViewSpec::all(), 0);
 
-        _imp->skewX->setValue(skewX, ViewSpec::all(), 0);
-        _imp->skewY->setValue(skewY, ViewSpec::all(), 0);
+        skewXKnob->setValue(skewX, ViewSpec::all(), 0);
+        skewYKnob->setValue(skewY, ViewSpec::all(), 0);
     }
 
     onTransformSet(time);
@@ -1589,17 +1420,18 @@ RotoDrawableItem::setExtraMatrix(bool setKeyframe,
                                  double time,
                                  const Transform::Matrix3x3& mat)
 {
-    _imp->extraMatrix->beginChanges();
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    extraMatrix->beginChanges();
     if (setKeyframe) {
-        _imp->extraMatrix->setValueAtTime(time, mat.a, ViewSpec::all(), 0); _imp->extraMatrix->setValueAtTime(time, mat.b, ViewSpec::all(), 1); _imp->extraMatrix->setValueAtTime(time, mat.c, ViewSpec::all(), 2);
-        _imp->extraMatrix->setValueAtTime(time, mat.d, ViewSpec::all(), 3); _imp->extraMatrix->setValueAtTime(time, mat.e, ViewSpec::all(), 4); _imp->extraMatrix->setValueAtTime(time, mat.f, ViewSpec::all(), 5);
-        _imp->extraMatrix->setValueAtTime(time, mat.g, ViewSpec::all(), 6); _imp->extraMatrix->setValueAtTime(time, mat.h, ViewSpec::all(), 7); _imp->extraMatrix->setValueAtTime(time, mat.i, ViewSpec::all(), 8);
+        extraMatrix->setValueAtTime(time, mat.a, ViewSpec::all(), 0); extraMatrix->setValueAtTime(time, mat.b, ViewSpec::all(), 1); extraMatrix->setValueAtTime(time, mat.c, ViewSpec::all(), 2);
+        extraMatrix->setValueAtTime(time, mat.d, ViewSpec::all(), 3); extraMatrix->setValueAtTime(time, mat.e, ViewSpec::all(), 4); extraMatrix->setValueAtTime(time, mat.f, ViewSpec::all(), 5);
+        extraMatrix->setValueAtTime(time, mat.g, ViewSpec::all(), 6); extraMatrix->setValueAtTime(time, mat.h, ViewSpec::all(), 7); extraMatrix->setValueAtTime(time, mat.i, ViewSpec::all(), 8);
     } else {
-        _imp->extraMatrix->setValue(mat.a, ViewSpec::all(), 0); _imp->extraMatrix->setValue(mat.b, ViewSpec::all(), 1); _imp->extraMatrix->setValue(mat.c, ViewSpec::all(), 2);
-        _imp->extraMatrix->setValue(mat.d, ViewSpec::all(), 3); _imp->extraMatrix->setValue(mat.e, ViewSpec::all(), 4); _imp->extraMatrix->setValue(mat.f, ViewSpec::all(), 5);
-        _imp->extraMatrix->setValue(mat.g, ViewSpec::all(), 6); _imp->extraMatrix->setValue(mat.h, ViewSpec::all(), 7); _imp->extraMatrix->setValue(mat.i, ViewSpec::all(), 8);
+        extraMatrix->setValue(mat.a, ViewSpec::all(), 0); extraMatrix->setValue(mat.b, ViewSpec::all(), 1); extraMatrix->setValue(mat.c, ViewSpec::all(), 2);
+        extraMatrix->setValue(mat.d, ViewSpec::all(), 3); extraMatrix->setValue(mat.e, ViewSpec::all(), 4); extraMatrix->setValue(mat.f, ViewSpec::all(), 5);
+        extraMatrix->setValue(mat.g, ViewSpec::all(), 6); extraMatrix->setValue(mat.h, ViewSpec::all(), 7); extraMatrix->setValue(mat.i, ViewSpec::all(), 8);
     }
-    _imp->extraMatrix->endChanges();
+    extraMatrix->endChanges();
 }
 
 void
@@ -1607,7 +1439,7 @@ RotoDrawableItem::resetTransformCenter()
 {
     double time = getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
     RectD bbox =  getBoundingBox(time);
-    KnobDoublePtr centerKnob = _imp->center;
+    KnobDoublePtr centerKnob = _imp->center.lock();
 
     centerKnob->beginChanges();
 
@@ -1631,15 +1463,511 @@ RotoDrawableItem::resetTransformCenter()
 void
 RotoDrawableItem::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
-    // Append the item knobs
-    const std::list<KnobIPtr>& itemKnobs = getKnobs();
-    for (std::list<KnobIPtr>::const_iterator it = itemKnobs.begin(); it != itemKnobs.end(); ++it) {
-        hash->append((*it)->computeHash(time, view));
-    }
-
-    RotoItem::appendToHash(time, view, hash);
+    KnobHolder::appendToHash(time, view, hash);
+    hash->append(isGloballyActivated());
 }
 
+
+
+void
+RotoDrawableItem::initializeKnobs()
+{
+
+    KnobHolderPtr thisShared = shared_from_this();
+    bool isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoOpacityParamLabel));
+        param->setHintToolTip( tr(kRotoOpacityHint) );
+        param->setName(kRotoOpacityParam);
+        param->setMinimum(0.);
+        param->setMaximum(1.);
+        param->setDisplayMinimum(0.);
+        param->setDisplayMaximum(1.);
+        param->setDefaultValue(ROTO_DEFAULT_OPACITY);
+        _imp->opacity = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoFeatherParamLabel));
+        param->setHintToolTip( tr(kRotoFeatherHint) );
+        param->setName(kRotoFeatherParam);
+        param->setMinimum(0);
+        param->setDisplayMinimum(0);
+        param->setDisplayMaximum(500);
+        param->setDefaultValue(ROTO_DEFAULT_FEATHER);
+        _imp->feather = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoFeatherFallOffParamLabel));
+        param->setHintToolTip( tr(kRotoFeatherFallOffHint) );
+        param->setName(kRotoFeatherFallOffParam);
+        param->setMinimum(0.001);
+        param->setMaximum(5.);
+        param->setDisplayMinimum(0.2);
+        param->setDisplayMaximum(5.);
+        param->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
+        _imp->featherFallOff = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoFeatherFallOffTypeLabel));
+        param->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
+        param->setName(kRotoFeatherFallOffType);
+        {
+            std::vector<std::string> entries,helps;
+            entries.push_back(kRotoFeatherFallOffTypeLinear);
+            helps.push_back(kRotoFeatherFallOffTypeLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypePLinear);
+            helps.push_back(kRotoFeatherFallOffTypePLinearHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseIn);
+            helps.push_back(kRotoFeatherFallOffTypeEaseInHint);
+            entries.push_back(kRotoFeatherFallOffTypeEaseOut);
+            helps.push_back(kRotoFeatherFallOffTypeEaseOutHint);
+            entries.push_back(kRotoFeatherFallOffTypeSmooth);
+            helps.push_back(kRotoFeatherFallOffTypeSmoothHint);
+            param->populateChoices(entries, helps);
+        }
+        _imp->fallOffRampType = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoDrawableItemLifeTimeParamLabel));
+        param->setHintToolTip( tr(kRotoDrawableItemLifeTimeParamHint) );
+        param->setName(kRotoDrawableItemLifeTimeParam);
+        {
+            std::vector<std::string> choices;
+            choices.push_back(kRotoDrawableItemLifeTimeSingle);
+            choices.push_back(kRotoDrawableItemLifeTimeFromStart);
+            choices.push_back(kRotoDrawableItemLifeTimeToEnd);
+            choices.push_back(kRotoDrawableItemLifeTimeCustom);
+            param->populateChoices(choices);
+        }
+        param->setDefaultValue(isStroke ? 0 : 3);
+        _imp->lifeTime = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kRotoDrawableItemLifeTimeFrameParamLabel));
+        param->setHintToolTip( tr(kRotoDrawableItemLifeTimeFrameParamHint) );
+        param->setName(kRotoDrawableItemLifeTimeFrameParam);
+        _imp->lifeTimeFrame = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoActivatedParamLabel));
+        param = KnobBool::create(KnobHolderPtr(), tr(kRotoActivatedParamLabel), 1, true);
+        param->setHintToolTip( tr(kRotoActivatedHint) );
+        param->setName(kRotoActivatedParam);
+        param->setDefaultValue(true);
+        _imp->activated = param;
+    }
+
+#ifdef NATRON_ROTO_INVERTIBLE
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoInvertedParamLabel));
+        param->setHintToolTip( tr(kRotoInvertedHint) );
+        param->setName(kRotoInvertedParam);
+        QObject::connect( param->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(invertedStateChanged()) );
+        param->setDefaultValue(false);
+        _imp->inverted = param;
+    }
+#endif
+
+
+    {
+        KnobColorPtr param = AppManager::createKnob<KnobColor>(thisShared, tr(kRotoColorParamLabel), 3);
+        param->setHintToolTip( tr(kRotoColorHint) );
+        param->setName(kRotoColorParam);
+        param->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
+        param->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
+        param->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
+        QObject::connect( param->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
+        _imp->color = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoCompOperatorParamLabel));
+        param->setHintToolTip( tr(kRotoCompOperatorHint) );
+        param->setName(kRotoCompOperatorParam);
+        std::vector<std::string> operators;
+        std::vector<std::string> tooltips;
+        Merge::getOperatorStrings(&operators, &tooltips);
+        param->populateChoices(operators, tooltips);
+        param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeCopy) );
+        QObject::connect( param->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this,
+                         SIGNAL(compositingOperatorChanged(ViewSpec,int,int)) );
+        _imp->compOperator = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemTranslateParamLabel), 2);
+        param->setName(kRotoDrawableItemTranslateParam);
+        param->setHintToolTip( tr(kRotoDrawableItemTranslateParamHint) );
+        _imp->translate = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemRotateParamLabel));
+        param->setName(kRotoDrawableItemRotateParam);
+        param->setHintToolTip( tr(kRotoDrawableItemRotateParamHint) );
+        _imp->rotate = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemScaleParamLabel), 2);
+        param->setName(kRotoDrawableItemScaleParam);
+        param->setHintToolTip( tr(kRotoDrawableItemScaleParamHint) );
+        param->setDefaultValue(1, 0);
+        param->setDefaultValue(1, 1);
+        _imp->scale = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoDrawableItemScaleUniformParamLabel));
+        param->setName(kRotoDrawableItemScaleUniformParam);
+        param->setHintToolTip( tr(kRotoDrawableItemScaleUniformParamHint) );
+        param->setDefaultValue(true);
+        _imp->scaleUniform = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemSkewXParamLabel));
+        param->setName(kRotoDrawableItemSkewXParam);
+        param->setHintToolTip( tr(kRotoDrawableItemSkewXParamHint) );
+        _imp->skewX = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemSkewYParamLabel));
+        param->setName(kRotoDrawableItemSkewYParam);
+        param->setHintToolTip( tr(kRotoDrawableItemSkewYParamHint) );
+        _imp->skewY = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoDrawableItemSkewOrderParamLabel));
+        param->setName(kRotoDrawableItemSkewOrderParam);
+        param->setHintToolTip( tr(kRotoDrawableItemSkewOrderParamHint) );
+        {
+            std::vector<std::string> choices;
+            choices.push_back("XY");
+            choices.push_back("YX");
+            param->populateChoices(choices);
+        }
+        _imp->skewOrder = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemCenterParamLabel), 2);
+        param->setName(kRotoDrawableItemCenterParam);
+        param->setHintToolTip( tr(kRotoDrawableItemCenterParamHint) );
+        _imp->center = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoDrawableItemExtraMatrixParamLabel), 9);
+        param->setName(kRotoDrawableItemExtraMatrixParam);
+        param->setHintToolTip( tr(kRotoDrawableItemExtraMatrixParamHint) );
+        param->setDefaultValue(1, 0);
+        param->setDefaultValue(1, 4);
+        param->setDefaultValue(1, 8);
+        _imp->extraMatrix = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushSizeParamLabel));
+        param->setName(kRotoBrushSizeParam);
+        param->setHintToolTip( tr(kRotoBrushSizeParamHint) );
+        param->setDefaultValue(25);
+        param->setMinimum(1);
+        param->setMaximum(1000);
+        _imp->brushSize = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushSpacingParamLabel));
+        param->setName(kRotoBrushSpacingParam);
+        param->setHintToolTip( tr(kRotoBrushSpacingParamHint) );
+        param->setDefaultValue(0.1);
+        param->setMinimum(0);
+        param->setMaximum(1);
+        _imp->brushSpacing = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushHardnessParamLabel));
+        param->setName(kRotoBrushHardnessParam);
+        param->setHintToolTip( tr(kRotoBrushHardnessParamHint) );
+        param->setDefaultValue(0.2);
+        param->setMinimum(0);
+        param->setMaximum(1);
+        _imp->brushHardness = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushEffectParamLabel));
+        param->setName(kRotoBrushEffectParam);
+        param->setHintToolTip( tr(kRotoBrushEffectParamHint) );
+        param->setDefaultValue(15);
+        param->setMinimum(0);
+        param->setMaximum(100);
+        _imp->effectStrength = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushPressureOpacityParamLabel));
+        param->setName(kRotoBrushPressureOpacityParam);
+        param->setHintToolTip( tr(kRotoBrushPressureOpacityParamHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(true);
+        _imp->pressureOpacity = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushPressureSizeParamLabel));
+        param->setName(kRotoBrushPressureSizeParam);
+        param->setHintToolTip( tr(kRotoBrushPressureSizeParamHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(false);
+        _imp->pressureSize = param;
+    }
+
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushPressureHardnessParamLabel));
+        param->setName(kRotoBrushPressureHardnessParam);
+        param->setHintToolTip( tr(kRotoBrushPressureHardnessParamHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(false);
+        _imp->pressureHardness = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushBuildupParamLabel));
+        param->setName(kRotoBrushBuildupParam);
+        param->setHintToolTip( tr(kRotoBrushBuildupParamHint) );
+        param->setDefaultValue(false);
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(true);
+        _imp->buildUp = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushVisiblePortionParamLabel), 2);
+        param->setDefaultValue(0, 0);
+        param->setDefaultValue(1, 1);
+        std::vector<double> mins, maxs;
+        mins.push_back(0);
+        mins.push_back(0);
+        maxs.push_back(1);
+        maxs.push_back(1);
+        param->setMinimumsAndMaximums(mins, maxs);
+        _imp->visiblePortion = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushTranslateParamLabel), 2);
+        param->setName(kRotoBrushTranslateParam);
+        param->setHintToolTip( tr(kRotoBrushTranslateParamHint) );
+        _imp->cloneTranslate = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushRotateParamLabel));
+        param->setName(kRotoBrushRotateParam);
+        param->setHintToolTip( tr(kRotoBrushRotateParamHint) );
+        _imp->cloneRotate = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushScaleParamLabel), 2);
+        param->setName(kRotoBrushScaleParam);
+        param->setHintToolTip( tr(kRotoBrushScaleParamHint) );
+        param->setDefaultValue(1, 0);
+        param->setDefaultValue(1, 1);
+        _imp->cloneScale = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushScaleUniformParamLabel));
+        param->setName(kRotoBrushScaleUniformParam);
+        param->setHintToolTip( tr(kRotoBrushScaleUniformParamHint) );
+        param->setDefaultValue(true);
+        _imp->cloneScaleUniform = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushSkewXParamLabel));
+        param->setName(kRotoBrushSkewXParam);
+        param->setHintToolTip( tr(kRotoBrushSkewXParamHint) );
+        _imp->cloneSkewX = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushSkewYParamLabel));
+        param->setName(kRotoBrushSkewYParam);
+        param->setHintToolTip( tr(kRotoBrushSkewYParamHint) );
+        _imp->cloneSkewY = param;
+    }
+
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoBrushSkewOrderParamLabel));
+        param->setName(kRotoBrushSkewOrderParam);
+        std::vector<std::string> choices;
+        choices.push_back("XY");
+        choices.push_back("YX");
+        param->populateChoices(choices);
+        param->setHintToolTip( tr(kRotoBrushSkewOrderParamHint) );
+        _imp->cloneSkewOrder = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoBrushCenterParamLabel), 2);
+        param->setName(kRotoBrushCenterParam);
+        param->setHintToolTip( tr(kRotoBrushCenterParamHint) );
+        _imp->cloneCenter = param;
+    }
+
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoBrushFilterParamLabel));
+        param->setName(kRotoBrushFilterParam);
+        param->setHintToolTip( tr(kRotoBrushFilterParamHint) );
+        {
+            std::vector<std::string> choices, helps;
+
+            choices.push_back(kFilterImpulse);
+            helps.push_back(kFilterImpulseHint);
+            choices.push_back(kFilterBilinear);
+            helps.push_back(kFilterBilinearHint);
+            choices.push_back(kFilterCubic);
+            helps.push_back(kFilterCubicHint);
+            choices.push_back(kFilterKeys);
+            helps.push_back(kFilterKeysHint);
+            choices.push_back(kFilterSimon);
+            helps.push_back(kFilterSimonHint);
+            choices.push_back(kFilterRifman);
+            helps.push_back(kFilterRifmanHint);
+            choices.push_back(kFilterMitchell);
+            helps.push_back(kFilterMitchellHint);
+            choices.push_back(kFilterParzen);
+            helps.push_back(kFilterParzenHint);
+            choices.push_back(kFilterNotch);
+            helps.push_back(kFilterNotchHint);
+            param->populateChoices(choices);
+        }
+        param->setDefaultValue(2);
+        _imp->cloneFilter = param;
+    }
+
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushBlackOutsideParamLabel));
+        param->setName(kRotoBrushBlackOutsideParam);
+        param->setHintToolTip( tr(kRotoBrushBlackOutsideParamHint) );
+        param->setDefaultValue(true);
+        _imp->cloneBlackOutside = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoBrushSourceColorLabel));
+        param->setName(kRotoBrushSourceColor);
+        param->setHintToolTip( tr(kRotoBrushSizeParamHint) );
+        param->setDefaultValue(1);
+        {
+            std::vector<std::string> choices;
+            choices.push_back("foreground");
+            choices.push_back("background");
+            for (int i = 1; i < ROTOPAINT_MAX_INPUTS_COUNT - 1; ++i) {
+                std::stringstream ss;
+                ss << "background " << i + 1;
+                choices.push_back( ss.str() );
+            }
+            param->populateChoices(choices);
+        }
+        _imp->sourceColor = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kRotoBrushTimeOffsetParamLabel));
+        param->setName(kRotoBrushTimeOffsetParam);
+        param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint) );
+        param->setDisplayMinimum(-100);
+        param->setDisplayMaximum(100);
+        _imp->timeOffset = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoBrushTimeOffsetModeParamLabel));
+        param->setName(kRotoBrushTimeOffsetModeParam);
+        param->setHintToolTip( tr(kRotoBrushTimeOffsetModeParamHint) );
+        std::vector<std::string> modes;
+        modes.push_back("Relative");
+        modes.push_back("Absolute");
+        param->populateChoices(modes);
+        _imp->timeOffsetMode = param;
+    }
+
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoMotionBlurParamLabel));
+        param->setName(kRotoPerShapeMotionBlurParam);
+        param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
+        param->setDefaultValue(0);
+        param->setMinimum(0);
+        param->setDisplayMinimum(0);
+        param->setDisplayMaximum(4);
+        param->setMaximum(4);
+        _imp->motionBlur = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoPerShapeShutterParamLabel));
+        param->setName(kRotoPerShapeShutterParam);
+        param->setHintToolTip( tr(kRotoShutterParamHint) );
+        param->setDefaultValue(0.5);
+        param->setMinimum(0);
+        param->setDisplayMinimum(0);
+        param->setDisplayMaximum(2);
+        param->setMaximum(2);
+        _imp->shutter = param;
+    }
+
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoShutterOffsetTypeParamLabel));
+        param->setName(kRotoPerShapeShutterOffsetTypeParam);
+        param->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
+        param->setDefaultValue(0);
+        {
+            std::vector<std::string> options, helps;
+            options.push_back("Centered");
+            helps.push_back(kRotoShutterOffsetCenteredHint);
+            options.push_back("Start");
+            helps.push_back(kRotoShutterOffsetStartHint);
+            options.push_back("End");
+            helps.push_back(kRotoShutterOffsetEndHint);
+            options.push_back("Custom");
+            helps.push_back(kRotoShutterOffsetCustomHint);
+            param->populateChoices(options, helps);
+        }
+        _imp->shutterType = param;
+    }
+
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kRotoShutterCustomOffsetParamLabel));
+        param->setName(kRotoPerShapeShutterCustomOffsetParam);
+        param->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
+        param->setDefaultValue(0);
+        _imp->customOffset = param;
+    }
+#endif // NATRON_ROTO_ENABLE_MOTION_BLUR
+
+    getDefaultOverlayColor(&_imp->overlayColor[0], &_imp->overlayColor[1], &_imp->overlayColor[2]);
+    _imp->overlayColor[3] = 1.;
+} // initializeKnobs
 
 NATRON_NAMESPACE_EXIT;
 

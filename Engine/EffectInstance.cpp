@@ -153,24 +153,15 @@ void
 EffectInstance::clearPluginMemoryChunks()
 {
     // This will remove the mem from the pluginMemoryChunks list
-    PluginMemoryPtr mem;
-    do {
-        mem.reset();
-        {
-            QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-            if ( !_imp->pluginMemoryChunks.empty() ) {
-                mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-#pragma message WARN("BUG: if mem is not NULL, it is never removed from the list and this goes into an infinite loop!!! should the following condition (!mem) be reversed?")
-                while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
-                    _imp->pluginMemoryChunks.pop_front();
-                    mem.reset();
-                    if ( !_imp->pluginMemoryChunks.empty() ) {
-                        mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-                    }
-                }
-            }
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    for (PluginMemoryWPtrList::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        PluginMemoryPtr mem = it->lock();
+        if (!mem) {
+            continue;
         }
-    } while (mem);
+        mem->setUnregisterOnDestructor(false);
+    }
+    _imp->pluginMemoryChunks.clear();
 }
 
 #ifdef DEBUG
@@ -320,6 +311,37 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
 
 
     KnobHolder::appendToHash(time, view, hash);
+}
+
+void
+EffectInstance::invalidateHashNotRecursive()
+{
+    HashableObject::invalidateHashCache();
+}
+
+static void invalidateHashRecursive(const EffectInstancePtr& effect, std::list<EffectInstancePtr>& markedNodes)
+{
+    if (std::find(markedNodes.begin(), markedNodes.end(), effect) != markedNodes.end()) {
+        return;
+    }
+
+    markedNodes.push_back(effect);
+
+    effect->invalidateHashNotRecursive();
+
+    NodesList outputs;
+    effect->getNode()->getOutputsWithGroupRedirection(outputs);
+    for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        invalidateHashRecursive((*it)->getEffectInstance(), markedNodes);
+    }
+
+}
+
+void
+EffectInstance::invalidateHashCache()
+{
+    std::list<EffectInstancePtr> markedNodes;
+    invalidateHashRecursive(shared_from_this(), markedNodes);
 }
 
 U64
@@ -2329,7 +2351,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                 lastFrame);
 
 
-    boost::shared_ptr<TimeLapse> timeRecorder;
+    TimeLapsePtr timeRecorder;
     RenderActionArgs actionArgs;
     boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
     setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, actionArgs, &glContextAttacher, &timeRecorder);
@@ -2372,7 +2394,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                                                       const double time,
                                                       const ViewIdx view,
                                                       const unsigned int mipMapLevel,
-                                                      const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                                      const TimeLapsePtr& timeRecorder,
                                                       EffectInstance::ImagePlanesToRender & planes)
 {
     std::list<ImageComponents> comps;
@@ -2735,7 +2757,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
                                                          const EffectInstance::RenderActionArgs &actionArgs,
                                                          const ImagePlanesToRender & planes,
                                                          const RectI& downscaledRectToRender,
-                                                         const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                                         const TimeLapsePtr& timeRecorder,
                                                          bool renderFullScaleThenDownscale,
                                                          unsigned int mipMapLevel,
                                                          const std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
@@ -2937,7 +2959,7 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
                                                 const std::bitset<4>& processChannels,
                                                 EffectInstance::RenderActionArgs &actionArgs,
                                                 boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
-                                                boost::shared_ptr<TimeLapse> *timeRecorder)
+                                                TimeLapsePtr *timeRecorder)
 {
     const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
 
@@ -3132,7 +3154,7 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, Value
 
     if (isMT) {
         node->refreshIdentityState();
-        node->onActionEvaluated();
+        invalidateHashCache();
     }
 }
 
@@ -3301,13 +3323,13 @@ EffectInstance::addPluginMemoryPointer(const PluginMemoryPtr& mem)
 void
 EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
-    std::list<boost::shared_ptr<PluginMemory> > safeCopy;
+    std::list<PluginMemoryPtr> safeCopy;
 
     {
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
         // make a copy of the list so that elements don't get deleted while the mutex is held
 
-        for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        for (PluginMemoryWPtrList::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
             PluginMemoryPtr p = it->lock();
             if (!p) {
                 continue;
@@ -3770,7 +3792,7 @@ EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool
         if (!k) {
             continue;
         }
-        boost::shared_ptr<OfxParamOverlayInteract> interact = k->getCustomInteract();
+        OfxParamOverlayInteractPtr interact = k->getCustomInteract();
         if (!interact) {
             continue;
         }

@@ -73,7 +73,7 @@ struct PreferenceTab
 {
     QTreeWidgetItem* treeItem;
     QFrame* tab;
-    boost::weak_ptr<KnobPageGui> page;
+    KnobPageGuiWPtr page;
 };
 
 struct PluginTreeNode

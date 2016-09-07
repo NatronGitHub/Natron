@@ -1100,7 +1100,7 @@ RotoItemEditorContext::RotoItemEditorContext(QTreeWidget* tree,
                                              RotoCurveEditorContext* context)
     : _imp( new RotoItemEditorContextPrivate(widget, curve, context) )
 {
-    const std::list<KnobIPtr >& knobs = curve->getKnobs();
+    const KnobsVec& knobs = curve->getKnobs();
 
     _imp->nameItem = new QTreeWidgetItem( _imp->context->getItem() );
     QString name = QString::fromUtf8( _imp->curve->getLabel().c_str() );
@@ -1111,7 +1111,7 @@ RotoItemEditorContext::RotoItemEditorContext(QTreeWidget* tree,
     RotoContextPtr roto = context->getNode()->getNode()->getRotoContext();
     bool hasAtLeast1KnobWithACurveShown = false;
 
-    for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         createElementsForKnob(_imp->nameItem, KnobGuiPtr(), *it, widget, tree, roto, _imp->knobs, &hasAtLeast1KnobWithACurveShown);
     }
 }

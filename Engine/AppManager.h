@@ -472,6 +472,8 @@ public:
 
     QStringList getAllNonOFXPluginsPaths() const;
 
+    QString getPyPlugsGlobalPath() const;
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;
@@ -542,13 +544,19 @@ public:
     void setPluginsUseInputImageCopyToRender(bool b);
     bool isCopyInputImageForPluginRenderEnabled() const;
 
-    QString getOpenGLVersion() const;
-
     QString getBoostVersion() const;
 
     QString getQtVersion() const;
 
     QString getCairoVersion() const;
+
+    QString getHoedownVersion() const;
+
+    QString getCeresVersion() const;
+
+    QString getOpenMVGVersion() const;
+
+    QString getQHTTPServerVersion() const;
 
     QString getPySideVersion() const;
 

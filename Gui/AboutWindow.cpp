@@ -26,6 +26,9 @@
 
 #include <stdexcept>
 
+#include <boost/config.hpp> // BOOST_COMPILER
+#include <boost/predef.h> // BOOST_PREDEF_ macros
+
 CLANG_DIAG_OFF(deprecated)
 #include <QSplitter>
 #include <QTextBrowser>
@@ -38,11 +41,14 @@ CLANG_DIAG_OFF(deprecated)
 #include <QHeaderView>
 #include <QtCore/QDir>
 CLANG_DIAG_ON(deprecated)
+#include <qhttpserver.h>
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
 
 #include "Engine/AppManager.h"
+#include "Engine/OSGLContext.h"
+#include "Engine/OSGLContext_osmesa.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
@@ -136,11 +142,192 @@ AboutWindow::AboutWindow(QWidget* parent)
         QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_COMMIT "\">")
                            + QString::fromUtf8(GIT_COMMIT).mid(0, 7)
                            + QString::fromUtf8("</a>") );
+#ifdef _OPENMP
+#define OPENMP_STRING " with OpenMP " STRINGIZE_CPP_NAME(_OPENMP)
+#else
+#define OPENMP_STRING ""
+#endif
+
+#if BOOST_ARCH_ALPHA
+#define BOOST_ARCH_NAME BOOST_ARCH_ALPHA_NAME
+#elif BOOST_ARCH_ARM
+#define BOOST_ARCH_NAME BOOST_ARCH_ARM_NAME
+#elif BOOST_ARCH_BLACKFIN
+#define BOOST_ARCH_NAME BOOST_ARCH_BLACKFIN_NAME
+#elif BOOST_ARCH_CONVEX
+#define BOOST_ARCH_NAME BOOST_ARCH_CONVEX_NAME
+#elif BOOST_ARCH_IA64
+#define BOOST_ARCH_NAME BOOST_ARCH_IA64_NAME
+#elif BOOST_ARCH_M68K
+#define BOOST_ARCH_NAME BOOST_ARCH_M68K_NAME
+#elif BOOST_ARCH_MIPS
+#define BOOST_ARCH_NAME BOOST_ARCH_MIPS_NAME
+#elif BOOST_ARCH_PARISK
+#define BOOST_ARCH_NAME BOOST_ARCH_PARISK_NAME
+#elif BOOST_ARCH_PPC
+#define BOOST_ARCH_NAME BOOST_ARCH_PPC_NAME
+#elif BOOST_ARCH_PYRAMID
+#define BOOST_ARCH_NAME BOOST_ARCH_PYRAMID_NAME
+#elif BOOST_ARCH_RS6000
+#define BOOST_ARCH_NAME BOOST_ARCH_RS6000_NAME
+#elif BOOST_ARCH_SPARC
+#define BOOST_ARCH_NAME BOOST_ARCH_SPARC_NAME
+#elif BOOST_ARCH_SH
+#define BOOST_ARCH_NAME BOOST_ARCH_SH_NAME
+#elif BOOST_ARCH_SYS370
+#define BOOST_ARCH_NAME BOOST_ARCH_SYS370_NAME
+#elif BOOST_ARCH_SYS390
+#define BOOST_ARCH_NAME BOOST_ARCH_SYS390_NAME
+#elif BOOST_ARCH_Z
+#define BOOST_ARCH_NAME BOOST_ARCH_Z_NAME
+#elif BOOST_ARCH_X86_32
+#define BOOST_ARCH_NAME BOOST_ARCH_X86_32_NAME
+#elif BOOST_ARCH_X86_64
+#define BOOST_ARCH_NAME BOOST_ARCH_X86_64_NAME
+#else
+#define BOOST_ARCH_NAME "unknown arch"
+#endif
+
+#if BOOST_OS_AIX
+#define BOOST_OS_NAME BOOST_OS_AIX_NAME
+#define BOOST_OS BOOST_OS_AIX
+#elif BOOST_OS_AMIGAOS
+#define BOOST_OS_NAME BOOST_OS_AMIGAOS_NAME
+#define BOOST_OS BOOST_OS_AMIGAOS
+#elif BOOST_OS_ANDROID
+#define BOOST_OS_NAME BOOST_OS_ANDROID_NAME
+#define BOOST_OS BOOST_OS_ANDROID
+#elif BOOST_OS_BEOS
+#define BOOST_OS_NAME BOOST_OS_BEOS_NAME
+#define BOOST_OS BOOST_OS_BEOS
+#elif BOOST_OS_BSD
+#define BOOST_OS_NAME BOOST_OS_BSD_NAME
+#define BOOST_OS BOOST_OS_BSD
+#elif BOOST_OS_CYGWIN
+#define BOOST_OS_NAME BOOST_OS_CYGWIN_NAME
+#define BOOST_OS BOOST_OS_CYGWIN
+#elif BOOST_OS_HAIKU
+#define BOOST_OS_NAME BOOST_OS_HAIKU_NAME
+#define BOOST_OS BOOST_OS_HAIKU
+#elif BOOST_OS_HPUX
+#define BOOST_OS_NAME BOOST_OS_HPUX_NAME
+#define BOOST_OS BOOST_OS_HPUX
+#elif BOOST_OS_IOS
+#define BOOST_OS_NAME BOOST_OS_IOS_NAME
+#define BOOST_OS BOOST_OS_IOS
+#elif BOOST_OS_IRIX
+#define BOOST_OS_NAME BOOST_OS_IRIX_NAME
+#define BOOST_OS BOOST_OS_IRIX
+#elif BOOST_OS_LINUX
+#define BOOST_OS_NAME BOOST_OS_LINUX_NAME
+#define BOOST_OS BOOST_OS_LINUX
+#elif BOOST_OS_MACOS
+#define BOOST_OS_NAME BOOST_OS_MACOS_NAME
+#define BOOST_OS BOOST_OS_MACOS
+#elif BOOST_OS_OS400
+#define BOOST_OS_NAME BOOST_OS_OS400_NAME
+#define BOOST_OS BOOST_OS_OS400
+#elif BOOST_OS_QNX
+#define BOOST_OS_NAME BOOST_OS_QNX_NAME
+#define BOOST_OS BOOST_OS_QNX
+#elif BOOST_OS_SOLARIS
+#define BOOST_OS_NAME BOOST_OS_SOLARIS_NAME
+#define BOOST_OS BOOST_OS_SOLARIS
+#elif BOOST_OS_UNIX
+#define BOOST_OS_NAME BOOST_OS_UNIX_NAME
+#define BOOST_OS BOOST_OS_UNIX
+#elif BOOST_OS_SVR4
+#define BOOST_OS_NAME BOOST_OS_SVR4_NAME
+#define BOOST_OS BOOST_OS_SVR4
+#elif BOOST_OS_VMS
+#define BOOST_OS_NAME BOOST_OS_VMS_NAME
+#define BOOST_OS BOOST_OS_VMS
+#elif BOOST_OS_WINDOWS
+#define BOOST_OS_NAME BOOST_OS_WINDOWS_NAME
+#define BOOST_OS BOOST_OS_WINDOWS
+#elif BOOST_OS_BSD_BSDI
+#define BOOST_OS_NAME BOOST_OS_BSD_BSDI_NAME
+#define BOOST_OS BOOST_OS_BSD_BSDI
+#elif BOOST_OS_BSD_DRAGONFLY
+#define BOOST_OS_NAME BOOST_OS_BSD_DRAGONFLY_NAME
+#define BOOST_OS BOOST_OS_BSD_DRAGONFLY
+#elif BOOST_OS_BSD_FREE
+#define BOOST_OS_NAME BOOST_OS_BSD_FREE_NAME
+#define BOOST_OS BOOST_OS_BSD_FREE
+#elif BOOST_OS_BSD_NET
+#define BOOST_OS_NAME BOOST_OS_BSD_NET_NAME
+#define BOOST_OS BOOST_OS_BSD_NET
+#elif BOOST_OS_BSD_OPEN
+#define BOOST_OS_NAME BOOST_OS_BSD_OPEN_NAME
+#define BOOST_OS BOOST_OS_BSD_OPEN
+#else
+#define BOOST_OS_NAME "unknown OS"
+#define BOOST_OS BOOST_VERSION_NUMBER_NOT_AVAILABLE
+#endif
+
+        QString osVer = QString::fromUtf8(BOOST_OS_NAME);
+#if BOOST_OS_MACOS >= BOOST_VERSION_NUMBER(10,0,0)
+        // special case for OSX, detect min/max versions
+        // see #include <AvailabilityMacros.h>
+        //    MAC_OS_X_VERSION_MIN_REQUIRED
+        //    MAC_OS_X_VERSION_MAX_ALLOWED
+        //#define MAC_OS_X_VERSION_10_0         1000
+        //#define MAC_OS_X_VERSION_10_1         1010
+        //#define MAC_OS_X_VERSION_10_2         1020
+        //#define MAC_OS_X_VERSION_10_3         1030
+        //#define MAC_OS_X_VERSION_10_4         1040
+        //#define MAC_OS_X_VERSION_10_5         1050
+        //#define MAC_OS_X_VERSION_10_6         1060
+        //#define MAC_OS_X_VERSION_10_7         1070
+        //#define MAC_OS_X_VERSION_10_8         1080
+        //#define MAC_OS_X_VERSION_10_9         1090
+        //#define MAC_OS_X_VERSION_10_10      101000
+        //#define MAC_OS_X_VERSION_10_10_2    101002
+        //#define MAC_OS_X_VERSION_10_10_3    101003
+        //#define MAC_OS_X_VERSION_10_11      101100
+        //#define MAC_OS_X_VERSION_10_11_2    101102
+        //#define MAC_OS_X_VERSION_10_11_3    101103
+        //#define MAC_OS_X_VERSION_10_11_4    101104
+        osVer += QString::fromUtf8(" %1.%2-%3.%4")
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 100000
+        .arg(MAC_OS_X_VERSION_MIN_REQUIRED / 100)
+        .arg(MAC_OS_X_VERSION_MIN_REQUIRED % 100)
+#else
+        .arg(MAC_OS_X_VERSION_MIN_REQUIRED / 10000)
+        .arg((MAC_OS_X_VERSION_MIN_REQUIRED % 10000) / 100)
+#endif
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 100000
+        .arg(MAC_OS_X_VERSION_MAX_ALLOWED / 100)
+        .arg(MAC_OS_X_VERSION_MAX_ALLOWED % 100)
+#else
+        .arg(MAC_OS_X_VERSION_MAX_ALLOWED / 10000)
+        .arg((MAC_OS_X_VERSION_MAX_ALLOWED % 10000) / 100)
+#endif
+        ;
+#else
+        //#define BOOST_VERSION_NUMBER(major,minor,patch)               \
+        //( (((major)%100)*10000000) + (((minor)%100)*100000) + ((patch)%100000) )
+        const unsigned major = BOOST_OS/10000000;
+        const unsigned minor = (BOOST_OS-10000000*major)/100000;
+        const unsigned patch = BOOST_OS % 100000;
+        if (BOOST_OS != BOOST_VERSION_NUMBER_NOT_AVAILABLE && major > 0) {
+            osVer += QString::fromUtf8(" %1").arg(major);
+            if (minor > 0 || patch > 0) {
+                osVer += QString::fromUtf8(".%1").arg(minor);
+                if (patch > 0) {
+                    osVer += QString::fromUtf8(".%1").arg(patch);
+                }
+            }
+        }
+#endif
         QString gitStr = ( tr("<p>This software was compiled on %3 from the source "
-                                             "code branch %1 at version %2.</p>")
+                                             "code branch %1 at version %2 using %4 targetting %5 for %6.</p>")
                            .arg( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_BRANCH "\">"GIT_BRANCH "</a>") ) // %1
                            .arg(argStr) // %2
-                           .arg( QString::fromUtf8(__DATE__) ) ); // %3
+                           .arg( QString::fromUtf8(__DATE__) ) // %3
+                           .arg( QString::fromUtf8(BOOST_COMPILER OPENMP_STRING) ) // %4
+                           .arg( QString::fromUtf8(BOOST_ARCH_NAME) ) // %5
+                           .arg(osVer) );// %6
         aboutText.append(gitStr);
     }
     if ( !std::string(IO_GIT_COMMIT).empty() ) {
@@ -339,27 +526,42 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
 void
 AboutWindow::updateLibrariesVersions()
 {
-
-    QString pythonStr = QString::fromUtf8("<p> Python %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
-    QString qtStr = QString::fromUtf8("<p> Qt %1 </p>").arg( appPTR->getQtVersion() );
-    QString boostStr = QString::fromUtf8("<p> Boost %1 </p>").arg( appPTR->getBoostVersion() );
-    QString openglStr = QString::fromUtf8("<p> OpenGL %1 </p>").arg( appPTR->getOpenGLVersion() );
+    QString libsText;
+    libsText += QString::fromUtf8("<p> Python %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+    libsText += QString::fromUtf8("<p> Qt %1 </p>").arg( appPTR->getQtVersion() );
+    libsText += QString::fromUtf8("<p> Boost %1 </p>").arg( appPTR->getBoostVersion() );
 
     QString cairoVersionStr = appPTR->getCairoVersion();
-    QString cairoStr;
     if (!cairoVersionStr.isEmpty()) {
-        cairoStr = QString::fromUtf8("<p> Cairo %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+        libsText += QString::fromUtf8("<p> Cairo %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
     }
+    libsText += QString::fromUtf8("<p> Hoedown %1 </p>").arg( appPTR->getHoedownVersion() );
+    libsText += QString::fromUtf8("<p> Ceres %1 </p>").arg( appPTR->getCeresVersion() );
+    libsText += QString::fromUtf8("<p> OpenMVG %1 </p>").arg( appPTR->getOpenMVGVersion() );
 
-
-    QString libsText;
-    libsText += pythonStr;
-    libsText += qtStr;
-    libsText += boostStr;
-    libsText += openglStr;
-    if (!cairoStr.isEmpty()) {
-        libsText += cairoStr;
+    std::list<OpenGLRendererInfo> openGLRenderers;
+    OSGLContext::getGPUInfos(openGLRenderers);
+    if ( !openGLRenderers.empty() ) {
+        libsText += (QLatin1String("<h3>") +
+                     tr("OpenGL renderers:") +
+                     QLatin1String("</h3>"));
+        for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
+            libsText += (QLatin1String("<p>") +
+                         tr("%1 from %2").arg( QString::fromUtf8( it->rendererName.c_str() ) )
+                         .arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
+                         QLatin1String("<br />") +
+                         tr("OpenGL version %1 with GLSL version %2")
+                         .arg( QString::fromUtf8( it->glVersionString.c_str() ) )
+                         .arg( QString::fromUtf8( it->glslVersionString.c_str() ) ) +
+                         QLatin1String("</p>") );
+        }
     }
+#ifdef HAVE_OSMESA
+    int mesaMajor, mesaMinor, mesaRev;
+    OSGLContext_osmesa::getOSMesaVersion(&mesaMajor, &mesaMinor, &mesaRev);
+    libsText += QString::fromUtf8("<p> OSMesa %1.%2.%3 </p>").arg(mesaMajor).arg(mesaMinor).arg(mesaRev);
+#endif
+
     _libsText->setText(libsText);
 }
 

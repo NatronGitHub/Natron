@@ -46,7 +46,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/HashableObject.h"
 #include "Engine/Knob.h"
 
 #include "Serialization/SerializationBase.h"
@@ -153,9 +152,9 @@ public:
     RotoContextPtr getContext() const;
     RotoItemPtr getPreviousItemInLayer() const;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
-
 protected:
+
+    virtual void initializeKnobs() OVERRIDE {}
 
 
     ///This mutex protects every-member this class and the derived class might have.
@@ -197,7 +196,7 @@ toRotoItem(const KnobHolderPtr& holder)
 inline RotoItemConstPtr
 toRotoItem(const KnobHolderConstPtr& holder)
 {
-    return boost::dynamic_pointer_cast<RotoItem>(holder);
+    return boost::dynamic_pointer_cast<const RotoItem>(holder);
 }
 
 NATRON_NAMESPACE_EXIT;

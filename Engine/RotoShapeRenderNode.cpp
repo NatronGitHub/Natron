@@ -347,7 +347,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     double distToNextOut = 0.;
     Point lastCenterOut;
 
-    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> glData;
+    RotoShapeRenderNodeOpenGLDataPtr glData;
     if (args.glContextData) {
         glData = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(args.glContextData);
         assert(glData);
@@ -498,7 +498,7 @@ RotoShapeRenderNode::purgeCaches()
 StatusEnum
 RotoShapeRenderNode::attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
-    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
+    RotoShapeRenderNodeOpenGLDataPtr ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
     *data = ret;
     return eStatusOK;
 }
@@ -506,7 +506,7 @@ RotoShapeRenderNode::attachOpenGLContext(const OSGLContextPtr& glContext, Effect
 StatusEnum
 RotoShapeRenderNode::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
-    boost::shared_ptr<RotoShapeRenderNodeOpenGLData> ret = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(data);
+    RotoShapeRenderNodeOpenGLDataPtr ret = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(data);
     assert(ret);
     ret->cleanup();
     return eStatusOK;

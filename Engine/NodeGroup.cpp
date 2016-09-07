@@ -543,7 +543,19 @@ NodeCollection::connectNodes(int inputNumber,
     Node::CanConnectInputReturnValue ret = output->canConnectInput(input, inputNumber);
     bool connectionOk = ret == Node::eCanConnectInput_ok ||
                         ret == Node::eCanConnectInput_differentFPS ||
-                        ret == Node::eCanConnectInput_differentPars;
+                        ret == Node::eCanConnectInput_differentPars ||
+                        ret == Node::eCanConnectInput_multiResNotSupported;
+
+    if (ret == Node::eCanConnectInput_multiResNotSupported) {
+        LogEntry::LogEntryColor c;
+        if (output->getColor(&c.r, &c.g, &c.b)) {
+            c.colorSet = true;
+        }
+
+        QString err = tr("Warning: %1 does not support inputs of different sizes but its inputs produce different output size. Please check this.").arg( QString::fromUtf8( output->getScriptName().c_str() ) );
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( output->getScriptName().c_str() ) , QDateTime::currentDateTime(), err, false, c);
+
+    }
 
     if ( !connectionOk || !output->connectInput(input, inputNumber) ) {
         return false;
@@ -969,17 +981,6 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >&
                 ParallelRenderArgsPtr childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
                 if (childArgs) {
                     argsMap.insert( std::make_pair(*it2, childArgs) );
-                }
-            }
-        }
-
-        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        RotoContextPtr rotoContext = (*it)->getRotoContext();
-        if (args && rotoContext) {
-            for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                ParallelRenderArgsPtr args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (args2) {
-                    argsMap.insert( std::make_pair(*it2, args2) );
                 }
             }
         }
@@ -2427,8 +2428,8 @@ exportRotoLayer(int indentLevel,
             QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")") );
 
-            const std::list<KnobIPtr>& knobs = isBezier->getKnobs();
-            for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            const KnobsVec& knobs = isBezier->getKnobs();
+            for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
                 QString paramNameStr = QString::fromUtf8("bezier.getParam(\"");
                 const std::string& paramName =  (*it)->getName();
                 if ( paramName.empty() ) {

@@ -63,16 +63,16 @@ struct PrecompNodePrivate
 public:
     PrecompNode* _publicInterface; // can not be a smart ptr
     AppInstanceWPtr app;
-    boost::weak_ptr<KnobFile> projectFileNameKnob;
-    //boost::weak_ptr<KnobButton> reloadProjectKnob;
-    boost::weak_ptr<KnobButton> editProjectKnob;
-    boost::weak_ptr<KnobBool> enablePreRenderKnob;
-    boost::weak_ptr<KnobGroup> preRenderGroupKnob;
-    boost::weak_ptr<KnobChoice> writeNodesKnob;
-    boost::weak_ptr<KnobButton> preRenderKnob;
-    boost::weak_ptr<KnobInt> firstFrameKnob, lastFrameKnob;
+    KnobFileWPtr projectFileNameKnob;
+    //KnobButtonWPtr reloadProjectKnob;
+    KnobButtonWPtr editProjectKnob;
+    KnobBoolWPtr enablePreRenderKnob;
+    KnobGroupWPtr preRenderGroupKnob;
+    KnobChoiceWPtr writeNodesKnob;
+    KnobButtonWPtr preRenderKnob;
+    KnobIntWPtr firstFrameKnob, lastFrameKnob;
     KnobStringWPtr outputNodeNameKnob;
-    boost::weak_ptr<KnobChoice> errorBehaviourKnbo;
+    KnobChoiceWPtr errorBehaviourKnbo;
     KnobStringWPtr subLabelKnob;
     QMutex dataMutex;
     NodesWList precompInputs;
@@ -661,7 +661,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     }
     //Remove all images from the cache associated to the reader since we know they are no longer valid.
     //This is a blocking call so that we are sure there's no old image laying around in the cache after this call
-    readNode->removeAllImagesFromCache(true);
+    readNode->removeAllImagesFromCache();
     readNode->purgeAllInstancesCaches();
 
     //Force the reader to reload the sequence/video

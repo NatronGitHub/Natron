@@ -1414,7 +1414,7 @@ public:
 
     void loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::CurveSerialization > & curves);
 
-    virtual void appendToFrameViewHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 Q_SIGNALS:
 

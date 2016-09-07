@@ -119,7 +119,7 @@ private:
 };
 
 inline RotoLayerPtr
-toRotoLayer(const RotoItemPtr& item)
+toRotoLayer(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<RotoLayer>(item);
 }
