@@ -885,8 +885,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
 
     if (outArgs->useViewerCache) {
-        RectI tilesBbox;
-        bool tilesBboxSet = false;
+        //RectI tilesBbox;
+        //bool tilesBboxSet = false;
 
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
@@ -947,7 +947,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 ++outArgs->params->nbCachedTile;
             } else {
                 // Uncached tile, add it to the bbox
-                if (!tilesBboxSet) {
+                /*if (!tilesBboxSet) {
                     tilesBboxSet = true;
                     tilesBbox.x1 = it->rectRounded.x1;
                     tilesBbox.x2 = it->rectRounded.x2;
@@ -955,16 +955,16 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                     tilesBbox.y2 = it->rectRounded.y2;
                 } else {
                     tilesBbox.merge(it->rectRounded.x1, it->rectRounded.y1, it->rectRounded.x2, it->rectRounded.y2);
-                }
+                }*/
             }
         }
 
-        if ( outArgs->params->roi.contains(tilesBbox) ) {
+        /*if ( outArgs->params->roi.contains(tilesBbox) ) {
             outArgs->params->roi = tilesBbox;
         }
         if ( outArgs->params->roi.isNull() ) {
             return eViewerRenderRetCodeRedraw;
-        }
+        }*/
         
 
     }
