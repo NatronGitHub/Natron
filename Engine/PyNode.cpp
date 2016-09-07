@@ -995,7 +995,10 @@ Effect::getRegionOfDefinition(double time,
         return rod;
     }
     RenderScale s(1.);
-    StatusEnum stat = effect->getRegionOfDefinition_public(effect->getRenderHash(time, ViewIdx(view)), time, s, ViewIdx(view), &rod);
+    U64 inputHash;
+    bool gotHash = effect->getRenderHash(time, ViewIdx(view), &inputHash);
+    (void)gotHash;
+    StatusEnum stat = effect->getRegionOfDefinition_public(inputHash, time, s, ViewIdx(view), &rod);
     if (stat != eStatusOK) {
         return RectD();
     }

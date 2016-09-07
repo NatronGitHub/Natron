@@ -491,6 +491,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                              bool singleThreaded,
                              bool isSequentialRender,
                              const NodePtr& rotoPaintNode,
+                             const RotoStrokeItemPtr& activeStrokeItem,
                              bool isDoingRotoNeatRender,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
@@ -532,7 +533,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, rotoPaintNode, isDoingRotoNeatRender, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, rotoPaintNode, activeStrokeItem, isDoingRotoNeatRender, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
@@ -650,29 +651,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         ViewerArgs* outArgs)
 {
     AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
-
-    {
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = time;
-        tlsArgs->view = view;
-        tlsArgs->isRenderUserInteraction = !isSequential;
-        tlsArgs->isSequential = isSequential;
-        tlsArgs->abortInfo = abortInfo;
-        tlsArgs->treeRoot = getNode();
-        tlsArgs->textureIndex = textureIndex;
-        tlsArgs->timeline = getTimeline();
-        tlsArgs->activeRotoPaintNode = rotoPaintNode;
-        tlsArgs->activeRotoDrawableItem = activeStrokeItem;
-        tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
-        tlsArgs->isAnalysis = false;
-        tlsArgs->draftMode = outArgs->draftModeEnabled;
-        tlsArgs->stats = stats;
-        try {
-            outArgs->frameArgs.reset( new ParallelRenderArgsSetter(tlsArgs) );
-        } catch (const std::exception& /*e*/) {
-            return eViewerRenderRetCodeFail;
-        }
-    }
 
 
     ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, rotoPaintNode, isDoingRotoNeatRender, abortInfo, stats, outArgs);
@@ -984,6 +962,11 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         if ( outArgs->params->roi.contains(tilesBbox) ) {
             outArgs->params->roi = tilesBbox;
         }
+        if ( outArgs->params->roi.isNull() ) {
+            return eViewerRenderRetCodeRedraw;
+        }
+        
+
     }
 
 
@@ -1007,12 +990,10 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
 
 
-    // The hash of the node to render, we store it and make sure we never call getHash() again for the render of this frame
-    outArgs->activeInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view);
-
-    // Now that we have computed the request pass, get the viewer hash
-    outArgs->params->frameViewHash = getRenderHash(outArgs->params->time, outArgs->params->view);
-
+    bool gotInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->activeInputHash);
+    (void)gotInputHash;
+    bool gotViewerHash = getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->params->frameViewHash);
+    (void)gotViewerHash;
 
 
     // When in draft mode first try to get a texture without draft and then try with draft
@@ -1136,12 +1117,43 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
                                       const NodePtr& rotoPaintNode,
+                                      const RotoStrokeItemPtr& activeStrokeItem,
                                       bool isDoingRotoNeatRender,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                       const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
 {
     // We are in the render thread, we may not have computed the RoD and lookup the cache yet
+    {
+        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+        tlsArgs->time = inArgs.params->time;
+        tlsArgs->view = view;
+        tlsArgs->isRenderUserInteraction = !isSequentialRender;
+        tlsArgs->isSequential = isSequentialRender;
+        tlsArgs->abortInfo = inArgs.params->abortInfo;
+        tlsArgs->treeRoot = getNode();
+        tlsArgs->textureIndex = inArgs.params->textureIndex;
+        tlsArgs->timeline = getTimeline();
+        tlsArgs->activeRotoPaintNode = rotoPaintNode;
+        tlsArgs->activeRotoDrawableItem = activeStrokeItem;
+        tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
+        tlsArgs->isAnalysis = false;
+        tlsArgs->draftMode = inArgs.draftModeEnabled;
+        tlsArgs->stats = stats;
+        try {
+            inArgs.frameArgs.reset( new ParallelRenderArgsSetter(tlsArgs) );
+        } catch (const std::exception& /*e*/) {
+            return eViewerRenderRetCodeFail;
+        }
+
+        // Refresh hash
+        bool gotHash = getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.params->frameViewHash);
+        assert(gotHash);
+        gotHash = inArgs.activeInputToRender->getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.activeInputHash);
+        assert(gotHash);
+        (void)gotHash;
+    }
+
 
     // Since we need to compute the RoD now, we MUST setup the thread local
     // storage otherwise functions like EffectInstance::aborted() would not work.

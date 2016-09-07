@@ -146,8 +146,6 @@ public:
 
     QString getProjectPath() const WARN_UNUSED_RETURN;
 
-    QDateTime getProjectFileLastModDate() const;
-
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
@@ -203,8 +201,6 @@ public:
     bool tryLock() const;
 
     void unlock() const;
-
-    qint64 getProjectCreationTime() const;
 
 
     /**

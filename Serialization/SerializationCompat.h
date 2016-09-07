@@ -1331,7 +1331,9 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
         std::map<std::string, int> _nodeCounters;
         ar & ::boost::serialization::make_nvp("NodeCounters", _nodeCounters);
     }
-    ar & ::boost::serialization::make_nvp("CreationDate", _creationDate);
+
+    long long creationDate;
+    ar & ::boost::serialization::make_nvp("CreationDate", creationDate);
 
 }
 

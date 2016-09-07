@@ -1859,7 +1859,6 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->lastProjectLoaded.reset();
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
             _imp->hasProjectBeenSavedByUser = false;
-            _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
             _imp->autoSaveTimer->stop();
@@ -2010,29 +2009,6 @@ Project::unlock() const
     _imp->projectLock.unlock();
 }
 
-qint64
-Project::getProjectCreationTime() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->projectCreationTime.toMSecsSinceEpoch();
-}
-
-QDateTime
-Project::getProjectFileLastModDate() const
-{
-    QString path = QString::fromUtf8(_imp->projectPath->getValue().c_str());
-    Global::ensureLastPathSeparator(path);
-    path += QString::fromUtf8(_imp->projectName->getValue().c_str());
-
-    QFileInfo info(path);
-    if (!info.exists()) {
-        assert(false);
-        return QDateTime::currentDateTime();
-    } else {
-        return info.lastModified();
-    }
-}
 
 ViewerColorSpaceEnum
 Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
@@ -2780,9 +2756,6 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
     // Timeline's current frame
     serialization->_timelineCurrent = currentFrame();
 
-    // Remember project creation date
-    serialization->_creationDate = getProjectCreationTime();
-
     if (getApp()->isBackground()) {
         // Use the last project loaded serialization for the gui layout
         if (_imp->lastProjectLoaded) {
@@ -2821,9 +2794,6 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     bool foundFrameRangeKnob = false;
     {
         CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(getApp());
-
-        // Restore project creation date
-        _imp->projectCreationTime = QDateTime::fromMSecsSinceEpoch( serialization->_creationDate );
 
         getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
 

@@ -124,7 +124,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         if (inputEffect) {
 
             // If this input is frame varying, the node is also frame varying
-            if (!frameViewRequestData->globalData.isFrameVaryingRecursive && inputEffect->isFrameVaryingOrAnimated()) {
+            if (frameViewRequestData && !frameViewRequestData->globalData.isFrameVaryingRecursive && inputEffect->isFrameVaryingOrAnimated()) {
                 frameViewRequestData->globalData.isFrameVaryingRecursive = true;
             }
 
@@ -391,7 +391,10 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         fvRequest = &nodeRequest->frames[frameView];
 
         // Get the hash from the thread local storage
-        U64 frameViewHash = effect->getRenderHash(time, view);
+        U64 frameViewHash;
+        bool gotHash = effect->getRenderHash(time, view, &frameViewHash);
+        assert(gotHash);
+        (void)gotHash;
 
         ///Check identity
         fvRequest->globalData.identityInputNb = -1;
@@ -714,8 +717,8 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
     // First append the knobs to the hash then the hash of the inputs.
     // This function is virtual so derived implementation can influence the hash.
     boost::scoped_ptr<Hash64> hashObj;
-    U64 hashValue = effect->findCachedHash(time ,view);
-    bool isHashCached = hashValue != 0;
+    U64 hashValue;
+    bool isHashCached = effect->findCachedHash(time, view, &hashValue);
     if (!isHashCached) {
         // No hash in cache, compute it
         hashObj.reset(new Hash64);
@@ -907,8 +910,8 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
                                const OSGLContextPtr& gpuContext,
                                const OSGLContextPtr& cpuContext)
 {
-    EffectInstancePtr liveInstance = node->getEffectInstance();
-    assert(liveInstance);
+    EffectInstancePtr effect = node->getEffectInstance();
+    assert(effect);
 
 
     {
@@ -937,7 +940,7 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         tlsArgs->doNanHandling = doNansHandling;
         tlsArgs->draftMode = inArgs->draftMode;
         tlsArgs->stats = inArgs->stats;
-        liveInstance->setParallelRenderArgsTLS(tlsArgs);
+        effect->setParallelRenderArgsTLS(tlsArgs);
 
     }
 }
@@ -1180,10 +1183,10 @@ ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
     return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
 }
 
-U64
-ParallelRenderArgs::getFrameViewHash(double time, ViewIdx view) const
+bool
+ParallelRenderArgs::getFrameViewHash(double time, ViewIdx view, U64* hash) const
 {
-    return findFrameViewHash(time, view, frameViewHash);
+    return findFrameViewHash(time, view, frameViewHash, hash);
 }
 
 NATRON_NAMESPACE_EXIT;

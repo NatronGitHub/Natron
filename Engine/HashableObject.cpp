@@ -75,15 +75,11 @@ HashableObject::getHashParent() const
 
 
 
-U64
-HashableObject::findCachedHash(double time, ViewIdx view) const
+bool
+HashableObject::findCachedHash(double time, ViewIdx view, U64 *hash) const
 {
-    QMutexLocker k(&_imp->hashCacheMutex);
-    U64 foundCached = findFrameViewHash(time, view, _imp->hashCache);
-    if (foundCached != 0) {
-        return foundCached;
-    }
-    return 0;
+    QMutexLocker k(&_imp->hashCacheMutex);;
+    return findFrameViewHash(time, view, _imp->hashCache, hash);
 }
 
 
@@ -99,6 +95,10 @@ HashableObject::computeHash_noCache(double time, ViewIdx view, Hash64* hash)
 void
 HashableObject::addHashToCache(double time, ViewIdx view, U64 hashValue)
 {
+    assert(hashValue != 0);
+    if (hashValue == 0) {
+        return;
+    }
     QMutexLocker k(&_imp->hashCacheMutex);
     FrameViewPair fv = {time, view};
     _imp->hashCache[fv] = hashValue;
@@ -110,21 +110,22 @@ HashableObject::computeHash(double time, ViewIdx view)
     {
         // Find a hash in the cache..
         QMutexLocker k(&_imp->hashCacheMutex);
-        U64 foundCached = findFrameViewHash(time, view, _imp->hashCache);
-        if (foundCached != 0) {
-            return foundCached;
+        U64 hashValue;
+        bool isCached = findFrameViewHash(time, view, _imp->hashCache, &hashValue);
+        if (isCached) {
+            return hashValue;
         }
 
         // Compute it
         Hash64 hash;
         computeHash_noCache(time, view, &hash);
         hash.computeHash();
-        U64 ret = hash.value();
+        hashValue = hash.value();
 
         // Cache it
         FrameViewPair fv = {time, view};
-        _imp->hashCache[fv] = ret;
-        return ret;
+        _imp->hashCache[fv] = hashValue;
+        return hashValue;
 
     }
 

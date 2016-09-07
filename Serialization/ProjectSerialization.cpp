@@ -81,7 +81,6 @@ ProjectSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     }
 
     em << YAML_NAMESPACE::Key << "Frame" << YAML_NAMESPACE::Value << _timelineCurrent;
-    em << YAML_NAMESPACE::Key << "CreationDate" << YAML_NAMESPACE::Value << _creationDate;
     em << YAML_NAMESPACE::Key << "NatronVersion" << YAML_NAMESPACE::Value;
     _projectLoadedInfo.encode(em);
 
@@ -137,7 +136,6 @@ ProjectSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
     }
     _timelineCurrent = node["Frame"].as<int>();
-    _creationDate = node["CreationDate"].as<long long>();
     _projectLoadedInfo.decode(node["NatronVersion"]);
     if (node["OpenedPanels"]) {
         YAML_NAMESPACE::Node n = node["OpenedPanels"];

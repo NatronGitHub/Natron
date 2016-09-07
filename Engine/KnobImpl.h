@@ -3039,6 +3039,13 @@ void appendValueToHash(const T& v, Hash64* hash)
 }
 
 template <>
+void appendValueToHash(const bool& v, Hash64* hash)
+{
+    hash->append(v);
+}
+
+
+template <>
 void appendValueToHash(const std::string& v, Hash64* hash)
 {
     Hash64::appendQString(QString::fromUtf8(v.c_str()), hash);

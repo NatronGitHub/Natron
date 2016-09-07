@@ -275,7 +275,9 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     }
 
     assert( !tls->frameArgs.empty() );
-    tls->frameArgs.pop_back();
+    if (!tls->frameArgs.empty()) {
+        tls->frameArgs.pop_back();
+    }
 }
 
 ParallelRenderArgsPtr
@@ -301,7 +303,7 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
 
     // If the node is frame varying, append the time to its hash.
     // Do so as well if it is view varying
-    if (isFrameVarying()) {
+    if (isFrameVaryingOrAnimated()) {
         hash->append(time);
     }
 
@@ -312,6 +314,7 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
     // Also append the project knobs to the hash. Their hash will only change when the project properties have been invalidated
     U64 projectHash = getApp()->getProject()->computeHash(time, view);
     hash->append(projectHash);
+
 
     KnobHolder::appendToHash(time, view, hash);
 }
@@ -347,24 +350,33 @@ EffectInstance::invalidateHashCache()
     invalidateHashRecursive(shared_from_this(), markedNodes);
 }
 
-U64
-EffectInstance::getRenderHash(double time, ViewIdx view) const
+bool
+EffectInstance::getRenderHash(double time, ViewIdx view, U64* retHash) const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
-        return 0;
+        *retHash = 0;
+        return false;
     }
 
     const ParallelRenderArgsPtr &args = tls->frameArgs.back();
     assert(args);
-    U64 hash = args->getFrameViewHash(time, view);
-    if (hash) {
-        return hash;
+    U64 hash;
+    bool gotIt = args->getFrameViewHash(time, view, &hash);
+    if (gotIt) {
+        *retHash = hash;
+        return true;
     }
 
     // Did not find a valid hash, check if it is cached...
-    return findCachedHash(time, view);
+    gotIt = findCachedHash(time, view, &hash);
+    if (gotIt) {
+        *retHash = hash;
+        return true;
+    }
+    *retHash = 0;
+    return false;
 }
 
 bool
@@ -669,7 +681,7 @@ EffectInstance::getImage(int inputNb,
      We did not apply any TLS to the node tree, so do it now.
      */
     boost::shared_ptr<ParallelRenderArgsSetter> tlsSetter;
-    if ( !tls || ( !tls->currentRenderArgs.validArgs && tls->frameArgs.empty() ) ) {
+    if ( !tls || ( !tls->currentRenderArgs.validArgs || tls->frameArgs.empty() ) ) {
 
         // We set the thread storage render args so that if the instance changed action
         // tries to call getImage it can render with good parameters.
@@ -711,7 +723,12 @@ EffectInstance::getImage(int inputNb,
             canonicalRoi = *optionalBoundsParam;
         } else {
             // Go for RoD
-            U64 inputHash = inputEffect->getRenderHash(time, view);
+            U64 inputHash;
+            bool gotHash = inputEffect->getRenderHash(time, view, &inputHash);
+            assert(gotHash);
+            if (!gotHash) {
+                return ImagePtr();
+            }
             RectD rod;
             StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputHash, time, scale, view, &rod);
             if ( (stat == eStatusFailed) || rod.isNull() ) {
@@ -758,7 +775,11 @@ EffectInstance::getImage(int inputNb,
         //When analysing we do not compute a request pass so we do not enter this condition
         ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
         if (inputFrameArgs) {
-            frameViewHash = inputFrameArgs->getFrameViewHash(time, view);
+            bool gotHash = inputFrameArgs->getFrameViewHash(time, view, &frameViewHash);
+            if (!gotHash) {
+                assert(false);
+                return ImagePtr();
+            }
         }
         const FrameViewRequest* request = 0;
         if (inputFrameArgs && inputFrameArgs->request) {
@@ -1166,7 +1187,10 @@ EffectInstance::getRegionsOfInterest(double time,
                 RectD rod;
                 RenderScale inpScale(input->supportsRenderScale() ? scale.x : 1.);
                 input->getParallelRenderArgsTLS();
-                StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(time, view), time, inpScale, view, &rod);
+                U64 inputHash;
+                bool gotHash = input->getRenderHash(time, view, &inputHash);
+                (void)gotHash;
+                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, inpScale, view, &rod);
                 if (stat == eStatusFailed) {
                     return;
                 }
@@ -3127,7 +3151,11 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, Value
 
     if (isMT) {
         node->refreshIdentityState();
-        invalidateHashCache();
+        if (knob) {
+            knob->invalidateHashCache();
+        } else {
+            invalidateHashCache();
+        }
     }
 }
 
@@ -3951,8 +3979,10 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             if (!preferredInput) {
                 return eStatusFailed;
             }
-
-            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(time, view), time, scale, view, rod);
+            U64 inputHash;
+            bool gotHash = preferredInput->getEffectInstance()->getRenderHash(time, view, &inputHash);
+            (void)gotHash;
+            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(inputHash, time, scale, view, rod);
         }
 
         StatusEnum ret;
@@ -5123,7 +5153,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 EffectInstancePtr
 EffectInstance::getNearestNonIdentity(double time)
 {
-    U64 hash = getRenderHash(time, ViewIdx(0));
+    U64 hash;
+    bool gotHash = getRenderHash(time, ViewIdx(0), &hash);
+    (void)gotHash;
     RenderScale scale(1.);
     Format frmt;
 

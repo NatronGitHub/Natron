@@ -62,7 +62,7 @@ public:
     /**
      * @brief Look for a hash in the cache. Returns 0 if nothing is found
      **/
-    U64 findCachedHash(double time, ViewIdx view) const;
+    bool findCachedHash(double time, ViewIdx view, U64 *hash) const;
 
     /**
      * @brief Compute has hash at the given time/view but does not use the hash cache at all.

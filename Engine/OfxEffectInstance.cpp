@@ -1731,8 +1731,9 @@ OfxEffectInstance::getFrameRange(double *first,
                     double time;
                     ViewIdx view;
                     inputEffect->getCurrentTimeView(&time, &view);
-                    U64 hash = inputEffect->getRenderHash(time, view);
-
+                    U64 hash;
+                    bool gotHash = inputEffect->getRenderHash(time, view, &hash);
+                    (void)gotHash;
                     double f, l;
                     inputEffect->getFrameRange_public(hash, &f, &l);
                     if (!firstValidInput) {

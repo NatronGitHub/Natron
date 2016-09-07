@@ -425,9 +425,9 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 
     if (node["Value"]) {
         YAML_NAMESPACE::Node valueNode = node["Value"];
-        initValuesVec(this, valueNode.size());
 
         int nDims = valueNode.IsSequence() ? valueNode.size() : 1;
+        initValuesVec(this, nDims);
 
         for (int i = 0; i < nDims; ++i) {
 

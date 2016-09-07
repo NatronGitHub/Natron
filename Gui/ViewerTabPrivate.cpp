@@ -160,7 +160,9 @@ static double
 transformTimeForNode(const EffectInstancePtr& currentNode,
                      double inTime)
 {
-    U64 nodeHash = currentNode->findCachedHash(inTime, ViewIdx(0));
+    U64 nodeHash;
+    bool gotHash = currentNode->findCachedHash(inTime, ViewIdx(0), &nodeHash);
+    (void)gotHash;
     FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, ViewIdx(0));
     FramesNeededMap::iterator foundInput0 = framesNeeded.find(0 /*input*/);
 

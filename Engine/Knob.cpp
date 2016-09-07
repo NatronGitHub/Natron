@@ -4322,15 +4322,14 @@ KnobHelper::randomSeed(double time,
     if (holder) {
         EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
-            U64 cachedHash = effect->findCachedHash(time, ViewIdx(0));
-            if (cachedHash == 0) {
+            bool gotHash = effect->findCachedHash(time, ViewIdx(0), &hash);
+            if (!gotHash) {
                 // Not cached.. compute a hash for the effect that does not depend on its inputs
                 Hash64 hashObj;
                 effect->computeHash_noCache(time, ViewIdx(0), &hashObj);
                 hashObj.computeHash();
-                cachedHash = hashObj.value();
+                hash = hashObj.value();
             }
-            hash = cachedHash;
         }
     }
     U32 hash32 = (U32)hash;
@@ -6941,10 +6940,12 @@ KnobHolder::appendToHash(double time, ViewIdx view, Hash64* hash)
         if (!(*it)->getEvaluateOnChange()) {
             continue;
         }
-        hash->append((*it)->computeHash(time, view));
+        U64 knobHash = (*it)->computeHash(time, view);
+        hash->append(knobHash);
+
     }
 
-} // Node::appendKnobsToFrameViewHash
+} // appendToHash
 
 
 

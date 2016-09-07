@@ -283,7 +283,7 @@ public:
      * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
      * at any time during the same render call.
      **/
-    U64 getRenderHash(double time, ViewIdx view) const WARN_UNUSED_RETURN;
+    bool getRenderHash(double time, ViewIdx view, U64* hash) const WARN_UNUSED_RETURN;
 
     void invalidateHashNotRecursive();
 

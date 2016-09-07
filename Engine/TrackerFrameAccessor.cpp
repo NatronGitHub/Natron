@@ -368,7 +368,10 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         return (mv::FrameAccessor::Key)0;
     }
 
-    U64 effectHash = effect->getRenderHash(frame, ViewIdx(0));
+    U64 effectHash;
+    bool gotHash = effect->getRenderHash(frame, ViewIdx(0), &effectHash);
+    assert(gotHash);
+    (void)gotHash;
     double par = effect->getAspectRatio(-1);
     RectD precomputedRoD;
     if (!region) {

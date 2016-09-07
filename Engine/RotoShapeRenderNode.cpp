@@ -129,9 +129,13 @@ RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
     RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
     if (isBezier) {
-        hash->append(isBezier->computeHash(time, view));
+        U64 bh = isBezier->computeHash(time, view);
+        hash->append(bh);
+
     } else if (isStroke) {
-        hash->append(isStroke->computeHash(time, view));
+        U64 sh = isStroke->computeHash(time, view);
+        hash->append(sh);
+        
     }
 
     

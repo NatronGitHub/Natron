@@ -185,7 +185,9 @@ DiskCacheNode::getFrameRange(double *first,
             double time;
             ViewIdx view;
             input->getCurrentTimeView(&time, &view);
-            U64 hash = input->getRenderHash(time, view);
+            U64 hash;
+            bool gotHash = input->getRenderHash(time, view, &hash);
+            (void)gotHash;
             input->getFrameRange_public(hash, first, last);
         }
         break;

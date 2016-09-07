@@ -414,7 +414,9 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 if (!input) {
                     continue;
                 }
-                U64 inputHash = input->getRenderHash(time, view);
+                U64 inputHash;
+                bool gotHash = input->getRenderHash(time, view, &inputHash);
+                (void)gotHash;
                 StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, argsScale, view, &inputRod);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
@@ -767,7 +769,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
 
     *tls = tlsData->getOrCreateTLSData();
     assert(*tls && !(*tls)->frameArgs.empty());
-    if ((*tls)->frameArgs.empty()) {
+    if (!*tls || (*tls)->frameArgs.empty()) {
         // TLS must have been set via ParallelRenderArgsSetter! Calling renderRoI without this is a bug.
         return eRenderRoIRetCodeFailed;
     }
@@ -784,7 +786,11 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
 
 
 
-    *frameViewHash = (*frameArgs)->getFrameViewHash(args.time, args.view);
+    bool gotHash = (*frameArgs)->getFrameViewHash(args.time, args.view, frameViewHash);
+    if (!gotHash) {
+        // The hash should have been computed
+        return eRenderRoIRetCodeFailed;
+    }
     *par = _publicInterface->getAspectRatio(-1);
     *fieldingOrder = _publicInterface->getFieldingOrder();
     *thisEffectOutputPremult = _publicInterface->getPremult();

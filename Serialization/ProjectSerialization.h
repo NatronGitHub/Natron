@@ -93,9 +93,6 @@ public:
     // The timeline current frame
     int _timelineCurrent;
 
-    // The project creation date, obtained with QDateTime::toMSecsSinceEpoch();
-    long long _creationDate;
-
     // Infos related to Natron version in the project being loaded
     ProjectBeingLoadedInfo _projectLoadedInfo;
 
@@ -114,7 +111,6 @@ public:
     , _additionalFormats()
     , _projectKnobs()
     , _timelineCurrent(0)
-    , _creationDate(0)
     , _projectLoadedInfo()
     , _openedPanelsOrdered()
     , _projectWorkspace()

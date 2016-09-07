@@ -99,14 +99,16 @@ struct FrameView_compare_less
 
 typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;
 
-inline U64 findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap& table)
+inline bool findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap& table, U64* hash)
 {
     FrameViewPair fv = {time, view};
     FrameViewHashMap::const_iterator it = table.find(fv);
     if (it != table.end()) {
-        return it->second;
+        *hash = it->second;
+        return true;
     }
-    return 0;
+    *hash = 0;
+    return false;
 
 }
 
@@ -199,7 +201,7 @@ public:
 
     bool isCurrentFrameRenderNotAbortable() const;
 
-    U64 getFrameViewHash(double time, ViewIdx view) const;
+    bool getFrameViewHash(double time, ViewIdx view, U64* hash) const;
 };
 
 

@@ -395,7 +395,9 @@ OfxClipInstance::getFrameRange(double &startFrame,
         double time;
         ViewIdx view;
         n->getCurrentTimeView(&time, &view);
-        U64 hash = n->getRenderHash(time, view);
+        U64 hash;
+        bool gotHash = n->getRenderHash(time, view, &hash);
+        (void)gotHash;
         n->getFrameRange_public(hash, &startFrame, &endFrame);
     } else {
         n = getEffectHolder();
@@ -502,7 +504,9 @@ OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
         double time;
         ViewIdx view;
         inputNode->getCurrentTimeView(&time, &view);
-        U64 hash = inputNode->getRenderHash(time, view);
+        U64 hash;
+        bool gotHash = inputNode->getRenderHash(time, view, &hash);
+        (void)gotHash;
         return inputNode->getFrameRange_public(hash, &unmappedStartFrame, &unmappedEndFrame);
     } else {
         ///The node is not connected, return project frame range
@@ -559,7 +563,9 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
     }
     if (associatedNode) {
 
-        U64 hash = associatedNode->getRenderHash(time, view);
+        U64 hash;
+        bool gotHash = associatedNode->getRenderHash(time, view, &hash);
+        (void)gotHash;
         RectD rod;
         RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
         StatusEnum st = associatedNode->getRegionOfDefinition_public(hash, time, scale, view, &rod);

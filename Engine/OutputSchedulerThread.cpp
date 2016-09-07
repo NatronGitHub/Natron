@@ -2305,8 +2305,11 @@ private:
                 }
 
                 // Get the hash now that we applied TLS
-                U64 activeInputHash = activeInputToRender->getRenderHash(time, tlsArgs->view);
-
+                U64 activeInputHash;
+                bool gotHash = activeInputToRender->getRenderHash(time, tlsArgs->view, &activeInputHash);
+                assert(gotHash);
+                (void)gotHash;
+                
                 // Call getRoD to know where to render
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputHash, time, scale, viewsToRender[view], &rod);
                 if (stat == eStatusFailed) {
@@ -2899,7 +2902,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/,  NodePtr(),  false /*rotoNeatRender*/,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/,  NodePtr(),  RotoStrokeItemPtr(), false /*rotoNeatRender*/,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3589,7 +3592,7 @@ public:
         }
         try {
             stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false,
-                                               _args->isRotoPaintRequest, _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
+                                               _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
         } catch (...) {
             stat = ViewerInstance::eViewerRenderRetCodeFail;
         }

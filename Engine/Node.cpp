@@ -5491,7 +5491,10 @@ checkCanConnectNoMultiRes(const Node* output,
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
     RenderScale scale(1.);
     RectD rod;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getEffectInstance()->getRenderHash(input->getEffectInstance()->getCurrentTime(), ViewIdx(0)),
+    U64 inputHash;
+    bool gotHash = input->getEffectInstance()->getRenderHash(input->getEffectInstance()->getCurrentTime(), ViewIdx(0), &inputHash);
+    (void)gotHash;
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(inputHash,
                                                                                output->getApp()->getTimeLine()->currentFrame(),
                                                                                scale,
                                                                                ViewIdx(0),
@@ -6827,7 +6830,10 @@ Node::makePreviewImage(SequenceTime time,
             return false;
         }
 
-        U64 nodeHash = effect->getRenderHash(time, ViewIdx(0));
+        U64 nodeHash;
+        bool gotHash = effect->getRenderHash(time, ViewIdx(0), &nodeHash);
+        assert(gotHash);
+        (void)gotHash;
 
         RenderScale scale(1.);
         RectD rod;
@@ -8008,39 +8014,6 @@ Node::onInputChanged(int inputNb)
         ///When loading a group (or project) just wait until everything is setup to actually compute input
         ///related data such as clip preferences
         ///Exception for the Rotopaint node which needs to setup its own graph internally
-
-        /**
-         * The plug-in might call getImage, set a valid thread storage on the tree.
-         **/
-        double time = getApp()->getTimeLine()->currentFrame();
-
-        // Keep abortInfo here otherwise it will get destroyed as nobody holds a shared ref to it except here
-        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-
-
-        const bool isRenderUserInteraction = true;
-        const bool isSequentialRender = false;
-        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-        if (isAbortable) {
-            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
-        }
-
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = time;
-        tlsArgs->view = ViewIdx(0);
-        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
-        tlsArgs->isSequential = isSequentialRender;
-        tlsArgs->abortInfo = abortInfo;
-        tlsArgs->treeRoot = shared_from_this();
-        tlsArgs->textureIndex = 0;
-        tlsArgs->timeline = getApp()->getTimeLine();
-        tlsArgs->activeRotoPaintNode = NodePtr();
-        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isDoingRotoNeatRender = false;
-        tlsArgs->isAnalysis = false;
-        tlsArgs->draftMode = false;
-        tlsArgs->stats = RenderStatsPtr();
-        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
 
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.

@@ -699,7 +699,10 @@ TrackMarker::resetCenter()
         RenderScale scale;
         scale.x = scale.y = 1;
         RectD rod;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getEffectInstance()->getRenderHash(time, ViewIdx(0)), time, scale, ViewIdx(0), &rod);
+        U64 inputHash;
+        bool gotHash = input->getEffectInstance()->getRenderHash(time, ViewIdx(0), &inputHash);
+        (void)gotHash;
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(inputHash, time, scale, ViewIdx(0), &rod);
         Point center;
         center.x = 0;
         center.y = 0;
@@ -1164,8 +1167,10 @@ TrackMarker::getMarkerImage(int time,
 
     EffectInstancePtr effectToRender = input->getEffectInstance();
 
-    U64 effectHash = effectToRender->getRenderHash(time, ViewIdx(0));
-
+    U64 effectHash;
+    bool gotHash = effectToRender->getRenderHash(time, ViewIdx(0), &effectHash);
+    assert(gotHash);
+    (void)gotHash;
     RenderScale scale;
     scale.x = scale.y = 1.;
     unsigned int mipMapLevel = 0;
