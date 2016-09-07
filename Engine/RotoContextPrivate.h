@@ -591,47 +591,47 @@ public:
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
     double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
-    KnobDoublePtr opacity; //< opacity of the rendered shape between 0 and 1
-    KnobDoublePtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
-    KnobDoublePtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
+    KnobDoubleWPtr opacity; //< opacity of the rendered shape between 0 and 1
+    KnobDoubleWPtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
+    KnobDoubleWPtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                   //alpha value is half the original value when at half distance from the feather distance
-    KnobChoicePtr fallOffRampType;
-    KnobChoicePtr lifeTime;
-    KnobBoolPtr activated; //< should the curve be visible/rendered ? (animable)
-    KnobIntPtr lifeTimeFrame;
+    KnobChoiceWPtr fallOffRampType;
+    KnobChoiceWPtr lifeTime;
+    KnobBoolWPtr activated; //< should the curve be visible/rendered ? (animable)
+    KnobIntWPtr lifeTimeFrame;
 #ifdef NATRON_ROTO_INVERTIBLE
-    KnobBoolPtr inverted; //< invert the rendering
+    KnobBoolWPtr inverted; //< invert the rendering
 #endif
-    KnobColorPtr color;
-    KnobChoicePtr compOperator;
-    KnobDoublePtr translate;
-    KnobDoublePtr rotate;
-    KnobDoublePtr scale;
-    KnobBoolPtr scaleUniform;
-    KnobDoublePtr skewX;
-    KnobDoublePtr skewY;
-    KnobChoicePtr skewOrder;
-    KnobDoublePtr center;
-    KnobDoublePtr extraMatrix;
-    KnobDoublePtr brushSize;
-    KnobDoublePtr brushSpacing;
-    KnobDoublePtr brushHardness;
-    KnobDoublePtr effectStrength;
-    KnobBoolPtr pressureOpacity, pressureSize, pressureHardness, buildUp;
-    KnobDoublePtr visiblePortion; // [0,1] by default
-    KnobDoublePtr cloneTranslate;
-    KnobDoublePtr cloneRotate;
-    KnobDoublePtr cloneScale;
-    KnobBoolPtr cloneScaleUniform;
-    KnobDoublePtr cloneSkewX;
-    KnobDoublePtr cloneSkewY;
-    KnobChoicePtr cloneSkewOrder;
-    KnobDoublePtr cloneCenter;
-    KnobChoicePtr cloneFilter;
-    KnobBoolPtr cloneBlackOutside;
-    KnobChoicePtr sourceColor;
-    KnobIntPtr timeOffset;
-    KnobChoicePtr timeOffsetMode;
+    KnobColorWPtr color;
+    KnobChoiceWPtr compOperator;
+    KnobDoubleWPtr translate;
+    KnobDoubleWPtr rotate;
+    KnobDoubleWPtr scale;
+    KnobBoolWPtr scaleUniform;
+    KnobDoubleWPtr skewX;
+    KnobDoubleWPtr skewY;
+    KnobChoiceWPtr skewOrder;
+    KnobDoubleWPtr center;
+    KnobDoubleWPtr extraMatrix;
+    KnobDoubleWPtr brushSize;
+    KnobDoubleWPtr brushSpacing;
+    KnobDoubleWPtr brushHardness;
+    KnobDoubleWPtr effectStrength;
+    KnobBoolWPtr pressureOpacity, pressureSize, pressureHardness, buildUp;
+    KnobDoubleWPtr visiblePortion; // [0,1] by default
+    KnobDoubleWPtr cloneTranslate;
+    KnobDoubleWPtr cloneRotate;
+    KnobDoubleWPtr cloneScale;
+    KnobBoolWPtr cloneScaleUniform;
+    KnobDoubleWPtr cloneSkewX;
+    KnobDoubleWPtr cloneSkewY;
+    KnobChoiceWPtr cloneSkewOrder;
+    KnobDoubleWPtr cloneCenter;
+    KnobChoiceWPtr cloneFilter;
+    KnobBoolWPtr cloneBlackOutside;
+    KnobChoiceWPtr sourceColor;
+    KnobIntWPtr timeOffset;
+    KnobChoiceWPtr timeOffsetMode;
 
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     KnobDoublePtr motionBlur;
