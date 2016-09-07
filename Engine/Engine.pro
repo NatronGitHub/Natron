@@ -108,6 +108,7 @@ SOURCES += \
     GPUContextPool.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
+    HashableObject.cpp \
     Hash64.cpp \
     HistogramCPU.cpp \
     HostOverlaySupport.cpp \
@@ -305,6 +306,7 @@ HEADERS += \
     GPUContextPool.h \
     GroupInput.h \
     GroupOutput.h \
+    HashableObject.h \
     Hash64.h \
     HistogramCPU.h \
     HostOverlaySupport.h \

@@ -1628,6 +1628,19 @@ RotoDrawableItem::resetTransformCenter()
     centerKnob->endChanges();
 }
 
+void
+RotoDrawableItem::appendToHash(double time, ViewIdx view, Hash64* hash)
+{
+    // Append the item knobs
+    const std::list<KnobIPtr>& itemKnobs = getKnobs();
+    for (std::list<KnobIPtr>::const_iterator it = itemKnobs.begin(); it != itemKnobs.end(); ++it) {
+        hash->append((*it)->computeHash(time, view));
+    }
+
+    RotoItem::appendToHash(time, view, hash);
+}
+
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

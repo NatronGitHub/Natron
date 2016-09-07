@@ -647,6 +647,7 @@ public:
 
     void setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 Q_SIGNALS:
 

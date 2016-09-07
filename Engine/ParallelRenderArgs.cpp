@@ -41,6 +41,7 @@
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
 
@@ -709,28 +710,17 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
         }
     }
 
-#pragma message WARN("TODO: cache the hash against frame/view and invalidate when something that triggers a render changes")
-
     // Compute the hash for this frame/view
     // First append the knobs to the hash then the hash of the inputs.
     // This function is virtual so derived implementation can influence the hash.
-    Hash64 hashObj;
-    effect->appendToHash(time, view, &hashObj);
-
-    // Append the plug-in ID in case for there is a coincidence of all parameter values (and ordering!) between 2 plug-ins
-    hashObj.append(node->getPluginID());
-
-
-    // If the node is frame varying, append the time to its hash.
-    // Do so as well if it is view varying
-    if (effect->isFrameVarying()) {
-        hashObj.append(time);
+    boost::scoped_ptr<Hash64> hashObj;
+    U64 hashValue = effect->findCachedHash(time ,view);
+    bool isHashCached = hashValue != 0;
+    if (!isHashCached) {
+        // No hash in cache, compute it
+        hashObj.reset(new Hash64);
+        effect->computeHash_noCache(time, view, hashObj.get());
     }
-
-    if (effect->isViewInvariant() == EffectInstance::eViewInvarianceAllViewsVariant) {
-        hashObj.append((int)view);
-    }
-
 
 
     // Use getFramesNeeded to know where to recurse
@@ -757,24 +747,36 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
                 for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                     U64 inputHash;
                     getDependenciesRecursive_internal(inputEffect->getNode(), f, viewIt->first, finalNodes, &inputHash);
-                    hashObj.append(inputHash);
+
+                    // Append the input hash
+                    if (!isHashCached) {
+                        hashObj->append(inputHash);
+                    }
                 }
             }
 
         }
     }
 
-    hashObj.computeHash();
+    if (!isHashCached) {
+        hashObj->computeHash();
+        hashValue = hashObj->value();
+    }
+
     FrameViewPair fv = {time, view};
-    nodeData->frameViewHash[fv] = hashObj.value();
-    
+    nodeData->frameViewHash[fv] = hashValue;
+
+    if (!isHashCached) {
+        effect->addHashToCache(time, view, hashValue);
+    }
+
     if (nodeHash) {
-        *nodeHash = hashObj.value();
+        *nodeHash = hashValue;
     }
 
 
     // Now that we have the hash for this frame/view, cache actions results
-    effect->cacheFramesNeeded(time, view, hashObj.value(), framesNeeded);
+    effect->cacheFramesNeeded(time, view, hashValue, framesNeeded);
 
 
 } // getDependenciesRecursive_internal
@@ -846,14 +848,9 @@ setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
                           const NodePtr& /*treeRoot*/,
                           double time)
 {
-    NodesList rotoPaintNodes;
-    EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
-    assert(rotoLive);
-    bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
-    assert(ok);
-    if (!ok) {
-        throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
-    }
+
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(rotoPaintNode->getEffectInstance());
+    NodesList rotoPaintTreeNodes = rotoPaintEffect->getNodes();
 
     /*
      Take from the stroke all the points that were input by the user so far on the main thread and set them globally to the
@@ -889,7 +886,7 @@ setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
     if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
         rotoPaintNode->getApp()->updateLastPaintStrokeData(isStrokeFirstTick, newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
 
-        for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
+        for (NodesList::iterator it = rotoPaintTreeNodes.begin(); it != rotoPaintTreeNodes.end(); ++it) {
             (*it)->prepareForNextPaintStrokeRender();
         }
         //updateLastStrokeDataRecursively(treeRoot, rotoPaintNode, lastStrokeBbox, false);
@@ -1186,14 +1183,7 @@ ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
 U64
 ParallelRenderArgs::getFrameViewHash(double time, ViewIdx view) const
 {
-    for (FrameViewHashMap::const_iterator it = frameViewHash.begin(); it != frameViewHash.end(); ++it) {
-        if (it->first.time == time) {
-            if ( (it->first.view == -1) || (it->first.view == view) ) {
-                return it->second;
-            }
-        }
-    }
-    return 0;
+    return findFrameViewHash(time, view, frameViewHash);
 }
 
 NATRON_NAMESPACE_EXIT;

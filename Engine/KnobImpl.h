@@ -3046,7 +3046,7 @@ void appendValueToHash(const std::string& v, Hash64* hash)
 
 template <typename T>
 void
-Knob<T>::appendToFrameViewHash(double time, ViewIdx view, Hash64* hash)
+Knob<T>::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
     int nDims = getDimension();
 
@@ -3055,9 +3055,7 @@ Knob<T>::appendToFrameViewHash(double time, ViewIdx view, Hash64* hash)
 
     for (int i = 0; i < nDims; ++i) {
         if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(i)) {
-            CurvePtr curve = getCurve(view, i);
-            assert(curve);
-            Hash64::appendCurve(curve, hash);
+            handleAnimatedHashing(this, view, i, hash);
         } else {
             T v = getValueAtTime(time, i, view);
             appendValueToHash(v, hash);

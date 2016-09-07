@@ -107,10 +107,13 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 static RotoMetaTypesRegistration registration;
+
 RotoItem::RotoItem(const RotoContextPtr& context,
                    const std::string & name,
                    RotoLayerPtr parent)
-    : itemMutex()
+    : KnobHolder(context->getNode()->getApp())
+    , SERIALIZATION_NAMESPACE::SerializableObjectBase()
+    , itemMutex()
     , _imp( new RotoItemPrivate(context, name, parent) )
 {
 }
@@ -247,7 +250,7 @@ RotoItem::setLocked_recursive(bool locked,
             QMutexLocker m(&itemMutex);
             _imp->locked = locked;
         }
-        getContext()->onItemLockedChanged(shared_from_this(), reason);
+        getContext()->onItemLockedChanged(toRotoItem(shared_from_this()), reason);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems & children = layer->getItems();
@@ -270,7 +273,7 @@ RotoItem::setLocked(bool l,
             QMutexLocker m(&itemMutex);
             _imp->locked = l;
         }
-        getContext()->onItemLockedChanged(shared_from_this(), reason);
+        getContext()->onItemLockedChanged(toRotoItem(shared_from_this()), reason);
     } else {
         setLocked_recursive(l, reason);
     }
@@ -383,7 +386,7 @@ RotoItem::setScriptName(const std::string & name)
                 c->changeItemScriptName(oldFullName, newFullName);
             }
         }
-        c->onItemScriptNameChanged( shared_from_this() );
+        c->onItemScriptNameChanged( toRotoItem(shared_from_this()) );
     }
 
     return true;
@@ -440,7 +443,7 @@ RotoItem::setLabel(const std::string& label)
     RotoContextPtr c = _imp->context.lock();
 
     if (c) {
-        c->onItemLabelChanged( shared_from_this() );
+        c->onItemLabelChanged( toRotoItem(shared_from_this()) );
     }
 }
 
@@ -582,8 +585,8 @@ RotoItem::getPreviousItemInLayer() const
     if (!layer) {
         return RotoItemPtr();
     }
-
-    return getPreviousInLayer( layer, shared_from_this() );
+    RotoItemConstPtr thisShared = toRotoItem(shared_from_this());
+    return getPreviousInLayer( layer, thisShared);
 }
 
 NATRON_NAMESPACE_EXIT;

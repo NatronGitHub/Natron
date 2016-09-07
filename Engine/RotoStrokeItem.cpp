@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
+#include "Engine/Hash64.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoShapeRenderCairo.h"
@@ -1035,6 +1036,28 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
         }
     }
 }
+
+void
+RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
+{
+    {
+        // Append the item knobs
+        QMutexLocker k(&itemMutex);
+        for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
+            Hash64::appendCurve(it->xCurve, hash);
+            Hash64::appendCurve(it->yCurve, hash);
+
+            // We don't add the pressure curve if there is more than 1 point, because it's extremely unlikely that the user draws twice the same curve with different pressure
+            if (it->pressureCurve->getKeyFramesCount() == 1) {
+                Hash64::appendCurve(it->pressureCurve, hash);}
+            
+        }
+    }
+    
+
+    RotoDrawableItem::appendToHash(time, view, hash);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

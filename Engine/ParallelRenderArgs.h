@@ -84,12 +84,14 @@ struct FrameView_compare_less
         } else if (lhs.time > rhs.time) {
             return false;
         } else {
+            if (lhs.view == -1 || rhs.view == -1 || lhs.view == rhs.view) {
+                return false;
+            }
             if (lhs.view < rhs.view) {
                 return true;
-            } else if (lhs.view > rhs.view) {
-                return true;
             } else {
-                return false;
+                // lhs.view > rhs.view
+                return true;
             }
         }
     }
@@ -97,7 +99,16 @@ struct FrameView_compare_less
 
 typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;
 
+inline U64 findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap& table)
+{
+    FrameViewPair fv = {time, view};
+    FrameViewHashMap::const_iterator it = table.find(fv);
+    if (it != table.end()) {
+        return it->second;
+    }
+    return 0;
 
+}
 
 /**
  * @brief Thread-local arguments given to render a frame by the tree.

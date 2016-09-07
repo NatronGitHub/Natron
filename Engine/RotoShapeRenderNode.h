@@ -155,7 +155,7 @@ public:
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) const OVERRIDE FINAL;
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash)  OVERRIDE FINAL;
 
 private:
 

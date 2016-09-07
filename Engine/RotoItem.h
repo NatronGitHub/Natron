@@ -46,6 +46,8 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/HashableObject.h"
+#include "Engine/Knob.h"
 
 #include "Serialization/SerializationBase.h"
 
@@ -69,9 +71,8 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem
-    : public QObject
-    , public boost::enable_shared_from_this<RotoItem>
-    , SERIALIZATION_NAMESPACE::SerializableObjectBase
+    : public KnobHolder
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -82,22 +83,14 @@ public:
         eSelectionReasonOther ///when the project loader restores the selection
     };
 
-
 public:
-    // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
+    // This class is virtual pure so no need to privatize the constructor
 
     RotoItem( const RotoContextPtr& context,
-              const std::string & name,
-              RotoLayerPtr parent = RotoLayerPtr() );
+             const std::string & name,
+             RotoLayerPtr parent = RotoLayerPtr() );
 
-public:
-    static RotoItemPtr create( const RotoContextPtr& context,
-                                               const std::string & name,
-                                               RotoLayerPtr parent = RotoLayerPtr() ) WARN_UNUSED_RETURN
-    {
-        return RotoItemPtr( new RotoItem(context, name, parent) );
-    }
 
     virtual ~RotoItem();
 
@@ -160,6 +153,8 @@ public:
     RotoContextPtr getContext() const;
     RotoItemPtr getPreviousItemInLayer() const;
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
+
 protected:
 
 
@@ -192,6 +187,18 @@ private:
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
+
+inline RotoItemPtr
+toRotoItem(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<RotoItem>(holder);
+}
+
+inline RotoItemConstPtr
+toRotoItem(const KnobHolderConstPtr& holder)
+{
+    return boost::dynamic_pointer_cast<RotoItem>(holder);
+}
 
 NATRON_NAMESPACE_EXIT;
 

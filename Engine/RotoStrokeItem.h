@@ -149,6 +149,8 @@ public:
     std::list<CurvePtr > getXControlPoints() const;
     std::list<CurvePtr > getYControlPoints() const;
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+
 private:
 
     RectD computeBoundingBox(double time) const;

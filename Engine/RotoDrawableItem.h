@@ -210,6 +210,7 @@ public:
 
     void resetTransformCenter();
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
 
 
 Q_SIGNALS:

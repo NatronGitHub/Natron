@@ -542,6 +542,9 @@ KnobHelper::KnobHelper(const KnobHolderPtr& holder,
     : _signalSlotHandler()
     , _imp( new KnobHelperPrivate(this, holder, dimension, label, declaredByPlugin) )
 {
+    if (holder) {
+        setHashParent(holder);
+    }
 }
 
 KnobHelper::~KnobHelper()
@@ -6927,15 +6930,16 @@ KnobHolder::updateHasAnimation()
 }
 
 void
-KnobHolder::appendKnobsToFrameViewHash(double time, ViewIdx view, Hash64* hash) const
+KnobHolder::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         if (!(*it)->getEvaluateOnChange()) {
             continue;
         }
-        (*it)->appendToFrameViewHash(time, view, hash);
+        hash->append((*it)->computeHash(time, view));
     }
+    HashableObject::appendToHash(time, view, hash);
 } // Node::appendKnobsToFrameViewHash
 
 

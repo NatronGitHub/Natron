@@ -44,6 +44,7 @@
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
+#include "Engine/HashableObject.h"
 #include "Engine/OverlaySupport.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
@@ -374,6 +375,7 @@ class KnobI
     : public OverlaySupport
     , public boost::enable_shared_from_this<KnobI>
     , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    , public HashableObject
 {
     friend class KnobHolder;
 
@@ -833,6 +835,8 @@ public:
     virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) = 0;
     virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const = 0;
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
+
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
      **/
@@ -1149,8 +1153,6 @@ public:
     virtual ViewIdx getCurrentView() const = 0;
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
-
-    virtual void appendToFrameViewHash(double time, ViewIdx view, Hash64* hash) = 0;
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
@@ -1859,7 +1861,7 @@ private:
 
 public:
 
-    virtual void appendToFrameViewHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
 
 
     /**
@@ -2353,6 +2355,7 @@ private:
 class KnobHolder
     : public QObject
     , public boost::enable_shared_from_this<KnobHolder>
+    , public HashableObject
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -2580,7 +2583,7 @@ public:
      * @brief To implement if you need to make the hash vary at a specific time/view
      **/
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) const;
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
 
 protected:
 

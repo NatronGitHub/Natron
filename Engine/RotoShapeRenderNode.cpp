@@ -120,7 +120,7 @@ RotoShapeRenderNode::initializeKnobs()
 }
 
 void
-RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash) const
+RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
     // Append the position of the curve at the given time
     RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
@@ -129,47 +129,12 @@ RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash) const
     RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
     if (isBezier) {
-        std::list<BezierCPPtr> cps = isBezier->getControlPoints_mt_safe();
-        std::list<BezierCPPtr> fps = isBezier->getFeatherPoints_mt_safe();
-        assert(cps.size() == fps.size() || fps.empty());
-
-        std::list<BezierCPPtr>::const_iterator fIt = fps.begin();
-        for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it!=cps.end(); ++it, ++fIt) {
-            double x, y, lx, ly, rx, ry;
-            (*it)->getPositionAtTime(false, time, view, &x, &y);
-            (*it)->getLeftBezierPointAtTime(false, time, view, &lx, &ly);
-            (*it)->getRightBezierPointAtTime(false, time, view, &rx, &ry);
-            double fx, fy, flx, fly, frx, fry;
-            (*fIt)->getPositionAtTime(false, time, view, &fx, &fy);
-            (*it)->getLeftBezierPointAtTime(false, time, view, &flx, &fly);
-            (*it)->getRightBezierPointAtTime(false, time, view, &frx, &fry);
-
-            hash->append(x);
-            hash->append(y);
-            hash->append(lx);
-            hash->append(ly);
-            hash->append(rx);
-            hash->append(ry);
-
-            // Only add feather if different
-            if (x != fx || y != fy || lx != flx || ly != fly || rx != frx || ry != fry) {
-                hash->append(fx);
-                hash->append(fy);
-                hash->append(flx);
-                hash->append(fly);
-                hash->append(frx);
-                hash->append(fry);
-            }
-        }
+        hash->append(isBezier->computeHash(time, view));
     } else if (isStroke) {
-#pragma message WARN("TODO: For strokes, serialize the timestamp of creation")
+        hash->append(isStroke->computeHash(time, view));
     }
 
-    // Append the item knobs
-    const std::list<KnobIPtr>& itemKnobs = item->getKnobs();
-    for (std::list<KnobIPtr>::const_iterator it = itemKnobs.begin(); it != itemKnobs.end(); ++it) {
-        (*it)->appendToFrameViewHash(time, view, hash);
-    }
+    
     EffectInstance::appendToHash(time, view, hash);
 
 }

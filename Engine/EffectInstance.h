@@ -121,7 +121,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 class EffectInstance
     : public NamedKnobHolder
-      , public LockManagerI<Image>
+    , public LockManagerI<Image>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -277,6 +277,7 @@ public:
         return _node.lock();
     }
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
 
     /**
      * @brief Returns the hash the node had at the start of renderRoI. This will return the same value

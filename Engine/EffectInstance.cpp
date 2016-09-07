@@ -299,6 +299,28 @@ EffectInstance::getParallelRenderArgsTLS() const
     return tls->frameArgs.back();
 }
 
+void
+EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
+{
+    NodePtr node = getNode();
+
+    // Append the plug-in ID in case for there is a coincidence of all parameter values (and ordering!) between 2 plug-ins
+    Hash64::appendQString(QString::fromUtf8(node->getPluginID().c_str()), hash);
+
+
+    // If the node is frame varying, append the time to its hash.
+    // Do so as well if it is view varying
+    if (isFrameVarying()) {
+        hash->append(time);
+    }
+
+    if (isViewInvariant() == eViewInvarianceAllViewsVariant) {
+        hash->append((int)view);
+    }
+
+
+    KnobHolder::appendToHash(time, view, hash);
+}
 
 U64
 EffectInstance::getRenderHash(double time, ViewIdx view) const
