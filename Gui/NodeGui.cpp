@@ -1673,7 +1673,11 @@ NodeGui::setUserSelected(bool b)
 bool
 NodeGui::getIsSelected() const
 {
-    return getNode()->getNodeIsSelected();
+    NodePtr node = getNode();
+    if (!node) {
+        return false;
+    }
+    return node->getNodeIsSelected();
 }
 
 Edge*

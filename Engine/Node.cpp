@@ -8612,12 +8612,7 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
 bool
 Node::isSubGraphEditedByUser() const
 {
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if (_imp->pyPlugInfo.pluginPythonModule.empty()) {
-            return true;
-        }
-    }
+    
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (!isGroup) {
         return false;
