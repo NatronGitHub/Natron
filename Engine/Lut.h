@@ -91,7 +91,7 @@ public:
     static const Lut* CineonLut();
     static const Lut* Gamma1_8Lut();
     static const Lut* Gamma2_2Lut();
-    static const Lut* PanaLogLut();
+    static const Lut* PanalogLut();
     static const Lut* ViperLogLut();
     static const Lut* REDLogLut();
     static const Lut* AlexaV3LogCLut();

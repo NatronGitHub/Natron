@@ -1427,9 +1427,9 @@ to_func_Panalog(float v)
 }
 
 const Lut*
-LutManager::PanaLogLut()
+LutManager::PanalogLut()
 {
-    return LutManager::m_instance.getLut("PanaLog", from_func_Panalog, to_func_Panalog);
+    return LutManager::m_instance.getLut("Panalog", from_func_Panalog, to_func_Panalog);
 }
 
 /// from REDLog to Linear
