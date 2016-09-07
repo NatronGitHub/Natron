@@ -435,7 +435,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 
             if (!dimNode.IsMap()) {
                 // This is a value
-                decodeValueFromNode(valueNode, _values[i]._value, &_values[i]._type);
+                decodeValueFromNode(dimNode, _values[i]._value, &_values[i]._type);
                 _values[i]._serializeValue = true;
             } else { // if (dimNode[i].isMap())
                 if (dimNode["Curve"]) {
