@@ -558,12 +558,11 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         return;
     }
     if (associatedNode) {
-        bool isProjectFormat;
 
         U64 hash = associatedNode->getRenderHash(time, view);
         RectD rod;
         RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
-        StatusEnum st = associatedNode->getRegionOfDefinition_public(hash, time, scale, view, &rod, &isProjectFormat);
+        StatusEnum st = associatedNode->getRegionOfDefinition_public(hash, time, scale, view, &rod);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
             ret->x2 = 0.;

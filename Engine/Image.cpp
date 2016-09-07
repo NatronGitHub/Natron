@@ -728,7 +728,6 @@ Image::Image(const ImageComponents& components,
                                                                   bitdepth,
                                                                   fielding,
                                                                   premult,
-                                                                  false /*isRoDProjectFormat*/,
                                                                   components,
                                                                   storage,
                                                                   textureTarget) ),
@@ -784,7 +783,6 @@ ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
-                  bool isRoDProjectFormat,
                   const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
@@ -797,16 +795,15 @@ Image::makeParams(const RectD & rod,
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
     return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipMapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           components,
+                                           storage,
+                                           textureTarget) );
 }
 
 ImageParamsPtr
@@ -814,7 +811,6 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   const RectI& bounds,
                   const double par,
                   unsigned int mipMapLevel,
-                  bool isRoDProjectFormat,
                   const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
@@ -826,20 +822,19 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
     RectI pixelRod;
     rod.toPixelEnclosing(mipMapLevel, par, &pixelRod);
     assert( bounds.left() >= pixelRod.left() && bounds.right() <= pixelRod.right() &&
-            bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
+           bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
     return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipMapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           components,
+                                           storage,
+                                           textureTarget) );
 }
 
 // code proofread and fixed by @devernay on 8/8/2014

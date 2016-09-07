@@ -1035,8 +1035,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
                                                                                 outArgs->params->time,
                                                                                 scale,
                                                                                 outArgs->params->view,
-                                                                                &rod,
-                                                                                0 /*isProjectFormat*/);
+                                                                                &rod);
             if (stat == eStatusFailed) {
                 // If was not cached, we cannot lookup the cache in the main-thread at this mipmapLevel
                 continue;
@@ -1046,8 +1045,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
                                                                               outArgs->params->time,
                                                                               supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                               outArgs->params->view,
-                                                                              &rod,
-                                                                              0 /*isProjectFormat*/);
+                                                                              &rod);
             if (stat == eStatusFailed) {
                 // It really failed, just exit
                 return eViewerRenderRetCodeFail;

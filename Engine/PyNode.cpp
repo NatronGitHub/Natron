@@ -987,12 +987,15 @@ Effect::getRegionOfDefinition(double time,
 {
     RectD rod;
 
-    if ( !getInternalNode() || !getInternalNode()->getEffectInstance() ) {
+    if (!getInternalNode()) {
+        return rod;
+    }
+    EffectInstancePtr effect = getInternalNode()->getEffectInstance() ;
+    if (!effect) {
         return rod;
     }
     RenderScale s(1.);
-    bool isProject;
-    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(0, time, s, ViewIdx(view), &rod, &isProject);
+    StatusEnum stat = effect->getRegionOfDefinition_public(effect->getRenderHash(time, ViewIdx(view)), time, s, ViewIdx(view), &rod);
     if (stat != eStatusOK) {
         return RectD();
     }

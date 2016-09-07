@@ -62,7 +62,6 @@ class ImageParamsSerialization
 public:
 
     RectDSerialization rod;
-    bool isRoDProjectFormat;
     double par;
     ImageComponentsSerialization components;
     int bitdepth;

@@ -2252,7 +2252,6 @@ private:
             RenderScale scale(1.);
 
             RectD rod;
-            bool isProjectFormat;
 
             EffectInstancePtr activeInputToRender = output;
 
@@ -2309,7 +2308,7 @@ private:
                 U64 activeInputHash = activeInputToRender->getRenderHash(time, tlsArgs->view);
 
                 // Call getRoD to know where to render
-                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
+                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputHash, time, scale, viewsToRender[view], &rod);
                 if (stat == eStatusFailed) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
 
@@ -2432,7 +2431,6 @@ DefaultScheduler::processFrame(const BufferedFrames& /*frames*/)
     ///Writers render to scale 1 always
     RenderScale scale(1.);
     OutputEffectInstancePtr effect = _effect.lock();
-    bool isProjectFormat;
     RectD rod;
     RectI roi;
     std::list<ImageComponents> components;
@@ -2472,7 +2470,7 @@ DefaultScheduler::processFrame(const BufferedFrames& /*frames*/)
 
         U64 hash = effect->getRenderHash(it->time, it->view);
 
-        ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
+        ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod) );
         rod.toPixelEnclosing(0, par, &roi);
 
 

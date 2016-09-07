@@ -214,26 +214,24 @@ public:
                             ViewIdx view,
                             bool draftMode);
     static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
-                                                     const double par,
-                                                     unsigned int mipMapLevel,
-                                                     bool isRoDProjectFormat,
-                                                     const ImageComponents& components,
-                                                     ImageBitDepthEnum bitdepth,
-                                                     ImagePremultiplicationEnum premult,
-                                                     ImageFieldingOrderEnum fielding,
-                                                     StorageModeEnum storage = eStorageModeRAM,
-                                                     U32 textureTarget = GL_TEXTURE_2D);
+                                     const double par,
+                                     unsigned int mipMapLevel,
+                                     const ImageComponents& components,
+                                     ImageBitDepthEnum bitdepth,
+                                     ImagePremultiplicationEnum premult,
+                                     ImageFieldingOrderEnum fielding,
+                                     StorageModeEnum storage = eStorageModeRAM,
+                                     U32 textureTarget = GL_TEXTURE_2D);
     static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
-                                                     const RectI& bounds,
-                                                     const double par,
-                                                     unsigned int mipMapLevel,
-                                                     bool isRoDProjectFormat,
-                                                     const ImageComponents& components,
-                                                     ImageBitDepthEnum bitdepth,
-                                                     ImagePremultiplicationEnum premult,
-                                                     ImageFieldingOrderEnum fielding,
-                                                     StorageModeEnum storage = eStorageModeRAM,
-                                                     U32 textureTarget = GL_TEXTURE_2D);
+                                     const RectI& bounds,
+                                     const double par,
+                                     unsigned int mipMapLevel,
+                                     const ImageComponents& components,
+                                     ImageBitDepthEnum bitdepth,
+                                     ImagePremultiplicationEnum premult,
+                                     ImageFieldingOrderEnum fielding,
+                                     StorageModeEnum storage = eStorageModeRAM,
+                                     U32 textureTarget = GL_TEXTURE_2D);
 
     // ImageParamsPtr getParams() const WARN_UNUSED_RETURN;
 

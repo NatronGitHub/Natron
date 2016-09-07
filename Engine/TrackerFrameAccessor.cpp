@@ -372,9 +372,8 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     double par = effect->getAspectRatio(-1);
     RectD precomputedRoD;
     if (!region) {
-        bool isProjectFormat;
 
-        StatusEnum stat = effect->getRegionOfDefinition_public(effectHash, frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(effectHash, frame, scale, ViewIdx(0), &precomputedRoD);
         if (stat == eStatusFailed) {
             return (mv::FrameAccessor::Key)0;
         }

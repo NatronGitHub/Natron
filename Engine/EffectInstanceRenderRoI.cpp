@@ -414,9 +414,8 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 if (!input) {
                     continue;
                 }
-                bool isProjectFormat;
                 U64 inputHash = input->getRenderHash(time, view);
-                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, argsScale, view, &inputRod, &isProjectFormat);
+                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, argsScale, view, &inputRod);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
                 }
@@ -750,7 +749,6 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
                                                      const FrameViewRequest** requestPassData,
                                                      RectD* rod,
                                                      RectI* roi,
-                                                     bool* isProjectFormat,
                                                      ComponentsNeededMapPtr *neededComps,
                                                      std::bitset<4> *processChannels,
                                                      const std::vector<ImageComponents>** outputComponents)
@@ -802,7 +800,6 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
-    *isProjectFormat = false;
     {
         ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
         if ( !args.preComputedRoD.isNull() ) {
@@ -811,11 +808,10 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
             ///Check if the pre-pass already has the RoD
             if (*requestPassData) {
                 *rod = (*requestPassData)->globalData.rod;
-                *isProjectFormat = (*requestPassData)->globalData.isProjectFormat;
             } else {
                 assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
 
-                StatusEnum stat = _publicInterface->getRegionOfDefinition_public(*frameViewHash, args.time, *renderMappedScale, args.view, rod, isProjectFormat);
+                StatusEnum stat = _publicInterface->getRegionOfDefinition_public(*frameViewHash, args.time, *renderMappedScale, args.view, rod);
 
                 // The rod might be NULL for a roto that has no beziers and no input
                 if (stat == eStatusFailed) {
@@ -1504,7 +1500,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                                               const OSGLContextPtr& glRenderContext,
                                                               ImageFieldingOrderEnum fieldingOrder,
                                                               ImageBitDepthEnum outputDepth,
-                                                              bool isProjectFormat,
                                                               bool fillGrownBoundsWithZeroes,
                                                               StorageModeEnum storage,
                                                               const std::vector<ImageComponents>& outputComponents,
@@ -1550,7 +1545,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                rod,
                                downscaledImageBounds,
                                upscaledImageBounds,
-                               isProjectFormat,
                                *components,
                                args.bitdepth,
                                planesToRender->outputPremult,
@@ -2058,7 +2052,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     unsigned int renderMappedMipMapLevel;
     RenderScale renderMappedScale;
     RectD rod; //!< rod is in canonical coordinates
-    bool isProjectFormat;
     RectI roi;
     ImagePremultiplicationEnum thisEffectOutputPremult;
     double par;
@@ -2067,7 +2060,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     std::bitset<4> processChannels;
     U64 frameViewHash;
     const std::vector<ImageComponents>* outputComponents;
-    if (!_imp->setupRenderRoIParams(args, &tls, &frameViewHash, &abortInfo, &frameArgs, &glGpuContext, &glCpuContext, &par, &fieldingOrder, &thisEffectOutputPremult, &supportsRS, &renderFullScaleThenDownscale, &renderMappedMipMapLevel, &renderMappedScale, &requestPassData, &rod, &roi, &isProjectFormat, &neededComps, &processChannels, &outputComponents)) {
+    if (!_imp->setupRenderRoIParams(args, &tls, &frameViewHash, &abortInfo, &frameArgs, &glGpuContext, &glCpuContext, &par, &fieldingOrder, &thisEffectOutputPremult, &supportsRS, &renderFullScaleThenDownscale, &renderMappedMipMapLevel, &renderMappedScale, &requestPassData, &rod, &roi, &neededComps, &processChannels, &outputComponents)) {
         return eRenderRoIRetCodeOk;
     }
 
@@ -2190,7 +2183,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Allocate planes in the cache ////////////////////////////////////////////////////////////
 
     if (hasSomethingToRender) {
-        _imp->renderRoIAllocateOutputPlanes(args, frameArgs, planesToRender, glContextLocker, glRenderContext, fieldingOrder, outputDepth, isProjectFormat, fillGrownBoundsWithZeroes, storage, *outputComponents, rod, upscaledImageBounds, downscaledImageBounds, lastStrokePixelRoD, par, renderFullScaleThenDownscale, createInCache, key);
+        _imp->renderRoIAllocateOutputPlanes(args, frameArgs, planesToRender, glContextLocker, glRenderContext, fieldingOrder, outputDepth, fillGrownBoundsWithZeroes, storage, *outputComponents, rod, upscaledImageBounds, downscaledImageBounds, lastStrokePixelRoD, par, renderFullScaleThenDownscale, createInCache, key);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

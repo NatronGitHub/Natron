@@ -699,8 +699,7 @@ TrackMarker::resetCenter()
         RenderScale scale;
         scale.x = scale.y = 1;
         RectD rod;
-        bool isProjectFormat;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getEffectInstance()->getRenderHash(time, ViewIdx(0)), time, scale, ViewIdx(0), &rod);
         Point center;
         center.x = 0;
         center.y = 0;
@@ -1174,9 +1173,7 @@ TrackMarker::getMarkerImage(int time,
     double par = effectToRender->getAspectRatio(-1);
 
     {
-        bool isProjectFormat;
-
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &precomputedRoD);
         if (stat == eStatusFailed) {
             return std::make_pair(ImagePtr(), roi);
         }

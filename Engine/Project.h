@@ -317,6 +317,8 @@ public:
 
     void refreshOpenGLRenderingFlagOnNodes();
 
+    virtual void invalidateHashCache() OVERRIDE FINAL;
+
 private:
 
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;

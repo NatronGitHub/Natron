@@ -43,7 +43,6 @@ ImageParamsSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
     NonKeyParamsSerialization::encode(em);
     rod.encode(em);
-    em << isRoDProjectFormat;
     em << par;
     components.encode(em);
     em << bitdepth;
@@ -56,18 +55,17 @@ ImageParamsSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 void
 ImageParamsSerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    if (!node.IsSequence() || node.size() != 9) {
+    if (!node.IsSequence() || node.size() != 8) {
         throw YAML_NAMESPACE::InvalidNode();
     }
     NonKeyParamsSerialization::decode(node[0]);
     rod.decode(node[1]);
-    isRoDProjectFormat = node[2].as<bool>();
-    par = node[3].as<double>();
-    components.decode(node[4]);
-    bitdepth = node[5].as<int>();
-    fielding = node[6].as<int>();
-    premult = node[7].as<int>();
-    mipMapLevel = node[8].as<unsigned int>();
+    par = node[2].as<double>();
+    components.decode(node[3]);
+    bitdepth = node[4].as<int>();
+    fielding = node[5].as<int>();
+    premult = node[6].as<int>();
+    mipMapLevel = node[7].as<unsigned int>();
 }
 
 SERIALIZATION_NAMESPACE_EXIT

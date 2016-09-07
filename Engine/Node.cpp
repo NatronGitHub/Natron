@@ -3559,10 +3559,9 @@ Node::makeInfoForInput(int inputNumber) const
     {
         RenderScale scale(1.);
         RectD rod;
-        bool isProjectFormat;
         StatusEnum stat = input->getRegionOfDefinition_public(0,
                                                               time,
-                                                              scale, ViewIdx(0), &rod, &isProjectFormat);
+                                                              scale, ViewIdx(0), &rod);
         if (stat != eStatusFailed) {
             ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
@@ -5492,12 +5491,11 @@ checkCanConnectNoMultiRes(const Node* output,
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
     RenderScale scale(1.);
     RectD rod;
-    bool isProjectFormat;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0,
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getEffectInstance()->getRenderHash(input->getEffectInstance()->getCurrentTime(), ViewIdx(0)),
                                                                                output->getApp()->getTimeLine()->currentFrame(),
                                                                                scale,
                                                                                ViewIdx(0),
-                                                                               &rod, &isProjectFormat);
+                                                                               &rod);
 
     if ( (stat == eStatusFailed) && !rod.isNull() ) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
@@ -5510,7 +5508,7 @@ checkCanConnectNoMultiRes(const Node* output,
     // with a RoD different from the input
 
     /*RectD outputRod;
-       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getCacheID(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
+       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getCacheID(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod);
        Q_UNUSED(stat);
 
        if ( !outputRod.isNull() && (rod != outputRod) ) {
@@ -5525,7 +5523,7 @@ checkCanConnectNoMultiRes(const Node* output,
                                                                                 output->getApp()->getTimeLine()->currentFrame(),
                                                                                 scale,
                                                                                 ViewIdx(0),
-                                                                                &inputRod, &isProjectFormat);
+                                                                                &inputRod);
             if ( (stat == eStatusFailed) && !inputRod.isNull() ) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
             }
@@ -6833,8 +6831,7 @@ Node::makePreviewImage(SequenceTime time,
 
         RenderScale scale(1.);
         RectD rod;
-        bool isProjectFormat;
-        StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod);
         if ( (stat == eStatusFailed) || rod.isNull() ) {
             return false;
         }

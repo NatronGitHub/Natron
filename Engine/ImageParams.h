@@ -107,7 +107,6 @@ public:
         , _fielding(eImageFieldingOrderNone)
         , _premult(eImagePremultiplicationPremultiplied)
         , _mipMapLevel(0)
-        , _isRoDProjectFormat(false)
     {
     }
 
@@ -120,7 +119,6 @@ public:
         , _fielding(other._fielding)
         , _premult(other._premult)
         , _mipMapLevel(other._mipMapLevel)
-        , _isRoDProjectFormat(other._isRoDProjectFormat)
     {
     }
 
@@ -131,7 +129,6 @@ public:
                 ImageBitDepthEnum bitdepth,
                 ImageFieldingOrderEnum fielding,
                 ImagePremultiplicationEnum premult,
-                bool isRoDProjectFormat,
                 const ImageComponents& components,
                 StorageModeEnum storageMode,
                 U32 textureTarget)
@@ -143,7 +140,6 @@ public:
         , _fielding(fielding)
         , _premult(premult)
         , _mipMapLevel(mipMapLevel)
-        , _isRoDProjectFormat(isRoDProjectFormat)
     {
         CacheEntryStorageInfo& info = getStorageInfo();
 
@@ -178,11 +174,6 @@ public:
     void setBounds(const RectI& bounds)
     {
         getStorageInfo().bounds = bounds;
-    }
-
-    bool isRodProjectFormat() const
-    {
-        return _isRoDProjectFormat;
     }
 
     ImageBitDepthEnum getBitDepth() const
@@ -244,7 +235,6 @@ public:
         }
         NonKeyParams::toSerialization(serializationBase);
         _rod.toSerialization(&serialization->rod);
-        serialization->isRoDProjectFormat = _isRoDProjectFormat;
         serialization->par = _par;
         serialization->fielding = (int)_fielding;
         serialization->premult = (int)_premult;
@@ -261,7 +251,6 @@ public:
         }
         NonKeyParams::fromSerialization(serializationBase);
         _rod.fromSerialization(serialization->rod);
-        _isRoDProjectFormat = serialization->isRoDProjectFormat;
         _par = serialization->par;
         _fielding = (ImageFieldingOrderEnum)serialization->fielding;
         _bitdepth = (ImageBitDepthEnum)serialization->bitdepth;
@@ -298,10 +287,6 @@ private:
     ImageFieldingOrderEnum _fielding;
     ImagePremultiplicationEnum _premult;
     unsigned int _mipMapLevel;
-    /// if true then when retrieving the associated image from cache
-    /// the caller should update the rod to the current project format.
-    /// This is because the project format might have changed since this image was cached.
-    bool _isRoDProjectFormat;
 
 };
 

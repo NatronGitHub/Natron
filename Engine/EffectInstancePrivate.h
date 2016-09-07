@@ -357,7 +357,6 @@ public:
                               const FrameViewRequest** requestPassData,
                               RectD* rod,
                               RectI* roi,
-                              bool* isProjectFormat,
                               ComponentsNeededMapPtr *neededComps,
                               std::bitset<4> *processChannels,
                               const std::vector<ImageComponents>** outputComponents);
@@ -452,7 +451,6 @@ public:
                                        const OSGLContextPtr& glRenderContext,
                                        ImageFieldingOrderEnum fieldingOrder,
                                        ImageBitDepthEnum outputDepth,
-                                       bool isProjectFormat,
                                        bool fillGrownBoundsWithZeroes,
                                        StorageModeEnum storage,
                                        const std::vector<ImageComponents>& outputComponents,

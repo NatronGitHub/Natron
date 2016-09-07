@@ -1035,7 +1035,6 @@ public:
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
      * By default it returns in rod the union of all inputs RoD and eStatusReplyDefault is returned.
-     * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
      **/
@@ -1049,9 +1048,8 @@ protected:
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
-     * @returns true if the rod is set to the project format.
      **/
-    bool ifInfiniteApplyHeuristic(U64 hash,
+    void ifInfiniteApplyHeuristic(U64 hash,
                                   double time,
                                   const RenderScale & scale,
                                   ViewIdx view,
@@ -1091,15 +1089,13 @@ public:
                                             double time,
                                             const RenderScale & scale,
                                             ViewIdx view,
-                                            RectD* rod,
-                                            bool* isProjectFormat) WARN_UNUSED_RETURN;
+                                            RectD* rod) WARN_UNUSED_RETURN;
 
     StatusEnum getRegionOfDefinitionFromCache(U64 hash,
                                               double time,
                                               const RenderScale & scale,
                                               ViewIdx view,
-                                              RectD* rod,
-                                              bool* isProjectFormat) WARN_UNUSED_RETURN;
+                                              RectD* rod) WARN_UNUSED_RETURN;
 
 public:
 
@@ -2153,7 +2149,6 @@ private:
                             const RectD & rod,
                             const RectI & downscaleImageBounds,
                             const RectI & fullScaleImageBounds,
-                            bool isProjectFormat,
                             const ImageComponents & components,
                             ImageBitDepthEnum depth,
                             ImagePremultiplicationEnum premult,

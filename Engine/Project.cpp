@@ -1478,11 +1478,6 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
     bool ret = true;
 
     if ( knob == _imp->viewsList ) {
-        /**
-         * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
-         * The only way to overcome this is to wipe the cache.
-         **/
-        appPTR->clearAllCaches();
 
         std::vector<std::string> viewNames = getProjectViewNames();
         getApp()->setupViewersForViews(viewNames);
@@ -1511,10 +1506,8 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         }
         if (found) {
             if (reason == eValueChangedReasonUserEdited) {
-                ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                    (*it)->getEffectInstance()->invalidateHashNotRecursive();
-                }
+
+                invalidateHashCache();
 
                 ///Format change, hence probably the PAR so run getClipPreferences again
                 forceComputeInputDependentDataOnAllTrees();
@@ -1540,6 +1533,21 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 
     return ret;
 } // Project::onKnobValueChanged
+
+void
+Project::invalidateHashCache()
+{
+    KnobHolder::invalidateHashCache();
+
+    // Also invalidate the hash of all nodes
+
+    NodesList nodes;
+    getNodes_recursive(nodes, true);
+
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        invalidateHashCache();
+    }
+}
 
 void
 Project::refreshOpenGLRenderingFlagOnNodes()

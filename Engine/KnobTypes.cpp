@@ -332,8 +332,7 @@ getInputRoD(const EffectInstancePtr& effect,
 #ifdef NATRON_NORMALIZE_SPATIAL_WITH_ROD
     RenderScale scale;
     scale.y = scale.x = 1.;
-    bool isProjectFormat;
-    Status stat = effect->getRegionOfDefinition_public(0, time, scale, /*view*/ 0, &rod, &isProjectFormat);
+    Status stat = effect->getRegionOfDefinition_public(0, time, scale, /*view*/ 0, &rod);
     if ( (stat == StatFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
         Format f;
         effect->getRenderFormat(&f);

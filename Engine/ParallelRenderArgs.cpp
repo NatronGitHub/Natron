@@ -423,7 +423,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ViewIdx rodView = view; //fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
 
         // Get the RoD
-        StatusEnum stat = effect->getRegionOfDefinition_public(frameViewHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(frameViewHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod);
         // If failed it should have failed earlier
         if ( (stat == eStatusFailed) && !fvRequest->globalData.rod.isNull() ) {
             return stat;

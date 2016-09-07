@@ -1494,7 +1494,8 @@ TrackerContextPrivate::getInputRoDAtTime(double time) const
     if (!input) {
         useProjFormat = true;
     } else {
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, RenderScale(1.), ViewIdx(0), &ret, 0);
+        EffectInstancePtr effect = input->getEffectInstance();
+        StatusEnum stat = effect->getRegionOfDefinition_public(effect->getRenderHash(time, ViewIdx(0)), time, RenderScale(1.), ViewIdx(0), &ret);
         if (stat == eStatusFailed) {
             useProjFormat = true;
         } else {

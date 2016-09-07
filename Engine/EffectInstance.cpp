@@ -309,6 +309,9 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
         hash->append((int)view);
     }
 
+    // Also append the project knobs to the hash. Their hash will only change when the project properties have been invalidated
+    U64 projectHash = getApp()->getProject()->computeHash(time, view);
+    hash->append(projectHash);
 
     KnobHolder::appendToHash(time, view, hash);
 }
@@ -355,7 +358,13 @@ EffectInstance::getRenderHash(double time, ViewIdx view) const
 
     const ParallelRenderArgsPtr &args = tls->frameArgs.back();
     assert(args);
-    return args->getFrameViewHash(time, view);
+    U64 hash = args->getFrameViewHash(time, view);
+    if (hash) {
+        return hash;
+    }
+
+    // Did not find a valid hash, check if it is cached...
+    return findCachedHash(time, view);
 }
 
 bool
@@ -704,8 +713,7 @@ EffectInstance::getImage(int inputNb,
             // Go for RoD
             U64 inputHash = inputEffect->getRenderHash(time, view);
             RectD rod;
-            bool isProjectFormat;
-            StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputHash, time, scale, view, &rod, &isProjectFormat);
+            StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputHash, time, scale, view, &rod);
             if ( (stat == eStatusFailed) || rod.isNull() ) {
                 return ImagePtr();
             }
@@ -1022,8 +1030,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
         EffectInstancePtr input = getInput(i);
         if (input) {
             RectD inputRod;
-            bool isProjectFormat;
-            StatusEnum st = input->getRegionOfDefinition_public(hash, time, renderMappedScale, view, &inputRod, &isProjectFormat);
+            StatusEnum st = input->getRegionOfDefinition_public(hash, time, renderMappedScale, view, &inputRod);
             assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == eStatusFailed) {
                 return st;
@@ -1043,7 +1050,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
     return firstInput ? eStatusReplyDefault : eStatusOK;
 }
 
-bool
+void
 EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                                          double time,
                                          const RenderScale & scale,
@@ -1082,12 +1089,11 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             EffectInstancePtr input = getInput(i);
             if (input) {
                 RectD inputRod;
-                bool isProjectFormat;
                 RenderScale inputScale = scale;
                 if (input->supportsRenderScaleMaybe() == eSupportsNo) {
                     inputScale.x = inputScale.y = 1.;
                 }
-                StatusEnum st = input->getRegionOfDefinition_public(hash, time, inputScale, view, &inputRod, &isProjectFormat);
+                StatusEnum st = input->getRegionOfDefinition_public(hash, time, inputScale, view, &inputRod);
                 if (st != eStatusFailed) {
                     if (firstInput) {
                         inputsUnion = inputRod;
@@ -1103,13 +1109,11 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
 
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
-    bool isProjectFormat = false;
     if (x1Infinite) {
         if ( !inputsUnion.isNull() ) {
             rod->x1 = std::min(inputsUnion.x1, projectDefault.x1);
         } else {
             rod->x1 = projectDefault.x1;
-            isProjectFormat = true;
         }
         rod->x2 = std::max(rod->x1, rod->x2);
     }
@@ -1118,7 +1122,6 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->y1 = std::min(inputsUnion.y1, projectDefault.y1);
         } else {
             rod->y1 = projectDefault.y1;
-            isProjectFormat = true;
         }
         rod->y2 = std::max(rod->y1, rod->y2);
     }
@@ -1127,7 +1130,6 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->x2 = std::max(inputsUnion.x2, projectDefault.x2);
         } else {
             rod->x2 = projectDefault.x2;
-            isProjectFormat = true;
         }
         rod->x1 = std::min(rod->x1, rod->x2);
     }
@@ -1136,16 +1138,12 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
             rod->y2 = std::max(inputsUnion.y2, projectDefault.y2);
         } else {
             rod->y2 = projectDefault.y2;
-            isProjectFormat = true;
         }
         rod->y1 = std::min(rod->y1, rod->y2);
     }
-    if ( isProjectFormat && !isGenerator() ) {
-        isProjectFormat = false;
-    }
+
     assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
-    return isProjectFormat;
 } // ifInfiniteApplyHeuristic
 
 void
@@ -1166,10 +1164,9 @@ EffectInstance::getRegionsOfInterest(double time,
             } else {
                 //Tiles not supported: get the RoD as RoI
                 RectD rod;
-                bool isPF;
                 RenderScale inpScale(input->supportsRenderScale() ? scale.x : 1.);
                 input->getParallelRenderArgsTLS();
-                StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(time, view), time, inpScale, view, &rod, &isPF);
+                StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(time, view), time, inpScale, view, &rod);
                 if (stat == eStatusFailed) {
                     return;
                 }
@@ -1556,7 +1553,6 @@ static ImagePtr ensureImageScale(unsigned int mipMapLevel,
                                                        downscaledBounds,
                                                        oldParams->getPixelAspectRatio(),
                                                        mipMapLevel,
-                                                       oldParams->isRodProjectFormat(),
                                                        oldParams->getComponents(),
                                                        oldParams->getBitDepth(),
                                                        oldParams->getPremultiplication(),
@@ -1610,7 +1606,6 @@ static ImagePtr ensureImageScale(unsigned int mipMapLevel,
                                                        upscaledImgBounds,
                                                        oldParams->getPixelAspectRatio(),
                                                        mipMapLevel,
-                                                       oldParams->isRodProjectFormat(),
                                                        oldParams->getComponents(),
                                                        oldParams->getBitDepth(),
                                                        oldParams->getPremultiplication(),
@@ -1713,24 +1708,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             unsigned int imgMMlevel = (*it)->getMipMapLevel();
             const ImageComponents & imgComps = (*it)->getComponents();
             ImageBitDepthEnum imgDepth = (*it)->getBitDepth();
-
-            if ( (*it)->getParams()->isRodProjectFormat() ) {
-                ////If the image was cached with a RoD dependent on the project format, but the project format changed,
-                ////just discard this entry
-                Format projectFormat;
-                getRenderFormat(&projectFormat);
-                RectD canonicalProject = projectFormat.toCanonicalFormat();
-                if ( canonicalProject != (*it)->getRoD() ) {
-                    appPTR->removeFromNodeCache(*it);
-                    continue;
-                }
-            }
-
-            ///Throw away images that are not even what the node want to render
-            /*if ( ( imgComps.isColorPlane() && nodePrefComps.isColorPlane() && (imgComps != nodePrefComps) ) || (imgDepth != nodePrefDepth) ) {
-                appPTR->removeFromNodeCache(*it);
-                continue;
-            }*/
 
             bool convertible = imgComps.isConvertibleTo(components);
             if ( (imgMMlevel == mipMapLevel) && convertible &&
@@ -1962,7 +1939,6 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    const RectD & rod,
                                    const RectI & downscaleImageBounds,
                                    const RectI & fullScaleImageBounds,
-                                   bool isProjectFormat,
                                    const ImageComponents & components,
                                    ImageBitDepthEnum depth,
                                    ImagePremultiplicationEnum premult,
@@ -1981,16 +1957,15 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     if (renderFullScaleThenDownscale) {
         downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true) );
         ImageParamsPtr upscaledImageParams = Image::makeParams(rod,
-                                                                               fullScaleImageBounds,
-                                                                               par,
-                                                                               0,
-                                                                               isProjectFormat,
-                                                                               components,
-                                                                               depth,
-                                                                               premult,
-                                                                               fielding,
-                                                                               storage,
-                                                                               GL_TEXTURE_2D);
+                                                               fullScaleImageBounds,
+                                                               par,
+                                                               0,
+                                                               components,
+                                                               depth,
+                                                               premult,
+                                                               fielding,
+                                                               storage,
+                                                               GL_TEXTURE_2D);
         //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
 
         fullScaleImage->reset();
@@ -2002,16 +1977,15 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     } else {
         ///Cache the image with the requested components instead of the remapped ones
         ImageParamsPtr cachedImgParams = Image::makeParams(rod,
-                                                                           downscaleImageBounds,
-                                                                           par,
-                                                                           mipmapLevel,
-                                                                           isProjectFormat,
-                                                                           components,
-                                                                           depth,
-                                                                           premult,
-                                                                           fielding,
-                                                                           storage,
-                                                                           GL_TEXTURE_2D);
+                                                           downscaleImageBounds,
+                                                           par,
+                                                           mipmapLevel,
+                                                           components,
+                                                           depth,
+                                                           premult,
+                                                           fielding,
+                                                           storage,
+                                                           GL_TEXTURE_2D);
 
         //Take the lock after getting the image from the cache or while allocating it
         ///to make sure a thread will not attempt to write to the image while its being allocated.
@@ -3062,7 +3036,6 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
                                  tls->currentRenderArgs.rod,
                                  tls->currentRenderArgs.renderWindowPixel,
                                  tls->currentRenderArgs.renderWindowPixel,
-                                 false /*isProjectFormat*/,
                                  plane,
                                  img->getBitDepth(),
                                  img->getPremultiplication(),
@@ -3924,16 +3897,12 @@ EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
                                                double time,
                                                const RenderScale & scale,
                                                ViewIdx view,
-                                               RectD* rod,
-                                               bool* isProjectFormat)
+                                               RectD* rod)
 {
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
 
     if (foundInCache) {
-        if (isProjectFormat) {
-            *isProjectFormat = false;
-        }
         if ( rod->isNull() ) {
             return eStatusFailed;
         }
@@ -3949,8 +3918,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              double time,
                                              const RenderScale & scale,
                                              ViewIdx view,
-                                             RectD* rod,
-                                             bool* isProjectFormat)
+                                             RectD* rod)
 {
     if ( !isEffectCreated() ) {
         return eStatusFailed;
@@ -3962,9 +3930,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
     }
     if (foundInCache) {
-        if (isProjectFormat) {
-            *isProjectFormat = false;
-        }
         if ( rod->isNull() ) {
             return eStatusFailed;
         }
@@ -3977,10 +3942,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
             if (tls && tls->currentRenderArgs.validArgs) {
                 *rod = tls->currentRenderArgs.rod;
-                if (isProjectFormat) {
-                    *isProjectFormat = false;
-                }
-
                 return eStatusOK;
             }
         }
@@ -3991,7 +3952,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 return eStatusFailed;
             }
 
-            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(time, view), time, scale, view, rod, isProjectFormat);
+            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(time, view), time, scale, view, rod);
         }
 
         StatusEnum ret;
@@ -4021,10 +3982,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
             assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
         }
-        bool isProject = ifInfiniteApplyHeuristic(hash, time, scale, view, rod);
-        if (isProjectFormat) {
-            *isProjectFormat = isProject;
-        }
+        ifInfiniteApplyHeuristic(hash, time, scale, view, rod);
+
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
         if (hash != 0) {

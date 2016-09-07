@@ -6943,7 +6943,7 @@ KnobHolder::appendToHash(double time, ViewIdx view, Hash64* hash)
         }
         hash->append((*it)->computeHash(time, view));
     }
-    HashableObject::appendToHash(time, view, hash);
+
 } // Node::appendKnobsToFrameViewHash
 
 

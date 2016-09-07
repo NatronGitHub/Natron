@@ -214,7 +214,6 @@ struct FrameViewRequestGlobalData
 
     ///Set when the first request is made, set on first request
     RectD rod;
-    bool isProjectFormat;
 
     //Identity data, set on first request
     bool isIdentity;
