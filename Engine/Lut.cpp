@@ -1292,25 +1292,37 @@ LutManager::sRGBLut()
     return LutManager::m_instance.getLut("sRGB", from_func_srgb, to_func_srgb);
 }
 
+// Rec.709 and Rec.2020 share the same transfer function (and illuminant), except that
+// Rec.2020 is more precise.
+// https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2020-0-201208-S!!PDF-E.pdf
+// Since this is float, we use the coefficients from Rec.2020
+
+/// from Rec709 to Linear
 static
 float
 from_func_Rec709(float v)
 {
-    if (v < 0.081f) {
+    //if (v < 0.081f) {
+    if (v < 0.08145f) {
         return (v < 0.0f) ? 0.0f : v * (1.0f / 4.5f);
     } else {
-        return std::pow( (v + 0.099f) * (1.0f / 1.099f), (1.0f / 0.45f) );
+        //return std::pow( (v + 0.099f) * (1.0f / 1.099f), (1.0f / 0.45f) );
+        return std::pow( (v + 0.0993f) * (1.0f / 1.0993f), (1.0f / 0.45f) );
     }
 }
 
+// see above comment
+/// to Rec709 from Linear
 static
 float
 to_func_Rec709(float v)
 {
-    if (v < 0.018f) {
+    //if (v < 0.018f) {
+    if (v < 0.0181f) {
         return (v < 0.0f) ? 0.0f : v * 4.5f;
     } else {
-        return 1.099f * std::pow(v, 0.45f) - 0.099f;
+        //return 1.099f * std::pow(v, 0.45f) - 0.099f;
+        return 1.0993f * std::pow(v, 0.45f) - (1.0993f - 1.f);
     }
 }
 
@@ -1330,6 +1342,7 @@ LutManager::Rec709Lut()
    whitepoint = 685.0
    gammasensito = 0.6
  */
+/// from Cineon to Linear
 static
 float
 from_func_Cineon(float v)
@@ -1337,6 +1350,7 @@ from_func_Cineon(float v)
     return ( 1.f / ( 1.f - std::pow(10.f, 1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
 }
 
+/// to Cineon from Linear
 static
 float
 to_func_Cineon(float v)
@@ -1352,18 +1366,20 @@ LutManager::CineonLut()
     return LutManager::m_instance.getLut("Cineon", from_func_Cineon, to_func_Cineon);
 }
 
+/// from Gamma 1.8 to Linear
 static
 float
 from_func_Gamma1_8(float v)
 {
-    return std::pow(v, 0.55f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 1.8f);
 }
 
+/// to Gamma 1.8 from Linear
 static
 float
 to_func_Gamma1_8(float v)
 {
-    return std::pow(v, 1.8f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 0.55f);
 }
 
 const Lut*
@@ -1372,18 +1388,20 @@ LutManager::Gamma1_8Lut()
     return LutManager::m_instance.getLut("Gamma1_8", from_func_Gamma1_8, to_func_Gamma1_8);
 }
 
+// from Gamma 2.2 to Linear
 static
 float
 from_func_Gamma2_2(float v)
 {
-    return std::pow(v, 0.45f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 2.2f);
 }
 
+// to Gamma 2.2 from Linear
 static
 float
 to_func_Gamma2_2(float v)
 {
-    return std::pow(v, 2.2f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 0.45f);
 }
 
 const Lut*
@@ -1392,26 +1410,51 @@ LutManager::Gamma2_2Lut()
     return LutManager::m_instance.getLut("Gamma2_2", from_func_Gamma2_2, to_func_Gamma2_2);
 }
 
+/// from Panalog to Linear
 static
 float
 from_func_Panalog(float v)
 {
-    return (std::pow(10.f, (1023.f * v - 681.f) / 444.f) - 0.0408) / 0.96f;
+    return (std::pow(10.f, (1023.f * v - 681.f) / 444.f) - 0.0408f) / (1.0f - 0.0408f);
 }
 
+/// to Panalog from Linear
 static
 float
 to_func_Panalog(float v)
 {
-    return (444.f * std::log10(0.0408 + 0.96f * v) + 681.f) / 1023.f;
+    return (444.f * std::log10(0.0408f + (1.0f - 0.0408f) * v) + 681.f) / 1023.f;
 }
 
 const Lut*
-LutManager::PanaLogLut()
+LutManager::PanalogLut()
 {
-    return LutManager::m_instance.getLut("PanaLog", from_func_Panalog, to_func_Panalog);
+    return LutManager::m_instance.getLut("Panalog", from_func_Panalog, to_func_Panalog);
 }
 
+/// from REDLog to Linear
+static
+float
+from_func_REDLog(float v)
+{
+    return (std::pow(10.f, (1023.f * v - 1023.f) / 511.f) - 0.01) / (1.0f - 0.01f);
+}
+
+/// to REDLog from Linear
+static
+float
+to_func_REDLog(float v)
+{
+    return (511.f * std::log10(0.01f + (1.0f - 0.01f) * v) + 1023.) / 1023.f;
+}
+
+const Lut*
+LutManager::REDLogLut()
+{
+    return LutManager::m_instance.getLut("REDLog", from_func_REDLog, to_func_REDLog);
+}
+
+/// from ViperLog to Linear
 static
 float
 from_func_ViperLog(float v)
@@ -1419,6 +1462,7 @@ from_func_ViperLog(float v)
     return std::pow(10.f, (1023.f * v - 1023.f) / 500.f);
 }
 
+/// to ViperLog from Linear
 static
 float
 to_func_ViperLog(float v)
@@ -1432,34 +1476,16 @@ LutManager::ViperLogLut()
     return LutManager::m_instance.getLut("ViperLog", from_func_ViperLog, to_func_ViperLog);
 }
 
-static
-float
-from_func_RedLog(float v)
-{
-    return (std::pow(10.f, ( 1023.f * v - 1023.f ) / 511.f) - 0.01f) / 0.99f;
-}
-
-static
-float
-to_func_RedLog(float v)
-{
-    return (511.f * std::log10(0.01f + 0.99f * v) + 1023.f) / 1023.f;
-}
-
-const Lut*
-LutManager::RedLogLut()
-{
-    return LutManager::m_instance.getLut("RedLog", from_func_RedLog, to_func_RedLog);
-}
-
+/// from AlexaV3LogC to Lin
 static
 float
 from_func_AlexaV3LogC(float v)
 {
     return v > 0.1496582f ? std::pow(10.f, (v - 0.385537f) / 0.2471896f) * 0.18f - 0.00937677f
-           : ( v / 0.9661776f - 0.04378604) * 0.18f - 0.00937677f;
+           : ( v / 0.9661776f - 0.04378604f) * 0.18f - 0.00937677f;
 }
 
+/// to AlexaV3LogC from Lin
 static
 float
 to_func_AlexaV3LogC(float v)

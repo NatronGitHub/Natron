@@ -91,9 +91,9 @@ public:
     static const Lut* CineonLut();
     static const Lut* Gamma1_8Lut();
     static const Lut* Gamma2_2Lut();
-    static const Lut* PanaLogLut();
+    static const Lut* PanalogLut();
     static const Lut* ViperLogLut();
-    static const Lut* RedLogLut();
+    static const Lut* REDLogLut();
     static const Lut* AlexaV3LogCLut();
 
 private:
@@ -469,6 +469,7 @@ void from_float_packed(float* to, const float* from, const RectI & conversionRec
 
 ///these are put in the header as they are used elsewhere
 
+/// from sRGB to Linear
 inline float
 from_func_srgb(float v)
 {
@@ -479,6 +480,7 @@ from_func_srgb(float v)
     }
 }
 
+/// to sRGB from Linear
 inline float
 to_func_srgb(float v)
 {
