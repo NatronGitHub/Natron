@@ -1334,10 +1334,10 @@ LutManager::Rec709Lut()
 
 /*
    Following the formula:
-   offset = pow(10,(blackpoint - whitepoint) * 0.002 / gammaSensito)
+   offset = pow(10,(blackpoint - whitepoint) * 0.002 / gamma)
    gain = 1/(1-offset)
-   linear = gain * pow(10,(1023*v - whitepoint)*0.002/gammaSensito)
-   cineon = (log10((v + offset) /gain)/ (0.002 / gammaSensito) + whitepoint)/1023
+   linear = gain * (pow(10,(1023*v - whitepoint)*0.002/gamma) - offset)
+   cineon = (log10((v + offset) /gain)/ (0.002 / gamma) + whitepoint)/1023
    Here we're using: blackpoint = 95.0
    whitepoint = 685.0
    gammasensito = 0.6
@@ -1347,7 +1347,10 @@ static
 float
 from_func_Cineon(float v)
 {
-    return ( 1.f / ( 1.f - std::pow(10.f, 1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
+    //return ( 1.f / ( 1.f - std::pow(10.f, -1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
+    //float offset = std::pow(10.f, (95.f - 685.f)*0.002f/0.6f);
+    //float offset = 0.01079775161f;
+    return ( 1.f / ( 1.f - 0.01079775161f ) ) * ( std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f) - 0.01079775161f);
 }
 
 /// to Cineon from Linear Opto-Electronic Transfer Function (OETF)
@@ -1355,9 +1358,12 @@ static
 float
 to_func_Cineon(float v)
 {
-    float offset = std::pow(10.f, 1.97f);
+    //float offset = std::pow(10.f, -1.97f);
+    //float offset = std::pow(10.f, (95.f - 685.f)*0.002f/0.6f);
+    //float offset = 0.01079775161f;
 
-    return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
+    //return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
+    return (std::log10( (v + 0.01079775161f) / ( 1.f / (1.f - 0.01079775161f) ) ) / (0.002f / 0.6f) + 685.0f) / 1023.f;
 }
 
 const Lut*
