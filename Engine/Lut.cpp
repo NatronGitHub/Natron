@@ -1506,6 +1506,61 @@ LutManager::AlexaV3LogCLut()
     return LutManager::m_instance.getLut("AlexaV3LogC", from_func_AlexaV3LogC, to_func_AlexaV3LogC);
 }
 
+/// from SLog1 to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_SLog1(float v)
+{
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= 90./1023. ? (std::pow( 10., (((v*1023.0-64.0)/(940.0-64.0)-0.616596-0.03)/0.432699))-0.037584)*0.9
+           : ((v*1023.0-64.0)/(940.0-64.0)-0.030001222851889303)/5.*0.9;
+}
+
+/// from Linear to SLog1 Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_SLog1(float v)
+{
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= -0.00008153227156 ? ((std::log10((v / 0.9) + 0.037584) * 0.432699 +0.616596+0.03)*(940.0-64.0) + 64.)/1023.
+           : (((v / 0.9) * 5. + 0.030001222851889303)*(940.0-64.0) + 64.)/1023;
+}
+
+const Lut*
+LutManager::SLog1Lut()
+{
+    return LutManager::m_instance.getLut("SLog1", from_func_SLog1, to_func_SLog1);
+}
+
+/// from SLog2 to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_SLog2(float v)
+{
+    // http://community.thefoundry.co.uk/discussion/topic.aspx?f=189&t=100372
+    // nuke.root().knob('luts').addCurve("SLog2-Ref", "{ (t>=90.0/1023.0)? 219.0*(pow(10.0, (((t*1023.0-64.0)/(940.0-64.0)-0.616596-0.03)/0.432699))-0.037584)/155.0*0.9 : ((t*1023.0-64.0)/(940.0-64.0)-0.030001222851889303)/3.53881278538813*0.9 }")
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= 90./1023. ? 219.0 * (std::pow( 10., (((v*1023.0-64.0)/(940.0-64.0)-0.616596-0.03)/0.432699))-0.037584)/155.0*0.9
+          : ((v*1023.0-64.0)/(940.0-64.0)-0.030001222851889303)/3.53881278538813*0.9;
+}
+
+/// from Linear to SLog2 Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_SLog2(float v)
+{
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= -0.00008153227156 ? ((std::log10((v / 0.9) * 155. / 219. + 0.037584) * 0.432699 +0.616596+0.03)*(940.0-64.0) + 64.)/1023.
+            : (((v / 0.9) * 3.53881278538813 + 0.030001222851889303)*(940.0-64.0) + 64.)/1023;
+}
+
+const Lut*
+LutManager::SLog2Lut()
+{
+    return LutManager::m_instance.getLut("SLog2", from_func_SLog2, to_func_SLog2);
+}
+
+
 // r,g,b values are from 0 to 1
 // h = [0,OFXS_HUE_CIRCLE], s = [0,1], v = [0,1]
 //		if s == 0, then h = 0 (undefined)
