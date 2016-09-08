@@ -610,9 +610,14 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QPainter::RenderHints rh = p.renderHints();
     p.setRenderHints(QPainter::Antialiasing);
    /*draw the slider*/
-    p.setBrush(QBrush(_imp->sliderColor));
+    if (!_imp->readOnly) {
+        p.setBrush(QBrush(_imp->sliderColor));
+    } else {
+        QColor disabledColor(100,100,100, 200);
+        p.setBrush(QBrush(disabledColor));
+    }
     /*draw a black rect around the slider for contrast or orange when focused*/
-    if ( !hasFocus() ) {
+    if ( !hasFocus() || _imp->readOnly ) {
         p.setPen(Qt::black);
     } else {
         QPen pen = p.pen();

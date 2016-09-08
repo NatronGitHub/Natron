@@ -469,7 +469,7 @@ void from_float_packed(float* to, const float* from, const RectI & conversionRec
 
 ///these are put in the header as they are used elsewhere
 
-/// from sRGB to Linear
+/// from sRGB to Linear Electro-Optical Transfer Function (EOTF)
 inline float
 from_func_srgb(float v)
 {
@@ -480,7 +480,7 @@ from_func_srgb(float v)
     }
 }
 
-/// to sRGB from Linear
+/// to sRGB from Linear Opto-Electronic Transfer Function (OETF)
 inline float
 to_func_srgb(float v)
 {
@@ -507,7 +507,7 @@ intToFloat(int value)
     return value / (float)(numvals - 1);
 }
 
-/// maps °.-1. to 0-(numvals-1)
+/// maps 0.-1. to 0-(numvals-1)
 template<int numvals>
 int
 floatToInt(float value)
