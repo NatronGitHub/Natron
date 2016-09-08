@@ -1297,7 +1297,7 @@ LutManager::sRGBLut()
 // https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2020-0-201208-S!!PDF-E.pdf
 // Since this is float, we use the coefficients from Rec.2020
 
-/// from Rec709 to Linear
+/// from Rec709 to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Rec709(float v)
@@ -1312,7 +1312,7 @@ from_func_Rec709(float v)
 }
 
 // see above comment
-/// to Rec709 from Linear
+/// to Rec709 from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Rec709(float v)
@@ -1342,7 +1342,7 @@ LutManager::Rec709Lut()
    whitepoint = 685.0
    gammasensito = 0.6
  */
-/// from Cineon to Linear
+/// from Cineon to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Cineon(float v)
@@ -1350,7 +1350,7 @@ from_func_Cineon(float v)
     return ( 1.f / ( 1.f - std::pow(10.f, 1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
 }
 
-/// to Cineon from Linear
+/// to Cineon from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Cineon(float v)
@@ -1366,7 +1366,7 @@ LutManager::CineonLut()
     return LutManager::m_instance.getLut("Cineon", from_func_Cineon, to_func_Cineon);
 }
 
-/// from Gamma 1.8 to Linear
+/// from Gamma 1.8 to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Gamma1_8(float v)
@@ -1374,7 +1374,7 @@ from_func_Gamma1_8(float v)
     return (v < 0.0f) ? 0.0f : std::pow(v, 1.8f);
 }
 
-/// to Gamma 1.8 from Linear
+/// to Gamma 1.8 from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Gamma1_8(float v)
@@ -1388,7 +1388,7 @@ LutManager::Gamma1_8Lut()
     return LutManager::m_instance.getLut("Gamma1_8", from_func_Gamma1_8, to_func_Gamma1_8);
 }
 
-// from Gamma 2.2 to Linear
+/// from Gamma 2.2 to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Gamma2_2(float v)
@@ -1396,7 +1396,7 @@ from_func_Gamma2_2(float v)
     return (v < 0.0f) ? 0.0f : std::pow(v, 2.2f);
 }
 
-// to Gamma 2.2 from Linear
+/// to Gamma 2.2 from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Gamma2_2(float v)
@@ -1410,7 +1410,7 @@ LutManager::Gamma2_2Lut()
     return LutManager::m_instance.getLut("Gamma2_2", from_func_Gamma2_2, to_func_Gamma2_2);
 }
 
-/// from Panalog to Linear
+/// from Panalog to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Panalog(float v)
@@ -1418,7 +1418,7 @@ from_func_Panalog(float v)
     return (std::pow(10.f, (1023.f * v - 681.f) / 444.f) - 0.0408f) / (1.0f - 0.0408f);
 }
 
-/// to Panalog from Linear
+/// to Panalog from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Panalog(float v)
@@ -1432,7 +1432,7 @@ LutManager::PanalogLut()
     return LutManager::m_instance.getLut("Panalog", from_func_Panalog, to_func_Panalog);
 }
 
-/// from REDLog to Linear
+/// from REDLog to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_REDLog(float v)
@@ -1440,7 +1440,7 @@ from_func_REDLog(float v)
     return (std::pow(10.f, (1023.f * v - 1023.f) / 511.f) - 0.01) / (1.0f - 0.01f);
 }
 
-/// to REDLog from Linear
+/// to REDLog from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_REDLog(float v)
@@ -1454,7 +1454,7 @@ LutManager::REDLogLut()
     return LutManager::m_instance.getLut("REDLog", from_func_REDLog, to_func_REDLog);
 }
 
-/// from ViperLog to Linear
+/// from ViperLog to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_ViperLog(float v)
@@ -1462,7 +1462,7 @@ from_func_ViperLog(float v)
     return std::pow(10.f, (1023.f * v - 1023.f) / 500.f);
 }
 
-/// to ViperLog from Linear
+/// to ViperLog from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_ViperLog(float v)
@@ -1476,7 +1476,7 @@ LutManager::ViperLogLut()
     return LutManager::m_instance.getLut("ViperLog", from_func_ViperLog, to_func_ViperLog);
 }
 
-/// from AlexaV3LogC to Lin
+/// from AlexaV3LogC to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_AlexaV3LogC(float v)
@@ -1485,7 +1485,7 @@ from_func_AlexaV3LogC(float v)
            : ( v / 0.9661776f - 0.04378604f) * 0.18f - 0.00937677f;
 }
 
-/// to AlexaV3LogC from Lin
+/// to AlexaV3LogC from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_AlexaV3LogC(float v)
