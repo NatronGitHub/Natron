@@ -33,7 +33,7 @@
         <file alias="LICENSE-Qt-LGPL.txt">../tools/license/components/LICENSE-Qt-LGPL.txt</file>
         <file alias="LICENSE-Schroedinger.txt">../tools/license/components/LICENSE-Schroedinger.txt</file>
         <file alias="LICENSE-SeExpr.txt">../tools/license/components/LICENSE-SeExpr.txt</file>
-        <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file> 
+        <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file>
         <file alias="LICENSE-bzip2.txt">../tools/license/components/LICENSE-bzip2.txt</file>
         <file alias="LICENSE-expat.txt">../tools/license/components/LICENSE-expat.txt</file>
         <file alias="LICENSE-fontconfig.txt">../tools/license/components/LICENSE-fontconfig.txt</file>
@@ -163,7 +163,7 @@
         <file>Resources/Images/execScript.png</file>
         <file>Resources/Images/expoOFF.png</file>
         <file>Resources/Images/expoON.png</file>
-        <file>Resources/Images/featherDisabled.png</file>  
+        <file>Resources/Images/featherDisabled.png</file>
         <file>Resources/Images/featherEnabled.png</file>
         <file>Resources/Images/featherLinkDisabled.png</file>
         <file>Resources/Images/featherLinkEnabled.png</file>
@@ -337,7 +337,7 @@
         <file>Resources/Images/merge_hypot.png</file>
         <file>Resources/Images/merge_in.png</file>
         <file>Resources/Images/merge_luminosity.png</file>
-        <file>Resources/Images/merge_mask.png</file> 
+        <file>Resources/Images/merge_mask.png</file>
         <file>Resources/Images/merge_matte.png</file>
         <file>Resources/Images/merge_max.png</file>
         <file>Resources/Images/merge_min.png</file>
@@ -370,5 +370,12 @@
         <file>Resources/Images/trackRange.png</file>
         <file>Resources/Images/prevUserKey.png</file>
         <file>Resources/Images/nextUserKey.png</file>
+        <file>Resources/Images/motionTypeAffine.png</file>
+        <file>Resources/Images/motionTypeRT.png</file>
+        <file>Resources/Images/MotionTypeRTS.png</file>
+        <file>Resources/Images/motionTypeS.png</file>
+        <file>Resources/Images/motionTypeT.png</file>
+        <file>Resources/Images/patternSize.png</file>
+        <file>Resources/Images/searchSize.png</file>
     </qresource>
 </RCC>
