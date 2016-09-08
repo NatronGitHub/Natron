@@ -95,6 +95,8 @@ public:
     static const Lut* ViperLogLut();
     static const Lut* REDLogLut();
     static const Lut* AlexaV3LogCLut();
+    static const Lut* SLog1Lut();
+    static const Lut* SLog2Lut();
 
 private:
     LutManager &operator= (const LutManager &)
