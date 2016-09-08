@@ -151,7 +151,7 @@ Settings::initializeKnobsGeneral()
 
     _natronSettingsExist = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Existing settings") );
     _natronSettingsExist->setName("existingSettings");
-    _natronSettingsExist->setSecretByDefault(true);
+    _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
 
     _checkForUpdates = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Always check for updates on start-up") );
@@ -297,7 +297,7 @@ Settings::initializeKnobsGeneral()
                                         "Changing this takes effect upon the next application launch, and requires clearing "
                                         "the OpenFX plugins cache from the Cache menu. "
                                         "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) );
-    _customHostName->setSecretByDefault(true);
+    _customHostName->setSecret(true);
     _generalTab->addKnob(_customHostName);
 } // Settings::initializeKnobsGeneral
 
@@ -712,9 +712,9 @@ Settings::initializeKnobsColorManagement()
     _customOcioConfigFile->setName("ocioCustomConfigFile");
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
-        _customOcioConfigFile->setDefaultAllDimensionsEnabled(true);
+        _customOcioConfigFile->setAllDimensionsEnabled(true);
     } else {
-        _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
+        _customOcioConfigFile->setAllDimensionsEnabled(false);
     }
 
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
@@ -739,7 +739,7 @@ Settings::initializeKnobsAppearance()
 
     _defaultAppearanceVersion = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Appearance version") );
     _defaultAppearanceVersion->setName("appearanceVersion");
-    _defaultAppearanceVersion->setSecretByDefault(true);
+    _defaultAppearanceVersion->setSecret(true);
     _appearanceTab->addKnob(_defaultAppearanceVersion);
 
     _systemFontChoice = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Font") );
@@ -2549,7 +2549,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
 
     const KnobsVec& knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->getDefaultIsSecret() ) {
+        if ( (*it)->getIsSecret() ) {
             continue;
         }
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );

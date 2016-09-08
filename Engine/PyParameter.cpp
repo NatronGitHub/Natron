@@ -107,11 +107,6 @@ Param::setVisible(bool visible)
     getInternalKnob()->setSecret(!visible);
 }
 
-void
-Param::setVisibleByDefault(bool visible)
-{
-    getInternalKnob()->setSecretByDefault(!visible);
-}
 
 bool
 Param::getIsEnabled(int dimension) const
@@ -124,12 +119,6 @@ Param::setEnabled(bool enabled,
                   int dimension)
 {
     getInternalKnob()->setEnabled(dimension, enabled);
-}
-
-void
-Param::setEnabledByDefault(bool enabled)
-{
-    getInternalKnob()->setDefaultAllDimensionsEnabled(enabled);
 }
 
 bool
@@ -784,7 +773,7 @@ IntParam::getDefaultValue(int dimension) const
 void
 IntParam::restoreDefaultValue(int dimension)
 {
-    _intKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    _intKnob.lock()->resetToDefaultValue(dimension);
 }
 
 void
@@ -1036,7 +1025,7 @@ DoubleParam::getDefaultValue(int dimension) const
 void
 DoubleParam::restoreDefaultValue(int dimension)
 {
-    _doubleKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    _doubleKnob.lock()->resetToDefaultValue(dimension);
 }
 
 void
@@ -1229,7 +1218,7 @@ ColorParam::getDefaultValue(int dimension) const
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    _colorKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    _colorKnob.lock()->resetToDefaultValue(dimension);
 }
 
 void
@@ -1390,7 +1379,7 @@ ChoiceParam::getDefaultValue() const
 void
 ChoiceParam::restoreDefaultValue()
 {
-    _choiceKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    _choiceKnob.lock()->resetToDefaultValue(0);
 }
 
 void
@@ -1543,7 +1532,7 @@ BooleanParam::getDefaultValue() const
 void
 BooleanParam::restoreDefaultValue()
 {
-    _boolKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    _boolKnob.lock()->resetToDefaultValue(0);
 }
 
 bool
@@ -1634,7 +1623,7 @@ StringParamBase::getDefaultValue() const
 void
 StringParamBase::restoreDefaultValue()
 {
-    _stringKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    _stringKnob.lock()->resetToDefaultValue(0);
 }
 
 QString

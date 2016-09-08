@@ -228,7 +228,8 @@ public:
 
     static void getMotionModelsAndHelps(bool addPerspective,
                                         std::vector<std::string>* models,
-                                        std::vector<std::string>* tooltips);
+                                        std::vector<std::string>* tooltips,
+                                        std::map<int, std::string> *icons);
 
     int getTransformReferenceFrame() const;
 

@@ -105,6 +105,10 @@ ViewerTab::drawOverlays(double time,
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+        ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
+        if (isViewerNode && isViewerNode != getInternalNode()) {
+            continue;
+        }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
@@ -162,6 +166,10 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           double pressure,
                                           double timestamp)
 {
+    ViewerNodePtr isViewerNode = node->isEffectViewerNode();
+    if (isViewerNode && isViewerNode != getInternalNode()) {
+        return false;
+    }
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -312,6 +320,11 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
     ViewIdx view = getInternalNode()->getCurrentView();
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
+        if (isViewerNode && isViewerNode != getInternalNode()) {
+            continue;
+        }
+
         QPointF transformViewportPos;
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -386,6 +399,11 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             double pressure,
                                             double timestamp)
 {
+    ViewerNodePtr isViewerNode = node->isEffectViewerNode();
+    if (isViewerNode && isViewerNode != getInternalNode()) {
+        return false;
+    }
+
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -573,6 +591,11 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     ViewIdx view = getInternalNode()->getCurrentView();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
+        if (isViewerNode && isViewerNode != getInternalNode()) {
+            continue;
+        }
         QPointF transformViewportPos;
         QPointF transformPos;
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -769,6 +792,11 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           Qt::Key qKey,
                                           const Qt::KeyboardModifiers& mods)
 {
+    ViewerNodePtr isViewerNode = node->isEffectViewerNode();
+    if (isViewerNode && isViewerNode != getInternalNode()) {
+        return false;
+    }
+
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
@@ -903,6 +931,11 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
+        if (isViewerNode && isViewerNode != getInternalNode()) {
+            continue;
+        }
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
 
@@ -960,6 +993,11 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
+    ViewerNodePtr isViewerNode = node->isEffectViewerNode();
+    if (isViewerNode && isViewerNode != getInternalNode()) {
+        return false;
+    }
+
     ViewIdx view = getInternalNode()->getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
@@ -1072,6 +1110,12 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
+        if (isViewerNode && isViewerNode != getInternalNode()) {
+            continue;
+        }
+
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
 
@@ -1125,6 +1169,12 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
+        if (isViewerNode && isViewerNode != getInternalNode()) {
+            continue;
+        }
+
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);

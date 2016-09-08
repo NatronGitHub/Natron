@@ -631,17 +631,34 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
 
     ///Motion-model
     {
+        EffectInstancePtr trackerEffect = node.lock()->getNode()->getEffectInstance();
         ItemData d;
         KnobChoicePtr motionModel = marker.getMotionModelKnob();
         ComboBox* cb = new ComboBox;
         cb->setFocusPolicy(Qt::NoFocus);
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
         cb->setCurrentIndex( motionModel->getValue() );
         QObject::connect( cb, SIGNAL(currentIndexChanged(int)), _publicInterface, SLOT(onItemMotionModelChanged(int)) );
         assert( choices.size() == helps.size() );
         for (std::size_t i = 0; i < choices.size(); ++i) {
-            cb->addItem( QString::fromUtf8( choices[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helps[i].c_str() ) );
+            std::map<int, std::string>::const_iterator foundIcon = icons.find(i);
+            std::string iconFilePath;
+            if (foundIcon != icons.end()) {
+                iconFilePath = foundIcon->second;
+            }
+
+            QIcon icon;
+            if (!iconFilePath.empty()) {
+                QPixmap pix = KnobGuiChoice::getPixmapFromFilePath(trackerEffect, QString::fromUtf8(iconFilePath.c_str()));
+                if (!pix.isNull()) {
+                    pix = pix.scaled(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+                    icon.addPixmap(pix);
+                }
+            }
+
+            cb->addItem( QString::fromUtf8( choices[i].c_str() ), icon, QKeySequence(), QString::fromUtf8( helps[i].c_str() ) );
         }
         TableItem* newItem = new TableItem;
         newItem->setToolTip( tooltipFromKnob(motionModel) );

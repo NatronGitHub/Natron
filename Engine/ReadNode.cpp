@@ -435,7 +435,7 @@ ReadNodePrivate::destroyReadNode()
 
             if (!isGeneric || mustSerializeKnob) {
 
-                if (!isGeneric && !(*it)->getDefaultIsSecret()) {
+                if (!isGeneric && !(*it)->getIsSecret()) {
                     // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
                     (*it)->setSecret(false);
                 }
@@ -1012,7 +1012,7 @@ ReadNode::initializeKnobs()
     KnobStringPtr pluginID = AppManager::createKnob<KnobString>( shared_from_this(), tr("PluginID") );
     pluginID->setAnimationEnabled(false);
     pluginID->setName(kNatronReadNodeParamDecodingPluginID);
-    pluginID->setSecretByDefault(true);
+    pluginID->setSecret(true);
     controlpage->addKnob(pluginID);
     _imp->pluginIDStringKnob = pluginID;
     _imp->readNodeKnobs.push_back(pluginID);

@@ -645,7 +645,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         int textureIndex,
                                                         bool canAbort,
                                                         const NodePtr& rotoPaintNode,
-                                                        const RotoStrokeItemPtr& activeStrokeItem,
+                                                        const RotoStrokeItemPtr& /*activeStrokeItem*/,
                                                         const bool isDoingRotoNeatRender,
                                                         const RenderStatsPtr& stats,
                                                         ViewerArgs* outArgs)
@@ -812,7 +812,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     outArgs->params->tiles.clear();
     outArgs->params->nbCachedTile = 0;
-    if (!outArgs->useViewerCache || outArgs->forceRender) {
+    if (!outArgs->useViewerCache) {
         outArgs->params->roi = uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
         outArgs->params->roiNotRoundedToTileSize = outArgs->params->roi;
 
@@ -890,8 +890,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
-            FrameKey key(PLUGINID_NATRON_VIEWER_GROUP,
-                         outArgs->params->time,
+            FrameKey key(outArgs->params->time,
                          outArgs->params->frameViewHash,
                          outArgs->params->gain,
                          outArgs->params->gamma,
@@ -1103,7 +1102,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
     // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
     // zillions of textures in the cache, each a few pixels different.
-    outArgs->useViewerCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingRotoNeatRender && !outArgs->isDoingPartialUpdates;
+    outArgs->useViewerCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingRotoNeatRender && !outArgs->isDoingPartialUpdates && !outArgs->forceRender;
 
 
     // Try to look-up the cache but do so only if we have a RoD valid in the cache because
@@ -1533,8 +1532,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     assert(!it->ramBuffer);
 
 
-                    FrameKey key(PLUGINID_NATRON_VIEWER_GROUP,
-                                 inArgs.params->time,
+                    FrameKey key(inArgs.params->time,
                                  updateParams->frameViewHash,
                                  inArgs.params->gain,
                                  inArgs.params->gamma,

@@ -138,7 +138,7 @@ TrackerNode::initializeKnobs()
     addMarker->setEvaluateOnChange(false);
     addMarker->setCheckable(true);
     addMarker->setDefaultValue(false);
-    addMarker->setSecretByDefault(true);
+    addMarker->setSecret(true);
     addMarker->setIconLabel(NATRON_IMAGES_PATH "addTrack.png");
     addOverlaySlaveParam(addMarker);
     trackingPage->addKnob(addMarker);
@@ -150,7 +150,7 @@ TrackerNode::initializeKnobs()
     trackBw->setEvaluateOnChange(false);
     trackBw->setCheckable(true);
     trackBw->setDefaultValue(false);
-    trackBw->setSecretByDefault(true);
+    trackBw->setSecret(true);
     trackBw->setInViewerContextCanHaveShortcut(true);
     trackBw->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOn.png", true);
     trackBw->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOff.png", false);
@@ -161,7 +161,7 @@ TrackerNode::initializeKnobs()
     trackPrev->setName(kTrackerUIParamTrackPrevious);
     trackPrev->setHintToolTip( tr(kTrackerUIParamTrackPreviousHint) );
     trackPrev->setEvaluateOnChange(false);
-    trackPrev->setSecretByDefault(true);
+    trackPrev->setSecret(true);
     trackPrev->setInViewerContextCanHaveShortcut(true);
     trackPrev->setIconLabel(NATRON_IMAGES_PATH "trackPrev.png");
     trackingPage->addKnob(trackPrev);
@@ -171,7 +171,7 @@ TrackerNode::initializeKnobs()
     stopTracking->setName(kTrackerUIParamStopTracking);
     stopTracking->setHintToolTip( tr(kTrackerUIParamStopTrackingHint) );
     stopTracking->setEvaluateOnChange(false);
-    stopTracking->setSecretByDefault(true);
+    stopTracking->setSecret(true);
     stopTracking->setInViewerContextCanHaveShortcut(true);
     stopTracking->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png");
     trackingPage->addKnob(stopTracking);
@@ -181,7 +181,7 @@ TrackerNode::initializeKnobs()
     trackNext->setName(kTrackerUIParamTrackNext);
     trackNext->setHintToolTip( tr(kTrackerUIParamTrackNextHint) );
     trackNext->setEvaluateOnChange(false);
-    trackNext->setSecretByDefault(true);
+    trackNext->setSecret(true);
     trackNext->setInViewerContextCanHaveShortcut(true);
     trackNext->setIconLabel(NATRON_IMAGES_PATH "trackNext.png");
     trackingPage->addKnob(trackNext);
@@ -193,7 +193,7 @@ TrackerNode::initializeKnobs()
     trackFw->setEvaluateOnChange(false);
     trackFw->setCheckable(true);
     trackFw->setDefaultValue(false);
-    trackFw->setSecretByDefault(true);
+    trackFw->setSecret(true);
     trackFw->setInViewerContextCanHaveShortcut(true);
     trackFw->setIconLabel(NATRON_IMAGES_PATH "trackForwardOn.png", true);
     trackFw->setIconLabel(NATRON_IMAGES_PATH "trackForwardOff.png", false);
@@ -204,7 +204,7 @@ TrackerNode::initializeKnobs()
     trackRange->setName(kTrackerUIParamTrackRange);
     trackRange->setHintToolTip( tr(kTrackerUIParamTrackRangeHint) );
     trackRange->setEvaluateOnChange(false);
-    trackRange->setSecretByDefault(true);
+    trackRange->setSecret(true);
     trackRange->setInViewerContextCanHaveShortcut(true);
     trackRange->setIconLabel(NATRON_IMAGES_PATH "trackRange.png");
     trackingPage->addKnob(trackRange);
@@ -214,7 +214,7 @@ TrackerNode::initializeKnobs()
     trackAllKeys->setName(kTrackerUIParamTrackAllKeyframes);
     trackAllKeys->setHintToolTip( tr(kTrackerUIParamTrackAllKeyframesHint) );
     trackAllKeys->setEvaluateOnChange(false);
-    trackAllKeys->setSecretByDefault(true);
+    trackAllKeys->setSecret(true);
     trackAllKeys->setInViewerContextCanHaveShortcut(true);
     trackAllKeys->setIconLabel(NATRON_IMAGES_PATH "trackAllKeyframes.png");
     trackingPage->addKnob(trackAllKeys);
@@ -225,7 +225,7 @@ TrackerNode::initializeKnobs()
     trackCurKey->setName(kTrackerUIParamTrackCurrentKeyframe);
     trackCurKey->setHintToolTip( tr(kTrackerUIParamTrackCurrentKeyframeHint) );
     trackCurKey->setEvaluateOnChange(false);
-    trackCurKey->setSecretByDefault(true);
+    trackCurKey->setSecret(true);
     trackCurKey->setInViewerContextCanHaveShortcut(true);
     trackCurKey->setIconLabel(NATRON_IMAGES_PATH "trackCurrentKeyframe.png");
     trackingPage->addKnob(trackCurKey);
@@ -236,7 +236,7 @@ TrackerNode::initializeKnobs()
     addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
     addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
     addKeyframe->setEvaluateOnChange(false);
-    addKeyframe->setSecretByDefault(true);
+    addKeyframe->setSecret(true);
     addKeyframe->setInViewerContextCanHaveShortcut(true);
     addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
     trackingPage->addKnob(addKeyframe);
@@ -246,7 +246,7 @@ TrackerNode::initializeKnobs()
     removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
     removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
     removeKeyframe->setEvaluateOnChange(false);
-    removeKeyframe->setSecretByDefault(true);
+    removeKeyframe->setSecret(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
     removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
     trackingPage->addKnob(removeKeyframe);
@@ -256,7 +256,7 @@ TrackerNode::initializeKnobs()
     clearAllAnimation->setName(kTrackerUIParamClearAllAnimation);
     clearAllAnimation->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
     clearAllAnimation->setEvaluateOnChange(false);
-    clearAllAnimation->setSecretByDefault(true);
+    clearAllAnimation->setSecret(true);
     clearAllAnimation->setInViewerContextCanHaveShortcut(true);
     clearAllAnimation->setIconLabel(NATRON_IMAGES_PATH "clearAnimation.png");
     trackingPage->addKnob(clearAllAnimation);
@@ -266,7 +266,7 @@ TrackerNode::initializeKnobs()
     clearBackwardAnim->setName(kTrackerUIParamClearAnimationBw);
     clearBackwardAnim->setHintToolTip( tr(kTrackerUIParamClearAnimationBwHint) );
     clearBackwardAnim->setEvaluateOnChange(false);
-    clearBackwardAnim->setSecretByDefault(true);
+    clearBackwardAnim->setSecret(true);
     clearBackwardAnim->setInViewerContextCanHaveShortcut(true);
     clearBackwardAnim->setIconLabel(NATRON_IMAGES_PATH "clearAnimationBw.png");
     trackingPage->addKnob(clearBackwardAnim);
@@ -276,7 +276,7 @@ TrackerNode::initializeKnobs()
     clearForwardAnim->setName(kTrackerUIParamClearAnimationFw);
     clearForwardAnim->setHintToolTip( tr(kTrackerUIParamClearAnimationFwHint) );
     clearForwardAnim->setEvaluateOnChange(false);
-    clearForwardAnim->setSecretByDefault(true);
+    clearForwardAnim->setSecret(true);
     clearForwardAnim->setInViewerContextCanHaveShortcut(true);
     clearForwardAnim->setIconLabel(NATRON_IMAGES_PATH "clearAnimationFw.png");
     trackingPage->addKnob(clearForwardAnim);
@@ -288,7 +288,7 @@ TrackerNode::initializeKnobs()
     updateViewer->setEvaluateOnChange(false);
     updateViewer->setCheckable(true);
     updateViewer->setDefaultValue(true);
-    updateViewer->setSecretByDefault(true);
+    updateViewer->setSecret(true);
     updateViewer->setInViewerContextCanHaveShortcut(true);
     updateViewer->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
     updateViewer->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);
@@ -301,7 +301,7 @@ TrackerNode::initializeKnobs()
     centerViewer->setEvaluateOnChange(false);
     centerViewer->setCheckable(true);
     centerViewer->setDefaultValue(false);
-    centerViewer->setSecretByDefault(true);
+    centerViewer->setSecret(true);
     centerViewer->setInViewerContextCanHaveShortcut(true);
     centerViewer->setIconLabel(NATRON_IMAGES_PATH "centerOnTrack.png");
     trackingPage->addKnob(centerViewer);
@@ -313,7 +313,7 @@ TrackerNode::initializeKnobs()
     createKeyOnMove->setEvaluateOnChange(false);
     createKeyOnMove->setCheckable(true);
     createKeyOnMove->setDefaultValue(true);
-    createKeyOnMove->setSecretByDefault(true);
+    createKeyOnMove->setSecret(true);
     createKeyOnMove->setInViewerContextCanHaveShortcut(true);
     createKeyOnMove->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOn.png", true);
     createKeyOnMove->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOff.png", false);
@@ -326,7 +326,7 @@ TrackerNode::initializeKnobs()
     showError->setEvaluateOnChange(false);
     showError->setCheckable(true);
     showError->setDefaultValue(false);
-    showError->setSecretByDefault(true);
+    showError->setSecret(true);
     showError->setInViewerContextCanHaveShortcut(true);
     addOverlaySlaveParam(showError);
     showError->setIconLabel(NATRON_IMAGES_PATH "showTrackError.png", true);
@@ -340,7 +340,7 @@ TrackerNode::initializeKnobs()
     resetOffset->setName(kTrackerUIParamResetOffset);
     resetOffset->setHintToolTip( tr(kTrackerUIParamResetOffsetHint) );
     resetOffset->setEvaluateOnChange(false);
-    resetOffset->setSecretByDefault(true);
+    resetOffset->setSecret(true);
     resetOffset->setInViewerContextCanHaveShortcut(true);
     addOverlaySlaveParam(resetOffset);
     resetOffset->setIconLabel(NATRON_IMAGES_PATH "resetTrackOffset.png");
@@ -351,7 +351,7 @@ TrackerNode::initializeKnobs()
     resetTrack->setName(kTrackerUIParamResetTrack);
     resetTrack->setHintToolTip( tr(kTrackerUIParamResetTrackHint) );
     resetTrack->setEvaluateOnChange(false);
-    resetTrack->setSecretByDefault(true);
+    resetTrack->setSecret(true);
     resetTrack->setInViewerContextCanHaveShortcut(true);
     addOverlaySlaveParam(resetTrack);
     resetTrack->setIconLabel(NATRON_IMAGES_PATH "restoreDefaultEnabled.png");
@@ -371,6 +371,10 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(magWindow);
     _imp->ui->magWindowPxSizeKnob = magWindow;
 
+
+    KnobSeparatorPtr trackTableSeparator = AppManager::createKnob<KnobSeparator>(shared_from_this(), tr(""));
+    trackTableSeparator->setName("trackTableSep");
+    trackingPage->addKnob(trackTableSeparator);
 
     addKnobToViewerUI(addMarker);
     addMarker->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
@@ -429,14 +433,14 @@ TrackerNode::initializeKnobs()
 
     // Right click menu
     KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( shared_from_this(), std::string(kTrackerUIParamRightClickMenu) );
-    rightClickMenu->setSecretByDefault(true);
+    rightClickMenu->setSecret(true);
     rightClickMenu->setEvaluateOnChange(false);
     trackingPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionSelectAllTracks);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -446,7 +450,7 @@ TrackerNode::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionRemoveTracks);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -456,7 +460,7 @@ TrackerNode::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeBottom);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -466,7 +470,7 @@ TrackerNode::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeLeft);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -476,7 +480,7 @@ TrackerNode::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeRight);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -486,7 +490,7 @@ TrackerNode::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeTop);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -498,7 +502,7 @@ TrackerNode::initializeKnobs()
     // Track range dialog
     KnobGroupPtr trackRangeDialog = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogLabel) );
     trackRangeDialog->setName(kTrackerUIParamTrackRangeDialog);
-    trackRangeDialog->setSecretByDefault(true);
+    trackRangeDialog->setSecret(true);
     trackRangeDialog->setEvaluateOnChange(false);
     trackRangeDialog->setDefaultValue(false);
     trackRangeDialog->setIsPersistent(false);
@@ -509,7 +513,7 @@ TrackerNode::initializeKnobs()
     KnobIntPtr trackRangeDialogFirstFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel) );
     trackRangeDialogFirstFrame->setName(kTrackerUIParamTrackRangeDialogFirstFrame);
     trackRangeDialogFirstFrame->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
-    trackRangeDialogFirstFrame->setSecretByDefault(true);
+    trackRangeDialogFirstFrame->setSecret(true);
     trackRangeDialogFirstFrame->setEvaluateOnChange(false);
     trackRangeDialogFirstFrame->setAnimationEnabled(false);
     trackRangeDialogFirstFrame->setIsPersistent(false);
@@ -520,7 +524,7 @@ TrackerNode::initializeKnobs()
     KnobIntPtr trackRangeDialogLastFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
     trackRangeDialogLastFrame->setName(kTrackerUIParamTrackRangeDialogLastFrame);
     trackRangeDialogLastFrame->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
-    trackRangeDialogLastFrame->setSecretByDefault(true);
+    trackRangeDialogLastFrame->setSecret(true);
     trackRangeDialogLastFrame->setEvaluateOnChange(false);
     trackRangeDialogLastFrame->setAnimationEnabled(false);
     trackRangeDialogLastFrame->setIsPersistent(false);
@@ -531,7 +535,7 @@ TrackerNode::initializeKnobs()
     KnobIntPtr trackRangeDialogFrameStep = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogStepLabel) );
     trackRangeDialogFrameStep->setName(kTrackerUIParamTrackRangeDialogStep);
     trackRangeDialogFrameStep->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
-    trackRangeDialogFrameStep->setSecretByDefault(true);
+    trackRangeDialogFrameStep->setSecret(true);
     trackRangeDialogFrameStep->setEvaluateOnChange(false);
     trackRangeDialogFrameStep->setAnimationEnabled(false);
     trackRangeDialogFrameStep->setIsPersistent(false);
@@ -542,7 +546,7 @@ TrackerNode::initializeKnobs()
     KnobButtonPtr trackRangeDialogOkButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
     trackRangeDialogOkButton->setName(kTrackerUIParamTrackRangeDialogOkButton);
     trackRangeDialogOkButton->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
-    trackRangeDialogOkButton->setSecretByDefault(true);
+    trackRangeDialogOkButton->setSecret(true);
     trackRangeDialogOkButton->setAddNewLine(false);
     trackRangeDialogOkButton->setEvaluateOnChange(false);
     trackRangeDialogOkButton->setSpacingBetweenItems(3);
@@ -553,7 +557,7 @@ TrackerNode::initializeKnobs()
     KnobButtonPtr trackRangeDialogCancelButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
     trackRangeDialogCancelButton->setName(kTrackerUIParamTrackRangeDialogCancelButton);
     trackRangeDialogCancelButton->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
-    trackRangeDialogCancelButton->setSecretByDefault(true);
+    trackRangeDialogCancelButton->setSecret(true);
     trackRangeDialogCancelButton->setEvaluateOnChange(false);
     trackRangeDialog->addKnob(trackRangeDialogCancelButton);
     _imp->ui->trackRangeDialogCancelButton = trackRangeDialogCancelButton;

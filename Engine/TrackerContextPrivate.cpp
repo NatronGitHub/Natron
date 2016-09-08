@@ -295,7 +295,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defPatternWinSizeKnob->setName(kTrackerParamDefaultMarkerPatternWinSize);
     defPatternWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerPatternWinSizeLabel));
     defPatternWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerPatternWinSizeHint) );
-    defPatternWinSizeKnob->setIconLabel(NATRON_IMAGES_PATH "patternSize.png");
+    defPatternWinSizeKnob->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "patternSize.png");
     defPatternWinSizeKnob->setAnimationEnabled(false);
     defPatternWinSizeKnob->setMinimum(1);
     defPatternWinSizeKnob->disableSlider();
@@ -309,7 +309,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defSearchWinSizeKnob->setName(kTrackerParamDefaultMarkerSearchWinSize);
     defSearchWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerSearchWinSizeLabel));
     defSearchWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerSearchWinSizeHint) );
-    defSearchWinSizeKnob->setIconLabel(NATRON_IMAGES_PATH "searchSize.png");
+    defSearchWinSizeKnob->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "searchSize.png");
     defSearchWinSizeKnob->setAnimationEnabled(false);
     defSearchWinSizeKnob->setMinimum(1);
     defSearchWinSizeKnob->disableSlider();
@@ -318,14 +318,15 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(defSearchWinSizeKnob);
     defaultSearchWinSize = defSearchWinSizeKnob;
 
-    KnobChoicePtr defMotionModelKnob = AppManager::createKnob<KnobChoice>(effect, tr(kTrackerParamDefaultMotionModelLabel), 1, false);
+    KnobChoicePtr defMotionModelKnob = AppManager::createKnob<KnobChoice>(effect, tr(""), 1, false);
     defMotionModelKnob->setName(kTrackerParamDefaultMotionModel);
     defMotionModelKnob->setAnimationEnabled(false);
     {
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
         defMotionModelKnob->populateChoices(choices, helps);
-
+        defMotionModelKnob->setIcons(icons);
     }
     defMotionModelKnob->setAnimationEnabled(false);
     defMotionModelKnob->setEvaluateOnChange(false);
@@ -366,8 +367,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     motionModelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
     {
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
         motionModelKnob->populateChoices(choices, helps);
+        motionModelKnob->setIcons(icons);
     }
     motionModelKnob->setAllDimensionsEnabled(false);
     motionModelKnob->setAnimationEnabled(false);
@@ -507,7 +510,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     fittingErrorWarningKnob->setDefaultValue( tr(kTrackerParamFittingErrorWarningLabel).toStdString() );
     fittingErrorWarningKnob->setIconLabel("dialog-warning");
     fittingErrorWarningKnob->setEvaluateOnChange(false);
-    fittingErrorWarningKnob->setSecretByDefault(true);
+    fittingErrorWarningKnob->setSecret(true);
     fittingErrorWarningKnob->setAsLabel();
     transformPage->addKnob(fittingErrorWarningKnob);
     fittingErrorWarning = fittingErrorWarningKnob;
@@ -619,7 +622,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         setFromPointsToInputRod = setToInputRod;
 
         KnobBoolPtr cornerPinSet = AppManager::createKnob<KnobBool>( effect, std::string(kTrackerParamCornerPinFromPointsSetOnce) );
-        cornerPinSet->setSecretByDefault(true);
+        cornerPinSet->setSecret(true);
         fromGroupKnob->addKnob(cornerPinSet);
         cornerPinFromPointsSetOnceAutomatically = cornerPinSet;
 
@@ -2189,28 +2192,28 @@ TrackerContextPrivate::resetTransformParamsAnimation()
 
 
         for (int i = 0; i < 4; ++i) {
-            toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-            toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
-            enabledPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+            toPointsKnob[i]->resetToDefaultValue(0);
+            toPointsKnob[i]->resetToDefaultValue(1);
+            enabledPointsKnob[i]->resetToDefaultValue(0);
         }
     }
     KnobDoublePtr centerKnob = center.lock();
 
-    centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-    centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+    centerKnob->resetToDefaultValue(0);
+    centerKnob->resetToDefaultValue(1);
     {
         // Revert animation on the transform
         KnobDoublePtr translationKnob = translate.lock();
         KnobDoublePtr scaleKnob = scale.lock();
         KnobDoublePtr rotationKnob = rotate.lock();
 
-        translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-        translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+        translationKnob->resetToDefaultValue(0);
+        translationKnob->resetToDefaultValue(1);
 
-        scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-        scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+        scaleKnob->resetToDefaultValue(0);
+        scaleKnob->resetToDefaultValue(1);
 
-        rotationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+        rotationKnob->resetToDefaultValue(0);
     }
 }
 

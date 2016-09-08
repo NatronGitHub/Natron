@@ -377,12 +377,11 @@ KnobGuiChoice::onRefreshMenuActionTriggered()
 }
 
 QPixmap
-KnobGuiChoice::getPixmapFromFilePath(const QString &filePath) const
+KnobGuiChoice::getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
 {
     QString customFilePath = filePath;
 
     if ( !QFile::exists(filePath) ) {
-        KnobHolderPtr holder = _knob.lock()->getHolder();
         EffectInstancePtr instance = toEffectInstance(holder);
         if (instance) {
             QString resourcesPath = QString::fromUtf8( instance->getNode()->getPluginResourcesPath().c_str() );
@@ -396,12 +395,18 @@ KnobGuiChoice::getPixmapFromFilePath(const QString &filePath) const
     if ( !QFile::exists(customFilePath) ) {
         return false;
     }
-    
+
     QPixmap pix(customFilePath);
     if ( pix.isNull() ) {
         return false;
     }
     return pix;
+}
+
+QPixmap
+KnobGuiChoice::getPixmapFromFilePath(const QString &filePath) const
+{
+    return getPixmapFromFilePath(_knob.lock()->getHolder(),filePath);
 }
 
 void

@@ -38,7 +38,7 @@ ValueSerialization::setEnabledChanged(bool b)
 {
     KnobSerialization* isKnob = dynamic_cast<KnobSerialization*>(_serialization);
     if (isKnob) {
-        isKnob->_enabledChanged = b;
+        isKnob->_disabled = !b;
     }
 }
 
@@ -55,14 +55,6 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     // we serialize strings, meaning that
     // if they are here, their value is true otherwise it goes to default
     std::list<std::string> propNames;
-    if (_visibilityChanged && _isPersistent) {
-        propNames.push_back("VisibilityChanged");
-    }
-
-    if (_enabledChanged && _isPersistent) {
-        // Only serialize enabled changed if all dimensions are changed
-        propNames.push_back("EnabledChanged");
-    }
 
     if (_masterIsAlias) {
         propNames.push_back("MasterIsAlias");
@@ -241,6 +233,14 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         if (!_tooltip.empty()) {
             em << YAML_NAMESPACE::Key << "Hint" << YAML_NAMESPACE::Value << _tooltip;
         }
+        if (_isSecret) {
+            propNames.push_back("Secret");
+        }
+
+        if (_disabled) {
+            propNames.push_back("Disabled");
+        }
+
         if (!_triggerNewLine) {
             propNames.push_back("NoNewLine");
         }
@@ -620,12 +620,12 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
         YAML_NAMESPACE::Node propsNode = node["Props"];
         for (std::size_t i = 0; i < propsNode.size(); ++i) {
             std::string prop = propsNode[i].as<std::string>();
-            if (prop == "VisibilityChanged") {
-                _visibilityChanged = true;
-            } else if (prop == "EnabledChanged") {
-                _enabledChanged = true;
-            } else if (prop == "MasterIsAlias") {
+            if (prop == "MasterIsAlias") {
                 _masterIsAlias = true;
+            } else if (prop == "Secret") {
+                _isSecret = true;
+            } else if (prop == "Disabled") {
+                _disabled = true;
             } else if (prop == "NoNewLine") {
                 _triggerNewLine = false;
             } else if (prop == "NoEval") {

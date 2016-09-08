@@ -1998,6 +1998,18 @@ Knob<T>::getInitialDefaultValue(int dimension) const
 }
 
 template<typename T>
+void
+Knob<T>::setCurrentDefaultValueAsInitialValue()
+{
+    int nDims = getDimension();
+    QMutexLocker l(&_valueMutex);
+    for (int i = 0; i < nDims; ++i) {
+        _defaultValues[i].initialValue = _defaultValues[i].value;
+        _defaultValues[i].defaultValueSet = true;
+    }
+}
+
+template<typename T>
 bool
 Knob<T>::hasDefaultValueChanged(int dimension) const
 {
@@ -2027,7 +2039,7 @@ Knob<T>::setDefaultValue(const T & v,
             _defaultValues[dimension].initialValue = v;
         }
     }
-    resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    resetToDefaultValue(dimension);
     computeHasModifications();
 }
 
@@ -2423,48 +2435,9 @@ KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
 }
 
 
-template<>
-void
-KnobDoubleBase::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
-{
-    KnobI::removeAnimation(ViewSpec::all(), dimension);
-    double defaultV;
-    {
-        QMutexLocker l(&_valueMutex);
-        defaultV = _defaultValues[dimension].value;
-    }
-
-    ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
-    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
-
-
-    clearExpression(dimension, true);
-    resetExtraToDefaultValue(dimension);
-    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
-    if (isDouble) {
-        if ( isDouble->getDefaultValuesAreNormalized() ) {
-            if (isDouble->getValueIsNormalized(dimension) == eValueIsNormalizedNone) {
-                // default is normalized, value is non-normalized: denormalize it!
-                double time = getCurrentTime();
-                defaultV = isDouble->denormalize(dimension, time, defaultV);
-            }
-        } else {
-            if (isDouble->getValueIsNormalized(dimension) != eValueIsNormalizedNone) {
-                // default is non-normalized, value is normalized: normalize it!
-                double time = getCurrentTime();
-                defaultV = isDouble->normalize(dimension, time, defaultV);
-            }
-        }
-    }
-    ignore_result( setValue(defaultV, ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault, NULL) );
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault);
-    }
-}
-
 template<typename T>
 void
-Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
+Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(ViewSpec::all(), dimension);
     T defaultV;
@@ -2481,14 +2454,6 @@ Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
     }
 }
 
-template<typename T>
-void
-Knob<T>::resetToDefaultValue(int dimension)
-{
-    resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
-    setSecret( getDefaultIsSecret() );
-    setEnabled( dimension, isDefaultEnabled(dimension) );
-}
 
 // If *all* the following conditions hold:
 // - this is a double value
@@ -2547,8 +2512,7 @@ KnobDoubleBase::resetToDefaultValue(int dimension)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault);
     }
-    setSecret( getDefaultIsSecret() );
-    setEnabled( dimension, isDefaultEnabled(dimension) );
+
 }
 
 template<typename T>

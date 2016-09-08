@@ -51,8 +51,7 @@ FrameKey::FrameKey()
 {
 }
 
-FrameKey::FrameKey(const std::string& pluginID,
-                   SequenceTime time,
+FrameKey::FrameKey(SequenceTime time,
                    U64 treeVersion,
                    double gain,
                    double gamma,
@@ -67,7 +66,7 @@ FrameKey::FrameKey(const std::string& pluginID,
                    const std::string& alphaChannelFullName,
                    bool useShaders,
                    bool draftMode)
-    : KeyHelper<U64>(pluginID)
+    : KeyHelper<U64>(std::string())
     , _time(time)
     , _treeVersion(treeVersion)
     , _gain(gain)

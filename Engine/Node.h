@@ -1537,7 +1537,6 @@ private:
     void declareRotoPythonField();
     void declareTrackerPythonField();
 
-    std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
 
     void setNodeIsRenderingInternal(NodesWList& markedNodes);

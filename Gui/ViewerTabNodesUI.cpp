@@ -90,6 +90,11 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
         return;
     }
 
+    ViewerNodePtr isViewerNode = n->getNode()->isEffectViewerNode();
+    if (isViewerNode && isViewerNode != getInternalNode()) {
+        return;
+    }
+
     boost::shared_ptr<NodeViewerContext> nodeContext = NodeViewerContext::create(n, this);
     nodeContext->createGui();
     _imp->nodesContext.insert( std::make_pair(n, nodeContext) );

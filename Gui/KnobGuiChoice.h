@@ -125,6 +125,8 @@ public:
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
+    static QPixmap getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
+
 public Q_SLOTS:
 
     void onCurrentIndexChanged(int i);

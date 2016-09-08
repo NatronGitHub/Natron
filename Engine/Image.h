@@ -208,11 +208,7 @@ public:
     }
 
     virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
-    static ImageKey makeKey(const std::string& pluginID,
-                            U64 nodeHashKey,
-                            double time,
-                            ViewIdx view,
-                            bool draftMode);
+
     static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                      const double par,
                                      unsigned int mipMapLevel,

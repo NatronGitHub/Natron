@@ -26,7 +26,6 @@
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/SerializationBase.h"
 
-
 #define kInViewerContextItemLayoutSpacing "Spacing"
 #define kInViewerContextItemLayoutStretchBefore "StretchB"
 #define kInViewerContextItemLayoutStretchAfter "StretchA"
@@ -340,8 +339,8 @@ public:
     std::string _typeName; // used for user knobs only to re-create the appropriate knob type
     std::string _scriptName; // the unique script-name of the knob
     int _dimension; // the number of dimensions held by the knob
-    bool _visibilityChanged; // true if the secretness of the knob is different than default
-    bool _enabledChanged; // true if the enabledness of the knob  is different than default
+    bool _isSecret; // true if the knob is hidden, only serialized for user knob,s
+    bool _disabled; // true if the knob is disabled, only serialized for user knobs
     bool _masterIsAlias; // is the master/slave link an alias ?
     std::vector<ValueSerialization> _values; // serialized value for each dimension
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
@@ -369,8 +368,8 @@ public:
     : _typeName()
     , _scriptName()
     , _dimension(0)
-    , _visibilityChanged(false)
-    , _enabledChanged(false)
+    , _isSecret(false)
+    , _disabled(false)
     , _masterIsAlias(false)
     , _values()
     , _extraData()

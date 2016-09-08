@@ -638,8 +638,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setIsMetadataSlave( isClipPreferencesSlaveParam(paramName) );
     knob->setIsPersistent(persistent);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
-    knob->setSecretByDefault(secretByDefault);
-    knob->setDefaultAllDimensionsEnabled(enabledByDefault);
+    knob->setSecret(secretByDefault);
+    knob->setAllDimensionsEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );

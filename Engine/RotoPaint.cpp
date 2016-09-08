@@ -289,7 +289,7 @@ RotoPaint::initializeKnobs()
     autoKeyingEnabled->setEvaluateOnChange(false);
     autoKeyingEnabled->setCheckable(true);
     autoKeyingEnabled->setDefaultValue(true);
-    autoKeyingEnabled->setSecretByDefault(true);
+    autoKeyingEnabled->setSecret(true);
     autoKeyingEnabled->setInViewerContextCanHaveShortcut(true);
     autoKeyingEnabled->setIconLabel(NATRON_IMAGES_PATH "autoKeyingEnabled.png", true);
     autoKeyingEnabled->setIconLabel(NATRON_IMAGES_PATH "autoKeyingDisabled.png", false);
@@ -301,7 +301,7 @@ RotoPaint::initializeKnobs()
     featherLinkEnabled->setCheckable(true);
     featherLinkEnabled->setEvaluateOnChange(false);
     featherLinkEnabled->setDefaultValue(true);
-    featherLinkEnabled->setSecretByDefault(true);
+    featherLinkEnabled->setSecret(true);
     featherLinkEnabled->setInViewerContextCanHaveShortcut(true);
     featherLinkEnabled->setHintToolTip( tr(kRotoUIParamFeatherLinkEnabledHint) );
     featherLinkEnabled->setIconLabel(NATRON_IMAGES_PATH "featherLinkEnabled.png", true);
@@ -315,7 +315,7 @@ RotoPaint::initializeKnobs()
     displayFeatherEnabled->setEvaluateOnChange(false);
     displayFeatherEnabled->setCheckable(true);
     displayFeatherEnabled->setDefaultValue(true);
-    displayFeatherEnabled->setSecretByDefault(true);
+    displayFeatherEnabled->setSecret(true);
     displayFeatherEnabled->setInViewerContextCanHaveShortcut(true);
     addOverlaySlaveParam(displayFeatherEnabled);
     displayFeatherEnabled->setIconLabel(NATRON_IMAGES_PATH "featherEnabled.png", true);
@@ -329,7 +329,7 @@ RotoPaint::initializeKnobs()
     stickySelection->setEvaluateOnChange(false);
     stickySelection->setCheckable(true);
     stickySelection->setDefaultValue(false);
-    stickySelection->setSecretByDefault(true);
+    stickySelection->setSecret(true);
     stickySelection->setInViewerContextCanHaveShortcut(true);
     stickySelection->setIconLabel(NATRON_IMAGES_PATH "stickySelectionEnabled.png", true);
     stickySelection->setIconLabel(NATRON_IMAGES_PATH "stickySelectionDisabled.png", false);
@@ -342,7 +342,7 @@ RotoPaint::initializeKnobs()
     bboxClickAnywhere->setEvaluateOnChange(false);
     bboxClickAnywhere->setCheckable(true);
     bboxClickAnywhere->setDefaultValue(false);
-    bboxClickAnywhere->setSecretByDefault(true);
+    bboxClickAnywhere->setSecret(true);
     bboxClickAnywhere->setInViewerContextCanHaveShortcut(true);
     bboxClickAnywhere->setIconLabel(NATRON_IMAGES_PATH "viewer_roiEnabled.png", true);
     bboxClickAnywhere->setIconLabel(NATRON_IMAGES_PATH "viewer_roiDisabled.png", false);
@@ -355,7 +355,7 @@ RotoPaint::initializeKnobs()
     rippleEditEnabled->setEvaluateOnChange(false);
     rippleEditEnabled->setCheckable(true);
     rippleEditEnabled->setDefaultValue(false);
-    rippleEditEnabled->setSecretByDefault(true);
+    rippleEditEnabled->setSecret(true);
     rippleEditEnabled->setInViewerContextCanHaveShortcut(true);
     rippleEditEnabled->setIconLabel(NATRON_IMAGES_PATH "rippleEditEnabled.png", true);
     rippleEditEnabled->setIconLabel(NATRON_IMAGES_PATH "rippleEditDisabled.png", false);
@@ -366,7 +366,7 @@ RotoPaint::initializeKnobs()
     addKeyframe->setName(kRotoUIParamAddKeyFrame);
     addKeyframe->setEvaluateOnChange(false);
     addKeyframe->setHintToolTip( tr(kRotoUIParamAddKeyFrameHint) );
-    addKeyframe->setSecretByDefault(true);
+    addKeyframe->setSecret(true);
     addKeyframe->setInViewerContextCanHaveShortcut(true);
     addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addKF.png");
     generalPage->addKnob(addKeyframe);
@@ -376,7 +376,7 @@ RotoPaint::initializeKnobs()
     removeKeyframe->setName(kRotoUIParamRemoveKeyframe);
     removeKeyframe->setHintToolTip( tr(kRotoUIParamRemoveKeyframeHint) );
     removeKeyframe->setEvaluateOnChange(false);
-    removeKeyframe->setSecretByDefault(true);
+    removeKeyframe->setSecret(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
     removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeKF.png");
     generalPage->addKnob(removeKeyframe);
@@ -386,7 +386,7 @@ RotoPaint::initializeKnobs()
     showTransform->setName(kRotoUIParamShowTransform);
     showTransform->setHintToolTip( tr(kRotoUIParamShowTransformHint) );
     showTransform->setEvaluateOnChange(false);
-    showTransform->setSecretByDefault(true);
+    showTransform->setSecret(true);
     showTransform->setCheckable(true);
     showTransform->setDefaultValue(true);
     showTransform->setInViewerContextCanHaveShortcut(true);
@@ -405,7 +405,7 @@ RotoPaint::initializeKnobs()
     multiStroke->setHintToolTip( tr(kRotoUIParamMultiStrokeEnabledHint) );
     multiStroke->setEvaluateOnChange(false);
     multiStroke->setDefaultValue(true);
-    multiStroke->setSecretByDefault(true);
+    multiStroke->setSecret(true);
     generalPage->addKnob(multiStroke);
     _imp->ui->multiStrokeEnabled = multiStroke;
 
@@ -416,7 +416,7 @@ RotoPaint::initializeKnobs()
     colorWheel->setDefaultValue(1., 0);
     colorWheel->setDefaultValue(1., 1);
     colorWheel->setDefaultValue(1., 2);
-    colorWheel->setSecretByDefault(true);
+    colorWheel->setSecret(true);
     generalPage->addKnob(colorWheel);
     _imp->ui->colorWheelButton = colorWheel;
 
@@ -424,7 +424,7 @@ RotoPaint::initializeKnobs()
     blendingModes->setName(kRotoUIParamBlendingOp);
     blendingModes->setHintToolTip( tr(kRotoUIParamBlendingOpHint) );
     blendingModes->setEvaluateOnChange(false);
-    blendingModes->setSecretByDefault(true);
+    blendingModes->setSecret(true);
     {
         std::vector<std::string> choices, helps;
         Merge::getOperatorStrings(&choices, &helps);
@@ -440,7 +440,7 @@ RotoPaint::initializeKnobs()
     opacityKnob->setInViewerContextLabel( tr(kRotoUIParamOpacityLabel) );
     opacityKnob->setHintToolTip( tr(kRotoUIParamOpacityHint) );
     opacityKnob->setEvaluateOnChange(false);
-    opacityKnob->setSecretByDefault(true);
+    opacityKnob->setSecret(true);
     opacityKnob->setDefaultValue(1.);
     opacityKnob->setMinimum(0.);
     opacityKnob->setMaximum(1.);
@@ -454,7 +454,7 @@ RotoPaint::initializeKnobs()
     pressureOpacity->setEvaluateOnChange(false);
     pressureOpacity->setCheckable(true);
     pressureOpacity->setDefaultValue(true);
-    pressureOpacity->setSecretByDefault(true);
+    pressureOpacity->setSecret(true);
     pressureOpacity->setInViewerContextCanHaveShortcut(true);
     pressureOpacity->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
     pressureOpacity->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
@@ -466,7 +466,7 @@ RotoPaint::initializeKnobs()
     sizeKnob->setInViewerContextLabel( tr(kRotoUIParamSizeLabel) );
     sizeKnob->setHintToolTip( tr(kRotoUIParamSizeHint) );
     sizeKnob->setEvaluateOnChange(false);
-    sizeKnob->setSecretByDefault(true);
+    sizeKnob->setSecret(true);
     sizeKnob->setDefaultValue(25.);
     sizeKnob->setMinimum(0.);
     sizeKnob->setMaximum(1000.);
@@ -480,7 +480,7 @@ RotoPaint::initializeKnobs()
     pressureSize->setEvaluateOnChange(false);
     pressureSize->setCheckable(true);
     pressureSize->setDefaultValue(false);
-    pressureSize->setSecretByDefault(true);
+    pressureSize->setSecret(true);
     pressureSize->setInViewerContextCanHaveShortcut(true);
     pressureSize->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
     pressureSize->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
@@ -492,7 +492,7 @@ RotoPaint::initializeKnobs()
     hardnessKnob->setInViewerContextLabel( tr(kRotoUIParamHardnessLabel) );
     hardnessKnob->setHintToolTip( tr(kRotoUIParamHardnessHint) );
     hardnessKnob->setEvaluateOnChange(false);
-    hardnessKnob->setSecretByDefault(true);
+    hardnessKnob->setSecret(true);
     hardnessKnob->setDefaultValue(.2);
     hardnessKnob->setMinimum(0.);
     hardnessKnob->setMaximum(1.);
@@ -506,7 +506,7 @@ RotoPaint::initializeKnobs()
     pressureHardness->setEvaluateOnChange(false);
     pressureHardness->setCheckable(true);
     pressureHardness->setDefaultValue(false);
-    pressureHardness->setSecretByDefault(true);
+    pressureHardness->setSecret(true);
     pressureHardness->setInViewerContextCanHaveShortcut(true);
     pressureHardness->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
     pressureHardness->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
@@ -520,7 +520,7 @@ RotoPaint::initializeKnobs()
     buildUp->setEvaluateOnChange(false);
     buildUp->setCheckable(true);
     buildUp->setDefaultValue(true);
-    buildUp->setSecretByDefault(true);
+    buildUp->setSecret(true);
     buildUp->setInViewerContextCanHaveShortcut(true);
     buildUp->setIconLabel(NATRON_IMAGES_PATH "rotopaint_buildup_on.png", true);
     buildUp->setIconLabel(NATRON_IMAGES_PATH "rotopaint_buildup_off.png", false);
@@ -532,7 +532,7 @@ RotoPaint::initializeKnobs()
     effectStrength->setInViewerContextLabel( tr(kRotoUIParamEffectLabel) );
     effectStrength->setHintToolTip( tr(kRotoUIParamEffectHint) );
     effectStrength->setEvaluateOnChange(false);
-    effectStrength->setSecretByDefault(true);
+    effectStrength->setSecret(true);
     effectStrength->setDefaultValue(15);
     effectStrength->setMinimum(0.);
     effectStrength->setMaximum(100.);
@@ -545,7 +545,7 @@ RotoPaint::initializeKnobs()
     timeOffsetSb->setInViewerContextLabel( tr(kRotoUIParamTimeOffsetLabel) );
     timeOffsetSb->setHintToolTip( tr(kRotoUIParamTimeOffsetHint) );
     timeOffsetSb->setEvaluateOnChange(false);
-    timeOffsetSb->setSecretByDefault(true);
+    timeOffsetSb->setSecret(true);
     timeOffsetSb->setDefaultValue(0);
     timeOffsetSb->disableSlider();
     generalPage->addKnob(timeOffsetSb);
@@ -555,7 +555,7 @@ RotoPaint::initializeKnobs()
     timeOffsetMode->setName(kRotoUIParamTimeOffset);
     timeOffsetMode->setHintToolTip( tr(kRotoUIParamTimeOffsetHint) );
     timeOffsetMode->setEvaluateOnChange(false);
-    timeOffsetMode->setSecretByDefault(true);
+    timeOffsetMode->setSecret(true);
     {
         std::vector<std::string> choices, helps;
         choices.push_back("Relative");
@@ -572,7 +572,7 @@ RotoPaint::initializeKnobs()
     sourceType->setName(kRotoUIParamSourceType);
     sourceType->setHintToolTip( tr(kRotoUIParamSourceTypeHint) );
     sourceType->setEvaluateOnChange(false);
-    sourceType->setSecretByDefault(true);
+    sourceType->setSecret(true);
     {
         std::vector<std::string> choices, helps;
         choices.push_back("foreground");
@@ -592,7 +592,7 @@ RotoPaint::initializeKnobs()
     resetCloneOffset->setName(kRotoUIParamResetCloneOffset);
     resetCloneOffset->setHintToolTip( tr(kRotoUIParamResetCloneOffsetHint) );
     resetCloneOffset->setEvaluateOnChange(false);
-    resetCloneOffset->setSecretByDefault(true);
+    resetCloneOffset->setSecret(true);
     resetCloneOffset->setInViewerContextCanHaveShortcut(true);
     resetCloneOffset->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
     generalPage->addKnob(resetCloneOffset);
@@ -644,13 +644,13 @@ RotoPaint::initializeKnobs()
     KnobPagePtr toolbar = AppManager::createKnob<KnobPage>( shared_from_this(), std::string(kRotoUIParamToolbar) );
     toolbar->setAsToolBar(true);
     toolbar->setEvaluateOnChange(false);
-    toolbar->setSecretByDefault(true);
+    toolbar->setSecret(true);
     _imp->ui->toolbarPage = toolbar;
     KnobGroupPtr selectionToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamSelectionToolButtonLabel) );
     selectionToolButton->setName(kRotoUIParamSelectionToolButton);
     selectionToolButton->setAsToolButton(true);
     selectionToolButton->setEvaluateOnChange(false);
-    selectionToolButton->setSecretByDefault(true);
+    selectionToolButton->setSecret(true);
     selectionToolButton->setInViewerContextCanHaveShortcut(true);
     selectionToolButton->setIsPersistent(false);
     toolbar->addKnob(selectionToolButton);
@@ -659,7 +659,7 @@ RotoPaint::initializeKnobs()
     editPointsToolButton->setName(kRotoUIParamEditPointsToolButton);
     editPointsToolButton->setAsToolButton(true);
     editPointsToolButton->setEvaluateOnChange(false);
-    editPointsToolButton->setSecretByDefault(true);
+    editPointsToolButton->setSecret(true);
     editPointsToolButton->setInViewerContextCanHaveShortcut(true);
     editPointsToolButton->setIsPersistent(false);
     toolbar->addKnob(editPointsToolButton);
@@ -668,7 +668,7 @@ RotoPaint::initializeKnobs()
     editBezierToolButton->setName(kRotoUIParamBezierEditionToolButton);
     editBezierToolButton->setAsToolButton(true);
     editBezierToolButton->setEvaluateOnChange(false);
-    editBezierToolButton->setSecretByDefault(true);
+    editBezierToolButton->setSecret(true);
     editBezierToolButton->setInViewerContextCanHaveShortcut(true);
     editBezierToolButton->setIsPersistent(false);
     toolbar->addKnob(editBezierToolButton);
@@ -677,7 +677,7 @@ RotoPaint::initializeKnobs()
     paintToolButton->setName(kRotoUIParamPaintBrushToolButton);
     paintToolButton->setAsToolButton(true);
     paintToolButton->setEvaluateOnChange(false);
-    paintToolButton->setSecretByDefault(true);
+    paintToolButton->setSecret(true);
     paintToolButton->setInViewerContextCanHaveShortcut(true);
     paintToolButton->setIsPersistent(false);
     toolbar->addKnob(paintToolButton);
@@ -689,7 +689,7 @@ RotoPaint::initializeKnobs()
         cloneToolButton->setName(kRotoUIParamCloneBrushToolButton);
         cloneToolButton->setAsToolButton(true);
         cloneToolButton->setEvaluateOnChange(false);
-        cloneToolButton->setSecretByDefault(true);
+        cloneToolButton->setSecret(true);
         cloneToolButton->setInViewerContextCanHaveShortcut(true);
         cloneToolButton->setIsPersistent(false);
         toolbar->addKnob(cloneToolButton);
@@ -698,7 +698,7 @@ RotoPaint::initializeKnobs()
         effectToolButton->setName(kRotoUIParamEffectBrushToolButton);
         effectToolButton->setAsToolButton(true);
         effectToolButton->setEvaluateOnChange(false);
-        effectToolButton->setSecretByDefault(true);
+        effectToolButton->setSecret(true);
         effectToolButton->setInViewerContextCanHaveShortcut(true);
         effectToolButton->setIsPersistent(false);
         toolbar->addKnob(effectToolButton);
@@ -707,7 +707,7 @@ RotoPaint::initializeKnobs()
         mergeToolButton->setName(kRotoUIParamMergeBrushToolButton);
         mergeToolButton->setAsToolButton(true);
         mergeToolButton->setEvaluateOnChange(false);
-        mergeToolButton->setSecretByDefault(true);
+        mergeToolButton->setSecret(true);
         mergeToolButton->setInViewerContextCanHaveShortcut(true);
         mergeToolButton->setIsPersistent(false);
         toolbar->addKnob(mergeToolButton);
@@ -721,7 +721,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamSelectAllToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(true);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "cursor.png");
         tool->setIsPersistent(false);
@@ -734,7 +734,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamSelectPointsToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "selectPoints.png");
         tool->setIsPersistent(false);
@@ -747,7 +747,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamSelectShapesToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "selectCurves.png");
         tool->setIsPersistent(false);
@@ -760,7 +760,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamSelectFeatherPointsToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "selectFeather.png");
         tool->setIsPersistent(false);
@@ -773,7 +773,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamAddPointsToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(true);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "addPoints.png");
         tool->setIsPersistent(false);
@@ -786,7 +786,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamRemovePointsToolButtonAction) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "removePoints.png");
         tool->setIsPersistent(false);
@@ -799,7 +799,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamCuspPointsToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "cuspPoints.png");
         tool->setIsPersistent(false);
@@ -812,7 +812,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamSmoothPointsToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "smoothPoints.png");
         tool->setIsPersistent(false);
@@ -825,7 +825,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamOpenCloseCurveToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "openCloseCurve.png");
         tool->setIsPersistent(false);
@@ -839,7 +839,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamRemoveFeatherToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "removeFeather.png");
         tool->setIsPersistent(false);
@@ -853,7 +853,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamDrawBezierToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(true);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "bezier32.png");
         tool->setIsPersistent(false);
@@ -867,7 +867,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamDrawEllipseToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "ellipse.png");
         tool->setIsPersistent(false);
@@ -881,7 +881,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamDrawRectangleToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rectangle.png");
         tool->setIsPersistent(false);
@@ -894,7 +894,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamDrawBrushToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(true);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_solid.png");
         tool->setIsPersistent(false);
@@ -907,7 +907,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamPencilToolButtonAction) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rotoToolPencil.png");
         tool->setIsPersistent(false);
@@ -921,7 +921,7 @@ RotoPaint::initializeKnobs()
         tool->setHintToolTip( tr(kRotoUIParamEraserToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
-        tool->setSecretByDefault(true);
+        tool->setSecret(true);
         tool->setEvaluateOnChange(false);
         tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_eraser.png");
         tool->setIsPersistent(false);
@@ -935,7 +935,7 @@ RotoPaint::initializeKnobs()
             tool->setHintToolTip( tr(kRotoUIParamCloneToolButtonActionHint) );
             tool->setCheckable(true);
             tool->setDefaultValue(true);
-            tool->setSecretByDefault(true);
+            tool->setSecret(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_clone.png");
             tool->setIsPersistent(false);
@@ -948,7 +948,7 @@ RotoPaint::initializeKnobs()
             tool->setHintToolTip( tr(kRotoUIParamRevealToolButtonActionHint) );
             tool->setCheckable(true);
             tool->setDefaultValue(false);
-            tool->setSecretByDefault(true);
+            tool->setSecret(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_reveal.png");
             tool->setIsPersistent(false);
@@ -963,7 +963,7 @@ RotoPaint::initializeKnobs()
             tool->setHintToolTip( tr(kRotoUIParamBlurToolButtonActionHint) );
             tool->setCheckable(true);
             tool->setDefaultValue(true);
-            tool->setSecretByDefault(true);
+            tool->setSecret(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_blur.png");
             tool->setIsPersistent(false);
@@ -976,7 +976,7 @@ RotoPaint::initializeKnobs()
             tool->setHintToolTip( tr(kRotoUIParamSmearToolButtonActionHint) );
             tool->setCheckable(true);
             tool->setDefaultValue(false);
-            tool->setSecretByDefault(true);
+            tool->setSecret(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_smear.png");
             tool->setIsPersistent(false);
@@ -989,7 +989,7 @@ RotoPaint::initializeKnobs()
             tool->setHintToolTip( tr(kRotoUIParamDodgeToolButtonActionHint) );
             tool->setCheckable(true);
             tool->setDefaultValue(true);
-            tool->setSecretByDefault(true);
+            tool->setSecret(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_dodge.png");
             tool->setIsPersistent(false);
@@ -1002,7 +1002,7 @@ RotoPaint::initializeKnobs()
             tool->setHintToolTip( tr(kRotoUIParamBurnToolButtonActionHint) );
             tool->setCheckable(true);
             tool->setDefaultValue(false);
-            tool->setSecretByDefault(true);
+            tool->setSecret(true);
             tool->setEvaluateOnChange(false);
             tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_burn.png");
             tool->setIsPersistent(false);
@@ -1013,14 +1013,14 @@ RotoPaint::initializeKnobs()
 
     // Right click menu
     KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( shared_from_this(), std::string(kRotoUIParamRightClickMenu) );
-    rightClickMenu->setSecretByDefault(true);
+    rightClickMenu->setSecret(true);
     rightClickMenu->setEvaluateOnChange(false);
     generalPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionRemoveItemsLabel) );
         action->setName(kRotoUIParamRightClickMenuActionRemoveItems);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1031,7 +1031,7 @@ RotoPaint::initializeKnobs()
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionCuspItemsLabel) );
         action->setName(kRotoUIParamRightClickMenuActionCuspItems);
         action->setEvaluateOnChange(false);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
@@ -1040,7 +1040,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionSmoothItemsLabel) );
         action->setName(kRotoUIParamRightClickMenuActionSmoothItems);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1050,7 +1050,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel) );
         action->setName(kRotoUIParamRightClickMenuActionRemoveItemsFeather);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1060,7 +1060,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeBottomLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeBottom);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1070,7 +1070,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeLeftLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeLeft);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1080,7 +1080,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeTopLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeTop);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1090,7 +1090,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeRightLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeRight);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1100,7 +1100,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionSelectAllLabel) );
         action->setName(kRotoUIParamRightClickMenuActionSelectAll);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         generalPage->addKnob(action);
@@ -1109,7 +1109,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionOpenCloseLabel) );
         action->setName(kRotoUIParamRightClickMenuActionOpenClose);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
@@ -1119,7 +1119,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionLockShapesLabel) );
         action->setName(kRotoUIParamRightClickMenuActionLockShapes);
-        action->setSecretByDefault(true);
+        action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);

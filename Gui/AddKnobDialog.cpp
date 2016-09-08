@@ -1583,7 +1583,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     knob->setEvaluateOnChange( evaluatesOnChange->isChecked() );
 
 
-    knob->setSecretByDefault( hideBox->isChecked() );
+    knob->setSecret( hideBox->isChecked() );
     knob->setName(nameLineEdit->text().toStdString(), true);
     knob->setHintToolTip( tooltipArea->toPlainText().toStdString() );
     bool addedInGrp = false;

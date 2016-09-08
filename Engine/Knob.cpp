@@ -304,17 +304,11 @@ struct KnobHelperPrivate
     // Tells whether the knob is secret
     bool IsSecret;
 
-    // Tells whether the knob is assumed to be secret by default. This is to avoid serializing the IsSecret value
-    bool defaultIsSecret;
-
     // Tells whether the knob is secret in the viewer. By default it is always visible in the viewer (if it has a viewer UI)
     bool inViewerContextSecret;
 
     // For each dimension tells whether the knob is enabled
     std::vector<bool> enabled;
-
-    // For each dimension, tells whether the knob is considered to be enabled by default. This is to avoid serializing the enabled value
-    std::vector<bool> defaultEnabled;
 
     // True if this knob can use the undo/redo stack
     bool CanUndo;
@@ -458,10 +452,8 @@ struct KnobHelperPrivate
         , parentKnob()
         , stateMutex()
         , IsSecret(false)
-        , defaultIsSecret(false)
         , inViewerContextSecret(false)
         , enabled(dimension_)
-        , defaultEnabled(dimension_)
         , CanUndo(true)
         , evaluateOnChange(true)
         , IsPersistent(true)
@@ -513,7 +505,6 @@ struct KnobHelperPrivate
         expressions.resize(dimension);
         hasModifications.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
-            defaultEnabled[i] = enabled[i] = true;
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
             mustClearExprResults[i] = false;
@@ -2024,17 +2015,6 @@ KnobHelper::setEnabled(int dimension,
 }
 
 void
-KnobHelper::setDefaultEnabled(int dimension,
-                              bool b)
-{
-    {
-        QMutexLocker k(&_imp->stateMutex);
-        _imp->defaultEnabled[dimension] = b;
-    }
-    setEnabled(dimension, b);
-}
-
-void
 KnobHelper::setAllDimensionsEnabled(bool b)
 {
     bool changed = false;
@@ -2051,28 +2031,6 @@ KnobHelper::setAllDimensionsEnabled(bool b)
     if (changed && _signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
     }
-}
-
-void
-KnobHelper::setDefaultAllDimensionsEnabled(bool b)
-{
-    {
-        QMutexLocker k(&_imp->stateMutex);
-        for (U32 i = 0; i < _imp->enabled.size(); ++i) {
-            _imp->defaultEnabled[i] = b;
-        }
-    }
-    setAllDimensionsEnabled(b);
-}
-
-void
-KnobHelper::setSecretByDefault(bool b)
-{
-    {
-        QMutexLocker k(&_imp->stateMutex);
-        _imp->defaultIsSecret = b;
-    }
-    setSecret(b);
 }
 
 void
@@ -3210,14 +3168,6 @@ KnobHelper::getIsSecretRecursive() const
     return false;
 }
 
-bool
-KnobHelper::getDefaultIsSecret() const
-{
-    QMutexLocker k(&_imp->stateMutex);
-
-    return _imp->defaultIsSecret;
-}
-
 void
 KnobHelper::setIsFrozen(bool frozen)
 {
@@ -3236,15 +3186,6 @@ KnobHelper::isEnabled(int dimension) const
     return _imp->enabled[dimension];
 }
 
-bool
-KnobHelper::isDefaultEnabled(int dimension) const
-{
-    assert( 0 <= dimension && dimension < getDimension() );
-
-    QMutexLocker k(&_imp->stateMutex);
-
-    return _imp->defaultEnabled[dimension];
-}
 
 void
 KnobHelper::setDirty(bool d)
@@ -4360,19 +4301,8 @@ KnobHelper::hasModifications() const
 bool
 KnobHelper::hasModificationsForSerialization() const
 {
-    bool enabledChanged = false;
-    bool defValueChanged = false;
-    for (int i = 0; i < getDimension(); ++i) {
-        if ( isEnabled(i) != isDefaultEnabled(i) ) {
-            enabledChanged = true;
-        }
-        if (hasDefaultValueChanged(i)) {
-            defValueChanged = true;
-        }
-    }
 
-    return hasModifications() ||
-           getIsSecret() != getDefaultIsSecret() || enabledChanged || defValueChanged;
+    return hasModifications();
 }
 
 bool
@@ -5005,18 +4935,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_typeName = typeName();
         serialization->_dimension = getDimension();
         serialization->_scriptName = getName();
-        serialization->_visibilityChanged = (getIsSecret() != getDefaultIsSecret());
 
-        int nDimsDisabled = 0;
-        for (int i = 0; i < serialization->_dimension; ++i) {
-            // If the knob is slaved, it will be disabled so do not take it into account
-            if (!isSlave(i) && (isEnabled(i) != isDefaultEnabled(i))) {
-                ++nDimsDisabled;
-            }
-        }
-        if (nDimsDisabled == serialization->_dimension) {
-            serialization->_enabledChanged = true;
-        }
 
         // Values bits
         serialization->_values.resize(serialization->_dimension);
@@ -5038,6 +4957,22 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_tooltip = getHintToolTip();
         serialization->_iconFilePath[0] = getIconLabel(false);
         serialization->_iconFilePath[1] = getIconLabel(true);
+
+        if (serialization->_isUserKnob) {
+            serialization->_isSecret = getIsSecret();
+
+            int nDimsDisabled = 0;
+            for (int i = 0; i < serialization->_dimension; ++i) {
+                // If the knob is slaved, it will be disabled so do not take it into account
+                if (!isSlave(i) && (!isEnabled(i))) {
+                    ++nDimsDisabled;
+                }
+            }
+            if (nDimsDisabled == serialization->_dimension) {
+                serialization->_disabled = true;
+            }
+        }
+
 
         // Viewer UI context bits
         if (getHolder()) {
@@ -5148,8 +5083,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
 
         // Check if we need to serialize this knob
         serialization->_mustSerialize = true;
-        if (!serialization->_isUserKnob && !serialization->_visibilityChanged && !serialization->_masterIsAlias &&
-            !serialization->_hasViewerInterface) {
+        if (!serialization->_isUserKnob && !serialization->_masterIsAlias && !serialization->_hasViewerInterface) {
             bool mustSerialize = false;
             for (std::size_t i = 0; i < serialization->_values.size(); ++i) {
                 mustSerialize |= serialization->_values[i]._mustSerialize;
@@ -5195,14 +5129,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     blockValueChanges();
     beginChanges();
 
-    // Restore visibility
-    if (serialization->_visibilityChanged) {
-        setSecret(!getDefaultIsSecret());
-    }
-    // Restore enabled state
-    if (serialization->_enabledChanged) {
-        setAllDimensionsEnabled(!isDefaultEnabled(0));
-    }
 
     // There is a case where the dimension of a parameter might have changed between versions, e.g:
     // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
@@ -5261,6 +5187,13 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     // Restore user knobs bits
     if (serialization->_isUserKnob) {
         setAsUserKnob(true);
+        if (serialization->_isSecret) {
+            setSecret(true);
+        }
+        // Restore enabled state
+        if (serialization->_disabled) {
+            setAllDimensionsEnabled(false);
+        }
         setIsPersistent(serialization->_isPersistent);
         if (serialization->_animatesChanged) {
             setAnimationEnabled(!isAnimatedByDefault());

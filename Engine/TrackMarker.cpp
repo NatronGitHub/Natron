@@ -222,8 +222,10 @@ TrackMarker::initializeKnobs()
     mmodelKnob->setName(kTrackerParamMotionModel);
     {
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(true, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(true, &choices, &helps, &icons);
         mmodelKnob->populateChoices(choices, helps);
+        mmodelKnob->setIcons(icons);
     }
 
     mmodelKnob->setDefaultValue(defMotionModel_i);

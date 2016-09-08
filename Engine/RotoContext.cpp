@@ -959,7 +959,7 @@ RotoContext::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjec
     _imp->isCurrentlyLoading = true;
 
     for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        it->lock()->setDefaultAllDimensionsEnabled(false);
+        it->lock()->setAllDimensionsEnabled(false);
     }
 
     assert(_imp->layers.size() == 1);

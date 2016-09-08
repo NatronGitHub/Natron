@@ -47,8 +47,7 @@ public:
 
     FrameKey();
 
-    FrameKey(const std::string& pluginID,
-             SequenceTime time,
+    FrameKey(SequenceTime time,
              U64 treeVersion,
              double gain,
              double gamma,

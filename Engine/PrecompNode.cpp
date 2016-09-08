@@ -315,13 +315,13 @@ PrecompNode::initializeKnobs()
     outputNode->setName("outputNode");
     outputNode->setHintToolTip( tr("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.").toStdString() );
     outputNode->setAnimationEnabled(false);
-    outputNode->setSecretByDefault(true);
+    outputNode->setSecret(true);
     mainPage->addKnob(outputNode);
     _imp->outputNodeNameKnob = outputNode;
 
     KnobStringPtr sublabel = AppManager::createKnob<KnobString>( shared_from_this(), tr("SubLabel") );
     sublabel->setName(kNatronOfxParamStringSublabelName);
-    sublabel->setSecretByDefault(true);
+    sublabel->setSecret(true);
     mainPage->addKnob(sublabel);
     _imp->subLabelKnob = sublabel;
 } // PrecompNode::initializeKnobs

@@ -922,31 +922,26 @@ public:
      * @brief Enables/disables user interaction with the given dimension.
      **/
     virtual void setEnabled(int dimension, bool b) = 0;
-    virtual void setDefaultEnabled(int dimension, bool b) = 0;
 
     /**
      * @brief Is the dimension enabled ?
      **/
     virtual bool isEnabled(int dimension) const = 0;
-    virtual bool isDefaultEnabled(int dimension) const = 0;
 
     /**
      * @brief Convenience function, same as calling setEnabled(int,bool) for all dimensions.
      **/
     virtual void setAllDimensionsEnabled(bool b) = 0;
-    virtual void setDefaultAllDimensionsEnabled(bool b) = 0;
 
     /**
      * @brief Set the knob visible/invisible on the GUI representing it.
      **/
     virtual void setSecret(bool b) = 0;
-    virtual void setSecretByDefault(bool b) = 0;
 
     /**
      * @brief Is the knob visible to the user ?
      **/
     virtual bool getIsSecret() const = 0;
-    virtual bool getDefaultIsSecret() const = 0;
 
     /**
      * @brief Returns true if a knob is secret because it is either itself secret or one of its parent, recursively
@@ -1274,7 +1269,6 @@ public:
      * @brief Restores the default value
      **/
     virtual void resetToDefaultValue(int dimension) = 0;
-    virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) = 0;
 
     /**
      * @brief Must return true if this Lnob holds a POD (plain old data) type, i.e. int, bool, or double.
@@ -1529,16 +1523,11 @@ public:
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEnabled(int dimension, bool b) OVERRIDE FINAL;
-    virtual void setDefaultEnabled(int dimension, bool b) OVERRIDE FINAL;
     virtual bool isEnabled(int dimension) const OVERRIDE FINAL;
-    virtual bool isDefaultEnabled(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsEnabled(bool b) OVERRIDE FINAL;
-    virtual void setDefaultAllDimensionsEnabled(bool b) OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
-    virtual void setSecretByDefault(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;
     virtual void setName(const std::string & name, bool throwExceptions = false) OVERRIDE FINAL;
@@ -2042,6 +2031,8 @@ public:
 
     bool isDefaultValueSet(int dimension) const WARN_UNUSED_RETURN;
 
+    void setCurrentDefaultValueAsInitialValue();
+
     /**
      * @brief Set a default value and set the knob value to it for the particular dimension.
      **/
@@ -2083,7 +2074,6 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
-    virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) OVERRIDE FINAL;
     virtual void clone(const KnobIPtr& other, int dimension = -1, int otherDimension = -1)  OVERRIDE FINAL;
     virtual void clone(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;

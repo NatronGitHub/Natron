@@ -3451,19 +3451,6 @@ Node::isActivated() const
     return _imp->activated;
 }
 
-std::string
-Node::makeCacheInfo() const
-{
-    std::size_t ram, disk;
-
-    appPTR->getMemoryStatsForPlugin(getPluginID(), &ram, &disk);
-    QString ramSizeStr = printAsRAM( (U64)ram );
-    QString diskSizeStr = printAsRAM( (U64)disk );
-    std::stringstream ss;
-    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: <font color=#c8c8c8>" << ramSizeStr.toStdString() << "</font> / Disk: <font color=#c8c8c8>" << diskSizeStr.toStdString() << "</font>";
-
-    return ss.str();
-}
 
 std::string
 Node::makeInfoForInput(int inputNumber) const
@@ -3625,9 +3612,7 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
             formatSize->setEvaluateOnChange(false);
             formatPar->setEvaluateOnChange(false);
             formatSize->setSecret(true);
-            formatSize->setSecretByDefault(true);
             formatPar->setSecret(true);
-            formatPar->setSecretByDefault(true);
             _imp->pluginFormatKnobs.size = toKnobInt(formatSize);
             _imp->pluginFormatKnobs.par = toKnobDouble(formatPar);
 
@@ -3704,7 +3689,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
                                                                      "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
                                                                      "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
     if ( ( isRenderScaleSupportEnabledForPlugin() ) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
-        useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
+        useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
@@ -4114,7 +4099,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
-        premultWarning->setSecretByDefault(true);
+        premultWarning->setSecret(true);
         premultWarning->setAsLabel();
         premultWarning->setEvaluateOnChange(false);
         premultWarning->setIsPersistent(false);
@@ -4346,7 +4331,7 @@ Node::Implementation::createChannelSelector(int inputNb,
         layer->setHintToolTip( tr("Select here the layer that will be used in input by %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
     }
     layer->setAnimationEnabled(false);
-    layer->setSecretByDefault(!isOutput);
+    layer->setSecret(!isOutput);
     page->addKnob(layer);
     sel.layer = layer;
     std::vector<std::string> baseLayers;
@@ -4462,6 +4447,10 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     choice->populateChoices(entries);
     choice->beginChanges();
     choice->setDefaultValue(defValue);
+
+    // We don't want to serialize the default value even if it changed, because it will be restored by the project
+    choice->setCurrentDefaultValueAsInitialValue();
+
     if (!loadingProject) {
         //changedKnob was not called because we are initializing knobs
         handleFormatKnob(choice);
@@ -4558,7 +4547,7 @@ Node::makeDocumentation(bool genHTML) const
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
-        if ( (*it)->getDefaultIsSecret() ) {
+        if ( (*it)->getIsSecret() ) {
             continue;
         }
         QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
@@ -4800,7 +4789,6 @@ Node::onSetSupportRenderScaleMaybeSet(int support)
     if ( (EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes ) {
         KnobBoolPtr b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
         if (b) {
-            b->setSecretByDefault(true);
             b->setSecret(true);
         }
     }
@@ -8937,8 +8925,6 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         }
         std::string outputInfo = makeInfoForInput(-1);
         ssinfo << outputInfo << "<br />";
-        std::string cacheInfo = makeCacheInfo();
-        ssinfo << cacheInfo << "<br />";
         ssinfo << "<b>" << tr("Supports tiles:").toStdString() << "</b> <font color=#c8c8c8>";
         ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         if (_imp->effect) {

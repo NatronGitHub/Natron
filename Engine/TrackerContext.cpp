@@ -61,21 +61,28 @@ NATRON_NAMESPACE_ENTER;
 void
 TrackerContext::getMotionModelsAndHelps(bool addPerspective,
                                         std::vector<std::string>* models,
-                                        std::vector<std::string>* tooltips)
+                                        std::vector<std::string>* tooltips,
+                                        std::map<int, std::string> *icons)
 {
     models->push_back("Trans.");
     tooltips->push_back(kTrackerParamMotionModelTranslation);
+    (*icons)[0] = NATRON_IMAGES_PATH "motionTypeT.png";
     models->push_back("Trans.+Rot.");
     tooltips->push_back(kTrackerParamMotionModelTransRot);
+    (*icons)[1] = NATRON_IMAGES_PATH "motionTypeRT.png";
     models->push_back("Trans.+Scale");
     tooltips->push_back(kTrackerParamMotionModelTransScale);
+    //(*icons)[0] = NATRON_IMAGES_PATH "motionTypeTS.png";
     models->push_back("Trans.+Rot.+Scale");
     tooltips->push_back(kTrackerParamMotionModelTransRotScale);
+    (*icons)[3] = NATRON_IMAGES_PATH "motionTypeRTS.png";
     models->push_back("Affine");
     tooltips->push_back(kTrackerParamMotionModelAffine);
+    (*icons)[4] = NATRON_IMAGES_PATH "motionTypeAffine.png";
     if (addPerspective) {
         models->push_back("Perspective");
         tooltips->push_back(kTrackerParamMotionModelPerspective);
+        //(*icons)[5] = NATRON_IMAGES_PATH "motionTypePerspective.png";
     }
 }
 

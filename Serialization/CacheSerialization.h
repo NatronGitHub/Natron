@@ -79,31 +79,35 @@ public:
 
     virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE FINAL
     {
-        em << YAML_NAMESPACE::BeginSeq;
         em << YAML_NAMESPACE::Flow;
+        em << YAML_NAMESPACE::BeginSeq;
         em << filePath;
         em << dataOffsetInFile;
         em << size;
         em << hash;
-        em << pluginID;
         key.encode(em);
         params.encode(em);
+        if (!pluginID.empty()) {
+            em << pluginID;
+        }
         em << YAML_NAMESPACE::EndSeq;
 
     }
 
     virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE FINAL
     {
-        if (!node.IsSequence() || node.size() != 7) {
+        if (!node.IsSequence() || node.size() < 6) {
             throw YAML_NAMESPACE::InvalidNode();
         }
         filePath = node[0].as<std::string>();
         dataOffsetInFile = node[1].as<std::size_t>();
         size = node[2].as<std::size_t>();
         hash = node[3].as<hash_type>();
-        pluginID = node[4].as<std::string>();
-        key.decode(node[5]);
-        params.decode(node[6]);
+        key.decode(node[4]);
+        params.decode(node[5]);
+        if (node.size() >= 7) {
+            pluginID = node[6].as<std::string>();
+        }
     }
 
 

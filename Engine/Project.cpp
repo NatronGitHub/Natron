@@ -926,7 +926,7 @@ Project::initializeKnobs()
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistent(false);
 //    _imp->projectName->setAsLabel();
-    _imp->projectName->setDefaultEnabled(0, false);
+    _imp->projectName->setEnabled(0, false);
     _imp->projectName->setAnimationEnabled(false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
@@ -935,7 +935,7 @@ Project::initializeKnobs()
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistent(false);
     _imp->projectPath->setAnimationEnabled(false);
-    _imp->projectPath->setDefaultEnabled(0, false);
+    _imp->projectPath->setEnabled(0, false);
     // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
 
@@ -943,7 +943,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     // _imp->natronVersion->setAsLabel();
-    _imp->natronVersion->setDefaultEnabled(0, false);
+    _imp->natronVersion->setEnabled(0, false);
     _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
 
@@ -954,7 +954,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip( tr("The user name and host name of the original author of the project.") );
     //_imp->originalAuthorName->setAsLabel();
-    _imp->originalAuthorName->setDefaultEnabled(0, false);
+    _imp->originalAuthorName->setEnabled(0, false);
     _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
@@ -965,7 +965,7 @@ Project::initializeKnobs()
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
     // _imp->lastAuthorName->setAsLabel();
-    _imp->lastAuthorName->setDefaultEnabled(0, false);
+    _imp->lastAuthorName->setEnabled(0, false);
     _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
@@ -976,7 +976,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip( tr("The creation date of the project.") );
     //_imp->projectCreationDate->setAsLabel();
-    _imp->projectCreationDate->setDefaultEnabled(0, false);
+    _imp->projectCreationDate->setEnabled(0, false);
     _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
@@ -986,7 +986,7 @@ Project::initializeKnobs()
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
     //_imp->saveDate->setAsLabel();
-    _imp->saveDate->setDefaultEnabled(0, false);
+    _imp->saveDate->setEnabled(0, false);
     _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);

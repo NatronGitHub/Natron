@@ -266,21 +266,6 @@ static PythonToCppFunc is_number_PythonToCpp_QFlags_NATRON_NAMESPACE_StandardBut
         return number_PythonToCpp_QFlags_NATRON_NAMESPACE_StandardButtonEnum_;
     return 0;
 }
-static void NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum(PyObject* pyIn, void* cppOut) {
-    *((::NATRON_NAMESPACE::ImageBitDepthEnum*)cppOut) = (::NATRON_NAMESPACE::ImageBitDepthEnum) Shiboken::Enum::getValue(pyIn);
-
-}
-static PythonToCppFunc is_NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum_Convertible(PyObject* pyIn) {
-    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX]))
-        return NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum;
-    return 0;
-}
-static PyObject* NATRON_NAMESPACE_ImageBitDepthEnum_CppToPython_NATRON_NAMESPACE_ImageBitDepthEnum(const void* cppIn) {
-    int castCppIn = *((::NATRON_NAMESPACE::ImageBitDepthEnum*)cppIn);
-    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX], castCppIn);
-
-}
-
 static void NATRON_NAMESPACE_KeyframeTypeEnum_PythonToCpp_NATRON_NAMESPACE_KeyframeTypeEnum(PyObject* pyIn, void* cppOut) {
     *((::NATRON_NAMESPACE::KeyframeTypeEnum*)cppOut) = (::NATRON_NAMESPACE::KeyframeTypeEnum) Shiboken::Enum::getValue(pyIn);
 
@@ -293,6 +278,21 @@ static PythonToCppFunc is_NATRON_NAMESPACE_KeyframeTypeEnum_PythonToCpp_NATRON_N
 static PyObject* NATRON_NAMESPACE_KeyframeTypeEnum_CppToPython_NATRON_NAMESPACE_KeyframeTypeEnum(const void* cppIn) {
     int castCppIn = *((::NATRON_NAMESPACE::KeyframeTypeEnum*)cppIn);
     return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX], castCppIn);
+
+}
+
+static void NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum(PyObject* pyIn, void* cppOut) {
+    *((::NATRON_NAMESPACE::ImageBitDepthEnum*)cppOut) = (::NATRON_NAMESPACE::ImageBitDepthEnum) Shiboken::Enum::getValue(pyIn);
+
+}
+static PythonToCppFunc is_NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum_Convertible(PyObject* pyIn) {
+    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX]))
+        return NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum;
+    return 0;
+}
+static PyObject* NATRON_NAMESPACE_ImageBitDepthEnum_CppToPython_NATRON_NAMESPACE_ImageBitDepthEnum(const void* cppIn) {
+    int castCppIn = *((::NATRON_NAMESPACE::ImageBitDepthEnum*)cppIn);
+    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX], castCppIn);
 
 }
 
@@ -515,43 +515,6 @@ void init_NATRON_NAMESPACE(PyObject* module)
     }
     // End of 'StandardButtonEnum' enum/flags.
 
-    // Initialization of enum 'ImageBitDepthEnum'.
-    SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
-        "ImageBitDepthEnum",
-        "NatronEngine.Natron.ImageBitDepthEnum",
-        "Natron::ImageBitDepthEnum");
-    if (!SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX])
-        return ;
-
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthNone", (long) NATRON_NAMESPACE::eImageBitDepthNone))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthByte", (long) NATRON_NAMESPACE::eImageBitDepthByte))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthShort", (long) NATRON_NAMESPACE::eImageBitDepthShort))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthHalf", (long) NATRON_NAMESPACE::eImageBitDepthHalf))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthFloat", (long) NATRON_NAMESPACE::eImageBitDepthFloat))
-        return ;
-    // Register converter for enum 'NATRON_NAMESPACE::ImageBitDepthEnum'.
-    {
-        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
-            NATRON_NAMESPACE_ImageBitDepthEnum_CppToPython_NATRON_NAMESPACE_ImageBitDepthEnum);
-        Shiboken::Conversions::addPythonToCppValueConversion(converter,
-            NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum,
-            is_NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum_Convertible);
-        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX], converter);
-        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX], converter);
-        Shiboken::Conversions::registerConverterName(converter, "Natron::ImageBitDepthEnum");
-        Shiboken::Conversions::registerConverterName(converter, "ImageBitDepthEnum");
-    }
-    // End of 'ImageBitDepthEnum' enum.
-
     // Initialization of enum 'KeyframeTypeEnum'.
     SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
         "KeyframeTypeEnum",
@@ -600,6 +563,43 @@ void init_NATRON_NAMESPACE(PyObject* module)
         Shiboken::Conversions::registerConverterName(converter, "KeyframeTypeEnum");
     }
     // End of 'KeyframeTypeEnum' enum.
+
+    // Initialization of enum 'ImageBitDepthEnum'.
+    SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
+        "ImageBitDepthEnum",
+        "NatronEngine.Natron.ImageBitDepthEnum",
+        "Natron::ImageBitDepthEnum");
+    if (!SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX])
+        return ;
+
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthNone", (long) NATRON_NAMESPACE::eImageBitDepthNone))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthByte", (long) NATRON_NAMESPACE::eImageBitDepthByte))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthShort", (long) NATRON_NAMESPACE::eImageBitDepthShort))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthHalf", (long) NATRON_NAMESPACE::eImageBitDepthHalf))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eImageBitDepthFloat", (long) NATRON_NAMESPACE::eImageBitDepthFloat))
+        return ;
+    // Register converter for enum 'NATRON_NAMESPACE::ImageBitDepthEnum'.
+    {
+        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX],
+            NATRON_NAMESPACE_ImageBitDepthEnum_CppToPython_NATRON_NAMESPACE_ImageBitDepthEnum);
+        Shiboken::Conversions::addPythonToCppValueConversion(converter,
+            NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum,
+            is_NATRON_NAMESPACE_ImageBitDepthEnum_PythonToCpp_NATRON_NAMESPACE_ImageBitDepthEnum_Convertible);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX], converter);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_IMAGEBITDEPTHENUM_IDX], converter);
+        Shiboken::Conversions::registerConverterName(converter, "Natron::ImageBitDepthEnum");
+        Shiboken::Conversions::registerConverterName(converter, "ImageBitDepthEnum");
+    }
+    // End of 'ImageBitDepthEnum' enum.
 
     // Initialization of enum 'MergingFunctionEnum'.
     SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_MERGINGFUNCTIONENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
@@ -1613,8 +1613,8 @@ void init_NATRON_NAMESPACE(PyObject* module)
 
     qRegisterMetaType< ::NATRON_NAMESPACE::StandardButtonEnum >("Natron::StandardButtonEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::StandardButtons >("Natron::StandardButtons");
-    qRegisterMetaType< ::NATRON_NAMESPACE::ImageBitDepthEnum >("Natron::ImageBitDepthEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::KeyframeTypeEnum >("Natron::KeyframeTypeEnum");
+    qRegisterMetaType< ::NATRON_NAMESPACE::ImageBitDepthEnum >("Natron::ImageBitDepthEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::MergingFunctionEnum >("Natron::MergingFunctionEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::AnimationLevelEnum >("Natron::AnimationLevelEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::ViewerContextLayoutTypeEnum >("Natron::ViewerContextLayoutTypeEnum");

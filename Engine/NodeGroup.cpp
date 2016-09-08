@@ -1838,22 +1838,10 @@ exportKnobValues(int indentLevel,
         } // if (isParametric) {
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
 
-    bool isSecretByDefault = knob->getDefaultIsSecret();
-    if (knob->isUserKnob() && isSecretByDefault) {
-        if (!hasExportedValue) {
-            hasExportedValue = true;
-            if (mustDefineParam) {
-                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-            }
-        }
-
-        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setVisibleByDefault(False)") );
-    }
 
     if ( knob->isUserKnob() ) {
         bool isSecret = knob->getIsSecret();
-        if (isSecret != isSecretByDefault) {
+        if (isSecret) {
             if (!hasExportedValue) {
                 hasExportedValue = true;
                 if (mustDefineParam) {
@@ -1872,22 +1860,9 @@ exportKnobValues(int indentLevel,
             WRITE_INDENT(innerIdent); WRITE_STRING(str);
         }
 
-        bool enabledByDefault = knob->isDefaultEnabled(0);
-        if (!enabledByDefault) {
-            if (!hasExportedValue) {
-                hasExportedValue = true;
-                if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                }
-            }
-
-            WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setEnabledByDefault(False)") );
-        }
-
         for (int i = 0; i < knob->getDimension(); ++i) {
             bool isEnabled = knob->isEnabled(i);
-            if (isEnabled != enabledByDefault) {
+            if (!isEnabled) {
                 if (!hasExportedValue) {
                     hasExportedValue = true;
                     if (mustDefineParam) {

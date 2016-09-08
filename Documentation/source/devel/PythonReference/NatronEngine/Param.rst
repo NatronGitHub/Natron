@@ -43,13 +43,11 @@ Functions
 *    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
 *    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
-*    def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
 *    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon [,checked=False])
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
-*    def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
 *    def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
 *    def :meth:`setViewerUILayoutType<NatronEngine.Param.setViewerUILayoutType>` (type)
 *    def :meth:`setViewerUIItemSpacing<NatronEngine.Param.setViewerUIItemSpacing>` (spacingPx)
@@ -523,15 +521,6 @@ When disabled, the parameter will be displayed in black and the user will not be
 to edit it.
 See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
 
-.. method:: NatronEngine.Param.setEnabledByDefault(enabled)
-
-
-    :param enabled: :class:`bool<PySide.QtCore.bool>`
-
-Set whether the parameter should be enabled or not by default.
-When disabled, the parameter will be displayed in black and the user will not be able
-to edit it.
-
 
 .. method:: NatronEngine.Param.setEvaluateOnChange(eval)
 
@@ -586,14 +575,6 @@ See :func:`getIsPersistent<NatronEngine.Param.getIsPersistent>`
 	
 Set whether this parameter should be visible or not to the user.
 See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
-
-.. method:: NatronEngine.Param.setVisibleByDefault(visible)
-
-
-    :param visible: :class:`bool<PySide.QtCore.bool>`
-	
-Set whether this parameter should be visible or not to the user in its default state.
-
 
 .. method:: NatronEngine.Param.setAsAlias(otherParam)
 

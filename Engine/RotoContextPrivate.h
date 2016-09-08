@@ -833,7 +833,7 @@ public:
         opacityKnob->setDisplayMinimum(0.);
         opacityKnob->setDisplayMaximum(1.);
         opacityKnob->setDefaultValue(ROTO_DEFAULT_OPACITY);
-        opacityKnob->setDefaultAllDimensionsEnabled(false);
+        opacityKnob->setAllDimensionsEnabled(false);
         opacityKnob->setIsPersistent(false);
         generalPage->addKnob(opacityKnob);
         knobs.push_back(opacityKnob);
@@ -845,7 +845,7 @@ public:
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
-        ck->setDefaultAllDimensionsEnabled(false);
+        ck->setAllDimensionsEnabled(false);
         generalPage->addKnob(ck);
         ck->setIsPersistent(false);
         knobs.push_back(ck);
@@ -856,7 +856,7 @@ public:
         lifeTimeKnob->setName(kRotoDrawableItemLifeTimeParam);
         lifeTimeKnob->setAddNewLine(false);
         lifeTimeKnob->setIsPersistent(false);
-        lifeTimeKnob->setDefaultAllDimensionsEnabled(false);
+        lifeTimeKnob->setAllDimensionsEnabled(false);
         lifeTimeKnob->setAnimationEnabled(false);
         {
             std::vector<std::string> choices, helps;
@@ -878,8 +878,8 @@ public:
         KnobIntPtr lifeTimeFrameKnob = AppManager::createKnob<KnobInt>(effect, tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1, true);
         lifeTimeFrameKnob->setHintToolTip( tr(kRotoDrawableItemLifeTimeFrameParamHint) );
         lifeTimeFrameKnob->setName(kRotoDrawableItemLifeTimeFrameParam);
-        lifeTimeFrameKnob->setSecretByDefault(!isPaintNode);
-        lifeTimeFrameKnob->setDefaultAllDimensionsEnabled(false);
+        lifeTimeFrameKnob->setSecret(!isPaintNode);
+        lifeTimeFrameKnob->setAllDimensionsEnabled(false);
         lifeTimeFrameKnob->setAddNewLine(false);
         lifeTimeFrameKnob->setAnimationEnabled(false);
         generalPage->addKnob(lifeTimeFrameKnob);
@@ -890,9 +890,9 @@ public:
         activatedKnob->setHintToolTip( tr(kRotoActivatedHint) );
         activatedKnob->setName(kRotoActivatedParam);
         activatedKnob->setAddNewLine(true);
-        activatedKnob->setSecretByDefault(isPaintNode);
+        activatedKnob->setSecret(isPaintNode);
         activatedKnob->setDefaultValue(true);
-        activatedKnob->setDefaultAllDimensionsEnabled(false);
+        activatedKnob->setAllDimensionsEnabled(false);
         generalPage->addKnob(activatedKnob);
         activatedKnob->setIsPersistent(false);
         knobs.push_back(activatedKnob);
@@ -903,7 +903,7 @@ public:
         invertedKnob->setHintToolTip( tr(kRotoInvertedHint) );
         invertedKnob->setName(kRotoInvertedParam);
         invertedKnob->setDefaultValue(false);
-        invertedKnob->setDefaultAllDimensionsEnabled(false);
+        invertedKnob->setAllDimensionsEnabled(false);
         invertedKnob->setIsPersistent(false);
         generalPage->addKnob(invertedKnob);
         knobs.push_back(invertedKnob);
@@ -917,7 +917,7 @@ public:
         featherKnob->setDisplayMinimum(0);
         featherKnob->setDisplayMaximum(500);
         featherKnob->setDefaultValue(ROTO_DEFAULT_FEATHER);
-        featherKnob->setDefaultAllDimensionsEnabled(false);
+        featherKnob->setAllDimensionsEnabled(false);
         featherKnob->setIsPersistent(false);
         shapePage->addKnob(featherKnob);
         knobs.push_back(featherKnob);
@@ -932,7 +932,7 @@ public:
         featherFallOffKnob->setDisplayMinimum(0.2);
         featherFallOffKnob->setDisplayMaximum(5.);
         featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
-        featherFallOffKnob->setDefaultAllDimensionsEnabled(false);
+        featherFallOffKnob->setAllDimensionsEnabled(false);
         featherFallOffKnob->setIsPersistent(false);
         featherFallOffKnob->setAddNewLine(false);
         shapePage->addKnob(featherFallOffKnob);
@@ -945,7 +945,7 @@ public:
         fallOffRampTypeKnob->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
         fallOffRampTypeKnob->setName(kRotoFeatherFallOffType);
         fallOffRampTypeKnob->populate();
-        fallOffRampTypeKnob->setDefaultAllDimensionsEnabled(false);
+        fallOffRampTypeKnob->setAllDimensionsEnabled(false);
         fallOffRampTypeKnob->setIsPersistent(false);
         {
             std::vector<std::string> entries,helps;
@@ -984,7 +984,7 @@ public:
                 }
                 sourceType->populateChoices(choices);
             }
-            sourceType->setDefaultAllDimensionsEnabled(false);
+            sourceType->setAllDimensionsEnabled(false);
             clonePage->addKnob(sourceType);
             knobs.push_back(sourceType);
             cloneKnobs.push_back(sourceType);
@@ -993,7 +993,7 @@ public:
             KnobDoublePtr translate = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushTranslateParamLabel), 2, true);
             translate->setName(kRotoBrushTranslateParam);
             translate->setHintToolTip( tr(kRotoBrushTranslateParamHint) );
-            translate->setDefaultAllDimensionsEnabled(false);
+            translate->setAllDimensionsEnabled(false);
             translate->setIncrement(10);
             clonePage->addKnob(translate);
             knobs.push_back(translate);
@@ -1003,7 +1003,7 @@ public:
             KnobDoublePtr rotate = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushRotateParamLabel), 1, true);
             rotate->setName(kRotoBrushRotateParam);
             rotate->setHintToolTip( tr(kRotoBrushRotateParamHint) );
-            rotate->setDefaultAllDimensionsEnabled(false);
+            rotate->setAllDimensionsEnabled(false);
             rotate->setDisplayMinimum(-180);
             rotate->setDisplayMaximum(180);
             clonePage->addKnob(rotate);
@@ -1021,7 +1021,7 @@ public:
             scale->setDisplayMaximum(10, 0);
             scale->setDisplayMaximum(10, 1);
             scale->setAddNewLine(false);
-            scale->setDefaultAllDimensionsEnabled(false);
+            scale->setAllDimensionsEnabled(false);
             clonePage->addKnob(scale);
             cloneKnobs.push_back(scale);
             knobs.push_back(scale);
@@ -1031,7 +1031,7 @@ public:
             scaleUniform->setName(kRotoBrushScaleUniformParam);
             scaleUniform->setHintToolTip( tr(kRotoBrushScaleUniformParamHint) );
             scaleUniform->setDefaultValue(true);
-            scaleUniform->setDefaultAllDimensionsEnabled(false);
+            scaleUniform->setAllDimensionsEnabled(false);
             scaleUniform->setAnimationEnabled(false);
             clonePage->addKnob(scaleUniform);
             cloneKnobs.push_back(scaleUniform);
@@ -1041,7 +1041,7 @@ public:
             KnobDoublePtr skewX = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushSkewXParamLabel), 1, true);
             skewX->setName(kRotoBrushSkewXParam);
             skewX->setHintToolTip( tr(kRotoBrushSkewXParamHint) );
-            skewX->setDefaultAllDimensionsEnabled(false);
+            skewX->setAllDimensionsEnabled(false);
             skewX->setDisplayMinimum(-1, 0);
             skewX->setDisplayMaximum(1, 0);
             cloneKnobs.push_back(skewX);
@@ -1052,7 +1052,7 @@ public:
             KnobDoublePtr skewY = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushSkewYParamLabel), 1, true);
             skewY->setName(kRotoBrushSkewYParam);
             skewY->setHintToolTip( tr(kRotoBrushSkewYParamHint) );
-            skewY->setDefaultAllDimensionsEnabled(false);
+            skewY->setAllDimensionsEnabled(false);
             skewY->setDisplayMinimum(-1, 0);
             skewY->setDisplayMaximum(1, 0);
             clonePage->addKnob(skewY);
@@ -1070,7 +1070,7 @@ public:
                 choices.push_back("YX");
                 skewOrder->populateChoices(choices);
             }
-            skewOrder->setDefaultAllDimensionsEnabled(false);
+            skewOrder->setAllDimensionsEnabled(false);
             skewOrder->setAnimationEnabled(false);
             clonePage->addKnob(skewOrder);
             cloneKnobs.push_back(skewOrder);
@@ -1080,7 +1080,7 @@ public:
             KnobDoublePtr center = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushCenterParamLabel), 2, true);
             center->setName(kRotoBrushCenterParam);
             center->setHintToolTip( tr(kRotoBrushCenterParamHint) );
-            center->setDefaultAllDimensionsEnabled(false);
+            center->setAllDimensionsEnabled(false);
             center->setDefaultValuesAreNormalized(true);
             center->setAddNewLine(false);
             center->setDefaultValue(0.5, 0);
@@ -1140,7 +1140,7 @@ public:
                 filter->populateChoices(choices);
             }
             filter->setDefaultValue(2);
-            filter->setDefaultAllDimensionsEnabled(false);
+            filter->setAllDimensionsEnabled(false);
             filter->setAddNewLine(false);
             clonePage->addKnob(filter);
             cloneKnobs.push_back(filter);
@@ -1151,7 +1151,7 @@ public:
             blackOutside->setName(kRotoBrushBlackOutsideParam);
             blackOutside->setHintToolTip( tr(kRotoBrushBlackOutsideParamHint) );
             blackOutside->setDefaultValue(true);
-            blackOutside->setDefaultAllDimensionsEnabled(false);
+            blackOutside->setAllDimensionsEnabled(false);
             clonePage->addKnob(blackOutside);
             knobs.push_back(blackOutside);
             cloneKnobs.push_back(blackOutside);
@@ -1162,7 +1162,7 @@ public:
             timeOffset->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint) );
             timeOffset->setDisplayMinimum(-100);
             timeOffset->setDisplayMaximum(100);
-            timeOffset->setDefaultAllDimensionsEnabled(false);
+            timeOffset->setAllDimensionsEnabled(false);
             timeOffset->setIsPersistent(false);
             timeOffset->setAddNewLine(false);
             clonePage->addKnob(timeOffset);
@@ -1179,7 +1179,7 @@ public:
                 modes.push_back("Absolute");
                 timeOffsetMode->populateChoices(modes);
             }
-            timeOffsetMode->setDefaultAllDimensionsEnabled(false);
+            timeOffsetMode->setAllDimensionsEnabled(false);
             timeOffsetMode->setIsPersistent(false);
             clonePage->addKnob(timeOffsetMode);
             knobs.push_back(timeOffsetMode);
@@ -1192,7 +1192,7 @@ public:
             brushSize->setDefaultValue(25);
             brushSize->setMinimum(1.);
             brushSize->setMaximum(1000);
-            brushSize->setDefaultAllDimensionsEnabled(false);
+            brushSize->setAllDimensionsEnabled(false);
             brushSize->setIsPersistent(false);
             strokePage->addKnob(brushSize);
             knobs.push_back(brushSize);
@@ -1205,7 +1205,7 @@ public:
             brushSpacing->setDefaultValue(0.1);
             brushSpacing->setMinimum(0.);
             brushSpacing->setMaximum(1.);
-            brushSpacing->setDefaultAllDimensionsEnabled(false);
+            brushSpacing->setAllDimensionsEnabled(false);
             brushSpacing->setIsPersistent(false);
             strokePage->addKnob(brushSpacing);
             knobs.push_back(brushSpacing);
@@ -1218,7 +1218,7 @@ public:
             brushHardness->setDefaultValue(0.2);
             brushHardness->setMinimum(0.);
             brushHardness->setMaximum(1.);
-            brushHardness->setDefaultAllDimensionsEnabled(false);
+            brushHardness->setAllDimensionsEnabled(false);
             brushHardness->setIsPersistent(false);
             strokePage->addKnob(brushHardness);
             knobs.push_back(brushHardness);
@@ -1231,7 +1231,7 @@ public:
             effectStrength->setDefaultValue(15);
             effectStrength->setMinimum(0.);
             effectStrength->setMaximum(100.);
-            effectStrength->setDefaultAllDimensionsEnabled(false);
+            effectStrength->setAllDimensionsEnabled(false);
             effectStrength->setIsPersistent(false);
             strokePage->addKnob(effectStrength);
             knobs.push_back(effectStrength);
@@ -1252,7 +1252,7 @@ public:
             pressureOpacity->setAnimationEnabled(false);
             pressureOpacity->setDefaultValue(true);
             pressureOpacity->setAddNewLine(false);
-            pressureOpacity->setDefaultAllDimensionsEnabled(false);
+            pressureOpacity->setAllDimensionsEnabled(false);
             pressureOpacity->setIsPersistent(false);
             strokePage->addKnob(pressureOpacity);
             knobs.push_back(pressureOpacity);
@@ -1265,7 +1265,7 @@ public:
             pressureSize->setAnimationEnabled(false);
             pressureSize->setDefaultValue(false);
             pressureSize->setAddNewLine(false);
-            pressureSize->setDefaultAllDimensionsEnabled(false);
+            pressureSize->setAllDimensionsEnabled(false);
             pressureSize->setIsPersistent(false);
             knobs.push_back(pressureSize);
             strokeKnobs.push_back(pressureSize);
@@ -1278,7 +1278,7 @@ public:
             pressureHardness->setAnimationEnabled(false);
             pressureHardness->setDefaultValue(false);
             pressureHardness->setAddNewLine(true);
-            pressureHardness->setDefaultAllDimensionsEnabled(false);
+            pressureHardness->setAllDimensionsEnabled(false);
             pressureHardness->setIsPersistent(false);
             knobs.push_back(pressureHardness);
             strokeKnobs.push_back(pressureHardness);
@@ -1291,7 +1291,7 @@ public:
             buildUp->setAnimationEnabled(false);
             buildUp->setDefaultValue(false);
             buildUp->setAddNewLine(true);
-            buildUp->setDefaultAllDimensionsEnabled(false);
+            buildUp->setAllDimensionsEnabled(false);
             buildUp->setIsPersistent(false);
             knobs.push_back(buildUp);
             strokeKnobs.push_back(buildUp);
@@ -1309,7 +1309,7 @@ public:
             maxs.push_back(1);
             maxs.push_back(1);
             visiblePortion->setMinimumsAndMaximums(mins, maxs);
-            visiblePortion->setDefaultAllDimensionsEnabled(false);
+            visiblePortion->setAllDimensionsEnabled(false);
             visiblePortion->setIsPersistent(false);
             strokePage->addKnob(visiblePortion);
             visiblePortion->setDimensionName(0, "start");
@@ -1322,7 +1322,7 @@ public:
         KnobDoublePtr translate = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemTranslateParamLabel), 2, true);
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip( tr(kRotoDrawableItemTranslateParamHint) );
-        translate->setDefaultAllDimensionsEnabled(false);
+        translate->setAllDimensionsEnabled(false);
         translate->setIncrement(10);
         transformPage->addKnob(translate);
         knobs.push_back(translate);
@@ -1331,7 +1331,7 @@ public:
         KnobDoublePtr rotate = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemRotateParamLabel), 1, true);
         rotate->setName(kRotoDrawableItemRotateParam);
         rotate->setHintToolTip( tr(kRotoDrawableItemRotateParamHint) );
-        rotate->setDefaultAllDimensionsEnabled(false);
+        rotate->setAllDimensionsEnabled(false);
         rotate->setDisplayMinimum(-180);
         rotate->setDisplayMaximum(180);
         transformPage->addKnob(rotate);
@@ -1348,7 +1348,7 @@ public:
         scale->setDisplayMaximum(10, 0);
         scale->setDisplayMaximum(10, 1);
         scale->setAddNewLine(false);
-        scale->setDefaultAllDimensionsEnabled(false);
+        scale->setAllDimensionsEnabled(false);
         transformPage->addKnob(scale);
         knobs.push_back(scale);
         scaleKnob = scale;
@@ -1357,7 +1357,7 @@ public:
         scaleUniform->setName(kRotoDrawableItemScaleUniformParam);
         scaleUniform->setHintToolTip( tr(kRotoDrawableItemScaleUniformParamHint) );
         scaleUniform->setDefaultValue(true);
-        scaleUniform->setDefaultAllDimensionsEnabled(false);
+        scaleUniform->setAllDimensionsEnabled(false);
         scaleUniform->setAnimationEnabled(false);
         transformPage->addKnob(scaleUniform);
         knobs.push_back(scaleUniform);
@@ -1366,7 +1366,7 @@ public:
         KnobDoublePtr skewX = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemSkewXParamLabel), 1, true);
         skewX->setName(kRotoDrawableItemSkewXParam);
         skewX->setHintToolTip( tr(kRotoDrawableItemSkewXParamHint) );
-        skewX->setDefaultAllDimensionsEnabled(false);
+        skewX->setAllDimensionsEnabled(false);
         skewX->setDisplayMinimum(-1, 0);
         skewX->setDisplayMaximum(1, 0);
         transformPage->addKnob(skewX);
@@ -1376,7 +1376,7 @@ public:
         KnobDoublePtr skewY = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemSkewYParamLabel), 1, true);
         skewY->setName(kRotoDrawableItemSkewYParam);
         skewY->setHintToolTip( tr(kRotoDrawableItemSkewYParamHint) );
-        skewY->setDefaultAllDimensionsEnabled(false);
+        skewY->setAllDimensionsEnabled(false);
         skewY->setDisplayMinimum(-1, 0);
         skewY->setDisplayMaximum(1, 0);
         transformPage->addKnob(skewY);
@@ -1393,7 +1393,7 @@ public:
             choices.push_back("YX");
             skewOrder->populateChoices(choices);
         }
-        skewOrder->setDefaultAllDimensionsEnabled(false);
+        skewOrder->setAllDimensionsEnabled(false);
         skewOrder->setAnimationEnabled(false);
         transformPage->addKnob(skewOrder);
         knobs.push_back(skewOrder);
@@ -1402,7 +1402,7 @@ public:
         KnobDoublePtr center = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemCenterParamLabel), 2, true);
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip( tr(kRotoDrawableItemCenterParamHint) );
-        center->setDefaultAllDimensionsEnabled(false);
+        center->setAllDimensionsEnabled(false);
         center->setDefaultValuesAreNormalized(true);
         center->setAddNewLine(false);
         center->setDefaultValue(0.5, 0);
@@ -1433,7 +1433,7 @@ public:
         KnobDoublePtr extraMatrix = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemExtraMatrixParamLabel), 9, true);
         extraMatrix->setName(kRotoDrawableItemExtraMatrixParam);
         extraMatrix->setHintToolTip( tr(kRotoDrawableItemExtraMatrixParamHint) );
-        extraMatrix->setDefaultAllDimensionsEnabled(false);
+        extraMatrix->setAllDimensionsEnabled(false);
         // Set to identity
         extraMatrix->setDefaultValue(1, 0);
         extraMatrix->setDefaultValue(1, 4);
@@ -1547,7 +1547,7 @@ public:
         globalMotionBlur->setDisplayMinimum(0);
         globalMotionBlur->setDisplayMaximum(4);
         globalMotionBlur->setMaximum(4);
-        globalMotionBlur->setSecretByDefault(true);
+        globalMotionBlur->setSecret(true);
         mbPage->addKnob(globalMotionBlur);
         globalMotionBlurKnob = globalMotionBlur;
         knobs.push_back(globalMotionBlur);
@@ -1560,7 +1560,7 @@ public:
         globalShutter->setDisplayMinimum(0);
         globalShutter->setDisplayMaximum(2);
         globalShutter->setMaximum(2);
-        globalShutter->setSecretByDefault(true);
+        globalShutter->setSecret(true);
         mbPage->addKnob(globalShutter);
         globalShutterKnob = globalShutter;
         knobs.push_back(globalShutter);
@@ -1582,7 +1582,7 @@ public:
             globalShutterType->populateChoices(options, helps);
         }
         globalShutterType->setAddNewLine(false);
-        globalShutterType->setSecretByDefault(true);
+        globalShutterType->setSecret(true);
         mbPage->addKnob(globalShutterType);
         globalShutterTypeKnob = globalShutterType;
         knobs.push_back(globalShutterType);
@@ -1591,7 +1591,7 @@ public:
         globalCustomOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         globalCustomOffset->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         globalCustomOffset->setDefaultValue(0);
-        globalCustomOffset->setSecretByDefault(true);
+        globalCustomOffset->setSecret(true);
         mbPage->addKnob(globalCustomOffset);
         globalCustomOffsetKnob = globalCustomOffset;
         knobs.push_back(globalCustomOffset);
