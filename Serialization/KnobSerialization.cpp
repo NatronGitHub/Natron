@@ -678,7 +678,6 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 void
 GroupKnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML_NAMESPACE::VerbatimTag("GroupParam");
     em << YAML_NAMESPACE::BeginMap;
 
     em << YAML_NAMESPACE::Key << "TypeName" << YAML_NAMESPACE::Value << _typeName;
@@ -731,7 +730,13 @@ GroupKnobSerialization::decode(const YAML_NAMESPACE::Node& node)
     if (node["Params"]) {
         YAML_NAMESPACE::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
-            if (paramsNode[i].Tag() == "GroupParam") {
+
+            std::string typeName;
+            if (paramsNode[i]["TypeName"]) {
+                typeName = paramsNode[i]["TypeName"].as<std::string>();
+            }
+
+            if (typeName == kKnobPageTypeName || typeName == kKnobGroupTypeName) {
                 GroupKnobSerializationPtr s(new GroupKnobSerialization);
                 s->decode(paramsNode[i]);
                 _children.push_back(s);
