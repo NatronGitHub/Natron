@@ -302,6 +302,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defPatternWinSizeKnob->setAddNewLine(false);
     defPatternWinSizeKnob->setEvaluateOnChange(false);
     defPatternWinSizeKnob->setDefaultValue(21);
+    defPatternWinSizeKnob->setSecret(true);
     settingsPage->addKnob(defPatternWinSizeKnob);
     defaultPatternWinSize = defPatternWinSizeKnob;
 
@@ -314,6 +315,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defSearchWinSizeKnob->setMinimum(1);
     defSearchWinSizeKnob->disableSlider();
     defSearchWinSizeKnob->setEvaluateOnChange(false);
+    defSearchWinSizeKnob->setSecret(true);
     defSearchWinSizeKnob->setDefaultValue(71);
     settingsPage->addKnob(defSearchWinSizeKnob);
     defaultSearchWinSize = defSearchWinSizeKnob;
@@ -327,6 +329,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         defMotionModelKnob->populateChoices(choices, helps);
 
     }
+    defMotionModelKnob->setSecret(true);
     defMotionModelKnob->setAnimationEnabled(false);
     defMotionModelKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(defMotionModelKnob);
