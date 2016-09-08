@@ -438,7 +438,11 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         QObject::connect( _imp->slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
         QObject::connect( _imp->slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
         QObject::connect( _imp->slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
-        containerLayout->addWidget(_imp->slider);
+        if (spinBoxesGrid) {
+            spinBoxesGrid->addWidget(_imp->slider, rowIndex, columnIndex);
+        } else {
+            containerLayout->addWidget(_imp->slider);
+        }
 
         sliderVisible = shouldSliderBeVisible(dispminGui, dispmaxGui);
 

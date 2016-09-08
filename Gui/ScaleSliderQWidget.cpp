@@ -114,7 +114,7 @@ struct ScaleSliderQWidgetPrivate
         , lineColor(Qt::black)
         , allowDraftModeSetting(allowDraftModeSetting)
     {
-        font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_10) / NATRON_FONT_SIZE_12 );
+        font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_10) / NATRON_FONT_SIZE_13 );
         assert( boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos) );
     }
 };
@@ -147,7 +147,7 @@ ScaleSliderQWidget::sizeHint() const
 QSize
 ScaleSliderQWidget::minimumSizeHint() const
 {
-    return QSize( TO_DPIX(150), TO_DPIY(30) );
+    return QSize( TO_DPIX(150), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
@@ -610,9 +610,14 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QPainter::RenderHints rh = p.renderHints();
     p.setRenderHints(QPainter::Antialiasing);
    /*draw the slider*/
-    p.setBrush(QBrush(_imp->sliderColor));
+    if (!_imp->readOnly) {
+        p.setBrush(QBrush(_imp->sliderColor));
+    } else {
+        QColor disabledColor(100,100,100, 200);
+        p.setBrush(QBrush(disabledColor));
+    }
     /*draw a black rect around the slider for contrast or orange when focused*/
-    if ( !hasFocus() ) {
+    if ( !hasFocus() || _imp->readOnly ) {
         p.setPen(Qt::black);
     } else {
         QPen pen = p.pen();
