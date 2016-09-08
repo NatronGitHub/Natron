@@ -2852,9 +2852,10 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 
     if (isOutput) {
         RenderEnginePtr engine = isOutput->getRenderEngine();
-        assert(engine);
-        engine->quitEngine(allowThreadsToRestart);
-        engine->waitForEngineToQuit_enforce_blocking();
+        if (engine) {
+            engine->quitEngine(allowThreadsToRestart);
+            engine->waitForEngineToQuit_enforce_blocking();
+        }
     }
 
     //Returns when the preview is done computign
@@ -9009,7 +9010,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     if (!ret) {
         KnobGroupPtr isGroup = toKnobGroup(what);
-        if ( isGroup && isGroup->getIsDialog() ) {
+        if ( isGroup && isGroup->getIsDialog() && reason == eValueChangedReasonNatronInternalEdited) {
             NodeGuiIPtr gui = getNodeGui();
             if (gui) {
                 gui->showGroupKnobAsDialog(isGroup);

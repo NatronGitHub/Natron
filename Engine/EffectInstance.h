@@ -290,7 +290,9 @@ public:
     /**
      * @brief Recursively invalidates the hash of this node and the nodes downstream.
      **/
-    virtual void invalidateHashCache() OVERRIDE FINAL;
+    virtual void invalidateHashCache() OVERRIDE ;
+
+    static void invalidateHashRecursive(const EffectInstancePtr& effect, std::list<EffectInstancePtr>& markedNodes);
 
     /**
      * @brief Forwarded to the node's name

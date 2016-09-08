@@ -1512,7 +1512,7 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
     }
 
 
-    if ( !canAnimate() || !isAnimated(dimension, view) ) {
+    if ( !canAnimate() || (isAnimationEnabled() && !isAnimated(dimension, view)) ) {
         return;
     }
 

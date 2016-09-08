@@ -2264,21 +2264,40 @@ RotoContext::refreshRotoPaintTree()
         }
     }
 
-
+    // Default to premult node as bottom of the tree
     NodePtr treeBottomNode = rotoPaintEffect->getPremultNode();
     assert(treeBottomNode);
+    NodePtr treeOutputNode = rotoPaintEffect->getOutputNode(false);
 
     NodePtr bottomTreeInput;
     if (canConcatenate) {
-        bottomTreeInput = globalMerge;
+        // Connect the premult to the global merge if we concatenate
+        bottomTreeInput = _imp->globalMergeNodes.front();
     } else {
         if (!items.empty()) {
+            // Connect premult to the first item merge node
             bottomTreeInput = items.front()->getMergeNode();
+        } else {
+            // Connect to the internal input node
+            bottomTreeInput = rotoPaintEffect->getInternalInputNode(0);
+
+            // If the tree is empty, just wire the output to input, don't use the premult node
+            treeBottomNode = treeOutputNode;
         }
     }
 
+    // Connect the output node to the premult if needed
+    if (treeBottomNode != bottomTreeInput) {
+        if (treeOutputNode->getRealInput(0) != treeBottomNode) {
+            treeOutputNode->disconnectInput(0);
+            treeOutputNode->connectInput(treeBottomNode, 0);
+        }
+    }
+
+    // This either connect the output to the input node if the items are empty or connect the premult to the first merge node
     treeBottomNode->disconnectInput(0);
     treeBottomNode->connectInput(bottomTreeInput, 0);
+
 
 } // RotoContext::refreshRotoPaintTree
 

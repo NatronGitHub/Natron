@@ -80,6 +80,12 @@ RotoPaint::~RotoPaint()
 }
 
 bool
+RotoPaint::isSubGraphUserVisible() const
+{
+    return false;
+}
+
+bool
 RotoPaint::isDefaultBehaviourPaintContext() const
 {
     return _imp->isPaintByDefault;
@@ -196,39 +202,37 @@ RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /
             assert(input);
             _imp->inputNodes.push_back(input);
         }
-        NodePtr outputNode;
-        {
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, thisShared);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Output");
+    }
+    NodePtr outputNode;
+    {
+        CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, thisShared);
+        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Output");
 
-            outputNode = getApp()->createNode(args);
-            assert(outputNode);
-        }
-        NodePtr premultNode;
-        {
-            CreateNodeArgs args(PLUGINID_OFX_PREMULT, thisShared);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            // Set premult node to be identity by default
-            args.addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
-            args.addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
-            args.addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
-            args.addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Alpha Premult");
+        outputNode = getApp()->createNode(args);
+        assert(outputNode);
+    }
+    NodePtr premultNode;
+    {
+        CreateNodeArgs args(PLUGINID_OFX_PREMULT, thisShared);
+        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        // Set premult node to be identity by default
+        args.addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
+        args.addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
+        args.addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
+        args.addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
 
-            premultNode = getApp()->createNode(args);
-            _imp->premultNode = premultNode;
-
-        }
-
-
-        // Initialize default connections
-        outputNode->connectInput(premultNode, 0);
-
+        premultNode = getApp()->createNode(args);
+        _imp->premultNode = premultNode;
 
     }
+
+
+    // Initialize default connections
+    outputNode->connectInput(_imp->inputNodes[0].lock(), 0);
 }
 
 void
@@ -241,6 +245,7 @@ RotoPaint::initializeKnobs()
 
 
     KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(shared_from_this(), tr("Output"), 1, false);
+    sep->setName("outputSeparator");
     generalPage->addKnob(sep);
 
 

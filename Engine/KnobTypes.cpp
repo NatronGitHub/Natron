@@ -549,8 +549,9 @@ KnobChoice::cloneExtraData(const KnobIPtr& other,
         return;
     }
 
+    std::string activeEntry = isChoice->getActiveEntryText_mt_safe();
     QMutexLocker k(&_entriesMutex);
-    _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
+    _currentEntryLabel = activeEntry;
 }
 
 bool

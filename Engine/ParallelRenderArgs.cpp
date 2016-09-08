@@ -740,24 +740,12 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
 
     FramesNeededMap framesNeeded;
 
-    if (isIdentity && identityInput != -1) {
-        assert(identityInput != -1);
-        NodePtr identityNode;
-        if (identityInput == -2) {
-            identityNode = node;
-        } else {
-            identityNode = node->getInput(identityInput);
-        }
+    if (isIdentity && identityInput == -2) {
+        // Recurse if the effect is identity on itself so that we add a hash at the correct time
+        NodePtr identityNode = node;
         if (identityNode) {
             U64 inputHash;
             getDependenciesRecursive_internal(identityNode, identityTime, identityView, finalNodes, &inputHash);
-            if (!isHashCached && identityInput != -2) {
-                // Only append the hash of the input if we are identity on another node (not itself)
-                hashObj->append(inputHash);
-            }
-        } else {
-            effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is not connected but required to render").arg(QString::fromUtf8(effect->getInputLabel(identityInput).c_str())).toStdString());
-            throw std::invalid_argument("Input disconnected");
         }
     } else { // !isIdentity
 
@@ -768,10 +756,6 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
             // No need to use transform redirections to compute the hash
             EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, effect, InputMatrixMapPtr());
             if (!inputEffect) {
-                if (!effect->isInputOptional(it->first)) {
-                    effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is not connected but required to render").arg(QString::fromUtf8(effect->getInputLabel(it->first).c_str())).toStdString());
-                    throw std::invalid_argument("Input disconnected");
-                }
                 continue;
             }
 
@@ -817,10 +801,7 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
     // Now that we have the hash for this frame/view, cache actions results
     if (!framesNeeded.empty()) {
         effect->cacheFramesNeeded(time, view, hashValue, framesNeeded);
-    } else if (isIdentity) {
-        effect->cacheIsIdentity(time, view, hashValue, identityInput, identityTime, identityView);
     }
-
 
 } // getDependenciesRecursive_internal
 

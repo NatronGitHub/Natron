@@ -3587,9 +3587,6 @@ public:
         ///it calls appendToBuffer by itself
         ViewerInstance::ViewerRenderRetCode stat = ViewerInstance::eViewerRenderRetCodeFail;
         BufferableObjectList ret;
-        if (_args->isRotoNeatRender || _args->isRotoPaintRequest) {
-            qDebug() << "Exec roto render: " << _args->isRotoNeatRender;
-        }
         try {
             stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false,
                                                _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->isRotoNeatRender, _args->args, _args->request, _args->stats);

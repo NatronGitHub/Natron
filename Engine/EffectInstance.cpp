@@ -325,7 +325,8 @@ EffectInstance::invalidateHashNotRecursive()
     HashableObject::invalidateHashCache();
 }
 
-static void invalidateHashRecursive(const EffectInstancePtr& effect, std::list<EffectInstancePtr>& markedNodes)
+void
+EffectInstance::invalidateHashRecursive(const EffectInstancePtr& effect, std::list<EffectInstancePtr>& markedNodes)
 {
     if (std::find(markedNodes.begin(), markedNodes.end(), effect) != markedNodes.end()) {
         return;

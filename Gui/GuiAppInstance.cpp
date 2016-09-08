@@ -1245,7 +1245,6 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
                                   const RotoStrokeItemPtr& stroke,
                                   bool isPainting)
 {
-    qDebug() << "setUserIsPainting: " << isPainting;
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         bool newStroke = stroke != _imp->rotoData.stroke;

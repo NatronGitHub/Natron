@@ -1256,6 +1256,17 @@ NodeGroup::isInputMask(int inputNb) const
 }
 
 void
+NodeGroup::invalidateHashCache()
+{
+    invalidateHashNotRecursive();
+    NodesList nodes = getNodes();
+    std::list<EffectInstancePtr> markedNodes;
+    for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        invalidateHashRecursive((*it)->getEffectInstance(), markedNodes);
+    }
+}
+
+void
 NodeGroup::initializeKnobs()
 {
     KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);

@@ -157,6 +157,8 @@ void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
 
+    initializeKnobs();
+
     RotoContextPtr context = getContext();
     RotoPaintPtr rotoPaintEffect = toRotoPaint(context->getNode()->getEffectInstance());
     AppInstancePtr app = rotoPaintEffect->getApp();
@@ -907,7 +909,7 @@ RotoDrawableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBa
     if (!s) {
         throw std::logic_error("RotoDrawableItem::save()");
     }
-    const KnobsVec& knobs = getKnobs();
+    KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         SERIALIZATION_NAMESPACE::KnobSerializationPtr k;
         serializeRotoKnob( *it, &k );
@@ -1556,9 +1558,9 @@ RotoDrawableItem::initializeKnobs()
 
     {
         KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoActivatedParamLabel));
-        param = KnobBool::create(KnobHolderPtr(), tr(kRotoActivatedParamLabel), 1, true);
         param->setHintToolTip( tr(kRotoActivatedHint) );
         param->setName(kRotoActivatedParam);
+        param->setAnimationEnabled(true);
         param->setDefaultValue(true);
         _imp->activated = param;
     }

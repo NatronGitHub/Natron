@@ -397,6 +397,8 @@ public:
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE ;
 
+    virtual void invalidateHashCache() OVERRIDE ;
+
     NodePtr getOutputNode(bool useGuiConnexions) const;
 
     NodePtr getOutputNodeInput(bool useGuiConnexions) const;
