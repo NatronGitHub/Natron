@@ -11228,7 +11228,7 @@ Node::getChannelSelectorKnob(int inputNb) const
 void
 Node::checkForPremultWarningAndCheckboxes()
 {
-    if ( isOutputNode() ) {
+    if ( isOutputNode() || _imp->effect->isGenerator() || _imp->effect->isReader() ) {
         return;
     }
     KnobBoolPtr chans[4];

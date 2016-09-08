@@ -892,15 +892,16 @@ Project::initializeKnobs()
 
     KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( shared_from_this(), tr("LUT") );
     std::vector<std::string> colorSpaces;
-    colorSpaces.push_back("sRGB");
+    // Keep it in sync with ViewerColorSpaceEnum
     colorSpaces.push_back("Linear");
+    colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Rec.709");
     _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("8-Bit Colorspace") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
     _imp->colorSpace8u->setAnimationEnabled(false);
     _imp->colorSpace8u->populateChoices(colorSpaces);
-    _imp->colorSpace8u->setDefaultValue(0);
+    _imp->colorSpace8u->setDefaultValue(1);
     lutPages->addKnob(_imp->colorSpace8u);
 
     _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("16-Bit Colorspace") );
@@ -916,7 +917,7 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
     _imp->colorSpace32f->setAnimationEnabled(false);
     _imp->colorSpace32f->populateChoices(colorSpaces);
-    _imp->colorSpace32f->setDefaultValue(1);
+    _imp->colorSpace32f->setDefaultValue(0);
     lutPages->addKnob(_imp->colorSpace32f);
 
     KnobPagePtr infoPage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Info").toStdString() );
