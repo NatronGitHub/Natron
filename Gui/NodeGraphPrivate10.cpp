@@ -221,9 +221,11 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
         allNodes.push_back( isContainerGroup->getNode() );
     }
 
-
-    QPointF offset =  averageNodesPosition - duplicateNodeUI->pos();
+    // Position the node to the indicated position with the same offset of the selection center than the original node
+    QPointF duplicatedNodeInitialPos = duplicateNodeUI->scenePos();
+    QPointF offset = duplicatedNodeInitialPos - averageNodesPosition;
     QPointF newPos = position + offset;
+    newPos = duplicateNodeUI->mapToParent(duplicateNodeUI->mapFromScene(newPos));
     duplicateNodeUI->setPosition( newPos.x(), newPos.y() );
     duplicateNodeUI->forceComputePreview( groupContainer->getApplication()->getProject()->currentFrame() );
 
