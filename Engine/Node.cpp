@@ -349,6 +349,7 @@ public:
         , nodeColor()
         , overlayColor()
         , nodeIsSelected(false)
+        , restoringDefaults(false)
     {
         nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
         nodeSize[0] = nodeSize[1] = -1;
@@ -601,6 +602,7 @@ public:
     // This is used to determine if the ordering has changed or not for serialization purpose
     std::list<std::string> defaultViewerKnobsOrder;
 
+    bool restoringDefaults;
 };
 
 class RefreshingInputData_RAII
@@ -2427,6 +2429,8 @@ void
 Node::restoreNodeToDefaultState()
 {
     assert(QThread::currentThread() == qApp->thread());
+
+    FlagSetter setter(true, &_imp->restoringDefaults);
 
     _imp->effect->beginChanges();
 
@@ -7243,7 +7247,7 @@ Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
-    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
+    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently) || _imp->restoringDefaults) {
         return false;
     }
 

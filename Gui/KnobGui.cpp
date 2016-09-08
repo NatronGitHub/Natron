@@ -216,15 +216,19 @@ KnobGui::createGUI(QWidget* fieldContainer,
         if (spacing > 0) {
             layout->addSpacing( TO_DPIX(spacing) );
         }
-        if (label) {
+        if (labelContainer) {
+            layout->addWidget(labelContainer);
+        } else {
             if (_imp->warningIndicator) {
                 layout->addWidget(_imp->warningIndicator);
             }
-            layout->addWidget(label);
+            if (label) {
+                layout->addWidget(label);
+            }
         }
     }
-
-
+    
+    
     if (label) {
         toolTip(label);
     }

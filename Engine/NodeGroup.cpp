@@ -1533,6 +1533,9 @@ NodeGroup::clearLastRenderedImage()
 void
 NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
 {
+    if (getPluginID() != PLUGINID_NATRON_GROUP) {
+        return;
+    }
     // Group nodes are always considered "edited"
     setSubGraphEditedByUser(true);
 

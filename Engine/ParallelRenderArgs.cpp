@@ -740,7 +740,7 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
 
     FramesNeededMap framesNeeded;
 
-    if (isIdentity) {
+    if (isIdentity && identityInput != -1) {
         assert(identityInput != -1);
         NodePtr identityNode;
         if (identityInput == -2) {

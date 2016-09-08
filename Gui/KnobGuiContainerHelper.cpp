@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TabGroup.h"
 
@@ -527,8 +528,8 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
     if ( !labelIconFilePath.isEmpty() ) {
         QPixmap pix;
 
-        QFontMetrics fm(widget->font(), 0);
-        int pixSize = fm.height();
+        //QFontMetrics fm(widget->font(), 0);
+        int pixSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
 
         if (labelIconFilePath == QLatin1String("dialog-warning")) {
             pix = getStandardIcon(QMessageBox::Warning, pixSize, widget);

@@ -317,15 +317,23 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
     KnobClickableLabel* label = 0;
     std::string inViewerLabel = knob->getInViewerContextLabel();
     std::string inViewerLabelIcon = knob->getInViewerContextIconFilePath(false);
+    QWidget* labelContainer = 0;
     if ( (!inViewerLabel.empty() || !inViewerLabelIcon.empty()) && ret->shouldCreateLabel() ) {
-        label = new KnobClickableLabel(QString(), ret, widgetsContainer);
+        labelContainer = new QWidget(widgetsContainer);
+        QHBoxLayout* labelLayout = new QHBoxLayout(labelContainer);
+        labelLayout->setContentsMargins(0, 0, TO_DPIX(3), 0 );
+        labelLayout->setSpacing( TO_DPIY(2) );
+
+        label = new KnobClickableLabel(QString(), ret, labelContainer);
         KnobGuiContainerHelper::setLabelFromTextAndIcon(label, QString::fromUtf8(inViewerLabel.c_str()) + QString::fromUtf8(":"), QString::fromUtf8(inViewerLabelIcon.c_str()), ret->isLabelBold());
         QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
+
+        labelLayout->addWidget(label);
     }
     if (layoutType == eViewerContextLayoutTypeStretchBefore) {
         lastRowLayout->addStretch();
     }
-    ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, layoutType == eViewerContextLayoutTypeAddNewLine, 0, knobsOnSameLine);
+    ret->createGUI(lastRowContainer, labelContainer, label, 0 /*warningIndicator*/, lastRowLayout, layoutType == eViewerContextLayoutTypeAddNewLine, 0, knobsOnSameLine);
 
     if (layoutType == eViewerContextLayoutTypeAddNewLine) {
         knobsOnSameLine.clear();
