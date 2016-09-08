@@ -65,6 +65,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/NodeSettingsPanel.h"
 #include "Gui/NodeGui.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
@@ -401,9 +402,11 @@ ProjectGui::load(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSeriali
     // Now restore opened settings panels
     const std::list<std::string> & openedPanels = serialization->_openedPanelsOrdered;
     //reverse the iterator to fill the layout bottom up
+    bool hasProjectSettings = false;
     for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it != openedPanels.rend(); ++it) {
         if (*it == kNatronProjectSettingsPanelSerializationNameOld || *it == kNatronProjectSettingsPanelSerializationNameNew) {
             _gui->setVisibleProjectSettingsPanel();
+            hasProjectSettings = true;
         } else {
             NodePtr node = getInternalProject()->getNodeByFullySpecifiedName(*it);
             if (node) {
@@ -413,9 +416,15 @@ ProjectGui::load(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSeriali
                 assert(nodeGui);
                 if (nodeGui) {
                     nodeGui->setVisibleSettingsPanel(true);
+                    if (nodeGui->getSettingPanel()) {
+                        _gui->putSettingsPanelFirst(nodeGui->getSettingPanel());
+                    }
                 }
             }
         }
+    }
+    if (!hasProjectSettings) {
+        _panel->setClosed(true);
     }
 
     _gui->getApp()->updateProjectLoadStatus( tr("Restoring layout") );

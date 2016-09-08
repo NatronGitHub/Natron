@@ -725,41 +725,77 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
         effect->computeHash_noCache(time, view, hashObj.get());
     }
 
+    // Before checking getFramesNeeded we need to check if the effect is identity. In the case where the effect is identity on itself (identityInput == -2)
+    // we have to add the hash at the identity time/view. 
+    int identityInput;
+    ViewIdx identityView;
+    double identityTime;
+    bool isIdentity;
+    try {
+        // Pass a null hash because we cannot know the hash as of yet since we did not recurse on inputs already, meaning the action will not be cached.
+        isIdentity = effect->isIdentity_public(false, 0, time, RenderScale(1.), RectI(), view, &identityTime, &identityView, &identityInput);
+    } catch (...) {
+        isIdentity = false;
+    }
 
-    // Use getFramesNeeded to know where to recurse
-    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(0, time, view);
-    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+    FramesNeededMap framesNeeded;
 
-        // No need to use transform redirections to compute the hash
-        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, effect, InputMatrixMapPtr());
-        if (!inputEffect) {
-            if (!effect->isInputOptional(it->first)) {
-                effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is not connected but required to render").arg(QString::fromUtf8(effect->getInputLabel(it->first).c_str())).toStdString());
-                throw std::invalid_argument("Input disconnected");
-            }
-            continue;
+    if (isIdentity) {
+        assert(identityInput != -1);
+        NodePtr identityNode;
+        if (identityInput == -2) {
+            identityNode = node;
+        } else {
+            identityNode = node->getInput(identityInput);
         }
+        if (identityNode) {
+            U64 inputHash;
+            getDependenciesRecursive_internal(identityNode, identityTime, identityView, finalNodes, &inputHash);
+            if (!isHashCached && identityInput != -2) {
+                // Only append the hash of the input if we are identity on another node (not itself)
+                hashObj->append(inputHash);
+            }
+        } else {
+            effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is not connected but required to render").arg(QString::fromUtf8(effect->getInputLabel(identityInput).c_str())).toStdString());
+            throw std::invalid_argument("Input disconnected");
+        }
+    } else { // !isIdentity
 
-        // For all views requested in input
-        for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+        // Use getFramesNeeded to know where to recurse
+        framesNeeded = effect->getFramesNeeded_public(0, time, view);
+        for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
-            // For all ranges in this view
-            for (U32 range = 0; range < viewIt->second.size(); ++range) {
+            // No need to use transform redirections to compute the hash
+            EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, effect, InputMatrixMapPtr());
+            if (!inputEffect) {
+                if (!effect->isInputOptional(it->first)) {
+                    effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is not connected but required to render").arg(QString::fromUtf8(effect->getInputLabel(it->first).c_str())).toStdString());
+                    throw std::invalid_argument("Input disconnected");
+                }
+                continue;
+            }
 
-                // For all frames in the range
-                for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
-                    U64 inputHash;
-                    getDependenciesRecursive_internal(inputEffect->getNode(), f, viewIt->first, finalNodes, &inputHash);
+            // For all views requested in input
+            for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
 
-                    // Append the input hash
-                    if (!isHashCached) {
-                        hashObj->append(inputHash);
+                // For all ranges in this view
+                for (U32 range = 0; range < viewIt->second.size(); ++range) {
+
+                    // For all frames in the range
+                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+                        U64 inputHash;
+                        getDependenciesRecursive_internal(inputEffect->getNode(), f, viewIt->first, finalNodes, &inputHash);
+
+                        // Append the input hash
+                        if (!isHashCached) {
+                            hashObj->append(inputHash);
+                        }
                     }
                 }
+                
             }
-
         }
-    }
+    } // isIdentity
 
     if (!isHashCached) {
         hashObj->computeHash();
@@ -779,7 +815,11 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
 
 
     // Now that we have the hash for this frame/view, cache actions results
-    effect->cacheFramesNeeded(time, view, hashValue, framesNeeded);
+    if (!framesNeeded.empty()) {
+        effect->cacheFramesNeeded(time, view, hashValue, framesNeeded);
+    } else if (isIdentity) {
+        effect->cacheIsIdentity(time, view, hashValue, identityInput, identityTime, identityView);
+    }
 
 
 } // getDependenciesRecursive_internal

@@ -2405,6 +2405,13 @@ AppInstance::getOpenedSettingsPanels() const
     return _imp->openedSettingsPanels;
 }
 
+void
+AppInstance::setOpenedSettingsPanelsInternal(const std::list<DockablePanelI*>& panels)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->openedSettingsPanels = panels;
+}
+
 QString
 AppInstance::getAvailablePaneName(const QString & baseName) const
 {

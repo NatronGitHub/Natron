@@ -4046,6 +4046,12 @@ EffectInstance::cacheFramesNeeded(double time, ViewIdx view, U64 hash, const Fra
     _imp->actionsCache->setFramesNeededResult(hash, time, view, 0, framesNeeded);
 }
 
+void
+EffectInstance::cacheIsIdentity(double time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView)
+{
+    _imp->actionsCache->setIdentityResult(hash, time, view, identityInput, identityView, identityTime);
+}
+
 FramesNeededMap
 EffectInstance::getFramesNeeded_public(U64 hash,
                                        double time,

@@ -438,6 +438,8 @@ public:
 
     std::list<DockablePanelI*> getOpenedSettingsPanels() const;
 
+    void setOpenedSettingsPanelsInternal(const std::list<DockablePanelI*>& panels);
+
     void registerFloatingWindow(SerializableWindow* window);
     void unregisterFloatingWindow(SerializableWindow* window);
     void clearFloatingWindows();

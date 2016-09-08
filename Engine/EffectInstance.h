@@ -1111,6 +1111,8 @@ public:
 
     void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 
+    void cacheIsIdentity(double time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView);
+
     void getFrameRange_public(U64 hash, double *first, double *last);
 
 

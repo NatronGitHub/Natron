@@ -271,9 +271,9 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     std::list<DockablePanelI*>::iterator it = std::find(panels.begin(), panels.end(), panel);
     if ( it != panels.end() ) {
         if ( !panel->isFloating() ) {
-            getApp()->unregisterSettingsPanel(panel);
-            getApp()->registerSettingsPanel(panel, 0);
-
+            panels.erase(it);
+            panels.push_front(panel);
+            getApp()->setOpenedSettingsPanelsInternal(panels);
             panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
             _imp->_layoutPropertiesBin->removeWidget(panel);
             _imp->_layoutPropertiesBin->insertWidget(0, panel);
@@ -285,6 +285,7 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
         } else {
             panel->activateWindow();
         }
+
     } else {
         return;
     }

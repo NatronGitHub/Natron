@@ -771,7 +771,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     assert(*tls && !(*tls)->frameArgs.empty());
     if (!*tls || (*tls)->frameArgs.empty()) {
         // TLS must have been set via ParallelRenderArgsSetter! Calling renderRoI without this is a bug.
-        return eRenderRoIRetCodeFailed;
+        return false;
     }
 
     (*frameArgs) = (*tls)->frameArgs.back();
@@ -787,9 +787,10 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
 
 
     bool gotHash = (*frameArgs)->getFrameViewHash(args.time, args.view, frameViewHash);
+    assert(gotHash);
     if (!gotHash) {
         // The hash should have been computed
-        return eRenderRoIRetCodeFailed;
+        return false;
     }
     *par = _publicInterface->getAspectRatio(-1);
     *fieldingOrder = _publicInterface->getFieldingOrder();
@@ -799,7 +800,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     *renderMappedMipMapLevel = *renderFullScaleThenDownscale ? 0 : args.mipMapLevel;
     *renderMappedScale = ( Image::getScaleFromMipMapLevel(*renderMappedMipMapLevel) );
     assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
-
+    *requestPassData = 0;
     if ((*frameArgs)->request) {
         *requestPassData = (*frameArgs)->request->getFrameViewRequest(args.time, args.view);
     }
@@ -2100,7 +2101,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     if (requestPassData) {
         tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
-        tls->currentRenderArgs.transformRedirections = requestPassData->globalData.transforms;
+        if (requestPassData->globalData.transforms) {
+            *tls->currentRenderArgs.transformRedirections = *requestPassData->globalData.transforms;
+        }
         useTransforms = !tls->currentRenderArgs.transformRedirections->empty();
     } else {
         useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
