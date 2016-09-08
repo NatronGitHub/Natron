@@ -4743,40 +4743,58 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
 {
     serialization->_expression = knob->getExpression(dimension);
     serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(dimension);
+
+    bool gotValue = !serialization->_expression.empty();
+
     CurvePtr curve = knob->getCurve(ViewSpec::current(), dimension);
-    if (curve) {
+    if (curve && !gotValue) {
         curve->toSerialization(&serialization->_animationCurve);
+        if (!serialization->_animationCurve.keys.empty()) {
+            gotValue = true;
+        }
     }
 
-    std::pair< int, KnobIPtr > master = knob->getMaster(dimension);
-
-    if ( master.second && !knob->isMastersPersistenceIgnored() ) {
-        if (master.second->getDimension() > 1) {
-            serialization->_slaveMasterLink.masterDimensionName = master.second->getDimensionName(master.first);
+    if (!gotValue) {
+        EffectInstancePtr isHolderEffect = toEffectInstance(knob->getHolder());
+        bool isEffectCloned = false;
+        if (isHolderEffect) {
+            isEffectCloned = isHolderEffect->getNode()->getMasterNode().get() != 0;
         }
-        serialization->_slaveMasterLink.hasLink = true;
-        if (master.second != knob) {
-            NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
-            assert(holder);
 
-            TrackMarkerPtr isMarker = toTrackMarker(holder);
-            if (isMarker) {
+        std::pair< int, KnobIPtr > master = knob->getMaster(dimension);
+
+        // Only serialize master link if:
+        // - it exists and
+        // - the knob wants the slave/master link to be persistent and
+        // - the effect is not a clone of another one OR the master knob is an alias of this one
+        if ( master.second && !knob->isMastersPersistenceIgnored() && (!isEffectCloned || knob->getAliasMaster())) {
+            if (master.second->getDimension() > 1) {
+                serialization->_slaveMasterLink.masterDimensionName = master.second->getDimensionName(master.first);
+            }
+            serialization->_slaveMasterLink.hasLink = true;
+            gotValue = true;
+            if (master.second != knob) {
+                NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( master.second->getHolder() );
+                assert(holder);
+
+                TrackMarkerPtr isMarker = toTrackMarker(holder);
                 if (isMarker) {
-                    serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
-                    if (isMarker->getContext()->getNode()->getEffectInstance() != holder) {
-                        serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+                    if (isMarker) {
+                        serialization->_slaveMasterLink.masterTrackName = isMarker->getScriptName_mt_safe();
+                        if (isMarker->getContext()->getNode()->getEffectInstance() != holder) {
+                            serialization->_slaveMasterLink.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+                        }
+                    }
+                } else {
+                    // coverity[dead_error_line]
+                    if (holder && holder != knob->getHolder()) {
+                        serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
                     }
                 }
-            } else {
-                // coverity[dead_error_line]
-                if (holder && holder != knob->getHolder()) {
-                    serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
-                }
+                serialization->_slaveMasterLink.masterKnobName = master.second->getName();
             }
-            serialization->_slaveMasterLink.masterKnobName = master.second->getName();
         }
     }
-
 
     KnobBoolBasePtr isBoolBase = toKnobBoolBase(knob);
     KnobIntPtr isInt = toKnobInt(knob);
@@ -4792,34 +4810,24 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     KnobGroupPtr isGrp = toKnobGroup(knob);
     KnobSeparatorPtr isSep = toKnobSeparator(knob);
     KnobButtonPtr btn = toKnobButton(knob);
-
     if (isInt) {
-        serialization->_value.isInt = isInt->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeInteger;
         serialization->_defaultValue.isInt = isInt->getDefaultValue(dimension);
-        serialization->_serializeValue = (serialization->_value.isInt != serialization->_defaultValue.isInt);
         serialization->_serializeDefaultValue = isInt->hasDefaultValueChanged(dimension);
     } else if (isBool || isGrp || isButton) {
-        serialization->_value.isBool = isBoolBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeBoolean;
         serialization->_defaultValue.isBool = isBoolBase->getDefaultValue(dimension);
-        serialization->_serializeValue = (serialization->_value.isBool != serialization->_defaultValue.isBool);
         serialization->_serializeDefaultValue = isBoolBase->hasDefaultValueChanged(dimension);
     } else if (isColor || isDouble) {
-        serialization->_value.isDouble = isDoubleBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeDouble;
         serialization->_defaultValue.isDouble = isDoubleBase->getDefaultValue(dimension);
-        serialization->_serializeValue = (serialization->_value.isDouble != serialization->_defaultValue.isDouble);
         serialization->_serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
     } else if (isStringBase) {
-        serialization->_value.isString = isStringBase->getValue(dimension);
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
         serialization->_defaultValue.isString = isStringBase->getDefaultValue(dimension);
-        serialization->_serializeValue = (serialization->_value.isString != serialization->_defaultValue.isString);
         serialization->_serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
 
     } else if (isChoice) {
-        serialization->_value.isString = isChoice->getActiveEntryText_mt_safe();
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
         //serialization->_defaultValue.isString
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
@@ -4829,15 +4837,36 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
             defValue = entries[defIndex];
         }
         serialization->_defaultValue.isString = defValue;
-        serialization->_serializeValue = (serialization->_value.isString != serialization->_defaultValue.isString);
         serialization->_serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
 
     }
 
+    serialization->_serializeValue = false;
+
+    if (!gotValue) {
+
+        if (isInt) {
+            serialization->_value.isInt = isInt->getValue(dimension);
+            serialization->_serializeValue = (serialization->_value.isInt != serialization->_defaultValue.isInt);
+        } else if (isBool || isGrp || isButton) {
+            serialization->_value.isBool = isBoolBase->getValue(dimension);
+            serialization->_serializeValue = (serialization->_value.isBool != serialization->_defaultValue.isBool);
+        } else if (isColor || isDouble) {
+            serialization->_value.isDouble = isDoubleBase->getValue(dimension);
+            serialization->_serializeValue = (serialization->_value.isDouble != serialization->_defaultValue.isDouble);
+        } else if (isStringBase) {
+            serialization->_value.isString = isStringBase->getValue(dimension);
+            serialization->_serializeValue = (serialization->_value.isString != serialization->_defaultValue.isString);
+
+        } else if (isChoice) {
+            serialization->_value.isString = isChoice->getActiveEntryText_mt_safe();
+            serialization->_serializeValue = (serialization->_value.isString != serialization->_defaultValue.isString);
+        }
+    }
     // Check if we need to serialize this dimension
     serialization->_mustSerialize = true;
 
-    if (serialization->_expression.empty() && !serialization->_slaveMasterLink.hasLink && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
+    if (serialization->_expression.empty() && !serialization->_slaveMasterLink.hasLink && serialization->_animationCurve.keys.empty()  && !serialization->_serializeValue && !serialization->_serializeDefaultValue) {
         serialization->_mustSerialize = false;
     }
 

@@ -734,7 +734,7 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
         EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, effect, InputMatrixMapPtr());
         if (!inputEffect) {
             if (!effect->isInputOptional(it->first)) {
-                effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is required to render").arg(QString::fromUtf8(effect->getInputLabel(it->first).c_str())).toStdString());
+                effect->setPersistentMessage(eMessageTypeError, effect->tr("Input %1 is not connected but required to render").arg(QString::fromUtf8(effect->getInputLabel(it->first).c_str())).toStdString());
                 throw std::invalid_argument("Input disconnected");
             }
             continue;

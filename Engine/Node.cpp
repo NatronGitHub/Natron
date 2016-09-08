@@ -1670,15 +1670,15 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
         // Restore slave/master links first
         {
             if (isKnobSerialization->_masterIsAlias) {
-
-                const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
-                const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
-                const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
-                KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
-                if (alias) {
-                    knob->setKnobAsAliasOfThis(alias, true);
+                if (!isKnobSerialization->_values.empty()) {
+                    const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
+                    const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
+                    const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
+                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
+                    if (alias) {
+                        knob->setKnobAsAliasOfThis(alias, true);
+                    }
                 }
-
             } else {
                 for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
                     if (!isKnobSerialization->_values[i]._slaveMasterLink.hasLink) {

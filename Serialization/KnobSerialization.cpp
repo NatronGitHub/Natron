@@ -76,7 +76,7 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     for (std::size_t i = 0; i < _values.size(); ++i) {
         if (_values[i]._mustSerialize && _isPersistent) {
             ++nDimsToSerialize;
-            if (_values[i]._serializeValue || !_values[i]._animationCurve.keys.empty()) {
+            if (_values[i]._serializeValue || !_values[i]._animationCurve.keys.empty() || _values[i]._slaveMasterLink.hasLink || !_values[i]._expression.empty()) {
                 ++nDimsWithValue;
             }
             if (_values[i]._serializeDefaultValue) {
@@ -277,12 +277,21 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
                 em << YAML_NAMESPACE::EndSeq;
             }
             if (!cdata->_helpStrings.empty()) {
-                em << YAML_NAMESPACE::Key << "Hints" << YAML_NAMESPACE::Value;
-                em <<  YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+                bool hasHelp = false;
                 for (std::size_t i = 0; i < cdata->_helpStrings.size(); ++i) {
-                    em << cdata->_helpStrings[i];
+                    if (!cdata->_helpStrings[i].empty()) {
+                        hasHelp = true;
+                        break;
+                    }
                 }
-                em << YAML_NAMESPACE::EndSeq;
+                if (hasHelp) {
+                    em << YAML_NAMESPACE::Key << "Hints" << YAML_NAMESPACE::Value;
+                    em <<  YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+                    for (std::size_t i = 0; i < cdata->_helpStrings.size(); ++i) {
+                        em << cdata->_helpStrings[i];
+                    }
+                    em << YAML_NAMESPACE::EndSeq;
+                }
             }
         } else if (vdata) {
             if (vdata->min != INT_MIN && vdata->min != -DBL_MAX) {
