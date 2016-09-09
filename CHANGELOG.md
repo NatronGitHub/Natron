@@ -16,6 +16,9 @@
 
 - (beta feature) SeExprSimple: new simple expression plugin with one expression per channel
 - (beta feature) DenoiseSharpen: new wavelet-based denoising plugin
+- (beta feature) Log2Lin: Convert from/to the logarithmic space used by Cineon files.
+- (beta feature) PLogLin: Convert between linear and log representations using the Josh Pines log conversion.
+- (beta feature) Quantize: Reduce the number of color levels with posterization or dithering
 - ImageStatistics: can now extract the pixels with the maximum and minimum luminance, as well as their values
 
 ## Version 2.1.2
