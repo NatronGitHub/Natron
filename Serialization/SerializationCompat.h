@@ -307,10 +307,7 @@ SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization::serialize(Archive & ar,
             _knobs.push_back(k);
         }
     }
-    ar & ::boost::serialization::make_nvp("OC.r", _overlayColor[0]);
-    ar & ::boost::serialization::make_nvp("OC.g", _overlayColor[1]);
-    ar & ::boost::serialization::make_nvp("OC.b", _overlayColor[2]);
-    ar & ::boost::serialization::make_nvp("OC.a", _overlayColor[3]);
+
 }
 
 template<class Archive>
@@ -408,7 +405,8 @@ void SERIALIZATION_NAMESPACE::RotoItemSerialization::serialize(Archive & ar,
     if (version >= ROTO_ITEM_INTRODUCES_LABEL) {
         ar & ::boost::serialization::make_nvp("Label", label);
     }
-    ar & ::boost::serialization::make_nvp("Activated", activated);
+    bool act;
+    ar & ::boost::serialization::make_nvp("Activated", act);
     ar & ::boost::serialization::make_nvp("ParentLayer", parentLayerName);
     ar & ::boost::serialization::make_nvp("Locked", locked);
 }
@@ -723,7 +721,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Secret", secret);
     if (secret) {
         // Assume by default that knobs are visible
-        _visibilityChanged = true;
+        _isSecret = true;
     }
 
     if (version >= KNOB_SERIALIZATION_INTRODUCES_ALIAS) {

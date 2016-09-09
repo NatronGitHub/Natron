@@ -152,9 +152,10 @@ public:
     RotoContextPtr getContext() const;
     RotoItemPtr getPreviousItemInLayer() const;
 
+    
 protected:
 
-    virtual void initializeKnobs() OVERRIDE {}
+    virtual void initializeKnobs() OVERRIDE;
 
 
     ///This mutex protects every-member this class and the derived class might have.

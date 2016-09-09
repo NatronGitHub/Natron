@@ -302,7 +302,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
         }
     }
     if ( knob->getHolder() ) {
-        knob->getHolder()->incrHashAndEvaluate(knob->getEvaluateOnChange(), false);
+        knob->getHolder()->invalidateCacheHashAndEvaluate(knob->getEvaluateOnChange(), false);
     }
     Q_EMIT keyInterpolationChanged();
 }

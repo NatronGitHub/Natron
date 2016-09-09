@@ -1387,7 +1387,6 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
             }
             _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
             _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
-            _imp->context->evaluateChange();
             break;
         }
     }
@@ -1532,7 +1531,6 @@ void
 RotoPanel::onItemColorDialogEdited(const QColor & color)
 {
     QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-    bool mustEvaluate = false;
     for (int i = 0; i < selected.size(); ++i) {
         TreeItems::iterator found = _imp->findItem(selected[i]);
         assert( found != _imp->items.end() );
@@ -1550,7 +1548,6 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 found->treeItem->setIcon(COL_COLOR, icon);
                 KnobColorPtr contextKnob = _imp->context->getColorKnob();
                 contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-                mustEvaluate = true;
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
                 colorArray[0] = color.redF();
@@ -1564,9 +1561,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
             }
         }
     }
-    if (mustEvaluate) {
-        _imp->context->evaluateChange();
-    }
+
 }
 
 void
@@ -1705,7 +1700,6 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
             bool colorChosen = false;
             double shapeColor[3];
-            bool mustEvaluate = false;
             if (drawable) {
                 QColorDialog dialog;
                 dialog.setOption(QColorDialog::DontUseNativeDialog);
@@ -1732,7 +1726,6 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                     if (drawable) {
                         KnobColorPtr colorKnob = drawable->getColorKnob();
                         colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-                        mustEvaluate = true;
                         found->treeItem->setIcon(COL_COLOR, icon);
                     }
                 }
@@ -1741,11 +1734,8 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             if ( colorChosen && !selected.empty() ) {
                 KnobColorPtr colorKnob = _imp->context->getColorKnob();
                 colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-                mustEvaluate = true;
             }
-            if (mustEvaluate) {
-                _imp->context->evaluateChange();
-            }
+
             break;
         }
         default:
@@ -2578,7 +2568,7 @@ RemoveItemsUndoCommand::undo()
 
         it->treeItem->setHidden(false);
     }
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2599,7 +2589,7 @@ RemoveItemsUndoCommand::redo()
             it->parentTreeItem->removeChild(it->treeItem);
         }
     }
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2631,7 +2621,7 @@ AddLayerUndoCommand::undo()
     }
     _roto->getContext()->removeItem(_layer, RotoItem::eSelectionReasonSettingsPanel);
     _roto->clearSelection();
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2656,7 +2646,7 @@ AddLayerUndoCommand::redo()
     }
     _roto->clearSelection();
     _roto->getContext()->select(_layer, RotoItem::eSelectionReasonOther);
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
     _firstRedoCalled = true;
 }
@@ -2729,7 +2719,7 @@ DragItemsUndoCommand::undo()
         }
     }
     _roto->getContext()->refreshRotoPaintTree();
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
 
     setText( tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
@@ -2751,7 +2741,7 @@ DragItemsUndoCommand::redo()
         it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
     }
     _roto->getContext()->refreshRotoPaintTree();
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2883,7 +2873,7 @@ PasteItemUndoCommand::undo()
             _roto->getContext()->removeItem(it->itemCopy, RotoItem::eSelectionReasonOther);
         }
     }
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2925,7 +2915,7 @@ PasteItemUndoCommand::redo()
         }
     }
 
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2980,7 +2970,7 @@ void
 DuplicateItemUndoCommand::undo()
 {
     _roto->getContext()->removeItem(_item.duplicatedItem, RotoItem::eSelectionReasonOther);
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
@@ -2990,7 +2980,7 @@ DuplicateItemUndoCommand::redo()
     _roto->getContext()->addItem(_item.item->getParentLayer(),
                                  0, _item.duplicatedItem, RotoItem::eSelectionReasonOther);
 
-    _roto->getContext()->evaluateChange();
+    _roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 

@@ -719,7 +719,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     viewerInputs.clear();
     viewerInputs.resize(nInputs);
     for (int i = 0; i < nInputs; ++i) {
-        NodePtr inputNode = _publicInterface->getNode()->getInput(i);
+        NodePtr inputNode = _publicInterface->getNode()->getRealInput(i);
         if (!inputNode) {
             continue;
         }

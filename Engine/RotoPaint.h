@@ -36,6 +36,7 @@
 #include "Engine/EngineFwd.h"
 
 #define ROTOPAINT_MAX_INPUTS_COUNT 11
+#define ROTOPAINT_MASK_INPUT_INDEX 10
 
 
 NATRON_NAMESPACE_ENTER;

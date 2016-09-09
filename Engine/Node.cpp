@@ -2520,7 +2520,7 @@ Node::restoreNodeToDefaultState()
     _imp->effect->endChanges();
 
     // Refresh hash & meta-data and trigger a render
-    _imp->effect->incrHashAndEvaluate(true, true);
+    _imp->effect->invalidateCacheHashAndEvaluate(true, true);
 
 } // Node::restoreNodeToDefaultState
 
@@ -2534,6 +2534,11 @@ Node::restoreSublabel()
     }
     KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
     _imp->ofxSubLabelKnob = sublabelKnobIsString;
+
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        ioContainer->_imp->ofxSubLabelKnob = sublabelKnobIsString;
+    }
     if (!sublabelKnobIsString) {
         return;
     }
@@ -3903,7 +3908,7 @@ Node::createHostMixKnob(const KnobPagePtr& mainPage)
 {
     KnobDoublePtr mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect, tr("Mix"), 1, false);
 
-    mixKnob->setName("hostMix");
+    mixKnob->setName(kHostMixingKnobName);
     mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
     mixKnob->setMinimum(0.);
     mixKnob->setMaximum(1.);
@@ -7031,21 +7036,6 @@ Node::getTrackerContext() const
     return _imp->trackContext;
 }
 
-U64
-Node::getRotoAge() const
-{
-    if (_imp->rotoContext) {
-        return _imp->rotoContext->getAge();
-    }
-
-    RotoDrawableItemPtr item = _imp->paintStroke.lock();
-    if (item) {
-        return item->getContext()->getAge();
-    }
-
-    return 0;
-}
-
 const KnobsVec &
 Node::getKnobs() const
 {
@@ -7622,13 +7612,10 @@ refreshPreviewsRecursivelyDownstreamInternal(double time,
 
     marked.push_back(node);
 
-    NodesWList outputs;
-    node->getOutputs_mt_safe(outputs);
-    for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (output) {
-            output->refreshPreviewsRecursivelyDownstream(time);
-        }
+    NodesList outputs;
+    node->getOutputsWithGroupRedirection(outputs);
+    for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        (*it)->refreshPreviewsRecursivelyDownstream(time);
     }
 }
 

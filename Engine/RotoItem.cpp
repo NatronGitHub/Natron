@@ -80,7 +80,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
-
+#define kParamGloballyEnabled "enabled"
+#define kParamGloballyEnabledLabel "Enabled"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -165,8 +166,7 @@ void
 RotoItem::setGloballyActivated_recursive(bool a)
 {
     {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = a;
+        _imp->globallyActivated.lock()->setValue(a);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems & children = layer->getItems();
@@ -174,6 +174,19 @@ RotoItem::setGloballyActivated_recursive(bool a)
                 (*it)->setGloballyActivated_recursive(a);
             }
         }
+    }
+    invalidateCacheHashAndEvaluate(true, false);
+}
+
+void
+RotoItem::initializeKnobs()
+{
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(shared_from_this(), tr(kParamGloballyEnabledLabel));
+        param->setName(kParamGloballyEnabled);
+        param->setDefaultValue(true);
+        param->setSecret(true);
+        _imp->globallyActivated = param;
     }
 }
 
@@ -186,25 +199,16 @@ RotoItem::setGloballyActivated(bool a,
     if (setChildren) {
         setGloballyActivated_recursive(a);
     } else {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = a;
+        _imp->globallyActivated.lock()->setValue(a);
     }
-    RotoContextPtr c = _imp->context.lock();
-    if (c) {
-        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
-        if (isDrawable) {
-            isDrawable->invalidateHashCache();
-        }
-        c->evaluateChange();
-    }
+    invalidateCacheHashAndEvaluate(true, false);
 }
 
 bool
 RotoItem::isGloballyActivated() const
 {
-    QMutexLocker l(&itemMutex);
-
-    return _imp->globallyActivated;
+    KnobBoolPtr knob = _imp->globallyActivated.lock();
+    return knob ? knob->getValue() : true;
 }
 
 static bool
@@ -228,7 +232,7 @@ RotoItem::isDeactivatedRecursive() const
     RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
-        if (!_imp->globallyActivated) {
+        if (!_imp->globallyActivated.lock()->getValue()) {
             return true;
         }
         parent = _imp->parentLayer.lock();
@@ -458,7 +462,6 @@ RotoItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
     RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
-        serialization->activated = _imp->globallyActivated;
         serialization->name = _imp->scriptName;
         serialization->label = _imp->label;
         serialization->locked = _imp->locked;
@@ -479,7 +482,6 @@ RotoItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBa
     }
     {
         QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = serialization->activated;
         _imp->locked = serialization->locked;
         _imp->scriptName = serialization->name;
         if ( !serialization->label.empty() ) {
@@ -588,5 +590,6 @@ RotoItem::getPreviousItemInLayer() const
     RotoItemConstPtr thisShared = toRotoItem(shared_from_this());
     return getPreviousInLayer( layer, thisShared);
 }
+
 
 NATRON_NAMESPACE_EXIT;

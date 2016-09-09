@@ -2810,7 +2810,8 @@ NodeGui::refreshNodeText()
     }
     NodePtr node = getNode();
 
-    KnobStringPtr extraLabelKnob = node->getExtraLabelKnob();
+    KnobStringPtr extraLabelKnob;
+    extraLabelKnob = node->getExtraLabelKnob();
     KnobStringPtr subLabelKnob = node->getOFXSubLabelKnob();
 
 

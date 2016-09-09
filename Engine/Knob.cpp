@@ -5359,6 +5359,9 @@ struct KnobHolder::KnobHolderPrivate
     bool hasAnimation;
     DockablePanelI* settingsPanel;
 
+    std::list<KnobIWPtr> overlaySlaves;
+
+
     KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
         , knobsMutex()
@@ -5663,6 +5666,39 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
         _imp->settingsPanel->deleteKnobGui(sharedKnob);
     }
 }
+
+void
+KnobHolder::addOverlaySlaveParam(const KnobIPtr& knob)
+{
+    _imp->overlaySlaves.push_back(knob);
+}
+
+bool
+KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob) const
+{
+    for (std::list<KnobIWPtr >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
+        KnobIPtr k = it->lock();
+        if (!k) {
+            continue;
+        }
+        if (k == knob) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+KnobHolder::redrawOverlayInteract()
+{
+    if ( isDoingInteractAction() ) {
+        getApp()->queueRedrawForAllViewers();
+    } else {
+        getApp()->redrawAllViewers();
+    }
+}
+
 
 bool
 KnobHolder::moveViewerUIKnobOneStepUp(const KnobIPtr& knob)
@@ -6212,7 +6248,7 @@ KnobHolder::onDoEvaluateOnMainThread(bool significant,
 }
 
 void
-KnobHolder::incrHashAndEvaluate(bool isSignificant,
+KnobHolder::invalidateCacheHashAndEvaluate(bool isSignificant,
                                 bool refreshMetadatas)
 {
     onSignificantEvaluateAboutToBeCalled(KnobIPtr(), eValueChangedReasonNatronInternalEdited, -1, 0, ViewSpec(0));

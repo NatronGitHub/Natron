@@ -764,8 +764,6 @@ public:
      **/
     bool moveSelectedCpsWithKeyArrows(int x, int y);
 
-
-    void evaluate(bool redraw);
     void autoSaveAndRedraw();
 
     void redrawOverlays();

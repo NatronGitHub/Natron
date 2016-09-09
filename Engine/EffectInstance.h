@@ -1626,15 +1626,6 @@ public:
         return false;
     }
 
-    virtual void redrawOverlayInteract();
-
-    /**
-     * @brief Flag that the overlays should be redrawn when this knob changes.
-     **/
-    void addOverlaySlaveParam(const KnobIPtr& knob);
-
-    bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
-
 
     /**
      * @brief Returns the components available on each input for this effect at the given time.
@@ -1717,6 +1708,17 @@ public:
 
     void clearRenderInstances();
 
+
+
+    /**
+     * @brief Called when something that should force a new evaluation (render) is done.
+     * @param isSignificant If false the viewers will only be redrawn and nothing will be rendered.
+     * @param refreshMetadatas If true the meta-datas on this node and all nodes downstream recursively will be re-computed.
+     **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE FINAL;
+
 protected:
 
 
@@ -1727,13 +1729,6 @@ protected:
      **/
     virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 
-
-    /**
-    * @brief Must be implemented to evaluate a value change
-    * made to a knob(e.g: force a new render).
-    * @param knob[in] The knob whose value changed.
-    **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
 
 private:
 
@@ -2167,7 +2162,7 @@ private:
                             ImagePtr* downscaleImage);
 
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE FINAL;
+
     virtual void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master) OVERRIDE FINAL;
 
 public:

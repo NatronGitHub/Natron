@@ -17,7 +17,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "RotoItemSerialization.h"
-
+#include "Serialization/KnobSerialization.h"
 SERIALIZATION_NAMESPACE_ENTER
 
 void
@@ -30,9 +30,6 @@ RotoItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << label;
     }
     std::list<std::string> props;
-    if (!activated) {
-        props.push_back("Disabled");
-    }
     if (locked) {
         props.push_back("Locked");
     }
@@ -67,9 +64,7 @@ RotoItemSerialization::decode(const YAML_NAMESPACE::Node& node)
         YAML_NAMESPACE::Node props = node["Props"];
         for (std::size_t i = 0; i < props.size(); ++i) {
             std::string prop = props[i].as<std::string>();
-            if (prop == "Disabled") {
-                activated = true;
-            } else if (prop == "Locked") {
+            if (prop == "Locked") {
                 locked = true;
             } else {
                 throw std::invalid_argument("RotoItemSerialization: unknown property: " + prop);

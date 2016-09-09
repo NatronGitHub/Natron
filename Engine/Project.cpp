@@ -1150,6 +1150,7 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat)
         entries.push_back( str.toStdString() );
     }
     if (addAsAdditionalFormat) {
+        entries.push_back( formatStr.toStdString() );
         ret = (entries.size() - 1);
     }
 

@@ -1011,38 +1011,30 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             }
 
             std::map<KnobHolderPtr, bool> toEvaluate;
-            std::list<RotoContextPtr > rotoToEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
                 KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
                 BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
                 if (isKnobCurve) {
-                    if ( !isKnobCurve->getKnobGui() ) {
-                        RotoContextPtr roto = isKnobCurve->getRotoContext();
-                        assert(roto);
-                        rotoToEvaluate.push_back(roto);
-                    } else {
-                        KnobIPtr knob = isKnobCurve->getInternalKnob();
-                        assert(knob);
-                        KnobHolderPtr holder = knob->getHolder();
-                        assert(holder);
-                        std::map<KnobHolderPtr, bool>::iterator found = toEvaluate.find(holder);
-                        bool evaluateOnChange = knob->getEvaluateOnChange();
-                        if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
-                            found->second = true;
-                        } else if ( found == toEvaluate.end() ) {
-                            toEvaluate.insert( std::make_pair(holder, evaluateOnChange) );
-                        }
+                    KnobIPtr knob = isKnobCurve->getInternalKnob();
+                    assert(knob);
+                    KnobHolderPtr holder = knob->getHolder();
+                    assert(holder);
+                    std::map<KnobHolderPtr, bool>::iterator found = toEvaluate.find(holder);
+                    bool evaluateOnChange = knob->getEvaluateOnChange();
+                    if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
+                        found->second = true;
+                    } else if ( found == toEvaluate.end() ) {
+                        toEvaluate.insert( std::make_pair(holder, evaluateOnChange) );
                     }
                 } else if (isBezierCurve) {
-                    rotoToEvaluate.push_back( isBezierCurve->getRotoContext() );
+                    toEvaluate.insert( std::make_pair(isBezierCurve->getBezier(), true) );
+                }
+
+                for (std::map<KnobHolderPtr, bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
+                    it->first->invalidateCacheHashAndEvaluate(it->second, false);
                 }
             }
-            for (std::map<KnobHolderPtr, bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
-                it->first->incrHashAndEvaluate(it->second, false);
-            }
-            for (std::list<RotoContextPtr >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
-                (*it)->evaluateChange();
-            }
+
         } else if (_imp->_state == eEventStateDraggingTangent) {
             if (_imp->_gui) {
                 _imp->_gui->setDraftRenderEnabled(false);
@@ -1051,17 +1043,12 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( _imp->_selectedDerivative.second->curve.get() );
             BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( _imp->_selectedDerivative.second->curve.get() );
             if (isKnobCurve) {
-                if ( !isKnobCurve->getKnobGui() ) {
-                    RotoContextPtr roto = isKnobCurve->getRotoContext();
-                    assert(roto);
-                    roto->evaluateChange();
-                } else {
-                    KnobIPtr toEvaluate = isKnobCurve->getInternalKnob();
-                    assert(toEvaluate);
-                    toEvaluate->getHolder()->incrHashAndEvaluate(true, false);
-                }
+                KnobIPtr toEvaluate = isKnobCurve->getInternalKnob();
+                assert(toEvaluate);
+                toEvaluate->getHolder()->invalidateCacheHashAndEvaluate(true, false);
+
             } else if (isBezierCurve) {
-                isBezierCurve->getRotoContext()->evaluateChange();
+                isBezierCurve->getBezier()->invalidateCacheHashAndEvaluate(true, false);
             }
         }
     }

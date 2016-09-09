@@ -3166,21 +3166,13 @@ EffectInstance::evaluate(bool isSignificant,
 {
     NodePtr node = getNode();
 
-    if ( refreshMetadatas && node->isNodeCreated() ) {
+    if ( refreshMetadatas && node && node->isNodeCreated() ) {
         refreshMetaDatas_public(true);
     }
 
-    /*
-       We always have to trigger a render because this might be a tree not connected via a link to the knob who changed
-       but just an expression
-
-       if (reason == eValueChangedReasonSlaveRefresh) {
-        //do not trigger a render, the master will do it already
-        return;
-       }*/
-
-
     double time = getCurrentTime();
+
+    // Get the connected viewers downstream and re-render or redraw them.
     std::list<ViewerInstancePtr> viewers;
     node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
@@ -3192,6 +3184,8 @@ EffectInstance::evaluate(bool isSignificant,
             (*it)->redrawViewer();
         }
     }
+
+    // If significant, also refresh previews downstream 
     if (isSignificant) {
         node->refreshPreviewsRecursivelyDownstream(time);
     }
@@ -4789,15 +4783,6 @@ EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
     return getNode()->isDuringPaintStrokeCreation();
 }
 
-void
-EffectInstance::redrawOverlayInteract()
-{
-    if ( isDoingInteractAction() ) {
-        getApp()->queueRedrawForAllViewers();
-    } else {
-        getApp()->redrawAllViewers();
-    }
-}
 
 RenderScale
 EffectInstance::getOverlayInteractRenderScale() const
@@ -4847,27 +4832,6 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
     return getNode()->setCurrentCursor(customCursorFilePath);
 }
 
-void
-EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
-{
-    _imp->overlaySlaves.push_back(knob);
-}
-
-bool
-EffectInstance::isOverlaySlaveParam(const KnobIConstPtr& knob) const
-{
-    for (std::list<KnobIWPtr >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
-        KnobIPtr k = it->lock();
-        if (!k) {
-            continue;
-        }
-        if (k == knob) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,

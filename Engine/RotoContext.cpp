@@ -32,6 +32,8 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset
 
+#include <ofxNatron.h>
+
 #include <boost/scoped_ptr.hpp>
 
 #include <QtCore/QLineF>
@@ -229,6 +231,7 @@ RotoContext::addLayerInternal(bool declarePython)
         }
 
         item.reset( new RotoLayer( this_shared, name, RotoLayerPtr() ) );
+        item->initializeKnobsPublic();
         if (parentLayer) {
             parentLayer->addItem(item, declarePython);
             indexInLayer = parentLayer->getItems().size() - 1;
@@ -457,7 +460,6 @@ RotoContext::makeStroke(RotoStrokeType type,
 
     {
         QMutexLocker l(&_imp->rotoContextMutex);
-        ++_imp->age; // increase age
 
         RotoLayerPtr deepestLayer = _imp->findDeepestSelectedLayer();
 
@@ -1140,7 +1142,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                     //Slave internal knobs of the bezier
                     assert( (*it)->getDimension() == thisKnob->getDimension() );
                     for (int i = 0; i < (*it)->getDimension(); ++i) {
-                        (*it)->slaveTo(i, thisKnob, i);
+                        (*it)->slaveTo(i, thisKnob, i, true);
                     }
 
                     QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
@@ -1551,9 +1553,7 @@ RotoContext::removeAnimationOnSelectedCurves()
             addOrRemoveKeyRecursively(isLayer, time, false, true);
         }
     }
-    if ( !_imp->selectedItems.empty() ) {
-        evaluateChange();
-    }
+
 }
 
 void
@@ -1834,32 +1834,7 @@ RotoContext::findDeepestSelectedLayer() const
     return _imp->findDeepestSelectedLayer();
 }
 
-void
-RotoContext::incrementAge()
-{
-    _imp->incrementRotoAge();
-}
 
-void
-RotoContext::evaluateChange()
-{
-    _imp->incrementRotoAge();
-    getNode()->getEffectInstance()->incrHashAndEvaluate(true, false);
-}
-
-void
-RotoContext::evaluateChange_noIncrement()
-{
-    //Used for the rotopaint to optimize the portion to render (render only the bbox of the last tick of the mouse move)
-    std::list<ViewerInstancePtr> viewers;
-
-    getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
-         it != viewers.end();
-         ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-}
 
 void
 RotoContext::clearViewersLastRenderedStrokes()
@@ -1872,14 +1847,6 @@ RotoContext::clearViewersLastRenderedStrokes()
          ++it) {
         (*it)->clearLastRenderedImage();
     }
-}
-
-U64
-RotoContext::getAge()
-{
-    QMutexLocker l(&_imp->rotoContextMutex);
-
-    return _imp->age;
 }
 
 void
@@ -1927,13 +1894,6 @@ RotoContext::onItemLabelChanged(const RotoItemPtr& item)
     Q_EMIT itemLabelChanged(item);
 }
 
-void
-RotoContext::onItemKnobChanged()
-{
-    emitRefreshViewerOverlays();
-    evaluateChange();
-}
-
 std::string
 RotoContext::getRotoNodeName() const
 {
@@ -1965,8 +1925,7 @@ RotoContext::getBeziersKeyframeTimes(std::list<double> *times) const
 }
 
 static void
-dequeueActionForLayer(const RotoLayerPtr& layer,
-                      bool *evaluate)
+dequeueActionForLayer(const RotoLayerPtr& layer)
 {
     RotoItems items = layer->getItems_mt_safe();
 
@@ -1974,9 +1933,9 @@ dequeueActionForLayer(const RotoLayerPtr& layer,
         BezierPtr isBezier = toBezier(*it);
         RotoLayerPtr isLayer = toRotoLayer(*it);
         if (isBezier) {
-            *evaluate = *evaluate | isBezier->dequeueGuiActions();
+            isBezier->dequeueGuiActions();
         } else if (isLayer) {
-            dequeueActionForLayer(isLayer, evaluate);
+            dequeueActionForLayer(isLayer);
         }
     }
 }
@@ -1984,16 +1943,11 @@ dequeueActionForLayer(const RotoLayerPtr& layer,
 void
 RotoContext::dequeueGuiActions()
 {
-    bool evaluate = false;
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if ( !_imp->layers.empty() ) {
-            dequeueActionForLayer(_imp->layers.front(), &evaluate);
+            dequeueActionForLayer(_imp->layers.front());
         }
-    }
-
-    if (evaluate) {
-        evaluateChange();
     }
 }
 
@@ -2124,6 +2078,8 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
         mergeNode->setWhileCreatingPaintStroke(true);
     }
 
+
+
     {
         // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
         KnobChoicePtr glRenderKnob = mergeNode->getOpenGLEnabledKnob();
@@ -2149,6 +2105,11 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
         for (int i = 0; i < 4; ++i) {
             mergeRGBA[i]->slaveTo(0, rotoPaintRGBA[i], 0);
         }
+
+        // Link mix
+        KnobIPtr rotoPaintMix = rotoPaintEffect->getKnobByName(kHostMixingKnobName);
+        KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
+        mergeMix->slaveTo(0, rotoPaintMix, 0);
 
     }
 
@@ -2266,7 +2227,9 @@ RotoContext::refreshRotoPaintTree()
 
     // Default to premult node as bottom of the tree
     NodePtr treeBottomNode = rotoPaintEffect->getPremultNode();
-    assert(treeBottomNode);
+    if (!treeBottomNode) {
+        return;
+    }
     NodePtr treeOutputNode = rotoPaintEffect->getOutputNode(false);
 
     NodePtr bottomTreeInput;
@@ -2294,9 +2257,33 @@ RotoContext::refreshRotoPaintTree()
         }
     }
 
+
+
     // This either connect the output to the input node if the items are empty or connect the premult to the first merge node
     treeBottomNode->disconnectInput(0);
     treeBottomNode->connectInput(bottomTreeInput, 0);
+
+    if (treeBottomNode == rotoPaintEffect->getPremultNode()) {
+        // Make sure the premult node has its RGB checkbox checked
+        treeBottomNode->getEffectInstance()->beginChanges();
+        KnobBoolPtr process[3];
+        process[0] = toKnobBool(treeBottomNode->getKnobByName(kNatronOfxParamProcessR));
+        process[1] = toKnobBool(treeBottomNode->getKnobByName(kNatronOfxParamProcessG));
+        process[2] = toKnobBool(treeBottomNode->getKnobByName(kNatronOfxParamProcessB));
+        for (int i = 0; i < 3; ++i) {
+            assert(process[i]);
+            process[i]->setValue(true);
+        }
+        treeBottomNode->getEffectInstance()->endChanges();
+    }
+
+
+    if (!items.empty()) {
+        assert(bottomTreeInput->getPluginID() == PLUGINID_OFX_MERGE);
+        // Connect the mask of the merge to the Mask input
+        bottomTreeInput->disconnectInput(2);
+        bottomTreeInput->connectInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
+    }
 
 
 } // RotoContext::refreshRotoPaintTree

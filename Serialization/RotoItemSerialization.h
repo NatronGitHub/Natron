@@ -31,14 +31,11 @@ class RotoItemSerialization
 public:
 
     std::string name, label;
-    bool activated;
     std::string parentLayerName;
     bool locked;
 
-
     RotoItemSerialization()
         : name()
-        , activated(true)
         , parentLayerName()
         , locked(false)
     {

@@ -202,7 +202,6 @@ public:
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    std::list<KnobIWPtr> overlaySlaves;
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
     bool runningClipPreferences; //only used on main thread

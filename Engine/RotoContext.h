@@ -200,20 +200,8 @@ private:
 public:
 
 
-    /**
-     * @brief To be called when a change was made to trigger a new render.
-     **/
-    void evaluateChange();
-    void evaluateChange_noIncrement();
-
-    void incrementAge();
-
     void clearViewersLastRenderedStrokes();
 
-    /**
-     *@brief Returns the age of the roto context
-     **/
-    U64 getAge();
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
@@ -330,8 +318,6 @@ public:
 
     void onItemScriptNameChanged(const RotoItemPtr& item);
     void onItemLabelChanged(const RotoItemPtr& item);
-
-    void onItemKnobChanged();
 
     void declarePythonFields();
 

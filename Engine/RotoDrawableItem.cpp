@@ -70,23 +70,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/RotoDrawableItemSerialization.h"
 #include "Serialization/NodeSerialization.h"
 
-#define kMergeOFXParamOperation "operation"
-#define kMergeOFXParamInvertMask "maskInvert"
-#define kBlurCImgParamSize "size"
-#define kTimeOffsetParamOffset "timeOffset"
-#define kFrameHoldParamFirstFrame "firstFrame"
-
-#define kTransformParamTranslate "translate"
-#define kTransformParamRotate "rotate"
-#define kTransformParamScale "scale"
-#define kTransformParamUniform "uniform"
-#define kTransformParamSkewX "skewX"
-#define kTransformParamSkewY "skewY"
-#define kTransformParamSkewOrder "skewOrder"
-#define kTransformParamCenter "center"
-#define kTransformParamFilter "filter"
-#define kTransformParamResetCenter "resetCenter"
-#define kTransformParamBlackOutside "black_outside"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -100,7 +83,6 @@ RotoDrawableItem::RotoDrawableItem(const RotoContextPtr& context,
     : RotoItem(context, name, parent)
     , _imp( new RotoDrawableItemPrivate() )
 {
-    QObject::connect( this, SIGNAL(overlayColorChanged()), context.get(), SIGNAL(refreshViewerOverlays()) );
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -157,7 +139,7 @@ void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
 
-    initializeKnobs();
+    initializeKnobsPublic();
 
     RotoContextPtr context = getContext();
     RotoPaintPtr rotoPaintEffect = toRotoPaint(context->getNode()->getEffectInstance());
@@ -165,9 +147,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
     QString fixedNamePrefix = QString::fromUtf8( rotoPaintEffect->getNode()->getScriptName_mt_safe().c_str() );
     fixedNamePrefix.append( QLatin1Char('_') );
     fixedNamePrefix.append( QString::fromUtf8( getScriptName().c_str() ) );
-    fixedNamePrefix.append( QLatin1Char('_') );
-    fixedNamePrefix.append( QString::number( context->getAge() ) );
-    fixedNamePrefix.append( QLatin1Char('_') );
 
     QString pluginId;
     RotoStrokeType type;
@@ -357,6 +336,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
         KnobIPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
         mergeMaskInvertKnob->slaveTo(0, _imp->invertKnob.lock(), 0);
 #endif
+
+        // Link mix
+        KnobIPtr rotoPaintMix = rotoPaintEffect->getKnobByName(kHostMixingKnobName);
+        KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
+        mergeMix->slaveTo(0, rotoPaintMix, 0);
     }
 
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
@@ -589,7 +573,7 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
                         bool /*originatedFromMainThread*/)
 {
     // Any knob except transform center should break the multi-stroke into a new stroke
-    if ( (reason == eValueChangedReasonSlaveRefresh) && (knob != _imp->center.lock()) && (knob != _imp->cloneCenter.lock()) ) {
+    if ( (reason == eValueChangedReasonUserEdited) && (knob != _imp->center.lock()) && (knob != _imp->cloneCenter.lock()) ) {
 #pragma message WARN("Check if the reason is correct here, shouldn't it be user edited?")
         getContext()->s_breakMultiStroke();
     }
@@ -614,9 +598,44 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
         refreshNodesConnections(getContext()->canConcatenatedRotoPaintTree());
     }
 
-
+    if (isOverlaySlaveParam(knob)) {
+        redrawOverlayInteract();
+    }
     return true;
 } // RotoDrawableItem::onKnobValueChanged
+
+void
+RotoDrawableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view)
+{
+
+    if (knob) {
+        knob->invalidateHashCache();
+    }
+    
+    invalidateHashCache();
+    // Call invalidate hash on the mask and effect, this will recurse below on all nodes in the group which is enough to invalidate the hash;
+    if (_imp->maskNode) {
+        _imp->maskNode->getEffectInstance()->onSignificantEvaluateAboutToBeCalled(KnobIPtr(), reason, dimension, time, view);
+    }
+    if (_imp->effectNode) {
+        _imp->effectNode->getEffectInstance()->onSignificantEvaluateAboutToBeCalled(KnobIPtr(), reason, dimension, time, view);
+    }
+}
+
+void
+RotoDrawableItem::evaluate(bool isSignificant, bool refreshMetadatas)
+{
+    if (!_imp->mergeNode) {
+        return;
+    }
+    // Call evaluate on the merge node
+    // If the tree is "concatenated", the merge node will not be used hence call it on the RotoPaint node itself
+    if (_imp->mergeNode->getOutputs().empty()) {
+        getContext()->getNode()->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
+    } else {
+        _imp->mergeNode->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
+    }
+}
 
 
 
@@ -876,10 +895,6 @@ RotoDrawableItem::clone(const RotoItem* other)
     for (; it != knobs.end(); ++it, ++otherIt) {
         (*it)->clone(*otherIt);
     }
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, otherDrawable->_imp->overlayColor, sizeof(double) * 4);
-    }
     RotoItem::clone(other);
 }
 
@@ -887,13 +902,12 @@ static void
 serializeRotoKnob(const KnobIPtr & knob,
                  SERIALIZATION_NAMESPACE::KnobSerializationPtr* serialization)
 {
-    std::pair<int, KnobIPtr > master = knob->getMaster(0);
-    serialization->reset(new SERIALIZATION_NAMESPACE::KnobSerialization);
+    /*std::pair<int, KnobIPtr > master = knob->getMaster(0);
     if (master.second) {
         master.second->toSerialization(serialization->get());
-    } else {
+    } else {*/
         knob->toSerialization(serialization->get());
-    }
+    //}
 }
 
 void
@@ -905,21 +919,13 @@ RotoDrawableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBa
         return;
     }
 
-    assert(s);
-    if (!s) {
-        throw std::logic_error("RotoDrawableItem::save()");
-    }
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        SERIALIZATION_NAMESPACE::KnobSerializationPtr k;
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr k(new SERIALIZATION_NAMESPACE::KnobSerialization);
         serializeRotoKnob( *it, &k );
         if (k->_mustSerialize) {
             s->_knobs.push_back(k);
         }
-    }
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
     }
     RotoItem::toSerialization(obj);
 }
@@ -945,10 +951,6 @@ RotoDrawableItem::fromSerialization(const SERIALIZATION_NAMESPACE::Serialization
                 break;
             }
         }
-    }
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, s->_overlayColor, sizeof(double) * 4);
     }
 
 } // RotoDrawableItem::load
@@ -980,7 +982,6 @@ RotoDrawableItem::setActivated(bool a,
                                double time)
 {
     _imp->activated.lock()->setValueAtTime(time, a, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
 }
 
 double
@@ -995,7 +996,6 @@ RotoDrawableItem::setOpacity(double o,
                              double time)
 {
     _imp->opacity.lock()->setValueAtTime(time, o, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
 }
 
 double
@@ -1010,7 +1010,6 @@ RotoDrawableItem::setFeatherDistance(double d,
                                      double time)
 {
     _imp->feather.lock()->setValueAtTime(time, d, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
 }
 
 int
@@ -1024,7 +1023,6 @@ RotoDrawableItem::setFeatherFallOff(double f,
                                     double time)
 {
     _imp->featherFallOff.lock()->setValueAtTime(time, f, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
 }
 
 double
@@ -1068,7 +1066,6 @@ RotoDrawableItem::setColor(double time,
     colorKnob->setValueAtTime(time, r, ViewSpec::all(), 0);
     colorKnob->setValueAtTime(time, g, ViewSpec::all(), 1);
     colorKnob->setValueAtTime(time, b, ViewSpec::all(), 2);
-    getContext()->onItemKnobChanged();
 }
 
 int
@@ -1100,20 +1097,18 @@ RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
 void
 RotoDrawableItem::getOverlayColor(double* color) const
 {
-    QMutexLocker l(&itemMutex);
-    std::memcpy(color, _imp->overlayColor, sizeof(double) * 4);
+    KnobColorPtr knob = _imp->overlayColor.lock();
+    color[0] = knob->getValue(0);
+    color[1] = knob->getValue(1);
+    color[2] = knob->getValue(2);
+    color[3] = knob->getValue(3);
 }
 
 void
 RotoDrawableItem::setOverlayColor(const double *color)
 {
-    ///MT-safe: only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, color, sizeof(double) * 4);
-    }
-    Q_EMIT overlayColorChanged();
+
+    _imp->overlayColor.lock()->setValues(color[0], color[1], color[2], color[3], ViewSpec(0), eValueChangedReasonNatronInternalEdited);
 }
 
 KnobBoolPtr RotoDrawableItem::getActivatedKnob() const
@@ -1587,6 +1582,18 @@ RotoDrawableItem::initializeKnobs()
         QObject::connect( param->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
         _imp->color = param;
     }
+    {
+        KnobColorPtr param = AppManager::createKnob<KnobColor>(thisShared, tr(kRotoOverlayColorLabel), 4);
+        param->setHintToolTip( tr(kRotoOverlayColorHint) );
+        param->setName(kRotoOverlayColor);
+        double def[4];
+        getDefaultOverlayColor(&def[0], &def[1], &def[2]);
+        def[3] = 1.;
+        for (int i = 0; i < 4; ++i) {
+            param->setDefaultValue(def[i], i);
+        }
+        _imp->overlayColor = param;
+    }
 
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoCompOperatorParamLabel));
@@ -1749,7 +1756,6 @@ RotoDrawableItem::initializeKnobs()
         KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kRotoBrushBuildupParamLabel));
         param->setName(kRotoBrushBuildupParam);
         param->setHintToolTip( tr(kRotoBrushBuildupParamHint) );
-        param->setDefaultValue(false);
         param->setAnimationEnabled(false);
         param->setDefaultValue(true);
         _imp->buildUp = param;
@@ -1967,8 +1973,6 @@ RotoDrawableItem::initializeKnobs()
     }
 #endif // NATRON_ROTO_ENABLE_MOTION_BLUR
 
-    getDefaultOverlayColor(&_imp->overlayColor[0], &_imp->overlayColor[1], &_imp->overlayColor[2]);
-    _imp->overlayColor[3] = 1.;
 } // initializeKnobs
 
 NATRON_NAMESPACE_EXIT;

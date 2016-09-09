@@ -84,6 +84,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoNameHint "Name of the layer or curve."
 
 
+#define kRotoOverlayColor "overlayColor"
+#define kRotoOverlayColorLabel "Overlay Color"
+#define kRotoOverlayColorHint "The color of the overlay in the Viewer"
+
 #define kRotoOpacityParam "opacity"
 #define kRotoOpacityParamLabel "Opacity"
 #define kRotoOpacityHint \
@@ -539,7 +543,7 @@ struct RotoItemPrivate
     ////should be visible/rendered or not at any time.
     ////This is different from the "activated" knob for RotoDrawableItem's which in that
     ////case allows to define a life-time
-    bool globallyActivated;
+    KnobBoolWPtr globallyActivated;
 
     ////A locked item should not be modifiable by the GUI
     bool locked;
@@ -551,7 +555,7 @@ struct RotoItemPrivate
         , scriptName(n)
         , label(n)
         , parentLayer(parent)
-        , globallyActivated(true)
+        , globallyActivated()
         , locked(false)
     {
     }
@@ -590,7 +594,7 @@ public:
     NodePtr effectNode, maskNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
-    double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
+    KnobColorWPtr overlayColor; //< the color the shape overlay should be drawn with, defaults to smooth red
     KnobDoubleWPtr opacity; //< opacity of the rendered shape between 0 and 1
     KnobDoubleWPtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     KnobDoubleWPtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
@@ -716,7 +720,6 @@ public:
     bool featherLink;
     bool isCurrentlyLoading;
     NodeWPtr node;
-    U64 age;
 
     ///These are knobs that take the value of the selected splines info.
     ///Their value changes when selection changes.
@@ -803,7 +806,6 @@ public:
         , featherLink(true)
         , isCurrentlyLoading(false)
         , node(n)
-        , age(0)
         , globalMergeNodes()
     {
         EffectInstancePtr effect = n->getEffectInstance();
@@ -1599,17 +1601,7 @@ public:
 #endif // ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     }
 
-    /**
-     * @brief Call this after any change to notify the mask has changed for the cache.
-     **/
-    void incrementRotoAge()
-    {
-        ///MT-safe: only called on the main-thread
-        assert( QThread::currentThread() == qApp->thread() );
 
-        QMutexLocker l(&rotoContextMutex);
-        ++age;
-    }
 
     RotoLayerPtr findDeepestSelectedLayer() const
     {

@@ -54,6 +54,14 @@ RotoLayerSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         }
         em << YAML_NAMESPACE::EndSeq;
     }
+    if (!knobs.empty()) {
+        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
+        em << YAML_NAMESPACE::BeginSeq;
+        for (KnobSerializationList::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            (*it)->encode(em);
+        }
+        em << YAML_NAMESPACE::EndSeq;
+    }
     em << YAML_NAMESPACE::EndMap;
 }
 
@@ -84,6 +92,14 @@ RotoLayerSerialization::decode(const YAML_NAMESPACE::Node& node)
                 children.push_back(s);
 
             }
+        }
+    }
+    if (node["Params"]) {
+        YAML_NAMESPACE::Node paramsNode = node["Params"];
+        for (std::size_t i = 0; i < paramsNode.size(); ++i) {
+            KnobSerializationPtr knob(new KnobSerialization);
+            knob->decode(paramsNode[i]);
+            knobs.push_back(knob);
         }
     }
 }

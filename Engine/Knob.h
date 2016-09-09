@@ -2406,6 +2406,17 @@ public:
      **/
     void deleteKnob(const KnobIPtr& knob, bool alsoDeleteGui);
 
+
+    /**
+     * @brief Flag that the overlays should be redrawn when this knob changes.
+     **/
+    void addOverlaySlaveParam(const KnobIPtr& knob);
+
+    bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
+
+    virtual void redrawOverlayInteract();
+    
+
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(const KnobIPtr& knob);
     bool moveKnobOneStepDown(const KnobIPtr& knob);
@@ -2707,7 +2718,7 @@ public:
 
 
     //Calls onSignificantEvaluateAboutToBeCalled + evaluate
-    void incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
+    void invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
 
 protected:
 

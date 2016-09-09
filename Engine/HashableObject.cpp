@@ -45,6 +45,8 @@ struct HashableObjectPrivate
 
     HashableObjectPrivate()
     : parent()
+    , hashCache()
+    , hashCacheMutex(QMutex::Recursive) // It might recurse when calling getValue on a knob with an expression because of randomSeed
     {
 
     }

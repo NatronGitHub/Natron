@@ -28,7 +28,6 @@ RotoDrawableItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     // This assumes that a map is already created
 
     RotoItemSerialization::encode(em);
-    bool hasOverlayColor = _overlayColor[0] != -1 || _overlayColor[1] != -1 || _overlayColor[2] != -1 || _overlayColor[3] != -1;
 
     if (!_knobs.empty()) {
         em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
@@ -36,14 +35,6 @@ RotoDrawableItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
-    }
-
-    if (hasOverlayColor) {
-        em << YAML_NAMESPACE::Key << "OverlayColor" << YAML_NAMESPACE::Value;
-        em << YAML_NAMESPACE::Flow;
-        em << YAML_NAMESPACE::BeginSeq;
-        em << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << _overlayColor[3];
         em << YAML_NAMESPACE::EndSeq;
     }
 
@@ -61,16 +52,6 @@ RotoDrawableItemSerialization::decode(const YAML_NAMESPACE::Node& node)
             _knobs.push_back(s);
         }
     }
-    if (node["OverlayColor"]) {
-        YAML_NAMESPACE::Node colorNode = node["OverlayColor"];
-        if (colorNode.size() != 4) {
-            throw YAML_NAMESPACE::InvalidNode();
-        }
-        for (std::size_t i = 0; i < colorNode.size(); ++i) {
-            _overlayColor[i] = colorNode[i].as<double>();
-        }
-    }
-
 
 }
 

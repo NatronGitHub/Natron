@@ -189,7 +189,6 @@ BezierCurve::setCurveFinished(bool finished)
 {
     _bezier->setCurveFinished(finished);
     _bezier->getContext()->emitRefreshViewerOverlays();
-    _bezier->getContext()->evaluateChange();
 }
 
 bool

@@ -65,6 +65,7 @@ CLANG_DIAG_ON(deprecated)
 #define kInputChannelKnobName "inputChannel"
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
+#define kHostMixingKnobName "hostMix"
 
 #define kOfxMaskInvertParamName "maskInvert"
 #define kOfxMixParamName "mix"
@@ -360,8 +361,6 @@ public:
     RotoContextPtr getRotoContext() const;
 
     TrackerContextPtr getTrackerContext() const;
-
-    U64 getRotoAge() const;
 
     /**
      * @brief Forwarded to the live effect instance

@@ -190,6 +190,14 @@ RotoLayer::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj
         assert(childSerialization);
         s->children.push_back(childSerialization);
     }
+    KnobsVec knobs = getKnobs_mt_safe();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr k(new SERIALIZATION_NAMESPACE::KnobSerialization);
+        (*it)->toSerialization(k.get());
+        if (k->_mustSerialize) {
+            s->knobs.push_back(k);
+        }
+    }
 
 
     RotoItem::toSerialization(obj);
@@ -242,9 +250,21 @@ RotoLayer::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectB
                     layer->setParentLayer(this_layer);
                 }
             }
-            //Rotopaint tree nodes use the roto context age for their script-name, make sure they have a different one
-            getContext()->incrementAge();
+
         }
+        const KnobsVec& knobs = getKnobs();
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->knobs.begin(); it != s->knobs.end(); ++it) {
+            for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+                if ( (*it2)->getName() == (*it)->getName() ) {
+                    boost::shared_ptr<KnobSignalSlotHandler> slot = (*it2)->getSignalSlotHandler();
+                    slot->blockSignals(true);
+                    (*it2)->fromSerialization(**it);
+                    slot->blockSignals(false);
+                    break;
+                }
+            }
+        }
+
     }
 }
 

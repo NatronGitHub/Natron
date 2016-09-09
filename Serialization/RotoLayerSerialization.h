@@ -54,6 +54,8 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 
     std::list <RotoItemSerializationPtr> children;
+
+    KnobSerializationList knobs;
 };
 
 SERIALIZATION_NAMESPACE_EXIT;

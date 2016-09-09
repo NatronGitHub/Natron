@@ -694,7 +694,7 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
     const QString& newRoleID = actionData[0];
     const QString& newToolID = actionData[1];
 
-    if (currentTool == newToolID) {
+    if (currentTool == newToolID && currentRole == newRoleID) {
         return;
     }
 

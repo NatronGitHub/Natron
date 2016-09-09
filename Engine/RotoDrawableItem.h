@@ -54,6 +54,25 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kMergeParamOutputChannelsB      "OutputChannelsB"
 #define kMergeParamOutputChannelsA      "OutputChannelsA"
 
+#define kMergeOFXParamMix "mix"
+#define kMergeOFXParamOperation "operation"
+#define kMergeOFXParamInvertMask "maskInvert"
+#define kBlurCImgParamSize "size"
+#define kTimeOffsetParamOffset "timeOffset"
+#define kFrameHoldParamFirstFrame "firstFrame"
+
+#define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
+#define kTransformParamUniform "uniform"
+#define kTransformParamSkewX "skewX"
+#define kTransformParamSkewY "skewY"
+#define kTransformParamSkewOrder "skewOrder"
+#define kTransformParamCenter "center"
+#define kTransformParamFilter "filter"
+#define kTransformParamResetCenter "resetCenter"
+#define kTransformParamBlackOutside "black_outside"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -207,13 +226,16 @@ public:
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
 
-    void initializeKnobs() OVERRIDE;
+    virtual void initializeKnobs() OVERRIDE;
+
+
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE;
 
 Q_SIGNALS:
 
     void invertedStateChanged();
-
-    void overlayColorChanged();
 
     void shapeColorChanged();
 

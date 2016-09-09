@@ -54,7 +54,6 @@
 #include "Global/GlobalDefines.h"
 
 
-#define ROTOPAINT_MASK_INPUT_INDEX 10
 
 #define ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX 5
 
@@ -227,6 +226,13 @@ RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /
 
         premultNode = getApp()->createNode(args);
         _imp->premultNode = premultNode;
+
+        KnobBoolPtr disablePremultKnob = premultNode->getDisabledKnob();
+        try {
+            disablePremultKnob->setExpression(0, "not thisGroup.premultiply.get()", false, true);
+        } catch (...) {
+            assert(false);
+        }
 
     }
 
@@ -1285,8 +1291,9 @@ RotoPaint::knobChanged(const KnobIPtr& k,
                 continue;
             }
             isBezier->setKeyframe(time);
+            isBezier->invalidateCacheHashAndEvaluate(true, false);
         }
-        getNode()->getRotoContext()->evaluateChange();
+
     } else if ( k == _imp->ui->removeKeyframeButton.lock() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
             BezierPtr isBezier = toBezier(*it);
@@ -1295,7 +1302,6 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             }
             isBezier->removeKeyframe(time);
         }
-        getNode()->getRotoContext()->evaluateChange();
     } else if ( k == _imp->ui->removeItemsMenuAction.lock() ) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if ( !_imp->ui->selectedCps.empty() ) {
@@ -1366,7 +1372,6 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             _imp->ui->builtBezier.reset();
             _imp->ui->selectedCps.clear();
             _imp->ui->setCurrentTool( _imp->ui->selectAllAction.lock() );
-            _imp->ui->getContext()->evaluateChange();
         }
     } else if ( k == _imp->ui->lockShapeMenuAction.lock() ) {
         _imp->ui->lockSelectedCurves();
@@ -1884,7 +1889,6 @@ RotoPaint::onInteractViewportSelectionCleared()
             _imp->ui->builtBezier.reset();
             _imp->ui->selectedCps.clear();
             _imp->ui->setCurrentTool( _imp->ui->selectAllAction.lock() );
-            _imp->ui->getContext()->evaluateChange();
         }
     }
 }
@@ -2418,7 +2422,7 @@ RotoPaint::onOverlayPenDown(double time,
                 }
                 _imp->ui->makeStroke( false, RotoPoint(pos.x(), pos.y(), pressure, timestamp) );
             }
-            context->evaluateChange();
+            _imp->ui->strokeBeingPaint->invalidateCacheHashAndEvaluate(true, false);
             _imp->ui->state = eEventStateBuildingStroke;
             setCurrentCursor(eCursorBlank);
         }
@@ -2789,7 +2793,7 @@ RotoPaint::onOverlayPenMotion(double time,
             RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
             if ( _imp->ui->strokeBeingPaint->appendPoint(false, p) ) {
                 _imp->ui->lastMousePos = pos;
-                context->evaluateChange_noIncrement();
+                redrawOverlayInteract();
 
                 return true;
             }
@@ -2869,8 +2873,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
     }
 
     if (_imp->ui->evaluateOnPenUp) {
-        context->evaluateChange();
-        getApp()->triggerAutoSave();
+        invalidateCacheHashAndEvaluate(true, false);
 
         //sync other viewers linked to this roto
         redrawOverlayInteract();
@@ -2965,7 +2968,6 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
             _imp->ui->builtBezier.reset();
             _imp->ui->selectedCps.clear();
             _imp->ui->setCurrentTool( _imp->ui->selectAllAction.lock() );
-            getNode()->getRotoContext()->evaluateChange();
             didSomething = true;
         }
     }
@@ -3013,8 +3015,7 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
     }
 
     if (_imp->ui->evaluateOnKeyUp) {
-        getNode()->getRotoContext()->evaluateChange();
-        getNode()->getApp()->triggerAutoSave();
+        invalidateCacheHashAndEvaluate(true, false);
         redrawOverlayInteract();
         _imp->ui->evaluateOnKeyUp = false;
     }
@@ -3107,7 +3108,7 @@ RotoPaint::evaluateNeatStrokeRender()
         _imp->mustDoNeatRender = true;
     }
 
-    getNode()->getRotoContext()->evaluateChange();
+    invalidateCacheHashAndEvaluate(true, false);
 
 }
 

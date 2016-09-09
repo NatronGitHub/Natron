@@ -980,22 +980,25 @@ Bezier::dequeueGuiActions()
             _imp->mustCopyGui = false;
         }
     }
-    QMutexLocker k(&itemMutex);
+    {
+        QMutexLocker k(&itemMutex);
 
-    if (mustCopy) {
-        BezierPtr this_shared = toBezier( shared_from_this() );
-        assert(this_shared);
-        BezierCPs::iterator fit = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
-            (*it)->cloneGuiCurvesToInternalCurves();
-            (*fit)->cloneGuiCurvesToInternalCurves();
+        if (mustCopy) {
+            BezierPtr this_shared = toBezier( shared_from_this() );
+            assert(this_shared);
+            BezierCPs::iterator fit = _imp->featherPoints.begin();
+            for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
+                (*it)->cloneGuiCurvesToInternalCurves();
+                (*fit)->cloneGuiCurvesToInternalCurves();
+            }
+
+            _imp->isClockwiseOriented = _imp->guiIsClockwiseOriented;
+            _imp->isClockwiseOrientedStatic = _imp->guiIsClockwiseOrientedStatic;
         }
-
-        _imp->isClockwiseOriented = _imp->guiIsClockwiseOriented;
-        _imp->isClockwiseOrientedStatic = _imp->guiIsClockwiseOrientedStatic;
-        invalidateHashCache();
     }
-
+    if (mustCopy) {
+        invalidateCacheHashAndEvaluate(true, false);
+    }
     return mustCopy;
 }
 
@@ -1076,7 +1079,7 @@ Bezier::clone(const RotoItem* other)
         _imp->isOpenBezier = otherBezier->_imp->isOpenBezier;
         _imp->finished = otherBezier->_imp->finished && !_imp->isOpenBezier;
     }
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     RotoDrawableItem::clone(other);
     Q_EMIT cloned();
 }
@@ -1153,7 +1156,7 @@ Bezier::addControlPoint(double x,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
 
     return p;
 } // Bezier::addControlPoint
@@ -1359,7 +1362,7 @@ Bezier::addControlPointAfterIndex(int index,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
 
     return p;
 } // addControlPointAfterIndex
@@ -1471,7 +1474,7 @@ Bezier::setCurveFinished(bool finished)
 
     resetTransformCenter();
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(false);
 }
 
@@ -1509,7 +1512,7 @@ Bezier::removeControlPointByIndex(int index)
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(false);
 
     Q_EMIT controlPointRemoved();
@@ -1684,7 +1687,7 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(useGuiCurve, time);
     if (autoKeying) {
         setKeyframe(time);
@@ -1987,7 +1990,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(useGuiCurve, time);
     if (!useGuiCurve) {
         QMutexLocker k(&itemMutex);
@@ -2129,7 +2132,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(useGuiCurve, time);
     if (!useGuiCurve) {
         QMutexLocker k(&itemMutex);
@@ -2224,7 +2227,7 @@ Bezier::transformPoint(const BezierCPPtr & point,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(useGuiCurve, time);
     if (!useGuiCurve) {
         QMutexLocker k(&itemMutex);
@@ -2258,7 +2261,7 @@ Bezier::removeFeatherAtIndex(int index)
 
     (*fp)->clone(**cp);
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -2306,7 +2309,7 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
         }
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     refreshPolygonOrientation(useGuiCurve, time);
     if (autoKeying) {
         setKeyframe(time);
@@ -2415,8 +2418,7 @@ Bezier::removeKeyframe(double time)
         copyInternalPointsToGuiPoints();
     }
 
-    invalidateHashCache();
-    getContext()->evaluateChange();
+    invalidateCacheHashAndEvaluate(true, false);
     Q_EMIT keyframeRemoved(time);
 }
 
@@ -2447,7 +2449,7 @@ Bezier::removeAnimation()
         copyInternalPointsToGuiPoints();
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     Q_EMIT animationRemoved();
 }
 
@@ -2503,7 +2505,7 @@ Bezier::moveKeyframe(double oldTime,
         copyInternalPointsToGuiPoints();
     }
 
-    invalidateHashCache();
+    invalidateCacheHashAndEvaluate(true, false);
     Q_EMIT keyframeRemoved(oldTime);
     Q_EMIT keyframeSet(newTime);
 } // Bezier::moveKeyframe
@@ -3688,8 +3690,8 @@ Bezier::appendToHash(double time, ViewIdx view, Hash64* hash)
         (*it)->getRightBezierPointAtTime(false, time, view, &rx, &ry);
         double fx, fy, flx, fly, frx, fry;
         (*fIt)->getPositionAtTime(false, time, view, &fx, &fy);
-        (*it)->getLeftBezierPointAtTime(false, time, view, &flx, &fly);
-        (*it)->getRightBezierPointAtTime(false, time, view, &frx, &fry);
+        (*fIt)->getLeftBezierPointAtTime(false, time, view, &flx, &fly);
+        (*fIt)->getRightBezierPointAtTime(false, time, view, &frx, &fry);
 
         hash->append(x);
         hash->append(y);
