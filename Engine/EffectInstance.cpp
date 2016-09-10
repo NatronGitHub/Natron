@@ -1904,15 +1904,18 @@ EffectInstance::tryConcatenateTransforms(double time,
                 //input is either disabled, or identity or can concatenate a transform too
                 if (inputIsDisabled) {
                     int prefInput;
-                    input = input->getNearestNonDisabled();
-                    prefInput = input ? input->getNode()->getPreferredInput() : -1;
+                    EffectInstancePtr nearestNonDisabled = input->getNearestNonDisabled();
+                    prefInput = input->getNode()->getPreferredInput();
                     if (prefInput == -1) {
                         break;
                     }
 
-                    if (input) {
+                    if (nearestNonDisabled) {
                         im.newInputNbToFetchFrom = prefInput;
                         im.newInputEffect = input;
+                        input = nearestNonDisabled;
+                    } else {
+                        input.reset();
                     }
                 } else if (inputCanTransform) {
                     Transform::Matrix3x3 m;
