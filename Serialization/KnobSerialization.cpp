@@ -454,7 +454,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
                     _values[i]._expression = dimNode["MultiExpr"].as<std::string>();
                     _values[i]._expresionHasReturnVariable = true;
                 } else if (dimNode["Expr"]) {
-                    _values[i]._expression = dimNode["MultiExpr"].as<std::string>();
+                    _values[i]._expression = dimNode["Expr"].as<std::string>();
                 } else {
                     // This is most likely a regular slavr/master link
                     if (dimNode["N"]) {

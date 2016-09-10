@@ -307,7 +307,11 @@ SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization::serialize(Archive & ar,
             _knobs.push_back(k);
         }
     }
-
+    double overlayColor[4];
+    ar & ::boost::serialization::make_nvp("OC.r", overlayColor[0]);
+    ar & ::boost::serialization::make_nvp("OC.g", overlayColor[1]);
+    ar & ::boost::serialization::make_nvp("OC.b", overlayColor[2]);
+    ar & ::boost::serialization::make_nvp("OC.a", overlayColor[3]);
 }
 
 template<class Archive>
