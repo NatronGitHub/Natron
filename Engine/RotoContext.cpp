@@ -2055,7 +2055,11 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
         }
     }
 
+
     NodePtr node = getNode();
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+
+
     //We must create a new merge node
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
 
@@ -2064,7 +2068,7 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
     fixedNamePrefix.append( QLatin1Char('_') );
 
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE,  NodeCollectionPtr() );
+    CreateNodeArgs args( PLUGINID_OFX_MERGE,  rotoPaintEffect );
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
@@ -2093,7 +2097,6 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
     setOperationKnob(mergeNode, blendingOperator);
 
     {
-        RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
         // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
         KnobBoolPtr rotoPaintRGBA[4];
         KnobBoolPtr mergeRGBA[4];

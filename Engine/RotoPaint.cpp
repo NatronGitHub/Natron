@@ -2793,7 +2793,7 @@ RotoPaint::onOverlayPenMotion(double time,
             RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
             if ( _imp->ui->strokeBeingPaint->appendPoint(false, p) ) {
                 _imp->ui->lastMousePos = pos;
-                redrawOverlayInteract();
+                _imp->ui->strokeBeingPaint->evaluate(true, false);
 
                 return true;
             }

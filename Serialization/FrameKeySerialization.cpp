@@ -23,36 +23,45 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 FrameKeySerialization::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
-    em << frame << view << treeHash << gain << gamma << lut << bitdepth << channels;
+    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
+    em << YAML_NAMESPACE::Key << "Frame" << YAML_NAMESPACE::Value << frame;
+    em << YAML_NAMESPACE::Key << "View" << YAML_NAMESPACE::Value << view;
+    em << YAML_NAMESPACE::Key << "Hash" << YAML_NAMESPACE::Value << treeHash;
+    if (bitdepth != kBitDepthSerializationByte) {
+        em << YAML_NAMESPACE::Key << "Depth" << YAML_NAMESPACE::Value << bitdepth;
+    }
+    em << YAML_NAMESPACE::Key << "Rect" << YAML_NAMESPACE::Value;
     textureRect.encode(em);
-    em << mipMapLevel << inputName;
-    layer.encode(em);
-    em << alphaChannelFullName;
-    em << draftMode;
-    em << YAML_NAMESPACE::EndSeq;
+    if (draftMode) {
+        em << YAML_NAMESPACE::Key << "Draft" << YAML_NAMESPACE::Value << draftMode;
+    }
+    if (useShader) {
+        em << YAML_NAMESPACE::Key << "Shaders" << YAML_NAMESPACE::Value << useShader;
+    }
+    em << YAML_NAMESPACE::EndMap;
 }
 
 void
 FrameKeySerialization::decode(const YAML_NAMESPACE::Node& node)
 {
-    if (!node.IsSequence() || node.size() != 14) {
+    if (!node.IsMap()) {
         throw YAML_NAMESPACE::InvalidNode();
     }
-    frame = node[0].as<int>();
-    view = node[1].as<int>();
-    treeHash = node[2].as<unsigned long long>();
-    gain = node[3].as<double>();
-    gamma = node[4].as<double>();
-    lut = node[5].as<int>();
-    bitdepth = node[6].as<int>();
-    channels = node[7].as<int>();
-    textureRect.decode(node[8]);
-    mipMapLevel = node[9].as<unsigned int>();
-    inputName = node[10].as<std::string>();
-    layer.decode(node[11]);
-    alphaChannelFullName = node[12].as<std::string>();
-    draftMode = node[13].as<bool>();
+    frame = node["Frame"].as<int>();
+    view = node["View"].as<int>();
+    treeHash = node["Hash"].as<unsigned long long>();
+    if (node["Depth"]) {
+        bitdepth = node["Depth"].as<std::string>();
+    } else {
+        bitdepth = kBitDepthSerializationByte;
+    }
+    textureRect.decode(node["Rect"]);
+    if (node["Draft"]) {
+        draftMode = node["Draft"].as<bool>();
+    }
+    if (node["Shaders"]) {
+        useShader = node["Shaders"].as<bool>();
+    }
    
 }
 

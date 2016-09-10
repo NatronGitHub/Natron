@@ -1058,6 +1058,12 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
     RotoDrawableItem::appendToHash(time, view, hash);
 }
 
+void
+RotoStrokeItem::invalidateHashCache()
+{
+    RotoDrawableItem::invalidateHashCache();
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

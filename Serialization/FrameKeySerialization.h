@@ -23,6 +23,12 @@
 #include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/TextureRectSerialization.h"
 
+#define kBitDepthSerializationByte "B"
+#define kBitDepthSerializationShort "S"
+#define kBitDepthSerializationHalf "H"
+#define kBitDepthSerializationFloat "F"
+
+
 SERIALIZATION_NAMESPACE_ENTER;
 
 class FrameKeySerialization
@@ -33,19 +39,20 @@ public:
     int frame;
     int view;
     unsigned long long treeHash;
-    double gain, gamma;
-    int lut;
-    int bitdepth;
-    int channels;
+    std::string bitdepth;
     TextureRectSerialization textureRect;
-    unsigned int mipMapLevel;
-    std::string inputName;
-    ImageComponentsSerialization layer;
-    std::string alphaChannelFullName;
     bool draftMode;
+    bool useShader;
 
     FrameKeySerialization()
     : SerializationObjectBase()
+    , frame(0)
+    , view(0)
+    , treeHash(0)
+    , bitdepth()
+    , textureRect()
+    , draftMode(false)
+    , useShader(false)
     {
 
     }

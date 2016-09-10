@@ -143,7 +143,7 @@ RectI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
         return;
     }
     s->x1 = x1;
-    s->y1 = y2;
+    s->y1 = y1;
     s->x2 = x2;
     s->y2 = y2;
 }

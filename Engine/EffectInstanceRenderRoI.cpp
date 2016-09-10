@@ -351,7 +351,6 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
         } // usesBitmap
 
         // During painting, we cannot recompute twice the same rectangles to render
-        assert(!isDuringPaintStroke || (isDuringPaintStroke && (!lastStrokePixelRoD->isNull() || rectsLeftToRender.empty())));
         if ( isDuringPaintStroke && !lastStrokePixelRoD->isNull() && !rectsLeftToRender.empty()) {
             rectsLeftToRender.clear();
             RectI intersection;

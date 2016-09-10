@@ -1286,10 +1286,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
     if (isGrp) {
-        if (!isCreatingPythonGroup()) {
-            // For PyPlugs do it in createNodeFromPythonModule
-            onGroupCreationFinished(node, serialization, args);
-        }
 
         try {
             isGrp->onGroupCreated(serialization);
@@ -1299,6 +1295,11 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             }
             return NodePtr();
         }
+        if (!isCreatingPythonGroup()) {
+            // For PyPlugs do it in createNodeFromPythonModule
+            onGroupCreationFinished(node, serialization, args);
+        }
+
     }
 
     return node;

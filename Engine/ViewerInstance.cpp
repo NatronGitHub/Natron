@@ -56,6 +56,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
 #include "Engine/MemoryFile.h"
+#include "Engine/Hash64.h"
 #include "Engine/Node.h"
 #include "Engine/GroupInput.h"
 #include "Engine/OfxEffectInstance.h"
@@ -891,19 +892,11 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
             FrameKey key(outArgs->params->time,
-                         outArgs->params->frameViewHash,
-                         outArgs->params->gain,
-                         outArgs->params->gamma,
-                         outArgs->params->lut,
-                         (int)outArgs->params->depth,
-                         outArgs->channels,
                          outArgs->params->view,
+                         outArgs->params->frameViewHash,
+                         (int)outArgs->params->depth,
                          it->rect,
-                         mipmapLevel,
-                         inputToRenderName,
-                         outArgs->params->layer,
-                         outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
-                         outArgs->params->depth == eImageBitDepthFloat,
+                         outArgs->params->depth == eImageBitDepthFloat, // use shaders,
                          isDraftMode);
             std::list<FrameEntryPtr> entries;
             bool hasTextureCached = appPTR->getTexture(key, &entries);
@@ -973,6 +966,26 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 } // ViewerInstance::getViewerRoIAndTexture
 
 
+static U64 makeViewerCacheHash(double time, ViewIdx view, const ViewerInstance* viewer)
+{
+    Hash64 hash;
+    U64 viewerProcessHash;
+    bool gotIt = viewer->getRenderHash(time, view, &viewerProcessHash);
+    if (!gotIt) {
+        return 0;
+    }
+    hash.append(viewerProcessHash);
+
+    // Also append the viewer group node hash because it has all knobs settings on it
+    ViewerNodePtr group = viewer->getViewerNodeGroup();
+    assert(group);
+    if (group) {
+        U64 groupHash = group->computeHash(time, view);
+        hash.append(groupHash);
+    }
+    hash.computeHash();
+    return hash.value();
+}
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
@@ -991,8 +1004,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
     bool gotInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->activeInputHash);
     (void)gotInputHash;
-    bool gotViewerHash = getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->params->frameViewHash);
-    (void)gotViewerHash;
+    outArgs->params->frameViewHash = makeViewerCacheHash(outArgs->params->time, outArgs->params->view, this);
 
 
     // When in draft mode first try to get a texture without draft and then try with draft
@@ -1146,9 +1158,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }
 
         // Refresh hash
-        bool gotHash = getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.params->frameViewHash);
-        assert(gotHash);
-        gotHash = inArgs.activeInputToRender->getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.activeInputHash);
+        inArgs.params->frameViewHash = makeViewerCacheHash(inArgs.params->time, inArgs.params->view, this);
+
+        bool gotHash = inArgs.activeInputToRender->getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.activeInputHash);
         assert(gotHash);
         (void)gotHash;
     }
@@ -1533,19 +1545,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
                     FrameKey key(inArgs.params->time,
-                                 updateParams->frameViewHash,
-                                 inArgs.params->gain,
-                                 inArgs.params->gamma,
-                                 inArgs.params->lut,
-                                 (int)inArgs.params->depth,
-                                 inArgs.channels,
                                  inArgs.params->view,
+                                 updateParams->frameViewHash,
+                                 (int)inArgs.params->depth,
                                  it->rect,
-                                 inArgs.params->mipMapLevel,
-                                 inputToRenderName,
-                                 inArgs.params->layer,
-                                 inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
-                                 inArgs.params->depth == eImageBitDepthFloat,
+                                 inArgs.params->depth == eImageBitDepthFloat, // use shaders,
                                  inArgs.draftModeEnabled);
 
 

@@ -1104,9 +1104,9 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
     }
 
     bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-    double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-    double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-    if (autoConnect && !serialization && node_gui_i && (xPosHint == INT_MIN || yPosHint == INT_MIN)) {
+    //double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+    //double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+    if (autoConnect && !serialization && node_gui_i /*&& (xPosHint == INT_MIN || yPosHint == INT_MIN)*/) {
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);

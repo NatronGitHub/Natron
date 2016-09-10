@@ -190,7 +190,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if ( !pluginId.isEmpty() ) {
         fixedNamePrefix.append( QString::fromUtf8("Effect") );
 
-        CreateNodeArgs args( pluginId.toStdString(), NodeCollectionPtr() );
+        CreateNodeArgs args( pluginId.toStdString(), rotoPaintEffect );
         args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
@@ -266,7 +266,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, NodeCollectionPtr() );
+                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect );
                 args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                 args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
@@ -284,7 +284,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
-                CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, NodeCollectionPtr() );
+                CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect );
                 args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                 args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
                 args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
@@ -303,7 +303,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE, NodeCollectionPtr() );
+    CreateNodeArgs args( PLUGINID_OFX_MERGE, rotoPaintEffect );
     args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
@@ -349,7 +349,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         {
             fixedNamePrefix = baseFixedName;
             fixedNamePrefix.append( QString::fromUtf8("Mask") );
-            CreateNodeArgs args( maskPluginID.toStdString(), NodeCollectionPtr() );
+            CreateNodeArgs args( maskPluginID.toStdString(), rotoPaintEffect );
             args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -360,8 +360,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 throw std::runtime_error("Rotopaint requires the plug-in " + maskPluginID.toStdString() + " in order to work");
             }
 
-            // For drawn masks, the hash depend on the draw bezier/stroke, hence we need to add this item as a child of the RotoShapeRenderNode
-            setHashParent(_imp->maskNode->getEffectInstance());
+
             {
                 // For masks set the output components to alpha
                 KnobIPtr knob = _imp->maskNode->getKnobByName(kRotoShapeRenderNodeParamOutputComponents);
@@ -371,6 +370,13 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 typeChoice->setValue(1);
             }
         }
+    }
+
+    // For drawn masks, the hash depend on the draw bezier/stroke, hence we need to add this item as a child of the RotoShapeRenderNode
+    if (_imp->maskNode) {
+        setHashParent(_imp->maskNode->getEffectInstance());
+    } else if (type == eRotoStrokeTypeSolid || type == eRotoStrokeTypeSmear) {
+        setHashParent(_imp->effectNode->getEffectInstance());
     }
 
     KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
@@ -1470,6 +1476,8 @@ void
 RotoDrawableItem::initializeKnobs()
 {
 
+    RotoItem::initializeKnobs();
+    
     KnobHolderPtr thisShared = shared_from_this();
     bool isStroke = dynamic_cast<RotoStrokeItem*>(this);
     

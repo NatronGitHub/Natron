@@ -651,7 +651,7 @@ typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
  * This function throw exceptions upon error.
  **/
 static void
-getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view, FindDependenciesMap& finalNodes, U64* nodeHash)
+getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, int viewerIndex, double time, ViewIdx view, FindDependenciesMap& finalNodes, U64* nodeHash)
 {
     // There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
     // want to recurse upstream for them too
@@ -745,12 +745,20 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
         NodePtr identityNode = node;
         if (identityNode) {
             U64 inputHash;
-            getDependenciesRecursive_internal(identityNode, identityTime, identityView, finalNodes, &inputHash);
+            getDependenciesRecursive_internal(identityNode, treeRoot, viewerIndex, identityTime, identityView, finalNodes, &inputHash);
         }
     } else { // !isIdentity
 
-        // Use getFramesNeeded to know where to recurse
-        framesNeeded = effect->getFramesNeeded_public(0, time, view);
+        // For the viewer add frames needed depending on the input being rendered (this is a special case
+        if (node == treeRoot && node->isEffectViewerInstance()) {
+            FrameRangesMap &frameRange = framesNeeded[viewerIndex] ;
+            std::vector<RangeD>& ranges = frameRange[view];
+            RangeD r = {time, time};
+            ranges.push_back(r);
+        } else {
+            // Use getFramesNeeded to know where to recurse
+            framesNeeded = effect->getFramesNeeded_public(0, time, view);
+        }
         for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
             // No need to use transform redirections to compute the hash
@@ -768,7 +776,7 @@ getDependenciesRecursive_internal(const NodePtr& node, double time, ViewIdx view
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         U64 inputHash;
-                        getDependenciesRecursive_internal(inputEffect->getNode(), f, viewIt->first, finalNodes, &inputHash);
+                        getDependenciesRecursive_internal(inputEffect->getNode(), treeRoot, viewerIndex, f, viewIt->first, finalNodes, &inputHash);
 
                         // Append the input hash
                         if (!isHashCached) {
@@ -1029,7 +1037,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
 
     // Get dependencies node tree where to apply TLS
     FindDependenciesMap dependenciesMap;
-    getDependenciesRecursive_internal(inArgs->treeRoot, inArgs->time, inArgs->view, dependenciesMap, 0);
+    getDependenciesRecursive_internal(inArgs->treeRoot, inArgs->treeRoot, inArgs->textureIndex, inArgs->time, inArgs->view, dependenciesMap, 0);
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
     for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {

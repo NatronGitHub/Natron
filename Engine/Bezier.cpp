@@ -3682,35 +3682,41 @@ Bezier::appendToHash(double time, ViewIdx view, Hash64* hash)
     std::list<BezierCPPtr> fps = getFeatherPoints_mt_safe();
     assert(cps.size() == fps.size() || fps.empty());
 
-    std::list<BezierCPPtr>::const_iterator fIt = fps.begin();
-    for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it!=cps.end(); ++it, ++fIt) {
-        double x, y, lx, ly, rx, ry;
-        (*it)->getPositionAtTime(false, time, view, &x, &y);
-        (*it)->getLeftBezierPointAtTime(false, time, view, &lx, &ly);
-        (*it)->getRightBezierPointAtTime(false, time, view, &rx, &ry);
-        double fx, fy, flx, fly, frx, fry;
-        (*fIt)->getPositionAtTime(false, time, view, &fx, &fy);
-        (*fIt)->getLeftBezierPointAtTime(false, time, view, &flx, &fly);
-        (*fIt)->getRightBezierPointAtTime(false, time, view, &frx, &fry);
+    if (!cps.empty()) {
 
-        hash->append(x);
-        hash->append(y);
-        hash->append(lx);
-        hash->append(ly);
-        hash->append(rx);
-        hash->append(ry);
+        if (!_imp->isOpenBezier) {
+            hash->append(isCurveFinished());
+        }
 
-        // Only add feather if different
-        if (x != fx || y != fy || lx != flx || ly != fly || rx != frx || ry != fry) {
-            hash->append(fx);
-            hash->append(fy);
-            hash->append(flx);
-            hash->append(fly);
-            hash->append(frx);
-            hash->append(fry);
+        std::list<BezierCPPtr>::const_iterator fIt = fps.begin();
+        for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it!=cps.end(); ++it, ++fIt) {
+            double x, y, lx, ly, rx, ry;
+            (*it)->getPositionAtTime(false, time, view, &x, &y);
+            (*it)->getLeftBezierPointAtTime(false, time, view, &lx, &ly);
+            (*it)->getRightBezierPointAtTime(false, time, view, &rx, &ry);
+            double fx, fy, flx, fly, frx, fry;
+            (*fIt)->getPositionAtTime(false, time, view, &fx, &fy);
+            (*fIt)->getLeftBezierPointAtTime(false, time, view, &flx, &fly);
+            (*fIt)->getRightBezierPointAtTime(false, time, view, &frx, &fry);
+
+            hash->append(x);
+            hash->append(y);
+            hash->append(lx);
+            hash->append(ly);
+            hash->append(rx);
+            hash->append(ry);
+
+            // Only add feather if different
+            if (x != fx || y != fy || lx != flx || ly != fly || rx != frx || ry != fry) {
+                hash->append(fx);
+                hash->append(fy);
+                hash->append(flx);
+                hash->append(fly);
+                hash->append(frx);
+                hash->append(fry);
+            }
         }
     }
-
     RotoDrawableItem::appendToHash(time, view, hash);
 }
 

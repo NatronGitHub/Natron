@@ -3541,7 +3541,7 @@ KnobHelper::slaveToInternal(int dimension,
                           _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)), Qt::UniqueConnection );
     }
 
-    bool hasChanged = cloneAndCheckIfChanged(other, dimension);
+    bool hasChanged = cloneAndCheckIfChanged(other, dimension, otherDimension);
 
     //Do not disable buttons when they are slaved
     KnobButton* isBtn = dynamic_cast<KnobButton*>(this);

@@ -48,18 +48,10 @@ public:
     FrameKey();
 
     FrameKey(SequenceTime time,
-             U64 treeVersion,
-             double gain,
-             double gamma,
-             int lut,
-             int bitDepth,
-             int channels,
              ViewIdx view,
+             U64 treeVersion,
+             int bitDepth,
              const TextureRect & textureRect,
-             unsigned int mipMapLevel,
-             const std::string & inputName,
-             const ImageComponents& layer,
-             const std::string& alphaChannelFullName,
              bool useShaders,
              bool draftMode);
 
@@ -82,40 +74,12 @@ public:
         return _treeVersion;
     }
 
-    double getGain() const WARN_UNUSED_RETURN
-    {
-        return _gain;
-    }
-
-    double getGamma() const WARN_UNUSED_RETURN
-    {
-        return _gamma;
-    }
-
-    int getLut() const WARN_UNUSED_RETURN
-    {
-        return _lut;
-    }
-
-    int getChannels() const WARN_UNUSED_RETURN
-    {
-        return _channels;
-    }
-
     int getView() const WARN_UNUSED_RETURN
     {
         return _view;
     }
 
-    unsigned int getMipMapLevel() const
-    {
-        return _mipMapLevel;
-    }
 
-    const std::string & getInputName() const WARN_UNUSED_RETURN
-    {
-        return _inputName;
-    }
 
     const TextureRect& getTexRect() const WARN_UNUSED_RETURN
     {
@@ -129,19 +93,11 @@ public:
 
 private:
     SequenceTime _time; // The frame in the sequence
-    U64 _treeVersion; // The hash of the viewer node
-    double _gain; // The gain on the viewer (if we don't apply it through GLSL shaders)
-    double _gamma;  // The gamma on the viewer (if we don't apply it through GLSL shaders)
-    int _lut;  // The lut on the viewer (if we don't apply it through GLSL shaders)
+    ViewIdx _view; // The view of the frame
+    U64 _treeVersion; // The hash of the viewer process node + viewer node
     int _bitDepth;  // The bitdepth of the texture (i.e: 8bit or 32bit fp)
-    int _channels; // The display channels, as requested by the user. Note that this will make a new cache entry whenever the user
-                   // picks a new value in dropdown on the GUI
-    int /*ViewIdx*/ _view; // The view of the frame, store it locally as an int for easier serialization
+
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
-    unsigned int _mipMapLevel; // The scale of the image from which this texture was made
-    std::string _inputName; // The name of the input node used (to not mix up input 1, 2, 3 etc...)
-    ImageComponents _layer; // The Layer of the image
-    std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A
     bool _useShaders; // Whether GLSL shaders are active or not
     bool _draftMode; // Whether draft mode is enabled or not
 };
