@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
+#include <QtCore/QProcess>
 #include <QtNetwork/QHostInfo>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
@@ -265,6 +266,54 @@ Project::loadProject(const QString & path,
     return true;
 } // loadProject
 
+void
+Project::checkForOlderProjectFile(const QString& filePathIn, QString* filePathOut)
+{
+    *filePathOut = filePathIn;
+
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open( &ifile, filePathIn.toStdString() );
+    if (!ifile) {
+        throw std::runtime_error( tr("Failed to open %1").arg(filePathIn).toStdString() );
+    }
+
+    {
+        // Try to determine if this is a project made with Natron > 2.2 or an older project
+        std::string firstLine;
+        std::getline(ifile, firstLine);
+        if (firstLine.find("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>") != std::string::npos) {
+            // This is an old boost serialization file, convert the project first
+            QString path = appPTR->getApplicationBinaryPath();
+            Global::ensureLastPathSeparator(path);
+            path += QLatin1String("NatronProjectConverter");
+
+            if (!QFile::exists(path)) {
+                throw std::runtime_error( tr("Could not find executable %1").arg(path).toStdString() );
+            }
+
+            QProcess proc;
+
+            QStringList args;
+            args << QLatin1String("-i") << filePathIn ;
+            proc.start(path, args);
+            proc.waitForFinished();
+            if (proc.exitCode() == 0) {
+                // Update filepath to converted file
+                int foundLastDot = filePathIn.lastIndexOf(QLatin1Char('.'));
+                if (foundLastDot != -1) {
+                    filePathOut->clear();
+                    filePathOut->append(filePathIn.mid(0, foundLastDot));
+                    filePathOut->append(QLatin1String("-converted."));
+                    filePathOut->append(QLatin1String(NATRON_PROJECT_FILE_EXT));
+                }
+            } else {
+                QString error = QString::fromUtf8(proc.readAllStandardError().data());
+                throw std::runtime_error(error.toStdString());
+            }
+        }
+    }
+}
+
 bool
 Project::loadProjectInternal(const QString & path,
                              const QString & name,
@@ -279,12 +328,19 @@ Project::loadProjectInternal(const QString & path,
         throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
     }
 
+    if (!isAutoSave) {
+        QString convertedFilePath;
+        checkForOlderProjectFile(filePath, &convertedFilePath);
+        filePath = convertedFilePath;
+    }
+
     bool ret = false;
     FStreamsSupport::ifstream ifile;
     FStreamsSupport::open( &ifile, filePath.toStdString() );
     if (!ifile) {
         throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
     }
+
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
