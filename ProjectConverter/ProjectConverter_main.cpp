@@ -340,18 +340,18 @@ private:
     }
 };
 
-static boost::scoped_ptr<ConverterAppManager> app;
+static boost::scoped_ptr<ConverterAppManager> g_app;
 
 static void initializeAppOnce()
 {
     // Create Natron instance
-    if (app) {
+    if (g_app) {
         return;
     }
-    app.reset(new ConverterAppManager);
+    g_app.reset(new ConverterAppManager);
     int nArgc = 0;
-    app->load(nArgc, 0, CLArgs());
-    assert(app->getTopLevelInstance());
+    g_app->load(nArgc, 0, CLArgs());
+    assert(g_app->getTopLevelInstance());
 
 
 }
@@ -461,13 +461,13 @@ static void tryReadAndConvertOlderWorkspace(std::istream& stream, SERIALIZATION_
 static void tryReadAndConvertOlderProject(const QString& filename, const QString& outFileName)
 {
     initializeAppOnce();
-    AppInstancePtr instance = app->getTopLevelInstance();
+    AppInstancePtr instance = g_app->getTopLevelInstance();
     assert(instance);
     if (!instance) {
         return;
     }
 
-    app->clearFailedNodesLoads();
+    g_app->clearFailedNodesLoads();
 
     AppInstancePtr couldLoadProj = instance->loadProject(filename.toStdString());
     if (couldLoadProj) {
@@ -606,13 +606,26 @@ static bool convertDirectory(const QString& dirPath, bool replaceOriginal, bool 
         }
 
         if (it->endsWith(QLatin1String(".ntp")) || it->endsWith(QLatin1String(".nl"))) {
-            convertFile(absoluteOriginalFilePath, replaceOriginal, data);
+            try {
+                convertFile(absoluteOriginalFilePath, replaceOriginal, data);
+            } catch (const std::exception& e) {
+                std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
+                continue;
+            }
             didSomething = true;
         }
     }
 
     return didSomething;
 } // convertDirectory
+
+static void cleanupApp()
+{
+    if (g_app) {
+        g_app->quitApplication();
+        g_app.reset();
+    }
+} // cleanupApp
 
 static void cleanupCreatedFiles(const ProcessData& data)
 {
@@ -679,12 +692,11 @@ main(int argc, char *argv[])
         }
     } catch (const std::exception& e) {
         cleanupCreatedFiles(convertData);
+        cleanupApp();
         std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
         return 1;
     }
-    
-    app->quitApplication();
-    app.reset();
+    cleanupApp();
     return 0;
 } // main
 
