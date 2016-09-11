@@ -1070,11 +1070,11 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
 
     if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
         if ( (version >= NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS) || (_pluginID == PLUGINID_NATRON_GROUP) ) {
-            ar & ::boost::serialization::make_nvp("PythonModule", _pythonModule);
+            std::string pythonModule;
+            ar & ::boost::serialization::make_nvp("PythonModule", pythonModule);
             if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION) {
-                ar & ::boost::serialization::make_nvp("PythonModuleVersion", _pythonModuleVersion);
-            } else {
-                _pythonModuleVersion = 1;
+                int pythonModuleVersion;
+                ar & ::boost::serialization::make_nvp("PythonModuleVersion", pythonModuleVersion);
             }
         }
     }

@@ -106,13 +106,6 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         em << YAML_NAMESPACE::Key << "CloneMaster" << YAML_NAMESPACE::Value << _masterNodeFullyQualifiedScriptName;
     }
 
-    if (!_pythonModule.empty()) {
-        em << YAML_NAMESPACE::Key << "PyPlug" << YAML_NAMESPACE::Value << _pythonModule;
-        if ((int)_pythonModuleVersion != 1) {
-            em << YAML_NAMESPACE::Key << "PyPlugVersion" << YAML_NAMESPACE::Value << _pythonModuleVersion;
-        }
-    }
-    
     if (!_presetLabel.empty()) {
         em << YAML_NAMESPACE::Key << "Preset" << YAML_NAMESPACE::Value << _presetLabel;
     }
@@ -220,13 +213,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     if (node["CloneMaster"]) {
         _masterNodeFullyQualifiedScriptName = node["CloneMaster"].as<std::string>();
     }
-    if (node["PyPlug"]) {
-        _pythonModule = node["PyPlug"].as<std::string>();
-        if (node["PyPlugVersion"]) {
-            _pythonModuleVersion = node["PyPlugVersion"].as<int>();
-        }
-    }
-
+    
     if (node["Preset"]) {
         _presetLabel = node["Preset"].as<std::string>();
     }

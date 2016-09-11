@@ -1952,6 +1952,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     // Check if pages ordering changed, if not do not serialize
     bool pageOrderChanged = hasPageOrderChangedSinceDefault();
 
+
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
     for (std::size_t i  = 0; i < knobs.size(); ++i) {
@@ -1963,7 +1964,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             if (pageOrderChanged) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
-            if ( knobs[i]->isUserKnob() ) {
+            if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
                 userPages.push_back(knobs[i]);
             }
         }
@@ -1973,7 +1974,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (knobs[i]->isUserKnob()) {
+        if (knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin()) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
         }
@@ -2014,10 +2015,6 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     serialization->_pluginID = getPluginID();
 
     bool subGraphEdited = isSubGraphEditedByUser();
-    if (!subGraphEdited) {
-        serialization->_pythonModule = getPluginPythonModule();
-        serialization->_pythonModuleVersion = getMajorVersion();
-    }
     
     {
         QMutexLocker k(&_imp->nodePresetMutex);
@@ -2170,7 +2167,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
             _imp->createdComponents.push_back(s);
         }
     }
-
+  
     {
         // Load all knobs
 
@@ -2657,12 +2654,19 @@ Node::Implementation::refreshDefaultPagesOrder()
     defaultPagesOrder.clear();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr ispage = toKnobPage(*it);
-        if (ispage) {
+        if (ispage && !ispage->getChildren().empty()) {
             defaultPagesOrder.push_back( ispage->getName() );
         }
     }
 
 }
+
+void
+Node::refreshDefaultPagesOrder()
+{
+    _imp->refreshDefaultPagesOrder();
+}
+
 
 void
 Node::Implementation::refreshDefaultViewerKnobsOrder()
@@ -2674,6 +2678,7 @@ Node::Implementation::refreshDefaultViewerKnobsOrder()
     }
 }
 
+
 std::list<std::string>
 Node::getPagesOrder() const
 {
@@ -2682,7 +2687,7 @@ Node::getPagesOrder() const
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr ispage = toKnobPage(*it);
-        if (ispage) {
+        if (ispage && !ispage->getChildren().empty()) {
             ret.push_back( ispage->getName() );
         }
     }

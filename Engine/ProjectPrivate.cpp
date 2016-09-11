@@ -101,68 +101,6 @@ ProjectPrivate::ProjectPrivate(Project* project)
 }
 
 
-void
-ProjectPrivate::checkForPyPlugNewVersion(const std::string& pythonModuleName,
-                                         bool moduleNameIsScriptPath,
-                                         int savedPythonModuleVersion,
-                                         bool* usingPythonModule,
-                                         std::string* pluginID,
-                                         std::map<std::string, bool>* moduleUpdatesProcessed)
-{
-    
-    *usingPythonModule = false;
-
-    std::string moduleName;
-    if (moduleNameIsScriptPath) {
-        // Before Natron 2.2, we saved the absolute file path of the Python script instead of just the module name
-        QString qPyModulePath = QString::fromUtf8( pythonModuleName.c_str() );
-        QtCompat::removeFileExtension(qPyModulePath);
-        int foundSlash = qPyModulePath.lastIndexOf(QChar::fromAscii('/'));
-        if (foundSlash != -1) {
-            moduleName = qPyModulePath.mid(foundSlash + 1).toStdString();
-        }
-    } else {
-        moduleName = pythonModuleName;
-    }
-
-    std::string pythonPluginID, pluginLabel, iconFilePath, pluginGrouping, description, pluginPath;
-    unsigned int version;
-    bool istoolset;
-
-    if ( !NATRON_PYTHON_NAMESPACE::getGroupInfos(moduleName, &pythonPluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
-        return;
-    }
-
-    if ((int)version != savedPythonModuleVersion && (int)savedPythonModuleVersion != -1) {
-        std::map<std::string, bool>::iterator found = moduleUpdatesProcessed->find(moduleName);
-        if ( found != moduleUpdatesProcessed->end() ) {
-            if (found->second) {
-                *pluginID = pythonPluginID;
-                *usingPythonModule = true;
-            }
-        } else {
-            StandardButtonEnum rep = Dialogs::questionDialog( tr("New PyPlug version").toStdString(),
-                                                             ( tr("Version %1 of PyPlug \"%2\" was found.").arg(version).arg( QString::fromUtf8( moduleName.c_str() ) ).toStdString() + '\n' +
-                                                              tr("You are currently using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
-                                                              tr("Would you like to update your script to use the newer version?").toStdString() ),
-                                                             false,
-                                                             StandardButtons(eStandardButtonYes | eStandardButtonNo) );
-            if (rep == eStandardButtonYes) {
-                *pluginID = pythonPluginID;
-                *usingPythonModule = true;
-            } else {
-                *pluginID = PLUGINID_NATRON_GROUP;
-                *usingPythonModule = false;
-            }
-            moduleUpdatesProcessed->insert( std::make_pair(moduleName, rep == eStandardButtonYes) );
-        }
-    } else {
-        *pluginID = pythonPluginID;
-        *usingPythonModule = true;
-    }
-
-} // checkForPyPlugNewVersion
-
 bool
 Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
                                        const NodeCollectionPtr& group,
@@ -238,35 +176,14 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             }
         } // if ( !(*it)->getMultiInstanceParentName().empty() ) {
 
-        // If the node is a PyPlug, load the PyPlug but if the version loaded by Natron is different ask the user whehter he/she
-        // wants to update the PyPlug, otherwise load it as a group and keep it as it is in the project file
-        const std::string& pythonModuleName = (*it)->_pythonModule;
         NodePtr node;
-        bool usingPythonModule = false;
-        if ( !pythonModuleName.empty() ) {
-            int savedPythonModuleVersion = (*it)->_pythonModuleVersion;
-            bool moduleNameIsScriptPath = FileSystemModel::startsWithDriveName(QString::fromUtf8(pythonModuleName.c_str()), true);
-            ProjectPrivate::checkForPyPlugNewVersion(pythonModuleName, moduleNameIsScriptPath, savedPythonModuleVersion, &usingPythonModule, &pluginID, moduleUpdatesProcessed);
-
-        } // if (!pythonModuleAbsolutePath.empty()) {
-
         if (!createNodes) {
             // We are in the case where we loaded a PyPlug: it probably created all the nodes in the group already but didn't
             // load their serialization
             node = group->getNodeByName( (*it)->_nodeScriptName );
         }
 
-        int majorVersion, minorVersion;
-        if (usingPythonModule) {
-            //We already asked the user whether he/she wanted to load a newer version of the PyPlug, let the loadNode function accept it
-            majorVersion = -1;
-            minorVersion = -1;
-        } else {
-            // For regular C++ plug-ins, we do not have a backup, we forced to let the user use the plug-ins that were anyway loaded with
-            // the application
-            majorVersion = (*it)->_pluginMajorVersion;
-            minorVersion = (*it)->_pluginMinorVersion;
-        }
+        int majorVersion = (*it)->_pluginMajorVersion, minorVersion = (*it)->_pluginMinorVersion;
 
         if (!node) {
             CreateNodeArgs args(pluginID, group);
@@ -291,8 +208,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             mustShowErrorsLog = true;
             continue;
         } else {
-            if ( majorVersion != -1 && !usingPythonModule && node->getPlugin() &&
-                (node->getPlugin()->getMajorVersion() != (int)majorVersion) && ( node->getPluginID() == pluginID) ) {
+            if ( majorVersion != -1 && (node->getMajorVersion() != (int)majorVersion) && ( node->getPluginID() == pluginID) ) {
                 // If the node has a IOContainer don't do this check: when loading older projects that had a
                 // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
                 QString text( tr("WARNING: The node %1 (%2) version %3.%4 "
@@ -318,6 +234,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
         // For group, create children
         const SERIALIZATION_NAMESPACE::NodeSerializationList& children = (*it)->_children;
+        bool usingPythonModule = !node->getPyPlugID().empty();
         if ( !children.empty() && !usingPythonModule) {
             NodeGroupPtr isGrp = node->isEffectNodeGroup();
             if (isGrp) {

@@ -51,8 +51,6 @@ public:
     , _userPages()
     , _pagesIndexes()
     , _children()
-    , _pythonModule()
-    , _pythonModuleVersion(-1)
     , _userComponents()
     , _nodePositionCoords()
     , _nodeSize()
@@ -116,12 +114,6 @@ public:
 
     // If this node is a group or a multi-instance, this is the children
     NodeSerializationList _children;
-
-    // If this node is a PyPlug, this is the Python module name
-    std::string _pythonModule;
-
-    // If this node is a PyPlug, this is the PyPlug version
-    int _pythonModuleVersion;
 
     // This is the user created components on the node
     std::list<ImageComponentsSerialization> _userComponents;

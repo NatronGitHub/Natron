@@ -593,6 +593,22 @@ KnobChoice::cloneExtraData(const KnobIPtr& other,
     _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
 }
 
+bool
+KnobChoice::hasModificationsVirtual(int dimension) const
+{
+    int def_i = getDefaultValue(dimension);
+    std::string defaultVal;
+
+    QMutexLocker k(&_entriesMutex);
+    if (def_i >= 0 && def_i < (int)_mergedEntries.size()) {
+        defaultVal = _mergedEntries[def_i];
+    }
+    if (defaultVal != _currentEntryLabel) {
+        return true;
+    }
+    return false;
+}
+
 #ifdef DEBUG
 #pragma message WARN("When enabling multi-view knobs, make this multi-view too")
 #endif

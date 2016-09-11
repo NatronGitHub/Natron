@@ -433,6 +433,7 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const = 0;
+    virtual void setDeclaredByPlugin(bool b) = 0;
 
     /**
      * @brief Must flag that the knob was dynamically created to warn the gui it should handle it correctly
@@ -1344,6 +1345,7 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
+    virtual void setDeclaredByPlugin(bool b) OVERRIDE FINAL;
     virtual void setAsInstanceSpecific() OVERRIDE FINAL;
     virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDynamicallyCreated() OVERRIDE FINAL;
@@ -2587,6 +2589,8 @@ public:
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
 
 protected:
+
+    void onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob);
 
     //////////////////////////////////////////////////////////////////////////////////////////
 

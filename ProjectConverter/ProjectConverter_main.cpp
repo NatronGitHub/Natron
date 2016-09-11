@@ -247,22 +247,20 @@ private:
                         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
                         NodePtr node = app->createNode(args);
-                        NodeGuiIPtr gui_i = node->getNodeGui();
-                        assert(gui_i);
-                        BackdropGuiPtr bd = toBackdropGui( gui_i );
-                        assert(bd);
-                        if (bd) {
-                            bd->setPos(x, y);
-                            bd->resize(w, h);
+                        assert(node);
+                        if (node) {
+                            node->setPosition(x, y);
+                            node->setSize(w, h);
                             if (labelSerialization && !labelSerialization->_values.empty()) {
-                                bd->onLabelChanged( QString::fromUtf8(labelSerialization->_values[0]._value.isString.c_str()));
+                                KnobStringPtr labelKnob = node->getExtraLabelKnob();
+                                if (labelKnob) {
+                                    labelKnob->setValue(labelSerialization->_values[0]._value.isString);
+                                }
                             }
 
                             float r, g, b;
                             it->getColor(r, g, b);
-                            QColor c;
-                            c.setRgbF(r, g, b);
-                            bd->setCurrentColor(c);
+                            node->setColor(r, g, b);
                             node->setLabel( it->getFullySpecifiedName() );
                         }
                     }
@@ -412,8 +410,12 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
     if (!instance) {
         return;
     }
-    instance->loadProject(filename.toStdString());
-    instance->saveTemp(outFileName.toStdString());
+    AppInstancePtr couldLoadProj = instance->loadProject(filename.toStdString());
+    if (couldLoadProj) {
+        instance->saveTemp(outFileName.toStdString());
+    } else {
+        throw std::invalid_argument("Could not load project.");
+    }
 
 
 } // tryReadAndConvertOlderProject
@@ -474,39 +476,90 @@ static void convertFile(const QString& filename, const QString& outputFileName)
 
 } // convertFile
 
-static void convertDirectory(const QString& dirPath, const QString& outputDirPath, bool recurse, unsigned int recursionLevel)
+static bool convertDirectory(const QString& dirPath, const QString& outputDirPath, bool recurse, unsigned int recursionLevel)
 {
-    QDir d(dirPath);
-    if (!d.exists()) {
+    QDir originalDir(dirPath);
+    if (!originalDir.exists()) {
         QString message = QString::fromUtf8("%1: No such file or directory").arg(dirPath);
         throw std::invalid_argument(message.toStdString());
     }
+    QStringList originalFiles = originalDir.entryList(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot);
+
+    QString originalDirAbsolutePath = originalDir.absolutePath();
 
     QString newDirPath = outputDirPath;
+
+    bool createdDir = false;
     if (outputDirPath.isEmpty()) {
         newDirPath = dirPath;
         if (recursionLevel == 0) {
+            // Create new dir
             newDirPath += QLatin1String("_converted");
+            originalDir.cdUp();
+            QString dirBaseName;
+            int foundSlash = dirPath.lastIndexOf(QLatin1Char('/'));
+            if (foundSlash != -1) {
+                dirBaseName = dirPath.mid(foundSlash + 1);
+            }
+            dirBaseName += QLatin1String("_converted");
+            if (originalDir.exists(dirBaseName)) {
+                originalDir.rmdir(dirBaseName);
+            }
+            originalDir.mkdir(dirBaseName);
+            createdDir = true;
+            bool ok = originalDir.cd(dirBaseName);
+            assert(ok);
+            (void)ok;
+
+        }
+    } else {
+        QDir newDir(newDirPath);
+        QStringList newDirFiles = newDir.entryList(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot);
+        if (newDir.exists()) {
+            if (!newDirFiles.isEmpty()) {
+                throw std::invalid_argument(QString::fromUtf8("%1 exists and is not empty").arg(newDirPath).toStdString());
+            }
+        } else {
+            createdDir = true;
+            QDir().mkpath(newDirPath);
         }
     }
-
-    QStringList files = d.entryList(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot);
-    for (QStringList::const_iterator it = files.begin(); it!=files.end(); ++it) {
-
-        QString absoluteFilePath = d.absolutePath() + QLatin1Char('/') + *it;
-        QDir subDir(absoluteFilePath);
+    bool didSomething = false;
+    for (QStringList::const_iterator it = originalFiles.begin(); it!=originalFiles.end(); ++it) {
+        QString childPath = newDirPath + QLatin1Char('/') + *it;
+        QString absoluteOriginalFilePath = originalDirAbsolutePath + QLatin1Char('/') + *it;
+        QDir subDir(absoluteOriginalFilePath);
         if (subDir.exists()) {
             if (recurse) {
-                QString childPath = newDirPath + QLatin1Char('/') + *it;
-                convertDirectory(absoluteFilePath, childPath, recurse, recursionLevel + 1);
+                didSomething |= convertDirectory(absoluteOriginalFilePath, childPath, recurse, recursionLevel + 1);
             }
             continue;
         }
 
         if (it->endsWith(QLatin1String(".ntp")) || it->endsWith(QLatin1String(".nl"))) {
-            convertFile(absoluteFilePath, QString());
+            try {
+                convertFile(absoluteOriginalFilePath, childPath);
+                didSomething = true;
+            } catch (...) {
+                /*if (createdDir) {
+                    QDir().rmdir(newDirPath);
+                }*/
+                if (QFile::exists(childPath)) {
+                    QFile::remove(childPath);
+                }
+
+                // Copy the actual file
+                QFile::copy(absoluteOriginalFilePath, childPath);
+
+            }
+        } else {
+            QFile::copy(absoluteOriginalFilePath, childPath);
         }
     }
+    /*if (!didSomething) {
+        QDir().rmdir(newDirPath);
+    }*/
+    return didSomething;
 } // convertDirectory
 
 int
@@ -534,7 +587,12 @@ main(int argc,
     QDir d(inputPath);
     if (d.exists()) {
         // This is a directory
-        convertDirectory(inputPath, outputPath, recurse, 0);
+        try {
+            convertDirectory(inputPath, outputPath, recurse, 0);
+        } catch (const std::exception& e) {
+            std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
+            return 1;
+        }
     } else {
         if (!QFile::exists(inputPath)) {
             std::cerr << QString::fromUtf8("%1: No such file or directory").arg(inputPath).toStdString() << std::endl;
@@ -543,6 +601,9 @@ main(int argc,
         try {
             convertFile(inputPath, outputPath);
         } catch (const std::exception& e) {
+            if (QFile::exists(outputPath)) {
+                QFile::remove(outputPath);
+            }
             std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
             return 1;
         }

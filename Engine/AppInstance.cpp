@@ -952,6 +952,10 @@ AppInstance::createNodeFromPythonModule(const PluginPtr& plugin,
         if (serialization) {
             containerNode->fromSerialization(*serialization);
         }
+
+        // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
+        containerNode->refreshDefaultPagesOrder();
+
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
 
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
@@ -975,7 +979,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
         QtCompat::removeFileExtension(str);
         int foundLastSlash = str.lastIndexOf( QChar::fromLatin1('/') );
         if (foundLastSlash != -1) {
-            pythonModuleName = str.mid(0, foundLastSlash).toStdString();
+            pythonModuleName = str.mid(foundLastSlash + 1).toStdString();
         }
     }
 

@@ -732,6 +732,8 @@ Q_SIGNALS:
 
 private:
 
+    virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
+
     virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,

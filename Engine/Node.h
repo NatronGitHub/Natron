@@ -177,6 +177,8 @@ private:
 
 public:
 
+    void refreshDefaultPagesOrder();
+
     /**
      * @brief Setup the node state according to the presets file.
      * This function throws exception in case of error.

@@ -2836,8 +2836,12 @@ NodeGui::refreshNodeText()
             } else {
                 _presetIcon->setVisible(true);
                 _presetIcon->setPixmap(pix);
+                presetsIconSet = true;
             }
-            subLabelContent.clear();
+        }
+        if (!presetsIconSet) {
+            subLabelContent.prepend(QLatin1String("("));
+            subLabelContent.append(QLatin1String(")"));
         }
     } else {
 

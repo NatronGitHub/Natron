@@ -121,13 +121,6 @@ public:
 
     ProjectPrivate(Project* project);
 
-    static void checkForPyPlugNewVersion(const std::string& pythonModuleName,
-                                  bool moduleNameIsScriptPath,
-                                 int savedPythonModuleVersion,
-                                  bool* usingPythonModule,
-                                  std::string* pluginID,
-                                  std::map<std::string, bool>* moduleUpdatesProcessed);
-
         
     bool findFormat(int index, Format* format) const;
     bool findFormat(const std::string& formatSpec, Format* format) const;

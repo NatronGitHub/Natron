@@ -4280,6 +4280,9 @@ ViewerNode::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
 unsigned int
 ViewerNode::getProxyModeKnobMipMapLevel() const
 {
+    if (!_imp->toggleProxyModeButtonKnob.lock()->getValue()) {
+        return 0;
+    }
     int index =  _imp->proxyChoiceKnob.lock()->getValue();
     return index + 1;
 }

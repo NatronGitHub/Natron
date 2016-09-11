@@ -913,7 +913,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     refreshAdvancedColsVisibility();
     QItemSelectionModel* selModel = _imp->view->selectionModel();
-    QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
+    QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onKnobsTreeSelectionChanged(QItemSelection,QItemSelection)) );
     _imp->mainLayout->addWidget(_imp->view);
 }
 
