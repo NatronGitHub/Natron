@@ -549,6 +549,7 @@ Project::saveProjectInternal(const QString & path,
         try {
             SERIALIZATION_NAMESPACE::ProjectSerialization projectSerializationObj;
             toSerialization(&projectSerializationObj);
+            appPTR->aboutToSaveProject(&projectSerializationObj);
             SERIALIZATION_NAMESPACE::write(ofile, projectSerializationObj);
         } catch (...) {
             if (!autoSave && updateProjectProperties) {

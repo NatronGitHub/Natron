@@ -132,7 +132,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
     std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > createdNodes;
     for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-        std::string pluginID = (*it)->_pluginID;
         /*if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER_GROUP) || (pluginID == "Viewer") ) ) {
             // If the node is a viewer, don't try to load it in background mode
             continue;
@@ -159,7 +158,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    CreateNodeArgs args(pluginID, group);
+                    CreateNodeArgs args((*it)->_pluginID, group);
                     args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
                     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -183,45 +182,33 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             node = group->getNodeByName( (*it)->_nodeScriptName );
         }
 
-        int majorVersion = (*it)->_pluginMajorVersion, minorVersion = (*it)->_pluginMinorVersion;
-
         if (!node) {
-            CreateNodeArgs args(pluginID, group);
-            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
-            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
-            args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, *it);
-            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
-            if (!(*it)->_multiInstanceParentName.empty()) {
-                args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->_multiInstanceParentName);
-            }
-            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-            node = group->getApplication()->createNode(args);
+            node = appPTR->createNodeForProjectLoading(*it, group);
         }
+
         if (!node) {
             QString text( tr("ERROR: The node %1 version %2.%3"
                              " was found in the script but does not"
                              " exist in the loaded plug-ins.")
-                         .arg( QString::fromUtf8( pluginID.c_str() ) )
-                         .arg(majorVersion).arg(minorVersion) );
+                         .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                         .arg((*it)->_pluginMajorVersion).arg((*it)->_pluginMinorVersion) );
             appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
             mustShowErrorsLog = true;
             continue;
         } else {
-            if ( majorVersion != -1 && (node->getMajorVersion() != (int)majorVersion) && ( node->getPluginID() == pluginID) ) {
+            if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) && ( node->getPluginID() == (*it)->_pluginID) ) {
                 // If the node has a IOContainer don't do this check: when loading older projects that had a
                 // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
                 QString text( tr("WARNING: The node %1 (%2) version %3.%4 "
                                  "was found in the script but was loaded "
                                  "with version %5.%6 instead.")
                              .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
-                             .arg( QString::fromUtf8( pluginID.c_str() ) )
-                             .arg(majorVersion)
-                             .arg(minorVersion)
+                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                             .arg((*it)->_pluginMajorVersion)
+                             .arg((*it)->_pluginMinorVersion)
                              .arg( node->getPlugin()->getMajorVersion() )
                              .arg( node->getPlugin()->getMinorVersion() ) );
                 appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
-                mustShowErrorsLog = true;
             }
         }
         if (!createNodes && node) {

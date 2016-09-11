@@ -602,6 +602,10 @@ public:
     std::string getReaderPluginIDForFileType(const std::string & extension) const;
     std::string getWriterPluginIDForFileType(const std::string & extension) const;
 
+    virtual NodePtr createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group);
+
+    virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* /*serialization*/) {}
+
 public Q_SLOTS:
 
     void exitAppWithSaveWarning()

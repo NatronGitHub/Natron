@@ -79,6 +79,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
@@ -2107,6 +2108,22 @@ AppManager::createOFXEffect(const NodePtr& node,
                             const CreateNodeArgs& args) const
 {
     return _imp->ofxHost->createOfxEffect(node, args);
+}
+
+NodePtr
+AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group)
+{
+    CreateNodeArgs args(serialization->_pluginID, group);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
+    args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    if (!serialization->_multiInstanceParentName.empty()) {
+        args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, serialization->_multiInstanceParentName);
+    }
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+    return group->getApplication()->createNode(args);
 }
 
 void

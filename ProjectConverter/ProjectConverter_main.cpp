@@ -27,8 +27,7 @@
 #include <QDir>
 #include <QFile>
 
-
-#include <QColor>
+#include <QDateTime>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -37,6 +36,7 @@
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/FStreamsSupport.h"
+#include "Engine/StandardPaths.h"
 
 #include "Gui/BackdropGui.h"
 
@@ -199,15 +199,77 @@ convertToProjectSerialization(const SERIALIZATION_NAMESPACE::ProjectGuiSerializa
     
 } // convertToProjectSerialization
 
+static SERIALIZATION_NAMESPACE::NodeSerializationPtr foundSerializationRecursive(const std::string& scriptName, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes)
+{
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        if ((*it)->_nodeScriptName == scriptName) {
+            return *it;
+        }
+        if (!(*it)->_children.empty()) {
+            SERIALIZATION_NAMESPACE::NodeSerializationPtr found = foundSerializationRecursive(scriptName, (*it)->_children);
+            if (found) {
+                return found;
+            }
+        }
+
+    }
+    return SERIALIZATION_NAMESPACE::NodeSerializationPtr();
+}
+
 
 class ConverterAppManager : public AppManager
 {
+    SERIALIZATION_NAMESPACE::NodeSerializationList failedNodes;
 public:
 
     ConverterAppManager()
     : AppManager()
     {
 
+    }
+
+    const SERIALIZATION_NAMESPACE::NodeSerializationList& getFailedNodesLoads() const
+    {
+        return failedNodes;
+    }
+
+    void clearFailedNodesLoads()
+    {
+        failedNodes.clear();
+    }
+
+    virtual NodePtr createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group) OVERRIDE FINAL
+    {
+        NodePtr ret = AppManager::createNodeForProjectLoading(serialization, group);
+        if (!ret) {
+            failedNodes.push_back(serialization);
+        }
+        return ret;
+    }
+
+    virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* serialization) OVERRIDE FINAL
+    {
+        // Add all nodes that could not be loaded (probably because the plug-in could not be found)
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::iterator it = failedNodes.begin(); it!=failedNodes.end(); ++it) {
+            if ((*it)->_groupFullyQualifiedScriptName.empty()) {
+                serialization->_nodes.push_back(*it);
+            } else {
+                std::string groupScriptName;
+                {
+                    std::size_t foundDot = (*it)->_groupFullyQualifiedScriptName.find_last_of(".");
+                    if (foundDot != std::string::npos) {
+                        // This is a group in another group
+                        groupScriptName = (*it)->_groupFullyQualifiedScriptName.substr(foundDot + 1);
+                    } else {
+                        groupScriptName = (*it)->_groupFullyQualifiedScriptName;
+                    }
+                }
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr foundGroup = foundSerializationRecursive(groupScriptName, serialization->_nodes);
+                if (foundGroup) {
+                    foundGroup->_children.push_back(*it);
+                }
+            }
+        }
     }
 
 private:
@@ -305,15 +367,15 @@ printUsage(const std::string& programName)
                               "made with Natron version 2.1.3 and older to the new project format used in 2.2\n\n"
                               "Program options:\n\n"
                               "-i <filename>: Converts a .ntp (Project) or .nl (Workspace) file to\n"
-                              "               a newer version. Upon failure an error message will be printed.\n"
-                              "               In output, if the -o option is not passed, the converted\n"
-                              "               file will have the same name as the input file with the\n"
-                              "               \"converted\" extension before the file extension.\n\n"
+                              "               a newer version. Upon failure an error message will be printed.\n\n"
                               "-i <dir name>: Converts all .ntp files under the given directory.\n\n"
-                              "-r: If the path given to -i is a directory, recursively convert all recognized\n"
-                              "    files in each sub-directory.\n\n"
-                              "-o <filename/dirname>: Optional: If set this will instead output the\n"
-                              "                       converted file or directory to this name instead.").arg(QString::fromUtf8(programName.c_str()));
+                              "-r: Optional: If the path given to -i is a directory, recursively convert all\n"
+                              "              recognized files in each sub-directory.\n\n"
+                              "-o: Optional: If set the original file(s) will be replaced by the converted file(s).\n"
+                              "              The original file(s) will be renamed with the .bak extension.\n"
+                              "              If not set the converted file(s) will have the same name as \n"
+                              "              the input file with the \"-converted\" suffix before the file\n"
+                              "              extension.").arg(QString::fromUtf8(programName.c_str()));
     std::cout << msg.toStdString() << std::endl;
 } // printUsage
 
@@ -327,8 +389,10 @@ static QStringList::iterator hasToken(QStringList &localArgs, const QString& tok
     return localArgs.end();
 } // hasToken
 
-static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* outputPath, bool* recurse)
+static void parseArgs(const QStringList& appArgs, QString* inputPath, bool* replaceOriginal, bool* recurse)
 {
+    *recurse = false;
+    *replaceOriginal = false;
     QStringList localArgs = appArgs;
     {
         QStringList::iterator foundInput = hasToken(localArgs, QLatin1String("-i"));
@@ -347,13 +411,7 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* o
     {
         QStringList::iterator foundInput = hasToken(localArgs, QLatin1String("-o"));
         if (foundInput != localArgs.end()) {
-            ++foundInput;
-            if ( foundInput != localArgs.end() ) {
-                *outputPath = *foundInput;
-                localArgs.erase(foundInput);
-            } else {
-                throw std::invalid_argument(QString::fromUtf8("-o switch without a file/directory name").toStdString());
-            }
+            *replaceOriginal = true;
         }
 
     }
@@ -361,9 +419,7 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* o
     {
         QStringList::iterator foundInput = hasToken(localArgs, QLatin1String("-r"));
         if (foundInput != localArgs.end()) {
-            if ( foundInput != localArgs.end() ) {
-                *recurse = true;
-            }
+            *recurse = true;
         }
 
     }
@@ -410,6 +466,9 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
     if (!instance) {
         return;
     }
+
+    app->clearFailedNodesLoads();
+
     AppInstancePtr couldLoadProj = instance->loadProject(filename.toStdString());
     if (couldLoadProj) {
         instance->saveTemp(outFileName.toStdString());
@@ -420,8 +479,21 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
 
 } // tryReadAndConvertOlderProject
 
-static void convertFile(const QString& filename, const QString& outputFileName)
+struct ProcessData
 {
+    std::list<std::string> bakFiles;
+    std::list<std::string> convertedFiles;
+};
+
+
+static void convertFile(const QString& filename, bool replaceOriginal, ProcessData* data)
+{
+
+    if (!QFile::exists(filename)) {
+        QString message = QString::fromUtf8("%1: No such file or directory").arg(filename);
+        throw std::invalid_argument(message.toStdString());
+    }
+
     bool isProjectFile = filename.endsWith(QLatin1String(".ntp"));
     bool isWorkspaceFile = filename.endsWith(QLatin1String(".nl"));
 
@@ -430,16 +502,31 @@ static void convertFile(const QString& filename, const QString& outputFileName)
         throw std::invalid_argument(message.toStdString());
     }
 
-    QString outFileName = outputFileName;
-    if (outFileName.isEmpty()) {
+
+    QString outFileName;
+
+    if (replaceOriginal) {
+        // To replace the original, first we save to a temporary file then we save onto the original file
+        QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
+        Global::ensureLastPathSeparator(tmpFilename);
+        tmpFilename.append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
+        outFileName = tmpFilename;
+    } else {
         int foundDot = filename.lastIndexOf(QLatin1Char('.'));
+        assert(foundDot != -1);
         if (foundDot != -1) {
             outFileName = filename.mid(0, foundDot);
             outFileName += QLatin1String("-converted.");
             outFileName += filename.mid(foundDot + 1);
         }
-    }
 
+        // Remove any existing file with the same name
+        if (QFile::exists(outFileName)) {
+            QFile::remove(outFileName);
+        }
+    }
+    
+    
     if (isProjectFile) {
         tryReadAndConvertOlderProject(filename, outFileName);
     } else if (isWorkspaceFile) {
@@ -470,13 +557,30 @@ static void convertFile(const QString& filename, const QString& outputFileName)
             SERIALIZATION_NAMESPACE::write(ofile, *workspace);
 
         }
-
     }
 
+    if (!replaceOriginal) {
+        data->convertedFiles.push_back(outFileName.toStdString());
+    } else {
+        // Copy the original file to a backup
+        QString backupFileName = filename;
+        backupFileName += QLatin1String(".bak");
+        if (QFile::exists(backupFileName)) {
+            QFile::remove(backupFileName);
+        }
+        QFile::copy(filename, backupFileName);
+
+        data->bakFiles.push_back(backupFileName.toStdString());
+
+        // Copy the output file onto the original file
+        QFile::remove(filename);
+        QFile::copy(outFileName, filename);
+        QFile::remove(outFileName);
+    }
 
 } // convertFile
 
-static bool convertDirectory(const QString& dirPath, const QString& outputDirPath, bool recurse, unsigned int recursionLevel)
+static bool convertDirectory(const QString& dirPath, bool replaceOriginal, bool recurse, unsigned int recursionLevel, ProcessData* data)
 {
     QDir originalDir(dirPath);
     if (!originalDir.exists()) {
@@ -484,87 +588,62 @@ static bool convertDirectory(const QString& dirPath, const QString& outputDirPat
         throw std::invalid_argument(message.toStdString());
     }
     QStringList originalFiles = originalDir.entryList(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot);
-
     QString originalDirAbsolutePath = originalDir.absolutePath();
 
-    QString newDirPath = outputDirPath;
-
-    bool createdDir = false;
-    if (outputDirPath.isEmpty()) {
-        newDirPath = dirPath;
-        if (recursionLevel == 0) {
-            // Create new dir
-            newDirPath += QLatin1String("_converted");
-            originalDir.cdUp();
-            QString dirBaseName;
-            int foundSlash = dirPath.lastIndexOf(QLatin1Char('/'));
-            if (foundSlash != -1) {
-                dirBaseName = dirPath.mid(foundSlash + 1);
-            }
-            dirBaseName += QLatin1String("_converted");
-            if (originalDir.exists(dirBaseName)) {
-                originalDir.rmdir(dirBaseName);
-            }
-            originalDir.mkdir(dirBaseName);
-            createdDir = true;
-            bool ok = originalDir.cd(dirBaseName);
-            assert(ok);
-            (void)ok;
-
-        }
-    } else {
-        QDir newDir(newDirPath);
-        QStringList newDirFiles = newDir.entryList(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot);
-        if (newDir.exists()) {
-            if (!newDirFiles.isEmpty()) {
-                throw std::invalid_argument(QString::fromUtf8("%1 exists and is not empty").arg(newDirPath).toStdString());
-            }
-        } else {
-            createdDir = true;
-            QDir().mkpath(newDirPath);
-        }
-    }
     bool didSomething = false;
     for (QStringList::const_iterator it = originalFiles.begin(); it!=originalFiles.end(); ++it) {
-        QString childPath = newDirPath + QLatin1Char('/') + *it;
         QString absoluteOriginalFilePath = originalDirAbsolutePath + QLatin1Char('/') + *it;
-        QDir subDir(absoluteOriginalFilePath);
-        if (subDir.exists()) {
-            if (recurse) {
-                didSomething |= convertDirectory(absoluteOriginalFilePath, childPath, recurse, recursionLevel + 1);
+
+        // Check for sub-directory
+        {
+            QDir subDir(absoluteOriginalFilePath);
+            if (subDir.exists()) {
+                if (recurse) {
+                    didSomething |= convertDirectory(absoluteOriginalFilePath, replaceOriginal, recurse, recursionLevel + 1, data);
+                }
+                continue;
             }
-            continue;
         }
 
         if (it->endsWith(QLatin1String(".ntp")) || it->endsWith(QLatin1String(".nl"))) {
-            try {
-                convertFile(absoluteOriginalFilePath, childPath);
-                didSomething = true;
-            } catch (...) {
-                /*if (createdDir) {
-                    QDir().rmdir(newDirPath);
-                }*/
-                if (QFile::exists(childPath)) {
-                    QFile::remove(childPath);
-                }
-
-                // Copy the actual file
-                QFile::copy(absoluteOriginalFilePath, childPath);
-
-            }
-        } else {
-            QFile::copy(absoluteOriginalFilePath, childPath);
+            convertFile(absoluteOriginalFilePath, replaceOriginal, data);
+            didSomething = true;
         }
     }
-    /*if (!didSomething) {
-        QDir().rmdir(newDirPath);
-    }*/
+
     return didSomething;
 } // convertDirectory
 
+static void cleanupCreatedFiles(const ProcessData& data)
+{
+    for (std::list<std::string>::const_iterator it = data.bakFiles.begin(); it!= data.bakFiles.end(); ++it) {
+        QString filename(QString::fromUtf8(it->c_str()));
+        if (!QFile::exists(filename)) {
+            continue;
+        }
+        QString nonBakFilename = filename;
+        assert(filename.endsWith(QLatin1String(".bak")));
+        nonBakFilename.remove(nonBakFilename.size() - 4, 4);
+
+        // Remove the created file
+        if (QFile::exists(nonBakFilename)) {
+            QFile::remove(nonBakFilename);
+        }
+        QFile::copy(filename, nonBakFilename);
+        QFile::remove(filename);
+    }
+
+    for (std::list<std::string>::const_iterator it = data.convertedFiles.begin(); it!= data.convertedFiles.end(); ++it) {
+        QString filename(QString::fromUtf8(it->c_str()));
+        if (!QFile::exists(filename)) {
+            continue;
+        }
+        QFile::remove(filename);
+    }
+} // cleanupCreatedFiles
+
 int
-main(int argc,
-     char *argv[])
+main(int argc, char *argv[])
 {
     //QCoreApplication app(argc,argv);
     QStringList arguments;
@@ -573,41 +652,37 @@ main(int argc,
     }
 
     // Parse app args
-    QString inputPath, outputPath;
-    bool recurse;
+    QString inputPath;
+    bool recurse, replaceOriginal;
     try {
-        parseArgs(arguments, & inputPath, &outputPath, &recurse);
+        parseArgs(arguments, & inputPath, &replaceOriginal, &recurse);
     } catch (const std::exception &e) {
         std::cerr << QString::fromUtf8("Error while parsing command line arguments: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
         printUsage(argv[0]);
         return 1;
     }
 
-
-    QDir d(inputPath);
-    if (d.exists()) {
-        // This is a directory
-        try {
-            convertDirectory(inputPath, outputPath, recurse, 0);
-        } catch (const std::exception& e) {
-            std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
-            return 1;
-        }
-    } else {
-        if (!QFile::exists(inputPath)) {
-            std::cerr << QString::fromUtf8("%1: No such file or directory").arg(inputPath).toStdString() << std::endl;
-            return 1;
-        }
-        try {
-            convertFile(inputPath, outputPath);
-        } catch (const std::exception& e) {
-            if (QFile::exists(outputPath)) {
-                QFile::remove(outputPath);
-            }
-            std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
-            return 1;
-        }
+    bool isDir;
+    {
+        QDir d(inputPath);
+        isDir = d.exists();
     }
+
+    ProcessData convertData;
+
+    try {
+
+        if (isDir) {
+            convertDirectory(inputPath, replaceOriginal, recurse, 0, &convertData);
+        } else {
+            convertFile(inputPath, replaceOriginal, &convertData);
+        }
+    } catch (const std::exception& e) {
+        cleanupCreatedFiles(convertData);
+        std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
+        return 1;
+    }
+    
     app->quitApplication();
     app.reset();
     return 0;
