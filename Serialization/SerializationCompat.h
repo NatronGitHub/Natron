@@ -1044,7 +1044,21 @@ SERIALIZATION_NAMESPACE::GroupKnobSerialization::serialize(Archive & ar, const u
     }
 }
 
-
+static void addUserKnobToRegularKnobsRecursive(const SERIALIZATION_NAMESPACE::GroupKnobSerialization& k, SERIALIZATION_NAMESPACE::NodeSerialization* node)
+{
+    for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = k._children.begin(); it!=k._children.end(); ++it) {
+        SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroup = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(it->get());
+        if (isGroup) {
+            addUserKnobToRegularKnobsRecursive(*isGroup, node);
+        } else {
+            SERIALIZATION_NAMESPACE::KnobSerializationPtr isKnob = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::KnobSerialization>(*it);
+            assert(isKnob);
+            if (isKnob) {
+                node->_knobsValues.push_back(isKnob);
+            }
+        }
+    }
+}
 
 template<class Archive>
 void
@@ -1068,9 +1082,9 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
     }
     ar & ::boost::serialization::make_nvp("Plugin_id", _pluginID);
 
+    std::string pythonModule;
     if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
         if ( (version >= NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS) || (_pluginID == PLUGINID_NATRON_GROUP) ) {
-            std::string pythonModule;
             ar & ::boost::serialization::make_nvp("PythonModule", pythonModule);
             if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION) {
                 int pythonModuleVersion;
@@ -1141,7 +1155,13 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         for (int i = 0; i < userPagesCount; ++i) {
             boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization() );
             ar & ::boost::serialization::make_nvp("item", *s);
-            _userPages.push_back(s);
+            if (pythonModule.empty()) {
+                // Only remember user pages for NON python modules. Before Natron 2.2 we used to serialize knobs declared by
+                // the Python script as user knobs. This is no longer the case, so just deserialize them as regular knobs
+                _userPages.push_back(s);
+            } else {
+                addUserKnobToRegularKnobsRecursive(*s, this);
+            }
         }
         if (version >= NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX) {
             int count;
