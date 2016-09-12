@@ -272,7 +272,7 @@ AppManager::loadProjectFromFileFunction(std::istream& ifile, const AppInstancePt
     SERIALIZATION_NAMESPACE::read(ifile, obj);
 }
 
-void
+bool
 AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut)
 {
     *filePathOut = filePathIn;
@@ -299,27 +299,35 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
 
             app->updateProjectLoadStatus(tr("Converting project to newer format"));
 
+            QString baseNameIn;
+            {
+                int foundLastDot = filePathIn.lastIndexOf(QLatin1Char('/'));
+                if (foundLastDot != -1) {
+                    baseNameIn = filePathIn.mid(foundLastDot + 1);
+                }
+            }
+
+            filePathOut->clear();
+            filePathOut->append(StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp));
+            Global::ensureLastPathSeparator(*filePathOut);
+            filePathOut->append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
+            filePathOut->append(baseNameIn);
+
             QProcess proc;
 
             QStringList args;
-            args << QLatin1String("-i") << filePathIn ;
+            args << QLatin1String("-i") << filePathIn << QLatin1String("-o") << *filePathOut;
             proc.start(path, args);
             proc.waitForFinished();
             if (proc.exitCode() == 0) {
-                // Update filepath to converted file
-                int foundLastDot = filePathIn.lastIndexOf(QLatin1Char('.'));
-                if (foundLastDot != -1) {
-                    filePathOut->clear();
-                    filePathOut->append(filePathIn.mid(0, foundLastDot));
-                    filePathOut->append(QLatin1String("-converted."));
-                    filePathOut->append(QLatin1String(NATRON_PROJECT_FILE_EXT));
-                }
+                return true;
             } else {
                 QString error = QString::fromUtf8(proc.readAllStandardError().data());
                 throw std::runtime_error(error.toStdString());
             }
         }
     }
+    return false;
 }
 
 bool

@@ -693,7 +693,7 @@ protected:
      * @brief Check if the project is an older project made prior Natron 2.2.
      * If this is an older project, it converts the file to a new file.
      **/
-    virtual void checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut);
+    virtual bool checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut);
 
 private:
 

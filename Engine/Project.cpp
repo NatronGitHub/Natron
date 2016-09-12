@@ -286,17 +286,8 @@ Project::loadProjectInternal(const QString & pathIn,
 
 
     QString filePathOut;
-    appPTR->checkForOlderProjectFile(getApp(), filePathIn, &filePathOut);
+    bool hasConverted = appPTR->checkForOlderProjectFile(getApp(), filePathIn, &filePathOut);
 
-    QString pathOut, nameOut;
-    {
-        // If the file was converted, get the name from there
-        int lastSlash = filePathOut.lastIndexOf(QLatin1Char('/'));
-        if (lastSlash != -1) {
-            pathOut = filePathOut.mid(0, lastSlash + 1);
-            nameOut = filePathOut.mid(lastSlash + 1);
-        }
-    }
 
     bool ret = false;
     FStreamsSupport::ifstream ifile;
@@ -335,7 +326,7 @@ Project::loadProjectInternal(const QString & pathIn,
 
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
-            ret = load(*_imp->lastProjectLoaded, nameOut, pathOut);
+            ret = load(*_imp->lastProjectLoaded, nameIn, pathIn);
         }
 
         if (!getApp()->isBackground()) {
@@ -379,7 +370,8 @@ Project::loadProjectInternal(const QString & pathIn,
         QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
         Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     } else {
-        Q_EMIT projectNameChanged(filePathOut, false);
+        // Mark it modified if it was converted
+        Q_EMIT projectNameChanged(filePathIn, hasConverted);
     }
 
     ///Try to take the project lock by creating a lock file

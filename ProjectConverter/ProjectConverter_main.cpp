@@ -274,9 +274,10 @@ public:
 
 private:
 
-    virtual void checkForOlderProjectFile(const AppInstancePtr& /*app*/, const QString& filePathIn, QString* filePathOut) OVERRIDE FINAL
+    virtual bool checkForOlderProjectFile(const AppInstancePtr& /*app*/, const QString& filePathIn, QString* filePathOut) OVERRIDE FINAL
     {
         *filePathOut = filePathIn;
+        return false;
     }
 
     virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj) OVERRIDE FINAL
@@ -373,14 +374,16 @@ printUsage(const std::string& programName)
                               "Program options:\n\n"
                               "-i <filename>: Converts a .ntp (Project) or .nl (Workspace) file to\n"
                               "               a newer version. Upon failure an error message will be printed.\n\n"
-                              "-i <dir name>: Converts all .ntp files under the given directory.\n\n"
+                              "-i <dir name>: Converts all .ntp or .nl files under the given directory.\n\n"
                               "-r: Optional: If the path given to -i is a directory, recursively convert all\n"
                               "              recognized files in each sub-directory.\n\n"
-                              "-o: Optional: If set the original file(s) will be replaced by the converted file(s).\n"
+                              "-o <filename>: Optional: Only valid when used with -i <filename>. If set,\n"
+                              "               this the absolute file path of the output file.\n\n"
+                              "-c: Optional: If set the original file(s) will be replaced by the converted file(s).\n"
                               "              The original file(s) will be renamed with the .bak extension.\n"
                               "              If not set the converted file(s) will have the same name as \n"
                               "              the input file with the \"-converted\" suffix before the file\n"
-                              "              extension.").arg(QString::fromUtf8(programName.c_str()));
+                              "              extension. When the -o option is set, this option has no effect.\n\n").arg(QString::fromUtf8(programName.c_str()));
     std::cout << msg.toStdString() << std::endl;
 } // printUsage
 
@@ -394,7 +397,7 @@ static QStringList::iterator hasToken(QStringList &localArgs, const QString& tok
     return localArgs.end();
 } // hasToken
 
-static void parseArgs(const QStringList& appArgs, QString* inputPath, bool* replaceOriginal, bool* recurse)
+static void parseArgs(const QStringList& appArgs, QString* inputPath, QString* outputPath, bool* replaceOriginal, bool* recurse)
 {
     *recurse = false;
     *replaceOriginal = false;
@@ -415,6 +418,20 @@ static void parseArgs(const QStringList& appArgs, QString* inputPath, bool* repl
     }
     {
         QStringList::iterator foundInput = hasToken(localArgs, QLatin1String("-o"));
+        if (foundInput != localArgs.end()) {
+            ++foundInput;
+            if ( foundInput != localArgs.end() ) {
+                *outputPath = *foundInput;
+                localArgs.erase(foundInput);
+            } else {
+                throw std::invalid_argument(QString::fromUtf8("-o switch without a file name").toStdString());
+            }
+        }
+
+    }
+
+    {
+        QStringList::iterator foundInput = hasToken(localArgs, QLatin1String("-c"));
         if (foundInput != localArgs.end()) {
             *replaceOriginal = true;
         }
@@ -491,7 +508,7 @@ struct ProcessData
 };
 
 
-static void convertFile(const QString& filename, bool replaceOriginal, ProcessData* data)
+static void convertFile(const QString& filename, const QString& outputFilePathArgs, bool replaceOriginal, ProcessData* data)
 {
 
     if (!QFile::exists(filename)) {
@@ -509,29 +526,36 @@ static void convertFile(const QString& filename, bool replaceOriginal, ProcessDa
 
 
     QString outFileName;
-
-    if (replaceOriginal) {
-        // To replace the original, first we save to a temporary file then we save onto the original file
-        QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-        Global::ensureLastPathSeparator(tmpFilename);
-        tmpFilename.append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
-        outFileName = tmpFilename;
-    } else {
-        int foundDot = filename.lastIndexOf(QLatin1Char('.'));
-        assert(foundDot != -1);
-        if (foundDot != -1) {
-            outFileName = filename.mid(0, foundDot);
-            outFileName += QLatin1String("-converted.");
-            outFileName += filename.mid(foundDot + 1);
-        }
-
+    if (!outputFilePathArgs.isEmpty()) {
+        outFileName = outputFilePathArgs;
         // Remove any existing file with the same name
         if (QFile::exists(outFileName)) {
             QFile::remove(outFileName);
         }
+    } else {
+        if (replaceOriginal) {
+            // To replace the original, first we save to a temporary file then we save onto the original file
+            QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
+            Global::ensureLastPathSeparator(tmpFilename);
+            tmpFilename.append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
+            outFileName = tmpFilename;
+        } else {
+            int foundDot = filename.lastIndexOf(QLatin1Char('.'));
+            assert(foundDot != -1);
+            if (foundDot != -1) {
+                outFileName = filename.mid(0, foundDot);
+                outFileName += QLatin1String("-converted.");
+                outFileName += filename.mid(foundDot + 1);
+            }
+
+            // Remove any existing file with the same name
+            if (QFile::exists(outFileName)) {
+                QFile::remove(outFileName);
+            }
+        }
     }
-    
-    
+
+
     if (isProjectFile) {
         tryReadAndConvertOlderProject(filename, outFileName);
     } else if (isWorkspaceFile) {
@@ -564,7 +588,7 @@ static void convertFile(const QString& filename, bool replaceOriginal, ProcessDa
         }
     }
 
-    if (!replaceOriginal) {
+    if (!replaceOriginal || !outputFilePathArgs.isEmpty()) {
         data->convertedFiles.push_back(outFileName.toStdString());
     } else {
         // Copy the original file to a backup
@@ -612,7 +636,7 @@ static bool convertDirectory(const QString& dirPath, bool replaceOriginal, bool 
 
         if (it->endsWith(QLatin1String(".ntp")) || it->endsWith(QLatin1String(".nl"))) {
             try {
-                convertFile(absoluteOriginalFilePath, replaceOriginal, data);
+                convertFile(absoluteOriginalFilePath, QString(),replaceOriginal, data);
             } catch (const std::exception& e) {
                 std::cerr << QString::fromUtf8("Error: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
                 continue;
@@ -670,10 +694,10 @@ main(int argc, char *argv[])
     }
 
     // Parse app args
-    QString inputPath;
+    QString inputPath, outputPath;
     bool recurse, replaceOriginal;
     try {
-        parseArgs(arguments, & inputPath, &replaceOriginal, &recurse);
+        parseArgs(arguments, &inputPath, &outputPath, &replaceOriginal, &recurse);
     } catch (const std::exception &e) {
         std::cerr << QString::fromUtf8("Error while parsing command line arguments: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
         printUsage(argv[0]);
@@ -693,7 +717,7 @@ main(int argc, char *argv[])
         if (isDir) {
             convertDirectory(inputPath, replaceOriginal, recurse, 0, &convertData);
         } else {
-            convertFile(inputPath, replaceOriginal, &convertData);
+            convertFile(inputPath, outputPath, replaceOriginal, &convertData);
         }
     } catch (const std::exception& e) {
         cleanupCreatedFiles(convertData);
