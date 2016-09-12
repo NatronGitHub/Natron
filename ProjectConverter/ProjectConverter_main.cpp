@@ -274,6 +274,11 @@ public:
 
 private:
 
+    virtual void checkForOlderProjectFile(const AppInstancePtr& /*app*/, const QString& filePathIn, QString* filePathOut) OVERRIDE FINAL
+    {
+        *filePathOut = filePathIn;
+    }
+
     virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj) OVERRIDE FINAL
     {
         try {

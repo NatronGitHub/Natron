@@ -266,79 +266,43 @@ Project::loadProject(const QString & path,
     return true;
 } // loadProject
 
-void
-Project::checkForOlderProjectFile(const QString& filePathIn, QString* filePathOut)
-{
-    *filePathOut = filePathIn;
 
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open( &ifile, filePathIn.toStdString() );
-    if (!ifile) {
-        throw std::runtime_error( tr("Failed to open %1").arg(filePathIn).toStdString() );
-    }
-
-    {
-        // Try to determine if this is a project made with Natron > 2.2 or an older project
-        std::string firstLine;
-        std::getline(ifile, firstLine);
-        if (firstLine.find("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>") != std::string::npos) {
-            // This is an old boost serialization file, convert the project first
-            QString path = appPTR->getApplicationBinaryPath();
-            Global::ensureLastPathSeparator(path);
-            path += QLatin1String("NatronProjectConverter");
-
-            if (!QFile::exists(path)) {
-                throw std::runtime_error( tr("Could not find executable %1").arg(path).toStdString() );
-            }
-
-            QProcess proc;
-
-            QStringList args;
-            args << QLatin1String("-i") << filePathIn ;
-            proc.start(path, args);
-            proc.waitForFinished();
-            if (proc.exitCode() == 0) {
-                // Update filepath to converted file
-                int foundLastDot = filePathIn.lastIndexOf(QLatin1Char('.'));
-                if (foundLastDot != -1) {
-                    filePathOut->clear();
-                    filePathOut->append(filePathIn.mid(0, foundLastDot));
-                    filePathOut->append(QLatin1String("-converted."));
-                    filePathOut->append(QLatin1String(NATRON_PROJECT_FILE_EXT));
-                }
-            } else {
-                QString error = QString::fromUtf8(proc.readAllStandardError().data());
-                throw std::runtime_error(error.toStdString());
-            }
-        }
-    }
-}
 
 bool
-Project::loadProjectInternal(const QString & path,
-                             const QString & name,
+Project::loadProjectInternal(const QString & pathIn,
+                             const QString & nameIn,
                              bool isAutoSave,
                              bool isUntitledAutosave)
 {
     FlagSetter loadingProjectRAII(true, &_imp->isLoadingProject, &_imp->isLoadingProjectMutex);
-    QString filePath = path + name;
-    std::cout << tr("Loading project: %1").arg(filePath).toStdString() << std::endl;
+    QString filePathIn = pathIn + nameIn;
+    std::cout << tr("Loading project: %1").arg(filePathIn).toStdString() << std::endl;
 
-    if ( !QFile::exists(filePath) ) {
-        throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
+    if ( !QFile::exists(filePathIn) ) {
+        throw std::invalid_argument( QString( filePathIn + QString::fromUtf8(" : no such file.") ).toStdString() );
     }
 
-    if (!isAutoSave) {
-        QString convertedFilePath;
-        checkForOlderProjectFile(filePath, &convertedFilePath);
-        filePath = convertedFilePath;
+    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), nameIn);
+
+
+    QString filePathOut;
+    appPTR->checkForOlderProjectFile(getApp(), filePathIn, &filePathOut);
+
+    QString pathOut, nameOut;
+    {
+        // If the file was converted, get the name from there
+        int lastSlash = filePathOut.lastIndexOf(QLatin1Char('/'));
+        if (lastSlash != -1) {
+            pathOut = filePathOut.mid(0, lastSlash + 1);
+            nameOut = filePathOut.mid(lastSlash + 1);
+        }
     }
 
     bool ret = false;
     FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open( &ifile, filePath.toStdString() );
+    FStreamsSupport::open( &ifile, filePathOut.toStdString() );
     if (!ifile) {
-        throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+        throw std::runtime_error( tr("Failed to open %1").arg(filePathOut).toStdString() );
     }
 
 
@@ -346,7 +310,7 @@ Project::loadProjectInternal(const QString & path,
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
         ///in the BezierCP class serialisation
         bool foundV = false;
-        QFile f(filePath);
+        QFile f(filePathOut);
         f.open(QIODevice::ReadOnly);
         QTextStream fs(&f);
         while ( !fs.atEnd() ) {
@@ -363,7 +327,6 @@ Project::loadProjectInternal(const QString & path,
         }
     }
 
-    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
 
     try {
         // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
@@ -372,7 +335,7 @@ Project::loadProjectInternal(const QString & path,
 
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
-            ret = load(*_imp->lastProjectLoaded, name, path);
+            ret = load(*_imp->lastProjectLoaded, nameOut, pathOut);
         }
 
         if (!getApp()->isBackground()) {
@@ -410,13 +373,13 @@ Project::loadProjectInternal(const QString & path,
         }
         _imp->lastAutoSave = QDateTime::currentDateTime();
         _imp->ageSinceLastSave = QDateTime();
-        _imp->lastAutoSaveFilePath = filePath;
+        _imp->lastAutoSaveFilePath = filePathOut;
 
         QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
         QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
         Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     } else {
-        Q_EMIT projectNameChanged(path + name, false);
+        Q_EMIT projectNameChanged(filePathOut, false);
     }
 
     ///Try to take the project lock by creating a lock file
@@ -2819,6 +2782,8 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         // Use the last project loaded serialization for the gui layout
         if (_imp->lastProjectLoaded) {
             serialization->_projectWorkspace = _imp->lastProjectLoaded->_projectWorkspace;
+            serialization->_openedPanelsOrdered = _imp->lastProjectLoaded->_openedPanelsOrdered;
+            serialization->_viewportsData = _imp->lastProjectLoaded->_viewportsData;
         }
     } else {
         // Serialize workspace
@@ -2892,23 +2857,28 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
                 continue;
             }
             foundKnob->fromSerialization(**it);
-            if (foundKnob == _imp->envVars) {
-                onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
-                // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
-                // by the main GUI process
-                if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-                    _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
-                }
-            } else if (foundKnob == _imp->natronVersion) {
-                std::string v = _imp->natronVersion->getValue();
-                if (v == "Natron v1.0.0") {
-                    getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
-                }
-            } else if (foundKnob == _imp->frameRange) {
+            if (foundKnob == _imp->frameRange) {
                 foundFrameRangeKnob = true;
             }
         }
 
+        {
+            // Refresh OCIO path
+            onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+
+            // Refresh project path
+            // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+            // by the main GUI process
+            if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+                _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
+            }
+
+            // Check for old Natron 1 bug
+            std::string v = _imp->natronVersion->getValue();
+            if (v == "Natron v1.0.0") {
+                getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
+            }
+        }
 
         // Restore the timeline
         _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
@@ -2930,7 +2900,7 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     _imp->lastAutoSave = time;
     getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
 
-    if (foundFrameRangeKnob) {
+    if (!foundFrameRangeKnob) {
         recomputeFrameRangeFromReaders();
     }
     

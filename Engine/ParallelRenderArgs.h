@@ -91,7 +91,7 @@ struct FrameView_compare_less
                 return true;
             } else {
                 // lhs.view > rhs.view
-                return true;
+                return false;
             }
         }
     }

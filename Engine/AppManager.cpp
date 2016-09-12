@@ -272,6 +272,56 @@ AppManager::loadProjectFromFileFunction(std::istream& ifile, const AppInstancePt
     SERIALIZATION_NAMESPACE::read(ifile, obj);
 }
 
+void
+AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut)
+{
+    *filePathOut = filePathIn;
+
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open( &ifile, filePathIn.toStdString() );
+    if (!ifile) {
+        throw std::runtime_error( tr("Failed to open %1").arg(filePathIn).toStdString() );
+    }
+
+    {
+        // Try to determine if this is a project made with Natron > 2.2 or an older project
+        std::string firstLine;
+        std::getline(ifile, firstLine);
+        if (firstLine.find("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>") != std::string::npos) {
+            // This is an old boost serialization file, convert the project first
+            QString path = appPTR->getApplicationBinaryPath();
+            Global::ensureLastPathSeparator(path);
+            path += QLatin1String("NatronProjectConverter");
+
+            if (!QFile::exists(path)) {
+                throw std::runtime_error( tr("Could not find executable %1").arg(path).toStdString() );
+            }
+
+            app->updateProjectLoadStatus(tr("Converting project to newer format"));
+
+            QProcess proc;
+
+            QStringList args;
+            args << QLatin1String("-i") << filePathIn ;
+            proc.start(path, args);
+            proc.waitForFinished();
+            if (proc.exitCode() == 0) {
+                // Update filepath to converted file
+                int foundLastDot = filePathIn.lastIndexOf(QLatin1Char('.'));
+                if (foundLastDot != -1) {
+                    filePathOut->clear();
+                    filePathOut->append(filePathIn.mid(0, foundLastDot));
+                    filePathOut->append(QLatin1String("-converted."));
+                    filePathOut->append(QLatin1String(NATRON_PROJECT_FILE_EXT));
+                }
+            } else {
+                QString error = QString::fromUtf8(proc.readAllStandardError().data());
+                throw std::runtime_error(error.toStdString());
+            }
+        }
+    }
+}
+
 bool
 AppManager::load(int &argc,
                  char *argv[],

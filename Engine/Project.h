@@ -402,11 +402,6 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
-    /**
-     * @brief Check if the project is an older project made prior Natron 2.2.
-     * If this is an older project, it converts the file to a new file.
-     **/
-    void checkForOlderProjectFile(const QString& filePathIn, QString* filePathOut);
 
     bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave, bool isUntitledAutosave);
 

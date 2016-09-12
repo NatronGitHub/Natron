@@ -439,10 +439,16 @@ ProjectGui::load(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSeriali
     }
 
     const RegisteredTabs& registeredTabs = getGui()->getRegisteredTabs();
-    for (std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>::const_iterator it = serialization->_viewportsData.begin(); it!=serialization->_viewportsData.end(); ++it) {
-        RegisteredTabs::const_iterator found = registeredTabs.find(it->first);
-        if (found != registeredTabs.end()) {
-            found->second.first->loadProjection(it->second);
+    for (RegisteredTabs::const_iterator it = registeredTabs.begin(); it != registeredTabs.end(); ++it) {
+        std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>::const_iterator found = serialization->_viewportsData.find(it->first);
+        if (found != serialization->_viewportsData.end()) {
+            it->second.first->loadProjection(found->second);
+        } else {
+            // If we could not find a projection for a viewer, reset to image fitted in the viewport
+            ViewerTab* isViewer = dynamic_cast<ViewerTab*>(it->second.first);
+            if (isViewer) {
+                isViewer->getViewer()->fitImageToFormat();
+            }
         }
     }
 

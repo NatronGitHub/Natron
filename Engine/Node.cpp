@@ -8792,6 +8792,7 @@ Node::setHideInputsKnobValue(bool hidden)
 void
 Node::onRefreshIdentityStateRequestReceived()
 {
+
     assert( QThread::currentThread() == qApp->thread() );
     if ( (_imp->refreshIdentityStateRequestsCount == 0) || !_imp->effect ) {
         //was already processed
@@ -8800,6 +8801,9 @@ Node::onRefreshIdentityStateRequestReceived()
     _imp->refreshIdentityStateRequestsCount = 0;
 
     ProjectPtr project = getApp()->getProject();
+    if (project->isLoadingProject()) {
+        return;
+    }
     double time = project->currentFrame();
     RenderScale scale(1.);
     double inputTime = 0;

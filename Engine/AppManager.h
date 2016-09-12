@@ -689,6 +689,12 @@ protected:
      */
     virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
 
+    /**
+     * @brief Check if the project is an older project made prior Natron 2.2.
+     * If this is an older project, it converts the file to a new file.
+     **/
+    virtual void checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut);
+
 private:
 
     void findAllScriptsRecursive(const QDir& directory,
