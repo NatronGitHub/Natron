@@ -484,6 +484,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
 
         YAML_NAMESPACE::Node defNode = node["Default"];
         int nDims = defNode.IsSequence() ? defNode.size() : 1;
+        initValuesVec(this, nDims);
         for (int i = 0; i < nDims; ++i) {
 
             YAML_NAMESPACE::Node dimNode = defNode.IsSequence() ? defNode[i] : defNode;
