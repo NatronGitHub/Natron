@@ -189,6 +189,7 @@ SOURCES += \
     SplitterI.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
+    StubNode.cpp \
     TabWidgetI.cpp \
     Texture.cpp \
     TextureRect.cpp \
@@ -401,6 +402,7 @@ HEADERS += \
     SplitterI.h \
     StandardPaths.h \
     StringAnimationManager.h \
+    StubNode.h \
     TabWidgetI.h \
     Texture.h \
     TextureRect.h \
