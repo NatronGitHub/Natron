@@ -105,6 +105,7 @@
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/StubNode.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
@@ -1482,6 +1483,7 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerBuiltInPlugin<JoinViewsNode>(QString::fromUtf8(NATRON_IMAGES_PATH "joinViewsNode.png"), false, false);
     registerBuiltInPlugin<OneViewNode>(QString::fromUtf8(NATRON_IMAGES_PATH "oneViewNode.png"), false, false);
     registerBuiltInPlugin<ReadNode>(QString::fromUtf8(NATRON_IMAGES_PATH "readImage.png"), false, false);
+    registerBuiltInPlugin<StubNode>(QString::fromUtf8(""), false, true);
     registerBuiltInPlugin<WriteNode>(QString::fromUtf8(NATRON_IMAGES_PATH "writeImage.png"), false, false);
     registerBuiltInPlugin<ViewerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
     registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, true);
@@ -2171,17 +2173,45 @@ AppManager::createOFXEffect(const NodePtr& node,
 NodePtr
 AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group)
 {
-    CreateNodeArgs args(serialization->_pluginID, group);
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
-    args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
-    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
-    if (!serialization->_multiInstanceParentName.empty()) {
-        args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, serialization->_multiInstanceParentName);
+    NodePtr retNode;
+    {
+        CreateNodeArgs args(serialization->_pluginID, group);
+        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
+        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
+        args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        if (!serialization->_multiInstanceParentName.empty()) {
+            args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, serialization->_multiInstanceParentName);
+        }
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        retNode =  group->getApplication()->createNode(args);
     }
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-    return group->getApplication()->createNode(args);
+    if (retNode) {
+        return retNode;
+    }
+    
+    // If the node could not be created, make a Stub node
+    {
+        CreateNodeArgs args(PLUGINID_NATRON_STUB, group);
+        
+        std::string serializationString;
+        std::ostringstream ss(serializationString);
+        try {
+            SERIALIZATION_NAMESPACE::write(ss, *serialization);
+        } catch (...) {
+            return retNode;
+        }
+        
+        args.addParamDefaultValue<std::string>(kStubNodeParamSerialization, serializationString);
+        args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, serialization->_nodeScriptName);
+        retNode = group->getApplication()->createNode(args);
+
+    }
+    return retNode;
 }
 
 void

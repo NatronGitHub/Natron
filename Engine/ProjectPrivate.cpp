@@ -196,7 +196,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             mustShowErrorsLog = true;
             continue;
         } else {
-            if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) && ( node->getPluginID() == (*it)->_pluginID) ) {
+            if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
                 // If the node has a IOContainer don't do this check: when loading older projects that had a
                 // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
                 QString text( tr("WARNING: The node %1 (%2) version %3.%4 "

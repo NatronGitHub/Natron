@@ -62,17 +62,29 @@ public:
         return PLUGINID_NATRON_STUB;
     }
 
+    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN;
+    
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
+    void refreshInputsFromSerialization();
 
-protected:
+    virtual void onKnobsLoaded() OVERRIDE FINAL;
+    
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr getNodeSerialization () const;
+    
+private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
+    
+    virtual bool knobChanged(const KnobIPtr& k,
+                             ValueChangedReasonEnum reason,
+                             ViewSpec view,
+                             double time,
+                             bool originatedFromMainThread) OVERRIDE FINAL;
 
 private:
 

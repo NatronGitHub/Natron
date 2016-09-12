@@ -80,6 +80,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ProjectPrivate.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
+#include "Engine/StubNode.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
@@ -2693,7 +2694,18 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         getActiveNodes(&nodes);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if ( !(*it)->getParentMultiInstance() && (*it)->isPersistent() ) {
-                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state;
+                StubNodePtr isStub = toStubNode((*it)->getEffectInstance());
+                if (isStub) {
+                    state = isStub->getNodeSerialization();
+                    if (!state) {
+                        continue;
+                    }
+                } else {
+                    state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                }
+                
                 (*it)->toSerialization(state.get());
                 serialization->_nodes.push_back(state);
             }

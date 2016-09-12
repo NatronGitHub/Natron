@@ -92,6 +92,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/StubNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
@@ -935,9 +936,7 @@ Node::load(const CreateNodeArgs& args)
         _imp->isMultiInstance = true;
     }
 
-    /*if (isMultiInstanceChild && !args.serialization) {
-        updateEffectSubLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
-     }*/
+ 
     restoreSublabel();
 
     declarePythonFields();
@@ -2054,7 +2053,18 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if ( (*it)->isPersistent() ) {
-                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state;
+                StubNodePtr isStub = toStubNode((*it)->getEffectInstance());
+                if (isStub) {
+                    state = isStub->getNodeSerialization();
+                    if (!state) {
+                        continue;
+                    }
+                } else {
+                    state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                }
+                
                 (*it)->toSerialization(state.get());
                 serialization->_children.push_back(state);
             }
@@ -2529,6 +2539,10 @@ Node::restoreSublabel()
     if (!sublabelKnob) {
         return;
     }
+    
+    // Make sure the knob is not persistent
+    sublabelKnob->setIsPersistent(false);
+    
     KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
     _imp->ofxSubLabelKnob = sublabelKnobIsString;
 
