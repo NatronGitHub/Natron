@@ -156,7 +156,9 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         if (nDimsWithDefValue) {
             em << YAML_NAMESPACE::Key << "Default" << YAML_NAMESPACE::Value;
             // Starting dimensions
-            em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+            if (_values.size() > 1) {
+                em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+            }
             for (std::size_t i = 0; i < _values.size(); ++i) {
                 switch (_values[i]._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
@@ -176,7 +178,9 @@ KnobSerialization::encode(YAML_NAMESPACE::Emitter& em) const
                 }
 
             }
-            em << YAML_NAMESPACE::EndSeq;
+            if (_values.size() > 1) {
+                em << YAML_NAMESPACE::EndSeq;
+            }
         }
 
     } // hasDimensionToSerialize
@@ -473,6 +477,18 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
                 }
 
             } // if (!valueNode[i].IsSequence())
+        }
+    }
+
+    if (node["Default"]) {
+
+        YAML_NAMESPACE::Node defNode = node["Default"];
+        int nDims = defNode.IsSequence() ? defNode.size() : 1;
+        for (int i = 0; i < nDims; ++i) {
+
+            YAML_NAMESPACE::Node dimNode = defNode.IsSequence() ? defNode[i] : defNode;
+            decodeValueFromNode(dimNode, _values[i]._defaultValue, &_values[i]._type);
+
         }
     }
 

@@ -1940,8 +1940,9 @@ DopeSheetViewPrivate::computeRetimeRange(const DSNodePtr& retimer)
         double inputFirst, inputLast;
         input->getEffectInstance()->getFrameRange_public(0, &inputFirst, &inputLast);
 
-        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(0, inputFirst, ViewIdx(0));
-        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(0, inputLast, ViewIdx(0));
+        U64 hash;
+        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), &hash);
+        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), &hash);
         assert( !framesFirst.empty() && !framesLast.empty() );
         if ( framesFirst.empty() || framesLast.empty() ) {
             return;

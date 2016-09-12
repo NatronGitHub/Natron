@@ -354,24 +354,20 @@ EffectInstance::invalidateHashCache()
 bool
 EffectInstance::getRenderHash(double time, ViewIdx view, U64* retHash) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        *retHash = 0;
-        return false;
-    }
-
-    const ParallelRenderArgsPtr &args = tls->frameArgs.back();
-    assert(args);
     U64 hash;
-    bool gotIt = args->getFrameViewHash(time, view, &hash);
-    if (gotIt) {
-        *retHash = hash;
-        return true;
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (tls && !tls->frameArgs.empty()) {
+        const ParallelRenderArgsPtr &args = tls->frameArgs.back();
+        assert(args);
+        bool gotIt = args->getFrameViewHash(time, view, &hash);
+        if (gotIt) {
+            *retHash = hash;
+            return true;
+        }
     }
 
     // Did not find a valid hash, check if it is cached...
-    gotIt = findCachedHash(time, view, &hash);
+    bool gotIt = findCachedHash(time, view, &hash);
     if (gotIt) {
         *retHash = hash;
         return true;
@@ -4051,32 +4047,100 @@ EffectInstance::cacheIsIdentity(double time, ViewIdx view, U64 hash, int identit
 }
 
 FramesNeededMap
-EffectInstance::getFramesNeeded_public(U64 hash,
-                                       double time,
-                                       ViewIdx view)
+EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
 {
-    NON_RECURSIVE_ACTION();
-    FramesNeededMap framesNeeded;
-    bool foundInCache = false;
-    if (hash != 0) {
-        foundInCache = _imp->actionsCache->getFramesNeededResult(hash, time, view, 0, &framesNeeded);
-    }
-    if (foundInCache) {
-        return framesNeeded;
-    }
 
-    try {
-        framesNeeded = getFramesNeeded(time, view);
-    } catch (std::exception &e) {
-        if ( !hasPersistentMessage() ) { // plugin may already have set a message
-            setPersistentMessage( eMessageTypeError, e.what() );
+    /*
+     Compute the frame/view hash if needed
+     */
+    FramesNeededMap framesNeeded;
+
+    boost::scoped_ptr<Hash64> hashObj;
+    U64 hashValue;
+
+    bool isHashCached = getRenderHash(time, view, &hashValue);
+    if (!isHashCached) {
+        // No hash in cache, compute it
+        hashObj.reset(new Hash64);
+        computeHash_noCache(time, view, hashObj.get());
+    } else {
+
+        // We have a cached hash, get frames needed for this hash
+        bool foundInCache = _imp->actionsCache->getFramesNeededResult(hashValue, time, view, 0, &framesNeeded);
+        if (foundInCache) {
+            *retHash = hashValue;
+            return framesNeeded;
         }
     }
 
-    if (hash != 0) {
-        _imp->actionsCache->setFramesNeededResult(hash, time, view, 0, framesNeeded);
+
+    // Follow the frames needed to compute the hash
+    // For the viewer add frames needed depending on the input being rendered (this is a special case
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
+    if (isViewer) {
+        int viewerIndex = getViewerIndexThreadLocal();
+        FrameRangesMap &frameRange = framesNeeded[viewerIndex] ;
+        std::vector<RangeD>& ranges = frameRange[view];
+        RangeD r = {time, time};
+        ranges.push_back(r);
+    } else {
+        // Use getFramesNeeded to know where to recurse
+        NON_RECURSIVE_ACTION();
+        try {
+            framesNeeded = getFramesNeeded(time, view);
+        } catch (std::exception &e) {
+            if ( !hasPersistentMessage() ) { // plugin may already have set a message
+                setPersistentMessage( eMessageTypeError, e.what() );
+            }
+            return framesNeeded;
+        }
+
     }
 
+    if (!isHashCached) {
+
+        // We need to append the hash of the inputs to the hash. To do so, recurse on inputs and call getFramesNeeded on them
+        for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+
+            // No need to use transform redirections to compute the hash
+            EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, this, InputMatrixMapPtr());
+            if (!inputEffect) {
+                continue;
+            }
+
+            // For all views requested in input
+            for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+
+                // For all ranges in this view
+                for (U32 range = 0; range < viewIt->second.size(); ++range) {
+
+                    // For all frames in the range
+                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+                        U64 inputHash;
+                        FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(f, viewIt->first, &inputHash);
+                        (void)inputFramesNeeded;
+
+                        // Append the input hash
+                        hashObj->append(inputHash);
+                    }
+                }
+
+            }
+        }
+
+    } // !isHashCached
+
+    // Cache the hash if needed
+    if (!isHashCached) {
+        hashObj->computeHash();
+        hashValue = hashObj->value();
+        addHashToCache(time, view, hashValue);
+    }
+
+    // Cache the result of the actino
+    _imp->actionsCache->setFramesNeededResult(hashValue, time, view, 0, framesNeeded);
+
+    *retHash = hashValue;
     return framesNeeded;
 }
 
@@ -4727,6 +4791,28 @@ EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    bool /*originatedFromMainThread*/)
 {
     return false;
+}
+
+void
+EffectInstance::setViewerIndexThreadLocal(int viewerIndex)
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    if (!tls) {
+        return;
+    }
+    tls->viewerTextureIndex = viewerIndex;
+}
+
+int
+EffectInstance::getViewerIndexThreadLocal() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        // Should not happen. setViewerIndexThreadLocal should have been called earlier
+        assert(false);
+        return 0;
+    }
+    return tls->viewerTextureIndex;
 }
 
 bool

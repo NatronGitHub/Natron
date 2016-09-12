@@ -674,6 +674,10 @@ public:
 
     void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
 
+    void setViewerIndexThreadLocal(int viewerIndex);
+
+    int getViewerIndexThreadLocal() const;
+
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
@@ -703,6 +707,8 @@ public:
                                          const RectD & renderWindow,
                                          const NodePtr & treeRoot,
                                          FrameRequestMap & request);
+
+    static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect, const InputMatrixMapPtr& reroutesMap);
 
 
     // Implem is in ParallelRenderArgs.cpp
@@ -1109,7 +1115,7 @@ public:
                                      ViewIdx view,
                                      RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, U64* hash) WARN_UNUSED_RETURN;
 
     void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 
@@ -1873,6 +1879,10 @@ public:
         std::list<ParallelRenderArgsPtr > frameArgs;
         EffectInstance::RenderArgs currentRenderArgs;
 
+        // When rendering with the viewer, to compute the frame/view hash we need to call getFramesNeeded.
+        // But for the viewer the frames needed depend on the index we are rendering (i.e: A or B).
+        int viewerTextureIndex;
+
         EffectTLSData()
             : beginEndRenderCount(0)
             , actionRecursionLevel(0)
@@ -1881,6 +1891,7 @@ public:
 #endif
             , frameArgs()
             , currentRenderArgs()
+            , viewerTextureIndex(0)
         {
         }
     };

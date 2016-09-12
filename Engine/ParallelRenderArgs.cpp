@@ -47,7 +47,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
-static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstancePtr& thisEffect, const InputMatrixMapPtr& reroutesMap)
+EffectInstancePtr
+EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect, const InputMatrixMapPtr& reroutesMap)
 {
     // Check if the input is a mask
     bool inputIsMask = thisEffect->isInputMask(inputNb);
@@ -120,7 +121,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
     //Add frames needed to the frames to render
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         int inputNb = it->first;
-        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect, reroutesMap);
+        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect.get(), reroutesMap);
         if (inputEffect) {
 
             // If this input is frame varying, the node is also frame varying
@@ -418,6 +419,11 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             }
         }
 
+        if (fvRequest->globalData.identityInputNb == -2) {
+            // If identity on itself, add to the hash cache
+            effect->addHashToCache(fvRequest->globalData.inputIdentityTime, fvRequest->globalData.identityView, frameViewHash);
+        }
+
         /*
            Do NOT call getRegionOfDefinition on the identity time, if the plug-in returns an identity time different from
            this time, we expect that it handles getRegionOfDefinition itself correctly.
@@ -439,9 +445,10 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
         }
 
-        // Get the frame/views needed for this frame/view
-        // Pass a null hash because we cannot know the hash as of yet since we did not recurse on inputs already, meaning the action will not be cached.
-        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(frameViewHash, time, view);
+        // Get the frame/views needed for this frame/view.
+        // This is cached because we computed the hash in the ParallelRenderArgs constructor before.
+        U64 hash;
+        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(time, view, &hash);
     } // if (foundFrameView != nodeRequest->frames.end()) {
 
     assert(fvRequest);
@@ -713,102 +720,41 @@ getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, 
         }
     }
 
-    // Compute the hash for this frame/view
-    // First append the knobs to the hash then the hash of the inputs.
-    // This function is virtual so derived implementation can influence the hash.
-    boost::scoped_ptr<Hash64> hashObj;
+
+
     U64 hashValue;
-    bool isHashCached = effect->findCachedHash(time, view, &hashValue);
-    if (!isHashCached) {
-        // No hash in cache, compute it
-        hashObj.reset(new Hash64);
-        effect->computeHash_noCache(time, view, hashObj.get());
-    }
+    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, &hashValue);
 
-    // Before checking getFramesNeeded we need to check if the effect is identity. In the case where the effect is identity on itself (identityInput == -2)
-    // we have to add the hash at the identity time/view. 
-    int identityInput;
-    ViewIdx identityView;
-    double identityTime;
-    bool isIdentity;
-    try {
-        // Pass a null hash because we cannot know the hash as of yet since we did not recurse on inputs already, meaning the action will not be cached.
-        isIdentity = effect->isIdentity_public(false, 0, time, RenderScale(1.), RectI(), view, &identityTime, &identityView, &identityInput);
-    } catch (...) {
-        isIdentity = false;
-    }
 
-    FramesNeededMap framesNeeded;
+    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
-    if (isIdentity && identityInput == -2) {
-        // Recurse if the effect is identity on itself so that we add a hash at the correct time
-        NodePtr identityNode = node;
-        if (identityNode) {
-            U64 inputHash;
-            getDependenciesRecursive_internal(identityNode, treeRoot, viewerIndex, identityTime, identityView, finalNodes, &inputHash);
+        // No need to use transform redirections to compute the hash
+        EffectInstancePtr inputEffect = EffectInstance::resolveInputEffectForFrameNeeded(it->first, effect.get(), InputMatrixMapPtr());
+        if (!inputEffect) {
+            continue;
         }
-    } else { // !isIdentity
 
-        // For the viewer add frames needed depending on the input being rendered (this is a special case
-        if (node == treeRoot && node->isEffectViewerInstance()) {
-            FrameRangesMap &frameRange = framesNeeded[viewerIndex] ;
-            std::vector<RangeD>& ranges = frameRange[view];
-            RangeD r = {time, time};
-            ranges.push_back(r);
-        } else {
-            // Use getFramesNeeded to know where to recurse
-            framesNeeded = effect->getFramesNeeded_public(0, time, view);
-        }
-        for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+        // For all views requested in input
+        for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
 
-            // No need to use transform redirections to compute the hash
-            EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, effect, InputMatrixMapPtr());
-            if (!inputEffect) {
-                continue;
-            }
+            // For all ranges in this view
+            for (U32 range = 0; range < viewIt->second.size(); ++range) {
 
-            // For all views requested in input
-            for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
-
-                // For all ranges in this view
-                for (U32 range = 0; range < viewIt->second.size(); ++range) {
-
-                    // For all frames in the range
-                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
-                        U64 inputHash;
-                        getDependenciesRecursive_internal(inputEffect->getNode(), treeRoot, viewerIndex, f, viewIt->first, finalNodes, &inputHash);
-
-                        // Append the input hash
-                        if (!isHashCached) {
-                            hashObj->append(inputHash);
-                        }
-                    }
+                // For all frames in the range
+                for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+                    U64 inputHash;
+                    getDependenciesRecursive_internal(inputEffect->getNode(), treeRoot, viewerIndex, f, viewIt->first, finalNodes, &inputHash);
                 }
-                
             }
+
         }
-    } // isIdentity
-
-    if (!isHashCached) {
-        hashObj->computeHash();
-        hashValue = hashObj->value();
     }
-
     FrameViewPair fv = {time, view};
     nodeData->frameViewHash[fv] = hashValue;
 
-    if (!isHashCached) {
-        effect->addHashToCache(time, view, hashValue);
-    }
 
     if (nodeHash) {
         *nodeHash = hashValue;
-    }
-
-
-    // Now that we have the hash for this frame/view, cache actions results
-    if (!framesNeeded.empty()) {
-        effect->cacheFramesNeeded(time, view, hashValue, framesNeeded);
     }
 
 } // getDependenciesRecursive_internal

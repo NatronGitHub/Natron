@@ -398,6 +398,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     compOp->setDefaultValueFromLabel(Merge::getOperatorString(op), 0);
 
+    // Make sure it is not serialized
+    compOp->setCurrentDefaultValueAsInitialValue();
+
     if (isStroke) {
         if (type == eRotoStrokeTypeSmear) {
             KnobDoublePtr spacingKnob = isStroke->getBrushSpacingKnob();

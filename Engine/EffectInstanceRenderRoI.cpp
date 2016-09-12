@@ -602,6 +602,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         if (inputNbIdentity == -1) {
             return eRenderRoIRetCodeOk;
         } else if (inputNbIdentity == -2) {
+            
             // there was at least one crash if you set the first frame to a negative value
             assert(inputTimeIdentity != args.time || viewInvariance == eViewInvarianceAllViewsInvariant);
 
@@ -785,7 +786,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
 
 
 
-    bool gotHash = (*frameArgs)->getFrameViewHash(args.time, args.view, frameViewHash);
+    bool gotHash = _publicInterface->getRenderHash(args.time, args.view, frameViewHash);
     assert(gotHash);
     if (!gotHash) {
         // The hash should have been computed
@@ -1265,7 +1266,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
 EffectInstance::RenderRoIRetCode
 EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs & args,
                                                            const EffectDataTLSPtr& tls,
-                                                           const U64 frameViewHash,
+                                                           const U64 /*frameViewHash*/,
                                                            const ComponentsNeededMapPtr& neededComps,
                                                            const FrameViewRequest* requestPassData,
                                                            const ImagePlanesToRenderPtr &planesToRender,
@@ -1285,7 +1286,8 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
     if (requestPassData) {
         **framesNeeded = requestPassData->globalData.frameViewsNeeded;
     } else {
-        **framesNeeded = _publicInterface->getFramesNeeded_public(frameViewHash, args.time, args.view);
+        U64 hash;
+        **framesNeeded = _publicInterface->getFramesNeeded_public(args.time, args.view, &hash);
     }
 
 

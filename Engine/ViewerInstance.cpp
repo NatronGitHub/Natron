@@ -1134,6 +1134,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
 {
+    // Flag to the TLS that we are rendering this index. It needs it to compute properly the hash, see getFramesNeeded_public
+    setViewerIndexThreadLocal(inArgs.params->textureIndex);
+
     // We are in the render thread, we may not have computed the RoD and lookup the cache yet
     {
         ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
