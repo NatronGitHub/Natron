@@ -2704,9 +2704,9 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
                     }
                 } else {
                     state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                    (*it)->toSerialization(state.get());
                 }
                 
-                (*it)->toSerialization(state.get());
                 serialization->_nodes.push_back(state);
             }
         }

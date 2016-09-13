@@ -414,6 +414,7 @@ static void decodeValueFromNode(const YAML_NAMESPACE::Node& node,
 static void initValuesVec(KnobSerialization* serialization, int nDims)
 {
     if ((int)serialization->_values.size() != nDims) {
+        serialization->_dimension = nDims;
         serialization->_values.resize(nDims);
         for (std::size_t i = 0; i < serialization->_values.size(); ++i) {
             serialization->_values[i]._serialization = serialization;

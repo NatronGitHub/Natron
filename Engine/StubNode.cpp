@@ -133,6 +133,27 @@ StubNode::refreshInputsFromSerialization()
     
     // Re-initialize inputs
     getNode()->initializeInputs();
+    getNode()->setLabel(_imp->serialObj->_nodeLabel);
+    if (_imp->serialObj->_nodeLabel != _imp->serialObj->_nodeScriptName) {
+        getNode()->setScriptName(_imp->serialObj->_nodeScriptName);
+    }
+    if (_imp->serialObj->_nodeColor[0] != -1 || _imp->serialObj->_nodeColor[1] != -1 || _imp->serialObj->_nodeColor[2] != -1) {
+        getNode()->setColor(_imp->serialObj->_nodeColor[0], _imp->serialObj->_nodeColor[1], _imp->serialObj->_nodeColor[2]);
+    }
+    if (_imp->serialObj->_nodePositionCoords[0] != INT_MIN || _imp->serialObj->_nodePositionCoords[1] != INT_MIN) {
+        getNode()->setPosition(_imp->serialObj->_nodePositionCoords[0], _imp->serialObj->_nodePositionCoords[1]);
+    }
+
+    // Check for label knob
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = _imp->serialObj->_knobsValues.begin(); it != _imp->serialObj->_knobsValues.end(); ++it) {
+        if ((*it)->_scriptName == kUserLabelKnobName) {
+            KnobStringPtr labelKnob = getNode()->getExtraLabelKnob();
+            if (labelKnob) {
+                labelKnob->fromSerialization(**it);
+            }
+            break;
+        }
+    }
 }
 
 bool
@@ -153,7 +174,7 @@ StubNode::knobChanged(const KnobIPtr& k,
 }
 
 void
-StubNode::onKnobsLoaded()
+StubNode::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /*defaultParamValues*/)
 {
     refreshInputsFromSerialization();
 }

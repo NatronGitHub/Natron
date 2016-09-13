@@ -199,27 +199,9 @@ convertToProjectSerialization(const SERIALIZATION_NAMESPACE::ProjectGuiSerializa
     
 } // convertToProjectSerialization
 
-static SERIALIZATION_NAMESPACE::NodeSerializationPtr foundSerializationRecursive(const std::string& scriptName, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes)
-{
-    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if ((*it)->_nodeScriptName == scriptName) {
-            return *it;
-        }
-        if (!(*it)->_children.empty()) {
-            SERIALIZATION_NAMESPACE::NodeSerializationPtr found = foundSerializationRecursive(scriptName, (*it)->_children);
-            if (found) {
-                return found;
-            }
-        }
-
-    }
-    return SERIALIZATION_NAMESPACE::NodeSerializationPtr();
-}
-
 
 class ConverterAppManager : public AppManager
 {
-    SERIALIZATION_NAMESPACE::NodeSerializationList failedNodes;
 public:
 
     ConverterAppManager()
@@ -228,49 +210,6 @@ public:
 
     }
 
-    const SERIALIZATION_NAMESPACE::NodeSerializationList& getFailedNodesLoads() const
-    {
-        return failedNodes;
-    }
-
-    void clearFailedNodesLoads()
-    {
-        failedNodes.clear();
-    }
-
-    virtual NodePtr createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group) OVERRIDE FINAL
-    {
-        NodePtr ret = AppManager::createNodeForProjectLoading(serialization, group);
-        if (!ret) {
-            failedNodes.push_back(serialization);
-        }
-        return ret;
-    }
-
-    virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* serialization) OVERRIDE FINAL
-    {
-        // Add all nodes that could not be loaded (probably because the plug-in could not be found)
-        for (SERIALIZATION_NAMESPACE::NodeSerializationList::iterator it = failedNodes.begin(); it!=failedNodes.end(); ++it) {
-            if ((*it)->_groupFullyQualifiedScriptName.empty()) {
-                serialization->_nodes.push_back(*it);
-            } else {
-                std::string groupScriptName;
-                {
-                    std::size_t foundDot = (*it)->_groupFullyQualifiedScriptName.find_last_of(".");
-                    if (foundDot != std::string::npos) {
-                        // This is a group in another group
-                        groupScriptName = (*it)->_groupFullyQualifiedScriptName.substr(foundDot + 1);
-                    } else {
-                        groupScriptName = (*it)->_groupFullyQualifiedScriptName;
-                    }
-                }
-                SERIALIZATION_NAMESPACE::NodeSerializationPtr foundGroup = foundSerializationRecursive(groupScriptName, serialization->_nodes);
-                if (foundGroup) {
-                    foundGroup->_children.push_back(*it);
-                }
-            }
-        }
-    }
 
 private:
 
@@ -488,8 +427,6 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
     if (!instance) {
         return;
     }
-
-    g_app->clearFailedNodesLoads();
 
     AppInstancePtr couldLoadProj = instance->loadProject(filename.toStdString());
     if (couldLoadProj) {

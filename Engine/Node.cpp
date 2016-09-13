@@ -2063,9 +2063,9 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
                     }
                 } else {
                     state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                    (*it)->toSerialization(state.get());
                 }
                 
-                (*it)->toSerialization(state.get());
                 serialization->_children.push_back(state);
             }
         }
@@ -2099,7 +2099,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     }
 
     getPosition(&serialization->_nodePositionCoords[0], &serialization->_nodePositionCoords[1]);
-    getSize(&serialization->_nodeSize[0], &serialization->_nodeSize[1]);
+
+    // Only save the size for backdrops, that's the only node where the user can resize
+    if (isEffectBackdrop()) {
+        getSize(&serialization->_nodeSize[0], &serialization->_nodeSize[1]);
+    }
 
     if (hasColorChangedSinceDefault()) {
         getColor(&serialization->_nodeColor[0], &serialization->_nodeColor[1], &serialization->_nodeColor[2]);
@@ -2615,12 +2619,14 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
         try {
             restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
         } catch (const std::exception& e) {
-            LogEntry::LogEntryColor c;
-            if (getColor(&c.r, &c.g, &c.b)) {
-                c.colorSet = true;
+            // For stub nodes don't report errors
+            if (!isEffectStubNode()) {
+                LogEntry::LogEntryColor c;
+                if (getColor(&c.r, &c.g, &c.b)) {
+                    c.colorSet = true;
+                }
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
             }
-            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
-
         }
     }
 
@@ -4173,7 +4179,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     QString labelKnobLabel = isBackdropNode ? tr("Name label") : tr("Label");
     createLabelKnob( settingsPage, labelKnobLabel.toStdString() );
 
-    if (isBackdropNode) {
+    if (isBackdropNode || isEffectStubNode()) {
         //backdrops just have a label
         return;
     }
@@ -6994,6 +7000,13 @@ Node::isEffectNodeGroup() const
 {
     return toNodeGroup(_imp->effect);
 }
+
+StubNodePtr
+Node::isEffectStubNode() const
+{
+    return toStubNode(_imp->effect);
+}
+
 
 PrecompNodePtr
 Node::isEffectPrecompNode() const

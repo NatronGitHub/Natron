@@ -4063,18 +4063,18 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
                 break;
             }
         }
-        assert(groupInputIndex != -1);
-        assert(groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0);
+        if (groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0) {
 
-        
-        if (nodeToConnect == _imp->internalViewerProcessNode.lock()) {
-            nodeToConnect->disconnectInput(internalInputIdx);
-            nodeToConnect->connectInput(groupInputNodes[groupInputIndex], internalInputIdx);
-        } else {
-            int prefInput = nodeToConnect->getPreferredInputForConnection();
-            if (prefInput != -1) {
-                nodeToConnect->disconnectInput(prefInput);
-                nodeToConnect->connectInput(groupInputNodes[groupInputIndex], prefInput);
+
+            if (nodeToConnect == _imp->internalViewerProcessNode.lock()) {
+                nodeToConnect->disconnectInput(internalInputIdx);
+                nodeToConnect->connectInput(groupInputNodes[groupInputIndex], internalInputIdx);
+            } else {
+                int prefInput = nodeToConnect->getPreferredInputForConnection();
+                if (prefInput != -1) {
+                    nodeToConnect->disconnectInput(prefInput);
+                    nodeToConnect->connectInput(groupInputNodes[groupInputIndex], prefInput);
+                }
             }
         }
     }

@@ -2194,16 +2194,15 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     // If the node could not be created, make a Stub node
     {
         CreateNodeArgs args(PLUGINID_NATRON_STUB, group);
-        
-        std::string serializationString;
-        std::ostringstream ss(serializationString);
+
+        std::stringstream ss;
         try {
             SERIALIZATION_NAMESPACE::write(ss, *serialization);
         } catch (...) {
             return retNode;
         }
         
-        args.addParamDefaultValue<std::string>(kStubNodeParamSerialization, serializationString);
+        args.addParamDefaultValue<std::string>(kStubNodeParamSerialization, ss.str());
         args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);

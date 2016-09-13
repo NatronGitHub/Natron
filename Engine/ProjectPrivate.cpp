@@ -196,10 +196,20 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             mustShowErrorsLog = true;
             continue;
         } else {
-            if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
+            if (node->getPluginID() == PLUGINID_NATRON_STUB) {
+                // If the node could not be created and we made a stub instead, warn the user
+                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                 "was found in the script but the plug-in could not be found. It has been replaced by a pass-through node instead.")
+                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                             .arg((*it)->_pluginMajorVersion)
+                             .arg((*it)->_pluginMinorVersion));
+                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+                mustShowErrorsLog = true;
+            } else if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
                 // If the node has a IOContainer don't do this check: when loading older projects that had a
                 // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
-                QString text( tr("WARNING: The node %1 (%2) version %3.%4 "
+                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
                                  "was found in the script but was loaded "
                                  "with version %5.%6 instead.")
                              .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )

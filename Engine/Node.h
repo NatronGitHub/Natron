@@ -341,6 +341,8 @@ public:
 
     NodeGroupPtr isEffectNodeGroup() const;
 
+    StubNodePtr isEffectStubNode() const;
+
     PrecompNodePtr isEffectPrecompNode() const;
 
     OutputEffectInstancePtr isEffectOutput() const;

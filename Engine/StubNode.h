@@ -71,10 +71,10 @@ public:
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void refreshInputsFromSerialization();
-
-    virtual void onKnobsLoaded() OVERRIDE FINAL;
     
     SERIALIZATION_NAMESPACE::NodeSerializationPtr getNodeSerialization () const;
+
+    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
     
 private:
 
