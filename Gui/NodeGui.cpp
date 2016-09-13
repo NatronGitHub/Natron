@@ -383,6 +383,7 @@ NodeGui::restoreStateAfterCreation()
     onOutputLayerChanged();
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
+    onKnobsLinksChanged();
 }
 
 void
@@ -2334,6 +2335,9 @@ NodeGui::onKnobExpressionChanged(const KnobGui* knob)
 void
 NodeGui::onKnobsLinksChanged()
 {
+    if (!_expressionIndicator) {
+        return;
+    }
     NodePtr node = getNode();
 
     typedef std::list<Node::KnobLink> InternalLinks;
@@ -2420,7 +2424,7 @@ NodeGui::onKnobsLinksChanged()
         }
     }
 
-    if (_knobsLinks.size() > 0) {
+    if (links.size() > 0) {
         if ( !_expressionIndicator->isActive() ) {
             _expressionIndicator->setActive(true);
         }
