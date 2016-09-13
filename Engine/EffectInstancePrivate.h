@@ -158,7 +158,11 @@ public:
 
     Implementation(const Implementation& other);
 
-public:
+    ~Implementation()
+    {
+        
+    }
+
     EffectInstance* _publicInterface; // can not be a smart ptr
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters

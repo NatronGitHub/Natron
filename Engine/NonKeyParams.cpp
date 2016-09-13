@@ -79,6 +79,7 @@ NonKeyParams::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObje
     }
     _storageInfo.dataTypeSize = serialization->dataTypeSize;
     _storageInfo.numComponents = serialization->nComps;
+    _storageInfo.mode = eStorageModeDisk;
     _storageInfo.bounds.fromSerialization(serialization->bounds);
 }
 
