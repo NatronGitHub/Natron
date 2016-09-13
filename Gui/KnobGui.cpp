@@ -536,29 +536,65 @@ KnobGui::createAnimationMenu(QMenu* menu,
     {
         Menu* copyMenu = new Menu(menu);
         copyMenu->setTitle( tr("Copy") );
-        if (hasAnimation && isAppKnob) {
-            QAction* copyAnimationAction = new QAction(tr("Copy Animation"), copyMenu);
-            copyAnimationAction->setData(-1);
-            QObject::connect( copyAnimationAction, SIGNAL(triggered()), this, SLOT(onCopyAnimationActionTriggered()) );
-            copyMenu->addAction(copyAnimationAction);
+
+        if (dimension != -1 || nDims == 1) {
+            if (hasAnimation && isAppKnob) {
+                QAction* copyAnimationAction = new QAction(tr("Copy Animation"), copyMenu);
+                copyAnimationAction->setData(dimension);
+                QObject::connect( copyAnimationAction, SIGNAL(triggered()), this, SLOT(onCopyAnimationActionTriggered()) );
+                copyMenu->addAction(copyAnimationAction);
+            }
+
+
+            QAction* copyValuesAction = new QAction(tr("Copy Value"), copyMenu);
+            copyValuesAction->setData( QVariant(dimension) );
+            copyMenu->addAction(copyValuesAction);
+            QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
+
+
+            if (isAppKnob) {
+                QAction* copyLinkAction = new QAction(tr("Copy Link"), copyMenu);
+                copyLinkAction->setData( QVariant(dimension) );
+                copyMenu->addAction(copyLinkAction);
+                QObject::connect( copyLinkAction, SIGNAL(triggered()), this, SLOT(onCopyLinksActionTriggered()) );
+            }
         }
 
+        if (knob->getDimension() > 1) {
+            if (hasAnimation && isAppKnob) {
+                QString title = tr("Copy Animation");
+                title += QLatin1Char(' ');
+                title += tr("(all dimensions)");
+                QAction* copyAnimationAction = new QAction(title, copyMenu);
+                copyAnimationAction->setData(-1);
+                QObject::connect( copyAnimationAction, SIGNAL(triggered()), this, SLOT(onCopyAnimationActionTriggered()) );
+                copyMenu->addAction(copyAnimationAction);
+            }
+            {
+                QString title = tr("Copy Values");
+                title += QLatin1Char(' ');
+                title += tr("(all dimensions)");
+                QAction* copyValuesAction = new QAction(title, copyMenu);
+                copyValuesAction->setData(-1);
+                copyMenu->addAction(copyValuesAction);
+                QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
+            }
 
-        QAction* copyValuesAction = new QAction(tr("Copy Value(s)"), copyMenu);
-        copyValuesAction->setData( QVariant(-1) );
-        copyMenu->addAction(copyValuesAction);
-        QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
+            if (isAppKnob) {
+                QString title = tr("Copy Link");
+                title += QLatin1Char(' ');
+                title += tr("(all dimensions)");
+                QAction* copyLinkAction = new QAction(title, copyMenu);
+                copyLinkAction->setData(-1);
+                copyMenu->addAction(copyLinkAction);
+                QObject::connect( copyLinkAction, SIGNAL(triggered()), this, SLOT(onCopyLinksActionTriggered()) );
+            }
 
-
-        if (isAppKnob) {
-            QAction* copyLinkAction = new QAction(tr("Copy Link"), copyMenu);
-            copyLinkAction->setData( QVariant(-1) );
-            copyMenu->addAction(copyLinkAction);
-            QObject::connect( copyLinkAction, SIGNAL(triggered()), this, SLOT(onCopyLinksActionTriggered()) );
         }
 
         menu->addAction( copyMenu->menuAction() );
     }
+
     ///If the clipboard is either empty or has no animation, disable the Paste animation action.
     KnobPtr fromKnob;
     KnobClipBoardType type;
