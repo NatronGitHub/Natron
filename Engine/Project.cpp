@@ -1455,12 +1455,18 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
               const QString& name,
               const QString& path)
 {
+    appPTR->clearErrorLog_mt_safe();
+
+
     _imp->projectName->setValue( name.toStdString() );
     _imp->projectPath->setValue( path.toStdString() );
 
     getApp()->setProjectBeingLoadedInfo(obj._projectLoadedInfo);
 
-    appPTR->clearErrorLog_mt_safe();
+    if (NATRON_VERSION_ENCODE(obj._projectLoadedInfo.vMajor, obj._projectLoadedInfo.vMinor, obj._projectLoadedInfo.vRev) > NATRON_VERSION_ENCODED) {
+        appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), tr("The project %1 was saved on a more recent version of %2 (%3.%4.%5). This version of %2 may fail to recover it thoroughly.").arg(name).arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(obj._projectLoadedInfo.vMajor).arg(obj._projectLoadedInfo.vMinor).arg(obj._projectLoadedInfo.vRev));;
+    }
+
     fromSerialization(obj);
 
     std::list<LogEntry> log;
