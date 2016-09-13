@@ -32,6 +32,8 @@
 #include <QClipboard>
 #include <QDebug>
 #include <QThread>
+#include <QFile>
+#include <QUrl>
 #include <QtCore/QMimeData>
 
 #include "Engine/Node.h"
@@ -44,11 +46,13 @@
 #include "Gui/CurveEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/ScriptEditor.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
 
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/NodeClipBoard.h"
+#include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
 
 #include "Global/QtCompat.h"
@@ -154,41 +158,100 @@ NodeGraph::pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard
 {
     QPointF position =  mapToScene( mapFromGlobal( QCursor::pos() ) );
 
-    _imp->pasteNodesInternal(clipboard, position, false, newNodes);
+    _imp->pasteNodesInternal(clipboard.nodes, position, false, newNodes);
 }
 
 bool
-NodeGraph::pasteNodeClipBoards(const QPointF& pos)
+NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
 {
+    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
+
+    SERIALIZATION_NAMESPACE::NodeSerializationList nodes;
+    
+    // Check if this is a regular clipboard
+    // This will also check if this is a single node
+    try {
+        std::istringstream ss(str);
+        SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
+        SERIALIZATION_NAMESPACE::read(ss, &cb);
+    } catch (...) {
+        
+        // Check if this was copy/pasted from a project directly
+        try {
+            std::istringstream ss(str);
+            SERIALIZATION_NAMESPACE::ProjectSerialization isProject;
+            SERIALIZATION_NAMESPACE::read(ss, &isProject);
+            nodes = isProject._nodes;
+        } catch (...) {
+            
+            // check for a preset...
+            try {
+                std::istringstream ss(str);
+                SERIALIZATION_NAMESPACE::NodePresetSerialization isPreset;
+                SERIALIZATION_NAMESPACE::read(ss, &isPreset);
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr ns(new SERIALIZATION_NAMESPACE::NodeSerialization);
+                *ns = isPreset.node;
+                nodes.push_back(ns);
+            } catch (...) {
+                
+                // Last resort: Assume this is python code or the url of a file. We cannot rely on the
+                // mimetype correctly here because on OSX the url gets encoded as a string
+                QString qStr = QString::fromUtf8(str.c_str());
+                if ( QFile::exists(qStr) ) {
+                    QList<QUrl> urls;
+                    urls.push_back( QUrl::fromLocalFile(qStr) );
+                    getGui()->handleOpenFilesFromUrls( urls, QCursor::pos() );
+                } else {
+                    std::string error, output;
+                    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str, &error, &output) ) {
+                        getGui()->appendToScriptEditor(error);
+                        getGui()->ensureScriptEditorVisible();
+                    } else if ( !output.empty() ) {
+                        getGui()->appendToScriptEditor(output);
+                    }
+                }
+                return false;
+                
+            }
+        }
+    }
+    
+    _imp->pasteNodesInternal(nodes, pos, true, &newNodes);
+    
+    return true;
+
+}
+
+bool
+NodeGraph::pasteClipboard(const QPointF& pos)
+{
+    QPointF position;
+    if (pos.x() == INT_MIN || pos.y() == INT_MIN) {
+        position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    } else {
+        position = pos;
+    }
+
     QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimedata = clipboard->mimeData();
+
+    // If this is a list of files, try to open them
+    if ( mimedata->hasUrls() ) {
+        QList<QUrl> urls = mimedata->urls();
+        getGui()->handleOpenFilesFromUrls( urls, QCursor::pos() );
+        return true;
+    }
 
     if ( !mimedata->hasFormat( QLatin1String("text/plain") ) ) {
         return false;
     }
     QByteArray data = mimedata->data( QLatin1String("text/plain") );
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
     std::string s = QString::fromUtf8(data).toStdString();
-    try {
-        std::stringstream ss(s);
-        SERIALIZATION_NAMESPACE::read(ss, &cb);
-    } catch (...) {
-        return false;
-    }
-
-    _imp->pasteNodesInternal(cb, pos, true, &newNodes);
-
-    return true;
+    
+    return tryReadClipboard(position, s);
+    
 }
 
-bool
-NodeGraph::pasteNodeClipBoards()
-{
-    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
-
-    return pasteNodeClipBoards(position);
-}
 
 void
 NodeGraph::duplicateSelectedNodes(const QPointF& pos)
@@ -203,7 +266,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     SERIALIZATION_NAMESPACE::NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
     std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    _imp->pasteNodesInternal(tmpClipboard, pos, true, &newNodes);
+    _imp->pasteNodesInternal(tmpClipboard.nodes, pos, true, &newNodes);
 }
 
 void

@@ -496,7 +496,7 @@ NodeGraph::showMenu(const QPoint & pos)
         cloneSelectedNodes( rect.center() );
     } else if (ret == pasteAction) {
         QRectF rect = visibleSceneRect();
-        pasteNodeClipBoards( rect.center() );
+        pasteClipboard( rect.center() );
     }
 } // NodeGraph::showMenu
 

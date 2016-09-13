@@ -217,7 +217,7 @@ public:
     QRectF calcNodesBoundingRect();
 
     void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard);
-    void pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard, const QPointF& scenPos,
+    void pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializationList & clipboard, const QPointF& scenPos,
                             bool useUndoCommand,
                             std::list<std::pair<std::string, NodeGuiPtr > > *newNodes);
 

@@ -568,29 +568,17 @@ Gui::keyPressEvent(QKeyEvent* e)
             }
         }
     } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
-        // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
-        // We still try to check if it is a readable Python script
-        QClipboard* clipboard = QApplication::clipboard();
-        const QMimeData* mimedata = clipboard->mimeData();
-        if ( mimedata->hasFormat( QLatin1String("text/plain") ) ) {
-            QByteArray data = mimedata->data( QLatin1String("text/plain") );
-            QString str = QString::fromUtf8(data);
-            if ( QFile::exists(str) ) {
-                QList<QUrl> urls;
-                urls.push_back( QUrl::fromLocalFile(str) );
-                handleOpenFilesFromUrls( urls, QCursor::pos() );
-            } else {
-                std::string error, output;
-                if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str.toStdString(), &error, &output) ) {
-                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( error.c_str() ) );
-                    ensureScriptEditorVisible();
-                } else if ( !output.empty() ) {
-                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( output.c_str() ) );
-                }
-            }
-        } else if ( mimedata->hasUrls() ) {
-            QList<QUrl> urls = mimedata->urls();
-            handleOpenFilesFromUrls( urls, QCursor::pos() );
+        
+        NodeGraph* lastUsedGraph = getLastSelectedGraph();
+        if (!lastUsedGraph) {
+            lastUsedGraph = _imp->_nodeGraphArea;
+        }
+        assert(lastUsedGraph);
+        bool pasteNodesOk = false;
+        if (lastUsedGraph) {
+            // Try to paste on the most recently used nodegraph. If we are lucky this is a
+            // valid serialization
+            pasteNodesOk = lastUsedGraph->pasteClipboard();
         }
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();

@@ -25,24 +25,35 @@ SERIALIZATION_NAMESPACE_ENTER
 void
 NodeClipBoard::encode(YAML_NAMESPACE::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginSeq;
-    for (NodeSerializationList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        (*it)->encode(em);
+    assert(!nodes.empty());
+    if (nodes.size() == 1) {
+        nodes.front()->encode(em);
+    } else {
+        em << YAML_NAMESPACE::BeginSeq;
+        for (NodeSerializationList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            (*it)->encode(em);
+        }
+        em << YAML_NAMESPACE::EndSeq;
+
     }
-    em << YAML_NAMESPACE::EndSeq;
 }
 
 void
 NodeClipBoard::decode(const YAML_NAMESPACE::Node& node)
 {
-    if (!node.IsSequence()) {
-        throw YAML_NAMESPACE::InvalidNode();
-    }
+    
     nodes.clear();
-    for (std::size_t i = 0; i < node.size(); ++i) {
+    if (node.IsSequence()) {
+        for (std::size_t i = 0; i < node.size(); ++i) {
+            NodeSerializationPtr n(new NodeSerialization);
+            n->decode(node[i]);
+            nodes.push_back(n);
+        }
+    } else {
         NodeSerializationPtr n(new NodeSerialization);
-        n->decode(node[i]);
+        n->decode(node);
         nodes.push_back(n);
+
     }
 }
 

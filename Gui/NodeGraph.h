@@ -167,14 +167,17 @@ public:
     void pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard, std::list<std::pair<std::string, NodeGuiPtr > >* newNodes);
 
     void duplicateSelectedNodes(const QPointF& pos);
-    bool pasteNodeClipBoards(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);
+    
+    bool tryReadClipboard(const QPointF& pos, const std::string& str);
 
     QPointF getRootPos() const;
 
     bool isDoingNavigatorRender() const;
 
 public Q_SLOTS:
+    
+    bool pasteClipboard(const QPointF& pos = QPointF(INT_MIN, INT_MIN));
 
     void deleteSelection();
 
@@ -214,7 +217,6 @@ public Q_SLOTS:
     void copySelectedNodes();
 
     void cutSelectedNodes();
-    bool pasteNodeClipBoards();
     void duplicateSelectedNodes();
     void cloneSelectedNodes();
     void decloneSelectedNodes();

@@ -51,87 +51,87 @@ NATRON_NAMESPACE_ENTER;
 
 
 void
-NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard,
+NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializationList & clipboard,
                                      const QPointF& scenePos,
                                      bool useUndoCommand,
                                      std::list<std::pair<std::string, NodeGuiPtr > > *newNodes)
 {
-    if ( !clipboard.nodes.empty() ) {
-        double xmax = INT_MIN;
-        double xmin = INT_MAX;
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
-
-        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
-             it != clipboard.nodes.end(); ++it) {
-
-            if ( ((*it)->_nodePositionCoords[0] + (*it)->_nodeSize[0]) > xmax ) {
-                xmax = (*it)->_nodePositionCoords[0];
-            }
-            if ((*it)->_nodePositionCoords[0] < xmin) {
-                xmin = (*it)->_nodePositionCoords[0];
-            }
-            if ( ((*it)->_nodePositionCoords[1] + (*it)->_nodeSize[1]) > ymax ) {
-                ymax = (*it)->_nodePositionCoords[1];
-            }
-            if ((*it)->_nodePositionCoords[1] < ymin) {
-                ymin = (*it)->_nodePositionCoords[1];
-            }
+    if (clipboard.empty()) {
+        return;
+    }
+    double xmax = INT_MIN;
+    double xmin = INT_MAX;
+    double ymin = INT_MAX;
+    double ymax = INT_MIN;
+    
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
+         it != clipboard.end(); ++it) {
+        
+        if ( ((*it)->_nodePositionCoords[0] + (*it)->_nodeSize[0]) > xmax ) {
+            xmax = (*it)->_nodePositionCoords[0];
         }
-
-
-        QPointF offset((xmin + xmax) / 2., (ymin + ymax) / 2.);
-
-        NodesGuiList newNodesList;
-        std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > newNodesMap;
-
-        ///The script-name of the copy node is different than the one of the original one
-        ///We store the mapping so we can restore node links correctly
-        std::map<std::string, std::string> oldNewScriptNamesMap;
-        {
-            CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
-            const SERIALIZATION_NAMESPACE::NodeSerializationList& internalNodesClipBoard = clipboard.nodes;
-            for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
-                 it != clipboard.nodes.end(); ++it) {
-                const std::string& oldScriptName = (*it)->_nodeScriptName;
-                NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, offset, scenePos, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
-
-                if (!node) {
-                    continue;
-                }
-                newNodes->push_back( std::make_pair(oldScriptName, node) );
-                newNodesList.push_back(node);
-                newNodesMap.push_back( std::make_pair( *it, node->getNode() ) );
-
-                const std::string& newScriptName = node->getNode()->getScriptName();
-                oldNewScriptNamesMap[oldScriptName] = newScriptName;
+        if ((*it)->_nodePositionCoords[0] < xmin) {
+            xmin = (*it)->_nodePositionCoords[0];
+        }
+        if ( ((*it)->_nodePositionCoords[1] + (*it)->_nodeSize[1]) > ymax ) {
+            ymax = (*it)->_nodePositionCoords[1];
+        }
+        if ((*it)->_nodePositionCoords[1] < ymin) {
+            ymin = (*it)->_nodePositionCoords[1];
+        }
+    }
+    
+    
+    QPointF offset((xmin + xmax) / 2., (ymin + ymax) / 2.);
+    
+    NodesGuiList newNodesList;
+    std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > newNodesMap;
+    
+    ///The script-name of the copy node is different than the one of the original one
+    ///We store the mapping so we can restore node links correctly
+    std::map<std::string, std::string> oldNewScriptNamesMap;
+    {
+        CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
+             it != clipboard.end(); ++it) {
+            const std::string& oldScriptName = (*it)->_nodeScriptName;
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, offset, scenePos, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
+            
+            if (!node) {
+                continue;
             }
-            assert( internalNodesClipBoard.size() == newNodes->size() );
-
-            ///Now that all nodes have been duplicated, try to restore nodes connections
-            NodeGraphPrivate::restoreConnections(internalNodesClipBoard, *newNodes, oldNewScriptNamesMap);
-
-            NodesList allNodes;
-            _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
-
-
-            //Restore links once all children are created for alias knobs/expressions
-            for (std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
-                it->second->restoreKnobsLinks(*(it->first), allNodes, oldNewScriptNamesMap);
-            }
+            newNodes->push_back( std::make_pair(oldScriptName, node) );
+            newNodesList.push_back(node);
+            newNodesMap.push_back( std::make_pair( *it, node->getNode() ) );
+            
+            const std::string& newScriptName = node->getNode()->getScriptName();
+            oldNewScriptNamesMap[oldScriptName] = newScriptName;
         }
-
-
-        if (newNodesList.size() > 1) {
-            ///Only compute datas if we're pasting more than 1 node
-            _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
-        } else if (newNodesList.size() == 1) {
-            newNodesList.front()->getNode()->getEffectInstance()->refreshMetaDatas_public(true);
+        assert( clipboard.size() == newNodes->size() );
+        
+        ///Now that all nodes have been duplicated, try to restore nodes connections
+        NodeGraphPrivate::restoreConnections(clipboard, *newNodes, oldNewScriptNamesMap);
+        
+        NodesList allNodes;
+        _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
+        
+        
+        //Restore links once all children are created for alias knobs/expressions
+        for (std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
+            it->second->restoreKnobsLinks(*(it->first), allNodes, oldNewScriptNamesMap);
         }
-
-        if (useUndoCommand) {
-            _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
-        }
+    }
+    
+    
+    if (newNodesList.size() > 1) {
+        ///Only compute datas if we're pasting more than 1 node
+        _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+    } else if (newNodesList.size() == 1) {
+        newNodesList.front()->getNode()->getEffectInstance()->refreshMetaDatas_public(true);
+    }
+    
+    if (useUndoCommand) {
+        _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
     }
 } // pasteNodesInternal
 
