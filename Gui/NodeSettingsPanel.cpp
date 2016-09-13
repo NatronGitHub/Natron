@@ -430,12 +430,9 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     QString presetPath = dialog.getPresetPath();
     
     QString presetFilePath = presetPath;
-    if (!presetFilePath.endsWith(QChar::fromAscii('/'))) {
-        presetFilePath += QChar::fromAscii('/');
+    if (!presetFilePath.endsWith(QLatin1String("." NATRON_PRESETS_FILE_EXT))) {
+        presetFilePath += QLatin1String("." NATRON_PRESETS_FILE_EXT);
     }
-    presetFilePath += presetName;
-    presetFilePath += QChar::fromAscii('.');
-    presetFilePath += QLatin1String(NATRON_PRESETS_FILE_EXT);
 
     if (QFile::exists(presetFilePath)) {
         QString message = tr("%1 already exists, Would you like to overwrite it?").arg(presetFilePath);
