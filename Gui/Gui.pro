@@ -174,6 +174,7 @@ SOURCES += \
     NodeGraphPrivate.cpp \
     NodeGraphPrivate10.cpp \
     NodeGraphTextItem.cpp \
+    NodeGraphRectItem.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeSettingsPanel.cpp \
@@ -305,6 +306,7 @@ HEADERS += \
     NodeGraph.h \
     NodeGraphPrivate.h \
     NodeGraphTextItem.h \
+    NodeGraphRectItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeSettingsPanel.h \

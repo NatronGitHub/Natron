@@ -584,10 +584,7 @@ private:
     QGraphicsPolygonItem* _resizeHandle;
 
     /*A pointer to the rectangle of the node.*/
-    QGraphicsRectItem* _boundingBox;
-
-    /*A pointer to the channels pixmap displayed*/
-    QGraphicsPixmapItem* _channelsPixmap;
+    NodeGraphRectItem* _boundingBox;
 
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
@@ -595,7 +592,7 @@ private:
     std::vector<unsigned int> _previewData;
     int _previewW, _previewH;
     QGraphicsSimpleTextItem* _persistentMessage;
-    QGraphicsRectItem* _stateIndicator;
+    NodeGraphRectItem* _stateIndicator;
     bool _mergeHintActive;
     boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;

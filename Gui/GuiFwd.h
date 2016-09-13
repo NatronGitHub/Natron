@@ -153,6 +153,7 @@ class NodeCurveEditorElement;
 class NodeGraph;
 class NodeGraphPixmapItem;
 class NodeGraphTextItem;
+class NodeGraphRectItem;
 class NodeGui;
 class NodeGuiI;
 class NodeSettingsPanel;

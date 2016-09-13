@@ -91,6 +91,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGraphTextItem.h"
+#include "Gui/NodeGraphRectItem.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreviewThread.h"
 #include "Gui/PythonPanels.h"
@@ -162,7 +163,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _nameFrame(NULL)
     , _resizeHandle(NULL)
     , _boundingBox(NULL)
-    , _channelsPixmap(NULL)
     , _previewPixmap(NULL)
     , _previewDataMutex()
     , _previewData( NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int) )
@@ -548,7 +548,15 @@ NodeGui::createGui()
     int depth = getBaseDepth();
 
     setZValue(depth);
-    _boundingBox = new QGraphicsRectItem(this);
+    NodePtr node = getNode();
+
+    int cornerRadiusPx;
+    if (node->isEffectStubNode()) {
+        cornerRadiusPx = TO_DPIX(9);
+    } else {
+        cornerRadiusPx = 0;
+    }
+    _boundingBox = new NodeGraphRectItem(this, cornerRadiusPx);
     _boundingBox->setZValue(depth);
 
     if ( mustFrameName() ) {
@@ -561,7 +569,6 @@ NodeGui::createGui()
         _resizeHandle->setZValue(depth + 1);
     }
 
-    NodePtr node = getNode();
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
     BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
 
@@ -603,7 +610,7 @@ NodeGui::createGui()
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
-    _stateIndicator = new QGraphicsRectItem(this);
+    _stateIndicator = new NodeGraphRectItem(this, cornerRadiusPx);
     _stateIndicator->setZValue(depth - 1);
     _stateIndicator->hide();
 
