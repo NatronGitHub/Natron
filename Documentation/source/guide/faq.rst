@@ -86,4 +86,5 @@ The following graphics cards are supported for hardware-accelerated rendering:
 
 Cards not listed here will probably not support hardware-accelerated rendering.
 
-On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
+On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the Natron installer.
+
