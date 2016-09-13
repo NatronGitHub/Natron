@@ -340,6 +340,33 @@
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
+		1EB1215C1D87F6B5009646F7 /* ofx_plugin_programming_guide.html */ = {isa = PBXFileReference; lastKnownFileType = text.html.documentation; name = ofx_plugin_programming_guide.html; path = Documentation/ofx_plugin_programming_guide.html; sourceTree = "<group>"; };
+		1EB1215D1D87F6B5009646F7 /* ofxActionsSupported.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = ofxActionsSupported.rtf; path = Documentation/ofxActionsSupported.rtf; sourceTree = "<group>"; };
+		1EB1215E1D87F6B5009646F7 /* ofxPropSupported.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = ofxPropSupported.rtf; path = Documentation/ofxPropSupported.rtf; sourceTree = "<group>"; };
+		1EB1215F1D87F6B5009646F7 /* Presentation.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = Presentation.md; path = Documentation/Presentation.md; sourceTree = "<group>"; };
+		1EB121601D87F6B5009646F7 /* TuttleOFX-README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = "TuttleOFX-README.txt"; path = "Documentation/TuttleOFX-README.txt"; sourceTree = "<group>"; };
+		1EB121621D87F6EE009646F7 /* _group.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _group.rst; sourceTree = "<group>"; };
+		1EB121631D87F6EE009646F7 /* _groupChannel.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupChannel.rst; sourceTree = "<group>"; };
+		1EB121641D87F6EE009646F7 /* _groupColor.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupColor.rst; sourceTree = "<group>"; };
+		1EB121651D87F6EE009646F7 /* _groupDraw.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupDraw.rst; sourceTree = "<group>"; };
+		1EB121661D87F6EE009646F7 /* _groupExtra.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupExtra.rst; sourceTree = "<group>"; };
+		1EB121671D87F6EE009646F7 /* _groupFilter.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupFilter.rst; sourceTree = "<group>"; };
+		1EB121681D87F6EE009646F7 /* _groupImage.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupImage.rst; sourceTree = "<group>"; };
+		1EB121691D87F6EE009646F7 /* _groupKeyer.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupKeyer.rst; sourceTree = "<group>"; };
+		1EB1216A1D87F6EE009646F7 /* _groupMerge.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupMerge.rst; sourceTree = "<group>"; };
+		1EB1216B1D87F6EE009646F7 /* _groupOther.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupOther.rst; sourceTree = "<group>"; };
+		1EB1216C1D87F6EE009646F7 /* _groupTime.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupTime.rst; sourceTree = "<group>"; };
+		1EB1216D1D87F6EE009646F7 /* _groupTransform.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupTransform.rst; sourceTree = "<group>"; };
+		1EB1216E1D87F6EE009646F7 /* _groupViews.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupViews.rst; sourceTree = "<group>"; };
+		1EB1216F1D87F6EE009646F7 /* _prefs.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _prefs.rst; sourceTree = "<group>"; };
+		1EB121701D87F6EE009646F7 /* _static */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _static; sourceTree = "<group>"; };
+		1EB121711D87F6EE009646F7 /* _templates */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _templates; sourceTree = "<group>"; };
+		1EB121721D87F6EE009646F7 /* conf.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = conf.py; sourceTree = "<group>"; };
+		1EB121731D87F6EE009646F7 /* devel */ = {isa = PBXFileReference; lastKnownFileType = folder; path = devel; sourceTree = "<group>"; };
+		1EB121741D87F6EE009646F7 /* guide */ = {isa = PBXFileReference; lastKnownFileType = folder; path = guide; sourceTree = "<group>"; };
+		1EB121751D87F6EE009646F7 /* index.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = index.rst; sourceTree = "<group>"; };
+		1EB121761D87F6EE009646F7 /* plugins */ = {isa = PBXFileReference; lastKnownFileType = folder; path = plugins; sourceTree = "<group>"; };
+		1EB121771D87F6EE009646F7 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1EEB0B5B1D1ADF4D00F0D43D /* LICENSE-AGPL-3.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-AGPL-3.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5C1D1ADF4D00F0D43D /* LICENSE-Apache-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Apache-2.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5D1D1ADF4D00F0D43D /* LICENSE-Boost.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Boost.txt"; sourceTree = "<group>"; };
@@ -559,6 +586,36 @@
 				1EADE5DB18AA403700EF3180 /* Tests */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1EB121611D87F6BF009646F7 /* source */ = {
+			isa = PBXGroup;
+			children = (
+				1EB121621D87F6EE009646F7 /* _group.rst */,
+				1EB121631D87F6EE009646F7 /* _groupChannel.rst */,
+				1EB121641D87F6EE009646F7 /* _groupColor.rst */,
+				1EB121651D87F6EE009646F7 /* _groupDraw.rst */,
+				1EB121661D87F6EE009646F7 /* _groupExtra.rst */,
+				1EB121671D87F6EE009646F7 /* _groupFilter.rst */,
+				1EB121681D87F6EE009646F7 /* _groupImage.rst */,
+				1EB121691D87F6EE009646F7 /* _groupKeyer.rst */,
+				1EB1216A1D87F6EE009646F7 /* _groupMerge.rst */,
+				1EB1216B1D87F6EE009646F7 /* _groupOther.rst */,
+				1EB1216C1D87F6EE009646F7 /* _groupTime.rst */,
+				1EB1216D1D87F6EE009646F7 /* _groupTransform.rst */,
+				1EB1216E1D87F6EE009646F7 /* _groupViews.rst */,
+				1EB1216F1D87F6EE009646F7 /* _prefs.rst */,
+				1EB121701D87F6EE009646F7 /* _static */,
+				1EB121711D87F6EE009646F7 /* _templates */,
+				1EB121721D87F6EE009646F7 /* conf.py */,
+				1EB121731D87F6EE009646F7 /* devel */,
+				1EB121741D87F6EE009646F7 /* guide */,
+				1EB121751D87F6EE009646F7 /* index.rst */,
+				1EB121761D87F6EE009646F7 /* plugins */,
+				1EB121771D87F6EE009646F7 /* README.md */,
+			);
+			name = source;
+			path = Documentation/source;
 			sourceTree = "<group>";
 		};
 		1EEB0B211D1ADC9A00F0D43D /* components */ = {

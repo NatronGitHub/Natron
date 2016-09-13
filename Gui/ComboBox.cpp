@@ -451,15 +451,22 @@ ComboBox::createMenu()
 {
     if (!_cascading) {
         _rootNode->isMenu->clear();
+        QAction* activeAction = 0;
         for (U32 i = 0; i < _rootNode->children.size(); ++i) {
             _rootNode->children[i]->isLeaf->setEnabled( _enabled && !_readOnly );
             _rootNode->isMenu->addAction(_rootNode->children[i]->isLeaf);
+            if ((int)i == _currentIndex) {
+                activeAction = _rootNode->children[i]->isLeaf;
+            }
             for (U32 j = 0; j < _separators.size(); ++j) {
                 if (_separators[j] == (int)i) {
                     _rootNode->isMenu->addSeparator();
                     break;
                 }
             }
+        }
+        if (activeAction) {
+            _rootNode->isMenu->setActiveAction(activeAction);
         }
     } else {
         setEnabledRecursive( _enabled && !_readOnly, _rootNode.get() );
