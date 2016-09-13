@@ -328,7 +328,8 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     KnobGuiPtr guiKnob = knob.lock();
     KnobIPtr thisKnob = guiKnob->getKnob();
 
-    if ( !thisKnob->isEnabled(0) ) {
+    bool isEnabled = dimension == -1 ? thisKnob->isEnabled(0) : thisKnob->isEnabled(dimension);
+    if (!isEnabled) {
         return false;
     }
     int srcDim;
