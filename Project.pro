@@ -63,6 +63,7 @@ Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
 Tests.depends = Gui Engine
 App.depends = Gui Engine
+ProjectConverter.depends = Gui Engine
 
 OTHER_FILES += \
     Global/Enums.h \

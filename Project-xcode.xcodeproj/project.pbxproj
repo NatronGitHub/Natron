@@ -13,6 +13,8 @@
 			buildPhases = (
 			);
 			dependencies = (
+				AC3FFDFE1D8835900049666E /* PBXTargetDependency */,
+				AC3FFDF91D88358C0049666E /* PBXTargetDependency */,
 				AC7762A51D1ACE550006A58E /* PBXTargetDependency */,
 				ACD67C001CEC9D1000DD2CFE /* PBXTargetDependency */,
 				1E15253A1CA9CD8D0056C506 /* PBXTargetDependency */,
@@ -265,6 +267,20 @@
 			proxyType = 2;
 			remoteGlobalIDString = AC07FADE1D6F65D100A5A9D8;
 			remoteInfo = NatronProjectConverter;
+		};
+		AC3FFDF81D88358C0049666E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC7915091D70394D00CD424C /* yamlcpp.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = EEF7E91261C5BEF2A523730E;
+			remoteInfo = yamlcpp;
+		};
+		AC3FFDFD1D8835900049666E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 71837ACC34AF5AD4155896B4;
+			remoteInfo = Serialization;
 		};
 		AC4AA6371C480E8700C92E12 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1017,6 +1033,16 @@
 			isa = PBXTargetDependency;
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
+		};
+		AC3FFDF91D88358C0049666E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = yamlcpp;
+			targetProxy = AC3FFDF81D88358C0049666E /* PBXContainerItemProxy */;
+		};
+		AC3FFDFE1D8835900049666E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Serialization;
+			targetProxy = AC3FFDFD1D8835900049666E /* PBXContainerItemProxy */;
 		};
 		AC4AA6381C480E8700C92E12 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
