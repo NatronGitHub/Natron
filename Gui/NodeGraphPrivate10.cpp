@@ -255,6 +255,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
             collection = n->getGroup();
             parentName = n->getScriptName_mt_safe();
         }
+        std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > newNodesMap;
         std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
         std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator itUi = nodesUi.begin();
         for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -266,6 +267,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
                     (*oldNewScriptNameMapping)[(*it)->getNodeScriptName()] = newChild->getNode()->getScriptName();
                 }
                 allNodes.push_back( newChild->getNode() );
+                newNodesMap.push_back(std::make_pair(*it,newChild->getNode()));
             }
             if ( !nodesUi.empty() ) {
                 ++itUi;
@@ -273,9 +275,11 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
         }
         restoreConnections(nodes, newNodes, *oldNewScriptNameMapping);
 
-
         //Restore links once all children are created for alias knobs/expressions
-        n->restoreKnobsLinks(*internalSerialization, allNodes, *oldNewScriptNameMapping);
+        for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
+            it->second->restoreKnobsLinks(*(it->first), allNodes, *oldNewScriptNameMapping);
+        }
+
 
     }
 
