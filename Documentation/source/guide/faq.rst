@@ -54,3 +54,25 @@ As of today several applications are compatible with this plug-in format: (meani
 Can I use commercial and proprietary plug-ins within Natron ? 
 *************************************************************
 Yes. Natron doesn’t limit you to open-source plug-ins.
+
+Is my graphics card supported ?
+*******************************
+
+Depends. A OpenGL 2.0 compatible graphics card is needed to run Natron (2.1+).
+
+The following graphics cards are supported.
+
+ * Intel GMA 3150 (Linux-only)
+ * Intel GMA X3xxx (Linux-only)
+ * Intel GMA X4xxx (Windows 7 & Linux)
+ * Intel HD (Ironlake) (Windows 7 & Linux)
+ * Intel HD 2000/3000 (Sandy Bridge) (Windows 7/Linux/Mac)
+ * Intel HD 4000 and greater (All platforms)
+ * Nvidia GeForce 6 series and greater
+ * Nvidia Quadro FX and greater
+ * Nvidia Quadro NVS 285 and greater
+ * ATI/AMD Radeon R300 and greater
+ * ATI/AMD FireGL T2-64 and greater (FirePro)
+
+Cards not listed here will probably not work. On Windows and Linux you can enable software rendering. On Linux enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows enable the legacy hardware package in the installer.
+
