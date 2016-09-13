@@ -1,24 +1,29 @@
 FAQ
-=====
+===
 
 .. toctree::
    :maxdepth: 2
-   
-Can I use Natron for commercial work ?
-**************************************
+
+
+Can I use Natron for commercial work?
+*************************************
+
 Yes. Anything you create with Natron is yours and you’re free to do anything you want with it.
 
-What operating systems are supported by Natron ?
-************************************************
 
-We officially support:
+What operating systems are supported by Natron?
+***********************************************
+
+Natron officially supports:
 
 * Windows 7, 8 and 10 with latest service packs.
 * MacOSX 10.6 or greater
 * Linux 2.6.18 or greater (Glibc 2.12+/libgcc 4.4+)
 
-Why did you make Natron free of charge ?
-****************************************
+
+Why did you make Natron free of charge?
+***************************************
+
 Our original motives were to create a tool for people who needed it and that may felt left-aside by the software editors pricing plans, that is:
 
 * Students who want to learn compositing at home
@@ -30,8 +35,10 @@ One great mission of a free open-source software is to aim to create common prac
 
 On the other hand, being free of charge, Natron can be installed on large-scale render farms without wondering about licensing issues.
 
-What is OpenFX ?
-****************
+
+What is OpenFX?
+***************
+
 `OpenFX <http://openeffects.org/>`_ is a standard for creating visual effects plug-ins for compositing and editor applications.
 
 As of today several applications are compatible with this plug-in format: (meaning you can use the same plug-ins in all of them)
@@ -51,6 +58,33 @@ As of today several applications are compatible with this plug-in format: (meani
 * ButtleOFX
 * TuttleOFX
 
-Can I use commercial and proprietary plug-ins within Natron ? 
-*************************************************************
+
+Can I use commercial and proprietary plug-ins within Natron?
+************************************************************
+
 Yes. Natron doesn’t limit you to open-source plug-ins.
+
+
+Is my graphics card supported?
+******************************
+
+An OpenGL 2.0 compatible graphics card is needed to run Natron (2.1+) with hardware-accelerated rendering. Other graphics cards work with software-only rendering (see below).
+
+The following graphics cards are supported for hardware-accelerated rendering:
+
+ * Intel GMA 3150 (Linux-only)
+ * Intel GMA X3xxx (Linux-only)
+ * Intel GMA X4xxx (Windows 7 & Linux)
+ * Intel HD (Ironlake) (Windows 7 & Linux)
+ * Intel HD 2000/3000 (Sandy Bridge) (Windows 7/Linux/Mac)
+ * Intel HD 4000 and greater (All platforms)
+ * Nvidia GeForce 6 series and greater
+ * Nvidia Quadro FX and greater
+ * Nvidia Quadro NVS 285 and greater
+ * ATI/AMD Radeon R300 and greater
+ * ATI/AMD FireGL T2-64 and greater (FirePro)
+
+Cards not listed here will probably not support hardware-accelerated rendering.
+
+On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the Natron installer.
+

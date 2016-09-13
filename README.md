@@ -1,4 +1,4 @@
-Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/MrKepzie/Natron/blob/master/LICENSE) [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=master)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=master)](https://coveralls.io/r/MrKepzie/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=master)](https://readthedocs.org/projects/natron/?badge=master)
+Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/MrKepzie/Natron/blob/master/LICENSE) [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=master)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=master)](https://coveralls.io/r/MrKepzie/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=master)](https://readthedocs.org/projects/natron/?badge=master) [![Stories in Ready](https://badge.waffle.io/MrKepzie/Natron.png?label=ready&title=Ready)](https://waffle.io/MrKepzie/Natron)
 ======
 
 
@@ -94,15 +94,23 @@ Requirements
 A machine running one of the supported operating systems (GNU/Linux, OS X,
 Microsoft Windows), and a 32-bits x86 or 64-bits x86-64 processor.
 
-If your OpenGL version is not supported or does not implement the
-required extensions, you will get an error when launching Natron for
-the first time.
+An OpenGL 2.0 compatible graphics card is needed to run Natron (2.1+) with hardware-accelerated rendering. Other graphics cards work with software-only rendering (see below).
 
-The system must support one of these OpenGL configurations:
-- OpenGL 2.0
-- OpenGL 1.5 with the extensions `GL_ARB_texture_non_power_of_two`
-  `GL_ARB_shader_objects` `GL_ARB_vertex_buffer_object`
-  `GL_ARB_pixel_buffer_object`
+The following graphics cards are supported for hardware-accelerated rendering:
+
+* Intel GMA 3150 (Linux-only)
+* Intel GMA X3xxx (Linux-only)
+* Intel GMA X4xxx (Windows 7 & Linux)
+* Intel HD (Ironlake) (Windows 7 & Linux)
+* Intel HD 2000/3000 (Sandy Bridge) (Windows 7/Linux/Mac)
+* Intel HD 4000 and greater (All platforms)
+* Nvidia GeForce 6 series and greater
+* Nvidia Quadro FX and greater
+* Nvidia Quadro NVS 285 and greater
+* ATI/AMD Radeon R300 and greater
+* ATI/AMD FireGL T2-64 and greater (FirePro)
+
+On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
 
 
 Installing

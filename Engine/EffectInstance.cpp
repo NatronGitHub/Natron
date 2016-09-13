@@ -839,7 +839,7 @@ EffectInstance::getImage(int inputNb,
             //We are either in analysis or in an unknown thread
             //do not set identity flags, request for RoI the full RoD of the input
             if (inputEffect) {
-                StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputEffect->getRenderHash(), time, scale, view, &inputRoD, 0);
                 if (stat != eStatusFailed) {
                     inputRoDSet = true;
                 }

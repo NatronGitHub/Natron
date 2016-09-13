@@ -1292,25 +1292,37 @@ LutManager::sRGBLut()
     return LutManager::m_instance.getLut("sRGB", from_func_srgb, to_func_srgb);
 }
 
+// Rec.709 and Rec.2020 share the same transfer function (and illuminant), except that
+// Rec.2020 is more precise.
+// https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2020-0-201208-S!!PDF-E.pdf
+// Since this is float, we use the coefficients from Rec.2020
+
+/// from Rec709 to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Rec709(float v)
 {
-    if (v < 0.081f) {
+    //if (v < 0.081f) {
+    if (v < 0.08145f) {
         return (v < 0.0f) ? 0.0f : v * (1.0f / 4.5f);
     } else {
-        return std::pow( (v + 0.099f) * (1.0f / 1.099f), (1.0f / 0.45f) );
+        //return std::pow( (v + 0.099f) * (1.0f / 1.099f), (1.0f / 0.45f) );
+        return std::pow( (v + 0.0993f) * (1.0f / 1.0993f), (1.0f / 0.45f) );
     }
 }
 
+// see above comment
+/// to Rec709 from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Rec709(float v)
 {
-    if (v < 0.018f) {
+    //if (v < 0.018f) {
+    if (v < 0.0181f) {
         return (v < 0.0f) ? 0.0f : v * 4.5f;
     } else {
-        return 1.099f * std::pow(v, 0.45f) - 0.099f;
+        //return 1.099f * std::pow(v, 0.45f) - 0.099f;
+        return 1.0993f * std::pow(v, 0.45f) - (1.0993f - 1.f);
     }
 }
 
@@ -1322,28 +1334,36 @@ LutManager::Rec709Lut()
 
 /*
    Following the formula:
-   offset = pow(10,(blackpoint - whitepoint) * 0.002 / gammaSensito)
+   offset = pow(10,(blackpoint - whitepoint) * 0.002 / gamma)
    gain = 1/(1-offset)
-   linear = gain * pow(10,(1023*v - whitepoint)*0.002/gammaSensito)
-   cineon = (log10((v + offset) /gain)/ (0.002 / gammaSensito) + whitepoint)/1023
+   linear = gain * (pow(10,(1023*v - whitepoint)*0.002/gamma) - offset)
+   cineon = (log10((v + offset) /gain)/ (0.002 / gamma) + whitepoint)/1023
    Here we're using: blackpoint = 95.0
    whitepoint = 685.0
    gammasensito = 0.6
  */
+/// from Cineon to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Cineon(float v)
 {
-    return ( 1.f / ( 1.f - std::pow(10.f, 1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
+    //return ( 1.f / ( 1.f - std::pow(10.f, -1.97f) ) ) * std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
+    //float offset = std::pow(10.f, (95.f - 685.f)*0.002f/0.6f);
+    //float offset = 0.01079775161f;
+    return ( 1.f / ( 1.f - 0.01079775161f ) ) * ( std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f) - 0.01079775161f);
 }
 
+/// to Cineon from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Cineon(float v)
 {
-    float offset = std::pow(10.f, 1.97f);
+    //float offset = std::pow(10.f, -1.97f);
+    //float offset = std::pow(10.f, (95.f - 685.f)*0.002f/0.6f);
+    //float offset = 0.01079775161f;
 
-    return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
+    //return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
+    return (std::log10( (v + 0.01079775161f) / ( 1.f / (1.f - 0.01079775161f) ) ) / (0.002f / 0.6f) + 685.0f) / 1023.f;
 }
 
 const Lut*
@@ -1352,18 +1372,20 @@ LutManager::CineonLut()
     return LutManager::m_instance.getLut("Cineon", from_func_Cineon, to_func_Cineon);
 }
 
+/// from Gamma 1.8 to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Gamma1_8(float v)
 {
-    return std::pow(v, 0.55f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 1.8f);
 }
 
+/// to Gamma 1.8 from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Gamma1_8(float v)
 {
-    return std::pow(v, 1.8f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 0.55f);
 }
 
 const Lut*
@@ -1372,18 +1394,20 @@ LutManager::Gamma1_8Lut()
     return LutManager::m_instance.getLut("Gamma1_8", from_func_Gamma1_8, to_func_Gamma1_8);
 }
 
+/// from Gamma 2.2 to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Gamma2_2(float v)
 {
-    return std::pow(v, 0.45f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 2.2f);
 }
 
+/// to Gamma 2.2 from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Gamma2_2(float v)
 {
-    return std::pow(v, 2.2f);
+    return (v < 0.0f) ? 0.0f : std::pow(v, 0.45f);
 }
 
 const Lut*
@@ -1392,26 +1416,51 @@ LutManager::Gamma2_2Lut()
     return LutManager::m_instance.getLut("Gamma2_2", from_func_Gamma2_2, to_func_Gamma2_2);
 }
 
+/// from Panalog to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_Panalog(float v)
 {
-    return (std::pow(10.f, (1023.f * v - 681.f) / 444.f) - 0.0408) / 0.96f;
+    return (std::pow(10.f, (1023.f * v - 681.f) / 444.f) - 0.0408f) / (1.0f - 0.0408f);
 }
 
+/// to Panalog from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_Panalog(float v)
 {
-    return (444.f * std::log10(0.0408 + 0.96f * v) + 681.f) / 1023.f;
+    return (444.f * std::log10(0.0408f + (1.0f - 0.0408f) * v) + 681.f) / 1023.f;
 }
 
 const Lut*
-LutManager::PanaLogLut()
+LutManager::PanalogLut()
 {
-    return LutManager::m_instance.getLut("PanaLog", from_func_Panalog, to_func_Panalog);
+    return LutManager::m_instance.getLut("Panalog", from_func_Panalog, to_func_Panalog);
 }
 
+/// from REDLog to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_REDLog(float v)
+{
+    return (std::pow(10.f, (1023.f * v - 1023.f) / 511.f) - 0.01) / (1.0f - 0.01f);
+}
+
+/// to REDLog from Linear Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_REDLog(float v)
+{
+    return (511.f * std::log10(0.01f + (1.0f - 0.01f) * v) + 1023.) / 1023.f;
+}
+
+const Lut*
+LutManager::REDLogLut()
+{
+    return LutManager::m_instance.getLut("REDLog", from_func_REDLog, to_func_REDLog);
+}
+
+/// from ViperLog to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_ViperLog(float v)
@@ -1419,6 +1468,7 @@ from_func_ViperLog(float v)
     return std::pow(10.f, (1023.f * v - 1023.f) / 500.f);
 }
 
+/// to ViperLog from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_ViperLog(float v)
@@ -1432,34 +1482,16 @@ LutManager::ViperLogLut()
     return LutManager::m_instance.getLut("ViperLog", from_func_ViperLog, to_func_ViperLog);
 }
 
-static
-float
-from_func_RedLog(float v)
-{
-    return (std::pow(10.f, ( 1023.f * v - 1023.f ) / 511.f) - 0.01f) / 0.99f;
-}
-
-static
-float
-to_func_RedLog(float v)
-{
-    return (511.f * std::log10(0.01f + 0.99f * v) + 1023.f) / 1023.f;
-}
-
-const Lut*
-LutManager::RedLogLut()
-{
-    return LutManager::m_instance.getLut("RedLog", from_func_RedLog, to_func_RedLog);
-}
-
+/// from AlexaV3LogC to Linear Electro-Optical Transfer Function (EOTF)
 static
 float
 from_func_AlexaV3LogC(float v)
 {
     return v > 0.1496582f ? std::pow(10.f, (v - 0.385537f) / 0.2471896f) * 0.18f - 0.00937677f
-           : ( v / 0.9661776f - 0.04378604) * 0.18f - 0.00937677f;
+           : ( v / 0.9661776f - 0.04378604f) * 0.18f - 0.00937677f;
 }
 
+/// to AlexaV3LogC from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
 to_func_AlexaV3LogC(float v)
@@ -1473,6 +1505,61 @@ LutManager::AlexaV3LogCLut()
 {
     return LutManager::m_instance.getLut("AlexaV3LogC", from_func_AlexaV3LogC, to_func_AlexaV3LogC);
 }
+
+/// from SLog1 to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_SLog1(float v)
+{
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= 90./1023. ? (std::pow( 10., (((v*1023.0-64.0)/(940.0-64.0)-0.616596-0.03)/0.432699))-0.037584)*0.9
+           : ((v*1023.0-64.0)/(940.0-64.0)-0.030001222851889303)/5.*0.9;
+}
+
+/// from Linear to SLog1 Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_SLog1(float v)
+{
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= -0.00008153227156 ? ((std::log10((v / 0.9) + 0.037584) * 0.432699 +0.616596+0.03)*(940.0-64.0) + 64.)/1023.
+           : (((v / 0.9) * 5. + 0.030001222851889303)*(940.0-64.0) + 64.)/1023;
+}
+
+const Lut*
+LutManager::SLog1Lut()
+{
+    return LutManager::m_instance.getLut("SLog1", from_func_SLog1, to_func_SLog1);
+}
+
+/// from SLog2 to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_SLog2(float v)
+{
+    // http://community.thefoundry.co.uk/discussion/topic.aspx?f=189&t=100372
+    // nuke.root().knob('luts').addCurve("SLog2-Ref", "{ (t>=90.0/1023.0)? 219.0*(pow(10.0, (((t*1023.0-64.0)/(940.0-64.0)-0.616596-0.03)/0.432699))-0.037584)/155.0*0.9 : ((t*1023.0-64.0)/(940.0-64.0)-0.030001222851889303)/3.53881278538813*0.9 }")
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= 90./1023. ? 219.0 * (std::pow( 10., (((v*1023.0-64.0)/(940.0-64.0)-0.616596-0.03)/0.432699))-0.037584)/155.0*0.9
+          : ((v*1023.0-64.0)/(940.0-64.0)-0.030001222851889303)/3.53881278538813*0.9;
+}
+
+/// from Linear to SLog2 Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_SLog2(float v)
+{
+    // ref: https://pro.sony.com/bbsccms/assets/files/micro/dmpc/training/S-Log2_Technical_PaperV1_0.pdf
+    return v >= -0.00008153227156 ? ((std::log10((v / 0.9) * 155. / 219. + 0.037584) * 0.432699 +0.616596+0.03)*(940.0-64.0) + 64.)/1023.
+            : (((v / 0.9) * 3.53881278538813 + 0.030001222851889303)*(940.0-64.0) + 64.)/1023;
+}
+
+const Lut*
+LutManager::SLog2Lut()
+{
+    return LutManager::m_instance.getLut("SLog2", from_func_SLog2, to_func_SLog2);
+}
+
 
 // r,g,b values are from 0 to 1
 // h = [0,OFXS_HUE_CIRCLE], s = [0,1], v = [0,1]

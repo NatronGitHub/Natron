@@ -1,4 +1,19 @@
-* On OSX
+** On OSX
+
+There are two options: using homebrew, or using macports.
+
+The homebrew path is simpler, but doesn't allow to build universal binaries.
+
+* Using Homebrew
+
+install xquartz https://xquartz.macosforge.org
+
+brew tap homebrew/python
+brew tap homebrew/science
+brew install qt expat cairo glew
+brew install cmake swig boost boost-python ctl ffmpeg fontconfig freetype glew imagemagick jpeg jpeg-turbo libcaca libraw little-cms2 openexr openjpeg seexpr openimageio ilmbase jasper aces_container opencolorio
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
+export CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 
 * Setting up MacPorts
 
@@ -25,15 +40,15 @@
 (add +universal on OSX 10.5 and 10.6)
 
 * special portfiles:
-- graphics/ctl
 - graphics/openimageio
 - graphics/opencolorio
+- graphics/ctl
+- graphics/seexpr
 - aqua/qt4-quick-controls (for ButtleOFX)
 
 * external libraries (from https://sites.google.com/site/tuttleofx/development/build/libraries/macos )
 sudo port -v install \
 git \
-scons \
 boost +python27 \
 jpeg \
 openexr \
@@ -59,13 +74,15 @@ swig-python \
 py27-numpy \
 flex \
 bison \
+seexpr \
 ctl
 
 * for the OpenFX plugins and Natron:
 sudo port -v install \
 openexr \
 opencv \
-qt4-mac
+qt4-mac \
+python34
 
 
 * if the command "pkg-config --cflags glew" gives the following error:
@@ -91,12 +108,14 @@ Requires:
 EOF
 
 * on OSX 10.7 and below:
-sudo port -v install clang-3.3
-sudo port select clang mp-clang-3.3
+sudo port -v install clang-3.4
+sudo port select clang mp-clang-3.4
+sudo port select python python27 
 
 * on OSX 10.8 and above
  sudo port select clang none
  sudo port select gcc none
+sudo port select python python27 
 
 * compiling/installing libjpeg-turbo (don't install it in MacPorts, because it can't coexist with libjpeg):
 - download and install from the dmg file found at from http://sourceforge.net/projects/libjpeg-turbo/files/
@@ -110,7 +129,7 @@ git clone https://github.com/devernay/openfx-yadif.git
 git clone https://github.com/devernay/openfx-opencv.git
 git clone https://github.com/MrKepzie/openfx-io.git
 #git clone https://github.com/tuttleofx/CTL.git
-git clone https://github.com/wdas/SeExpr
+#git clone https://github.com/wdas/SeExpr
 #git clone https://github.com/devernay/sconsProject.git
 git clone https://github.com/tuttleofx/TuttleOFX.git
 git clone https://github.com/MrKepzie/Natron.git
@@ -240,102 +259,26 @@ cd ..
 (cd TuttleOFX;git checkout develop;git pull;git submodule update -i)
 
 cd TuttleOFX;
-#(cd 3rdParty; ln -s ../../CTL/CTL ctl)
-#(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure --prefix=/opt/local CC=clang  CXX=clang++ && make -j3)
-# if there is an error about memset being not defined, add "#include <cstring>" in /opt/local/include/OpenEXR/ImathMatrix.h and relaunch the last line
-(cd 3rdParty; ln -s ../../SeExpr seexpr)
-(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
+mkdir build
+cd build
 
-rm host.sconf; cat > host.sconf << EOF
-import os
-macports_base = '/opt/local'
-macports_include = os.path.join(macports_base, 'include')
-fwkdir_corefoundation = True
-dir_boost = macports_base
-lib_boost_filesystem = 'boost_filesystem-mt'
-lib_boost_program_options = 'boost_program_options-mt'
-lib_boost_python = 'boost_python-mt'
-lib_boost_regex = 'boost_regex-mt'
-lib_boost_system = 'boost_system-mt'
-lib_boost_serialization = 'boost_serialization-mt'
-lib_boost_unit_test_framework = 'boost_unit_test_framework-mt'
-lib_boost_thread = 'libboost_thread-mt'
-lib_boost_date_time = 'libboost_date_time-mt'
-lib_boost_chrono = 'libboost_chrono-mt'
-lib_boost_log = 'libboost_log-mt'
-lib_boost_atomic= 'libboost_atomic-mt'
-lib_rt = ''
-dir_caca = macports_base
-dir_ffmpeg = macports_base
-dir_avutil = macports_base
-dir_avcodec = macports_base
-dir_avformat = macports_base
-dir_swscale = macports_base
-dir_fontconfig = macports_base
-dir_freetype = macports_base
-incdir_freetype = [ macports_include,
-                    os.path.join(macports_include, 'freetype2') ]
-fwkdir_gl = True
-fwkdir_glu = True
-fwkdir_freeglut = True
-dir_glew = macports_base
-dir_half = macports_base
-incdir_half = [ macports_include, os.path.join(macports_include, 'OpenExr') ]
-dir_ilmbase = macports_base
-lib_gomp = ''
-dir_ltdl = macports_base
-incdir_imagemagick = os.path.join(macports_include, "ImageMagick-6")
-lib_imagemagick = "libMagickCore-6.Q16"
-dir_jpeg = macports_base
-dir_littlecms = macports_base
-dir_lcms = macports_base
-dir_lcms2 = macports_base
-dir_opencolorio = macports_base
-incdir_openexr = os.path.join(macports_include, 'OpenEXR/')
-dir_openimageio = macports_base
-incdir_openimageio = [ os.path.join(dir_openimageio, 'include'),
-                       os.path.join(dir_openimageio, 'include', 'OpenImageIO') ]
-dir_openjpeg = macports_base
-dir_png = macports_base
-dir_python= macports_base
-incdir_python = os.path.join(macports_base,
-                        'Library/Frameworks/Python.framework/Versions',
-                        '2.7/Headers')
-lib_python = "python2.7"
-dir_python_numpy = os.path.join(macports_base,
-                         'Library/Frameworks/Python.framework/Versions',
-                         '2.7/lib/python2.7/site-packages/numpy/core')
-dir_raw = macports_base
-dir_tiff = macports_base
-dir_turbojpeg = '/opt/libjpeg-turbo'
-dir_xlibs = macports_base
-dir_x264 = macports_base
-dir_mp3lame = macports_base
-dir_xvidcore = macports_base
-extern = '#3rdParty'
-dir_ctl = macports_base
-incdir_ctl = join(macports_include, 'CTL')
-dir_seexpr = join(extern, 'seexpr')
-incdir_seexpr = join(dir_seexpr, 'src/SeExpr')
-libdir_seexpr = join(dir_seexpr, 'build/src/SeExpr')
-EOF
+on MacPorts:
 
-#dir_ctl = join(extern, 'ctl')
-#modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-#incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
-#libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
-
-scons -k mode=debug CC=clang CXX=clang++ compiler=clang -j3
-rm -rf $ofx/Plugins/TuttleOFX.debug
-mkdir -p $ofx/Plugins/TuttleOFX.debug
-mv dist/*/*/debug/plugin/*.ofx.bundle $ofx/Plugins/TuttleOFX.debug
-
-scons -k CC=clang CXX=clang++ compiler=clang -j3
-rm -rf $ofx/Plugins.disabled/TuttleOFX
-mkdir -p $ofx/Plugins.disabled/TuttleOFX
-mv dist/*/*/production/plugin/*.ofx.bundle $ofx/Plugins.disabled/TuttleOFX
+export LIBRARY_PATH=/opt/local/lib
+cmake -DPYTHON_INCLUDE_DIR=/opt/local/Library/Frameworks/Python.framework/Headers -DOPENIMAGEIO_INCLUDE_DIR=/opt/local/include/OpenImageIO -DCMAKE_INSTALL_PREFIX=/tmp/tuttleofx-install -DCMAKE_PREFIX_PATH="/opt/local;/opt/libjpeg-turbo"  -DPYTHONLIBS_VERSION_STRING=2.7 -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ..  
 
 
+on HomeBrew:
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
+export CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
+export CPLUS_INCLUDE_PATH=/usr/local/include
+export LIBRARY_PATH=/usr/local/lib
+export PYTHON_VERSION=2.7
+cmake -DOPENIMAGEIO_INCLUDE_DIR=/usr/local/include/OpenImageIO -DCMAKE_INSTALL_PREFIX=/tmp/tuttleofx-install -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH -DINCLUDEPATH=/usr/local/include -DWITHOUT_NUMPY=True -DTUTTLE_DEPLOY_DEPENDENCIES=True -DTUTTLE_PYTHON_VERSION=${PYTHON_VERSION} ..
+
+then:
+make
+make install
 cd ..
 
 
@@ -454,7 +397,6 @@ git branch -d mybranch
 
 sudo yum install \
 \
-scons \
 git \
 gcc gcc-c++ \
 swig \
@@ -478,7 +420,8 @@ LibRaw-devel \
 openjpeg-devel \
 graphviz-devel \
  LibRaw-devel nasm OpenColorIO-devel OpenImageIO-devel numpy ffmpeg-devel turbojpeg-devel \
-opencv-devel ftgl-devel eigen2-devel
+opencv-devel ftgl-devel eigen2-devel \
+pyside-tools python-pyside-devel shiboken-devel python3-devel
 
 - checkout sources
 
@@ -602,9 +545,9 @@ cd ..
 
 cd TuttleOFX;
 (cd 3rdParty; ln -s ../../CTL/CTL ctl)
-(cd 3rdParty/ctl; git checkout afcff9748a81526ff9a85f6f85a4e9aabd8ae851; mkdir build; cd build && cmake .. && make)
-(cd 3rdParty; ln -s ../../SeExpr seexpr)
-(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
+(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure && make)
+(cd 3rdParty; ln -s ../../SeExpr seexpr) 
+(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make) 
 
 
 rm host.sconf; cat > host.sconf << EOF
@@ -617,8 +560,8 @@ incdir_python = '/usr/include/python2.7'
 extern = '#3rdParty'
 dir_ctl = join(extern, 'ctl')
 modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-incdir_ctl = [incdir_openexr]+[join(dir_ctl,'lib',inc) for inc in modules_ctl]
-libdir_ctl = [join(dir_ctl,'build/lib',inc) for inc in modules_ctl]
+incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
+libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
 dir_boost = '/opt/boost'
 incdir_ffmpeg = '/usr/include/ffmpeg'
 incdir_avutil = incdir_ffmpeg
@@ -650,13 +593,13 @@ make CXX="/opt/llvm/bin/clang++ -fsanitize=thread -fPIE -pie" LINK="/opt/llvm/bi
 
 ** on ubuntu:
 
+- install boost >= 1.54.0 in /opt/boost, see http://www.boost.org/doc/html/bbv2/installation.html
 
 - install dependencies
 
 [[[[ Special note for Ubuntu 12.04 (Precise):
 we alse require
 - boost >= 1.49 for Natron
-- install boost >= 1.54.0 in /opt/boost, see http://www.boost.org/doc/html/bbv2/installation.html
 - ilmbase, openexr, opencolorio, openimageio for TuttleOFX
 - opencv for the opencv plugins
 
@@ -755,8 +698,8 @@ see fedora install (above)
 (cd TuttleOFX;git checkout develop;git pull;git submodule update -i)
 
 cd TuttleOFX;
-(cd 3rdParty; ln -s ../../CTL ctl)
-(cd 3rdParty/ctl; git checkout afcff9748a81526ff9a85f6f85a4e9aabd8ae851;  mkdir build; cd build && cmake .. && make)
+(cd 3rdParty; ln -s ../../CTL/CTL ctl)
+(cd 3rdParty/ctl; git pull; autoreconf -i; ./configure && make)
 (cd 3rdParty;python init.py opencolorio)
 (cd 3rdParty; ln -s ../../SeExpr seexpr)
  (cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
@@ -797,8 +740,8 @@ incdir_python = join('/usr/include',lib_python)
 extern = '#3rdParty'
 dir_ctl = join(extern, 'ctl')
 modules_ctl = ['IlmCtlSimd', 'IlmCtl', 'IlmCtlMath']
-incdir_ctl = [incdir_openexr]+[join(dir_ctl,'lib',inc) for inc in modules_ctl]
-libdir_ctl = [join(dir_ctl,'build/lib',inc) for inc in modules_ctl]
+incdir_ctl = [incdir_openexr]+[join(dir_ctl,inc) for inc in modules_ctl]
+libdir_ctl = [join(dir_ctl,inc,'.libs') for inc in modules_ctl]
 dir_boost = '/opt/boost'
 dir_opencolorio = join(extern, 'opencolorio')
 incdir_opencolorio = [join(dir_opencolorio, 'export'),
