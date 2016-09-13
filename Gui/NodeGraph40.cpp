@@ -174,6 +174,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
         std::istringstream ss(str);
         SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
         SERIALIZATION_NAMESPACE::read(ss, &cb);
+        nodes = cb.nodes;
     } catch (...) {
         
         // Check if this was copy/pasted from a project directly
