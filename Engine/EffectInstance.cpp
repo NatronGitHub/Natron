@@ -889,7 +889,7 @@ EffectInstance::getImage(int inputNb,
                 roi = thisRod;
             } else {
                 if (inputEffect) {
-                    StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                    StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputEffect->getRenderHash(), time, scale, view, &inputRoD, 0);
                     if (stat != eStatusFailed) {
                         inputRoDSet = true;
                     }
