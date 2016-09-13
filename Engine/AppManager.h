@@ -493,9 +493,6 @@ public:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
 
-    void getMemoryStatsForPlugin(const std::string& holder,
-                                           std::size_t* ramOccupied,
-                                           std::size_t* diskOccupied) const;
 
     void setOFXHostHandle(void* handle);
 
@@ -607,6 +604,8 @@ public:
     virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* /*serialization*/) {}
 
 public Q_SLOTS:
+
+    void printCacheMemoryStats() const;
 
     void exitAppWithSaveWarning()
     {

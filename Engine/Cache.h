@@ -369,6 +369,18 @@ Q_SIGNALS:
     void entryStorageChanged(SequenceTime, int, int);
 };
 
+struct CacheEntryReportInfo
+{
+    std::size_t ramBytes, diskBytes;
+
+    CacheEntryReportInfo()
+    : ramBytes(0)
+    , diskBytes(0)
+    {
+
+    }
+};
+
 
 /*
  * ValueType must be derived of CacheEntryHelper
@@ -1695,12 +1707,9 @@ public:
         }
     }
 
-    void getMemoryStatsForPlugin(const std::string& pluginID,
-                                           std::size_t* ramOccupied,
-                                           std::size_t* diskOccupied) const
+
+    void getMemoryStats(std::map<std::string, CacheEntryReportInfo>* infos) const
     {
-        *ramOccupied = 0;
-        *diskOccupied = 0;
 
         QMutexLocker locker(&_lock);
 
@@ -1709,11 +1718,12 @@ public:
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
-                if (front->getKey().getHolderPluginID() == pluginID) {
-                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                        *ramOccupied += (*it)->size();
-                    }
+                std::string plugID = front->getKey().getHolderPluginID();
+                CacheEntryReportInfo& entryData = (*infos)[plugID];
+                for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    entryData.ramBytes += (*it)->size();
                 }
+
             }
         }
 
@@ -1722,11 +1732,12 @@ public:
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
-                if (front->getKey().getHolderPluginID() == pluginID) {
-                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                        *diskOccupied += (*it)->size();
-                    }
+                std::string plugID = front->getKey().getHolderPluginID();
+                CacheEntryReportInfo& entryData = (*infos)[plugID];
+                for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    entryData.diskBytes += (*it)->size();
                 }
+                
             }
         }
     }

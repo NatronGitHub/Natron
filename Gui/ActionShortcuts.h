@@ -116,6 +116,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionClearAllCaches "clearAllCaches"
 #define kShortcutDescActionClearAllCaches "Clear All Caches"
 
+#define kShortcutIDActionShowCacheReport "showCacheReport"
+#define kShortcutDescActionShowCacheReport "Show Cache Report"
+
 #define kShortcutIDActionShowAbout "showAbout"
 #define kShortcutDescActionShowAbout "About Natron"
 

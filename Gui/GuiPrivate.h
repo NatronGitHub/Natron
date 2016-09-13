@@ -109,6 +109,7 @@ public:
     ActionWithShortcut *actionClearNodeCache;
     ActionWithShortcut *actionClearPluginsLoadingCache;
     ActionWithShortcut *actionClearAllCaches;
+    ActionWithShortcut *actionShowCacheReport;
     ActionWithShortcut *actionShowAboutWindow;
     QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
     ActionWithShortcut *renderAllWriters;

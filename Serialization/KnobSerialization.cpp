@@ -681,7 +681,6 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
                 TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
                 data->boldActivated = true;
             } else {
-                assert(false);
                 std::cerr << "WARNING: Unrecognized parameter property " << prop << std::endl;
             }
 

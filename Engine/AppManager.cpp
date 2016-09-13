@@ -2259,29 +2259,62 @@ AppManager::queueEntriesForDeletion(const std::list<FrameEntryPtr>& images)
 }
 
 void
-AppManager::getMemoryStatsForPlugin(const std::string& pluginID,
-                                              std::size_t* ramOccupied,
-                                              std::size_t* diskOccupied) const
+AppManager::printCacheMemoryStats() const
 {
-    *ramOccupied = 0;
-    *diskOccupied = 0;
+    appPTR->clearErrorLog_mt_safe();
+    std::map<std::string, CacheEntryReportInfo> infos;
 
-    std::size_t viewerCacheMem = 0;
-    std::size_t viewerCacheDisk = 0;
-    std::size_t diskCacheMem = 0;
-    std::size_t diskCacheDisk = 0;
-    std::size_t nodeCacheMem = 0;
-    std::size_t nodeCacheDisk = 0;
+    {
+        // Cache entries for the viewer cache don't have a plug-in ID since this is the only plug-in using it
+        std::map<std::string, CacheEntryReportInfo> viewerInfos;
+        _imp->_viewerCache->getMemoryStats(&viewerInfos);
 
-    if (pluginID == PLUGINID_NATRON_VIEWER_GROUP) {
-        _imp->_viewerCache->getMemoryStatsForPlugin(pluginID, &viewerCacheMem, &viewerCacheDisk);
-    } else {
-        _imp->_diskCache->getMemoryStatsForPlugin(pluginID, &diskCacheMem, &diskCacheDisk);
-        _imp->_nodeCache->getMemoryStatsForPlugin(pluginID, &nodeCacheMem, &nodeCacheDisk);
+        CacheEntryReportInfo& data = infos[PLUGINID_NATRON_VIEWER_INTERNAL];
+        for (std::map<std::string, CacheEntryReportInfo>::iterator it = viewerInfos.begin(); it!=viewerInfos.end(); ++it) {
+            data.diskBytes += it->second.diskBytes;
+            data.ramBytes += it->second.ramBytes;
+        }
+    }
+    {
+        _imp->_nodeCache->getMemoryStats(&infos);
+    }
+    {
+        _imp->_diskCache->getMemoryStats(&infos);
     }
 
-    *ramOccupied = diskCacheMem + viewerCacheMem + nodeCacheMem;
-    *diskOccupied = diskCacheDisk + viewerCacheDisk + nodeCacheDisk;
+    QString reportStr;
+    std::size_t totalDisk = 0;
+    std::size_t totalRam = 0;
+    reportStr += QLatin1String("\n");
+    if (!infos.empty()) {
+        for (std::map<std::string, CacheEntryReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
+            if (it->second.ramBytes == 0 && it->second.diskBytes == 0) {
+                continue;
+            }
+            totalRam += it->second.ramBytes;
+            totalDisk += it->second.diskBytes;
+
+            reportStr += QString::fromUtf8(it->first.c_str());
+            reportStr += QLatin1String("--> ");
+            reportStr += QLatin1String("RAM: ");
+            reportStr += printAsRAM(it->second.ramBytes);
+            reportStr += QLatin1String(" Disk: ");
+            reportStr += printAsRAM(it->second.diskBytes);
+            reportStr += QLatin1String("\n");
+        }
+        reportStr += QLatin1String("-------------------------------\n");
+    }
+    reportStr += tr("Total");
+    reportStr += QLatin1String("--> ");
+    reportStr += QLatin1String("RAM: ");
+    reportStr += printAsRAM(totalRam);
+    reportStr += QLatin1String(" Disk: ");
+    reportStr += printAsRAM(totalDisk);
+
+
+    appPTR->writeToErrorLog_mt_safe(tr("Cache Report"), QDateTime::currentDateTime(), reportStr);
+
+    appPTR->showErrorLog();
 }
 
 
