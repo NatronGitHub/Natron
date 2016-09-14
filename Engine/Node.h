@@ -1379,11 +1379,11 @@ public:
     void clearStreamWarning(StreamWarningEnum warning);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
+    void refreshEnabledKnobsLabel(const ImageComponents& layer);
+
 private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
-
-    void refreshEnabledKnobsLabel(const ImageComponents& layer);
 
     void refreshCreatedViews(const KnobIPtr& knob);
 
