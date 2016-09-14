@@ -4,6 +4,7 @@ Compositing
 .. toctree::
    :maxdepth: 2
 
+   compositing_intro.rst
    managing_projects.rst
    reformatting.rst
    channels.rst
@@ -17,4 +18,3 @@ Compositing
    stereoscopic.rst
    previews_and_rendering.rst
    expressions.rst
-
