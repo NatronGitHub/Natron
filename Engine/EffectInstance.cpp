@@ -967,7 +967,7 @@ EffectInstance::getImage(int inputNb,
             RectD canonicalPixelRoI;
 
             if (!inputRoDSet) {
-                StatusEnum st = inputEffect->getRegionOfDefinition(frameViewHash, time, scale, view, &inputRoD);
+                StatusEnum st = inputEffect->getRegionOfDefinition(time, scale, view, &inputRoD);
                 Q_UNUSED(st);
             }
 
@@ -1019,8 +1019,7 @@ EffectInstance::getImage(int inputNb,
 } // getImage
 
 void
-EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
-                                              double /*time*/,
+EffectInstance::calcDefaultRegionOfDefinition(double /*time*/,
                                               const RenderScale & /*scale*/,
                                               ViewIdx /*view*/,
                                               RectD *rod)
@@ -1032,8 +1031,7 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
 }
 
 StatusEnum
-EffectInstance::getRegionOfDefinition(U64 hash,
-                                      double time,
+EffectInstance::getRegionOfDefinition(double time,
                                       const RenderScale & scale,
                                       ViewIdx view,
                                       RectD* rod) //!< rod is in canonical coordinates
@@ -1050,7 +1048,10 @@ EffectInstance::getRegionOfDefinition(U64 hash,
         EffectInstancePtr input = getInput(i);
         if (input) {
             RectD inputRod;
-            StatusEnum st = input->getRegionOfDefinition_public(hash, time, renderMappedScale, view, &inputRod);
+            U64 inputHash;
+            bool gotHash = input->getRenderHash(time, view, &inputHash);
+            (void)gotHash;
+            StatusEnum st = input->getRegionOfDefinition_public(inputHash, time, renderMappedScale, view, &inputRod);
             assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == eStatusFailed) {
                 return st;
@@ -1071,8 +1072,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
 }
 
 void
-EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
-                                         double time,
+EffectInstance::ifInfiniteApplyHeuristic(double time,
                                          const RenderScale & scale,
                                          ViewIdx view,
                                          RectD* rod) //!< input/output
@@ -1103,7 +1103,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
+        calcDefaultRegionOfDefinition(time, scale, view, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
             EffectInstancePtr input = getInput(i);
@@ -1113,7 +1113,10 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                 if (input->supportsRenderScaleMaybe() == eSupportsNo) {
                     inputScale.x = inputScale.y = 1.;
                 }
-                StatusEnum st = input->getRegionOfDefinition_public(hash, time, inputScale, view, &inputRod);
+                U64 inputHash;
+                bool gotHash = input->getRenderHash(time, view, &inputHash);
+                (void)gotHash;
+                StatusEnum st = input->getRegionOfDefinition_public(inputHash, time, inputScale, view, &inputRod);
                 if (st != eStatusFailed) {
                     if (firstInput) {
                         inputsUnion = inputRod;
@@ -3987,7 +3990,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             RECURSIVE_ACTION();
 
 
-            ret = getRegionOfDefinition(hash, time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
+            ret = getRegionOfDefinition(time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
 
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
@@ -4008,7 +4011,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
             assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
         }
-        ifInfiniteApplyHeuristic(hash, time, scale, view, rod);
+        ifInfiniteApplyHeuristic(time, scale, view, rod);
 
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 

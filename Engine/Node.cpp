@@ -9805,8 +9805,9 @@ Node::dequeueActions()
             isGroup->dequeueConnexions();
         }
     }
-    if (_imp->rotoContext) {
-        _imp->rotoContext->dequeueGuiActions();
+    RotoDrawableItemPtr strokeItem = getAttachedRotoItem();
+    if (strokeItem) {
+        strokeItem->dequeueGuiActions();
     }
 
 
@@ -10179,10 +10180,10 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(0, time, scaleOne, ViewIdx(0), &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(time, scaleOne, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
                 RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(0, time, scale, ViewIdx(0), &rod);
+                stat = _imp->effect->getRegionOfDefinition(time, scale, ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {

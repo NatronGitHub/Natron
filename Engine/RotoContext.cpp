@@ -1924,32 +1924,6 @@ RotoContext::getBeziersKeyframeTimes(std::list<double> *times) const
     }
 }
 
-static void
-dequeueActionForLayer(const RotoLayerPtr& layer)
-{
-    RotoItems items = layer->getItems_mt_safe();
-
-    for (RotoItems::iterator it = items.begin(); it != items.end(); ++it) {
-        BezierPtr isBezier = toBezier(*it);
-        RotoLayerPtr isLayer = toRotoLayer(*it);
-        if (isBezier) {
-            isBezier->dequeueGuiActions();
-        } else if (isLayer) {
-            dequeueActionForLayer(isLayer);
-        }
-    }
-}
-
-void
-RotoContext::dequeueGuiActions()
-{
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        if ( !_imp->layers.empty() ) {
-            dequeueActionForLayer(_imp->layers.front());
-        }
-    }
-}
 
 KnobChoicePtr
 RotoContext::getMotionBlurTypeKnob() const

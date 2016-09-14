@@ -159,11 +159,11 @@ RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 }
 
 StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
    
 
-    StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    StatusEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
     if (st != eStatusOK) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }

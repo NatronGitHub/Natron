@@ -1048,19 +1048,18 @@ public:
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
      **/
-    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) WARN_UNUSED_RETURN;
 
 protected:
 
 
-    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD *rod);
+    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD *rod);
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
      **/
-    void ifInfiniteApplyHeuristic(U64 hash,
-                                  double time,
+    void ifInfiniteApplyHeuristic(double time,
                                   const RenderScale & scale,
                                   ViewIdx view,
                                   RectD* rod); //!< input/output

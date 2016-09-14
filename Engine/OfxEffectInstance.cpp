@@ -1326,8 +1326,7 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 }
 
 StatusEnum
-OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
-                                         double time,
+OfxEffectInstance::getRegionOfDefinition(double time,
                                          const RenderScale & scale,
                                          ViewIdx view,
                                          RectD* rod)
@@ -1468,8 +1467,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
 } // getRegionOfDefinition
 
 void
-OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
-                                                 double time,
+OfxEffectInstance::calcDefaultRegionOfDefinition(double time,
                                                  const RenderScale & scale,
                                                  ViewIdx view,
                                                  RectD *rod)

@@ -593,7 +593,7 @@ public:
 
     void setAutoOrientationComputation(bool autoCompute);
 
-    bool dequeueGuiActions();
+    virtual bool dequeueGuiActions() OVERRIDE FINAL;
 
 private:
 

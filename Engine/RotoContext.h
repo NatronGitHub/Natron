@@ -349,7 +349,6 @@ public:
      **/
     RotoLayerPtr findDeepestSelectedLayer() const;
 
-    void dequeueGuiActions();
 
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
 

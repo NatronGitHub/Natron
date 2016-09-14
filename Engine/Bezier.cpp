@@ -1020,7 +1020,15 @@ Bezier::copyInternalPointsToGuiPoints()
 bool
 Bezier::canSetInternalPoints() const
 {
-    return !getContext()->getNode()->isNodeRendering();
+    NodePtr maskNode = getMaskNode();
+    if (maskNode && maskNode->isNodeRendering()) {
+        return false;
+    }
+    NodePtr effectNode = getEffectNode();
+    if (effectNode && effectNode->isNodeRendering()) {
+        return false;
+    }
+    return true;
 }
 
 void

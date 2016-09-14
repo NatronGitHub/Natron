@@ -1189,8 +1189,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 } // ReadNode::knobChanged
 
 StatusEnum
-ReadNode::getRegionOfDefinition(U64 hash,
-                                double time,
+ReadNode::getRegionOfDefinition(double time,
                                 const RenderScale & scale,
                                 ViewIdx view,
                                 RectD* rod)
@@ -1200,7 +1199,7 @@ ReadNode::getRegionOfDefinition(U64 hash,
     }
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getRegionOfDefinition(hash, time, scale, view, rod);
+        return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, rod);
     } else {
         return eStatusFailed;
     }
