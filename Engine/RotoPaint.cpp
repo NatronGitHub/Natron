@@ -156,6 +156,12 @@ RotoPaint::getPremultNode() const
 }
 
 NodePtr
+RotoPaint::getMetadataFixerNode() const
+{
+    return _imp->premultFixerNode.lock();
+}
+
+NodePtr
 RotoPaint::getInternalInputNode(int index) const
 {
     if (index < 0 || index >= (int)_imp->inputNodes.size()) {
@@ -236,6 +242,41 @@ RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /
 
     }
 
+    // Make a no-op that fixes the output premultiplication state
+    NodePtr noopNode;
+    {
+        CreateNodeArgs args(PLUGINID_OFX_NOOP, thisShared);
+        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        // Set premult node to be identity by default
+        args.addParamDefaultValue<bool>("setPremult", true);
+        noopNode = getApp()->createNode(args);
+        _imp->premultFixerNode = noopNode;
+
+        KnobIPtr premultChoiceKnob = noopNode->getKnobByName("outputPremult");
+        try {
+            const char* premultChoiceExpr =
+            "premultChecked = thisGroup.premultiply.get()\n"
+            "rChecked = thisGroup.doRed.get()\n"
+            "gChecked = thisGroup.doGreen.get()\n"
+            "bChecked = thisGroup.doBlue.get()\n"
+            "aChecked = thisGroup.doAlpha.get()\n"
+            "hasColor = rChecked or gChecked or bChecked\n"
+            "ret = 0\n"
+            "if premultChecked or hasColor or not aChecked:\n"
+            "    ret = 1\n" // premult if there's one of RGB checked or none
+            "else:\n"
+            "    ret = 2\n"
+            ;
+            premultChoiceKnob->setExpression(0, premultChoiceExpr, true, true);
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            assert(false);
+        }
+
+    }
+    noopNode->connectInput(premultNode, 0);
+    premultNode->connectInput(noopNode, 0);
 
     // Initialize default connections
     outputNode->connectInput(_imp->inputNodes[0].lock(), 0);

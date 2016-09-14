@@ -140,6 +140,8 @@ public:
 
     NodePtr getInternalInputNode(int index) const;
 
+    NodePtr getMetadataFixerNode() const;
+
     void getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b, KnobBoolPtr *a) const;
 
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -408,6 +408,7 @@ struct RotoPaintPrivate
     // The group internal input nodes
     std::vector<NodeWPtr> inputNodes;
     NodeWPtr premultNode;
+    NodeWPtr premultFixerNode;
 
     RotoPaintPrivate(RotoPaint* publicInterface,
                      bool isPaintByDefault);

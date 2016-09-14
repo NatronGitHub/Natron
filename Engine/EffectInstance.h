@@ -69,6 +69,7 @@
 #define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
 #define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"
 #define PLUGINID_OFX_FRAMEHOLD    "net.sf.openfx.FrameHold"
+#define PLUGINID_OFX_NOOP         "net.sf.openfx.NoOpPlugin"
 #define PLUGINID_OFX_PREMULT      "net.sf.openfx.Premult"
 #define PLUGINID_OFX_UNPREMULT    "net.sf.openfx.Unpremult"
 #define PLUGINID_OFX_RETIME       "net.sf.openfx.Retime"

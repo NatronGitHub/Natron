@@ -2755,7 +2755,7 @@ KnobHelper::setExpressionInternal(int dimension,
         exprInvalid = e.what();
         exprCpy = expression;
         if (failIfInvalid) {
-            throw e;
+            throw std::invalid_argument(exprInvalid);
         }
     }
 

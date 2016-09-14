@@ -2157,6 +2157,26 @@ RotoContext::isAnimated() const
     return false;
 }
 
+static void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
+{
+    if (treeOutputNode->getInput(0) != noOpNode) {
+        treeOutputNode->disconnectInput(0);
+        treeOutputNode->connectInput(noOpNode, 0);
+    }
+    if (noOpNode->getInput(0) != premultNode) {
+        noOpNode->disconnectInput(0);
+        noOpNode->connectInput(premultNode, 0);
+    }
+    if (premultNode->getInput(0) != mergeNode) {
+        premultNode->disconnectInput(0);
+        premultNode->connectInput(mergeNode, 0);
+    }
+    // Connect the mask of the merge to the Mask input
+    mergeNode->disconnectInput(2);
+    mergeNode->connectInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
+
+}
+
 void
 RotoContext::refreshRotoPaintTree()
 {
@@ -2227,64 +2247,43 @@ RotoContext::refreshRotoPaintTree()
         }
     }
 
-    // Default to premult node as bottom of the tree
-    NodePtr treeBottomNode = rotoPaintEffect->getPremultNode();
-    if (!treeBottomNode) {
+    // Default to noop node as bottom of the tree
+    NodePtr premultNode = rotoPaintEffect->getPremultNode();
+    NodePtr noOpNode = rotoPaintEffect->getMetadataFixerNode();
+    NodePtr treeOutputNode = rotoPaintEffect->getOutputNode(false);
+    if (!premultNode || !noOpNode || !treeOutputNode) {
         return;
     }
-    NodePtr treeOutputNode = rotoPaintEffect->getOutputNode(false);
 
-    NodePtr bottomTreeInput;
     if (canConcatenate) {
-        // Connect the premult to the global merge if we concatenate
-        bottomTreeInput = _imp->globalMergeNodes.front();
+        connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.front());
     } else {
         if (!items.empty()) {
-            // Connect premult to the first item merge node
-            bottomTreeInput = items.front()->getMergeNode();
+            // Connect noop to the first item merge node
+            connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.front()->getMergeNode());
+
         } else {
-            // Connect to the internal input node
-            bottomTreeInput = rotoPaintEffect->getInternalInputNode(0);
-
-            // If the tree is empty, just wire the output to input, don't use the premult node
-            treeBottomNode = treeOutputNode;
+            NodePtr treeInputNode0 = rotoPaintEffect->getInternalInputNode(0);
+            if (treeOutputNode->getInput(0) != treeInputNode0) {
+                treeOutputNode->disconnectInput(0);
+                treeOutputNode->connectInput(treeInputNode0, 0);
+            }
         }
     }
 
-    // Connect the output node to the premult if needed
-    if (treeBottomNode != bottomTreeInput) {
-        if (treeOutputNode->getRealInput(0) != treeBottomNode) {
-            treeOutputNode->disconnectInput(0);
-            treeOutputNode->connectInput(treeBottomNode, 0);
-        }
-    }
-
-
-
-    // This either connect the output to the input node if the items are empty or connect the premult to the first merge node
-    treeBottomNode->disconnectInput(0);
-    treeBottomNode->connectInput(bottomTreeInput, 0);
-
-    if (treeBottomNode == rotoPaintEffect->getPremultNode()) {
+    {
         // Make sure the premult node has its RGB checkbox checked
-        treeBottomNode->getEffectInstance()->beginChanges();
+        premultNode->getEffectInstance()->beginChanges();
         KnobBoolPtr process[3];
-        process[0] = toKnobBool(treeBottomNode->getKnobByName(kNatronOfxParamProcessR));
-        process[1] = toKnobBool(treeBottomNode->getKnobByName(kNatronOfxParamProcessG));
-        process[2] = toKnobBool(treeBottomNode->getKnobByName(kNatronOfxParamProcessB));
+        process[0] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessR));
+        process[1] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessG));
+        process[2] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessB));
         for (int i = 0; i < 3; ++i) {
             assert(process[i]);
             process[i]->setValue(true);
         }
-        treeBottomNode->getEffectInstance()->endChanges();
-    }
+        premultNode->getEffectInstance()->endChanges();
 
-
-    if (!items.empty()) {
-        assert(bottomTreeInput->getPluginID() == PLUGINID_OFX_MERGE);
-        // Connect the mask of the merge to the Mask input
-        bottomTreeInput->disconnectInput(2);
-        bottomTreeInput->connectInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
     }
 
 
