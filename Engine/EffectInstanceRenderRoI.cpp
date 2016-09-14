@@ -689,7 +689,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                     // We fetched potentially different components, so convert them to the format requested
                     std::map<ImageComponents, ImagePtr> convertedPlanes;
                     AppInstancePtr app = _publicInterface->getApp();
-                    bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+                    const bool useAlpha0ForRGBToRGBAConversion = false;
                     std::list<ImageComponents>::const_iterator compIt = args.components.begin();
 
                     for (std::map<ImageComponents, ImagePtr>::iterator it = outputPlanes->begin(); it != outputPlanes->end(); ++it, ++compIt) {
@@ -1911,7 +1911,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// Make sure all planes rendered have the requested  format ///////////////////////////
 
-    bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+    const bool useAlpha0ForRGBToRGBAConversion = false;
 
     // If the caller is not multiplanar, for the color plane we remap it to the components metadata obtained from the metadata pass, otherwise we stick to returning
     //bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;

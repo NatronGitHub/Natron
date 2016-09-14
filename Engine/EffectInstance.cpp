@@ -990,7 +990,8 @@ EffectInstance::getImage(int inputNb,
 
 
     if (mapToClipPrefs) {
-        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+        const bool useAlpha0ForRGBToRGBAConversion = false;
+        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, useAlpha0ForRGBToRGBAConversion, outputPremult, channelForMask);
     }
 
 #ifdef DEBUG

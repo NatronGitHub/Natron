@@ -336,7 +336,6 @@ public:
         , lastStrokeMovementMutex()
         , strokeBitmapCleared(false)
         , paintBuffer()
-        , useAlpha0ToConvertFromRGBToRGBA(false)
         , isBeingDestroyedMutex()
         , isBeingDestroyed(false)
         , inputModifiedRecursion(0)
@@ -555,12 +554,6 @@ public:
     // During painting this is the buffer we use
     ImagePtr paintBuffer;
 
-    // These are dynamic props
-
-    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
-    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
-    //won't be able to paint the alpha channel
-    bool useAlpha0ToConvertFromRGBToRGBA;
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
     boost::shared_ptr<NodeRenderWatcher> renderWatcher;
@@ -952,12 +945,6 @@ Node::load(const CreateNodeArgs& args)
         group->notifyNodeActivated(thisShared);
     }
 
-    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
-    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
-    //won't be able to paint the alpha channel
-    if ( isRotoPaintingNode() ) {
-        _imp->useAlpha0ToConvertFromRGBToRGBA = true;
-    }
 
     assert(_imp->effect);
 
@@ -989,11 +976,6 @@ Node::getCurrentNodePresets() const
     return _imp->initialNodePreset;
 }
 
-bool
-Node::usesAlpha0ToConvertFromRGBToRGBA() const
-{
-    return _imp->useAlpha0ToConvertFromRGBToRGBA;
-}
 
 void
 Node::setWhileCreatingPaintStroke(bool creating)
@@ -10667,15 +10649,7 @@ Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->paintStroke = stroke;
-    _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     setProcessChannelsValues(true, true, true, true);
-}
-
-void
-Node::setUseAlpha0ToConvertFromRGBToRGBA(bool use)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->useAlpha0ToConvertFromRGBToRGBA = use;
 }
 
 RotoDrawableItemPtr
