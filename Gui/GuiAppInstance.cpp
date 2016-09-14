@@ -209,17 +209,19 @@ GuiAppInstance::aboutToQuit()
 {
     deletePreviewProvider();
 
-    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-    _imp->_gui->setGuiAboutToClose(true);
+    if (_imp->_gui) {
+        ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+        _imp->_gui->setGuiAboutToClose(true);
 
-    _imp->_gui->notifyGuiClosing();
+        _imp->_gui->notifyGuiClosing();
 
-    AppInstance::aboutToQuit();
+        AppInstance::aboutToQuit();
 
-    _imp->_isClosing = true;
-    _imp->_gui->close();
-    _imp->_gui->deleteLater();
-    _imp->_gui = 0;
+        _imp->_isClosing = true;
+        _imp->_gui->close();
+        _imp->_gui->deleteLater();
+        _imp->_gui = 0;
+    }
 }
 
 GuiAppInstance::~GuiAppInstance()
