@@ -197,6 +197,15 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_autoSaveUnSavedProjects);
 
 
+    _saveSafetyMode = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Full Recovery Save") );
+    _saveSafetyMode->setName("fullRecoverySave");
+    _saveSafetyMode->setHintToolTip(tr("The save safety is used when saving projects. When checked all default values of parameters will be saved in the project, even if they did not change. This is useful "
+                                       "in the case a default value in a plug-in was changed by its developers, to ensure that the value is still the same when loading a project."
+                                       "By default this should not be needed as default values change are very rare. In a scenario where a project cannot be recovered in a newer version because "
+                                       "the default values for a node have changed, just save your project in an older version of %1 with this parameter checked so that it reloads correctly in the newer version.\n"
+                                       "Note that checking this parameter can make project files significantly larger.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+
+
     _hostName = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
     _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
@@ -3637,6 +3646,12 @@ bool
 Settings::isDriveLetterToUNCPathConversionEnabled() const
 {
     return !_enableMappingFromDriveLettersToUNCShareNames->getValue();
+}
+
+bool
+Settings::getIsFullRecoverySaveModeEnabled() const
+{
+    return _saveSafetyMode->getValue();
 }
 
 NATRON_NAMESPACE_EXIT;

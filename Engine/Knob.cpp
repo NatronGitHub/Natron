@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/StringAnimationManager.h"
+#include "Engine/Settings.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -4746,22 +4747,25 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     KnobGroupPtr isGrp = toKnobGroup(knob);
     KnobSeparatorPtr isSep = toKnobSeparator(knob);
     KnobButtonPtr btn = toKnobButton(knob);
+
+    bool isFullRecoverySave = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
+
     if (isInt) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeInteger;
         serialization->_defaultValue.isInt = isInt->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isInt->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isInt->hasDefaultValueChanged(dimension);
     } else if (isBool || isGrp || isButton) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeBoolean;
         serialization->_defaultValue.isBool = isBoolBase->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isBoolBase->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isBoolBase->hasDefaultValueChanged(dimension);
     } else if (isColor || isDouble) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeDouble;
         serialization->_defaultValue.isDouble = isDoubleBase->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isDoubleBase->hasDefaultValueChanged(dimension);
     } else if (isStringBase) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
         serialization->_defaultValue.isString = isStringBase->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isStringBase->hasDefaultValueChanged(dimension);
 
     } else if (isChoice) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
@@ -4773,7 +4777,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
             defValue = entries[defIndex];
         }
         serialization->_defaultValue.isString = defValue;
-        serialization->_serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isChoice->hasDefaultValueChanged(dimension);
 
     }
 
