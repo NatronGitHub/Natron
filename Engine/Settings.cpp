@@ -204,6 +204,7 @@ Settings::initializeKnobsGeneral()
                                        "By default this should not be needed as default values change are very rare. In a scenario where a project cannot be recovered in a newer version because "
                                        "the default values for a node have changed, just save your project in an older version of %1 with this parameter checked so that it reloads correctly in the newer version.\n"
                                        "Note that checking this parameter can make project files significantly larger.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    _generalTab->addKnob(_saveSafetyMode);
 
 
     _hostName = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Appear to plug-ins as") );

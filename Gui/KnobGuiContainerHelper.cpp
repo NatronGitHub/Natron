@@ -608,6 +608,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
     }
 
     KnobIPtr parentKnob = knob->getParentKnob();
+
+    // If this assert triggers, that means a knob was not added to a KnobPage.
     assert(parentKnob || !isPagingEnabled());
 
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);

@@ -1951,6 +1951,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     // Check if pages ordering changed, if not do not serialize
     bool pageOrderChanged = hasPageOrderChangedSinceDefault();
 
+    bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
@@ -1984,7 +1985,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         }
 
 
-        if (!knobs[i]->hasModificationsForSerialization()) {
+        if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
             // This knob was not modified by the user, don't serialize it
             continue;
         }

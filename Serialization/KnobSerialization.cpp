@@ -487,7 +487,7 @@ KnobSerialization::decode(const YAML_NAMESPACE::Node& node)
         int nDims = defNode.IsSequence() ? defNode.size() : 1;
         initValuesVec(this, nDims);
         for (int i = 0; i < nDims; ++i) {
-
+            _values[i]._serializeDefaultValue = true;
             YAML_NAMESPACE::Node dimNode = defNode.IsSequence() ? defNode[i] : defNode;
             decodeValueFromNode(dimNode, _values[i]._defaultValue, &_values[i]._type);
 

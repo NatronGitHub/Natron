@@ -415,7 +415,7 @@ struct KnobHelperPrivate
     mutable QMutex hasModificationsMutex;
 
     // For each dimension tells whether the knob is considered to have modification or not
-    std::vector<bool> hasModifications;
+    mutable std::vector<bool> hasModifications;
 
     // Protects valueChangedBlocked & listenersNotificationBlocked
     mutable QMutex valueChangedBlockedMutex;

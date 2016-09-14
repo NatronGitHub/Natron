@@ -2734,39 +2734,52 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
 
     // Serialize project settings
     std::vector< KnobIPtr > knobs = getKnobs_mt_safe();
+
+    bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
+
     for (U32 i = 0; i < knobs.size(); ++i) {
+
+        if (!knobs[i]->getIsPersistent()) {
+            continue;
+        }
         KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
         KnobPagePtr isPage = toKnobPage(knobs[i]);
         KnobButtonPtr isButton = toKnobButton(knobs[i]);
-        if ( knobs[i]->getIsPersistent() &&
-            !isGroup && !isPage && !isButton &&
-            knobs[i]->hasModificationsForSerialization() ) {
-            SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
-            knobs[i]->toSerialization(newKnobSer.get());
-            if (newKnobSer->_mustSerialize) {
-                
-                // Specialize case for the project paths knob: do not serialize the project path itself and
-                // the OCIO path as they are useless
-                if (knobs[i] == _imp->envVars) {
-                    std::list<std::vector<std::string> > projectPathsTable, newTable;
-                    _imp->envVars->getTable(&projectPathsTable);
-                    for (std::list<std::vector<std::string> >::iterator it = projectPathsTable.begin(); it!=projectPathsTable.end(); ++it) {
-                        if (it->size() > 0 &&
-                            (it->front() == NATRON_OCIO_ENV_VAR_NAME || it->front() == NATRON_PROJECT_ENV_VAR_NAME)) {
-                            continue;
-                        }
-                        newTable.push_back(*it);
-                    }
-                    newKnobSer->_values[0]._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
-                    newKnobSer->_values[0]._serializeValue = newKnobSer->_values[0]._value.isString.empty();
-                    if (!newKnobSer->_values[0]._serializeValue) {
-                        newKnobSer->_values[0]._mustSerialize = false;
-                        newKnobSer->_mustSerialize = false;
-                    }
-                }
-                serialization->_projectKnobs.push_back(newKnobSer);
-            }
+        if (isGroup || isPage || isButton) {
+            continue;
         }
+
+        if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
+            continue;
+        }
+
+
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        knobs[i]->toSerialization(newKnobSer.get());
+        if (newKnobSer->_mustSerialize) {
+
+            // Specialize case for the project paths knob: do not serialize the project path itself and
+            // the OCIO path as they are useless
+            if (knobs[i] == _imp->envVars) {
+                std::list<std::vector<std::string> > projectPathsTable, newTable;
+                _imp->envVars->getTable(&projectPathsTable);
+                for (std::list<std::vector<std::string> >::iterator it = projectPathsTable.begin(); it!=projectPathsTable.end(); ++it) {
+                    if (it->size() > 0 &&
+                        (it->front() == NATRON_OCIO_ENV_VAR_NAME || it->front() == NATRON_PROJECT_ENV_VAR_NAME)) {
+                        continue;
+                    }
+                    newTable.push_back(*it);
+                }
+                newKnobSer->_values[0]._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
+                newKnobSer->_values[0]._serializeValue = newKnobSer->_values[0]._value.isString.empty();
+                if (!newKnobSer->_values[0]._serializeValue) {
+                    newKnobSer->_values[0]._mustSerialize = false;
+                    newKnobSer->_mustSerialize = false;
+                }
+            }
+            serialization->_projectKnobs.push_back(newKnobSer);
+        }
+
     }
 
 
