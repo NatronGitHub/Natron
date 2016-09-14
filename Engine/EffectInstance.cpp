@@ -5645,7 +5645,9 @@ EffectInstance::refreshMetaDatas_internal()
     }
     onMetaDatasRefreshed(metadata);
     if (ret) {
-        getNode()->checkForPremultWarningAndCheckboxes();
+        NodePtr node = getNode();
+        node->checkForPremultWarningAndCheckboxes();
+        node->refreshEnabledKnobsLabel(getComponents(-1));
     }
 
     return ret;

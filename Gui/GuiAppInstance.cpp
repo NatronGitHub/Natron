@@ -219,7 +219,16 @@ GuiAppInstance::aboutToQuit()
 
         _imp->_isClosing = true;
         _imp->_gui->close();
+        //delete _imp->_gui;
         _imp->_gui->deleteLater();
+
+
+
+        // Make sure all events are processed
+        qApp->processEvents();
+        // Make sure all deleteLater calls are reached
+        qApp->sendPostedEvents(0, QEvent::DeferredDelete);
+
         _imp->_gui = 0;
     }
 }
