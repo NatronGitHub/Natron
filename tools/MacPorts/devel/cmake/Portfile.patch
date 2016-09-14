@@ -1,7 +1,7 @@
---- Portfile.orig	2016-08-31 17:34:23.000000000 +0200
-+++ Portfile	2016-08-31 17:34:28.000000000 +0200
+--- Portfile.orig	2016-09-13 16:15:01.000000000 +0200
++++ Portfile	2016-09-13 16:15:07.000000000 +0200
 @@ -2,7 +2,7 @@
- # $Id: Portfile 152005 2016-08-26 15:37:40Z michaelld@macports.org $
+ # $Id: Portfile 152410 2016-09-07 18:30:19Z michaelld@macports.org $
  
  PortSystem          1.0
 -PortGroup           muniversal 1.0

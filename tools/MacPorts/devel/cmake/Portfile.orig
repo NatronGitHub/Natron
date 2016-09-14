@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 152005 2016-08-26 15:37:40Z michaelld@macports.org $
+# $Id: Portfile 152410 2016-09-07 18:30:19Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -54,12 +54,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160824
+    version         20160906
     set dist_branch 3.6
-    set dist_date   20160824
-    set dist_hash   g96199
-    checksums       rmd160 da159d833c5cfcfb468135f8c2fc4ab1c521166b \
-                    sha256 c5287cf153c0d68b56375da89b4f5beb1850b92fd890ab4bdd48dcb3ba8792d9
+    set dist_date   20160906
+    set dist_hash   g343ef
+    checksums       rmd160 759660c9af82a5606b103f472c1abd410bc15711 \
+                    sha256 23e697aa775bb87dcb956e7e62b010a365e8f06a1be277f8b951c8349561ff89
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -75,6 +75,11 @@ if {${subport} eq ${name}} {
         patch-Modules-noArchCheck.devel.diff \
         patch-CMakeFindFrameworks.cmake.devel.diff \
         patch-Source_CMakeVersionCompute.cmake.devel.diff
+
+    # allow use of libuv or libuv-devel;
+    # system libuv is the default as of 20160830 (g320f5)
+    depends_lib-append \
+        path:lib/pkgconfig/libuv.pc:libuv
 
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
@@ -112,7 +117,7 @@ platform darwin {
     }
 }
 
-configure.args      --docdir=share/doc/cmake \
+configure.args-append --docdir=share/doc/cmake \
                     --parallel=${build.jobs} \
                     --init=${worksrcpath}/macports.cmake \
                     --system-libs \
