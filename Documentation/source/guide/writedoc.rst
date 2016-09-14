@@ -41,7 +41,7 @@ The documentation is generated using `Sphinx <http://www.sphinx-doc.org>`_, and 
 
 Most likely you will want to contribute to the User Guide. The guide is located in *Documentation/source/guide*. If you want to contribute to an already existing document just open the file in your favorite (plain) text-editor and do your modifications.
 
-If you want to preview your modifications you will need to install Sphinx. On Linux and Mac you can install it through your package manager (MacPorts recommended on Mac), on Windows refer to the `Sphinx documentation <http://www.sphinx-doc.org/en/stable/install.html#windows-install-python-and-sphinx>`_.
+If you want to preview your modifications you will need to install Sphinx. On Linux and Mac you can install it through your package manager (using MacPorts type ``sudo port install py27-sphinx``, on HomeBrew type ``pip install sphinx``), on Windows refer to the `Sphinx documentation <http://www.sphinx-doc.org/en/stable/install.html#windows-install-python-and-sphinx>`_.
 
 When you have Sphinx installed go to the Documentation folder and launch the following command:
 

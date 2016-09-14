@@ -1321,6 +1321,8 @@ public:
     void clearStreamWarning(StreamWarningEnum warning);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
+    void refreshEnabledKnobsLabel(const ImageComponents& layer);
+
 private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
@@ -1332,8 +1334,6 @@ private:
      * @return True if the hash has changed, false otherwise
      **/
     bool computeHashInternal() WARN_UNUSED_RETURN;
-
-    void refreshEnabledKnobsLabel(const ImageComponents& layer);
 
     void refreshCreatedViews(const KnobIPtr& knob);
 

@@ -9019,7 +9019,9 @@ void
 Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
 {
     const std::vector<std::string>& channels = comp.getComponentsNames();
-
+    if (!_imp->enabledChan[0].lock()) {
+        return;
+    }
     switch ( channels.size() ) {
     case 1: {
         for (int i = 0; i < 3; ++i) {

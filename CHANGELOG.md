@@ -11,6 +11,8 @@
 - fix dynamic kOfxSupportsTiles handling
 - add more properties to the "Info" node panel
 - the log window now becomes visible whenever a message is sent
+- Fix a bug where entering a Group node could crash Natron
+- Fix a bug where copy pasting a Group could loose expressions/links used nodes within the Group
 
 ### Plugins
 
