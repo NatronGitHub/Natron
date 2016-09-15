@@ -28,6 +28,7 @@ Functions
 *    def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
 *    def :meth:`getFrameRate<NatronEngine.Effect.getFrameRate>` ()
 *    def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
+*    def :meth:`getInput<NatronEngine.Effect.getInput>` (inputName)
 *    def :meth:`getLabel<NatronEngine.Effect.getLabel>` ()
 *    def :meth:`getInputLabel<NatronEngine.Effect.getInputLabel>` (inputNumber)
 *    def :meth:`getMaxInputCount<NatronEngine.Effect.getMaxInputCount>` ()
@@ -258,10 +259,17 @@ thread.
     :param inputNumber: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
+    Returns the node connected at the given *inputNumber*.
 
-    
-Returns the node connected at the given *inputNumber*.
-    
+
+.. method:: NatronEngine.Effect.getInput(inputName)
+
+
+:param inputName: :class:`str<PySide.QtCore.QString>`
+:rtype: :class:`Effect<NatronEngine.Effect>`
+
+    Same as :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` except that the parameter in input
+    is the name of the input as diplayed on the node-graph. This function is made available for convenience.
 
 
 

@@ -268,6 +268,7 @@ public:
      * @returns Pointer to an Effect, the caller is responsible for freeing it.
      **/
     Effect* getInput(int inputNumber) const;
+    Effect* getInput(const QString& inputLabel) const;
 
     /**
      * @brief Returns the name of the Effect as used internally

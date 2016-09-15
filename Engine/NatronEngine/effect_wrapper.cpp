@@ -570,26 +570,48 @@ static PyObject* Sbk_EffectFunc_getInput(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getInput(int)const
+    // 0: getInput(QString)const
+    // 1: getInput(int)const
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getInput(int)const
+        overloadId = 1; // getInput(int)const
+    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getInput(QString)const
     }
 
     // Function signature not found.
     if (overloadId == -1) goto Sbk_EffectFunc_getInput_TypeError;
 
     // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+    switch (overloadId) {
+        case 0: // getInput(const QString & inputLabel) const
+        {
+            ::QString cppArg0 = ::QString();
+            pythonToCpp(pyArg, &cppArg0);
 
-        if (!PyErr_Occurred()) {
-            // getInput(int)const
-            Effect * cppResult = const_cast<const ::Effect*>(cppSelf)->getInput(cppArg0);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+            if (!PyErr_Occurred()) {
+                // getInput(QString)const
+                Effect * cppResult = const_cast<const ::Effect*>(cppSelf)->getInput(cppArg0);
+                pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(pyResult);
+            }
+            break;
+        }
+        case 1: // getInput(int inputNumber) const
+        {
+            int cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // getInput(int)const
+                Effect * cppResult = const_cast<const ::Effect*>(cppSelf)->getInput(cppArg0);
+                pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(pyResult);
+            }
+            break;
         }
     }
 
@@ -600,7 +622,7 @@ static PyObject* Sbk_EffectFunc_getInput(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_EffectFunc_getInput_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"unicode", "int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getInput", overloads);
         return 0;
 }

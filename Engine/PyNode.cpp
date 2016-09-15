@@ -300,6 +300,27 @@ Effect::getInput(int inputNumber) const
     return NULL;
 }
 
+Effect*
+Effect::getInput(const QString& inputLabel) const
+{
+    NodePtr node = getInternalNode();
+    if (!node) {
+        return 0;
+    }
+    int maxInputs = node->getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        if (QString::fromUtf8(node->getInputLabel(i).c_str()) == inputLabel) {
+            NodePtr ret = node->getRealInput(i);
+            if (!ret) {
+                return 0;
+            }
+
+            return new Effect(ret);
+        }
+    }
+    return 0;
+}
+
 QString
 Effect::getScriptName() const
 {
