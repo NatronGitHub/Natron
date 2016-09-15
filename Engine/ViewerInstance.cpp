@@ -891,6 +891,9 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
+            if (!outArgs->params->frameViewHash) {
+                continue;
+            }
             FrameKey key(outArgs->params->time,
                          outArgs->params->view,
                          outArgs->params->frameViewHash,
@@ -1002,6 +1005,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
 
 
+    // Get the hash to see if we can lookup the cache. We may not have a valid hash computed yet in which case its value is 0
     bool gotInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->activeInputHash);
     (void)gotInputHash;
     outArgs->params->frameViewHash = makeViewerCacheHash(outArgs->params->time, outArgs->params->view, this);
@@ -1023,11 +1027,14 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         StatusEnum stat;
 
         if (useOnlyRoDCache) {
-            stat = outArgs->activeInputToRender->getRegionOfDefinitionFromCache(outArgs->activeInputHash,
-                                                                                outArgs->params->time,
-                                                                                scale,
-                                                                                outArgs->params->view,
-                                                                                &rod);
+            stat = eStatusFailed;
+            if (outArgs->activeInputHash != 0) {
+                stat = outArgs->activeInputToRender->getRegionOfDefinitionFromCache(outArgs->activeInputHash,
+                                                                                    outArgs->params->time,
+                                                                                    scale,
+                                                                                    outArgs->params->view,
+                                                                                    &rod);
+            }
             if (stat == eStatusFailed) {
                 // If was not cached, we cannot lookup the cache in the main-thread at this mipmapLevel
                 continue;

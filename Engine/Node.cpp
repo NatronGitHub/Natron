@@ -9779,6 +9779,24 @@ Node::unsetNodeIsRendering()
 }
 
 bool
+Node::isNodeRendering_nolock() const
+{
+    return _imp->nodeIsRendering > 0;
+}
+
+void
+Node::lockNodeRenderingMutex()
+{
+    _imp->nodeIsRenderingMutex.lock();
+}
+
+void
+Node::unlockNodeRenderingMutex()
+{
+    _imp->nodeIsRenderingMutex.unlock();
+}
+
+bool
 Node::isNodeRendering() const
 {
     QMutexLocker k(&_imp->nodeIsRenderingMutex);
@@ -9807,7 +9825,7 @@ Node::dequeueActions()
     }
     RotoDrawableItemPtr strokeItem = getAttachedRotoItem();
     if (strokeItem) {
-        strokeItem->dequeueGuiActions();
+        strokeItem->dequeueGuiActions(false);
     }
 
 

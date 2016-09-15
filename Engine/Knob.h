@@ -1755,7 +1755,6 @@ protected:
 
     void setGuiCurveHasChanged(ViewSpec view, int dimension, bool changed);
     bool hasGuiCurveChanged(ViewSpec view, int dimension) const;
-    void clearExpressionsResultsIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions);
 
 
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;

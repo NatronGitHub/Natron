@@ -1127,6 +1127,12 @@ public:
     void declarePythonFields();
 
 private:
+
+    friend class EnsureOperationOutOfRender;
+    void lockNodeRenderingMutex();
+    void unlockNodeRenderingMutex();
+    bool isNodeRendering_nolock() const;
+
     /**
      * @brief Declares to Python all parameters, roto, tracking attributes
      * This is called in activate() whenever the node was deleted
@@ -1599,6 +1605,37 @@ Q_SIGNALS:
 private:
 
     int getPreferredInputInternal(bool connected) const;
+
+};
+
+/**
+ * @brief Small RAII style that locks the nodeIsRendering mutex of a node and releases it.
+ * The caller should then use the isNodeRendering function to query whether the node is rendering or not
+ * and then perform actions if not. This guarantees that a render thread will not use the data pushed by the MT
+ * in the meantime.
+ **/
+class EnsureOperationOutOfRender
+{
+    NodePtr _node;
+
+public:
+
+    EnsureOperationOutOfRender(const NodePtr& node)
+    : _node(node)
+    {
+        node->lockNodeRenderingMutex();
+    }
+
+    bool isNodeRendering() const
+    {
+        return _node->isNodeRendering_nolock();
+    }
+
+    virtual ~EnsureOperationOutOfRender()
+    {
+        _node->unlockNodeRenderingMutex();
+
+    }
 
 };
 

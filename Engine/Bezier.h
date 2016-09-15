@@ -210,8 +210,8 @@ public:
 
 private:
 
-    void movePointByIndexInternal(bool useGuiCurve, int index, double time, double dx, double dy, bool onlyFeather);
-    void setPointByIndexInternal(bool useGuiCurve, int index, double time, double dx, double dy);
+    void movePointByIndexInternal(int index, double time, double dx, double dy, bool onlyFeather);
+    void setPointByIndexInternal(int index, double time, double dx, double dy);
 
 public:
 
@@ -593,7 +593,7 @@ public:
 
     void setAutoOrientationComputation(bool autoCompute);
 
-    virtual bool dequeueGuiActions() OVERRIDE FINAL;
+    virtual void dequeueGuiActions(bool force) OVERRIDE FINAL;
 
 private:
 
@@ -603,12 +603,7 @@ private:
 
     void computePolygonOrientation(bool useGuiCurves, double time, bool isStatic) const;
 
-    /*
-     * @brief If the node is currently involved in a render, returns false, otherwise returns true
-     */
-    bool canSetInternalPoints() const;
-
-    void copyInternalPointsToGuiPoints();
+    void evaluateCurveModified();
 
 public:
 

@@ -5020,6 +5020,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 void
 EffectInstance::clearLastRenderedImage()
 {
+    invalidateHashNotRecursive();
 }
 
 /**

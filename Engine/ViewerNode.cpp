@@ -2680,12 +2680,16 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         std::string aChoice = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
         std::string bChoice = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
         internalViewer->switchInput0And1();
-        _imp->aInputNodeChoiceKnob.lock()->blockValueChanges();
-        _imp->aInputNodeChoiceKnob.lock()->setValueFromLabel(bChoice, 0);
-        _imp->aInputNodeChoiceKnob.lock()->unblockValueChanges();
-        _imp->bInputNodeChoiceKnob.lock()->blockValueChanges();
-        _imp->bInputNodeChoiceKnob.lock()->setValueFromLabel(aChoice, 0);
-        _imp->bInputNodeChoiceKnob.lock()->unblockValueChanges();
+        try {
+            _imp->aInputNodeChoiceKnob.lock()->blockValueChanges();
+            _imp->aInputNodeChoiceKnob.lock()->setValueFromLabel(bChoice, 0);
+            _imp->aInputNodeChoiceKnob.lock()->unblockValueChanges();
+            _imp->bInputNodeChoiceKnob.lock()->blockValueChanges();
+            _imp->bInputNodeChoiceKnob.lock()->setValueFromLabel(aChoice, 0);
+            _imp->bInputNodeChoiceKnob.lock()->unblockValueChanges();
+        } catch (...) {
+
+        }
     } else if (k == _imp->rightClickHideAll.lock()) {
         bool allHidden = _imp->rightClickHideAll.lock()->getValue();
         _imp->rightClickHideAllTop.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);

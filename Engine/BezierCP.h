@@ -107,27 +107,27 @@ public:
 
     void clone(const BezierCP & other);
 
-    void setPositionAtTime(bool useGuiCurves, double time, double x, double y);
+    void setPositionAtTime(double time, double x, double y);
 
-    void setLeftBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
+    void setLeftBezierPointAtTime(double time, double x, double y);
 
-    void setRightBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
+    void setRightBezierPointAtTime(double time, double x, double y);
 
-    void setStaticPosition(bool useGuiCurves, double x, double y);
+    void setStaticPosition(double x, double y);
 
-    void setLeftBezierStaticPosition(bool useGuiCurves, double x, double y);
+    void setLeftBezierStaticPosition(double x, double y);
 
-    void setRightBezierStaticPosition(bool useGuiCurves, double x, double y);
+    void setRightBezierStaticPosition(double x, double y);
 
-    void removeKeyframe(bool useGuiCurves, double time);
+    void removeKeyframe(double time);
 
-    void removeAnimation(bool useGuiCurves, double currentTime);
-
-    ///returns true if a keyframe was set
-    bool cuspPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    void removeAnimation(double currentTime);
 
     ///returns true if a keyframe was set
-    bool smoothPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    bool cuspPoint(double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+
+    ///returns true if a keyframe was set
+    bool smoothPoint(double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const

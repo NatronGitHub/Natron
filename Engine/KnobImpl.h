@@ -2883,8 +2883,6 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     }
     cloneInternalCurvesIfNeeded(dimensionChanged);
 
-    clearExpressionsResultsIfNeeded(dimensionChanged);
-
     ret |= !dimensionChanged.empty();
 
     if ( !disableEvaluation && !dimensionChanged.empty() ) {

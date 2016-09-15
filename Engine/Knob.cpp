@@ -373,7 +373,7 @@ struct KnobHelperPrivate
     // Pointer to the knobGui interface if it has any
     KnobGuiIWPtr gui;
 
-    // Protects mustCloneGuiCurves & mustCloneInternalCurves & mustClearExprResults
+    // Protects mustCloneGuiCurves & mustCloneInternalCurves
     mutable QMutex mustCloneGuiCurvesMutex;
 
     // Set to true if gui curves were modified by the user instead of the real internal curves.
@@ -382,9 +382,6 @@ struct KnobHelperPrivate
 
     // Set to true if the internal curves were modified and we should update the gui curves
     std::vector<bool> mustCloneInternalCurves;
-
-    // Used by deQueueValuesSet to know whether we should clear expressions results or not
-    std::vector<bool> mustClearExprResults;
 
     // A blind handle to the ofx param, needed for custom OpenFX interpolation
     void* ofxParamHandle;
@@ -478,7 +475,6 @@ struct KnobHelperPrivate
         , mustCloneGuiCurvesMutex()
         , mustCloneGuiCurves()
         , mustCloneInternalCurves()
-        , mustClearExprResults()
         , ofxParamHandle(0)
         , isInstanceSpecific(false)
         , dimensionNames(dimension_)
@@ -502,13 +498,11 @@ struct KnobHelperPrivate
 
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
-        mustClearExprResults.resize(dimension);
         expressions.resize(dimension);
         hasModifications.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
-            mustClearExprResults[i] = false;
             hasModifications[i] = false;
         }
     }
@@ -1571,19 +1565,6 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
     }
 } // KnobHelper::removeAnimationWithReason
 
-void
-KnobHelper::clearExpressionsResultsIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions)
-{
-    QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
-
-    for (int i = 0; i < getDimension(); ++i) {
-        if (_imp->mustClearExprResults[i]) {
-            clearExpressionsResults(i);
-            _imp->mustClearExprResults[i] = false;
-            modifiedDimensions.insert( std::make_pair(i, eValueChangedReasonNatronInternalEdited) );
-        }
-    }
-}
 
 void
 KnobHelper::cloneInternalCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions)
@@ -4264,28 +4245,15 @@ void
 KnobHelper::randomSeed(double time,
                        unsigned int seed) const
 {
-    U64 hash = 0;
-    KnobHolderPtr holder = getHolder();
+    // Make the hash vary from seed
+    U32 hash32 = seed;
 
-    if (holder) {
-        EffectInstancePtr effect = toEffectInstance(holder);
-        if (effect) {
-            bool gotHash = effect->findCachedHash(time, ViewIdx(0), &hash);
-            if (!gotHash) {
-                // Not cached.. compute a hash for the effect that does not depend on its inputs
-                Hash64 hashObj;
-                effect->computeHash_noCache(time, ViewIdx(0), &hashObj);
-                hashObj.computeHash();
-                hash = hashObj.value();
-            }
-        }
+    // Make the hash vary from time
+    {
+        alias_cast_float ac;
+        ac.data = (float)time;
+        hash32 += ac.raw;
     }
-    U32 hash32 = (U32)hash;
-    hash32 += seed;
-
-    alias_cast_float ac;
-    ac.data = (float)time;
-    hash32 += ac.raw;
 
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;
@@ -6297,6 +6265,7 @@ KnobHolder::endChanges(bool discardRendering)
         if (it->dimensionChanged.size() == 1) {
             dimension = *it->dimensionChanged.begin();
         }
+
         if (!guiFrozen) {
             boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
             if (handler) {
@@ -6403,6 +6372,9 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
             }
         } else {
             foundChange->dimensionChanged.insert(dimension);
+
+            // Make sure expressions are invalidated
+            knob->clearExpressionsResults(dimension);
         }
 
         if ( !foundChange->valueChangeBlocked && knob->getIsMetadataSlave() ) {

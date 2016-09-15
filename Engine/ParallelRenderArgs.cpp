@@ -279,6 +279,10 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
                             }
 
+                            if (roi.isNull()) {
+                                continue;
+                            }
+
                             RectI inputRoIPixelCoords;
                             const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
                             const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
