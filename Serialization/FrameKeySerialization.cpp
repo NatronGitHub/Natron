@@ -18,34 +18,38 @@
 
 #include "FrameKeySerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-FrameKeySerialization::encode(YAML_NAMESPACE::Emitter& em) const
+FrameKeySerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "Frame" << YAML_NAMESPACE::Value << frame;
-    em << YAML_NAMESPACE::Key << "View" << YAML_NAMESPACE::Value << view;
-    em << YAML_NAMESPACE::Key << "Hash" << YAML_NAMESPACE::Value << treeHash;
+    em << YAML::Flow << YAML::BeginMap;
+    em << YAML::Key << "Frame" << YAML::Value << frame;
+    em << YAML::Key << "View" << YAML::Value << view;
+    em << YAML::Key << "Hash" << YAML::Value << treeHash;
     if (bitdepth != kBitDepthSerializationByte) {
-        em << YAML_NAMESPACE::Key << "Depth" << YAML_NAMESPACE::Value << bitdepth;
+        em << YAML::Key << "Depth" << YAML::Value << bitdepth;
     }
-    em << YAML_NAMESPACE::Key << "Rect" << YAML_NAMESPACE::Value;
+    em << YAML::Key << "Rect" << YAML::Value;
     textureRect.encode(em);
     if (draftMode) {
-        em << YAML_NAMESPACE::Key << "Draft" << YAML_NAMESPACE::Value << draftMode;
+        em << YAML::Key << "Draft" << YAML::Value << draftMode;
     }
     if (useShader) {
-        em << YAML_NAMESPACE::Key << "Shaders" << YAML_NAMESPACE::Value << useShader;
+        em << YAML::Key << "Shaders" << YAML::Value << useShader;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-FrameKeySerialization::decode(const YAML_NAMESPACE::Node& node)
+FrameKeySerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     frame = node["Frame"].as<int>();
     view = node["View"].as<int>();

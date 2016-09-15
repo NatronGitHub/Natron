@@ -18,22 +18,26 @@
 
 #include "TextureRectSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-TextureRectSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+TextureRectSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+    em << YAML::Flow << YAML::BeginSeq;
     rect.encode(em);
     em << closestPo2 << par;
-    em << YAML_NAMESPACE::EndSeq;
+    em << YAML::EndSeq;
 }
 
 void
-TextureRectSerialization::decode(const YAML_NAMESPACE::Node& node)
+TextureRectSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsSequence() || node.size() != 3) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     rect.decode(node[0]);
     closestPo2 = node[1].as<int>();

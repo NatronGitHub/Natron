@@ -16,12 +16,27 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef SERIALIZATIONCOMPAT_H
 #define SERIALIZATIONCOMPAT_H
 
 // This file contains all implementation of old boost serialization involving Engine and Gui classes
+
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/scoped_ptr.hpp>
+#include <boost/serialization/shared_ptr.hpp>
 
 #include "Serialization/SerializationBase.h"
 #include "Serialization/CurveSerialization.h"
@@ -30,8 +45,7 @@
 #include "Serialization/RotoContextSerialization.h"
 #include "Serialization/RotoDrawableItemSerialization.h"
 #include "Serialization/NodeGroupSerialization.h"
-
-
+#include "Serialization/SerializationFwd.h"
 
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"

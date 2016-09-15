@@ -18,34 +18,38 @@
 
 #include "RotoDrawableItemSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/KnobSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoDrawableItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+RotoDrawableItemSerialization::encode(YAML::Emitter& em) const
 {
     // This assumes that a map is already created
 
     RotoItemSerialization::encode(em);
 
     if (!_knobs.empty()) {
-        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
-        em << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Params" << YAML::Value;
+        em << YAML::BeginSeq;
         for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
 }
 
 void
-RotoDrawableItemSerialization::decode(const YAML_NAMESPACE::Node& node)
+RotoDrawableItemSerialization::decode(const YAML::Node& node)
 {
     RotoItemSerialization::decode(node);
     if (node["Params"]) {
-        YAML_NAMESPACE::Node paramsNode = node["Params"];
+        YAML::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(paramsNode[i]);

@@ -18,21 +18,25 @@
 
 #include "ImageKeySerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-ImageKeySerialization::encode(YAML_NAMESPACE::Emitter& em) const
+ImageKeySerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+    em << YAML::Flow << YAML::BeginSeq;
     em << nodeHashKey << time << view << draft;
-    em << YAML_NAMESPACE::EndSeq;
+    em << YAML::EndSeq;
 }
 
 void
-ImageKeySerialization::decode(const YAML_NAMESPACE::Node& node)
+ImageKeySerialization::decode(const YAML::Node& node)
 {
     if (!node.IsSequence() || node.size() != 4) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     nodeHashKey = node[0].as<unsigned long long>();
     time = node[1].as<double>();

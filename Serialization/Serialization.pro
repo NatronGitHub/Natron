@@ -49,6 +49,7 @@ HEADERS += \
     BezierSerialization.h \
     BezierCPSerialization.h \
     CacheSerialization.h \
+    CacheSerializationImpl.h \
     CurveSerialization.h \
     FormatSerialization.h \
     FrameKeySerialization.h \

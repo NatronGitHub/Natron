@@ -19,7 +19,6 @@
 #ifndef SERIALIZATION_BASE_H
 #define SERIALIZATION_BASE_H
 
-
 #include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
@@ -44,12 +43,12 @@ public:
     /**
      * @brief Implement to write the content of the object to the emitter
      **/
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const = 0;
+    virtual void encode(YAML::Emitter& em) const = 0;
 
     /**
      * @brief Implement to read the content of the object from the yaml node
      **/
-    virtual void decode(const YAML_NAMESPACE::Node& node) = 0;
+    virtual void decode(const YAML::Node& node) = 0;
 };
 
 /**

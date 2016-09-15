@@ -26,6 +26,7 @@
 #include "Serialization/RotoContextSerialization.h"
 #include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/SerializationBase.h"
+#include "Serialization/SerializationFwd.h"
 
 
 SERIALIZATION_NAMESPACE_ENTER;
@@ -130,9 +131,9 @@ public:
     // If this node was built with a preset, this is the one
     std::string _presetLabel;
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
@@ -172,9 +173,9 @@ public:
 
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 };
 
 SERIALIZATION_NAMESPACE_EXIT;

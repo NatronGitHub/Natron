@@ -19,12 +19,12 @@
 #ifndef Engine_CacheSerialization_h
 #define Engine_CacheSerialization_h
 
-
 #include "Serialization/SerializationBase.h"
 #include "Serialization/ImageKeySerialization.h"
 #include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/FrameKeySerialization.h"
 #include "Serialization/FrameParamsSerialization.h"
+#include "Serialization/SerializationFwd.h"
 
 
 SERIALIZATION_NAMESPACE_ENTER;
@@ -77,40 +77,9 @@ public:
     {
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE FINAL
-    {
-        em << YAML_NAMESPACE::Flow;
-        em << YAML_NAMESPACE::BeginSeq;
-        em << filePath;
-        em << dataOffsetInFile;
-        em << size;
-        em << hash;
-        key.encode(em);
-        params.encode(em);
-        if (!pluginID.empty()) {
-            em << pluginID;
-        }
-        em << YAML_NAMESPACE::EndSeq;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
 
-    }
-
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE FINAL
-    {
-        if (!node.IsSequence() || node.size() < 6) {
-            throw YAML_NAMESPACE::InvalidNode();
-        }
-        filePath = node[0].as<std::string>();
-        dataOffsetInFile = node[1].as<std::size_t>();
-        size = node[2].as<std::size_t>();
-        hash = node[3].as<hash_type>();
-        key.decode(node[4]);
-        params.decode(node[5]);
-        if (node.size() >= 7) {
-            pluginID = node[6].as<std::string>();
-        }
-    }
-
-
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
 };
 
 template<typename EntryType>
@@ -124,35 +93,9 @@ public:
     std::list<SerializedEntry<EntryType> > entries;
 
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE FINAL
-    {
-        em << YAML_NAMESPACE::BeginMap;
-        em << YAML_NAMESPACE::Key << "Version" << YAML_NAMESPACE::Value << cacheVersion;
-        if (!entries.empty()) {
-            em << YAML_NAMESPACE::Key << "Entries" << YAML_NAMESPACE::Value;
-            em << YAML_NAMESPACE::BeginSeq;
-            for (typename std::list<SerializedEntry<EntryType> >::const_iterator it = entries.begin(); it!=entries.end(); ++it) {
-                it->encode(em);
-            }
-            em << YAML_NAMESPACE::EndSeq;
-        }
-        em << YAML_NAMESPACE::EndMap;
-    }
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE FINAL
-    {
-        if (node["Version"]) {
-            cacheVersion = node["Version"].as<int>();
-        }
-        if (node["Entries"]) {
-            YAML_NAMESPACE::Node entriesNode = node["Entries"];
-            for (std::size_t i = 0; i < entriesNode.size(); ++i) {
-                SerializedEntry<EntryType> entry;
-                entry.decode(entriesNode[i]);
-                entries.push_back(entry);
-            }
-        }
-    }
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
 };
 
 

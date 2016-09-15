@@ -16,11 +16,11 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef WORKSPACESERIALIZATION_H
 #define WORKSPACESERIALIZATION_H
 
 #include "Serialization/SerializationBase.h"
+#include "Serialization/SerializationFwd.h"
 
 #define kSplitterOrientationHorizontal "Horizontal"
 #define kSplitterOrientationVertical "Vertical"
@@ -63,9 +63,9 @@ public:
     }
 
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 
 
@@ -107,9 +107,9 @@ public:
 
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
@@ -157,9 +157,9 @@ public:
 
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 };
 
@@ -204,9 +204,9 @@ public:
 
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 };
 
@@ -252,9 +252,9 @@ public:
 
     }
     
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 };
 
@@ -295,9 +295,9 @@ public:
     }
 
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 };
 

@@ -18,64 +18,68 @@
 
 #include "RotoLayerSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/BezierSerialization.h"
 #include "Serialization/RotoStrokeItemSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoLayerSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+RotoLayerSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
+    em << YAML::BeginMap;
     RotoItemSerialization::encode(em);
     if (!children.empty()) {
-        em << YAML_NAMESPACE::Key << "Children" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Children" << YAML::Value << YAML::BeginSeq;
         for (std::list<RotoItemSerializationPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
-            em << YAML_NAMESPACE::BeginMap;
+            em << YAML::BeginMap;
             BezierSerializationPtr isBezier = boost::dynamic_pointer_cast<BezierSerialization>(*it);
             RotoStrokeItemSerializationPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(*it);
             RotoLayerSerializationPtr isLayer = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
             assert(isBezier || isStroke || isLayer);
-            em << YAML_NAMESPACE::Key << "Type" << YAML_NAMESPACE::Value;
+            em << YAML::Key << "Type" << YAML::Value;
             if (isBezier) {
                 em << "Bezier";
-                em << YAML_NAMESPACE::Key << "Item" << YAML_NAMESPACE::Value;
+                em << YAML::Key << "Item" << YAML::Value;
                 isBezier->encode(em);
             } else if (isStroke) {
                 em << "Stroke";
-                em << YAML_NAMESPACE::Key << "Item" << YAML_NAMESPACE::Value;
+                em << YAML::Key << "Item" << YAML::Value;
                 isStroke->encode(em);
             } else if (isLayer) {
                 em << "Layer";
-                em << YAML_NAMESPACE::Key << "Item" << YAML_NAMESPACE::Value;
+                em << YAML::Key << "Item" << YAML::Value;
                 isLayer->encode(em);
             }
-            em << YAML_NAMESPACE::EndMap;
+            em << YAML::EndMap;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
     if (!knobs.empty()) {
-        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value;
-        em << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Params" << YAML::Value;
+        em << YAML::BeginSeq;
         for (KnobSerializationList::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-RotoLayerSerialization::decode(const YAML_NAMESPACE::Node& node)
+RotoLayerSerialization::decode(const YAML::Node& node)
 {
     RotoItemSerialization::decode(node);
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     if (node["Children"]) {
-        YAML_NAMESPACE::Node childrenNode = node["Children"];
+        YAML::Node childrenNode = node["Children"];
         for (std::size_t i = 0; i < childrenNode.size(); ++i) {
-            YAML_NAMESPACE::Node childNode = childrenNode[i];
+            YAML::Node childNode = childrenNode[i];
             std::string type = childNode["Type"].as<std::string>();
             if (type == "Bezier") {
                 BezierSerializationPtr s(new BezierSerialization);
@@ -95,7 +99,7 @@ RotoLayerSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
     }
     if (node["Params"]) {
-        YAML_NAMESPACE::Node paramsNode = node["Params"];
+        YAML::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr knob(new KnobSerialization);
             knob->decode(paramsNode[i]);

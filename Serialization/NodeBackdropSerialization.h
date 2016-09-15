@@ -22,6 +22,7 @@
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
 #include "Serialization/KnobSerialization.h"
+#include "Serialization/SerializationFwd.h"
 
 
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2

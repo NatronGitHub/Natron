@@ -21,8 +21,8 @@
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
-
 #include "Engine/AppManager.h"
+#include "Serialization/SerializationFwd.h"
 
 #include "Gui/GuiFwd.h"
 

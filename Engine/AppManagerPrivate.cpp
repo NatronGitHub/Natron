@@ -58,6 +58,7 @@
 #include "Engine/StandardPaths.h"
 
 #include "Serialization/CacheSerialization.h"
+#include "Serialization/CacheSerializationImpl.h"
 #include "Serialization/SerializationIO.h"
 
 // Don't forget to update glad.h and glad.c aswell when updating theses

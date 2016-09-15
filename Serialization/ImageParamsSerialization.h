@@ -19,8 +19,12 @@
 #ifndef IMAGEPARAMSSERIALIZATION_H
 #define IMAGEPARAMSSERIALIZATION_H
 
+#include <vector>
+#include <string>
+
 #include "Serialization/NonKeyParamsSerialization.h"
 #include "Serialization/RectDSerialization.h"
+#include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -50,9 +54,9 @@ public:
     // Each individual channel names, e.g: "R", "G", "B", "A"
     std::vector<std::string> channelNames;
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 };
 
@@ -81,9 +85,9 @@ public:
 
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 };
 
 SERIALIZATION_NAMESPACE_EXIT

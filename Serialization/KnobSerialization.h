@@ -22,9 +22,9 @@
 #include <map>
 #include <vector>
 
-
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/SerializationBase.h"
+#include "Serialization/SerializationFwd.h"
 
 #define kInViewerContextItemLayoutSpacing "Spacing"
 #define kInViewerContextItemLayoutStretchBefore "StretchB"
@@ -403,9 +403,9 @@ public:
         return _typeName;
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 
     template<class Archive>
@@ -456,9 +456,9 @@ public:
         return _typeName;
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 
     template<class Archive>

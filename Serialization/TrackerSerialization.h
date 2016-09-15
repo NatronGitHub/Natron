@@ -20,6 +20,7 @@
 #define TRACKERSERIALIZATION_H
 
 #include "Serialization/KnobSerialization.h"
+#include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -47,9 +48,9 @@ public:
     {
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
@@ -73,9 +74,9 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
     std::list<TrackSerialization> _tracks;
 };

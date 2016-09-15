@@ -19,8 +19,8 @@
 #ifndef Engine_RotoItemSerialization_h
 #define Engine_RotoItemSerialization_h
 
-
 #include "Serialization/SerializationBase.h"
+#include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -46,9 +46,9 @@ public:
     }
 
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 
     template<class Archive>

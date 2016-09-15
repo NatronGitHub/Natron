@@ -18,46 +18,50 @@
 
 #include "BezierSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/BezierCPSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-BezierSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+BezierSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
+    em << YAML::BeginMap;
     RotoDrawableItemSerialization::encode(em);
     if (!_controlPoints.empty()) {
-        em << YAML_NAMESPACE::Key << "Shape" << YAML_NAMESPACE::Value;
-        em << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Shape" << YAML::Value;
+        em << YAML::BeginSeq;
         for (std::list< ControlPoint >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
-            em << YAML_NAMESPACE::BeginMap;
-            em << YAML_NAMESPACE::Key << "Inner" << YAML_NAMESPACE::Value;
+            em << YAML::BeginMap;
+            em << YAML::Key << "Inner" << YAML::Value;
             it->innerPoint.encode(em);
             if (it->featherPoint) {
-                em << YAML_NAMESPACE::Key << "Feather" << YAML_NAMESPACE::Value;
+                em << YAML::Key << "Feather" << YAML::Value;
                 it->featherPoint->encode(em);
             }
-            em << YAML_NAMESPACE::EndMap;
+            em << YAML::EndMap;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
-    em << YAML_NAMESPACE::Key << "CanClose" << YAML_NAMESPACE::Value << !_isOpenBezier;
+    em << YAML::Key << "CanClose" << YAML::Value << !_isOpenBezier;
     if (!_isOpenBezier) {
-        em << YAML_NAMESPACE::Key << "Closed" << YAML_NAMESPACE::Value << _closed;
+        em << YAML::Key << "Closed" << YAML::Value << _closed;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-BezierSerialization::decode(const YAML_NAMESPACE::Node& node)
+BezierSerialization::decode(const YAML::Node& node)
 {
     RotoDrawableItemSerialization::decode(node);
     if (node["Shape"]) {
-        YAML_NAMESPACE::Node shapeNode = node["Shape"];
+        YAML::Node shapeNode = node["Shape"];
         for (std::size_t i = 0; i < shapeNode.size(); ++i) {
             ControlPoint c;
-            YAML_NAMESPACE::Node pointNode = shapeNode[i];
+            YAML::Node pointNode = shapeNode[i];
             if (pointNode["Inner"]) {
                 c.innerPoint.decode(pointNode["Inner"]);
             }

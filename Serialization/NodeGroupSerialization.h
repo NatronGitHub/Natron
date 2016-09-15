@@ -25,6 +25,7 @@
 #include "Engine/NodeGroup.h"
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/KnobSerialization.h"
+#include "Serialization/SerializationFwd.h"
 
 
 #define NODE_COLLECTION_SERIALIZATION_VERSION 1

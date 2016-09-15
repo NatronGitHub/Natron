@@ -19,8 +19,8 @@
 #ifndef Engine_FormatSerialization_h
 #define Engine_FormatSerialization_h
 
-
 #include "Serialization/SerializationBase.h"
+#include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -50,9 +50,9 @@ public:
         
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE FINAL;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE FINAL;
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
 
 };
 

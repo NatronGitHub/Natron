@@ -18,28 +18,32 @@
 
 #include "NodeClipBoard.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/NodeSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-NodeClipBoard::encode(YAML_NAMESPACE::Emitter& em) const
+NodeClipBoard::encode(YAML::Emitter& em) const
 {
     assert(!nodes.empty());
     if (nodes.size() == 1) {
         nodes.front()->encode(em);
     } else {
-        em << YAML_NAMESPACE::BeginSeq;
+        em << YAML::BeginSeq;
         for (NodeSerializationList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
 
     }
 }
 
 void
-NodeClipBoard::decode(const YAML_NAMESPACE::Node& node)
+NodeClipBoard::decode(const YAML::Node& node)
 {
     
     nodes.clear();

@@ -18,35 +18,39 @@
 
 #include "BezierCPSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-BezierCPSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+BezierCPSerialization::encode(YAML::Emitter& em) const
 {
     // The curves all have the same size
     assert(xCurve.keys.size() == yCurve.keys.size() && xCurve.keys.size() == leftCurveX.keys.size() && xCurve.keys.size() == leftCurveY.keys.size() && xCurve.keys.size() == rightCurveX.keys.size() && xCurve.keys.size() == rightCurveY.keys.size());
 
     if (xCurve.keys.empty()) {
-        em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Flow << YAML::BeginSeq;
         em << x << y << leftX << leftY << rightX << rightY;
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     } else {
-        em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Flow << YAML::BeginSeq;
         xCurve.encode(em);
         yCurve.encode(em);
         leftCurveX.encode(em);
         leftCurveY.encode(em);
         rightCurveX.encode(em);
         rightCurveY.encode(em);
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 }
 
-static void decodeBezierCPCurve(const YAML_NAMESPACE::Node& node, double* x, CurveSerialization* curve)
+static void decodeBezierCPCurve(const YAML::Node& node, double* x, CurveSerialization* curve)
 {
     try {
         *x = node.as<double>();
-    } catch (const YAML_NAMESPACE::BadConversion& /*e*/) {
+    } catch (const YAML::BadConversion& /*e*/) {
         curve->decode(node);
         if (!curve->keys.empty()) {
             *x = curve->keys.front().value;
@@ -55,10 +59,10 @@ static void decodeBezierCPCurve(const YAML_NAMESPACE::Node& node, double* x, Cur
 }
 
 void
-BezierCPSerialization::decode(const YAML_NAMESPACE::Node& node)
+BezierCPSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsSequence() || node.size() != 6) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
 
     decodeBezierCPCurve(node[0], &x, &xCurve);

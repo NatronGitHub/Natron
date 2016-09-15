@@ -19,8 +19,8 @@
 #ifndef NATRON_ENGINE_CURVESERIALIZATION_H
 #define NATRON_ENGINE_CURVESERIALIZATION_H
 
-
 #include "Serialization/SerializationBase.h"
+#include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -80,9 +80,9 @@ public:
     // gave us a list of keyframes with a correct ordering
     std::list<KeyFrameSerialization> keys;
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE FINAL;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE FINAL;
+    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
 
 };
 

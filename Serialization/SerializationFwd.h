@@ -19,47 +19,17 @@
 #ifndef SERIALIZATIONFWD_H
 #define SERIALIZATIONFWD_H
 
-#include <sstream>
 #include <list>
-#include <vector>
 
 #include "Global/Macros.h"
-
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-
-#ifdef NATRON_BOOST_SERIALIZATION_COMPAT
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/set.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/scoped_ptr.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#endif // NATRON_BOOST_SERIALIZATION_COMPAT
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include "yaml.h"
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 #endif // #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 
-
-
-
-
-
 SERIALIZATION_NAMESPACE_ENTER;
+
 class BezierSerialization;
 class CurveSerialization;
 class ImageComponentsSerialization;
@@ -105,6 +75,16 @@ typedef boost::shared_ptr<RotoStrokeItemSerialization> RotoStrokeItemSerializati
 
 typedef std::list<NodeSerializationPtr> NodeSerializationList;
 typedef std::list<KnobSerializationPtr> KnobSerializationList;
+
 SERIALIZATION_NAMESPACE_EXIT;
+
+#ifndef YAML
+#error "YAML should be defined to YAML_NATRON"
+#endif
+
+namespace YAML {
+    class Emitter;
+    class Node;
+}
 
 #endif // SERIALIZATIONFWD_H

@@ -18,23 +18,27 @@
 
 #include "WorkspaceSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/KnobSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-ViewportData::encode(YAML_NAMESPACE::Emitter& em) const
+ViewportData::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+    em << YAML::Flow << YAML::BeginSeq;
     em << left << bottom << zoomFactor << par << zoomOrPanSinceLastFit;
-    em << YAML_NAMESPACE::EndSeq;
+    em << YAML::EndSeq;
 }
 
 void
-ViewportData::decode(const YAML_NAMESPACE::Node& node)
+ViewportData::decode(const YAML::Node& node)
 {
     if (!node.IsSequence() || node.size() != 5) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     left = node[0].as<double>();
     bottom = node[1].as<double>();
@@ -44,29 +48,29 @@ ViewportData::decode(const YAML_NAMESPACE::Node& node)
 }
 
 void
-PythonPanelSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+PythonPanelSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << name;
-    em << YAML_NAMESPACE::Key << "Func" << YAML_NAMESPACE::Value << pythonFunction;
+    em << YAML::BeginMap;
+    em << YAML::Key << "ScriptName" << YAML::Value << name;
+    em << YAML::Key << "Func" << YAML::Value << pythonFunction;
     if (!userData.empty()) {
-        em << YAML_NAMESPACE::Key << "Data" << YAML_NAMESPACE::Value << userData;
+        em << YAML::Key << "Data" << YAML::Value << userData;
     }
     if (!knobs.empty()) {
-        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Params" << YAML::Value << YAML::BeginSeq;
         for (KnobSerializationList::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-PythonPanelSerialization::decode(const YAML_NAMESPACE::Node& node)
+PythonPanelSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     name = node["ScriptName"].as<std::string>();
     pythonFunction = node["Func"].as<std::string>();
@@ -74,7 +78,7 @@ PythonPanelSerialization::decode(const YAML_NAMESPACE::Node& node)
         userData = node["Data"].as<std::string>();
     }
     if (node["Params"]) {
-        YAML_NAMESPACE::Node paramsNode = node["Params"];
+        YAML::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(paramsNode[i]);
@@ -85,31 +89,31 @@ PythonPanelSerialization::decode(const YAML_NAMESPACE::Node& node)
 }
 
 void
-TabWidgetSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+TabWidgetSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << scriptName;
+    em << YAML::Flow << YAML::BeginMap;
+    em << YAML::Key << "ScriptName" << YAML::Value << scriptName;
     if (currentIndex != 0) {
-        em << YAML_NAMESPACE::Key << "Current" << YAML_NAMESPACE::Value << currentIndex;
+        em << YAML::Key << "Current" << YAML::Value << currentIndex;
     }
     if (isAnchor) {
-        em << YAML_NAMESPACE::Key << "Anchor" << YAML_NAMESPACE::Value << isAnchor;
+        em << YAML::Key << "Anchor" << YAML::Value << isAnchor;
     }
     if (!tabs.empty()) {
-        em << YAML_NAMESPACE::Key << "Tabs" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Tabs" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<std::string>::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
             em << *it;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-TabWidgetSerialization::decode(const YAML_NAMESPACE::Node& node)
+TabWidgetSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     scriptName = node["ScriptName"].as<std::string>();
     if (node["Current"]) {
@@ -123,7 +127,7 @@ TabWidgetSerialization::decode(const YAML_NAMESPACE::Node& node)
         isAnchor = false;
     }
     if (node["Tabs"]) {
-        YAML_NAMESPACE::Node tabsNode = node["Tabs"];
+        YAML::Node tabsNode = node["Tabs"];
         for (std::size_t i = 0; i < tabsNode.size(); ++i) {
             tabs.push_back(tabsNode[i].as<std::string>());
         }
@@ -131,37 +135,37 @@ TabWidgetSerialization::decode(const YAML_NAMESPACE::Node& node)
 }
 
 void
-WidgetSplitterSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+WidgetSplitterSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "Layout" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << orientation << leftChildSize << rightChildSize << YAML_NAMESPACE::EndSeq;
-    em << YAML_NAMESPACE::Key << "LeftType" << YAML_NAMESPACE::Value << leftChild.type;
-    em << YAML_NAMESPACE::Key << "LeftChild" << YAML_NAMESPACE::Value;
+    em << YAML::BeginMap;
+    em << YAML::Key << "Layout" << YAML::Value << YAML::Flow << YAML::BeginSeq << orientation << leftChildSize << rightChildSize << YAML::EndSeq;
+    em << YAML::Key << "LeftType" << YAML::Value << leftChild.type;
+    em << YAML::Key << "LeftChild" << YAML::Value;
     if (leftChild.childIsSplitter) {
         leftChild.childIsSplitter->encode(em);
     } else if (leftChild.childIsTabWidget) {
         leftChild.childIsTabWidget->encode(em);
     }
-    em << YAML_NAMESPACE::Key << "RightType" << YAML_NAMESPACE::Value << rightChild.type;
-    em << YAML_NAMESPACE::Key << "RightChild" << YAML_NAMESPACE::Value;
+    em << YAML::Key << "RightType" << YAML::Value << rightChild.type;
+    em << YAML::Key << "RightChild" << YAML::Value;
     if (rightChild.childIsSplitter) {
         rightChild.childIsSplitter->encode(em);
     } else if (rightChild.childIsTabWidget) {
         rightChild.childIsTabWidget->encode(em);
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-WidgetSplitterSerialization::decode(const YAML_NAMESPACE::Node& node)
+WidgetSplitterSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     {
-        YAML_NAMESPACE::Node n = node["Layout"];
+        YAML::Node n = node["Layout"];
         if (n.size() != 3) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         orientation = n[0].as<std::string>();
         leftChildSize = n[1].as<int>();
@@ -187,13 +191,13 @@ WidgetSplitterSerialization::decode(const YAML_NAMESPACE::Node& node)
 }
 
 void
-WindowSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+WindowSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "Pos" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << windowPosition[0] << windowPosition[1] << YAML_NAMESPACE::EndSeq;
-    em << YAML_NAMESPACE::Key << "Size" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << windowSize[0] << windowSize[1] << YAML_NAMESPACE::EndSeq;
-    em << YAML_NAMESPACE::Key << "ChildType" << YAML_NAMESPACE::Value << childType;
-    em << YAML_NAMESPACE::Key << "Child" << YAML_NAMESPACE::Value;
+    em << YAML::BeginMap;
+    em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << windowPosition[0] << windowPosition[1] << YAML::EndSeq;
+    em << YAML::Key << "Size" << YAML::Value << YAML::Flow << YAML::BeginSeq << windowSize[0] << windowSize[1] << YAML::EndSeq;
+    em << YAML::Key << "ChildType" << YAML::Value << childType;
+    em << YAML::Key << "Child" << YAML::Value;
     if (isChildSplitter) {
         isChildSplitter->encode(em);
     } else if (isChildTabWidget) {
@@ -201,32 +205,32 @@ WindowSerialization::encode(YAML_NAMESPACE::Emitter& em) const
     } else if (!isChildSettingsPanel.empty()) {
         em << isChildSettingsPanel;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-WindowSerialization::decode(const YAML_NAMESPACE::Node& node)
+WindowSerialization::decode(const YAML::Node& node)
 {
     {
-        YAML_NAMESPACE::Node n = node["Pos"];
+        YAML::Node n = node["Pos"];
         if (!n.IsSequence() || n.size() != 2) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         windowPosition[0] = n[0].as<int>();
         windowPosition[1] = n[1].as<int>();
 
     }
     {
-        YAML_NAMESPACE::Node n = node["Size"];
+        YAML::Node n = node["Size"];
         if (!n.IsSequence() || n.size() != 2) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         windowSize[0] = n[0].as<int>();
         windowSize[1] = n[1].as<int>();
 
     }
     childType = node["ChildType"].as<std::string>();
-    YAML_NAMESPACE::Node childNode = node["Child"];
+    YAML::Node childNode = node["Child"];
     if (childType == kSplitterChildTypeSplitter) {
         isChildSplitter.reset(new WidgetSplitterSerialization);
         isChildSplitter->decode(childNode);
@@ -239,56 +243,56 @@ WindowSerialization::decode(const YAML_NAMESPACE::Node& node)
 }
 
 void
-WorkspaceSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+WorkspaceSerialization::encode(YAML::Emitter& em) const
 {
     if (_histograms.empty() && _pythonPanels.empty() && !_mainWindowSerialization && _floatingWindowsSerialization.empty()) {
         return;
     }
-    em << YAML_NAMESPACE::BeginMap;
+    em << YAML::BeginMap;
     if (!_histograms.empty()) {
-        em << YAML_NAMESPACE::Key << "Histograms" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Histograms" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<std::string>::const_iterator it = _histograms.begin(); it!=_histograms.end(); ++it) {
             em << *it;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     if (!_pythonPanels.empty()) {
-        em << YAML_NAMESPACE::Key << "PyPanels" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "PyPanels" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<PythonPanelSerialization>::const_iterator it = _pythonPanels.begin(); it!=_pythonPanels.end(); ++it) {
             it->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
     if (_mainWindowSerialization) {
-        em << YAML_NAMESPACE::Key << "MainWindow" << YAML_NAMESPACE::Value;
+        em << YAML::Key << "MainWindow" << YAML::Value;
         _mainWindowSerialization->encode(em);
     }
     if (!_floatingWindowsSerialization.empty()) {
-        em << YAML_NAMESPACE::Key << "FloatingWindows" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "FloatingWindows" << YAML::Value << YAML::BeginSeq;
         for (std::list<boost::shared_ptr<WindowSerialization> >::const_iterator it = _floatingWindowsSerialization.begin(); it!=_floatingWindowsSerialization.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 }
 
 void
-WorkspaceSerialization::decode(const YAML_NAMESPACE::Node& node)
+WorkspaceSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     if (node["Histograms"]) {
-        YAML_NAMESPACE::Node n = node["Histograms"];
+        YAML::Node n = node["Histograms"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             _histograms.push_back(n[i].as<std::string>());
         }
     }
     if (node["PyPanels"]) {
-        YAML_NAMESPACE::Node n = node["PyPanels"];
+        YAML::Node n = node["PyPanels"];
         for (std::size_t i = 0; i < n.size(); ++i) {
             PythonPanelSerialization p;
             p.decode(n[i]);
@@ -300,7 +304,7 @@ WorkspaceSerialization::decode(const YAML_NAMESPACE::Node& node)
         _mainWindowSerialization->decode(node["MainWindow"]);
     }
     if (node["FloatingWindows"]) {
-        YAML_NAMESPACE::Node n = node["FloatingWindows"];
+        YAML::Node n = node["FloatingWindows"];
         for (std::size_t i = 0; i < n[i].size(); ++i) {
             boost::shared_ptr<WindowSerialization> p(new WindowSerialization);
             p->decode(n[i]);

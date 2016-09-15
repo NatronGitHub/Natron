@@ -3,7 +3,7 @@
 ######################################################################
 
 TEMPLATE = lib
-TARGET = yamlcpp
+TARGET = yaml-cpp-natron
 CONFIG+= staticlib
 CONFIG-= qt
 
@@ -13,6 +13,9 @@ include(../../libs.pri)
 include(../../config.pri)
 
 DEFINES += YAML_CPP_NO_CONTRIB
+
+CONFIG += yaml-cpp-flags
+
 #DEFINES += LABEL_SUFFIX="static"
 
 # yamlcpp has too many "unused" warnings
@@ -22,51 +25,55 @@ DEFINES += YAML_CPP_NO_CONTRIB
 
 INCLUDEPATH += $$PWD/src
 INCLUDEPATH += $$PWD/include
-INCLUDEPATH += $$PWD/include/include
+DEPENDPATH += $$PWD/include/yaml-cpp
 
 
 # Input
 HEADERS += \
-        include/include/anchor.h \
-        include/include/binary.h \
+        include/yaml-cpp/anchor.h \
+        include/yaml-cpp/binary.h \
+        include/yaml-cpp/dll.h \
+        include/yaml-cpp/emitfromevents.h \
+        include/yaml-cpp/emitter.h \
+        include/yaml-cpp/emitterdef.h \
+        include/yaml-cpp/emittermanip.h \
+        include/yaml-cpp/emitterstyle.h \
+        include/yaml-cpp/eventhandler.h \
+        include/yaml-cpp/exceptions.h \
+        include/yaml-cpp/mark.h \
+        include/yaml-cpp/node/convert.h \
+        include/yaml-cpp/node/detail/bool_type.h \
+        include/yaml-cpp/node/detail/impl.h \
+        include/yaml-cpp/node/detail/iterator.h \
+        include/yaml-cpp/node/detail/iterator_fwd.h \
+        include/yaml-cpp/node/detail/memory.h \
+        include/yaml-cpp/node/detail/node.h \
+        include/yaml-cpp/node/detail/node_data.h \
+        include/yaml-cpp/node/detail/node_iterator.h \
+        include/yaml-cpp/node/detail/node_ref.h \
+        include/yaml-cpp/node/emit.h \
+        include/yaml-cpp/node/impl.h \
+        include/yaml-cpp/node/iterator.h \
+        include/yaml-cpp/node/node.h \
+        include/yaml-cpp/node/parse.h \
+        include/yaml-cpp/node/ptr.h \
+        include/yaml-cpp/node/type.h \
+        include/yaml-cpp/noncopyable.h \
+        include/yaml-cpp/null.h \
+        include/yaml-cpp/ostream_wrapper.h \
+        include/yaml-cpp/parser.h \
+        include/yaml-cpp/stlemitter.h \
+        include/yaml-cpp/traits.h \
+        include/yaml-cpp/version.h \
+        include/yaml-cpp/yaml.h \
         src/collectionstack.h \
         src/directives.h \
-        include/include/dll.h \
-        include/include/emitfromevents.h \
-        include/include/emitter.h \
-        include/include/emitterdef.h \
-        include/include/emittermanip.h \
         src/emitterstate.h \
         src/emitterutils.h \
-        include/include/emitterstyle.h \
-        include/include/eventhandler.h \
         src/exp.h \
-        include/include/exceptions.h \
         src/indentation.h \
-        include/include/mark.h \
         src/nodebuilder.h\
         src/nodeevents.h\
-        include/include/node/convert.h \
-        include/include/node/detail/bool_type.h \
-        include/include/node/detail/impl.h \
-        include/include/node/detail/iterator_fwd.h \
-        include/include/node/detail/iterator.h \
-        include/include/node/detail/memory.h \
-        include/include/node/detail/node_data.h \
-        include/include/node/detail/node_iterator.h \
-        include/include/node/detail/node_ref.h \
-        include/include/node/detail/node.h \
-        include/include/node/emit.h \
-        include/include/node/impl.h \
-        include/include/node/iterator.h \
-        include/include/node/node.h \
-        include/include/node/parse.h \
-        include/include/node/ptr.h \
-        include/include/node/type.h \
-        include/include/noncopyable.h \
-        include/include/null.h \
-        include/include/ostream_wrapper.h \
-        include/include/parser.h \
         src/ptr_stack.h \
         src/ptr_vector.h \
         src/regex_yaml.h \
@@ -80,12 +87,7 @@ HEADERS += \
         src/streamcharsource.h \
         src/stringsource.h \
         src/tag.h \
-        src/token.h \
-        include/include/stlemitter.h \
-        include/include/traits.h \
-        include/include/version.h \
-        include/yaml.h
-
+        src/token.h
 
 SOURCES += \
         src/binary.cpp \
@@ -117,8 +119,8 @@ SOURCES += \
         src/tag.cpp
 
 HEADERS +=  \
-        include/include/contrib/anchordict.h \
-        include/include/contrib/graphbuilder.h \
+        include/yaml-cpp/contrib/anchordict.h \
+        include/yaml-cpp/contrib/graphbuilder.h \
         src/contrib/graphbuilderadapter.h\
 
 SOURCES += \

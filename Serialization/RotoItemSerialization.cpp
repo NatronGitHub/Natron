@@ -17,37 +17,43 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "RotoItemSerialization.h"
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/KnobSerialization.h"
+
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+RotoItemSerialization::encode(YAML::Emitter& em) const
 {
     // This assumes that a map is already created
 
-    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << name;
+    em << YAML::Key << "ScriptName" << YAML::Value << name;
     if (label != name) {
-        em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << label;
+        em << YAML::Key << "Label" << YAML::Value << label;
     }
     std::list<std::string> props;
     if (locked) {
         props.push_back("Locked");
     }
     if (!parentLayerName.empty()) {
-        em << YAML_NAMESPACE::Key << "Layer" << YAML_NAMESPACE::Value << parentLayerName;
+        em << YAML::Key << "Layer" << YAML::Value << parentLayerName;
     }
     if (!props.empty()) {
-        em << YAML_NAMESPACE::Key << "Props" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Props" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<std::string>::const_iterator it = props.begin(); it!=props.end(); ++it) {
             em << *it;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
 }
 
 void
-RotoItemSerialization::decode(const YAML_NAMESPACE::Node& node)
+RotoItemSerialization::decode(const YAML::Node& node)
 {
 
     name = node["ScriptName"].as<std::string>();
@@ -61,7 +67,7 @@ RotoItemSerialization::decode(const YAML_NAMESPACE::Node& node)
         parentLayerName = node["Layer"].as<std::string>();
     }
     if (node["Props"]) {
-        YAML_NAMESPACE::Node props = node["Props"];
+        YAML::Node props = node["Props"];
         for (std::size_t i = 0; i < props.size(); ++i) {
             std::string prop = props[i].as<std::string>();
             if (prop == "Locked") {

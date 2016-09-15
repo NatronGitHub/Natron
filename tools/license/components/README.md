@@ -23,6 +23,7 @@ Natron binaries include components from the following libraries:
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
 * hoedown (BSD) https://github.com/hoedown/hoedown
 * libtess (SGI Free Software License B, X11-like) ftp://ftp.freedesktop.org/pub/mesa/glu/
+* yaml-cpp (MIT) https://github.com/jbeder/yaml-cpp
 
 # Additional dependencies
 

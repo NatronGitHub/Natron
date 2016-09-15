@@ -18,46 +18,50 @@
 
 #include "RotoLayerSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Serialization/CurveSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-RotoStrokeItemSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+RotoStrokeItemSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
+    em << YAML::BeginMap;
     RotoDrawableItemSerialization::encode(em);
     bool isSolid = _brushType != kRotoStrokeItemSerializationBrushTypeSolid;
 
     if (!isSolid) {
-        em << YAML_NAMESPACE::Key << "Type" << YAML_NAMESPACE::Value << _brushType;
+        em << YAML::Key << "Type" << YAML::Value << _brushType;
     }
     if (!_subStrokes.empty()) {
-        em << YAML_NAMESPACE::Key << "SubStrokes" << YAML_NAMESPACE::Value;
-        em << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "SubStrokes" << YAML::Value;
+        em << YAML::BeginSeq;
         for (std::list<PointCurves>::const_iterator it = _subStrokes.begin(); it!= _subStrokes.end(); ++it) {
-            em << YAML_NAMESPACE::Flow;
-            em << YAML_NAMESPACE::BeginMap;
-            em << YAML_NAMESPACE::Key << "x" << YAML_NAMESPACE::Value;
+            em << YAML::Flow;
+            em << YAML::BeginMap;
+            em << YAML::Key << "x" << YAML::Value;
             it->x->encode(em);
-            em << YAML_NAMESPACE::Key << "y" << YAML_NAMESPACE::Value;
+            em << YAML::Key << "y" << YAML::Value;
             it->y->encode(em);
-            em << YAML_NAMESPACE::Key << "pressure" << YAML_NAMESPACE::Value;
+            em << YAML::Key << "pressure" << YAML::Value;
             it->pressure->encode(em);
-            em << YAML_NAMESPACE::EndMap;
+            em << YAML::EndMap;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
     
 }
 
 
 void
-RotoStrokeItemSerialization::decode(const YAML_NAMESPACE::Node& node)
+RotoStrokeItemSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     RotoItemSerialization::decode(node);
 
@@ -68,9 +72,9 @@ RotoStrokeItemSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
 
     if (node["SubStrokes"]) {
-        YAML_NAMESPACE::Node strokesNode = node["SubStrokes"];
+        YAML::Node strokesNode = node["SubStrokes"];
         for (std::size_t i = 0; i < strokesNode.size(); ++i) {
-            YAML_NAMESPACE::Node strokeN = strokesNode[i];
+            YAML::Node strokeN = strokesNode[i];
             PointCurves p;
             p.x.reset(new CurveSerialization);
             p.y.reset(new CurveSerialization);

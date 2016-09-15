@@ -18,16 +18,20 @@
 
 #include "NodeSerialization.h"
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 SERIALIZATION_NAMESPACE_ENTER
 
 void
-NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+NodeSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "PluginID" << YAML_NAMESPACE::Value << _pluginID;
-    em << YAML_NAMESPACE::Key << "ScriptName" << YAML_NAMESPACE::Value << _nodeScriptName;
+    em << YAML::BeginMap;
+    em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
+    em << YAML::Key << "ScriptName" << YAML::Value << _nodeScriptName;
     if (_nodeLabel != _nodeScriptName) {
-        em << YAML_NAMESPACE::Key << "Label" << YAML_NAMESPACE::Value << _nodeLabel;
+        em << YAML::Key << "Label" << YAML::Value << _nodeLabel;
     }
 
     std::string fullyQualifiedName = _groupFullyQualifiedScriptName;
@@ -38,9 +42,9 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
 
     // If version is 1.0 do not serialize
     if ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1)) {
-        em << YAML_NAMESPACE::Key << "Version" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Version" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         em << _pluginMajorVersion << _pluginMinorVersion;
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     bool hasInput = false;
@@ -51,101 +55,101 @@ NodeSerialization::encode(YAML_NAMESPACE::Emitter& em) const
         }
     }
     if (hasInput) {
-        em << YAML_NAMESPACE::Key << "Inputs" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginMap;
+        em << YAML::Key << "Inputs" << YAML::Value << YAML::Flow << YAML::BeginMap;
         for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
             if (!it->second.empty()) {
-                em << YAML_NAMESPACE::Key << it->first << YAML_NAMESPACE::Value << it->second;
+                em << YAML::Key << it->first << YAML::Value << it->second;
             }
         }
-        em << YAML_NAMESPACE::EndMap;
+        em << YAML::EndMap;
     }
 
     if (!_knobsValues.empty()) {
-        em << YAML_NAMESPACE::Key << "Params" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Params" << YAML::Value << YAML::BeginSeq;
         for (KnobSerializationList::const_iterator it = _knobsValues.begin(); it!=_knobsValues.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     if (!_userPages.empty()) {
-        em << YAML_NAMESPACE::Key << "UserPages" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "UserPages" << YAML::Value << YAML::BeginSeq;
         for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin(); it!=_userPages.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     if (!_pagesIndexes.empty()) {
-        em << YAML_NAMESPACE::Key << "PagesOrder" << YAML_NAMESPACE::Value <<  YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "PagesOrder" << YAML::Value <<  YAML::Flow << YAML::BeginSeq;
         for (std::list<std::string>::const_iterator it = _pagesIndexes.begin(); it!=_pagesIndexes.end(); ++it) {
             em << *it;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     if (!_children.empty()) {
-        em << YAML_NAMESPACE::Key << "Children" << YAML_NAMESPACE::Value << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "Children" << YAML::Value << YAML::BeginSeq;
         for (NodeSerializationList::const_iterator it = _children.begin(); it!=_children.end(); ++it) {
             (*it)->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     if (_rotoContext) {
-        em << YAML_NAMESPACE::Key << "Roto" << YAML_NAMESPACE::Value;
+        em << YAML::Key << "Roto" << YAML::Value;
         _rotoContext->encode(em);
     }
 
     if (_trackerContext) {
-        em << YAML_NAMESPACE::Key << "Tracks" << YAML_NAMESPACE::Value;
+        em << YAML::Key << "Tracks" << YAML::Value;
         _trackerContext->encode(em);
     }
 
     if (!_masterNodeFullyQualifiedScriptName.empty()) {
-        em << YAML_NAMESPACE::Key << "CloneMaster" << YAML_NAMESPACE::Value << _masterNodeFullyQualifiedScriptName;
+        em << YAML::Key << "CloneMaster" << YAML::Value << _masterNodeFullyQualifiedScriptName;
     }
 
     if (!_presetLabel.empty()) {
-        em << YAML_NAMESPACE::Key << "Preset" << YAML_NAMESPACE::Value << _presetLabel;
+        em << YAML::Key << "Preset" << YAML::Value << _presetLabel;
     }
 
     if (!_userComponents.empty()) {
-        em << YAML_NAMESPACE::Key << "NewLayers" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "NewLayers" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<ImageComponentsSerialization>::const_iterator it = _userComponents.begin(); it!=_userComponents.end(); ++it) {
             it->encode(em);
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
 
     if (_nodePositionCoords[0] != INT_MIN && _nodePositionCoords[1] != INT_MIN) {
-        em << YAML_NAMESPACE::Key << "Pos" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << _nodePositionCoords[0] << _nodePositionCoords[1] << YAML_NAMESPACE::EndSeq;
+        em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodePositionCoords[0] << _nodePositionCoords[1] << YAML::EndSeq;
     }
     if (_nodeSize[0] != -1 && _nodeSize[1] != -1) {
-        em << YAML_NAMESPACE::Key << "Size" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << _nodeSize[0] << _nodeSize[1] << YAML_NAMESPACE::EndSeq;
+        em << YAML::Key << "Size" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeSize[0] << _nodeSize[1] << YAML::EndSeq;
     }
     if (_nodeColor[0] != -1 && _nodeColor[1] != -1 && _nodeColor[2] != -1) {
-        em << YAML_NAMESPACE::Key << "Color" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << _nodeColor[0] << _nodeColor[1] << _nodeColor[2] << YAML_NAMESPACE::EndSeq;
+        em << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeColor[0] << _nodeColor[1] << _nodeColor[2] << YAML::EndSeq;
     }
     if (_overlayColor[0] != -1 && _overlayColor[1] != -1 && _overlayColor[2] != -1) {
-        em << YAML_NAMESPACE::Key << "OverlayColor" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << YAML_NAMESPACE::EndSeq;
+        em << YAML::Key << "OverlayColor" << YAML::Value << YAML::Flow << YAML::BeginSeq << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << YAML::EndSeq;
     }
 
     if (!_viewerUIKnobsOrder.empty()) {
-        em << YAML_NAMESPACE::Key << "ViewerParamsOrder" << YAML_NAMESPACE::Value << YAML_NAMESPACE::Flow << YAML_NAMESPACE::BeginSeq;
+        em << YAML::Key << "ViewerParamsOrder" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<std::string>::const_iterator it = _viewerUIKnobsOrder.begin(); it!=_viewerUIKnobsOrder.end(); ++it) {
             em << *it;
         }
-        em << YAML_NAMESPACE::EndSeq;
+        em << YAML::EndSeq;
     }
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 } // NodeSerialization::encode
 
 void
-NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
+NodeSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
 
     _pluginID = node["PluginID"].as<std::string>();
@@ -157,23 +161,23 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
 
     if (node["Version"]) {
-        YAML_NAMESPACE::Node versionNode = node["Version"];
+        YAML::Node versionNode = node["Version"];
         if (versionNode.size() != 2) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         _pluginMajorVersion = versionNode[0].as<int>();
         _pluginMinorVersion = versionNode[1].as<int>();
     }
 
     if (node["Inputs"]) {
-        YAML_NAMESPACE::Node inputsNode = node["Inputs"];
-        for (YAML_NAMESPACE::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
+        YAML::Node inputsNode = node["Inputs"];
+        for (YAML::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
             _inputs.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
         }
     }
     
     if (node["Params"]) {
-        YAML_NAMESPACE::Node paramsNode = node["Params"];
+        YAML::Node paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
             KnobSerializationPtr s(new KnobSerialization);
             s->decode(paramsNode[i]);
@@ -181,7 +185,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
     }
     if (node["UserPages"]) {
-        YAML_NAMESPACE::Node pagesNode = node["UserPages"];
+        YAML::Node pagesNode = node["UserPages"];
         for (std::size_t i = 0; i < pagesNode.size(); ++i) {
             GroupKnobSerializationPtr s(new GroupKnobSerialization);
             s->decode(pagesNode[i]);
@@ -189,13 +193,13 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
     }
     if (node["PagesOrder"]) {
-        YAML_NAMESPACE::Node pagesOrder = node["PagesOrder"];
+        YAML::Node pagesOrder = node["PagesOrder"];
         for (std::size_t i = 0; i < pagesOrder.size(); ++i) {
             _pagesIndexes.push_back(pagesOrder[i].as<std::string>());
         }
     }
     if (node["Children"]) {
-        YAML_NAMESPACE::Node childrenNode = node["Children"];
+        YAML::Node childrenNode = node["Children"];
         for (std::size_t i = 0; i < childrenNode.size(); ++i) {
             NodeSerializationPtr s(new NodeSerialization);
             s->decode(childrenNode[i]);
@@ -219,7 +223,7 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
     }
     
     if (node["NewLayers"]) {
-        YAML_NAMESPACE::Node layersNode = node["NewLayers"];
+        YAML::Node layersNode = node["NewLayers"];
         for (std::size_t i = 0; i < layersNode.size(); ++i) {
             ImageComponentsSerialization s;
             s.decode(layersNode[i]);
@@ -227,41 +231,41 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
         }
     }
     if (node["Pos"]) {
-        YAML_NAMESPACE::Node posNode = node["Pos"];
+        YAML::Node posNode = node["Pos"];
         if (posNode.size() != 2) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         _nodePositionCoords[0] = posNode[0].as<double>();
         _nodePositionCoords[1] = posNode[1].as<double>();
     }
     if (node["Size"]) {
-        YAML_NAMESPACE::Node sizeNode = node["Size"];
+        YAML::Node sizeNode = node["Size"];
         if (sizeNode.size() != 2) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         _nodeSize[0] = sizeNode[0].as<double>();
         _nodeSize[1] = sizeNode[1].as<double>();
     }
     if (node["Color"]) {
-        YAML_NAMESPACE::Node colorNode = node["Color"];
+        YAML::Node colorNode = node["Color"];
         if (colorNode.size() != 3) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         _nodeColor[0] = colorNode[0].as<double>();
         _nodeColor[1] = colorNode[1].as<double>();
         _nodeColor[2] = colorNode[2].as<double>();
     }
     if (node["OverlayColor"]) {
-        YAML_NAMESPACE::Node colorNode = node["OverlayColor"];
+        YAML::Node colorNode = node["OverlayColor"];
         if (colorNode.size() != 3) {
-            throw YAML_NAMESPACE::InvalidNode();
+            throw YAML::InvalidNode();
         }
         _overlayColor[0] = colorNode[0].as<double>();
         _overlayColor[1] = colorNode[1].as<double>();
         _overlayColor[2] = colorNode[2].as<double>();
     }
     if (node["ViewerParamsOrder"]) {
-        YAML_NAMESPACE::Node viewerParamsOrderNode = node["ViewerParamsOrder"];
+        YAML::Node viewerParamsOrderNode = node["ViewerParamsOrder"];
         for (std::size_t i = 0; i < viewerParamsOrderNode.size(); ++i) {
             _viewerUIKnobsOrder.push_back(viewerParamsOrderNode[i].as<std::string>());
         }
@@ -271,30 +275,30 @@ NodeSerialization::decode(const YAML_NAMESPACE::Node& node)
 } // NodeSerialization::decode
 
 void
-NodePresetSerialization::encode(YAML_NAMESPACE::Emitter& em) const
+NodePresetSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML_NAMESPACE::BeginMap;
-    em << YAML_NAMESPACE::Key << "PluginID" << YAML_NAMESPACE::Value << pluginID;
-    em << YAML_NAMESPACE::Key << "PresetLabel" << YAML_NAMESPACE::Value << presetLabel;
+    em << YAML::BeginMap;
+    em << YAML::Key << "PluginID" << YAML::Value << pluginID;
+    em << YAML::Key << "PresetLabel" << YAML::Value << presetLabel;
     if (!presetIcon.empty()) {
-        em << YAML_NAMESPACE::Key << "Icon" << YAML_NAMESPACE::Value << presetIcon;
+        em << YAML::Key << "Icon" << YAML::Value << presetIcon;
     }
     if (presetSymbol != 0) {
-        em << YAML_NAMESPACE::Key << "Key" << YAML_NAMESPACE::Value << presetSymbol;
+        em << YAML::Key << "Key" << YAML::Value << presetSymbol;
     }
     if (presetModifiers != 0) {
-        em << YAML_NAMESPACE::Key << "Modifiers" << YAML_NAMESPACE::Value << presetModifiers;
+        em << YAML::Key << "Modifiers" << YAML::Value << presetModifiers;
     }
-    em << YAML_NAMESPACE::Key << "Node" << YAML_NAMESPACE::Value;
+    em << YAML::Key << "Node" << YAML::Value;
     node.encode(em);
-    em << YAML_NAMESPACE::EndMap;
+    em << YAML::EndMap;
 };
 
 void
-NodePresetSerialization::decode(const YAML_NAMESPACE::Node& node)
+NodePresetSerialization::decode(const YAML::Node& node)
 {
     if (!node.IsMap()) {
-        throw YAML_NAMESPACE::InvalidNode();
+        throw YAML::InvalidNode();
     }
     pluginID = node["PluginID"].as<std::string>();
     presetLabel = node["PresetLabel"].as<std::string>();

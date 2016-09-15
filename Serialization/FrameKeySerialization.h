@@ -22,6 +22,7 @@
 #include "Serialization/SerializationBase.h"
 #include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/TextureRectSerialization.h"
+#include "Serialization/SerializationFwd.h"
 
 #define kBitDepthSerializationByte "B"
 #define kBitDepthSerializationShort "S"
@@ -62,9 +63,9 @@ public:
 
     }
 
-    virtual void encode(YAML_NAMESPACE::Emitter& em) const OVERRIDE;
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
-    virtual void decode(const YAML_NAMESPACE::Node& node) OVERRIDE;
+    virtual void decode(const YAML::Node& node) OVERRIDE;
 
 };
 
