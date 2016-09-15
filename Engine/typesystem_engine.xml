@@ -264,7 +264,9 @@
            </inject-code>
        </modify-function>
    </object-type>
-   
+
+   <object-type name="ExprUtils">
+   </object-type>
    <object-type name="RectD">
        <modify-function signature="operator=(RectD)" remove="all"/>
        <modify-function signature="debug()const" remove="all"/>
@@ -558,6 +560,14 @@
         </inject-documentation>
         
         <modify-function signature="getInput(int)const">
+            <inject-documentation format="target">
+                Returns the node at the given input.
+            </inject-documentation>
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getInput(QString)const">
             <inject-documentation format="target">
                 Returns the node at the given input.
             </inject-documentation>
