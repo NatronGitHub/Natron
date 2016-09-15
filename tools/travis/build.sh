@@ -65,6 +65,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
     make $J -C libs/libtess
+    make $J -C libs/yaml-cpp
     make $J -C HostSupport;
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
@@ -73,6 +74,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C Engine;
+    make $J -C Serialization;
     make $J -C Renderer;
     make $J -C Gui;
     make $J -C App; # linking Natron may break the 3Gb limit
@@ -101,8 +103,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
     make $J -C libs/libtess
+    make $J -C libs/yaml-cpp
     make $J -C HostSupport;
     make $J -C Engine;
+    make $J -C Serialization;
     make $J -C Renderer;
     make $J -C Gui;
     make -C App; # linking Natron may break the 3Gb limit
