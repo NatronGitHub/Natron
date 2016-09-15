@@ -11,7 +11,7 @@
 
 #define CP_REPLACEMENT_CHARACTER (0xFFFD)
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 enum UtfIntroState {
   uis_start,
   uis_utfbe_b1,
@@ -445,4 +445,4 @@ void Stream::StreamInUtf32() const {
 
   QueueUnicodeCodepoint(m_readahead, ch);
 }
-YAML_NAMESPACE_EXIT
+}

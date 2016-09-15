@@ -9,7 +9,7 @@
 
 #include <string>
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 struct Directives;
 struct Token;
 
@@ -28,6 +28,6 @@ struct Tag {
   TYPE type;
   std::string handle, value;
 };
-YAML_NAMESPACE_EXIT
+}
 
 #endif  // TAG_H_62B23520_7C8E_11DE_8A39_0800200C9A66

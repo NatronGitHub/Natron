@@ -1,7 +1,7 @@
 #include "graphbuilderadapter.h"
-#include "contrib/graphbuilder.h"
+#include "yaml-cpp/contrib/graphbuilder.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 struct Mark;
 
 int GraphBuilderAdapter::ContainerFrame::sequenceMarker;
@@ -91,4 +91,4 @@ void GraphBuilderAdapter::DispositionNode(void *pNode) {
     m_builder.AppendToSequence(pContainer, pNode);
   }
 }
-YAML_NAMESPACE_EXIT
+}

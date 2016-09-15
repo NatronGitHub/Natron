@@ -2,10 +2,10 @@
 #include "regex_yaml.h"
 #include "regeximpl.h"
 #include "stream.h"
-#include "exceptions.h"  // IWYU pragma: keep
-#include "mark.h"
+#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
+#include "yaml-cpp/mark.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 const std::string ScanVerbatimTag(Stream& INPUT) {
   std::string tag;
 
@@ -78,4 +78,4 @@ const std::string ScanTagSuffix(Stream& INPUT) {
 
   return tag;
 }
-YAML_NAMESPACE_EXIT
+}

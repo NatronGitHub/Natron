@@ -1,8 +1,8 @@
 #include "graphbuilderadapter.h"
 
-#include "parser.h"  // IWYU pragma: keep
+#include "yaml-cpp/parser.h"  // IWYU pragma: keep
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 class GraphBuilderInterface;
 
 void* BuildGraphOfNextDocument(Parser& parser,
@@ -14,4 +14,4 @@ void* BuildGraphOfNextDocument(Parser& parser,
     return NULL;
   }
 }
-YAML_NAMESPACE_EXIT
+}

@@ -7,8 +7,8 @@
 #pragma once
 #endif
 
-#include "noncopyable.h"
-#include "mark.h"
+#include "yaml-cpp/noncopyable.h"
+#include "yaml-cpp/mark.h"
 #include <cstddef>
 #include <deque>
 #include <ios>
@@ -16,7 +16,7 @@
 #include <set>
 #include <string>
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 class Stream : private noncopyable {
  public:
   friend class StreamCharSource;
@@ -71,6 +71,6 @@ inline bool Stream::ReadAheadTo(size_t i) const {
     return true;
   return _ReadAheadTo(i);
 }
-YAML_NAMESPACE_EXIT
+}
 
 #endif  // STREAM_H_62B23520_7C8E_11DE_8A39_0800200C9A66

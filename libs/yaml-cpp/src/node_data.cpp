@@ -2,15 +2,15 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <sstream>
 
-#include "exceptions.h"
-#include "node/detail/memory.h"
-#include "node/detail/node.h"  // IWYU pragma: keep
-#include "node/detail/node_data.h"
-#include "node/detail/node_iterator.h"
-#include "node/ptr.h"
-#include "node/type.h"
+#include "yaml-cpp/exceptions.h"
+#include "yaml-cpp/node/detail/memory.h"
+#include "yaml-cpp/node/detail/node.h"  // IWYU pragma: keep
+#include "yaml-cpp/node/detail/node_data.h"
+#include "yaml-cpp/node/detail/node_iterator.h"
+#include "yaml-cpp/node/ptr.h"
+#include "yaml-cpp/node/type.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 namespace detail {
 
 std::string node_data::empty_scalar;
@@ -298,4 +298,4 @@ void node_data::convert_sequence_to_map(shared_memory_holder pMemory) {
   m_type = NodeType::Map;
 }
 }
-YAML_NAMESPACE_EXIT
+}

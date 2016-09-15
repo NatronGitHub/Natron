@@ -2,13 +2,13 @@
 
 #include "exp.h"
 #include "stream.h"
-#include "exceptions.h"  // IWYU pragma: keep
+#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 struct Mark;
-YAML_NAMESPACE_EXIT
+}  // namespace YAML
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 namespace Exp {
 unsigned ParseHex(const std::string& str, const Mark& mark) {
   unsigned value = 0;
@@ -133,4 +133,4 @@ std::string Escape(Stream& in) {
   throw ParserException(in.mark(), std::string(ErrorMsg::INVALID_ESCAPE) + ch);
 }
 }
-YAML_NAMESPACE_EXIT
+}

@@ -2,12 +2,12 @@
 
 #include "emitterutils.h"
 #include "indentation.h"  // IWYU pragma: keep
-#include "emitter.h"
-#include "emitterdef.h"
-#include "emittermanip.h"
-#include "exceptions.h"  // IWYU pragma: keep
+#include "yaml-cpp/emitter.h"
+#include "yaml-cpp/emitterdef.h"
+#include "yaml-cpp/emittermanip.h"
+#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 class Binary;
 struct _Null;
 
@@ -684,7 +684,7 @@ Emitter& Emitter::Write(const std::string& str) {
                                  m_pState->CurGroupFlowType(), escapeNonAscii);
 
   if (strFormat == StringFormat::Literal)
-    m_pState->SetMapKeyFormat(YAML_NAMESPACE::LongKey, FmtScope::Local);
+    m_pState->SetMapKeyFormat(YAML::LongKey, FmtScope::Local);
 
   PrepareNode(EmitterNodeType::Scalar);
 
@@ -908,4 +908,4 @@ Emitter& Emitter::Write(const Binary& binary) {
 
   return *this;
 }
-YAML_NAMESPACE_EXIT
+}

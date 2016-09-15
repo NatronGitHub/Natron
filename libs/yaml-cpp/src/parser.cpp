@@ -5,10 +5,10 @@
 #include "scanner.h"     // IWYU pragma: keep
 #include "singledocparser.h"
 #include "token.h"
-#include "exceptions.h"  // IWYU pragma: keep
-#include "parser.h"
+#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
+#include "yaml-cpp/parser.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 class EventHandler;
 
 Parser::Parser() {}
@@ -125,4 +125,4 @@ void Parser::PrintTokens(std::ostream& out) {
     m_pScanner->pop();
   }
 }
-YAML_NAMESPACE_EXIT
+}

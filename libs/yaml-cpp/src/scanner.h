@@ -18,9 +18,9 @@
 #include "ptr_vector.h"
 #include "stream.h"
 #include "token.h"
-#include "mark.h"
+#include "yaml-cpp/mark.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 class Node;
 class RegEx;
 
@@ -130,6 +130,6 @@ class Scanner {
   ptr_vector<IndentMarker> m_indentRefs;  // for "garbage collection"
   std::stack<FLOW_MARKER> m_flows;
 };
-YAML_NAMESPACE_EXIT
+}
 
 #endif  // SCANNER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

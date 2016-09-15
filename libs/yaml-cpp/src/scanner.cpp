@@ -4,9 +4,9 @@
 #include "exp.h"
 #include "scanner.h"
 #include "token.h"
-#include "exceptions.h"  // IWYU pragma: keep
+#include "yaml-cpp/exceptions.h"  // IWYU pragma: keep
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 Scanner::Scanner(std::istream& in)
     : INPUT(in),
       m_startedStream(false),
@@ -383,4 +383,4 @@ void Scanner::ThrowParserException(const std::string& msg) const {
   }
   throw ParserException(mark, msg);
 }
-YAML_NAMESPACE_EXIT
+}

@@ -1,8 +1,8 @@
-#include "node/detail/memory.h"
-#include "node/detail/node.h"  // IWYU pragma: keep
-#include "node/ptr.h"
+#include "yaml-cpp/node/detail/memory.h"
+#include "yaml-cpp/node/detail/node.h"  // IWYU pragma: keep
+#include "yaml-cpp/node/ptr.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 namespace detail {
 
 void memory_holder::merge(memory_holder& rhs) {
@@ -23,4 +23,4 @@ void memory::merge(const memory& rhs) {
   m_nodes.insert(rhs.m_nodes.begin(), rhs.m_nodes.end());
 }
 }
-YAML_NAMESPACE_EXIT
+}

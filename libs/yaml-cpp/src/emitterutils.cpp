@@ -7,10 +7,10 @@
 #include "regex_yaml.h"
 #include "regeximpl.h"
 #include "stringsource.h"
-#include "binary.h"  // IWYU pragma: keep
-#include "ostream_wrapper.h"
+#include "yaml-cpp/binary.h"  // IWYU pragma: keep
+#include "yaml-cpp/ostream_wrapper.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 namespace Utils {
 namespace {
 enum { REPLACEMENT_CHARACTER = 0xFFFD };
@@ -481,4 +481,4 @@ bool WriteBinary(ostream_wrapper& out, const Binary& binary) {
   return true;
 }
 }
-YAML_NAMESPACE_EXIT
+}

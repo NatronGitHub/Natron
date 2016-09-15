@@ -12,12 +12,12 @@
 #include <memory>
 #include <vector>
 
-#include "noncopyable.h"
+#include "yaml-cpp/noncopyable.h"
 
-YAML_NAMESPACE_ENTER
+namespace YAML {
 
 template <typename T>
-class ptr_vector : private YAML_NAMESPACE::noncopyable {
+class ptr_vector : private YAML::noncopyable {
  public:
   ptr_vector() {}
   ~ptr_vector() { clear(); }
@@ -44,6 +44,6 @@ class ptr_vector : private YAML_NAMESPACE::noncopyable {
  private:
   std::vector<T*> m_data;
 };
-YAML_NAMESPACE_EXIT
+}
 
 #endif  // PTR_VECTOR_H_62B23520_7C8E_11DE_8A39_0800200C9A66
