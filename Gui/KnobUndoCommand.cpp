@@ -42,11 +42,12 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/AppInstance.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/GuiApplicationManager.h"
 
+#include "Serialization/CurveSerialization.h"
+#include "Serialization/KnobSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 struct PasteUndoCommandPrivate
@@ -55,15 +56,17 @@ struct PasteUndoCommandPrivate
     KnobClipBoardType type;
     int fromDimension;
     int targetDimension;
-    KnobSerializationPtr originalSerialization;
-    KnobIPtr fromKnob;
+    SERIALIZATION_NAMESPACE::KnobSerializationPtr toKnobSerialization, fromKnobSerialization;
+    KnobIWPtr fromKnob;
 
     PasteUndoCommandPrivate()
         : knob()
         , type(eKnobClipBoardTypeCopyLink)
         , fromDimension(-1)
         , targetDimension(-1)
-        , originalSerialization(new KnobSerialization)
+        , toKnobSerialization()
+        , fromKnobSerialization()
+        , fromKnob()
     {
     }
 };
@@ -76,40 +79,21 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
     : QUndoCommand(0)
     , _imp( new PasteUndoCommandPrivate() )
 {
+    _imp->fromKnob = fromKnob;
     _imp->knob = knob;
     _imp->type = type;
     _imp->fromDimension = fromDimension;
     _imp->targetDimension = targetDimension;
-    _imp->fromKnob = fromKnob;
 
-    {
-        std::ostringstream ss;
-        {
-            try {
-                boost::archive::xml_oarchive oArchive(ss);
-                _imp->originalSerialization->initialize( knob->getKnob() );
-                oArchive << boost::serialization::make_nvp("KnobClipboard", *_imp->originalSerialization);
-            } catch (...) {
-                assert(false);
-            }
-        }
-        _imp->originalSerialization.reset(new KnobSerialization);
-        std::string str = ss.str();
-        {
-            try {
-                std::stringstream ss(str);
-                boost::archive::xml_iarchive iArchive(ss);
-                iArchive >> boost::serialization::make_nvp("KnobClipboard", *_imp->originalSerialization);
-            } catch (...) {
-                assert(false);
-            }
-        }
-    }
-    assert( _imp->originalSerialization->getKnob() );
+    _imp->toKnobSerialization.reset(new SERIALIZATION_NAMESPACE::KnobSerialization);
+    knob->getKnob()->toSerialization(_imp->toKnobSerialization.get());
+    _imp->fromKnobSerialization.reset(new SERIALIZATION_NAMESPACE::KnobSerialization);
+    fromKnob->toSerialization(_imp->fromKnobSerialization.get());
+
 
     assert(knob);
     assert( _imp->targetDimension >= -1 && _imp->targetDimension < _imp->knob.lock()->getKnob()->getDimension() );
-    assert( _imp->fromDimension >= -1 && _imp->fromDimension < _imp->fromKnob->getDimension() );
+    assert( _imp->fromDimension >= -1 && _imp->fromDimension < _imp->fromKnobSerialization->_dimension );
     QString text;
     switch (type) {
     case eKnobClipBoardTypeCopyAnim:
@@ -132,17 +116,18 @@ PasteUndoCommand::~PasteUndoCommand()
 void
 PasteUndoCommand::undo()
 {
-    copyFrom(_imp->originalSerialization->getKnob(), false);
+    copyFrom(_imp->toKnobSerialization, _imp->knob.lock()->getKnob(), false);
 } // undo
 
 void
 PasteUndoCommand::redo()
 {
-    copyFrom(_imp->fromKnob, true);
+    copyFrom(_imp->fromKnobSerialization, _imp->fromKnob.lock(), true);
 } // undo
 
 void
-PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
+PasteUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSerializationPtr& serializedKnob,
+                           const KnobIPtr& fromKnob,
                            bool isRedo)
 {
     KnobIPtr internalKnob = _imp->knob.lock()->getKnob();
@@ -152,15 +137,17 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
             if ( ( _imp->targetDimension == -1) || ( i == _imp->targetDimension) ) {
-                CurvePtr fromCurve;
+                CurvePtr fromCurve(new Curve());
                 if ( ( i == _imp->targetDimension) && ( _imp->fromDimension != -1) ) {
-                    fromCurve = serializedKnob->getCurve(ViewIdx(0), _imp->fromDimension);
+                    if (serializedKnob->_values[_imp->fromDimension]._animationCurve.keys.empty()) {
+                        fromCurve->fromSerialization(serializedKnob->_values[_imp->fromDimension]._animationCurve);
+                    }
                 } else {
-                    fromCurve = serializedKnob->getCurve(ViewIdx(0), i);
+                    if (!serializedKnob->_values[i]._animationCurve.keys.empty()) {
+                        fromCurve->fromSerialization(serializedKnob->_values[i]._animationCurve);
+                    }
                 }
-                if (!fromCurve) {
-                    continue;
-                }
+
                 internalKnob->cloneCurve(ViewIdx(0), i, *fromCurve);
             }
         }
@@ -173,27 +160,11 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         KnobDoubleBasePtr isDouble = toKnobDoubleBase( internalKnob );
         KnobStringBasePtr isString = toKnobStringBase( internalKnob );
 
-        KnobIntBasePtr isFromInt = toKnobIntBase( serializedKnob );
-        KnobBoolBasePtr isFromBool = toKnobBoolBase( serializedKnob );
-        KnobDoubleBasePtr isFromDouble = toKnobDoubleBase( serializedKnob );
-        KnobStringBasePtr isFromString = toKnobStringBase( serializedKnob );
-
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
+            int fromDim =  (i == _imp->targetDimension && _imp->fromDimension != -1) ? _imp->fromDimension : i;
             if ( ( _imp->targetDimension == -1) || ( i == _imp->targetDimension) ) {
-                if (isInt && isFromInt) {
-                    int f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromInt->getValue(_imp->fromDimension) : isFromInt->getValue(i);
-                    isInt->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                } else if (isBool && isFromBool) {
-                    bool f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromBool->getValue(_imp->fromDimension) : isFromBool->getValue(i);
-                    isBool->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                } else if (isDouble && isFromDouble) {
-                    double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
-                    isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                } else if (isString && isFromString) {
-                    std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
-                    isString->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                }
+                internalKnob->restoreValueFromSerialization(serializedKnob->_values[fromDim], i, false);
             }
         }
         internalKnob->endChanges();
@@ -207,9 +178,9 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
             if ( ( _imp->targetDimension == -1) || ( i == _imp->targetDimension) ) {
                 if (isRedo) {
                     if (_imp->fromDimension != -1) {
-                        internalKnob->slaveTo(i, serializedKnob, _imp->fromDimension);
+                        internalKnob->slaveTo(i, fromKnob, _imp->fromDimension);
                     } else {
-                        internalKnob->slaveTo(i, serializedKnob, i);
+                        internalKnob->slaveTo(i, fromKnob, i);
                     }
                 } else {
                     internalKnob->unSlave(i, false);
@@ -518,32 +489,40 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
     , _targetDim(targetDim)
     , _knobs()
 {
+    setText( tr("Restore default value(s)") );
+
+    
     for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobButtonPtr isButton = toKnobButton(*it);
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobSeparatorPtr isSep = toKnobSeparator(*it);
+        if (isSep || isPage || (isButton && !isButton->getIsCheckable())) {
+            continue;
+        }
         _knobs.push_front(*it);
-        _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobSerialization());
+        (*it)->toSerialization(s.get());
+        _serializations.push_back(s);
     }
 }
 
 void
 RestoreDefaultsCommand::undo()
 {
-    assert( _clones.size() == _knobs.size() );
+    assert( _serializations.size() == _knobs.size() );
 
     std::list<SequenceTime> times;
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app = first->getHolder()->getApp();
     assert(app);
-    std::list<KnobIWPtr >::const_iterator itClone = _clones.begin();
+    SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator itClone = _serializations.begin();
     for (std::list<KnobIWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
-        KnobIPtr itCloneKnob = itClone->lock();
-        if (!itCloneKnob) {
-            continue;
-        }
-        itKnob->cloneAndUpdateGui( itCloneKnob );
+       
+        itKnob->fromSerialization(**itClone);
 
         if ( itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
@@ -562,12 +541,11 @@ RestoreDefaultsCommand::undo()
     }
     app->addMultipleKeyframeIndicatorsAdded(times, true);
 
-    first->getHolder()->incrHashAndEvaluate(true, true);
+    first->getHolder()->invalidateCacheHashAndEvaluate(true, true);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
 
-    setText( tr("Restore default value(s)") );
 }
 
 void
@@ -657,12 +635,11 @@ RestoreDefaultsCommand::redo()
 
 
     if ( first->getHolder() ) {
-        first->getHolder()->incrHashAndEvaluate(true, true);
+        first->getHolder()->invalidateCacheHashAndEvaluate(true, true);
         if ( first->getHolder()->getApp() ) {
             first->getHolder()->getApp()->redrawAllViewers();
         }
     }
-    setText( tr("Restore default value(s)") );
 } // RestoreDefaultsCommand::redo
 
 SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,

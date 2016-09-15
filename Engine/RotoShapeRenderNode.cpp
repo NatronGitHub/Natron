@@ -26,9 +26,11 @@
 
 
 #include "Engine/AppInstance.h"
+#include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/Hash64.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
@@ -117,6 +119,30 @@ RotoShapeRenderNode::initializeKnobs()
     }
 }
 
+void
+RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
+{
+    // Append the position of the curve at the given time
+    RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
+    assert(item);
+
+    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+    if (isBezier) {
+        U64 bh = isBezier->computeHash(time, view);
+        hash->append(bh);
+
+    } else if (isStroke) {
+        U64 sh = isStroke->computeHash(time, view);
+        hash->append(sh);
+        
+    }
+
+    
+    EffectInstance::appendToHash(time, view, hash);
+
+}
+
 StatusEnum
 RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 {
@@ -133,11 +159,11 @@ RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 }
 
 StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
    
 
-    StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    StatusEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
     if (st != eStatusOK) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }

@@ -48,6 +48,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGui.h"
+#include "Gui/TabWidget.h"
+
+
 
 #include "Global/QtCompat.h"
 
@@ -329,13 +332,13 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     for (std::set<NodeGuiPtr>::iterator it = nodesToMove.begin();
          it != nodesToMove.end(); ++it) {
         //The current position
-        QPointF pos = (*it)->getPos_mt_safe();
+        QPointF pos = (*it)->pos();
 
         //if ignoreMagnet == true, we do not snap nodes to horizontal/vertical positions
         (*it)->refreshPosition(pos.x() + dxScene, pos.y() + dyScene, ignoreMagnet, newPos);
 
         //The new position
-        QPointF newNodePos = (*it)->getPos_mt_safe();
+        QPointF newNodePos = (*it)->pos();
         if (!ignoreMagnet) {
             //Magnet only works when selection is only for a single node
             //Adjust the delta since mouse press by the new position after snapping
@@ -393,7 +396,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     bool groupEdited = true;
     if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
     if (!groupEdited && isGroupEditable) {
         ///check if user is nearby unlock
@@ -406,6 +409,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             QPoint pos = mapToGlobal( e->pos() );
             QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
                                                                                                 "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+            e->accept();
+            return;
         }
     }
 
@@ -548,7 +553,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdate) {
         update();
     }
-    QGraphicsView::mouseMoveEvent(e);
+    
+    TabWidget* tab = getParentPane() ;
+    if (tab && _imp->_evtState == eEventStateNone) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    } else {
+        QGraphicsView::mouseMoveEvent(e);
+    }
 } // mouseMoveEvent
 
 NATRON_NAMESPACE_EXIT;

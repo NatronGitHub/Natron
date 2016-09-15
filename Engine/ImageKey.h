@@ -31,36 +31,34 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#include "Serialization/ImageKeySerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 class ImageKey
-    :  public KeyHelper<U64>
+    : public KeyHelper<U64>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
+    typedef SERIALIZATION_NAMESPACE::ImageKeySerialization SerializationType;
+
     U64 _nodeHashKey;
     double _time;
-    double _pixelAspect;
-    int /*ViewIdx*/ _view; // store it locally as an int for easier serialization
+    ViewIdx _view; 
     bool _draftMode;
-    bool _frameVaryingOrAnimated;
 
-    //When true that means the image has been computed based on inputs using a mipmaplevel != 0
-    //hence it is probably not very high quality, even though the mipmap level is 0
-    bool _fullScaleWithDownscaleInputs;
+
 
     ImageKey();
 
-    ImageKey(const CacheEntryHolder* holder,
+    ImageKey(const std::string& pluginID,
              U64 nodeHashKey,
-             bool frameVaryingOrAnimated,
              double time,
              ViewIdx view,
-             double pixelAspect,
-             bool draftMode,
-             bool fullScaleWithDownscaleInputs);
+             bool draftMode);
 
-    void fillHash(Hash64* hash) const;
+    virtual void fillHash(Hash64* hash) const OVERRIDE FINAL;
 
     U64 getTreeVersion() const
     {
@@ -76,11 +74,12 @@ public:
 
     ViewIdx getView() const
     {
-        return ViewIdx(_view);
+        return _view;
     }
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

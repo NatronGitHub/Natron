@@ -151,7 +151,7 @@ Settings::initializeKnobsGeneral()
 
     _natronSettingsExist = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Existing settings") );
     _natronSettingsExist->setName("existingSettings");
-    _natronSettingsExist->setSecretByDefault(true);
+    _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
 
     _checkForUpdates = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Always check for updates on start-up") );
@@ -195,6 +195,16 @@ Settings::initializeKnobsGeneral()
                                                  "saved and will prompt you on startup if an auto-save of that unsaved project was found. "
                                                  "Disabling this will no longer save un-saved project.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_autoSaveUnSavedProjects);
+
+
+    _saveSafetyMode = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Full Recovery Save") );
+    _saveSafetyMode->setName("fullRecoverySave");
+    _saveSafetyMode->setHintToolTip(tr("The save safety is used when saving projects. When checked all default values of parameters will be saved in the project, even if they did not change. This is useful "
+                                       "in the case a default value in a plug-in was changed by its developers, to ensure that the value is still the same when loading a project."
+                                       "By default this should not be needed as default values change are very rare. In a scenario where a project cannot be recovered in a newer version because "
+                                       "the default values for a node have changed, just save your project in an older version of %1 with this parameter checked so that it reloads correctly in the newer version.\n"
+                                       "Note that checking this parameter can make project files significantly larger.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    _generalTab->addKnob(_saveSafetyMode);
 
 
     _hostName = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Appear to plug-ins as") );
@@ -297,7 +307,7 @@ Settings::initializeKnobsGeneral()
                                         "Changing this takes effect upon the next application launch, and requires clearing "
                                         "the OpenFX plugins cache from the Cache menu. "
                                         "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) );
-    _customHostName->setSecretByDefault(true);
+    _customHostName->setSecret(true);
     _generalTab->addKnob(_customHostName);
 } // Settings::initializeKnobsGeneral
 
@@ -616,13 +626,11 @@ Settings::initializeKnobsUserInterface()
                                             "on the viewer. Turning this off will suspend the notification system.") );
     _uiPage->addKnob(_notifyOnFileChange);
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     _filedialogForWriters = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Prompt with file dialog when creating Write node") );
     _filedialogForWriters->setName("writeUseDialog");
     _filedialogForWriters->setDefaultValue(true);
     _filedialogForWriters->setHintToolTip( tr("When checked, opens-up a file dialog when creating a Write node") );
     _uiPage->addKnob(_filedialogForWriters);
-#endif
 
 
     _renderOnEditingFinished = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Refresh viewer only when editing is finished") );
@@ -714,9 +722,9 @@ Settings::initializeKnobsColorManagement()
     _customOcioConfigFile->setName("ocioCustomConfigFile");
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
-        _customOcioConfigFile->setDefaultAllDimensionsEnabled(true);
+        _customOcioConfigFile->setAllDimensionsEnabled(true);
     } else {
-        _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
+        _customOcioConfigFile->setAllDimensionsEnabled(false);
     }
 
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
@@ -741,7 +749,7 @@ Settings::initializeKnobsAppearance()
 
     _defaultAppearanceVersion = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Appearance version") );
     _defaultAppearanceVersion->setName("appearanceVersion");
-    _defaultAppearanceVersion->setSecretByDefault(true);
+    _defaultAppearanceVersion->setSecret(true);
     _appearanceTab->addKnob(_defaultAppearanceVersion);
 
     _systemFontChoice = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Font") );
@@ -1822,7 +1830,7 @@ Settings::restorePluginSettings()
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
 
             if ( plugin->getIsForInternalUseOnly() ) {
@@ -1879,7 +1887,7 @@ Settings::savePluginsSettings()
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
@@ -2551,7 +2559,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
 
     const KnobsVec& knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->getDefaultIsSecret() ) {
+        if ( (*it)->getIsSecret() ) {
             continue;
         }
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
@@ -3632,19 +3640,19 @@ Settings::isRenderQueuingEnabled() const
 bool
 Settings::isFileDialogEnabledForNewWriters() const
 {
-#ifdef NATRON_ENABLE_IO_META_NODES
-
     return _filedialogForWriters->getValue();
-#else
-
-    return true;
-#endif
 }
 
 bool
 Settings::isDriveLetterToUNCPathConversionEnabled() const
 {
     return !_enableMappingFromDriveLettersToUNCShareNames->getValue();
+}
+
+bool
+Settings::getIsFullRecoverySaveModeEnabled() const
+{
+    return _saveSafetyMode->getValue();
 }
 
 NATRON_NAMESPACE_EXIT;

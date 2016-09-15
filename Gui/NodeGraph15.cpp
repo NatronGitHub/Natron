@@ -150,7 +150,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     _imp->_arrowSelected->stackBefore( targetNode.get() );
                     if (ok) {
                         foundSrc = true;
-                        pushUndoCommand( new ConnectCommand(this, _imp->_arrowSelected, _imp->_arrowSelected->getSource(), targetNode) );
+                        pushUndoCommand( new ConnectCommand(this, _imp->_arrowSelected, _imp->_arrowSelected->getSource(), targetNode, -1) );
                     }
                 } else {
                     // Find the input edge of the node we just released the mouse over,
@@ -163,7 +163,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             assert(foundInput);
                             foundSrc = true;
                             pushUndoCommand( new ConnectCommand( this, foundInput,
-                                                                 foundInput->getSource(), _imp->_arrowSelected->getSource() ) );
+                                                                 foundInput->getSource(), _imp->_arrowSelected->getSource(), -1 ) );
                         }
                     }
                 }
@@ -175,7 +175,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         // So the user understands some nodes can have output
         if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
             pushUndoCommand( new ConnectCommand( this, _imp->_arrowSelected, _imp->_arrowSelected->getSource(),
-                                                 NodeGuiPtr() ) );
+                                                 NodeGuiPtr(), -1 ) );
         }
 
 
@@ -225,7 +225,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         Edge* inputEdge = selectedNode->getInputArrow(prefInput);
                         assert(inputEdge);
                         pushUndoCommand( new ConnectCommand( this, inputEdge, inputEdge->getSource(),
-                                                             _imp->_highLightedEdge->getSource() ) );
+                                                             _imp->_highLightedEdge->getSource(), -1 ) );
                     }
                 } else {
                     pushUndoCommand( new InsertNodeCommand(this, _imp->_highLightedEdge, selectedNode) );

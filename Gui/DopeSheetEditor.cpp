@@ -32,6 +32,8 @@
 #include <QSplitter>
 #include <QKeyEvent>
 
+#include "Serialization/WorkspaceSerialization.h"
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetHierarchyView.h"
@@ -76,11 +78,12 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)
  *
  * Creates a DopeSheetEditor.
  */
-DopeSheetEditor::DopeSheetEditor(Gui *gui,
+DopeSheetEditor::DopeSheetEditor(const std::string& scriptName,
+                                 Gui *gui,
                                  const TimeLinePtr& timeline,
                                  QWidget *parent)
     : QWidget(parent),
-    PanelWidget(this, gui),
+    PanelWidget(scriptName, this, gui),
     _imp( new DopeSheetEditorPrivate(this) )
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -286,6 +289,23 @@ QUndoStack*
 DopeSheetEditor::getUndoStack() const
 {
     return _imp->model ? _imp->model->getUndoStack() : 0;
+}
+
+bool
+DopeSheetEditor::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
+{
+    if (!_imp->dopeSheetView->hasDrawnOnce()) {
+        return false;
+    }
+    _imp->dopeSheetView->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+    return true;
+}
+
+bool
+DopeSheetEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
+{
+    _imp->dopeSheetView->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

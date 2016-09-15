@@ -308,7 +308,6 @@ OfxParamToKnob::getKnobHolder() const
         return EffectInstancePtr();
     }
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr node = effect->getNode();
     assert(node);
     std::string pluginID = node->getPluginID();
@@ -323,7 +322,6 @@ OfxParamToKnob::getKnobHolder() const
 
         return iocontainer->getEffectInstance();
     }
-#endif
 
     return effect;
 }

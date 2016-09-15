@@ -216,17 +216,21 @@ KnobGui::createGUI(QWidget* fieldContainer,
         if (spacing > 0) {
             layout->addSpacing( TO_DPIX(spacing) );
         }
-        if (label) {
+        if (labelContainer) {
+            layout->addWidget(labelContainer);
+        } else {
             if (_imp->warningIndicator) {
                 layout->addWidget(_imp->warningIndicator);
             }
-            layout->addWidget(label);
+            if (label) {
+                layout->addWidget(label);
+            }
         }
     }
-
-
+    
+    
     if (label) {
-        label->setToolTip( toolTip() );
+        toolTip(label);
     }
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
@@ -319,8 +323,8 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         int dimension)
 {
     KnobIPtr knob = getKnob();
-
-    if ( knob->getIsSecret() ) {
+    bool isViewerKnob = isViewerUIKnob();
+    if ( (!isViewerKnob && knob->getIsSecret()) || (isViewerKnob && knob->getInViewerContextSecret()) ) {
         return;
     }
 
@@ -415,9 +419,9 @@ KnobGui::createAnimationMenu(QMenu* menu,
     bool hasDimensionSlaved = false;
     bool hasAnimation = false;
     bool dimensionHasAnimation = false;
-    bool isEnabled = true;
+    bool isDimensionEnabled = true;
     bool dimensionIsSlaved = false;
-
+    bool hasDimensionDisabled = false;
     for (int i = 0; i < nDims; ++i) {
         if ( knob->isSlave(i) ) {
             hasDimensionSlaved = true;
@@ -437,7 +441,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
             break;
         }
         if ( !knob->isEnabled(i) ) {
-            isEnabled = false;
+            hasDimensionDisabled = true;
+            if (dimension == i) {
+                isDimensionEnabled = false;
+            }
         }
     }
 
@@ -450,7 +457,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             setKeyAction->setData(-1);
             QObject::connect( setKeyAction, SIGNAL(triggered()), this, SLOT(onSetKeyActionTriggered()) );
             menu->addAction(setKeyAction);
-            if (!isEnabled) {
+            if (hasDimensionDisabled) {
                 setKeyAction->setEnabled(false);
             }
         } else {
@@ -458,7 +465,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             removeKeyAction->setData(-1);
             QObject::connect( removeKeyAction, SIGNAL(triggered()), this, SLOT(onRemoveKeyActionTriggered()) );
             menu->addAction(removeKeyAction);
-            if (!isEnabled) {
+            if (hasDimensionDisabled) {
                 removeKeyAction->setEnabled(false);
             }
         }
@@ -467,7 +474,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             QAction* removeAnyAnimationAction = new QAction(tr("Remove animation") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
             removeAnyAnimationAction->setData(-1);
             QObject::connect( removeAnyAnimationAction, SIGNAL(triggered()), this, SLOT(onRemoveAnimationActionTriggered()) );
-            if (!isEnabled) {
+            if (hasDimensionDisabled) {
                 removeAnyAnimationAction->setEnabled(false);
             }
             menu->addAction(removeAnyAnimationAction);
@@ -484,7 +491,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 setKeyAction->setData(dimension);
                 QObject::connect( setKeyAction, SIGNAL(triggered()), this, SLOT(onSetKeyActionTriggered()) );
                 menu->addAction(setKeyAction);
-                if (!isEnabled) {
+                if (!isDimensionEnabled) {
                     setKeyAction->setEnabled(false);
                 }
             } else {
@@ -492,7 +499,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 removeKeyAction->setData(dimension);
                 QObject::connect( removeKeyAction, SIGNAL(triggered()), this, SLOT(onRemoveKeyActionTriggered()) );
                 menu->addAction(removeKeyAction);
-                if (!isEnabled) {
+                if (!isDimensionEnabled) {
                     removeKeyAction->setEnabled(false);
                 }
             }
@@ -502,7 +509,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 removeAnyAnimationAction->setData(dimension);
                 QObject::connect( removeAnyAnimationAction, SIGNAL(triggered()), this, SLOT(onRemoveAnimationActionTriggered()) );
                 menu->addAction(removeAnyAnimationAction);
-                if (!isEnabled) {
+                if (!isDimensionEnabled) {
                     removeAnyAnimationAction->setEnabled(false);
                 }
             }
@@ -516,17 +523,17 @@ KnobGui::createAnimationMenu(QMenu* menu,
         QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"), menu);
         QObject::connect( showInCurveEditorAction, SIGNAL(triggered()), this, SLOT(onShowInCurveEditorActionTriggered()) );
         menu->addAction(showInCurveEditorAction);
-        if (!isEnabled) {
+        if (hasDimensionDisabled) {
             showInCurveEditorAction->setEnabled(false);
         }
 
         if ( (knob->getDimension() > 1) && !hasDimensionSlaved ) {
-            Menu* interpMenu = createInterpolationMenu(menu, -1, isEnabled);
+            Menu* interpMenu = createInterpolationMenu(menu, -1, !hasDimensionDisabled);
             Q_UNUSED(interpMenu);
         }
         if (dimensionHasAnimation && !dimensionIsSlaved) {
             if ( (dimension != -1) || (knob->getDimension() == 1) ) {
-                Menu* interpMenu = createInterpolationMenu(menu, dimension != -1 ? dimension : 0, isEnabled);
+                Menu* interpMenu = createInterpolationMenu(menu, dimension != -1 ? dimension : 0, isDimensionEnabled);
                 Q_UNUSED(interpMenu);
             }
         }
@@ -628,7 +635,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                     pasteAction->setData(-1);
                     QObject::connect( pasteAction, SIGNAL(triggered()), this, SLOT(onPasteActionTriggered()) );
                     menu->addAction(pasteAction);
-                    if (!isEnabled) {
+                    if (hasDimensionDisabled) {
                         pasteAction->setEnabled(false);
                     }
                 }
@@ -638,7 +645,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                     pasteAction->setData(dimension != -1 ? dimension : 0);
                     QObject::connect( pasteAction, SIGNAL(triggered()), this, SLOT(onPasteActionTriggered()) );
                     menu->addAction(pasteAction);
-                    if (!isEnabled) {
+                    if ((dimension != -1 && !isDimensionEnabled) || (dimension == -1 && hasDimensionDisabled)) {
                         pasteAction->setEnabled(false);
                     }
                 }
@@ -651,7 +658,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         resetDefaultAction->setData( QVariant(-1) );
         QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
-        if (!isEnabled) {
+        if (hasDimensionDisabled) {
             resetDefaultAction->setEnabled(false);
         }
     }
@@ -660,7 +667,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         resetDefaultAction->setData( QVariant(dimension) );
         QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
-        if (!isEnabled) {
+        if (!isDimensionEnabled) {
             resetDefaultAction->setEnabled(false);
         }
     }
@@ -684,7 +691,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                                                  tr("Set expression") ) + QLatin1Char(' ') + tr("(all dimensions)"), menu );
         setExprsAction->setData(-1);
         QObject::connect( setExprsAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
-        if (!isEnabled) {
+        if (hasDimensionDisabled) {
             setExprsAction->setEnabled(false);
         }
         menu->addAction(setExprsAction);
@@ -693,7 +700,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             QAction* clearExprAction = new QAction(tr("Clear expression") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
             QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
             clearExprAction->setData(-1);
-            if (!isEnabled) {
+            if (!isDimensionEnabled) {
                 clearExprAction->setEnabled(false);
             }
             menu->addAction(clearExprAction);
@@ -703,7 +710,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
         QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
         setExprAction->setData(dimension);
-        if (!isEnabled) {
+        if (!isDimensionEnabled) {
             setExprAction->setEnabled(false);
         }
         menu->addAction(setExprAction);
@@ -712,7 +719,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             QAction* clearExprAction = new QAction(tr("Clear expression"), menu);
             QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
             clearExprAction->setData(dimension);
-            if (!isEnabled) {
+            if (!isDimensionEnabled) {
                 clearExprAction->setEnabled(false);
             }
             menu->addAction(clearExprAction);

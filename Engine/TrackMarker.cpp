@@ -27,8 +27,8 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/AbortableRenderInfo.h"
+#include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
@@ -38,8 +38,10 @@
 #include "Engine/Node.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TimeLine.h"
-#include "Engine/TrackerSerialization.h"
 #include "Engine/TLSHolder.h"
+
+#include "Serialization/TrackerSerialization.h"
+
 
 #include <ofxNatron.h>
 
@@ -220,8 +222,10 @@ TrackMarker::initializeKnobs()
     mmodelKnob->setName(kTrackerParamMotionModel);
     {
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(true, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(true, &choices, &helps, &icons);
         mmodelKnob->populateChoices(choices, helps);
+        mmodelKnob->setIcons(icons);
     }
 
     mmodelKnob->setDefaultValue(defMotionModel_i);
@@ -314,44 +318,55 @@ TrackMarker::clone(const TrackMarker& other)
 }
 
 void
-TrackMarker::load(const TrackSerialization& serialization)
+TrackMarker::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    const SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::TrackSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
     QMutexLocker k(&_imp->trackMutex);
 
-    _imp->trackLabel = serialization._label;
-    _imp->trackScriptName = serialization._scriptName;
+    _imp->trackLabel = s->_label;
+    _imp->trackScriptName = s->_scriptName;
     const KnobsVec& knobs = getKnobs();
 
-    for (std::list<KnobSerializationPtr>::const_iterator it = serialization._knobs.begin(); it != serialization._knobs.end(); ++it) {
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->_knobs.begin(); it != s->_knobs.end(); ++it) {
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
                 (*it2)->blockValueChanges();
-                (*it2)->clone( (*it)->getKnob() );
+                (*it2)->fromSerialization(**it);
                 (*it2)->unblockValueChanges();
                 break;
             }
         }
     }
-    for (std::list<int>::const_iterator it = serialization._userKeys.begin(); it != serialization._userKeys.end(); ++it) {
+    for (std::list<int>::const_iterator it = s->_userKeys.begin(); it != s->_userKeys.end(); ++it) {
         _imp->userKeyframes.insert(*it);
     }
 }
 
 void
-TrackMarker::save(TrackSerialization* serialization) const
+TrackMarker::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
+    SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::TrackSerialization*>(obj);
+    if (!s) {
+        return;
+    }
     QMutexLocker k(&_imp->trackMutex);
 
-    serialization->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
-    serialization->_label = _imp->trackLabel;
-    serialization->_scriptName = _imp->trackScriptName;
+    s->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
+    s->_label = _imp->trackLabel;
+    s->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobSerializationPtr s( new KnobSerialization(*it) );
-        serialization->_knobs.push_back(s);
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr k( new SERIALIZATION_NAMESPACE::KnobSerialization);
+        (*it)->toSerialization(k.get());
+        if (k->_mustSerialize) {
+            s->_knobs.push_back(k);
+        }
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
-        serialization->_userKeys.push_back(*it);
+        s->_userKeys.push_back(*it);
     }
 }
 
@@ -686,8 +701,10 @@ TrackMarker::resetCenter()
         RenderScale scale;
         scale.x = scale.y = 1;
         RectD rod;
-        bool isProjectFormat;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        U64 inputHash;
+        bool gotHash = input->getEffectInstance()->getRenderHash(time, ViewIdx(0), &inputHash);
+        (void)gotHash;
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(inputHash, time, scale, ViewIdx(0), &rod);
         Point center;
         center.x = 0;
         center.y = 0;
@@ -1143,9 +1160,39 @@ TrackMarker::getMarkerImage(int time,
     tlsArgs->isAnalysis = true;
     tlsArgs->draftMode = true;
     tlsArgs->stats = RenderStatsPtr();
-    ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
+    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+    try {
+        frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+    } catch (...) {
+        return std::make_pair(ImagePtr(), roi);
+    }
+
+    EffectInstancePtr effectToRender = input->getEffectInstance();
+
+    U64 effectHash;
+    bool gotHash = effectToRender->getRenderHash(time, ViewIdx(0), &effectHash);
+    assert(gotHash);
+    (void)gotHash;
     RenderScale scale;
     scale.x = scale.y = 1.;
+    unsigned int mipMapLevel = 0;
+    RectD precomputedRoD;
+    double par = effectToRender->getAspectRatio(-1);
+
+    {
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &precomputedRoD);
+        if (stat == eStatusFailed) {
+            return std::make_pair(ImagePtr(), roi);
+        }
+    }
+
+    RectD canonicalRoi;
+    roi.toCanonical(mipMapLevel, par, precomputedRoD, &canonicalRoi);
+    if (frameRenderArgs->computeRequestPass(mipmapLevel, canonicalRoi) != eStatusOK) {
+        return std::make_pair(ImagePtr(), roi);
+    }
+
+
     EffectInstance::RenderRoIArgs args( time,
                                         scale,
                                         mipmapLevel, //mipmaplevel
@@ -1160,7 +1207,7 @@ TrackMarker::getMarkerImage(int time,
                                         eStorageModeRAM /*returnOpenGlTex*/,
                                         time);
     std::map<ImageComponents, ImagePtr> planes;
-    EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
+    EffectInstance::RenderRoIRetCode stat = effectToRender->renderRoI(args, &planes);
 
     appPTR->getAppTLS()->cleanupTLSForThread();
 
@@ -1324,7 +1371,7 @@ TrackMarkerPM::initializeKnobs()
     NodePtr node;
     {
         CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, NodeCollectionPtr() );
-        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
 

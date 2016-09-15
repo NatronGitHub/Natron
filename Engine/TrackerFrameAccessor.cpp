@@ -334,30 +334,17 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     RenderScale scale;
     scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)downscale );
 
-
-    RectD precomputedRoD;
-    if (!region) {
-        bool isProjectFormat;
-        StatusEnum stat = effect->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
-        if (stat == eStatusFailed) {
-            return (mv::FrameAccessor::Key)0;
-        }
-        double par = effect->getAspectRatio(-1);
-        precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
-    }
-
-    std::list<ImageComponents> components;
-    components.push_back( ImageComponents::getRGBComponents() );
-
     NodePtr node = _imp->context->getNode();
+
+
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
+
     AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
     }
-
 
     ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
     tlsArgs->time = frame;
@@ -374,7 +361,39 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     tlsArgs->isAnalysis = true;
     tlsArgs->draftMode = false;
     tlsArgs->stats = RenderStatsPtr();
-    ParallelRenderArgsSetter frameRenderArgs(tlsArgs); // Stats
+    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+    try {
+        frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+    } catch (...) {
+        return (mv::FrameAccessor::Key)0;
+    }
+
+    U64 effectHash;
+    bool gotHash = effect->getRenderHash(frame, ViewIdx(0), &effectHash);
+    assert(gotHash);
+    (void)gotHash;
+    double par = effect->getAspectRatio(-1);
+    RectD precomputedRoD;
+    if (!region) {
+
+        StatusEnum stat = effect->getRegionOfDefinition_public(effectHash, frame, scale, ViewIdx(0), &precomputedRoD);
+        if (stat == eStatusFailed) {
+            return (mv::FrameAccessor::Key)0;
+        }
+        precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
+    }
+
+    std::list<ImageComponents> components;
+    components.push_back( ImageComponents::getRGBComponents() );
+
+
+
+    RectD canonicalRoi;
+    roi.toCanonical(downscale, par, precomputedRoD, &canonicalRoi);
+    if (frameRenderArgs->computeRequestPass(downscale, canonicalRoi) != eStatusOK) {
+        return (mv::FrameAccessor::Key)0;
+    }
+
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         downscale,
@@ -389,6 +408,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         eStorageModeRAM /*returnOpenGLTex*/,
                                         frame);
     std::map<ImageComponents, ImagePtr> planes;
+
     EffectInstance::RenderRoIRetCode stat = effect->renderRoI(args, &planes);
     if ( (stat != EffectInstance::eRenderRoIRetCodeOk) || planes.empty() ) {
 #ifdef TRACE_LIB_MV

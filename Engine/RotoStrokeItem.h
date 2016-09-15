@@ -119,6 +119,8 @@ public:
 
     void setStrokeFinished();
 
+    virtual void invalidateHashCache() OVERRIDE;
+
 
     virtual void clone(const RotoItem* other) OVERRIDE FINAL;
 
@@ -127,14 +129,17 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE FINAL;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE FINAL;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+
+    static RotoStrokeType strokeTypeFromSerializationString(const std::string& s);
+    
     virtual RectD getBoundingBox(double time) const OVERRIDE FINAL;
 
 
@@ -146,6 +151,8 @@ public:
     std::list<CurvePtr > getXControlPoints() const;
     std::list<CurvePtr > getYControlPoints() const;
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+
 private:
 
     RectD computeBoundingBox(double time) const;
@@ -156,7 +163,7 @@ private:
 };
 
 inline RotoStrokeItemPtr
-toRotoStrokeItem(const RotoItemPtr& item)
+toRotoStrokeItem(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<RotoStrokeItem>(item);
 }

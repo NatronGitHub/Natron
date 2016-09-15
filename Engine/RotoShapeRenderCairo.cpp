@@ -636,9 +636,9 @@ RotoShapeRenderCairo::bezulate(double time,
                 (*next)->getPositionAtTime(false, time, ViewIdx(0), &p3.x, &p3.y);
                 Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
                 BezierCPPtr controlPoint(new BezierCP);
-                controlPoint->setStaticPosition(false, dest.x, dest.y);
-                controlPoint->setLeftBezierStaticPosition(false, p0p1_p1p2.x, p0p1_p1p2.y);
-                controlPoint->setRightBezierStaticPosition(false, p1p2_p2p3.x, p1p2_p2p3.y);
+                controlPoint->setStaticPosition(dest.x, dest.y);
+                controlPoint->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
+                controlPoint->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
                 subdivisedCurve.push_back(*it);
                 subdivisedCurve.push_back(controlPoint);
 

@@ -53,17 +53,18 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
+#include "Engine/Hash64.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoShapeRenderCairo.h"
-#include "Engine/RotoDrawableItemSerialization.h"
-#include "Engine/RotoItemSerialization.h"
 #include "Engine/RotoPoint.h"
-#include "Engine/RotoStrokeItemSerialization.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/CurveSerialization.h"
+#include "Serialization/RotoStrokeItemSerialization.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -96,7 +97,7 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
                                const std::string & name,
                                const RotoLayerPtr& parent)
 
-    : RotoDrawableItem(context, name, parent, true)
+    : RotoDrawableItem(context, name, parent)
     , _imp( new RotoStrokeItemPrivate(type) )
 {
 }
@@ -320,21 +321,21 @@ RotoStrokeItem::setStrokeFinished()
 
     if (effectNode) {
         effectNode->setWhileCreatingPaintStroke(false);
-        effectNode->incrementKnobsAge();
+        effectNode->getEffectInstance()->invalidateHashCache();
     }
     mergeNode->setWhileCreatingPaintStroke(false);
-    mergeNode->incrementKnobsAge();
+    mergeNode->getEffectInstance()->invalidateHashCache();
     if (timeOffsetNode) {
         timeOffsetNode->setWhileCreatingPaintStroke(false);
-        timeOffsetNode->incrementKnobsAge();
+        timeOffsetNode->getEffectInstance()->invalidateHashCache();
     }
     if (frameHoldNode) {
         frameHoldNode->setWhileCreatingPaintStroke(false);
-        frameHoldNode->incrementKnobsAge();
+        frameHoldNode->getEffectInstance()->invalidateHashCache();
     }
     if (maskNode) {
         maskNode->setWhileCreatingPaintStroke(false);
-        maskNode->incrementKnobsAge();
+        maskNode->getEffectInstance()->invalidateHashCache();
     }
 
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(false);
@@ -514,7 +515,7 @@ RotoStrokeItem::addStroke(const CurvePtr& xCurve,
         QMutexLocker k(&itemMutex);
         _imp->strokes.push_back(s);
     }
-    incrementNodesAge();
+    invalidateHashCache();
 }
 
 bool
@@ -536,7 +537,7 @@ RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
         empty =  _imp->strokes.empty();
     }
 
-    incrementNodesAge();
+    invalidateHashCache();
 
     return empty;
 }
@@ -726,65 +727,109 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->finished = true;
     }
     RotoDrawableItem::clone(other);
-    incrementNodesAge();
+    invalidateHashCache();
     resetNodesThreadSafety();
 }
 
 void
-RotoStrokeItem::save(const RotoItemSerializationPtr& obj) const
+RotoStrokeItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
-    RotoDrawableItem::save(obj);
-    RotoStrokeItemSerializationPtr s = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(obj);
-
-    assert(s);
+    SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization*>(obj);
     if (!s) {
-        throw std::logic_error("RotoStrokeItem::save");
+        return;
     }
+
+    RotoDrawableItem::toSerialization(obj);
+
     {
         QMutexLocker k(&itemMutex);
-        s->_brushType = (int)_imp->type;
+        switch (_imp->type) {
+            case eRotoStrokeTypeBlur:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeBlur;
+                break;
+            case eRotoStrokeTypeSmear:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeSmear;
+                break;
+            case eRotoStrokeTypeSolid:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeSolid;
+                break;
+            case eRotoStrokeTypeClone:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeClone;
+                break;
+            case eRotoStrokeTypeReveal:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeReveal;
+                break;
+            case eRotoStrokeTypeDodge:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeDodge;
+                break;
+            case eRotoStrokeTypeBurn:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeBurn;
+                break;
+            case eRotoStrokeTypeEraser:
+                s->_brushType = kRotoStrokeItemSerializationBrushTypeEraser;
+                break;
+            default:
+                break;
+        }
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it != _imp->strokes.end(); ++it) {
-            CurvePtr xCurve(new Curve);
-            CurvePtr yCurve(new Curve);
-            CurvePtr pressureCurve(new Curve);
-            xCurve->clone( *(it->xCurve) );
-            yCurve->clone( *(it->yCurve) );
-            pressureCurve->clone( *(it->pressureCurve) );
-            s->_xCurves.push_back(xCurve);
-            s->_yCurves.push_back(yCurve);
-            s->_pressureCurves.push_back(pressureCurve);
+            SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves p;
+            p.x.reset(new SERIALIZATION_NAMESPACE::CurveSerialization);
+            p.y.reset(new SERIALIZATION_NAMESPACE::CurveSerialization);
+            p.pressure.reset(new SERIALIZATION_NAMESPACE::CurveSerialization);
+            it->xCurve->toSerialization(p.x.get());
+            it->yCurve->toSerialization(p.y.get());
+            it->pressureCurve->toSerialization(p.pressure.get());
+            s->_subStrokes.push_back(p);
         }
     }
 }
 
-void
-RotoStrokeItem::load(const RotoItemSerialization & obj)
-{
-    RotoDrawableItem::load(obj);
-    const RotoStrokeItemSerialization* s = dynamic_cast<const RotoStrokeItemSerialization*>(&obj);
 
-    assert(s);
-    if (!s) {
-        throw std::logic_error("RotoStrokeItem::load");
+RotoStrokeType
+RotoStrokeItem::strokeTypeFromSerializationString(const std::string& s)
+{
+    if (s == kRotoStrokeItemSerializationBrushTypeBlur) {
+        return eRotoStrokeTypeBlur;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeSmear) {
+        return eRotoStrokeTypeSmear;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeSolid) {
+        return eRotoStrokeTypeSolid;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeClone) {
+        return eRotoStrokeTypeClone;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeReveal) {
+        return eRotoStrokeTypeReveal;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeDodge) {
+        return eRotoStrokeTypeDodge;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeBurn) {
+        return eRotoStrokeTypeBurn;
+    } else if (s == kRotoStrokeItemSerializationBrushTypeEraser) {
+        return eRotoStrokeTypeEraser;
+    } else {
+        throw std::runtime_error("Unknown brush type: " + s);
     }
+}
+
+void
+RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    RotoDrawableItem::fromSerialization(obj);
     {
         QMutexLocker k(&itemMutex);
-        _imp->type = (RotoStrokeType)s->_brushType;
-
-        assert( s->_xCurves.size() == s->_yCurves.size() && s->_xCurves.size() == s->_pressureCurves.size() );
-        std::list<CurvePtr >::const_iterator itY = s->_yCurves.begin();
-        std::list<CurvePtr >::const_iterator itP = s->_pressureCurves.begin();
-        for (std::list<CurvePtr >::const_iterator it = s->_xCurves.begin();
-             it != s->_xCurves.end(); ++it, ++itY, ++itP) {
-            RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
-            s.xCurve->clone( **(it) );
-            s.yCurve->clone( **(itY) );
-            s.pressureCurve->clone( **(itP) );
-            _imp->strokes.push_back(s);
+        _imp->type = strokeTypeFromSerializationString(s->_brushType);
+        for (std::list<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves>::const_iterator it = s->_subStrokes.begin(); it!=s->_subStrokes.end(); ++it) {
+            RotoStrokeItemPrivate::StrokeCurves stroke;
+            stroke.xCurve.reset(new Curve);
+            stroke.yCurve.reset(new Curve);
+            stroke.pressureCurve.reset(new Curve);
+            stroke.xCurve->fromSerialization(*it->x);
+            stroke.yCurve->fromSerialization(*it->y);
+            stroke.pressureCurve->fromSerialization(*it->pressure);
+            _imp->strokes.push_back(stroke);
         }
     }
 
@@ -991,6 +1036,34 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
         }
     }
 }
+
+void
+RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
+{
+    {
+        // Append the item knobs
+        QMutexLocker k(&itemMutex);
+        for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
+            Hash64::appendCurve(it->xCurve, hash);
+            Hash64::appendCurve(it->yCurve, hash);
+
+            // We don't add the pressure curve if there is more than 1 point, because it's extremely unlikely that the user draws twice the same curve with different pressure
+            if (it->pressureCurve->getKeyFramesCount() == 1) {
+                Hash64::appendCurve(it->pressureCurve, hash);}
+            
+        }
+    }
+    
+
+    RotoDrawableItem::appendToHash(time, view, hash);
+}
+
+void
+RotoStrokeItem::invalidateHashCache()
+{
+    RotoDrawableItem::invalidateHashCache();
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

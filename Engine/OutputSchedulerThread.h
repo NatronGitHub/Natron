@@ -225,6 +225,7 @@ public:
                         ViewIdx view,
                         const RenderStatsPtr& stats,
                         const BufferableObjectPtr& frame);
+    
     void appendToBuffer(double time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,

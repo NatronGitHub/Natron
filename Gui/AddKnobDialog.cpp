@@ -35,7 +35,7 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobFile.h" // KnobFile
-#include "Engine/KnobSerialization.h"
+#include "Serialization/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -58,7 +58,7 @@ NATRON_NAMESPACE_ENTER;
 struct AddKnobDialogPrivate
 {
     KnobIPtr knob;
-    KnobSerializationPtr originalKnobSerialization;
+    SERIALIZATION_NAMESPACE::KnobSerializationPtr originalKnobSerialization;
     KnobIPtr isKnobAlias;
     DockablePanel* panel;
     QVBoxLayout* vLayout;
@@ -78,6 +78,8 @@ struct AddKnobDialogPrivate
     QCheckBox* animatesCheckbox;
     Label* evaluatesLabel;
     QCheckBox* evaluatesOnChange;
+    Label* addToViewerUILabel;
+    QCheckBox* addToViewerUICheckbox;
     Label* tooltipLabel;
     QTextEdit* tooltipArea;
     Label* minLabel;
@@ -144,6 +146,8 @@ struct AddKnobDialogPrivate
         , animatesCheckbox(0)
         , evaluatesLabel(0)
         , evaluatesOnChange(0)
+        , addToViewerUILabel(0)
+        , addToViewerUICheckbox(0)
         , tooltipLabel(0)
         , tooltipArea(0)
         , minLabel(0)
@@ -199,6 +203,8 @@ struct AddKnobDialogPrivate
     void setVisibleHide(bool visible);
 
     void setVisibleMultiLine(bool visible);
+
+    void setVisibleViewerUi(bool visible);
 
     void setVisibleRichText(bool visible);
 
@@ -654,6 +660,22 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
     {
+        QWidget* rowContainer = new QWidget(this);
+        QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
+        rowLayout->setContentsMargins(0, 0, 15, 0);
+        _imp->addToViewerUILabel = new Label(tr("Add to Viewer UI:"), rowContainer);
+        _imp->addToViewerUICheckbox = new QCheckBox(rowContainer);
+        QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("When checked, the parameter will also appear in the Viewer interface for this node"), NATRON_NAMESPACE::WhiteSpaceNormal);
+        _imp->addToViewerUICheckbox->setToolTip(tt);
+        _imp->addToViewerUILabel->setToolTip(tt);
+        if (knob) {
+            _imp->addToViewerUICheckbox->setChecked(knob->getHolder()->getInViewerContextKnobIndex(knob) != -1);
+        }
+        rowLayout->addWidget(_imp->addToViewerUICheckbox);
+        rowLayout->addStretch();
+        _imp->mainLayout->addRow(_imp->addToViewerUILabel, rowContainer);
+    }
+    {
         QWidget* optContainer = new QWidget(this);
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
@@ -1048,7 +1070,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->panel->setUserPageActiveIndex();
 
     if (knob) {
-        _imp->originalKnobSerialization.reset( new KnobSerialization(knob) );
+        _imp->originalKnobSerialization.reset( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        knob->toSerialization(_imp->originalKnobSerialization.get());
     }
 }
 
@@ -1106,6 +1129,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(true);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1127,6 +1151,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(true);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1144,6 +1169,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1160,6 +1186,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1176,6 +1203,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1192,6 +1220,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(false);
         _imp->setVisibleMultiLine(true);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(true);
         _imp->setVisibleSequence(false);
@@ -1209,6 +1238,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(false);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(true);
@@ -1225,6 +1255,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(false);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(true);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1241,6 +1272,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(false);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1257,6 +1289,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(false);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1273,6 +1306,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1289,6 +1323,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(false);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1309,6 +1344,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         //_imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
+        _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
@@ -1547,7 +1583,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     knob->setEvaluateOnChange( evaluatesOnChange->isChecked() );
 
 
-    knob->setSecretByDefault( hideBox->isChecked() );
+    knob->setSecret( hideBox->isChecked() );
     knob->setName(nameLineEdit->text().toStdString(), true);
     knob->setHintToolTip( tooltipArea->toPlainText().toStdString() );
     bool addedInGrp = false;
@@ -1578,6 +1614,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
             }
         }
     }
+
 
 
     KnobHolderPtr holder = panel->getHolder();
@@ -1703,6 +1740,7 @@ AddKnobDialog::onOkClicked()
 
     ///If the knob was in a group, we need to place it at the same index
     int oldIndexInParent = -1;
+    int oldViewerIndex = -1;
     std::string oldKnobScriptName;
     std::vector<std::pair<std::string, bool> > expressions;
     std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
@@ -1712,9 +1750,16 @@ AddKnobDialog::onOkClicked()
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
     } else {
+
+
+
         oldKnobIsPage = toKnobPage(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
         effect = toEffectInstance( _imp->knob->getHolder() );
+        oldViewerIndex = effect->getInViewerContextKnobIndex(_imp->knob);
+        if (oldViewerIndex != -1) {
+            effect->removeKnobViewerUI(_imp->knob);
+        }
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob);
@@ -1798,7 +1843,7 @@ AddKnobDialog::onOkClicked()
 
 
         if (_imp->originalKnobSerialization) {
-            _imp->knob->clone( _imp->originalKnobSerialization->getKnob() );
+            _imp->knob->fromSerialization(*_imp->originalKnobSerialization);
         }
 
         KnobStringPtr isLabelKnob = toKnobString(_imp->knob);
@@ -1913,6 +1958,11 @@ AddKnobDialog::onOkClicked()
     //also refresh the new line flag for this knob if it was set
     if (_imp->knob && !wasNewLineActivated) {
         _imp->knob->setAddNewLine(false);
+    }
+
+    //Check if we need to add the knob to the viewer ui
+    if (_imp->addToViewerUICheckbox->isChecked()) {
+        _imp->panel->getHolder()->insertKnobToViewerUI(_imp->knob, oldViewerIndex);
     }
 
     //Recover listeners expressions
@@ -2037,6 +2087,13 @@ AddKnobDialogPrivate::setVisibleMultiLine(bool visible)
     if (!knob) {
         multiLine->setChecked(false);
     }
+}
+
+void
+AddKnobDialogPrivate::setVisibleViewerUi(bool visible)
+{
+    addToViewerUILabel->setVisible(visible);
+    addToViewerUICheckbox->setVisible(visible);
 }
 
 void

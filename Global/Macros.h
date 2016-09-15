@@ -54,6 +54,12 @@
 #define NATRON_NAMESPACE_EXIT }
 #define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
 
+#define SERIALIZATION_NAMESPACE Serialization
+// Macros to use in each file to enter and exit the right name spaces.
+#define SERIALIZATION_NAMESPACE_ENTER namespace SERIALIZATION_NAMESPACE {
+#define SERIALIZATION_NAMESPACE_EXIT }
+#define SERIALIZATION_NAMESPACE_USING using namespace SERIALIZATION_NAMESPACE;
+
 #define NATRON_PYTHON_NAMESPACE Python
 #define NATRON_PYTHON_NAMESPACE_ENTER namespace NATRON_PYTHON_NAMESPACE {
 #define NATRON_PYTHON_NAMESPACE_EXIT }
@@ -114,8 +120,8 @@ namespace NATRON_PYTHON_NAMESPACE { }
 
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 #define NATRON_VERSION_MAJOR 2
-#define NATRON_VERSION_MINOR 1
-#define NATRON_VERSION_REVISION 3
+#define NATRON_VERSION_MINOR 2
+#define NATRON_VERSION_REVISION 0
 
 
 #define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
@@ -235,14 +241,33 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
 
+
+#define PLUGIN_GROUP_IMAGE_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/image_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_3D_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/3D_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_CHANNEL_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/channel_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_MERGE_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/merge_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_COLOR_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/color_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_TRANSFORM_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/transform_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_DEEP_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/deep_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_FILTER_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/filter_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_VIEWS_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/multiview_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_MISC_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_TOOLSETS_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/toolsets_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_KEYER_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/keyer_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_TIME_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/time_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_PAINT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/paint_grouping_" NATRON_ICON_SET_NUMBER ".png";
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
+#define PLUGIN_DEFAULT_RESOURCES_PATH ":/Resources/"
+
+#define NATRON_FONT "Droid Sans"
+#define NATRON_FONT_ALT "Droid Sans"
+#define NATRON_SCRIPT_FONT "Courier New"
+
 //Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
-
-//Use this to have all readers inside the same Read meta-node and all the writers
-//into the same Write meta-node
-#define NATRON_ENABLE_IO_META_NODES 1
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x

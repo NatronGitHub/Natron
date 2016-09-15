@@ -67,14 +67,15 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
@@ -103,6 +104,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
+
+#include <SequenceParsing.h>
 
 NATRON_NAMESPACE_ENTER;
 
@@ -140,6 +143,22 @@ Gui::showErrorLog()
     }
 }
 
+NodeGuiPtr
+Gui::getCurrentNodeViewerInterface(const std::string& pluginID) const
+{
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    if (viewers.empty()) {
+        return NodeGuiPtr();
+    }
+    ViewerTab* viewer = viewers.front();
+    
+    return viewer->getCurrentNodeViewerInterface(pluginID);
+}
+
 void
 Gui::createNodeViewerInterface(const NodeGuiPtr& n)
 {
@@ -158,6 +177,17 @@ Gui::removeNodeViewerInterface(const NodeGuiPtr& n,
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         (*it)->removeNodeViewerInterface(n, permanently, false /*setNewInterface*/);
+    }
+}
+
+void
+Gui::removeViewerInterface(const NodeGuiPtr& n,
+                           bool permanently)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        (*it)->removeViewerInterface(n, permanently);
     }
 }
 
@@ -200,9 +230,16 @@ Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
     if (maxPanels == 0) {
         return;
     }
-    while ( (int)_imp->openedPanels.size() > maxPanels ) {
-        std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin();
-        (*it)->closePanel();
+
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    while ( (int)panels.size() > maxPanels ) {
+        std::list<DockablePanelI*>::reverse_iterator it = panels.rbegin();
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (!isPanel) {
+            return;
+        }
+        isPanel->closePanel();
+        panels = getApp()->getOpenedSettingsPanels();
     }
     _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
 }
@@ -216,15 +253,25 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
-    while ( !_imp->openedPanels.empty() ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        if ( !(*it)->isFloating() ) {
-            (*it)->setClosed(true);
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    bool foundNonFloating = true;
+    while ( !panels.empty() && foundNonFloating) {
+        std::list<DockablePanelI*>::iterator it = panels.begin();
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (isPanel) {
+            if ( !isPanel->isFloating() ) {
+                isPanel->setClosed(true);
+            }
         }
 
-        bool foundNonFloating = false;
-        for (std::list<DockablePanel*>::iterator it2 = _imp->openedPanels.begin(); it2 != _imp->openedPanels.end(); ++it2) {
-            if ( !(*it2)->isFloating() ) {
+        foundNonFloating = false;
+        panels = getApp()->getOpenedSettingsPanels();
+        for (std::list<DockablePanelI*>::iterator it2 = panels.begin(); it2 != panels.end(); ++it2) {
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it2);
+            if (!isPanel) {
+                continue;
+            }
+            if ( !isPanel->isFloating() ) {
                 foundNonFloating = true;
                 break;
             }
@@ -240,14 +287,19 @@ Gui::clearAllVisiblePanels()
 void
 Gui::minimizeMaximizeAllPanels(bool clicked)
 {
-    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (!isPanel) {
+            continue;
+        }
         if (clicked) {
-            if ( !(*it)->isMinimized() ) {
-                (*it)->minimizeOrMaximize(true);
+            if ( !isPanel->isMinimized() ) {
+                isPanel->minimizeOrMaximize(true);
             }
         } else {
-            if ( (*it)->isMinimized() ) {
-                (*it)->minimizeOrMaximize(false);
+            if ( isPanel->isMinimized() ) {
+                isPanel->minimizeOrMaximize(false);
             }
         }
     }
@@ -516,70 +568,18 @@ Gui::keyPressEvent(QKeyEvent* e)
             }
         }
     } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
-        // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
-        // We still try to check if it is a readable Python script
-        QClipboard* clipboard = QApplication::clipboard();
-        const QMimeData* mimedata = clipboard->mimeData();
-        if ( mimedata->hasFormat( QLatin1String("text/plain") ) ) {
-            QByteArray data = mimedata->data( QLatin1String("text/plain") );
-            QString str = QString::fromUtf8(data);
-            if ( QFile::exists(str) ) {
-                QList<QUrl> urls;
-                urls.push_back( QUrl::fromLocalFile(str) );
-                handleOpenFilesFromUrls( urls, QCursor::pos() );
-            } else {
-                std::string error, output;
-                if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str.toStdString(), &error, &output) ) {
-                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( error.c_str() ) );
-                    ensureScriptEditorVisible();
-                } else if ( !output.empty() ) {
-                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( output.c_str() ) );
-                }
-            }
-        } else if ( mimedata->hasUrls() ) {
-            QList<QUrl> urls = mimedata->urls();
-            handleOpenFilesFromUrls( urls, QCursor::pos() );
+        
+        NodeGraph* lastUsedGraph = getLastSelectedGraph();
+        if (!lastUsedGraph) {
+            lastUsedGraph = _imp->_nodeGraphArea;
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->previousFrame();
+        assert(lastUsedGraph);
+        bool pasteNodesOk = false;
+        if (lastUsedGraph) {
+            // Try to paste on the most recently used nodegraph. If we are lucky this is a
+            // valid serialization
+            pasteNodesOk = lastUsedGraph->pasteClipboard();
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->toggleStartForward();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->toggleStartBackward();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->abortRendering();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->nextFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->firstFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->lastFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->previousIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->nextIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        getApp()->goToPreviousKeyframe();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
@@ -625,6 +625,14 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
         connectBInput(9);
     } else {
+
+        // The player controls shortcuts are global to the application, so check them
+        ViewerTab* activeViewer = getActiveViewer();
+        if (activeViewer) {
+            if (activeViewer->checkForTimelinePlayerGlobalShortcut(key, modifiers)) {
+                return;
+            }
+        }
         /*
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
          * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
@@ -714,14 +722,20 @@ Gui::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
+void
+Gui::mouseMoveEvent(QMouseEvent* e)
+{
+    QMainWindow::mouseMoveEvent(e);
+}
+
 TabWidget*
 Gui::getAnchor() const
 {
-    QMutexLocker l(&_imp->_panesMutex);
+    std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
         if ( (*it)->isAnchor() ) {
-            return *it;
+            return dynamic_cast<TabWidget*>(*it);
         }
     }
 
@@ -760,7 +774,11 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     {
         QMutexLocker k(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-            (*it)->setTurboButtonDown(clicked);
+            ViewerNodePtr viewer = (*it)->getInternalNode();
+            if (!viewer) {
+                continue;
+            }
+            viewer->getTurboModeButtonKnob()->setValue(clicked);
             if (!clicked) {
                 (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
             }
@@ -788,13 +806,11 @@ Gui::addShortcut(BoundAction* action)
 void
 Gui::getNodesEntitledForOverlays(NodesList & nodes) const
 {
-    std::list<DockablePanel*> panels;
-    {
-        QMutexLocker k(&_imp->openedPanelsMutex);
-        panels = _imp->openedPanels;
-    }
 
-    for (std::list<DockablePanel*>::const_iterator it = panels.begin();
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+
+    std::set<ViewerNodePtr> viewerAddedSet;
+    for (std::list<DockablePanelI*>::const_iterator it = panels.begin();
          it != panels.end(); ++it) {
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
         if (!panel) {
@@ -805,7 +821,25 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
         if (node && internalNode) {
             if ( internalNode->shouldDrawOverlay() ) {
                 nodes.push_back( node->getNode() );
+                ViewerNodePtr isViewer = internalNode->isEffectViewerNode();
+                if (isViewer) {
+                    viewerAddedSet.insert(isViewer);
+                }
             }
+        }
+    }
+
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    // Also consider viewer nodes for overlays, even if their panel is closed
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it!= viewers.end(); ++it) {
+        ViewerNodePtr viewer = (*it)->getInternalNode();
+        std::set<ViewerNodePtr>::const_iterator found = viewerAddedSet.find(viewer);
+        if (found == viewerAddedSet.end()) {
+            nodes.push_back(viewer->getNode());
         }
     }
 }
@@ -828,7 +862,7 @@ Gui::renderAllViewers(bool canAbort)
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(canAbort);
+            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(canAbort);
         }
     }
 }
@@ -839,7 +873,7 @@ Gui::abortAllViewers()
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getNode()->abortAnyProcessing_non_blocking();
+            (*it)->getInternalNode()->getInternalViewerNode()->getNode()->abortAnyProcessing_non_blocking();
         }
     }
 }

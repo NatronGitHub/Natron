@@ -52,6 +52,7 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/AboutWindow.h"
 #include "Gui/ActionShortcuts.h"
@@ -210,9 +211,11 @@ Gui::registerNewColorPicker(KnobColorPtr knob)
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ( !(*it)->isPickerEnabled() ) {
-            (*it)->setPickerEnabled(true);
+        ViewerNodePtr internalViewerNode = (*it)->getInternalNode();
+        if (!internalViewerNode) {
+            continue;
         }
+        internalViewerNode->setPickerEnabled(true);
     }
     _imp->_projectGui->registerNewColorPicker(knob);
 }
@@ -240,22 +243,16 @@ Gui::hasPickers() const
 }
 
 void
-Gui::updateViewersViewsMenu(const std::vector<std::string>& viewNames)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->updateViewsMenu(viewNames);
-    }
-}
-
-void
 Gui::setViewersCurrentView(ViewIdx view)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->setCurrentView(view);
+        ViewerNodePtr internalViewerNode = (*it)->getInternalNode();
+        if (!internalViewerNode) {
+            continue;
+        }
+        internalViewerNode->setCurrentView(view);
     }
 }
 
@@ -273,24 +270,9 @@ Gui::getViewersList_mt_safe() const
     return _imp->_viewerTabs;
 }
 
-void
-Gui::setMasterSyncViewer(ViewerTab* master)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    _imp->_masterSyncViewer = master;
-}
-
-ViewerTab*
-Gui::getMasterSyncViewer() const
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    return _imp->_masterSyncViewer;
-}
 
 void
-Gui::activateViewerTab(const ViewerInstancePtr& viewer)
+Gui::activateViewerTab(const ViewerNodePtr& viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
 
@@ -309,7 +291,7 @@ Gui::activateViewerTab(const ViewerInstancePtr& viewer)
 }
 
 void
-Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
+Gui::deactivateViewerTab(const ViewerNodePtr& viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
     ViewerTab* v = 0;
@@ -322,8 +304,8 @@ Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
             }
         }
 
-        if ( v && (v == _imp->_masterSyncViewer) ) {
-            _imp->_masterSyncViewer = 0;
+        if ( v && (viewer->getNode() == getApp()->getMasterSyncViewer()) ) {
+            getApp()->setMasterSyncViewer(NodePtr());
         }
     }
 
@@ -333,7 +315,7 @@ Gui::deactivateViewerTab(const ViewerInstancePtr& viewer)
 }
 
 ViewerTab*
-Gui::getViewerTabForInstance(const ViewerInstancePtr& node) const
+Gui::getViewerTabForInstance(const ViewerNodePtr& node) const
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
@@ -382,58 +364,6 @@ Gui::getApp() const
     return _imp->_appInstance.lock();
 }
 
-const std::list<TabWidget*> &
-Gui::getPanes() const
-{
-    return _imp->_panes;
-}
-
-std::list<TabWidget*>
-Gui::getPanes_mt_safe() const
-{
-    QMutexLocker l(&_imp->_panesMutex);
-
-    return _imp->_panes;
-}
-
-int
-Gui::getPanesCount() const
-{
-    QMutexLocker l(&_imp->_panesMutex);
-
-    return (int)_imp->_panes.size();
-}
-
-QString
-Gui::getAvailablePaneName(const QString & baseName) const
-{
-    QString name = baseName;
-    QMutexLocker l(&_imp->_panesMutex);
-    int baseNumber = _imp->_panes.size();
-
-    if ( name.isEmpty() ) {
-        name.append( QString::fromUtf8("pane") );
-        name.append( QString::number(baseNumber) );
-    }
-
-    for (;; ) {
-        bool foundName = false;
-        for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-            if ( (*it)->objectName_mt_safe() == name ) {
-                foundName = true;
-                break;
-            }
-        }
-        if (foundName) {
-            ++baseNumber;
-            name = QString::fromUtf8("pane%1").arg(baseNumber);
-        } else {
-            break;
-        }
-    }
-
-    return name;
-}
 
 void
 Gui::setDraftRenderEnabled(bool b)
@@ -687,15 +617,11 @@ Gui::ensureScriptEditorVisible()
     } else {
         pane = _imp->_nodeGraphArea->getParentPane();
         if (!pane) {
-            std::list<TabWidget*> tabs;
-            {
-                QMutexLocker k(&_imp->_panesMutex);
-                tabs = _imp->_panes;
-            }
+            std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
             if ( tabs.empty() ) {
                 return;
             }
-            pane = tabs.front();
+            pane = dynamic_cast<TabWidget*>(tabs.front());
         }
         assert(pane);
         pane->moveScriptEditorHere();
@@ -714,15 +640,11 @@ Gui::ensureProgressPanelVisible()
     } else {
         pane = _imp->_nodeGraphArea->getParentPane();
         if (!pane) {
-            std::list<TabWidget*> tabs;
-            {
-                QMutexLocker k(&_imp->_panesMutex);
-                tabs = _imp->_panes;
-            }
+            std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
             if ( tabs.empty() ) {
                 return 0;
             }
-            pane = tabs.front();
+            pane = dynamic_cast<TabWidget*>(tabs.front());
         }
         assert(pane);
         PanelWidget* ret = pane->currentWidget();
@@ -799,16 +721,13 @@ Gui::renderSelectedNode()
         } else {
             if (selectedNodes.size() == 1) {
                 ///create a node and connect it to the node and use it to render
-#ifndef NATRON_ENABLE_IO_META_NODES
-                NodePtr writer = createWriter();
-#else
+
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
                 CreateNodeArgs args(PLUGINID_NATRON_WRITE, graph->getGroup());
                 args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
                 args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                 NodePtr writer = getApp()->createWriter( std::string(), args );
-#endif
                 if (writer) {
                     AppInstance::RenderWork w;
                     w.writer = toOutputEffectInstance( writer->getEffectInstance() );
@@ -914,7 +833,8 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
 
     ///Refresh all visible knobs at the current time
     if ( !getApp()->isGuiFrozen() ) {
-        for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+        std::list<DockablePanelI*> openedPanels = getApp()->getOpenedSettingsPanels();
+        for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
                 NodePtr node = nodePanel->getNode()->getNode();
@@ -934,14 +854,16 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        if ( ( (*it)->getInternalNode() == leadViewer ) && isPlayback ) {
+        ViewerNodePtr internalNode =  (*it)->getInternalNode() ;
+        ViewerInstancePtr instance = internalNode->getInternalViewerNode();
+        if ( (instance == leadViewer ) && isPlayback ) {
             continue;
         }
-        if ( (*it)->getInternalNode()->isDoingPartialUpdates() ) {
+        if ( instance->isDoingPartialUpdates() ) {
             //When tracking, we handle rendering separatly
             continue;
         }
-        (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
+        instance->renderCurrentFrame(!isPlayback);
     }
 } // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
 

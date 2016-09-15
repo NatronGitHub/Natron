@@ -34,9 +34,10 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 # Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
-CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
+CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags yaml-cpp-flags
 
 include(../global.pri)
+include(../libs.pri)
 
 log {
     DEFINES += NATRON_LOG
@@ -59,6 +60,7 @@ INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
+INCLUDEPATH += $$PWD/../Serialization
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 INCLUDEPATH += $$PWD/../google-breakpad/src
@@ -84,9 +86,9 @@ SOURCES += \
     Cache.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
+    ColorParser.cpp \
     CreateNodeArgs.cpp \
     Curve.cpp \
-    CurveSerialization.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
@@ -97,15 +99,16 @@ SOURCES += \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \
+    Format.cpp \
     FrameEntry.cpp \
     FrameKey.cpp \
-    FrameParamsSerialization.cpp \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
     GPUContextPool.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
+    HashableObject.cpp \
     Hash64.cpp \
     HistogramCPU.cpp \
     HostOverlaySupport.cpp \
@@ -115,11 +118,9 @@ SOURCES += \
     ImageComponents.cpp \
     ImageKey.cpp \
     ImageMaskMix.cpp \
-    ImageParamsSerialization.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     Knob.cpp \
-    KnobSerialization.cpp \
     KnobFactory.cpp \
     KnobFile.cpp \
     KnobTypes.cpp \
@@ -132,9 +133,6 @@ SOURCES += \
     NodeGroup.cpp \
     NodeMetadata.cpp \
     NonKeyParams.cpp \
-    NonKeyParamsSerialization.cpp \
-    NodeSerialization.cpp \
-    NodeGroupSerialization.cpp \
     NoOpBase.cpp \
     OSGLContext.cpp \
     OSGLContext_osmesa.cpp \
@@ -160,7 +158,7 @@ SOURCES += \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
-    ProjectSerialization.cpp \
+    PyPanelI.cpp \
     PyAppInstance.cpp \
     PyNodeGroup.cpp \
     PyNode.cpp \
@@ -187,8 +185,12 @@ SOURCES += \
     RotoUndoCommand.cpp \
     ScriptObject.cpp \
     Settings.cpp \
+    SerializableWindow.cpp \
+    SplitterI.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
+    StubNode.cpp \
+    TabWidgetI.cpp \
     Texture.cpp \
     TextureRect.cpp \
     ThreadPool.cpp \
@@ -205,6 +207,7 @@ SOURCES += \
     Transform.cpp \
     Utils.cpp \
     ViewerInstance.cpp \
+    ViewerNode.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
@@ -259,6 +262,7 @@ SOURCES += \
     NatronEngine/stringnodecreationproperty_wrapper.cpp
 
 
+
 HEADERS += \
     AbortableRenderInfo.h \
     AfterQuitProcessingI.h \
@@ -267,21 +271,17 @@ HEADERS += \
     AppManagerPrivate.h \
     Backdrop.h \
     Bezier.h \
-    BezierSerialization.h \
     BezierCP.h \
     BezierCPPrivate.h \
-    BezierCPSerialization.h \
     BlockingBackgroundRender.h \
     BufferableObject.h \
     CLArgs.h \
     Cache.h \
     CacheEntry.h \
-    CacheEntryHolder.h \
-    CacheSerialization.h \
     CoonsRegularization.h \
+    ColorParser.h \
     CreateNodeArgs.h \
     Curve.h \
-    CurveSerialization.h \
     CurvePrivate.h \
     DockablePanelI.h \
     Dot.h \
@@ -296,12 +296,9 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
-    FormatSerialization.h \
     FrameEntry.h \
     FrameKey.h \
-    FrameEntrySerialization.h \
     FrameParams.h \
-    FrameParamsSerialization.h \
     FStreamsSupport.h \
     fstream_mingw.h \
     GenericSchedulerThread.h \
@@ -310,6 +307,7 @@ HEADERS += \
     GPUContextPool.h \
     GroupInput.h \
     GroupOutput.h \
+    HashableObject.h \
     Hash64.h \
     HistogramCPU.h \
     HostOverlaySupport.h \
@@ -317,16 +315,13 @@ HEADERS += \
     ImageComponents.h \
     ImageKey.h \
     ImageLocker.h \
-    ImageSerialization.h \
     ImageParams.h \
-    ImageParamsSerialization.h \
     Interpolation.h \
     JoinViewsNode.h \
     KeyHelper.h \
     Knob.h \
     KnobGuiI.h \
     KnobImpl.h \
-    KnobSerialization.h \
     KnobFactory.h \
     KnobFile.h \
     KnobTypes.h \
@@ -340,13 +335,10 @@ HEADERS += \
     MergingEnum.h \
     Node.h \
     NodeGroup.h \
-    NodeGroupSerialization.h \
     NodeGraphI.h \
     NodeGuiI.h \
     NodeMetadata.h \
     NonKeyParams.h \
-    NonKeyParamsSerialization.h \
-    NodeSerialization.h \
     NoOpBase.h \
     OSGLContext.h \
     OSGLContext_osmesa.h \
@@ -375,7 +367,6 @@ HEADERS += \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
-    ProjectSerialization.h \
     PyAppInstance.h \
     PyGlobalFunctions.h \
     PyNodeGroup.h \
@@ -384,22 +375,17 @@ HEADERS += \
     PyRoto.h \
     PyTracker.h \
     Pyside_Engine_Python.h \
+    PyPanelI.h \
     ReadNode.h \
     RectD.h \
-    RectDSerialization.h \
     RectI.h \
-    RectISerialization.h \
     RenderStats.h \
     RotoBezierTriangulation.h \
     RotoContext.h \
     RotoContextPrivate.h \
-    RotoContextSerialization.h \
     RotoDrawableItem.h \
-    RotoDrawableItemSerialization.h \
     RotoLayer.h \
-    RotoLayerSerialization.h \
     RotoItem.h \
-    RotoItemSerialization.h \
     RotoPaint.h \
     RotoPaintInteract.h \
     RotoPoint.h \
@@ -408,16 +394,18 @@ HEADERS += \
     RotoShapeRenderCairo.h \
     RotoShapeRenderGL.h \
     RotoStrokeItem.h \
-    RotoStrokeItemSerialization.h \
     RotoUndoCommand.h \
     ScriptObject.h \
     Settings.h \
+    SerializableWindow.h \
     Singleton.h \
+    SplitterI.h \
     StandardPaths.h \
     StringAnimationManager.h \
+    StubNode.h \
+    TabWidgetI.h \
     Texture.h \
     TextureRect.h \
-    TextureRectSerialization.h \
     ThreadStorage.h \
     ThreadPool.h \
     TimeLine.h \
@@ -430,7 +418,6 @@ HEADERS += \
     TrackerNodeInteract.h \
     TrackerUndoCommand.h \
     TrackMarker.h \
-    TrackerSerialization.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
@@ -438,9 +425,9 @@ HEADERS += \
     UndoCommand.h \
     Utils.h \
     Variant.h \
-    VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
+    ViewerNode.h \
     ViewIdx.h \
     WriteNode.h \
     ../Global/Enums.h \

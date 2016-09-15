@@ -720,7 +720,7 @@ Image::Image(const ImageComponents& components,
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
 {
-    setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
+    setCacheEntry(ImageKey(std::string(), 0, 0, ViewIdx(0), false),
                   ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
@@ -728,7 +728,6 @@ Image::Image(const ImageComponents& components,
                                                                   bitdepth,
                                                                   fielding,
                                                                   premult,
-                                                                  false /*isRoDProjectFormat*/,
                                                                   components,
                                                                   storage,
                                                                   textureTarget) ),
@@ -780,23 +779,10 @@ Image::setBitmapDirtyZone(const RectI& zone)
     _bitmap.setDirtyZone(zone);
 }
 
-ImageKey
-Image::makeKey(const CacheEntryHolder* holder,
-               U64 nodeHashKey,
-               bool frameVaryingOrAnimated,
-               double time,
-               ViewIdx view,
-               bool draftMode,
-               bool fullScaleWithDownscaleInputs)
-{
-    return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
-}
-
 ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
-                  bool isRoDProjectFormat,
                   const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
@@ -809,16 +795,15 @@ Image::makeParams(const RectD & rod,
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
     return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipMapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           components,
+                                           storage,
+                                           textureTarget) );
 }
 
 ImageParamsPtr
@@ -826,7 +811,6 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   const RectI& bounds,
                   const double par,
                   unsigned int mipMapLevel,
-                  bool isRoDProjectFormat,
                   const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
@@ -838,20 +822,19 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
     RectI pixelRod;
     rod.toPixelEnclosing(mipMapLevel, par, &pixelRod);
     assert( bounds.left() >= pixelRod.left() && bounds.right() <= pixelRod.right() &&
-            bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
+           bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
     return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipMapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           components,
+                                           storage,
+                                           textureTarget) );
 }
 
 // code proofread and fixed by @devernay on 8/8/2014

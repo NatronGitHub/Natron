@@ -134,10 +134,7 @@ public:
     TableModel* model;
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
-    Button* addButton;
-    Button* removeButton;
     Button* selectAll;
-    Button* resetTracksButton;
 
     ///Set to true when we receive a signal from a knob value change
     ///this is to avoid infinite recursion with the dataChanged signal from the TableItem
@@ -157,10 +154,7 @@ public:
         , model(0)
         , buttonsContainer(0)
         , buttonsLayout(0)
-        , addButton(0)
-        , removeButton(0)
         , selectAll(0)
-        , resetTracksButton(0)
         , executingKnobValueChanged(false)
         , knobValueRecursion(0)
         , redrawOnSelectionChanged(true)
@@ -562,21 +556,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsContainer = new QWidget( layout->parentWidget() );
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
     _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->addButton = new Button(QIcon(), QString::fromUtf8("+"), _imp->buttonsContainer);
-    _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _imp->addButton->setIconSize( QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE) );
-    _imp->addButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add new."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->buttonsLayout->addWidget(_imp->addButton);
-
-    QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()) );
-
-    _imp->removeButton = new Button(QIcon(), QString::fromUtf8("-"), _imp->buttonsContainer);
-    _imp->removeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove selection."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _imp->removeButton->setIconSize( QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE) );
-    _imp->buttonsLayout->addWidget(_imp->removeButton);
-
-    QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()) );
+   
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, NATRON_SMALL_BUTTON_ICON_SIZE, &selectAll);
     _imp->selectAll = new Button(QIcon(selectAll), QString(), _imp->buttonsContainer);
@@ -587,10 +567,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
 
     QObject::connect( _imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()) );
 
-    _imp->resetTracksButton = new Button(QString::fromUtf8("Reset"), _imp->buttonsContainer);
-    QObject::connect( _imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()) );
-    _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Reset selected items."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
 
     layout->addWidget(_imp->buttonsContainer);
     appendButtons(_imp->buttonsLayout);
@@ -656,11 +633,6 @@ MultiInstancePanel::createNewInstance(bool useUndoRedoStack)
     return addInstanceInternal(useUndoRedoStack);
 }
 
-void
-MultiInstancePanel::onAddButtonClicked()
-{
-    ignore_result( addInstanceInternal(true) );
-}
 
 NodePtr
 MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
@@ -1021,11 +993,6 @@ MultiInstancePanel::onDeleteKeyPressed()
     removeInstancesInternal();
 }
 
-void
-MultiInstancePanel::onRemoveButtonClicked()
-{
-    removeInstancesInternal();
-}
 
 void
 MultiInstancePanel::removeInstancesInternal()
@@ -1585,71 +1552,6 @@ MultiInstancePanel::getSelectedInstances(std::list<NodePtr>* instances) const
     }
 }
 
-void
-MultiInstancePanel::resetSelectedInstances()
-{
-    std::list<NodePtr> selectedInstances;
-
-    getSelectedInstances(&selectedInstances);
-    _imp->view->selectionModel()->clear();
-    resetInstances(selectedInstances);
-}
-
-void
-MultiInstancePanel::resetAllInstances()
-{
-    _imp->view->selectionModel()->clear();
-    std::list<NodePtr> all;
-    for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
-        all.push_back( it->first.lock() );
-    }
-    resetInstances(all);
-}
-
-void
-MultiInstancePanel::resetInstances(const std::list<NodePtr> & instances)
-{
-    if ( instances.empty() ) {
-        return;
-    }
-
-    std::list<NodePtr>::const_iterator next = instances.begin();
-    if ( next != instances.end() ) {
-        ++next;
-    }
-    for (std::list<NodePtr>::const_iterator it = instances.begin();
-         it != instances.end();
-         ++it) {
-        //invalidate the cache by incrementing the age
-        (*it)->incrementKnobsAge();
-        if ( (*it)->areKeyframesVisibleOnTimeline() ) {
-            (*it)->hideKeyframesFromTimeline( next == instances.end() );
-        }
-        const std::vector<KnobIPtr > & knobs = (*it)->getKnobs();
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            KnobButtonPtr isBtn = toKnobButton(knobs[i]);
-
-            if ( !isBtn && (knobs[i]->getName() != kUserLabelKnobName) && (knobs[i]->getName() != kNatronOfxParamStringSublabelName) ) {
-                knobs[i]->beginChanges();
-                int dims = knobs[i]->getDimension();
-                for (int j = 0; j < dims; ++j) {
-                    knobs[i]->resetToDefaultValue(j);
-                }
-                knobs[i]->endChanges();
-            }
-        }
-
-        // increment for next iteration
-        if ( next != instances.end() ) {
-            ++next;
-        }
-    } // for(it)
-
-    instances.front()->getEffectInstance()->incrHashAndEvaluate(true, true);
-
-    ///To update interacts, kinda hack but can't figure out where else put this
-    getMainInstance()->getApp()->redrawAllViewers();
-}
 
 void
 MultiInstancePanel::onButtonTriggered(const KnobButtonPtr& button)
@@ -1936,7 +1838,7 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     } catch (...) {
     }
 
-    newInstance->updateEffectLabelKnob(newName);
+    newInstance->updateEffectSubLabelKnob(newName);
 
     KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance );
     std::list<KnobDoublePtr > centers;

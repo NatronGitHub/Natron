@@ -41,6 +41,8 @@
 #include "Engine/Transform.h" // Point3D
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/BezierCPSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -104,70 +106,48 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
 }
 
 void
-BezierCP::setPositionAtTime(bool useGuiCurves,
-                            double time,
+BezierCP::setPositionAtTime(double time,
                             double x,
                             double y)
 {
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
-        if (!useGuiCurves) {
-            _imp->curveX->addKeyFrame(k);
-        }
         _imp->guiCurveX->addKeyFrame(k);
     }
     {
         KeyFrame k(time, y);
-        k.setInterpolation(eKeyframeTypeLinear);
-        if (!useGuiCurves) {
-            _imp->curveY->addKeyFrame(k);
-        }
+        k.setInterpolation(eKeyframeTypeLinear); 
         _imp->guiCurveY->addKeyFrame(k);
     }
 }
 
 void
-BezierCP::setStaticPosition(bool useGuiCurves,
-                            double x,
+BezierCP::setStaticPosition(double x,
                             double y)
 {
     QMutexLocker l(&_imp->staticPositionMutex);
 
-    if (!useGuiCurves) {
-        _imp->x = x;
-        _imp->y = y;
-    }
     _imp->guiX = x;
     _imp->guiY = y;
 }
 
 void
-BezierCP::setLeftBezierStaticPosition(bool useGuiCurves,
-                                      double x,
+BezierCP::setLeftBezierStaticPosition(double x,
                                       double y)
 {
     QMutexLocker l(&_imp->staticPositionMutex);
 
-    if (!useGuiCurves) {
-        _imp->leftX = x;
-        _imp->leftY = y;
-    }
     _imp->guiLeftX = x;
     _imp->guiLeftY = y;
 }
 
 void
-BezierCP::setRightBezierStaticPosition(bool useGuiCurves,
-                                       double x,
+BezierCP::setRightBezierStaticPosition(double x,
                                        double y)
 {
     QMutexLocker l(&_imp->staticPositionMutex);
 
-    if (!useGuiCurves) {
-        _imp->rightX = x;
-        _imp->rightY = y;
-    }
     _imp->guiRightX = x;
     _imp->guiRightY = y;
 }
@@ -259,70 +239,47 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
 } // BezierCP::getRightBezierPointAtTime
 
 void
-BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
-                                   double time,
+BezierCP::setLeftBezierPointAtTime(double time,
                                    double x,
                                    double y)
 {
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
-        if (!useGuiCurves) {
-            _imp->curveLeftBezierX->addKeyFrame(k);
-        } else {
-            _imp->guiCurveLeftBezierX->addKeyFrame(k);
-        }
+        _imp->guiCurveLeftBezierX->addKeyFrame(k);
+
     }
     {
         KeyFrame k(time, y);
         k.setInterpolation(eKeyframeTypeLinear);
-        if (!useGuiCurves) {
-            _imp->curveLeftBezierY->addKeyFrame(k);
-        } else {
-            _imp->guiCurveLeftBezierY->addKeyFrame(k);
-        }
+        _imp->guiCurveLeftBezierY->addKeyFrame(k);
+
     }
 }
 
 void
-BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
-                                    double time,
+BezierCP::setRightBezierPointAtTime(double time,
                                     double x,
                                     double y)
 {
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
-        if (!useGuiCurves) {
-            _imp->curveRightBezierX->addKeyFrame(k);
-        }
         _imp->guiCurveRightBezierX->addKeyFrame(k);
     }
     {
         KeyFrame k(time, y);
         k.setInterpolation(eKeyframeTypeLinear);
-        if (!useGuiCurves) {
-            _imp->curveRightBezierY->addKeyFrame(k);
-        }
         _imp->guiCurveRightBezierY->addKeyFrame(k);
     }
 }
 
 void
-BezierCP::removeAnimation(bool useGuiCurves,
-                          double currentTime)
+BezierCP::removeAnimation(double currentTime)
 {
     {
         QMutexLocker k(&_imp->staticPositionMutex);
         try {
-            if (!useGuiCurves) {
-                _imp->x = _imp->curveX->getValueAt(currentTime);
-                _imp->y = _imp->curveY->getValueAt(currentTime);
-                _imp->leftX = _imp->curveLeftBezierX->getValueAt(currentTime);
-                _imp->leftY = _imp->curveLeftBezierY->getValueAt(currentTime);
-                _imp->rightX = _imp->curveRightBezierX->getValueAt(currentTime);
-                _imp->rightY = _imp->curveRightBezierY->getValueAt(currentTime);
-            }
             _imp->guiX = _imp->guiCurveX->getValueAt(currentTime);
             _imp->guiY = _imp->guiCurveY->getValueAt(currentTime);
             _imp->guiLeftX = _imp->guiCurveLeftBezierX->getValueAt(currentTime);
@@ -333,26 +290,17 @@ BezierCP::removeAnimation(bool useGuiCurves,
             //
         }
     }
-    if (!useGuiCurves) {
-        _imp->curveX->clearKeyFrames();
-        _imp->curveY->clearKeyFrames();
-        _imp->curveLeftBezierX->clearKeyFrames();
-        _imp->curveRightBezierX->clearKeyFrames();
-        _imp->curveLeftBezierY->clearKeyFrames();
-        _imp->curveRightBezierY->clearKeyFrames();
-    } else {
-        _imp->guiCurveX->clearKeyFrames();
-        _imp->guiCurveY->clearKeyFrames();
-        _imp->guiCurveLeftBezierX->clearKeyFrames();
-        _imp->guiCurveRightBezierX->clearKeyFrames();
-        _imp->guiCurveLeftBezierY->clearKeyFrames();
-        _imp->guiCurveRightBezierY->clearKeyFrames();
-    }
+    _imp->guiCurveX->clearKeyFrames();
+    _imp->guiCurveY->clearKeyFrames();
+    _imp->guiCurveLeftBezierX->clearKeyFrames();
+    _imp->guiCurveRightBezierX->clearKeyFrames();
+    _imp->guiCurveLeftBezierY->clearKeyFrames();
+    _imp->guiCurveRightBezierY->clearKeyFrames();
+
 }
 
 void
-BezierCP::removeKeyframe(bool useGuiCurves,
-                         double time)
+BezierCP::removeKeyframe(double time)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -360,14 +308,6 @@ BezierCP::removeKeyframe(bool useGuiCurves,
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
     if (_imp->curveX->getKeyFramesCount() == 1) {
         QMutexLocker l(&_imp->staticPositionMutex);
-        if (!useGuiCurves) {
-            _imp->x = _imp->curveX->getValueAt(time);
-            _imp->y = _imp->curveY->getValueAt(time);
-            _imp->leftX = _imp->curveLeftBezierX->getValueAt(time);
-            _imp->leftY = _imp->curveLeftBezierY->getValueAt(time);
-            _imp->rightX = _imp->curveRightBezierX->getValueAt(time);
-            _imp->rightY = _imp->curveRightBezierY->getValueAt(time);
-        }
         _imp->guiX = _imp->guiCurveX->getValueAt(time);
         _imp->guiY = _imp->guiCurveY->getValueAt(time);
         _imp->guiLeftX = _imp->guiCurveLeftBezierX->getValueAt(time);
@@ -377,14 +317,6 @@ BezierCP::removeKeyframe(bool useGuiCurves,
     }
 
     try {
-        if (!useGuiCurves) {
-            _imp->curveX->removeKeyFrameWithTime(time);
-            _imp->curveY->removeKeyFrameWithTime(time);
-            _imp->curveLeftBezierX->removeKeyFrameWithTime(time);
-            _imp->curveRightBezierX->removeKeyFrameWithTime(time);
-            _imp->curveLeftBezierY->removeKeyFrameWithTime(time);
-            _imp->curveRightBezierY->removeKeyFrameWithTime(time);
-        }
         _imp->guiCurveX->removeKeyFrameWithTime(time);
         _imp->guiCurveY->removeKeyFrameWithTime(time);
         _imp->guiCurveLeftBezierX->removeKeyFrameWithTime(time);
@@ -587,8 +519,7 @@ cuspTangent(double x,
 }
 
 static void
-smoothTangent(bool useGuiCurves,
-              double time,
+smoothTangent(double time,
               bool left,
               const BezierCP* p,
               const Transform::Matrix3x3& transform,
@@ -651,8 +582,8 @@ smoothTangent(bool useGuiCurves,
         Q_UNUSED(cpCount);
 
         double leftDx, leftDy, rightDx, rightDy;
-        Bezier::leftDerivativeAtPoint(useGuiCurves, time, *p, **prev, transform, &leftDx, &leftDy);
-        Bezier::rightDerivativeAtPoint(useGuiCurves, time, *p, **next, transform, &rightDx, &rightDy);
+        Bezier::leftDerivativeAtPoint(true, time, *p, **prev, transform, &leftDx, &leftDy);
+        Bezier::rightDerivativeAtPoint(true, time, *p, **next, transform, &rightDx, &rightDy);
         double norm = sqrt( (rightDx - leftDx) * (rightDx - leftDx) + (rightDy - leftDy) * (rightDy - leftDy) );
         Point delta;
         ///normalize derivatives by their norm
@@ -700,8 +631,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 bool
-BezierCP::cuspPoint(bool useGuiCurves,
-                    double time,
+BezierCP::cuspPoint(double time,
                     ViewIdx view,
                     bool autoKeying,
                     bool rippleEdit,
@@ -711,9 +641,9 @@ BezierCP::cuspPoint(bool useGuiCurves,
     assert( QThread::currentThread() == qApp->thread() );
 
     double x, y, leftX, leftY, rightX, rightY;
-    getPositionAtTime(useGuiCurves, time, view, &x, &y);
-    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY);
-    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY);
+    getPositionAtTime(true, time, view, &x, &y);
+    getLeftBezierPointAtTime(true, time, view, &leftX, &leftY);
+    bool isOnKeyframe = getRightBezierPointAtTime(true, time, view, &rightX, &rightY);
     double newLeftX = leftX, newLeftY = leftY, newRightX = rightX, newRightY = rightY;
     cuspTangent(x, y, &newLeftX, &newLeftY, pixelScale);
     cuspTangent(x, y, &newRightX, &newRightY, pixelScale);
@@ -721,8 +651,8 @@ BezierCP::cuspPoint(bool useGuiCurves,
     bool keyframeSet = false;
 
     if (autoKeying || isOnKeyframe) {
-        setLeftBezierPointAtTime(useGuiCurves, time, newLeftX, newLeftY);
-        setRightBezierPointAtTime(useGuiCurves, time, newRightX, newRightY);
+        setLeftBezierPointAtTime(time, newLeftX, newLeftY);
+        setRightBezierPointAtTime(time, newRightX, newRightY);
         if (!isOnKeyframe) {
             keyframeSet = true;
         }
@@ -730,10 +660,10 @@ BezierCP::cuspPoint(bool useGuiCurves,
 
     if (rippleEdit) {
         std::set<double> times;
-        getKeyframeTimes(useGuiCurves, &times);
+        getKeyframeTimes(true, &times);
         for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
-            setLeftBezierPointAtTime(useGuiCurves, *it, newLeftX, newLeftY);
-            setRightBezierPointAtTime(useGuiCurves, *it, newRightX, newRightY);
+            setLeftBezierPointAtTime(*it, newLeftX, newLeftY);
+            setRightBezierPointAtTime(*it, newRightX, newRightY);
         }
     }
 
@@ -741,8 +671,7 @@ BezierCP::cuspPoint(bool useGuiCurves,
 }
 
 bool
-BezierCP::smoothPoint(bool useGuiCurves,
-                      double time,
+BezierCP::smoothPoint(double time,
                       ViewIdx view,
                       bool autoKeying,
                       bool rippleEdit,
@@ -757,25 +686,25 @@ BezierCP::smoothPoint(bool useGuiCurves,
     Transform::Point3D pos, left, right;
     pos.z = left.z = right.z = 1.;
 
-    getPositionAtTime(useGuiCurves, time, view, &pos.x, &pos.y);
+    getPositionAtTime(true, time, view, &pos.x, &pos.y);
 
-    getLeftBezierPointAtTime(useGuiCurves, time, view, &left.x, &left.y);
-    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &right.x, &right.y);
+    getLeftBezierPointAtTime(true, time, view, &left.x, &left.y);
+    bool isOnKeyframe = getRightBezierPointAtTime(true, time, view, &right.x, &right.y);
 
     pos = Transform::matApply(transform, pos);
     left = Transform::matApply(transform, left);
     right = Transform::matApply(transform, right);
 
-    smoothTangent(useGuiCurves, time, true, this, transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
-    smoothTangent(useGuiCurves, time, false, this, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
+    smoothTangent(time, true, this, transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
+    smoothTangent(time, false, this, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
 
     bool keyframeSet = false;
 
     transform = Transform::matInverse(transform);
 
     if (autoKeying || isOnKeyframe) {
-        setLeftBezierPointAtTime(useGuiCurves, time, left.x, left.y);
-        setRightBezierPointAtTime(useGuiCurves, time, right.x, right.y);
+        setLeftBezierPointAtTime(time, left.x, left.y);
+        setRightBezierPointAtTime(time, right.x, right.y);
         if (!isOnKeyframe) {
             keyframeSet = true;
         }
@@ -783,10 +712,10 @@ BezierCP::smoothPoint(bool useGuiCurves,
 
     if (rippleEdit) {
         std::set<double> times;
-        getKeyframeTimes(useGuiCurves, &times);
+        getKeyframeTimes(true, &times);
         for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
-            setLeftBezierPointAtTime(useGuiCurves, *it, left.x, left.y);
-            setRightBezierPointAtTime(useGuiCurves, *it, right.x, right.y);
+            setLeftBezierPointAtTime(*it, left.x, left.y);
+            setRightBezierPointAtTime(*it, right.x, right.y);
         }
     }
 
@@ -888,6 +817,50 @@ BezierCP::equalsAtTime(bool useGuiCurves,
     return false;
 }
 
+bool
+BezierCP::operator==(const BezierCP& other) const
+{
+    if (*_imp->curveX != *other._imp->curveX) {
+        return false;
+    }
+    if (*_imp->curveY != *other._imp->curveY) {
+        return false;
+    }
+    if (*_imp->curveLeftBezierX != *other._imp->curveLeftBezierX) {
+        return false;
+    }
+    if (*_imp->curveLeftBezierY != *other._imp->curveLeftBezierY) {
+        return false;
+    }
+    if (*_imp->curveRightBezierX != *other._imp->curveRightBezierX) {
+        return false;
+    }
+    if (*_imp->curveRightBezierY != *other._imp->curveRightBezierY) {
+        return false;
+    }
+
+    if (_imp->x != other._imp->x) {
+        return false;
+    }
+    if (_imp->y != other._imp->y) {
+        return false;
+    }
+    if (_imp->leftX != other._imp->leftX) {
+        return false;
+    }
+    if (_imp->leftY != other._imp->leftY) {
+        return false;
+    }
+    if (_imp->rightX != other._imp->rightX) {
+        return false;
+    }
+    if (_imp->rightY != other._imp->rightY) {
+        return false;
+    }
+    return true;
+    
+}
+
 void
 BezierCP::cloneInternalCurvesToGuiCurves()
 {
@@ -928,6 +901,53 @@ BezierCP::cloneGuiCurvesToInternalCurves()
     _imp->leftY = _imp->guiLeftY;
     _imp->rightX = _imp->guiRightX;
     _imp->rightY = _imp->guiRightY;
+}
+
+void
+BezierCP::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::BezierCPSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::BezierCPSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    _imp->curveX->toSerialization(&s->xCurve);
+    _imp->curveY->toSerialization(&s->yCurve);
+    _imp->curveLeftBezierX->toSerialization(&s->leftCurveX);
+    _imp->curveLeftBezierY->toSerialization(&s->leftCurveY);
+    _imp->curveRightBezierX->toSerialization(&s->rightCurveX);
+    _imp->curveRightBezierY->toSerialization(&s->rightCurveY);
+
+    QMutexLocker k(&_imp->staticPositionMutex);
+    s->x = _imp->x;
+    s->y = _imp->y;
+    s->leftX = _imp->leftX;
+    s->leftY = _imp->leftY;
+    s->rightX = _imp->rightX;
+    s->rightY = _imp->rightY;
+}
+
+void
+BezierCP::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::BezierCPSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::BezierCPSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    _imp->curveX->fromSerialization(s->xCurve);
+    _imp->curveY->fromSerialization(s->yCurve);
+    _imp->curveLeftBezierX->fromSerialization(s->leftCurveX);
+    _imp->curveLeftBezierY->fromSerialization(s->leftCurveY);
+    _imp->curveRightBezierX->fromSerialization(s->rightCurveX);
+    _imp->curveRightBezierY->fromSerialization(s->rightCurveY);
+
+    QMutexLocker k(&_imp->staticPositionMutex);
+    _imp->x = s->x;
+    _imp->y = s->y;
+    _imp->leftX = s->leftX;
+    _imp->leftY = s->leftY;
+    _imp->rightX = s->rightX;
+    _imp->rightY = s->rightY;
+
 }
 
 NATRON_NAMESPACE_EXIT;

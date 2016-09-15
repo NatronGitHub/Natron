@@ -285,6 +285,7 @@ public:
     GLuint kfTexturesIDs[KF_TEXTURES_COUNT];
 
     // for navigating
+    mutable QMutex zoomContextMutex;
     ZoomContext zoomContext;
     bool zoomOrPannedSinceLastFit;
 
@@ -311,6 +312,9 @@ public:
 
     // UI
     Menu *contextMenu;
+
+    // True if paintGL was run at least once
+    bool drawnOnce;
 };
 
 DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
@@ -335,6 +339,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
     , eventState(DopeSheetView::esNoEditingState)
     , currentEditedReader()
     , contextMenu( new Menu(q_ptr) )
+    , drawnOnce(false)
 {
 }
 
@@ -1932,12 +1937,12 @@ DopeSheetViewPrivate::computeRetimeRange(const DSNodePtr& retimer)
     }
     NodePtr input = node->getInput(0);
     if (input) {
-        U64 nodeHash = node->getHashValue();
         double inputFirst, inputLast;
-        input->getEffectInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
+        input->getEffectInstance()->getFrameRange_public(0, &inputFirst, &inputLast);
 
-        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputFirst, ViewIdx(0), 0);
-        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputLast, ViewIdx(0), 0);
+        U64 hash;
+        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), &hash);
+        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), &hash);
         assert( !framesFirst.empty() && !framesLast.empty() );
         if ( framesFirst.empty() || framesLast.empty() ) {
             return;
@@ -2667,6 +2672,30 @@ DopeSheetView::redraw()
     update();
 }
 
+
+void
+DopeSheetView::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
+{
+    QGLFormat f = format();
+    *hasAlpha = f.alpha();
+    int r = f.redBufferSize();
+    if (r == -1) {
+        r = 8;// taken from qgl.h
+    }
+    int g = f.greenBufferSize();
+    if (g == -1) {
+        g = 8;// taken from qgl.h
+    }
+    int b = f.blueBufferSize();
+    if (b == -1) {
+        b = 8;// taken from qgl.h
+    }
+    int size = r;
+    size = std::min(size, g);
+    size = std::min(size, b);
+    *depthPerComponents = size;
+}
+
 /**
  * @brief DopeSheetView::getViewportSize
  *
@@ -3181,7 +3210,10 @@ DopeSheetView::resizeGL(int w,
 
     GL_GPU::glViewport(0, 0, w, h);
 
-    _imp->zoomContext.setScreenSize(w, h);
+    {
+        QMutexLocker k(&_imp->zoomContextMutex);
+        _imp->zoomContext.setScreenSize(w, h);
+    }
 
     // Don't do the following when the height of the widget is irrelevant
     if (h == 1) {
@@ -3194,10 +3226,14 @@ DopeSheetView::resizeGL(int w,
     }
 }
 
+bool
+DopeSheetView::hasDrawnOnce() const
+{
+    return _imp->drawnOnce;
+}
+
 /**
  * @brief DopeSheetView::paintGL
- *
- *
  */
 void
 DopeSheetView::paintGL()
@@ -3215,6 +3251,8 @@ DopeSheetView::paintGL()
         return;
     }
 
+    _imp->drawnOnce = true;
+    
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     zoomLeft = _imp->zoomContext.left();
     zoomRight = _imp->zoomContext.right();
@@ -3444,12 +3482,10 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
             if ( !modCASIsShift(e) ) {
                 _imp->model->getSelectionModel()->clearKeyframeSelection();
 
-                DSKnobPtr dsKnob = _imp->hierarchyView->getDSKnobAt( e->pos().y() );
-                if (dsKnob) {
-                    double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+                    /*double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
                     _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, OutputEffectInstancePtr(),
-                                              eTimelineChangeReasonDopeSheetEditorSeek);
-                }
+                                              eTimelineChangeReasonDopeSheetEditorSeek);*/
+
             }
 
             _imp->selectionRect.x1 = _imp->selectionRect.x2 = clickZoomCoords.x();
@@ -3468,8 +3504,10 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
     QPointF mouseZoomCoords = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
 
+    bool caught = true;
     if (e->buttons() == Qt::NoButton) {
         setCursor( _imp->getCursorDuringHover( e->pos() ) );
+        caught = false;
     } else if (_imp->eventState == DopeSheetView::esZoomingView) {
         _imp->zoomOrPannedSinceLastFit = true;
 
@@ -3503,6 +3541,7 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
     } else if ( buttonDownIsMiddle(e) ) {
         double dx = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMouseMove.x(),
                                                          _imp->lastPosOnMouseMove.y() ).x() - mouseZoomCoords.x();
+        QMutexLocker k(&_imp->zoomContextMutex);
         _imp->zoomContext.translate(dx, 0);
 
         redraw();
@@ -3512,9 +3551,21 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
             _imp->updateCurveWidgetFrameRange();
             _imp->gui->centerOpenedViewersOn( _imp->zoomContext.left(), _imp->zoomContext.right() );
         }
+    } else {
+        caught = false;
     }
 
     _imp->lastPosOnMouseMove = e->pos();
+    if (!caught) {
+        TabWidget* tab = 0;
+        tab = _imp->model->getEditor()->getParentPane() ;
+        if (tab) {
+            // If the Viewer is in a tab, send the tab widget the event directly
+            qApp->sendEvent(tab, e);
+        } else {
+            QGLWidget::mouseMoveEvent(e);
+        }
+    }
 } // DopeSheetView::mouseMoveEvent
 
 void
@@ -3644,8 +3695,10 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     }
 
 
-    _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-
+    {
+        QMutexLocker k(&_imp->zoomContextMutex);
+        _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+    }
     _imp->computeSelectedKeysBRect();
 
     redraw();
@@ -3662,6 +3715,30 @@ DopeSheetView::focusInEvent(QFocusEvent *e)
 {
     QGLWidget::focusInEvent(e);
 }
+
+/**
+ * @brief Get the current orthographic projection
+ **/
+void
+DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    *zoomLeft = _imp->zoomContext.left();
+    *zoomBottom = _imp->zoomContext.bottom();
+    *zoomFactor = _imp->zoomContext.factor();
+    *zoomAspectRatio = _imp->zoomContext.aspectRatio();
+}
+
+/**
+ * @brief Set the current orthographic projection
+ **/
+void
+DopeSheetView::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
+{
+    QMutexLocker k(&_imp->zoomContextMutex);
+    _imp->zoomContext.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

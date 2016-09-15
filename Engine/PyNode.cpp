@@ -74,10 +74,10 @@ ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
 
-    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getLayerName().c_str() ) );
+    Hash64::appendQString(QString::fromUtf8( layer._comps->getLayerName().c_str() ), &h );
     const std::vector<std::string>& comps = layer._comps->getComponentsNames();
     for (std::size_t i = 0; i < comps.size(); ++i) {
-        Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
+        Hash64::appendQString(QString::fromUtf8( comps[i].c_str() ), &h );
     }
 
     return (int)h.value();
@@ -987,13 +987,18 @@ Effect::getRegionOfDefinition(double time,
 {
     RectD rod;
 
-    if ( !getInternalNode() || !getInternalNode()->getEffectInstance() ) {
+    if (!getInternalNode()) {
         return rod;
     }
-    U64 hash = getInternalNode()->getHashValue();
+    EffectInstancePtr effect = getInternalNode()->getEffectInstance() ;
+    if (!effect) {
+        return rod;
+    }
     RenderScale s(1.);
-    bool isProject;
-    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, ViewIdx(view), &rod, &isProject);
+    U64 inputHash;
+    bool gotHash = effect->getRenderHash(time, ViewIdx(view), &inputHash);
+    (void)gotHash;
+    StatusEnum stat = effect->getRegionOfDefinition_public(inputHash, time, s, ViewIdx(view), &rod);
     if (stat != eStatusOK) {
         return RectD();
     }
@@ -1117,6 +1122,44 @@ Effect::setPagesOrder(const QStringList& pages)
         order.push_back( it->toStdString() );
     }
     getInternalNode()->setPagesOrder(order);
+}
+
+void
+Effect::insertParamInViewerUI(Param* param, int index)
+{
+    NodePtr node = getInternalNode();
+    if (!node || !param) {
+        return;
+    }
+    KnobIPtr knob = param->getInternalKnob();
+    if (!knob) {
+        return;
+    }
+    node->getEffectInstance()->insertKnobToViewerUI(knob, index);
+}
+
+void
+Effect::removeParamFromViewerUI(Param* param)
+{
+    NodePtr node = getInternalNode();
+    if (!node || !param) {
+        return;
+    }
+    KnobIPtr knob = param->getInternalKnob();
+    if (!knob) {
+        return;
+    }
+    node->getEffectInstance()->removeKnobViewerUI(knob);
+}
+
+void
+Effect::clearViewerUIParameters()
+{
+    NodePtr node = getInternalNode();
+    if (!node) {
+        return;
+    }
+    node->getEffectInstance()->setViewerUIKnobs(KnobsVec());
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

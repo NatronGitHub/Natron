@@ -393,6 +393,30 @@ enum ValueChangedReasonEnum
     eValueChangedReasonRestoreDefault,
 };
 
+
+// Used to add stretch before or after widgets
+enum ViewerContextLayoutTypeEnum
+{
+    eViewerContextLayoutTypeSpacing,
+    eViewerContextLayoutTypeSeparator,
+    eViewerContextLayoutTypeStretchAfter,
+    eViewerContextLayoutTypeStretchBefore,
+    eViewerContextLayoutTypeAddNewLine
+};
+
+// Controls how the knob contributes to the hash of a node.
+enum KnobFrameViewHashingStrategyEnum
+{
+    // The value (for each dimension) at the current frame/view is added to the hash
+    eKnobHashingStrategyValue,
+
+    // All keyframes of the curve for all dimensions are added to the cache.
+    // Typically this is needed for animated parameters that have an effect overtime which is
+    // integrated such as a speed param of a retimer: the speed could be 5 at frame 1 and 10 at frame 100
+    // but if the speed changes to 6 at frame 1, then output at frame 100 should change as well
+    eKnobHashingStrategyAnimation
+};
+
 enum AnimationLevelEnum
 {
     eAnimationLevelNone = 0,
@@ -438,8 +462,8 @@ enum ViewerCompositingOperatorEnum
 
 enum ViewerColorSpaceEnum
 {
-    eViewerColorSpaceSRGB = 0,
-    eViewerColorSpaceLinear,
+    eViewerColorSpaceLinear = 0,
+    eViewerColorSpaceSRGB,
     eViewerColorSpaceRec709
 };
 
@@ -488,13 +512,13 @@ enum SchedulingPolicyEnum
 
 enum DisplayChannelsEnum
 {
-    eDisplayChannelsRGB = 0,
+    eDisplayChannelsY = 0,
+    eDisplayChannelsRGB,
     eDisplayChannelsR,
     eDisplayChannelsG,
     eDisplayChannelsB,
     eDisplayChannelsA,
-    eDisplayChannelsY,
-    eDisplayChannelsMatte,
+    eDisplayChannelsMatte
 };
 
 /** @brief Enumerates the contexts a plugin can be used in */

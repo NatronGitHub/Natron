@@ -119,7 +119,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
             output = node->getApp()->createNode(args);
@@ -132,7 +132,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         }
         {
             CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
@@ -143,7 +143,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         {
             QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
             CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
             NodePtr cpNode = node->getApp()->createNode(args);
@@ -157,7 +157,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         {
             QString transformName = fixedNamePrefix + QLatin1String("Transform");
             CreateNodeArgs args(PLUGINID_OFX_TRANSFORM, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);
@@ -295,7 +295,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defPatternWinSizeKnob->setName(kTrackerParamDefaultMarkerPatternWinSize);
     defPatternWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerPatternWinSizeLabel));
     defPatternWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerPatternWinSizeHint) );
-    defPatternWinSizeKnob->setIconLabel(NATRON_IMAGES_PATH "patternSize.png");
+    defPatternWinSizeKnob->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "patternSize.png");
     defPatternWinSizeKnob->setAnimationEnabled(false);
     defPatternWinSizeKnob->setMinimum(1);
     defPatternWinSizeKnob->disableSlider();
@@ -310,7 +310,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defSearchWinSizeKnob->setName(kTrackerParamDefaultMarkerSearchWinSize);
     defSearchWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerSearchWinSizeLabel));
     defSearchWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerSearchWinSizeHint) );
-    defSearchWinSizeKnob->setIconLabel(NATRON_IMAGES_PATH "searchSize.png");
+    defSearchWinSizeKnob->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "searchSize.png");
     defSearchWinSizeKnob->setAnimationEnabled(false);
     defSearchWinSizeKnob->setMinimum(1);
     defSearchWinSizeKnob->disableSlider();
@@ -320,14 +320,15 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(defSearchWinSizeKnob);
     defaultSearchWinSize = defSearchWinSizeKnob;
 
-    KnobChoicePtr defMotionModelKnob = AppManager::createKnob<KnobChoice>(effect, tr(kTrackerParamDefaultMotionModelLabel), 1, false);
+    KnobChoicePtr defMotionModelKnob = AppManager::createKnob<KnobChoice>(effect, tr(""), 1, false);
     defMotionModelKnob->setName(kTrackerParamDefaultMotionModel);
     defMotionModelKnob->setAnimationEnabled(false);
     {
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
         defMotionModelKnob->populateChoices(choices, helps);
-
+        defMotionModelKnob->setIcons(icons);
     }
     defMotionModelKnob->setSecret(true);
     defMotionModelKnob->setAnimationEnabled(false);
@@ -369,8 +370,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     motionModelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
     {
         std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        std::map<int, std::string> icons;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
         motionModelKnob->populateChoices(choices, helps);
+        motionModelKnob->setIcons(icons);
     }
     motionModelKnob->setAllDimensionsEnabled(false);
     motionModelKnob->setAnimationEnabled(false);
@@ -510,7 +513,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     fittingErrorWarningKnob->setDefaultValue( tr(kTrackerParamFittingErrorWarningLabel).toStdString() );
     fittingErrorWarningKnob->setIconLabel("dialog-warning");
     fittingErrorWarningKnob->setEvaluateOnChange(false);
-    fittingErrorWarningKnob->setSecretByDefault(true);
+    fittingErrorWarningKnob->setSecret(true);
     fittingErrorWarningKnob->setAsLabel();
     transformPage->addKnob(fittingErrorWarningKnob);
     fittingErrorWarning = fittingErrorWarningKnob;
@@ -622,7 +625,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         setFromPointsToInputRod = setToInputRod;
 
         KnobBoolPtr cornerPinSet = AppManager::createKnob<KnobBool>( effect, std::string(kTrackerParamCornerPinFromPointsSetOnce) );
-        cornerPinSet->setSecretByDefault(true);
+        cornerPinSet->setSecret(true);
         fromGroupKnob->addKnob(cornerPinSet);
         cornerPinFromPointsSetOnceAutomatically = cornerPinSet;
 
@@ -1497,7 +1500,11 @@ TrackerContextPrivate::getInputRoDAtTime(double time) const
     if (!input) {
         useProjFormat = true;
     } else {
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale(1.), ViewIdx(0), &ret, 0);
+        EffectInstancePtr effect = input->getEffectInstance();
+        U64 nodeHash;
+        bool gotHash = effect->getRenderHash(time, ViewIdx(0), &nodeHash);
+        (void)gotHash;
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, RenderScale(1.), ViewIdx(0), &ret);
         if (stat == eStatusFailed) {
             useProjFormat = true;
         } else {
@@ -2188,28 +2195,28 @@ TrackerContextPrivate::resetTransformParamsAnimation()
 
 
         for (int i = 0; i < 4; ++i) {
-            toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-            toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
-            enabledPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+            toPointsKnob[i]->resetToDefaultValue(0);
+            toPointsKnob[i]->resetToDefaultValue(1);
+            enabledPointsKnob[i]->resetToDefaultValue(0);
         }
     }
     KnobDoublePtr centerKnob = center.lock();
 
-    centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-    centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+    centerKnob->resetToDefaultValue(0);
+    centerKnob->resetToDefaultValue(1);
     {
         // Revert animation on the transform
         KnobDoublePtr translationKnob = translate.lock();
         KnobDoublePtr scaleKnob = scale.lock();
         KnobDoublePtr rotationKnob = rotate.lock();
 
-        translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-        translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+        translationKnob->resetToDefaultValue(0);
+        translationKnob->resetToDefaultValue(1);
 
-        scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-        scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+        scaleKnob->resetToDefaultValue(0);
+        scaleKnob->resetToDefaultValue(1);
 
-        rotationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+        rotationKnob->resetToDefaultValue(0);
     }
 }
 

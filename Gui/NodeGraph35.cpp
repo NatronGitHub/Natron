@@ -40,7 +40,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
-#include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -54,6 +53,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ToolButton.h"
+
+#include "Serialization/KnobSerialization.h"
 
 #include "Global/QtCompat.h"
 
@@ -499,7 +500,7 @@ NodeGraph::showMenu(const QPoint & pos)
         cloneSelectedNodes( rect.center() );
     } else if (ret == pasteAction) {
         QRectF rect = visibleSceneRect();
-        pasteNodeClipBoards( rect.center() );
+        pasteClipboard( rect.center() );
     }
 } // NodeGraph::showMenu
 

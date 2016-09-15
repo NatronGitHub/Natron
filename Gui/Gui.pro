@@ -29,7 +29,11 @@ enable-cairo: CONFIG += cairo
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
+CONFIG += glad-flags yaml-cpp-flags
+
+
 include(../global.pri)
+include(../libs.pri)
 
 precompile_header {
   # Use Precompiled headers (PCH)
@@ -46,6 +50,7 @@ INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
+INCLUDEPATH += $$PWD/../Serialization
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
@@ -64,7 +69,6 @@ INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
 
-CONFIG += glad-flags
 
 win32-msvc* {
         CONFIG(64bit) {
@@ -82,7 +86,6 @@ SOURCES += \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
-    ChannelsComboBox.cpp \
     ClickableLabel.cpp \
     ColoredFrame.cpp \
     ComboBox.cpp \
@@ -105,6 +108,7 @@ SOURCES += \
     DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
+    EditNodeViewerContextDialog.cpp \
     EditScriptDialog.cpp \
     ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
@@ -155,7 +159,6 @@ SOURCES += \
     Menu.cpp \
     MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
-    NodeBackdropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -171,9 +174,9 @@ SOURCES += \
     NodeGraphPrivate.cpp \
     NodeGraphPrivate10.cpp \
     NodeGraphTextItem.cpp \
+    NodeGraphRectItem.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
-    NodeGuiSerialization.cpp \
     NodeSettingsPanel.cpp \
     NodeViewerContext.cpp \
     PanelWidget.cpp \
@@ -181,7 +184,6 @@ SOURCES += \
     PreferencesPanel.cpp \
     PreviewThread.cpp \
     ProjectGui.cpp \
-    ProjectGuiSerialization.cpp \
     ProgressPanel.cpp \
     ProgressTaskInfo.cpp \
     PropertiesBinWrapper.cpp \
@@ -196,7 +198,6 @@ SOURCES += \
     ScriptTextEdit.cpp \
     SequenceFileDialog.cpp \
     Shaders.cpp \
-    SerializableWindow.cpp \
     SpinBox.cpp \
     SpinBoxValidator.cpp \
     SplashScreen.cpp \
@@ -214,8 +215,8 @@ SOURCES += \
     ViewerGLPrivate.cpp \
     ViewerTab.cpp \
     ViewerTab10.cpp \
-    ViewerTab20.cpp \
-    ViewerTab30.cpp \
+    ViewerTabOverlays.cpp \
+    ViewerTabNodesUI.cpp \
     ViewerTab40.cpp \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
@@ -224,8 +225,7 @@ SOURCES += \
     NatronGui/guiapp_wrapper.cpp \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
-    NatronGui/pytabwidget_wrapper.cpp \
-    NatronGui/pyviewer_wrapper.cpp
+    NatronGui/pytabwidget_wrapper.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -235,7 +235,6 @@ HEADERS += \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
-    ChannelsComboBox.h \
     ClickableLabel.h \
     ColoredFrame.h \
     ComboBox.h \
@@ -259,6 +258,7 @@ HEADERS += \
     DotGui.h \
     Edge.h \
     EditExpressionDialog.h \
+    EditNodeViewerContextDialog.h \
     EditScriptDialog.h \
     ExportGroupTemplateDialog.h \
     FileTypeMainWindow_win.h \
@@ -302,15 +302,13 @@ HEADERS += \
     Menu.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
-    NodeBackdropSerialization.h \
-    NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \
     NodeGraphTextItem.h \
+    NodeGraphRectItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
-    NodeGuiSerialization.h \
     NodeSettingsPanel.h \
     NodeViewerContext.h \
     PanelWidget.h \
@@ -318,7 +316,6 @@ HEADERS += \
     PreferencesPanel.h \
     PreviewThread.h \
     ProjectGui.h \
-    ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
     ProgressPanel.h \
     ProgressTaskInfo.h \
@@ -336,7 +333,6 @@ HEADERS += \
     ScriptTextEdit.h \
     SequenceFileDialog.h \
     Shaders.h \
-    SerializableWindow.h \
     SpinBox.h \
     SpinBoxValidator.h \
     SplashScreen.h \
@@ -383,9 +379,7 @@ HEADERS += \
     NatronGui/guiapp_wrapper.h \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
-    NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h
-
+    NatronGui/pytabwidget_wrapper.h
 
 RESOURCES += \
     GuiResources.qrc

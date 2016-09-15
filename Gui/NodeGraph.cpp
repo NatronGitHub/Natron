@@ -37,7 +37,6 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -52,6 +51,8 @@
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraphTextItem.h"
+
+#include "Serialization/NodeSerialization.h"
 
 #include "Global/QtCompat.h"
 
@@ -78,11 +79,12 @@ NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
 
 NodeGraph::NodeGraph(Gui* gui,
                      const NodeCollectionPtr& group,
+                     const std::string& scriptName,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
     , NodeGraphI()
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new NodeGraphPrivate(this, group) )
 {
     group->setNodeGraphPointer(this);
@@ -91,21 +93,8 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroupPtr isGrp = toNodeGroup( group );
     if (isGrp) {
-        std::string newName = isGrp->getNode()->getFullyQualifiedName();
-        for (std::size_t i = 0; i < newName.size(); ++i) {
-            if (newName[i] == '.') {
-                newName[i] = '_';
-            }
-        }
-        setScriptName(newName);
-        std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode(), &label);
-        setLabel(label);
         QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
         QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );
-    } else {
-        setScriptName(kNodeGraphObjectName);
-        setLabel( tr("Node Graph").toStdString() );
     }
 
     QObject::connect( &_imp->autoScrollTimer, SIGNAL(timeout()), this, SLOT(onAutoScrollTimerTriggered()) );
@@ -291,7 +280,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
     bool groupEdited = true;
     if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
 
     bool drawLockedMode = !isGroupEditable || !groupEdited;
@@ -420,7 +409,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         isTopLevelNodeBeingCreated = true;
     }
     
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
     if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {

@@ -44,6 +44,7 @@
 NATRON_NAMESPACE_ENTER;
 
 
+
 #define kControlPointMidSize 3
 #define kBezierSelectionTolerance 8
 #define kControlPointSelectionTolerance 8
@@ -390,7 +391,7 @@ NATRON_NAMESPACE_ENTER;
 #define kShortcutIDActionRotoLockCurve "lock"
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
 
-struct RotoPaintInteract;
+class RotoPaintInteract;
 struct RotoPaintPrivate
 {
     RotoPaint* publicInterface; // can not be a smart ptr
@@ -403,6 +404,11 @@ struct RotoPaintPrivate
     bool mustDoNeatRender;
 
     RotoPaintInteractPtr ui;
+
+    // The group internal input nodes
+    std::vector<NodeWPtr> inputNodes;
+    NodeWPtr premultNode;
+    NodeWPtr premultFixerNode;
 
     RotoPaintPrivate(RotoPaint* publicInterface,
                      bool isPaintByDefault);
@@ -759,8 +765,6 @@ public:
      **/
     bool moveSelectedCpsWithKeyArrows(int x, int y);
 
-
-    void evaluate(bool redraw);
     void autoSaveAndRedraw();
 
     void redrawOverlays();

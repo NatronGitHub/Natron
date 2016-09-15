@@ -606,8 +606,7 @@ void
 KnobGuiTable::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
-        _imp->table->setToolTip(tt);
+        toolTip(_imp->table);
     }
 }
 

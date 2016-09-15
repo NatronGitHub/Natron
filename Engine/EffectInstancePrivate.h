@@ -158,7 +158,11 @@ public:
 
     Implementation(const Implementation& other);
 
-public:
+    ~Implementation()
+    {
+        
+    }
+
     EffectInstance* _publicInterface; // can not be a smart ptr
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
@@ -202,7 +206,6 @@ public:
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    std::list<KnobIWPtr> overlaySlaves;
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
     bool runningClipPreferences; //only used on main thread
@@ -326,9 +329,9 @@ public:
                                                           const ParallelRenderArgsPtr& frameArgs,
                                                           const FrameViewRequest* requestPassData,
                                                           SupportsEnum supportsRS,
+                                                          U64 frameViewHash,
                                                           double par,
                                                           unsigned int mipMapLevel,
-                                                          U64 nodeHash,
                                                           ImagePremultiplicationEnum thisEffectOutputPremult,
                                                           const RectD& rod,
                                                           const std::list<ImageComponents> &requestedComponents,
@@ -342,11 +345,11 @@ public:
 
     bool setupRenderRoIParams(const RenderRoIArgs & args,
                               EffectDataTLSPtr* tls,
+                              U64 *frameViewHash,
                               AbortableRenderInfoPtr *abortInfo,
                               ParallelRenderArgsPtr* frameArgs,
                               OSGLContextPtr *glGpuContext,
                               OSGLContextPtr *glCpuContext,
-                              U64 *nodeHash,
                               double *par,
                               ImageFieldingOrderEnum *fieldingOrder,
                               ImagePremultiplicationEnum *thisEffectOutputPremult,
@@ -357,7 +360,6 @@ public:
                               const FrameViewRequest** requestPassData,
                               RectD* rod,
                               RectI* roi,
-                              bool* isProjectFormat,
                               ComponentsNeededMapPtr *neededComps,
                               std::bitset<4> *processChannels,
                               const std::vector<ImageComponents>** outputComponents);
@@ -380,6 +382,8 @@ public:
 
     bool renderRoILookupCacheFirstTime(const RenderRoIArgs & args,
                                        const ParallelRenderArgsPtr& frameArgs,
+                                       const U64 frameViewHash,
+                                       const FrameViewRequest* requestPassData,
                                        StorageModeEnum storage,
                                        const OSGLContextPtr& glRenderContext,
                                        const OSGLContextAttacherPtr& glContextLocker,
@@ -391,7 +395,6 @@ public:
                                        const RectI& upscaledImageBounds,
                                        const RectI& downscaledImageBounds,
                                        bool renderFullScaleThenDownscale,
-                                       U64 nodeHash,
                                        unsigned int renderMipMapLevel,
                                        bool* createInCache,
                                        bool *renderScaleOneUpstreamIfRenderScaleSupportDisabled,
@@ -402,6 +405,7 @@ public:
 
     EffectInstance::RenderRoIRetCode renderRoIRenderInputImages(const RenderRoIArgs & args,
                                                                 const EffectDataTLSPtr& tls,
+                                                                const U64 frameViewHash,
                                                                 const ComponentsNeededMapPtr& neededComps,
                                                                 const FrameViewRequest* requestPassData,
                                                                 const ImagePlanesToRenderPtr &planesToRender,
@@ -411,7 +415,6 @@ public:
                                                                 ImagePremultiplicationEnum thisEffectOutputPremult,
                                                                 const RectD& rod,
                                                                 double par,
-                                                                U64 nodeHash,
                                                                 bool renderFullScaleThenDownscale,
                                                                 unsigned int renderMappedMipMapLevel,
                                                                 const RenderScale& renderMappedScale,
@@ -451,7 +454,6 @@ public:
                                        const OSGLContextPtr& glRenderContext,
                                        ImageFieldingOrderEnum fieldingOrder,
                                        ImageBitDepthEnum outputDepth,
-                                       bool isProjectFormat,
                                        bool fillGrownBoundsWithZeroes,
                                        StorageModeEnum storage,
                                        const std::vector<ImageComponents>& outputComponents,
@@ -474,7 +476,7 @@ public:
                                                                       const ImageComponents &outputClipPrefComps,
                                                                       bool hasSomethingToRender,
                                                                       StorageModeEnum storage,
-                                                                      U64 nodeHash,
+                                                                      const U64 frameViewHash,
                                                                       const RectD& rod,
                                                                       const RectI& roi,
                                                                       unsigned int renderMappedMipMapLevel,

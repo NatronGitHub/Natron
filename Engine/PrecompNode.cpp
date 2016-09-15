@@ -47,12 +47,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/KnobSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -73,7 +73,6 @@ public:
     KnobIntWPtr firstFrameKnob, lastFrameKnob;
     KnobStringWPtr outputNodeNameKnob;
     KnobChoiceWPtr errorBehaviourKnbo;
-    //kNatronOfxParamStringSublabelName to display the project name
     KnobStringWPtr subLabelKnob;
     QMutex dataMutex;
     NodesWList precompInputs;
@@ -316,13 +315,13 @@ PrecompNode::initializeKnobs()
     outputNode->setName("outputNode");
     outputNode->setHintToolTip( tr("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.").toStdString() );
     outputNode->setAnimationEnabled(false);
-    outputNode->setSecretByDefault(true);
+    outputNode->setSecret(true);
     mainPage->addKnob(outputNode);
     _imp->outputNodeNameKnob = outputNode;
 
     KnobStringPtr sublabel = AppManager::createKnob<KnobString>( shared_from_this(), tr("SubLabel") );
     sublabel->setName(kNatronOfxParamStringSublabelName);
-    sublabel->setSecretByDefault(true);
+    sublabel->setSecret(true);
     mainPage->addKnob(sublabel);
     _imp->subLabelKnob = sublabel;
 } // PrecompNode::initializeKnobs
@@ -578,7 +577,7 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append( QLatin1Char('_') );
 
     CreateNodeArgs args( readPluginID.toStdString(), app.lock()->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
@@ -662,7 +661,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     }
     //Remove all images from the cache associated to the reader since we know they are no longer valid.
     //This is a blocking call so that we are sure there's no old image laying around in the cache after this call
-    readNode->removeAllImagesFromCache(true);
+    readNode->removeAllImagesFromCache();
     readNode->purgeAllInstancesCaches();
 
     //Force the reader to reload the sequence/video

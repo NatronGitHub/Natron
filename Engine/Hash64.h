@@ -28,12 +28,12 @@
 #include "Global/Macros.h"
 
 #include <vector>
+#include <string>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/static_assert.hpp>
 #endif
 
 #include "Global/GlobalDefines.h"
-
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -89,6 +89,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
         node_values.push_back( toU64(value) );
     }
 
+    static void appendQString(const QString & str, Hash64* hash);
+
+    static void appendCurve(const CurvePtr& curve, Hash64* hash);
+
     bool operator== (const Hash64 & h) const
     {
         return this->hash == h.value();
@@ -119,7 +123,6 @@ private:
     std::vector<U64> node_values;
 };
 
-void Hash64_appendQString(Hash64* hash, const QString & str);
 
 NATRON_NAMESPACE_EXIT;
 

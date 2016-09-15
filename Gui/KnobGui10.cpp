@@ -34,7 +34,12 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
+#include "Engine/Plugin.h"
+#include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 
+#include "Gui/ActionShortcuts.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
@@ -297,7 +302,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
         }
     }
     if ( knob->getHolder() ) {
-        knob->getHolder()->incrHashAndEvaluate(knob->getEvaluateOnChange(), false);
+        knob->getHolder()->invalidateCacheHashAndEvaluate(knob->getEvaluateOnChange(), false);
     }
     Q_EMIT keyInterpolationChanged();
 }
@@ -500,7 +505,7 @@ KnobGui::getScriptNameHtml() const
 }
 
 QString
-KnobGui::toolTip() const
+KnobGui::toolTip(QWidget* w) const
 {
     KnobIPtr knob = getKnob();
     KnobChoicePtr isChoice = toKnobChoice(knob);
@@ -520,6 +525,9 @@ KnobGui::toolTip() const
     } else {
         realTt.append( QString::fromUtf8( isChoice->getHintToolTipFull().c_str() ) );
     }
+
+
+
 
     std::vector<std::string> expressions;
     bool exprAllSame = true;
@@ -570,6 +578,59 @@ KnobGui::toolTip() const
         tt.replace( QString::fromUtf8("<h2>"), QString::fromUtf8("<h2 style=\"font-size:large;\">") );
     }
 
+    bool setToolTip = false;
+    if (!tt.isEmpty() && isViewerUIKnob()) {
+        std::list<std::string> additionalShortcuts = knob->getInViewerContextAdditionalShortcuts();
+        EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+        if (isEffect) {
+            QString pluginShortcutGroup = isEffect->getNode()->getPlugin()->getPluginShortcutGroup();
+
+            QString additionalKeyboardShortcutString;
+            QString thisActionID = QString::fromUtf8( knob->getName().c_str() );
+            std::list<QKeySequence> keybinds = getKeybind( pluginShortcutGroup, thisActionID );
+            if (keybinds.size() > 0) {
+                if (!isMarkdown) {
+                    additionalKeyboardShortcutString += QLatin1String("<br/>");
+                } else {
+                    additionalKeyboardShortcutString += QLatin1String("\n");
+                }
+                additionalKeyboardShortcutString += QString::fromUtf8("<b>Keyboard shortcut: %1</b>");
+            }
+
+            if (keybinds.empty()) {
+                // add a fake %1 because additional shortcuts start at %2
+                additionalKeyboardShortcutString.push_back(QString::fromUtf8("%1"));
+            }
+            tt += additionalKeyboardShortcutString;
+            additionalShortcuts.push_front(thisActionID.toStdString());
+
+            if (w) {
+                QList<QAction*> actions = w->actions();
+                for (QList<QAction*>::iterator it = actions.begin(); it != actions.end(); ++it) {
+                    ToolTipActionShortcut* isToolTipAction = dynamic_cast<ToolTipActionShortcut*>(*it);
+                    if (isToolTipAction) {
+                        w->removeAction(isToolTipAction);
+                        delete isToolTipAction;
+                    }
+                }
+                w->addAction( new ToolTipActionShortcut(pluginShortcutGroup.toStdString(), additionalShortcuts, tt.toStdString(), w));
+                setToolTip = true;
+            }
+            // Ok we set the tooltip with the formating args (%1, %2) on the widget, we can now replace them to make the return value
+            for (std::list<std::string>::iterator it = additionalShortcuts.begin(); it!=additionalShortcuts.end(); ++it) {
+                std::list<QKeySequence> keybinds = getKeybind( pluginShortcutGroup, QString::fromUtf8( it->c_str() ) );
+                QString argValue;
+                if (keybinds.size() > 0) {
+                    argValue = keybinds.front().toString(QKeySequence::NativeText);
+                }
+                tt = tt.arg(argValue);
+            }
+
+        }
+    }
+    if (!setToolTip && w) {
+        w->setToolTip(tt);
+    }
     return tt;
 } // KnobGui::toolTip
 

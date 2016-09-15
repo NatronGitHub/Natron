@@ -83,6 +83,15 @@
 #define kCreateNodeArgsPropNodeSerialization "CreateNodeArgsPropNodeSerialization"
 
 /**
+ * @brief optional x1 std::string property indicating the label of the presets to use to load the node.
+ * The preset label must correspond to a valid label of a a preset file (.nps) that was found by Natron.
+ * The preset label is NOT the filename of the preset file, but the string in the file found next to the key "PresetLabel"
+ * If the preset cannot be found, the presets will not be loaded
+ * Default value - Empty
+ **/
+#define kCreateNodeArgsPropPreset "CreateNodeArgsPropPreset"
+
+/**
  * @brief optional x1 bool property
  * Default Value - false
  * If copy/pasting, we don't want to paste a PyPlug and create copy from the Python script,
@@ -94,15 +103,16 @@
 /**
  * @brief optional x1 bool property
  * Default Value - false
- * When set the node will not be part of the project. The node can be used for internal used, e.g in a Python script.
+ * When set to true the node will not be visible and will not be serialized into the user project.
+ * The node can be used for internal use, e.g in a Python script.
  **/
-#define kCreateNodeArgsPropOutOfProject "CreateNodeArgsPropOutOfProject"
+#define kCreateNodeArgsPropVolatile "CreateNodeArgsPropVolatile"
 
 /**
  * @brief optional x1 bool property
  * Default Value - false
  * If true, the node will not have any GUI created.
- * By default Natron will always create the GUI for a node, except if the property kCreateNodeArgsPropOutOfProject is set to true
+ * By default Natron will always create the GUI for a node, except if the property kCreateNodeArgsPropVolatile is set to true
  **/
 #define kCreateNodeArgsPropNoNodeGUI "CreateNodeArgsPropNoNodeGUI"
 
@@ -117,6 +127,14 @@
 /**
  * @brief optional x1 bool property
  * Default Value - true
+ * If true, if the node is a group, its sub-graph panel will be visible when created. If the property kCreateNodeArgsPropNodeSerialization is set to a non null
+ * serialization, this property has no effect.
+ **/
+#define kCreateNodeArgsPropSubGraphOpened "CreateNodeArgsPropSubGraphOpened"
+
+/**
+ * @brief optional x1 bool property
+ * Default Value - true
  * If true, Natron will try to automatically connect the node to others depending on the user selection. If the property kCreateNodeArgsPropNodeSerialization is set, this has no effect.
  **/
 #define kCreateNodeArgsPropAutoConnect "CreateNodeArgsPropAutoConnect"
@@ -124,7 +142,7 @@
 /**
  * @brief optional x1 bool property
  * Default Value - true
- * If true, Natron will push a undo/redo command to the stack when creating this node. If the property kCreateNodeArgsPropNoNodeGUI is set to true or kCreateNodeArgsPropOutOfProject
+ * If true, Natron will push a undo/redo command to the stack when creating this node. If the property kCreateNodeArgsPropNoNodeGUI is set to true or kCreateNodeArgsPropVolatile
  * is set to true, this property has no effet
  **/
 #define kCreateNodeArgsPropAddUndoRedoCommand "CreateNodeArgsPropAddUndoRedoCommand"
@@ -288,12 +306,14 @@ class CreateNodeArgs
         createProperty<int>(kCreateNodeArgsPropPluginVersion, -1, -1);
         createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
+        createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-        createProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, NodeSerializationPtr());
+        createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
-        createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
+        createProperty<bool>(kCreateNodeArgsPropVolatile, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
+        createProperty<bool>(kCreateNodeArgsPropSubGraphOpened, true);
         createProperty<bool>(kCreateNodeArgsPropAutoConnect, true);
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);

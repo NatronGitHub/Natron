@@ -36,6 +36,8 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -107,6 +109,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
 
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
 
@@ -126,7 +129,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
             if (isInt) {
                 args->setPropertyN<int>(prop, isInt->getValues(), fail);
             } else if (isBool) {
-                if (prop == kCreateNodeArgsPropOutOfProject) {
+                if (prop == kCreateNodeArgsPropVolatile) {
                     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
                     skipNoNodeGuiProp = true;
                 } else if (skipNoNodeGuiProp && prop == kCreateNodeArgsPropNoNodeGUI) {
@@ -233,6 +236,12 @@ App::timelineGetRightBound() const
     getInternalApp()->getFrameRange(&left, &right);
 
     return right;
+}
+
+void
+App::timelineGoTo(int frame)
+{
+    getInternalApp()->getTimeLine()->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 }
 
 AppSettings::AppSettings(const SettingsPtr& settings)
@@ -378,6 +387,46 @@ App::renderInternal(bool forceBlocking,
     getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
+void
+App::redrawViewer(Effect* viewerNode)
+{
+    if (!viewerNode) {
+        return;
+    }
+    NodePtr internalNode = viewerNode->getInternalNode();
+    if (!internalNode || !internalNode->isActivated()) {
+        return;
+    }
+    ViewerNodePtr viewer = internalNode->isEffectViewerNode();
+    if (!viewer) {
+        return;
+    }
+    viewer->redrawViewer();
+}
+
+void
+App::refreshViewer(Effect* viewerNode, bool useCache)
+{
+    if (!viewerNode) {
+        return;
+    }
+    NodePtr internalNode = viewerNode->getInternalNode();
+    if (!internalNode || !internalNode->isActivated()) {
+        return;
+    }
+    ViewerNodePtr viewer = internalNode->isEffectViewerNode();
+    if (!viewer) {
+        return;
+    }
+    ViewerInstancePtr instance = viewer->getInternalViewerNode();
+    if (useCache) {
+        instance->renderCurrentFrame(false);
+    } else {
+        instance->forceFullComputationOnNextFrame();
+        instance->renderCurrentFrame(false);
+    }
+}
+
 Param*
 App::getProjectParam(const QString& name) const
 {
@@ -399,7 +448,7 @@ App::writeToScriptEditor(const QString& message)
 void
 App::addFormat(const QString& formatSpec)
 {
-    if ( !getInternalApp()->getProject()->addFormat( formatSpec.toStdString() ) ) {
+    if ( !getInternalApp()->getProject()->addDefaultFormat( formatSpec.toStdString() ) ) {
         getInternalApp()->appendToScriptEditor( formatSpec.toStdString() );
     }
 }

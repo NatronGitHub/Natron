@@ -72,27 +72,11 @@ public:
     virtual void setPosition(double x, double y) = 0;
 
     /**
-     * @brief Get the position of top left corner of the node in the nodegraph.
-     * To retrieve the position of the center, you must add w / 2 and h / 2 respectively
-     * to x and y. w and h can be retrieved with getSize()
-     **/
-    virtual void getPosition(double *x, double* y) const = 0;
-
-    /**
-     * @brief Get the size of the bounding box of the node in the nodegraph
-     **/
-    virtual void getSize(double* w, double* h) const = 0;
-
-    /**
      * @brief Set the size of the bounding box of the node in the nodegraph
      **/
     virtual void setSize(double w, double h) = 0;
+    
     virtual void exportGroupAsPythonScript() = 0;
-
-    /**
-     * @brief Get the colour of the node as it appears on the nodegraph.
-     **/
-    virtual void getColor(double* r, double *g, double* b) const = 0;
 
     /**
      * @brief Set the colour of the node as it appears on the nodegraph.
@@ -100,10 +84,12 @@ public:
     virtual void setColor(double r, double g, double b) = 0;
 
     /**
-     * @brief Get the suggested overlay colour
+     * @brief set the suggested overlay colour
      **/
-    virtual bool getOverlayColor(double* r, double* g, double* b) const = 0;
+    virtual void setOverlayColor(double r, double g, double b) = 0;
 
+    virtual bool isOverlayLocked() const = 0;
+    
     /**
      * @brief Add a default viewer overlay
      **/

@@ -72,6 +72,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/TabWidget.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+
 using std::make_pair;
 using std::cout;
 using std::endl;
@@ -162,12 +164,13 @@ struct CurveEditorPrivate
     }
 };
 
-CurveEditor::CurveEditor(Gui* gui,
+CurveEditor::CurveEditor(const std::string& scriptName,
+                         Gui* gui,
                          const TimeLinePtr& timeline,
                          QWidget *parent)
     : QWidget(parent)
     , CurveSelection()
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new CurveEditorPrivate() )
 {
     setObjectName( QString::fromUtf8("CurveEditor") );
@@ -1097,7 +1100,7 @@ RotoItemEditorContext::RotoItemEditorContext(QTreeWidget* tree,
                                              RotoCurveEditorContext* context)
     : _imp( new RotoItemEditorContextPrivate(widget, curve, context) )
 {
-    const std::list<KnobIPtr >& knobs = curve->getKnobs();
+    const KnobsVec& knobs = curve->getKnobs();
 
     _imp->nameItem = new QTreeWidgetItem( _imp->context->getItem() );
     QString name = QString::fromUtf8( _imp->curve->getLabel().c_str() );
@@ -1108,7 +1111,7 @@ RotoItemEditorContext::RotoItemEditorContext(QTreeWidget* tree,
     RotoContextPtr roto = context->getNode()->getNode()->getRotoContext();
     bool hasAtLeast1KnobWithACurveShown = false;
 
-    for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         createElementsForKnob(_imp->nameItem, KnobGuiPtr(), *it, widget, tree, roto, _imp->knobs, &hasAtLeast1KnobWithACurveShown);
     }
 }
@@ -1534,11 +1537,10 @@ RotoCurveEditorContext::findElement(const KnobGuiPtr& knob,
 void
 CurveEditor::keyPressEvent(QKeyEvent* e)
 {
-    Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     bool accept = true;
 
-    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
+    if (key == Qt::Key_F && modCASIsNone(e)) {
         _imp->filterEdit->setFocus();
     } else {
         accept = false;
@@ -1697,6 +1699,24 @@ void
 CurveEditor::onExprLineEditFinished()
 {
     setSelectedCurveExpression( _imp->knobLineEdit->text() );
+}
+
+bool
+CurveEditor::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
+{
+    if (!_imp->curveWidget->hasDrawnOnce()) {
+        return false;
+    }
+    _imp->curveWidget->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+    return true;
+
+}
+
+bool
+CurveEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
+{
+    _imp->curveWidget->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

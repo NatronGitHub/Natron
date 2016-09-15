@@ -32,6 +32,8 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset
 
+#include <ofxNatron.h>
+
 #include <boost/scoped_ptr.hpp>
 
 #include <QtCore/QLineF>
@@ -63,10 +65,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OSGLContext.h"
 #include "Engine/ImageParams.h"
 #include "Engine/ImageLocker.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContextSerialization.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
@@ -75,6 +75,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
+
+#include "Serialization/RotoLayerSerialization.h"
+#include "Serialization/RotoContextSerialization.h"
+#include "Serialization/NodeSerialization.h"
+
 
 #define kMergeOFXParamOperation "operation"
 #define kMergeOFXParamInvertMask "maskInvert"
@@ -126,30 +131,6 @@ RotoContext::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
     }
 }
 
-NodePtr
-RotoContext::getRotoPaintBottomMergeNode() const
-{
-    std::list<RotoDrawableItemPtr > items = getCurvesByRenderOrder();
-
-    if ( items.empty() ) {
-        return NodePtr();
-    }
-
-    int bop;
-    if ( isRotoPaintTreeConcatenatableInternal(items, &bop) ) {
-        QMutexLocker k(&_imp->rotoContextMutex);
-        if ( !_imp->globalMergeNodes.empty() ) {
-            return _imp->globalMergeNodes.front();
-        }
-    }
-
-    const RotoDrawableItemPtr& firstStrokeItem = items.back();
-    assert(firstStrokeItem);
-    NodePtr bottomMerge = firstStrokeItem->getMergeNode();
-    assert(bottomMerge);
-
-    return bottomMerge;
-}
 
 void
 RotoContext::getRotoPaintTreeNodes(NodesList* nodes) const
@@ -250,6 +231,7 @@ RotoContext::addLayerInternal(bool declarePython)
         }
 
         item.reset( new RotoLayer( this_shared, name, RotoLayerPtr() ) );
+        item->initializeKnobsPublic();
         if (parentLayer) {
             parentLayer->addItem(item, declarePython);
             indexInLayer = parentLayer->getItems().size() - 1;
@@ -478,7 +460,6 @@ RotoContext::makeStroke(RotoStrokeType type,
 
     {
         QMutexLocker l(&_imp->rotoContextMutex);
-        ++_imp->age; // increase age
 
         RotoLayerPtr deepestLayer = _imp->findDeepestSelectedLayer();
 
@@ -936,77 +917,59 @@ RotoContext::isEmpty() const
 }
 
 void
-RotoContext::save(RotoContextSerialization* obj) const
+RotoContext::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
-    QMutexLocker l(&_imp->rotoContextMutex);
+    SERIALIZATION_NAMESPACE::RotoContextSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RotoContextSerialization*>(obj);
+    if (!s) {
+        return;
+    }
 
-    obj->_autoKeying = _imp->autoKeying;
-    obj->_featherLink = _imp->featherLink;
-    obj->_rippleEdit = _imp->rippleEdit;
+    QMutexLocker l(&_imp->rotoContextMutex);
 
     ///There must always be the base layer
     assert( !_imp->layers.empty() );
 
     ///Serializing this layer will recursively serialize everything
-    _imp->layers.front()->save( boost::dynamic_pointer_cast<RotoItemSerialization>(obj->_baseLayer) );
-
-    ///the age of the context is not serialized as the images are wiped from the cache anyway
-
-    ///Serialize the selection
-    for (std::list<RotoItemPtr >::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        obj->_selectedItems.push_back( (*it)->getScriptName() );
-    }
+    _imp->layers.front()->toSerialization(&s->_baseLayer);
 }
 
-static void
-linkItemsKnobsRecursively(RotoContext* ctx,
-                          const RotoLayerPtr & layer)
+
+void
+RotoContext::resetToDefault()
 {
-    const RotoItems & items = layer->getItems();
+    assert(_imp->layers.size() == 1);
+    RotoLayerPtr baseLayer = _imp->layers.front();
+    RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther;
+    removeItemRecursively(baseLayer, reason);
+    createBaseLayer();
+    Q_EMIT selectionChanged( (int)reason );
 
-    for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
-        BezierPtr isBezier = toBezier(*it);
-        RotoLayerPtr isLayer = toRotoLayer(*it);
 
-        if (isBezier) {
-            ctx->select(isBezier, RotoItem::eSelectionReasonOther);
-        } else if (isLayer) {
-            linkItemsKnobsRecursively(ctx, isLayer);
-        }
-    }
 }
 
 void
-RotoContext::load(const RotoContextSerialization & obj)
+RotoContext::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
+    const SERIALIZATION_NAMESPACE::RotoContextSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoContextSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+
     assert( QThread::currentThread() == qApp->thread() );
     ///no need to lock here, when this is called the main-thread is the only active thread
-
+    
     _imp->isCurrentlyLoading = true;
-    _imp->autoKeying = obj._autoKeying;
-    _imp->featherLink = obj._featherLink;
-    _imp->rippleEdit = obj._rippleEdit;
 
     for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        it->lock()->setDefaultAllDimensionsEnabled(false);
+        it->lock()->setAllDimensionsEnabled(false);
     }
 
     assert(_imp->layers.size() == 1);
 
     RotoLayerPtr baseLayer = _imp->layers.front();
 
-    baseLayer->load(*(obj._baseLayer));
+    baseLayer->fromSerialization(s->_baseLayer);
 
-    for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it != obj._selectedItems.end(); ++it) {
-        RotoItemPtr item = getItemByName(*it);
-        BezierPtr isBezier = toBezier(item);
-        RotoLayerPtr isLayer = toRotoLayer(item);
-        if (isBezier) {
-            select(isBezier, RotoItem::eSelectionReasonOther);
-        } else if (isLayer) {
-            linkItemsKnobsRecursively(this, isLayer);
-        }
-    }
     _imp->isCurrentlyLoading = false;
     refreshRotoPaintTree();
 }
@@ -1168,8 +1131,8 @@ RotoContext::selectInternal(const RotoItemPtr & item)
             }
         }
 
-        const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const KnobsVec& drawableKnobs = isDrawable->getKnobs();
+        for (KnobsVec::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             for (std::list<KnobIWPtr >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
                 KnobIPtr thisKnob = it2->lock();
                 if ( thisKnob->getName() == (*it)->getName() ) {
@@ -1179,7 +1142,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                     //Slave internal knobs of the bezier
                     assert( (*it)->getDimension() == thisKnob->getDimension() );
                     for (int i = 0; i < (*it)->getDimension(); ++i) {
-                        (*it)->slaveTo(i, thisKnob, i);
+                        (*it)->slaveTo(i, thisKnob, i, true);
                     }
 
                     QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
@@ -1324,8 +1287,8 @@ RotoContext::deselectInternal(RotoItemPtr b)
     if (isDrawable) {
         ///first-off set the context knobs to the value of this bezier
 
-        const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const KnobsVec& drawableKnobs = isDrawable->getKnobs();
+        for (KnobsVec::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             for (std::list<KnobIWPtr >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
                 KnobIPtr knob = it2->lock();
                 if ( knob->getName() == (*it)->getName() ) {
@@ -1590,9 +1553,7 @@ RotoContext::removeAnimationOnSelectedCurves()
             addOrRemoveKeyRecursively(isLayer, time, false, true);
         }
     }
-    if ( !_imp->selectedItems.empty() ) {
-        evaluateChange();
-    }
+
 }
 
 void
@@ -1873,32 +1834,7 @@ RotoContext::findDeepestSelectedLayer() const
     return _imp->findDeepestSelectedLayer();
 }
 
-void
-RotoContext::incrementAge()
-{
-    _imp->incrementRotoAge();
-}
 
-void
-RotoContext::evaluateChange()
-{
-    _imp->incrementRotoAge();
-    getNode()->getEffectInstance()->incrHashAndEvaluate(true, false);
-}
-
-void
-RotoContext::evaluateChange_noIncrement()
-{
-    //Used for the rotopaint to optimize the portion to render (render only the bbox of the last tick of the mouse move)
-    std::list<ViewerInstancePtr> viewers;
-
-    getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
-         it != viewers.end();
-         ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-}
 
 void
 RotoContext::clearViewersLastRenderedStrokes()
@@ -1911,14 +1847,6 @@ RotoContext::clearViewersLastRenderedStrokes()
          ++it) {
         (*it)->clearLastRenderedImage();
     }
-}
-
-U64
-RotoContext::getAge()
-{
-    QMutexLocker l(&_imp->rotoContextMutex);
-
-    return _imp->age;
 }
 
 void
@@ -1966,13 +1894,6 @@ RotoContext::onItemLabelChanged(const RotoItemPtr& item)
     Q_EMIT itemLabelChanged(item);
 }
 
-void
-RotoContext::onItemKnobChanged()
-{
-    emitRefreshViewerOverlays();
-    evaluateChange();
-}
-
 std::string
 RotoContext::getRotoNodeName() const
 {
@@ -2003,38 +1924,6 @@ RotoContext::getBeziersKeyframeTimes(std::list<double> *times) const
     }
 }
 
-static void
-dequeueActionForLayer(const RotoLayerPtr& layer,
-                      bool *evaluate)
-{
-    RotoItems items = layer->getItems_mt_safe();
-
-    for (RotoItems::iterator it = items.begin(); it != items.end(); ++it) {
-        BezierPtr isBezier = toBezier(*it);
-        RotoLayerPtr isLayer = toRotoLayer(*it);
-        if (isBezier) {
-            *evaluate = *evaluate | isBezier->dequeueGuiActions();
-        } else if (isLayer) {
-            dequeueActionForLayer(isLayer, evaluate);
-        }
-    }
-}
-
-void
-RotoContext::dequeueGuiActions()
-{
-    bool evaluate = false;
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        if ( !_imp->layers.empty() ) {
-            dequeueActionForLayer(_imp->layers.front(), &evaluate);
-        }
-    }
-
-    if (evaluate) {
-        evaluateChange();
-    }
-}
 
 KnobChoicePtr
 RotoContext::getMotionBlurTypeKnob() const
@@ -2104,19 +1993,28 @@ RotoContext::removeItemAsPythonField(const RotoItemPtr& item)
     }
 }
 
+static void setOperationKnob(const NodePtr& node, int blendingOperator)
+{
+    KnobIPtr mergeOperatorKnob = node->getKnobByName(kMergeOFXParamOperation);
+    KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
+    if (mergeOp) {
+        mergeOp->setValue(blendingOperator);
+    }
+}
+
 NodePtr
-RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
+RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex)
 {
     {
         QMutexLocker k(&_imp->rotoContextMutex);
         for (NodesList::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
             const std::vector<NodeWPtr > &inputs = (*it)->getInputs();
 
-            //Merge node goes like this: B, A, Mask, A2, A3, A4 ...
+            // Merge node goes like this: B, A, Mask, A2, A3, A4 ...
             assert( inputs.size() >= 3 && (*it)->getEffectInstance()->isInputMask(2) );
             if ( !inputs[1].lock() ) {
                 *availableInputIndex = 1;
-
+                setOperationKnob(*it, blendingOperator);
                 return *it;
             }
 
@@ -2124,14 +2022,18 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
             for (std::size_t i = 3; i < inputs.size(); ++i) {
                 if ( !inputs[i].lock() ) {
                     *availableInputIndex = (int)i;
-
+                    setOperationKnob(*it, blendingOperator);
                     return *it;
                 }
             }
         }
     }
 
+
     NodePtr node = getNode();
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+
+
     //We must create a new merge node
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
 
@@ -2140,19 +2042,20 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     fixedNamePrefix.append( QLatin1Char('_') );
 
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE,  NodeCollectionPtr() );
+    CreateNodeArgs args( PLUGINID_OFX_MERGE,  rotoPaintEffect );
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
     
     NodePtr mergeNode = node->getApp()->createNode(args);
     if (!mergeNode) {
         return mergeNode;
     }
-    mergeNode->setUseAlpha0ToConvertFromRGBToRGBA(true);
     if ( getNode()->isDuringPaintStrokeCreation() ) {
         mergeNode->setWhileCreatingPaintStroke(true);
     }
+
+
 
     {
         // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
@@ -2164,6 +2067,28 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
         }
     }
     *availableInputIndex = 1;
+    setOperationKnob(mergeNode, blendingOperator);
+
+    {
+        // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
+        KnobBoolPtr rotoPaintRGBA[4];
+        KnobBoolPtr mergeRGBA[4];
+        rotoPaintEffect->getEnabledChannelKnobs(&rotoPaintRGBA[0], &rotoPaintRGBA[1], &rotoPaintRGBA[2], &rotoPaintRGBA[3]);
+        mergeRGBA[0] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsR));
+        mergeRGBA[1] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsG));
+        mergeRGBA[2] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsB));
+        mergeRGBA[3] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsA));
+        for (int i = 0; i < 4; ++i) {
+            mergeRGBA[i]->slaveTo(0, rotoPaintRGBA[i], 0);
+        }
+
+        // Link mix
+        KnobIPtr rotoPaintMix = rotoPaintEffect->getKnobByName(kHostMixingKnobName);
+        KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
+        mergeMix->slaveTo(0, rotoPaintMix, 0);
+
+    }
+
 
     QMutexLocker k(&_imp->rotoContextMutex);
     _imp->globalMergeNodes.push_back(mergeNode);
@@ -2179,6 +2104,53 @@ RotoContext::canConcatenatedRotoPaintTree() const
     return isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
 }
 
+bool
+RotoContext::isAnimated() const
+{
+    std::list<RotoDrawableItemPtr> items = getCurvesByRenderOrder();
+    for (std::list<RotoDrawableItemPtr>::iterator it = items.begin(); it!=items.end(); ++it) {
+
+        const KnobsVec& knobs = (*it)->getKnobs();
+        for (KnobsVec::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
+            for (int i = 0; i < (*it2)->getDimension(); ++i) {
+                if ((*it2)->isAnimated(i)) {
+                    return true;
+                }
+            }
+        }
+
+
+        BezierPtr isBezier = toBezier(*it);
+        if (isBezier) {
+            int keys = isBezier->getKeyframesCount();
+            if (keys > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
+{
+    if (treeOutputNode->getInput(0) != noOpNode) {
+        treeOutputNode->disconnectInput(0);
+        treeOutputNode->connectInput(noOpNode, 0);
+    }
+    if (noOpNode->getInput(0) != premultNode) {
+        noOpNode->disconnectInput(0);
+        noOpNode->connectInput(premultNode, 0);
+    }
+    if (premultNode->getInput(0) != mergeNode) {
+        premultNode->disconnectInput(0);
+        premultNode->connectInput(mergeNode, 0);
+    }
+    // Connect the mask of the merge to the Mask input
+    mergeNode->disconnectInput(2);
+    mergeNode->connectInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
+
+}
+
 void
 RotoContext::refreshRotoPaintTree()
 {
@@ -2187,6 +2159,8 @@ RotoContext::refreshRotoPaintTree()
     }
 
     std::list<RotoDrawableItemPtr > items = getCurvesByRenderOrder();
+
+    // Check if the tree can be concatenated into a single merge node
     int blendingOperator;
     bool canConcatenate = isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     NodePtr globalMerge;
@@ -2196,17 +2170,21 @@ RotoContext::refreshRotoPaintTree()
         QMutexLocker k(&_imp->rotoContextMutex);
         mergeNodes = _imp->globalMergeNodes;
     }
-    //ensure that all global merge nodes are disconnected
+
+    // Ensure that all global merge nodes are disconnected
     for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
         int maxInputs = (*it)->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
         }
     }
-    globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+    globalMerge = getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
+    assert(rotoPaintEffect);
 
     if (canConcatenate) {
-        NodePtr rotopaintNodeInput = getNode()->getInput(0);
+        NodePtr rotopaintNodeInput = rotoPaintEffect->getInternalInputNode(0);
         //Connect the rotopaint node input to the B input of the Merge
         if (rotopaintNodeInput) {
             globalMerge->connectInput(rotopaintNodeInput, 0);
@@ -2219,17 +2197,13 @@ RotoContext::refreshRotoPaintTree()
         }
     }
 
+    // Refresh each item separately
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
         (*it)->refreshNodesConnections(canConcatenate);
 
         if (canConcatenate) {
-            {
-                KnobIPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
-                KnobChoicePtr mergeOp = toKnobChoice( mergeOperatorKnob );
-                if (mergeOp) {
-                    mergeOp->setValue(blendingOperator);
-                }
-            }
+
+            // If we concatenate the tree, connect the global merge to the effect
 
             NodePtr effectNode = (*it)->getEffectNode();
             assert(effectNode);
@@ -2237,8 +2211,8 @@ RotoContext::refreshRotoPaintTree()
             //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
             globalMerge->connectInput(effectNode, globalMergeIndex);
 
-            ///Refresh for next node
-            NodePtr nextMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+            // Refresh for next node
+            NodePtr nextMerge = getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
             if (nextMerge != globalMerge) {
                 assert( !nextMerge->getInput(0) );
                 nextMerge->connectInput(globalMerge, 0);
@@ -2246,6 +2220,47 @@ RotoContext::refreshRotoPaintTree()
             }
         }
     }
+
+    // Default to noop node as bottom of the tree
+    NodePtr premultNode = rotoPaintEffect->getPremultNode();
+    NodePtr noOpNode = rotoPaintEffect->getMetadataFixerNode();
+    NodePtr treeOutputNode = rotoPaintEffect->getOutputNode(false);
+    if (!premultNode || !noOpNode || !treeOutputNode) {
+        return;
+    }
+
+    if (canConcatenate) {
+        connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.front());
+    } else {
+        if (!items.empty()) {
+            // Connect noop to the first item merge node
+            connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.front()->getMergeNode());
+
+        } else {
+            NodePtr treeInputNode0 = rotoPaintEffect->getInternalInputNode(0);
+            if (treeOutputNode->getInput(0) != treeInputNode0) {
+                treeOutputNode->disconnectInput(0);
+                treeOutputNode->connectInput(treeInputNode0, 0);
+            }
+        }
+    }
+
+    {
+        // Make sure the premult node has its RGB checkbox checked
+        premultNode->getEffectInstance()->beginChanges();
+        KnobBoolPtr process[3];
+        process[0] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessR));
+        process[1] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessG));
+        process[2] = toKnobBool(premultNode->getKnobByName(kNatronOfxParamProcessB));
+        for (int i = 0; i < 3; ++i) {
+            assert(process[i]);
+            process[i]->setValue(true);
+        }
+        premultNode->getEffectInstance()->endChanges();
+
+    }
+
+
 } // RotoContext::refreshRotoPaintTree
 
 void

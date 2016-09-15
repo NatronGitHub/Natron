@@ -54,13 +54,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoItemSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Serialization/RotoItemSerialization.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -79,7 +80,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
-
+#define kParamGloballyEnabled "enabled"
+#define kParamGloballyEnabledLabel "Enabled"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -106,10 +108,13 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 static RotoMetaTypesRegistration registration;
+
 RotoItem::RotoItem(const RotoContextPtr& context,
                    const std::string & name,
                    RotoLayerPtr parent)
-    : itemMutex()
+    : KnobHolder(context->getNode()->getApp())
+    , SERIALIZATION_NAMESPACE::SerializableObjectBase()
+    , itemMutex()
     , _imp( new RotoItemPrivate(context, name, parent) )
 {
 }
@@ -161,8 +166,7 @@ void
 RotoItem::setGloballyActivated_recursive(bool a)
 {
     {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = a;
+        _imp->globallyActivated.lock()->setValue(a);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems & children = layer->getItems();
@@ -170,6 +174,19 @@ RotoItem::setGloballyActivated_recursive(bool a)
                 (*it)->setGloballyActivated_recursive(a);
             }
         }
+    }
+    invalidateCacheHashAndEvaluate(true, false);
+}
+
+void
+RotoItem::initializeKnobs()
+{
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(shared_from_this(), tr(kParamGloballyEnabledLabel));
+        param->setName(kParamGloballyEnabled);
+        param->setDefaultValue(true);
+        param->setSecret(true);
+        _imp->globallyActivated = param;
     }
 }
 
@@ -182,25 +199,16 @@ RotoItem::setGloballyActivated(bool a,
     if (setChildren) {
         setGloballyActivated_recursive(a);
     } else {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = a;
+        _imp->globallyActivated.lock()->setValue(a);
     }
-    RotoContextPtr c = _imp->context.lock();
-    if (c) {
-        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
-        if (isDrawable) {
-            isDrawable->incrementNodesAge();
-        }
-        c->evaluateChange();
-    }
+    invalidateCacheHashAndEvaluate(true, false);
 }
 
 bool
 RotoItem::isGloballyActivated() const
 {
-    QMutexLocker l(&itemMutex);
-
-    return _imp->globallyActivated;
+    KnobBoolPtr knob = _imp->globallyActivated.lock();
+    return knob ? knob->getValue() : true;
 }
 
 static bool
@@ -224,7 +232,7 @@ RotoItem::isDeactivatedRecursive() const
     RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
-        if (!_imp->globallyActivated) {
+        if (!_imp->globallyActivated.lock()->getValue()) {
             return true;
         }
         parent = _imp->parentLayer.lock();
@@ -246,7 +254,7 @@ RotoItem::setLocked_recursive(bool locked,
             QMutexLocker m(&itemMutex);
             _imp->locked = locked;
         }
-        getContext()->onItemLockedChanged(shared_from_this(), reason);
+        getContext()->onItemLockedChanged(toRotoItem(shared_from_this()), reason);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems & children = layer->getItems();
@@ -269,7 +277,7 @@ RotoItem::setLocked(bool l,
             QMutexLocker m(&itemMutex);
             _imp->locked = l;
         }
-        getContext()->onItemLockedChanged(shared_from_this(), reason);
+        getContext()->onItemLockedChanged(toRotoItem(shared_from_this()), reason);
     } else {
         setLocked_recursive(l, reason);
     }
@@ -382,7 +390,7 @@ RotoItem::setScriptName(const std::string & name)
                 c->changeItemScriptName(oldFullName, newFullName);
             }
         }
-        c->onItemScriptNameChanged( shared_from_this() );
+        c->onItemScriptNameChanged( toRotoItem(shared_from_this()) );
     }
 
     return true;
@@ -439,38 +447,45 @@ RotoItem::setLabel(const std::string& label)
     RotoContextPtr c = _imp->context.lock();
 
     if (c) {
-        c->onItemLabelChanged( shared_from_this() );
+        c->onItemLabelChanged( toRotoItem(shared_from_this()) );
     }
 }
 
 void
-RotoItem::save(const RotoItemSerializationPtr& obj) const
+RotoItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) 
 {
+
+    SERIALIZATION_NAMESPACE::RotoItemSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::RotoItemSerialization*>(obj);
+    if (!serialization) {
+        return;
+    }
     RotoLayerPtr parent;
     {
         QMutexLocker l(&itemMutex);
-        obj->activated = _imp->globallyActivated;
-        obj->name = _imp->scriptName;
-        obj->label = _imp->label;
-        obj->locked = _imp->locked;
+        serialization->name = _imp->scriptName;
+        serialization->label = _imp->label;
+        serialization->locked = _imp->locked;
         parent = _imp->parentLayer.lock();
     }
 
     if (parent) {
-        obj->parentLayerName = parent->getScriptName();
+        serialization->parentLayerName = parent->getScriptName();
     }
 }
 
 void
-RotoItem::load(const RotoItemSerialization &obj)
+RotoItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase &obj)
 {
+    const SERIALIZATION_NAMESPACE::RotoItemSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::RotoItemSerialization*>(&obj);
+    if (!serialization) {
+        return;
+    }
     {
         QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = obj.activated;
-        _imp->locked = obj.locked;
-        _imp->scriptName = obj.name;
-        if ( !obj.label.empty() ) {
-            _imp->label = obj.label;
+        _imp->locked = serialization->locked;
+        _imp->scriptName = serialization->name;
+        if ( !serialization->label.empty() ) {
+            _imp->label = serialization->label;
         } else {
             _imp->label = _imp->scriptName;
         }
@@ -500,7 +515,7 @@ RotoItem::load(const RotoItemSerialization &obj)
             _imp->scriptName = name;
         }
     }
-    RotoLayerPtr parent = getContext()->getLayerByName(obj.parentLayerName);
+    RotoLayerPtr parent = getContext()->getLayerByName(serialization->parentLayerName);
 
     {
         QMutexLocker l(&itemMutex);
@@ -572,8 +587,9 @@ RotoItem::getPreviousItemInLayer() const
     if (!layer) {
         return RotoItemPtr();
     }
-
-    return getPreviousInLayer( layer, shared_from_this() );
+    RotoItemConstPtr thisShared = toRotoItem(shared_from_this());
+    return getPreviousInLayer( layer, thisShared);
 }
+
 
 NATRON_NAMESPACE_EXIT;

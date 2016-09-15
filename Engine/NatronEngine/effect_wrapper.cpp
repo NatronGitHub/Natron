@@ -185,6 +185,29 @@ static PyObject* Sbk_EffectFunc_canConnectInput(PyObject* self, PyObject* args)
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_clearViewerUIParameters(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // clearViewerUIParameters()
+            cppSelf->clearViewerUIParameters();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
 {
     ::Effect* cppSelf = 0;
@@ -1111,6 +1134,83 @@ static PyObject* Sbk_EffectFunc_getUserPageParam(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_insertParamInViewerUI(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.insertParamInViewerUI(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.insertParamInViewerUI(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:insertParamInViewerUI", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: insertParamInViewerUI(Param*,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // insertParamInViewerUI(Param*,int)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+            overloadId = 0; // insertParamInViewerUI(Param*,int)
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_insertParamInViewerUI_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "index");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.insertParamInViewerUI(): got multiple values for keyword argument 'index'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
+                    goto Sbk_EffectFunc_insertParamInViewerUI_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1 = -1;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // insertParamInViewerUI(Param*,int)
+            cppSelf->insertParamInViewerUI(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_insertParamInViewerUI_TypeError:
+        const char* overloads[] = {"NatronEngine.Param, int = -1", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.insertParamInViewerUI", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_EffectFunc_isNodeSelected(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1187,6 +1287,50 @@ static PyObject* Sbk_EffectFunc_isWriterNode(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_removeParamFromViewerUI(PyObject* self, PyObject* pyArg)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: removeParamFromViewerUI(Param*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArg)))) {
+        overloadId = 0; // removeParamFromViewerUI(Param*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_removeParamFromViewerUI_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // removeParamFromViewerUI(Param*)
+            cppSelf->removeParamFromViewerUI(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_removeParamFromViewerUI_TypeError:
+        const char* overloads[] = {"NatronEngine.Param", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.removeParamFromViewerUI", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_EffectFunc_setColor(PyObject* self, PyObject* args)
@@ -1544,6 +1688,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"addUserPlane", (PyCFunction)Sbk_EffectFunc_addUserPlane, METH_VARARGS},
     {"beginChanges", (PyCFunction)Sbk_EffectFunc_beginChanges, METH_NOARGS},
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
+    {"clearViewerUIParameters", (PyCFunction)Sbk_EffectFunc_clearViewerUIParameters, METH_NOARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
@@ -1569,9 +1714,11 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getSize", (PyCFunction)Sbk_EffectFunc_getSize, METH_NOARGS},
     {"getTrackerContext", (PyCFunction)Sbk_EffectFunc_getTrackerContext, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
+    {"insertParamInViewerUI", (PyCFunction)Sbk_EffectFunc_insertParamInViewerUI, METH_VARARGS|METH_KEYWORDS},
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"isReaderNode", (PyCFunction)Sbk_EffectFunc_isReaderNode, METH_NOARGS},
     {"isWriterNode", (PyCFunction)Sbk_EffectFunc_isWriterNode, METH_NOARGS},
+    {"removeParamFromViewerUI", (PyCFunction)Sbk_EffectFunc_removeParamFromViewerUI, METH_O},
     {"setColor", (PyCFunction)Sbk_EffectFunc_setColor, METH_VARARGS},
     {"setLabel", (PyCFunction)Sbk_EffectFunc_setLabel, METH_O},
     {"setPagesOrder", (PyCFunction)Sbk_EffectFunc_setPagesOrder, METH_O},

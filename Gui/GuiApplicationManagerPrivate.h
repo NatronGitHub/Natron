@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
-#include "Gui/NodeClipBoard.h"
+#include "Serialization/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/PreviewThread.h"
 
@@ -79,7 +79,7 @@ struct GuiApplicationManagerPrivate
     bool _shortcutsChangedVersion;
     QString _fontFamily;
     int _fontSize;
-    NodeClipBoard _nodeCB;
+    SERIALIZATION_NAMESPACE::NodeClipBoard _nodeCB;
     std::list<PythonUserCommand> pythonCommands;
 
     ///Used temporarily to store startup args while we load fonts
@@ -133,15 +133,14 @@ struct GuiApplicationManagerPrivate
                           const std::string & description,
                           const Qt::KeyboardModifiers & modifiers, Qt::MouseButton button);
 
-    PluginGroupNodePtr  findPluginToolButtonInternal(const std::list<PluginGroupNodePtr>& children,
-                                                                     const PluginGroupNodePtr& parent,
-                                                                     const QStringList & grouping,
-                                                                     const QString & name,
-                                                                     const QStringList & groupingIcon,
-                                                                     const QString & iconPath,
-                                                                     int major,
-                                                                     int minor,
-                                                                     bool isUserCreatable);
+    /**
+     * @brief Finds and existing (or create) PluginGroupNode that matches the given grouping, e.g: "Color/Math" and plugin
+     **/
+    PluginGroupNodePtr  findPluginToolButtonOrCreateInternal(const std::list<PluginGroupNodePtr>& children,
+                                                             const PluginGroupNodePtr& parent,
+                                                             const PluginPtr& plugin,
+                                                             const QStringList& grouping,
+                                                             const QStringList& groupingIcon);
 
     void updateFontConfigCache();
 };

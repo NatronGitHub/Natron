@@ -204,22 +204,15 @@ public Q_SLOTS:
 
     void updateFontColorIcon(const QColor & color);
 
-    ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
-    ///of the font size.
-    static void parseFont(const QString & s, QFont* f, QColor* color);
-    static void findReplaceColorName(QString& text, const QColor& color);
-    static QString makeFontTag(const QString& family, int fontSize, const QColor& color);
-    static QString decorateTextWithFontTag(const QString& family, int fontSize, const QColor& color, const QString& text);
-    static QString removeNatronHtmlTag(QString text);
-    static QString getNatronHtmlTagContent(QString text);
+    static bool parseFont(const QString & s, QFont* f, QColor* color);
 
-    /**
-     * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
-     * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
-     **/
-    static QString removeAutoAddedHtmlTags(QString text, bool removeNatronTag = true);
+Q_SIGNALS:
+
+    void fontPropertyChanged();
 
 private:
+
+    QFont makeFontFromState() const;
 
     virtual bool shouldAddStretch() const OVERRIDE { return false; }
 
@@ -237,16 +230,6 @@ private:
 
     void mergeFormat(const QTextCharFormat & fmt);
 
-    void restoreTextInfoFromString();
-
-
-    QString addHtmlTags(QString text) const;
-
-    /**
-     * @brief Removes the prepending and appending '\n' and ' ' from str except for the last character.
-     **/
-    static QString stripWhitespaces(const QString & str);
-
 private:
     KnobLineEdit *_lineEdit; //< if single line
     Label* _label; // if label and the actual label is an icon
@@ -260,11 +243,6 @@ private:
     Button* _setItalicButton;
     SpinBox* _fontSizeSpinBox;
     Button* _fontColorButton;
-    int _fontSize;
-    bool _boldActivated;
-    bool _italicActivated;
-    QString _fontFamily;
-    QColor _fontColor;
     KnobStringWPtr _knob;
 };
 

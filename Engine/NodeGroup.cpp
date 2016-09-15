@@ -38,6 +38,8 @@
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
@@ -57,7 +59,9 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 10
+#include "Serialization/NodeSerialization.h"
+
+#define NATRON_PYPLUG_EXPORTER_VERSION 11
 
 NATRON_NAMESPACE_ENTER;
 
@@ -68,11 +72,23 @@ struct NodeCollectionPrivate
     mutable QMutex nodesMutex;
     NodesList nodes;
 
+    mutable QMutex graphEditedMutex;
+
+    // If false the user cannot ever edit this graph from the UI, except if from Python the setSubGraphEditable function is called
+    bool isEditable;
+
+    // If true, the user did edit the subgraph
+    bool wasGroupEditedByUser;
+
+
     NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
         , nodes()
+        , graphEditedMutex()
+        , isEditable(true)
+        , wasGroupEditedByUser(false)
     {
     }
 
@@ -238,7 +254,7 @@ NodeCollection::getWriters(std::list<OutputEffectInstancePtr>* writers) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPartOfProject() ) {
+        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
             OutputEffectInstancePtr out = (*it)->isEffectOutput();
             assert(out);
             writers->push_back(out);
@@ -275,20 +291,6 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 }
 
 bool
-NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getCacheID() == name ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
 NodeCollection::hasNodeRendering() const
 {
     QMutexLocker k(&_imp->nodesMutex);
@@ -316,6 +318,7 @@ NodeCollection::hasNodeRendering() const
 
     return false;
 }
+
 
 void
 NodeCollection::refreshViewersAndPreviews()
@@ -912,7 +915,7 @@ NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
         if ( (*it)->isActivated() ) {
             if ( (*it)->getEffectInstance()->isReader() ) {
                 double thisFirst, thislast;
-                (*it)->getEffectInstance()->getFrameRange_public( (*it)->getHashValue(), &thisFirst, &thislast );
+                (*it)->getEffectInstance()->getFrameRange_public( 0, &thisFirst, &thislast );
                 if (thisFirst != INT_MIN) {
                     *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
                 }
@@ -982,17 +985,6 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >&
             }
         }
 
-        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        RotoContextPtr rotoContext = (*it)->getRotoContext();
-        if (args && rotoContext) {
-            for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                ParallelRenderArgsPtr args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (args2) {
-                    argsMap.insert( std::make_pair(*it2, args2) );
-                }
-            }
-        }
-
 
         const NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
@@ -1006,6 +998,37 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >&
     }
 }
 
+void
+NodeCollection::setSubGraphEditedByUser(bool edited)
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    _imp->wasGroupEditedByUser = edited;
+}
+
+bool
+NodeCollection::isSubGraphEditedByUser() const
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    return _imp->wasGroupEditedByUser;
+}
+
+void
+NodeCollection::setSubGraphEditable(bool editable)
+{
+    {
+        QMutexLocker k(&_imp->graphEditedMutex);
+        _imp->isEditable = editable;
+    }
+    onGraphEditableChanged(editable);
+}
+
+bool
+NodeCollection::isSubGraphEditable() const
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    return _imp->isEditable;
+}
+
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
@@ -1013,7 +1036,7 @@ struct NodeGroupPrivate
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
-    bool isEditable;
+
     KnobButtonPtr exportAsTemplate;
 
     NodeGroupPrivate()
@@ -1024,7 +1047,6 @@ struct NodeGroupPrivate
         , guiOutputs()
         , isDeactivatingGroup(false)
         , isActivatingGroup(false)
-        , isEditable(true)
         , exportAsTemplate()
     {
     }
@@ -1231,6 +1253,17 @@ NodeGroup::isInputMask(int inputNb) const
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
+}
+
+void
+NodeGroup::invalidateHashCache()
+{
+    invalidateHashNotRecursive();
+    NodesList nodes = getNodes();
+    std::list<EffectInstancePtr> markedNodes;
+    for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        invalidateHashRecursive((*it)->getEffectInstance(), markedNodes);
+    }
 }
 
 void
@@ -1497,6 +1530,64 @@ NodeGroup::purgeCaches()
     }
 }
 
+void
+NodeGroup::clearLastRenderedImage()
+{
+    EffectInstance::clearLastRenderedImage();
+    NodesList nodes = getNodes();
+
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->getEffectInstance()->purgeCaches();
+    }
+}
+
+void
+NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
+{
+    if (getPluginID() != PLUGINID_NATRON_GROUP) {
+        return;
+    }
+    // Group nodes are always considered "edited"
+    setSubGraphEditedByUser(true);
+
+    if ( !serialization && !getApp()->isCreatingPythonGroup()) {
+        //if the node is a group and we're not loading the project, create one input and one output
+        NodePtr input, output;
+
+        NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+        {
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, thisShared);
+            args.setProperty(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
+            output = getApp()->createNode(args);
+            try {
+                output->setScriptName("Output");
+            } catch (...) {
+            }
+
+            assert(output);
+        }
+        {
+            CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
+            args.setProperty(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
+            input = getApp()->createNode(args);
+            assert(input);
+        }
+        if ( input && output && !output->getInput(0) ) {
+            output->connectInput(input, 0);
+
+            double x, y;
+            output->getPosition(&x, &y);
+            y -= 100;
+            input->setPosition(x, y);
+        }
+    }
+
+}
+
 bool
 NodeGroup::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,
@@ -1518,21 +1609,7 @@ NodeGroup::knobChanged(const KnobIPtr& k,
     return ret;
 }
 
-void
-NodeGroup::setSubGraphEditable(bool editable)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->isEditable = editable;
-    Q_EMIT graphEditableChanged(editable);
-}
 
-bool
-NodeGroup::isSubGraphEditable() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->isEditable;
-}
 
 static QString
 escapeString(const QString& str)
@@ -1770,22 +1847,10 @@ exportKnobValues(int indentLevel,
         } // if (isParametric) {
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
 
-    bool isSecretByDefault = knob->getDefaultIsSecret();
-    if (knob->isUserKnob() && isSecretByDefault) {
-        if (!hasExportedValue) {
-            hasExportedValue = true;
-            if (mustDefineParam) {
-                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-            }
-        }
-
-        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setVisibleByDefault(False)") );
-    }
 
     if ( knob->isUserKnob() ) {
         bool isSecret = knob->getIsSecret();
-        if (isSecret != isSecretByDefault) {
+        if (isSecret) {
             if (!hasExportedValue) {
                 hasExportedValue = true;
                 if (mustDefineParam) {
@@ -1804,22 +1869,9 @@ exportKnobValues(int indentLevel,
             WRITE_INDENT(innerIdent); WRITE_STRING(str);
         }
 
-        bool enabledByDefault = knob->isDefaultEnabled(0);
-        if (!enabledByDefault) {
-            if (!hasExportedValue) {
-                hasExportedValue = true;
-                if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                }
-            }
-
-            WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setEnabledByDefault(False)") );
-        }
-
         for (int i = 0; i < knob->getDimension(); ++i) {
             bool isEnabled = knob->isEnabled(i);
-            if (isEnabled != enabledByDefault) {
+            if (!isEnabled) {
                 if (!hasExportedValue) {
                     hasExportedValue = true;
                     if (mustDefineParam) {
@@ -1841,6 +1893,82 @@ exportKnobValues(int indentLevel,
             }
         }
     } // isuserknob
+
+    bool hasViewerUI = knob->getHolder()->getInViewerContextKnobIndex(knob) != -1;
+    if (hasViewerUI) {
+        if (!hasExportedValue) {
+            hasExportedValue = true;
+            if (mustDefineParam) {
+                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
+            }
+            {
+                QString str = QString::fromUtf8("param.setViewerUILayoutType(");
+                ViewerContextLayoutTypeEnum type = knob->getInViewerContextLayoutType();
+                switch (type) {
+                    case eViewerContextLayoutTypeSpacing:
+                        str += QString::fromUtf8("NatronEngine.Natron.ViewerContextLayoutTypeEnum.eViewerContextLayoutTypeSpacing");
+                        break;
+                    case eViewerContextLayoutTypeAddNewLine:
+                        str += QString::fromUtf8("NatronEngine.Natron.ViewerContextLayoutTypeEnum.eViewerContextLayoutTypeAddNewLine");
+                        break;
+                    case eViewerContextLayoutTypeSeparator:
+                        str += QString::fromUtf8("NatronEngine.Natron.ViewerContextLayoutTypeEnum.eViewerContextLayoutTypeSeparator");
+                        break;
+                    case eViewerContextLayoutTypeStretchAfter:
+                        str += QString::fromUtf8("NatronEngine.Natron.ViewerContextLayoutTypeEnum.eViewerContextLayoutTypeStretchAfter");
+                        break;
+                    case eViewerContextLayoutTypeStretchBefore:
+                        str += QString::fromUtf8("NatronEngine.Natron.ViewerContextLayoutTypeEnum.eViewerContextLayoutTypeStretchBefore");
+                        break;
+
+                }
+                str += QLatin1Char(')');
+                WRITE_INDENT(innerIdent); WRITE_STRING(str);
+            }
+            if (knob->getInViewerContextSecret()) {
+                QString str = QString::fromUtf8("param.setViewerUIVisible(");
+                str += QString::fromUtf8("False");
+                str += QLatin1Char(')');
+                WRITE_INDENT(innerIdent); WRITE_STRING(str);
+            }
+            {
+                QString str = QString::fromUtf8("param.setViewerUIItemSpacing(");
+                int spacing = knob->getInViewerContextItemSpacing();
+                str += NUM_INT(spacing);
+                str += QLatin1Char(')');
+                WRITE_INDENT(innerIdent); WRITE_STRING(str);
+            }
+            if (knob->isUserKnob()) {
+                std::string label = knob->getInViewerContextLabel();
+                if (!label.empty()) {
+                    QString str = QString::fromUtf8("param.setViewerUILabel(");
+                    str += ESC(label);
+                    str += QLatin1Char(')');
+                    WRITE_INDENT(innerIdent); WRITE_STRING(str);
+                }
+                for (int i = 0; i < 2; ++i) {
+                    QString icon = QString::fromUtf8(knob->getInViewerContextIconFilePath(i == 0 ? false : true).c_str());
+                    if (!icon.isEmpty()) {
+                        QString str = QString::fromUtf8("param.setViewerUIIconFilePath(");
+                        str += ESC(icon);
+                        str += QString::fromUtf8(", ");
+                        if (i == 0) {
+                            str += QString::fromUtf8("False");
+                        } else {
+                            str += QString::fromUtf8("True");
+                        }
+                        str += QLatin1Char(')');
+                        WRITE_INDENT(innerIdent); WRITE_STRING(str);
+                    }
+                    
+                }
+            }
+
+        }
+    }
+
+
 
     if (mustDefineParam && hasExportedValue) {
         WRITE_INDENT(innerIdent); WRITE_STRING("del param");
@@ -2156,6 +2284,10 @@ exportUserKnob(int indentLevel,
                                                  NUM_INT( isParametric->getDimension() ) + QString::fromUtf8(")") );
     }
 
+    if (isDouble && isDouble->getHasHostOverlayHandle()) {
+        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param.setUsePointInteract(True)"));
+    }
+
     WRITE_STATIC_LINE("");
 
     if (group) {
@@ -2280,24 +2412,18 @@ exportRotoLayer(int indentLevel,
             QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")") );
 
-            KnobBoolPtr activatedKnob = isBezier->getActivatedKnob();
-            exportKnobValues(indentLevel, activatedKnob, QString::fromUtf8("bezier.getActivatedParam()"), true, ts);
+            const KnobsVec& knobs = isBezier->getKnobs();
+            for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+                QString paramNameStr = QString::fromUtf8("bezier.getParam(\"");
+                const std::string& paramName =  (*it)->getName();
+                if ( paramName.empty() ) {
+                    continue;
+                }
+                paramNameStr += QString::fromUtf8( paramName.c_str() );
+                paramNameStr += QString::fromUtf8("\")");
 
-            KnobDoublePtr featherDist = isBezier->getFeatherKnob();
-            exportKnobValues(indentLevel, featherDist, QString::fromUtf8("bezier.getFeatherDistanceParam()"), true, ts);
-
-            KnobDoublePtr opacityKnob = isBezier->getOpacityKnob();
-            exportKnobValues(indentLevel, opacityKnob, QString::fromUtf8("bezier.getOpacityParam()"), true, ts);
-
-            KnobDoublePtr fallOffKnob = isBezier->getFeatherFallOffKnob();
-            exportKnobValues(indentLevel, fallOffKnob, QString::fromUtf8("bezier.getFeatherFallOffParam()"), true, ts);
-
-            KnobColorPtr colorKnob = isBezier->getColorKnob();
-            exportKnobValues(indentLevel, colorKnob, QString::fromUtf8("bezier.getColorParam()"), true, ts);
-
-            KnobChoicePtr compositing = isBezier->getOperatorKnob();
-            exportKnobValues(indentLevel, compositing, QString::fromUtf8("bezier.getCompositingOperatorParam()"), true, ts);
-
+                exportKnobValues(indentLevel, *it, paramNameStr, true, ts);
+            }
 
             WRITE_INDENT(indentLevel); WRITE_STRING( parentLayerName + QString::fromUtf8(".addItem(bezier)") );
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("");
@@ -2391,6 +2517,22 @@ exportAllNodeKnobs(int indentLevel,
         KnobsVec children =  (*it2)->getChildren();
         for (KnobsVec::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(indentLevel, *it3, QString::fromUtf8("lastNode"), KnobGroupPtr(), *it2, ts);
+        }
+    }
+
+    KnobsVec viewerUIKnobs = node->getEffectInstance()->getViewerUIKnobs();
+    if (!viewerUIKnobs.empty()) {
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add viewer interface parameters");
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.clearViewerUIParameters()");
+        for (KnobsVec::iterator it2 = viewerUIKnobs.begin(); it2 != viewerUIKnobs.end(); ++it2) {
+            QString s = QString::fromUtf8("lastNode.insertParamInViewerUI(lastNode.getParam(\"");
+            const std::string& paramName =  (*it2)->getName();
+            if ( paramName.empty() ) {
+                continue;
+            }
+            s += QString::fromUtf8( paramName.c_str() );
+            s += QString::fromUtf8("\"))");
+            WRITE_INDENT(indentLevel); WRITE_STRING(s);
         }
     }
 

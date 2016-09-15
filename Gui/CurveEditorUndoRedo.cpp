@@ -442,26 +442,18 @@ MoveKeysCommand::move(double dt,
     _widget->setUpdatesEnabled(false);
 
     std::list<KnobHolderPtr> differentKnobs;
-    std::list<RotoContextPtr > rotoToEvaluate;
 
     for (std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
         if (isKnobCurve) {
-            if ( !isKnobCurve->getKnobGui() ) {
-                RotoContextPtr roto = isKnobCurve->getRotoContext();
-                assert(roto);
-                if ( std::find(rotoToEvaluate.begin(), rotoToEvaluate.end(), roto) == rotoToEvaluate.end() ) {
-                    rotoToEvaluate.push_back(roto);
-                }
-            } else {
-                KnobIPtr k = isKnobCurve->getInternalKnob();
-                if ( k->getHolder() ) {
-                    if ( std::find( differentKnobs.begin(), differentKnobs.end(), k->getHolder() ) == differentKnobs.end() ) {
-                        differentKnobs.push_back( k->getHolder() );
-                        k->getHolder()->beginChanges();
-                    }
+            KnobIPtr k = isKnobCurve->getInternalKnob();
+            if ( k->getHolder() ) {
+                if ( std::find( differentKnobs.begin(), differentKnobs.end(), k->getHolder() ) == differentKnobs.end() ) {
+                    differentKnobs.push_back( k->getHolder() );
+                    k->getHolder()->beginChanges();
                 }
             }
+
         }
         moveKeys(it->first.get(), it->second, dt, dv);
         _widget->updateSelectionAfterCurveChange( it->first.get() );
@@ -474,10 +466,6 @@ MoveKeysCommand::move(double dt,
     }
 
     _widget->setUpdatesEnabled(true);
-
-    for (std::list<RotoContextPtr >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
-        (*it)->evaluateChange();
-    }
 
     _widget->refreshSelectedKeysAndUpdate();
 }
@@ -552,33 +540,26 @@ SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* widget,
 void
 SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 {
-    std::list<KnobIPtr> differentKnobs;
-    std::list<RotoContextPtr> rotoToEvaluate;
+    std::set<KnobHolderPtr> differentKnobs;
 
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->key->curve.get() );
         if (isKnobCurve) {
-            if ( !isKnobCurve->getKnobGui() ) {
-                RotoContextPtr roto = isKnobCurve->getRotoContext();
-                assert(roto);
-                if ( std::find(rotoToEvaluate.begin(), rotoToEvaluate.end(), roto) == rotoToEvaluate.end() ) {
-                    rotoToEvaluate.push_back(roto);
-                }
-            } else {
-                KnobIPtr k = isKnobCurve->getInternalKnob();
-                if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
-                    differentKnobs.push_back(k);
-                    k->beginChanges();
-                }
-            }
+
+            KnobIPtr k = isKnobCurve->getInternalKnob();
+            differentKnobs.insert(k->getHolder());
         } else {
             BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>( it->key->curve.get() );
             assert(bezierCurve);
             if (bezierCurve) {
                 assert( bezierCurve->getBezier() );
-                rotoToEvaluate.push_back( bezierCurve->getBezier()->getContext() );
+                differentKnobs.insert(bezierCurve->getBezier());
             }
         }
+    }
+
+    for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
+        (*it)->beginChanges();
     }
 
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
@@ -608,11 +589,8 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         }
     }
 
-    for (std::list<KnobIPtr>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
+    for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
         (*it)->endChanges();
-    }
-    for (std::list<RotoContextPtr>::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
-        (*it)->evaluateChange();
     }
 
     _widget->refreshSelectedKeysAndUpdate();
@@ -926,28 +904,27 @@ transform(const Transform::Matrix3x3& matrix,
 void
 TransformKeysCommand::transformKeys(const Transform::Matrix3x3& matrix)
 {
-    std::list<KnobHolderPtr> differentKnobs;
-    std::list<RotoContextPtr > rotoToEvaluate;
+
+    std::set<KnobHolderPtr> differentKnobs;
 
     for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
         if (isKnobCurve) {
-            if ( !isKnobCurve->getKnobGui() ) {
-                RotoContextPtr roto = isKnobCurve->getRotoContext();
-                assert(roto);
-                if ( std::find(rotoToEvaluate.begin(), rotoToEvaluate.end(), roto) == rotoToEvaluate.end() ) {
-                    rotoToEvaluate.push_back(roto);
-                }
-            } else {
-                KnobIPtr k = isKnobCurve->getInternalKnob();
-                if ( k->getHolder() ) {
-                    if ( std::find( differentKnobs.begin(), differentKnobs.end(), k->getHolder() ) == differentKnobs.end() ) {
-                        differentKnobs.push_back( k->getHolder() );
-                        k->getHolder()->beginChanges();
-                    }
-                }
+
+            KnobIPtr k = isKnobCurve->getInternalKnob();
+            differentKnobs.insert(k->getHolder());
+        } else {
+            BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
+            assert(bezierCurve);
+            if (bezierCurve) {
+                assert( bezierCurve->getBezier() );
+                differentKnobs.insert(bezierCurve->getBezier());
             }
         }
+    }
+
+    for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
+        (*it)->beginChanges();
     }
 
 
@@ -958,14 +935,12 @@ TransformKeysCommand::transformKeys(const Transform::Matrix3x3& matrix)
 
 
     if (_firstRedoCalled || _updateOnFirstRedo) {
-        for (std::list<KnobHolderPtr>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
+        for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
             (*it)->endChanges();
         }
+
     }
 
-    for (std::list<RotoContextPtr >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
-        (*it)->evaluateChange();
-    }
 
     _widget->setSelectedKeys(_keys);
     _firstRedoCalled = true;

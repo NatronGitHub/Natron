@@ -83,7 +83,7 @@ struct PluginTreeNode
     AnimatedCheckBox* rsCheckbox;
     AnimatedCheckBox* mtCheckbox;
     AnimatedCheckBox* glCheckbox;
-    Plugin* plugin;
+    PluginWPtr plugin;
 };
 
 typedef std::list<PluginTreeNode> PluginTreeNodeList;
@@ -433,7 +433,6 @@ PreferencesPanelPrivate::buildPluginGroupHierarchy(const QStringList& groupingSp
         }
     }
     PluginTreeNode group;
-    group.plugin = 0;
     group.item = groupParent;
     foundGuiGroup = pluginsList.insert(pluginsList.end(), group);
 
@@ -496,7 +495,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+            PluginPtr plugin  = *it2;
             assert(plugin);
             if ( plugin->getIsForInternalUseOnly() ) {
                 continue;
@@ -699,7 +698,7 @@ PreferencesPanel::createGui()
     setWindowTitle( tr("Preferences") );
     _imp->mainLayout = new QVBoxLayout(this);
 
-    _imp->splitter = new Splitter(Qt::Horizontal, this);
+    _imp->splitter = new Splitter(Qt::Horizontal, _imp->gui, this);
 
     _imp->tree = new QTreeWidget(_imp->splitter);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -790,7 +789,7 @@ PreferencesPanel::filterPlugins(const QString & txt)
         QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
-            if ( it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr) ) {
+            if ( it->plugin.lock() && it->plugin.lock()->getLabelWithoutSuffix().contains(expr) ) {
                 itemsToDisplay.push_back(it->item);
             } else {
                 it->item->setExpanded(false);
@@ -820,7 +819,7 @@ PreferencesPanel::onItemEnabledCheckBoxChecked(bool checked)
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->enabledCheckbox == cb) {
-            it->plugin->setActivated(checked);
+            it->plugin.lock()->setActivated(checked);
             _imp->pluginSettingsChanged = true;
             break;
         }
@@ -837,7 +836,7 @@ PreferencesPanel::onRSEnabledCheckBoxChecked(bool checked)
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->rsCheckbox == cb) {
-            it->plugin->setRenderScaleEnabled(checked);
+            it->plugin.lock()->setRenderScaleEnabled(checked);
             _imp->pluginSettingsChanged = true;
             break;
         }
@@ -854,7 +853,7 @@ PreferencesPanel::onMTEnabledCheckBoxChecked(bool checked)
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->mtCheckbox == cb) {
-            it->plugin->setMultiThreadingEnabled(checked);
+            it->plugin.lock()->setMultiThreadingEnabled(checked);
             _imp->pluginSettingsChanged = true;
             break;
         }
@@ -870,7 +869,7 @@ PreferencesPanel::onGLEnabledCheckBoxChecked(bool checked)
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
         if (it->mtCheckbox == cb) {
-            it->plugin->setOpenGLEnabled(checked);
+            it->plugin.lock()->setOpenGLEnabled(checked);
             _imp->pluginSettingsChanged = true;
             break;
         }

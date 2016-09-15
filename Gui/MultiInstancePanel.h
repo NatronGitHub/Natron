@@ -88,8 +88,6 @@ public:
 
     void getSelectedInstances(std::list<NodePtr>* instances) const;
 
-    void resetAllInstances();
-
     KnobIPtr getKnobForItem(TableItem* item, int* dimension) const;
     Gui* getGui() const;
     virtual void setIconForButton(const KnobButtonPtr& /*knob*/)
@@ -117,9 +115,6 @@ public:
 
 public Q_SLOTS:
 
-    void onAddButtonClicked();
-
-    void onRemoveButtonClicked();
 
     void onSelectAllButtonClicked();
 
@@ -132,8 +127,6 @@ public Q_SLOTS:
     void onDeleteKeyPressed();
 
     void onInstanceKnobValueChanged(ViewSpec view, int dim, int reason);
-
-    void resetSelectedInstances();
 
     void onSettingsPanelClosed(bool closed);
 
@@ -161,8 +154,6 @@ protected:
 private:
 
     virtual void onButtonTriggered(const KnobButtonPtr& button);
-
-    void resetInstances(const std::list<NodePtr> & instances);
 
     void removeInstancesInternal();
 

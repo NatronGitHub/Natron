@@ -100,6 +100,7 @@ public:
      **/
     void clearNodes(bool emitSignal);
 
+
     /**
      * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
      **/
@@ -225,9 +226,16 @@ public:
     void getWriters(std::list<OutputEffectInstancePtr>* writers) const;
 
     /**
-     * @brief Checks if a node in the project already has this cacheID
+     * @brief Controls whether the user can ever edit this graph from the UI. 
      **/
-    bool isCacheIDAlreadyTaken(const std::string& name) const;
+    void setSubGraphEditable(bool editable);
+    bool isSubGraphEditable() const;
+
+    /**
+     * @brief Controls whether the sub-graph is assumed to be edited by the user
+     **/
+    void setSubGraphEditedByUser(bool edited);
+    bool isSubGraphEditedByUser() const;
 
 public:
 
@@ -276,6 +284,11 @@ public:
                              const QString& pluginGrouping,
                              int version,
                              QString& output);
+
+protected:
+
+
+    virtual void onGraphEditableChanged(bool /*changed*/) {}
 
 private:
     void quitAnyProcessingInternal();
@@ -348,13 +361,29 @@ public:
         return false;
     }
 
+    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    virtual bool supportsMultipleClipFPSs() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
@@ -366,6 +395,9 @@ public:
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE FINAL;
+    virtual void clearLastRenderedImage() OVERRIDE ;
+
+    virtual void invalidateHashCache() OVERRIDE ;
 
     NodePtr getOutputNode(bool useGuiConnexions) const;
 
@@ -385,19 +417,36 @@ public:
     bool getIsActivatingGroup() const;
     void setIsActivatingGroup(bool b);
 
-    void setSubGraphEditable(bool editable);
-    bool isSubGraphEditable() const;
-
+    /**
+     * @brief For sub-classes override to choose whether to create a node graph that will be visible by the user or not.
+     * If returning false, the nodegraph will NEVER be created.
+     **/
     virtual bool isSubGraphUserVisible() const
     {
         return true;
     }
+
+    /**
+     * @brief Callback called when the group gui has been created
+     **/
+    virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization);
 
 Q_SIGNALS:
 
     void graphEditableChanged(bool);
 
 private:
+
+    // A group render function should never get called
+    virtual StatusEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return eStatusOK;
+    }
+
+    virtual void onGraphEditableChanged(bool changed) OVERRIDE FINAL
+    {
+        Q_EMIT graphEditableChanged(changed);
+    }
 
     virtual void initializeKnobs() OVERRIDE;
     virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,

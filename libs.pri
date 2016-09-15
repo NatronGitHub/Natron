@@ -139,10 +139,17 @@ libtess-flags {
 INCLUDEPATH += $$PWD/libs/libtess
 }
 
+yaml-cpp-flags {
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include/include
+}
+
+
+
 ################
 # Gui
 static-gui {
-CONFIG += static-engine static-qhttpserver static-hoedown static-libtess
+CONFIG += static-engine static-qhttpserver static-hoedown static-libtess static-serialization
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -189,7 +196,7 @@ win32-msvc*{
 # Engine
 
 static-engine {
-CONFIG += static-libmv static-openmvg static-hoedown static-libtess
+CONFIG += static-libmv static-openmvg static-hoedown static-libtess static-serialization
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -230,6 +237,52 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Engine/libEngine.a
 }
 } #static-engine
+
+
+################
+# Serialization
+
+static-serialization {
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/x64/release/ -lSerialization
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/x64/debug/ -lSerialization
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/win32/release/ -lSerialization
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/win32/debug/ -lSerialization
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/release/ -lSerialization
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/debug/ -lSerialization
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/build/Release/ -lSerialization
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/build/Debug/ -lSerialization
+        else:unix: LIBS += -L$$OUT_PWD/../Serialization/ -lSerialization
+}
+
+INCLUDEPATH += $$PWD/Serialization
+DEPENDPATH += $$OUT_PWD/../Serialization
+INCLUDEPATH += $$PWD/Global
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/x64/release/libSerialization.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/x64/debug/libSerialization.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/win32/release/libSerialization.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/win32/debug/libSerialization.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/release/libSerialization.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/debug/libSerialization.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/release/libSerialization.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/debug/libSerialization.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/build/Release/libSerialization.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/build/Debug/libSerialization.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Serialization/libSerialization.a
+}
+} #static-serialization
+
 
 ################
 # HostSupport
@@ -615,3 +668,48 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/libtess.a
 }
 } # static-libtess
+
+
+################
+# yaml-cpp
+
+static-yaml-cpp {
+
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include/include
+DEPENDPATH += $$OUT_PWD/../libs/yaml-cpp/include
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/x64/release/ -lyamlcpp
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/x64/debug/ -lyamlcpp
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/win32/release/ -lyamlcpp
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/win32/debug/ -lyamlcpp
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/release/ -lyamlcpp
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/debug/ -lyamlcpp
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/build/Release/ -lyamlcpp
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/build/Debug/ -lyamlcpp
+        else:unix: LIBS += -L$$OUT_PWD/../libs/yaml-cpp/ -lyamlcpp
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/x64/release/yamlcpp.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/x64/debug/yamlcpp.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/win32/release/yamlcpp.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/win32/debug/yamlcpp.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/libyamlcpp.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/libyamlcpp.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/libyamlcpp.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/libyamlcpp.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Release/libyamlcpp.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Debug/libyamlcpp.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/libyamlcpp.a
+}
+} # static-yaml-cpp

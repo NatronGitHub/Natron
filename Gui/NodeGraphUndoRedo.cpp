@@ -37,13 +37,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
@@ -51,6 +50,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MultiInstancePanel.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
@@ -74,7 +76,7 @@ MoveMultipleNodesCommand::move(double dx,
                                double dy)
 {
     for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        QPointF pos = (*it)->getPos_mt_safe();
+        QPointF pos = (*it)->pos();
         (*it)->setPosition(pos.x() + dx, pos.y() + dy);
     }
 }
@@ -365,18 +367,18 @@ RemoveMultipleNodesCommand::redo()
                 NodesList::const_iterator found = std::find(outputsToRestore.begin(), outputsToRestore.end(), output);
 
                 if ( found != outputsToRestore.end() ) {
-                    InspectorNodePtr inspector = toInspectorNode(output);
-                    ///if the node is an inspector, when disconnecting the active input just activate another input instead
-                    if (inspector) {
-                        const std::vector<NodeWPtr> & inputs = inspector->getGuiInputs();
+                    ViewerNodePtr isViewer = output->isEffectViewerNode();
+                    ///if the node is an viewer, when disconnecting the active input just activate another input instead
+                    if (isViewer) {
+                        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
                         ///set as active input the first non null input
                         for (std::size_t i = 0; i < inputs.size(); ++i) {
                             NodePtr input = inputs[i].lock();
                             if (input) {
-                                inspector->setActiveInputAndRefresh(i, true);
+                                isViewer->connectInputToIndex(i, 0);
                                 ///make sure we don't refresh it a second time
                                 std::list<ViewerInstancePtr>::iterator foundViewer =
-                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), inspector->isEffectViewerInstance() );
+                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), isViewer->getInternalViewerNode() );
                                 if ( foundViewer != viewersToRefresh.end() ) {
                                     viewersToRefresh.erase(foundViewer);
                                 }
@@ -413,13 +415,15 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
                                Edge* edge,
                                const NodeGuiPtr & oldSrc,
                                const NodeGuiPtr & newSrc,
+                               int viewerInternalIndex,
                                QUndoCommand *parent)
     : QUndoCommand(parent),
     _oldSrc(oldSrc),
     _newSrc(newSrc),
     _dst( edge->getDest() ),
     _graph(graph),
-    _inputNb( edge->getInputNumber() )
+    _inputNb( edge->getInputNumber() ),
+    _viewerInternalIndex(viewerInternalIndex)
 {
     assert( _dst.lock() );
 }
@@ -434,7 +438,8 @@ ConnectCommand::undo()
     doConnect(newSrc,
               oldSrc,
               dst,
-              _inputNb);
+              _inputNb,
+              _viewerInternalIndex);
 
     if (newSrc) {
         setText( tr("Connect %1 to %2")
@@ -462,7 +467,8 @@ ConnectCommand::redo()
     doConnect(oldSrc,
               newSrc,
               dst,
-              _inputNb);
+              _inputNb,
+              _viewerInternalIndex);
 
     if (newSrc) {
         setText( tr("Connect %1 to %2")
@@ -473,7 +479,7 @@ ConnectCommand::redo()
     }
 
 
-    ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
+    ViewerNodePtr isDstAViewer = dst->getNode()->isEffectViewerNode();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -484,12 +490,13 @@ void
 ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
                           const NodeGuiPtr &newSrc,
                           const NodeGuiPtr& dst,
-                          int inputNb)
+                          int inputNb,
+                          int viewerInternalIndex)
 {
     NodePtr internalDst =  dst->getNode();
     NodePtr internalNewSrc = newSrc ? newSrc->getNode() : NodePtr();
     NodePtr internalOldSrc = oldSrc ? oldSrc->getNode() : NodePtr();
-    ViewerInstancePtr isViewer = internalDst->isEffectViewerInstance();
+    ViewerNodePtr isViewer = internalDst->isEffectViewerNode();
 
 
     if (isViewer) {
@@ -528,6 +535,12 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
         }
     }
 
+    if (isViewer) {
+        if (viewerInternalIndex == 0 || viewerInternalIndex == 1) {
+            isViewer->connectInputToIndex(inputNb, viewerInternalIndex);
+        }
+    }
+
     dst->refreshEdges();
     dst->refreshEdgesVisility();
 
@@ -543,7 +556,7 @@ InsertNodeCommand::InsertNodeCommand(NodeGraph* graph,
                                      Edge* edge,
                                      const NodeGuiPtr & newSrc,
                                      QUndoCommand *parent)
-    : ConnectCommand(graph, edge, edge->getSource(), newSrc, parent)
+    : ConnectCommand(graph, edge, edge->getSource(), newSrc, -1, parent)
     , _inputEdge(0)
 {
     assert(newSrc);
@@ -564,10 +577,10 @@ InsertNodeCommand::undo()
     NodePtr dstInternal = dst->getNode();
     assert(newSrcInternal && dstInternal);
 
-    doConnect(newSrc, oldSrc, dst, _inputNb);
+    doConnect(newSrc, oldSrc, dst, _inputNb, -1);
 
     if (_inputEdge) {
-        doConnect( _inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber() );
+        doConnect( _inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber(), -1);
     }
 
     ViewerInstancePtr isDstAViewer = dst->getNode()->isEffectViewerInstance();
@@ -594,7 +607,7 @@ InsertNodeCommand::redo()
     newSrcInternal->beginInputEdition();
     dstInternal->beginInputEdition();
 
-    doConnect(oldSrc, newSrc, dst, _inputNb);
+    doConnect(oldSrc, newSrc, dst, _inputNb, -1);
 
 
     ///find out if the node is already connected to what the edge is connected
@@ -611,12 +624,12 @@ InsertNodeCommand::redo()
 
     _inputEdge = 0;
     if (oldSrcInternal && !alreadyConnected) {
-        ///push a second command... this is a bit dirty but I don't have time to add a whole new command just for this
+
         int prefInput = newSrcInternal->getPreferredInputForConnection();
         if (prefInput != -1) {
             _inputEdge = newSrc->getInputArrow(prefInput);
             assert(_inputEdge);
-            doConnect( _inputEdge->getSource(), oldSrc, _inputEdge->getDest(), _inputEdge->getInputNumber() );
+            doConnect( _inputEdge->getSource(), oldSrc, _inputEdge->getDest(), _inputEdge->getInputNumber(), -1 );
         }
     }
 
@@ -1124,111 +1137,6 @@ EnableNodesCommand::redo()
     setText( tr("Enable nodes") );
 }
 
-LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
-                                               const std::list<NodeSerializationPtr >& serialization,
-                                               QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _firstRedoCalled(false)
-    , _isUndone(false)
-    , _node(node)
-    , _newSerializations(serialization)
-{
-}
-
-void
-LoadNodePresetsCommand::getListAsShared(const std::list< NodeWPtr >& original,
-                                        std::list< NodePtr >& shared) const
-{
-    for (std::list< NodeWPtr >::const_iterator it = original.begin(); it != original.end(); ++it) {
-        shared.push_back( it->lock() );
-    }
-}
-
-LoadNodePresetsCommand::~LoadNodePresetsCommand()
-{
-}
-
-void
-LoadNodePresetsCommand::undo()
-{
-    _isUndone = true;
-
-    NodeGuiPtr node = _node.lock();
-    NodePtr internalNode = node->getNode();
-    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
-    internalNode->loadKnobs(*_oldSerialization.front(), true);
-    if (panel) {
-        std::list< NodePtr > newChildren, oldChildren;
-        getListAsShared(_newChildren, newChildren);
-        getListAsShared(_oldChildren, oldChildren);
-        panel->removeInstances(newChildren);
-        panel->addInstances(oldChildren);
-    }
-    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
-    internalNode->getApp()->triggerAutoSave();
-    setText( tr("Load presets") );
-}
-
-void
-LoadNodePresetsCommand::redo()
-{
-    NodeGuiPtr node = _node.lock();
-    NodePtr internalNode = node->getNode();
-    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
-
-    if (!_firstRedoCalled) {
-        ///Serialize the current state of the node
-        node->serializeInternal(_oldSerialization);
-
-        if (panel) {
-            const std::list<std::pair<NodeWPtr, bool> >& children = panel->getInstances();
-            for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = children.begin();
-                 it != children.end(); ++it) {
-                _oldChildren.push_back( it->first.lock() );
-            }
-        }
-
-        int k = 0;
-
-        for (std::list<NodeSerializationPtr >::const_iterator it = _newSerializations.begin();
-             it != _newSerializations.end(); ++it, ++k) {
-            if (k > 0) {  /// this is a multi-instance child, create it
-                NodePtr newNode = panel->createNewInstance(false);
-                newNode->loadKnobs(**it);
-                std::list<SequenceTime> keys;
-                newNode->getAllKnobsKeyframes(&keys);
-                newNode->getApp()->addMultipleKeyframeIndicatorsAdded(keys, true);
-                _newChildren.push_back(newNode);
-            }
-        }
-    }
-
-    internalNode->loadKnobs(*_newSerializations.front(), true);
-    if (panel) {
-        std::list< NodePtr > oldChildren, newChildren;
-        getListAsShared(_oldChildren, oldChildren);
-        getListAsShared(_newChildren, newChildren);
-        panel->removeInstances(oldChildren);
-        if (_firstRedoCalled) {
-            panel->addInstances(newChildren);
-        }
-    }
-
-    NodesList allNodes;
-    internalNode->getGroup()->getActiveNodes(&allNodes);
-    NodeGroupPtr isGroup = internalNode->isEffectNodeGroup();
-    if (isGroup) {
-        isGroup->getActiveNodes(&allNodes);
-    }
-    std::map<std::string, std::string> oldNewScriptNames;
-    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes, oldNewScriptNames);
-    internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
-    internalNode->getApp()->triggerAutoSave();
-    _firstRedoCalled = true;
-
-    setText( tr("Load presets") );
-} // LoadNodePresetsCommand::redo
-
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
                                                      const QString& oldName,
                                                      const QString& newName)
@@ -1368,7 +1276,7 @@ ExtractNodeUndoRedoCommand::undo()
             node->connectInput(output->getNode(), it2->first);
         }
 
-        QPointF curPos = output->getPos_mt_safe();
+        QPointF curPos = output->pos();
         output->refreshPosition(curPos.x() - 200, curPos.y(), true);
 
         ///Connect and move inputs
@@ -1381,7 +1289,7 @@ ExtractNodeUndoRedoCommand::undo()
             }
 
             if (input != output) {
-                QPointF curPos = input->getPos_mt_safe();
+                QPointF curPos = input->pos();
                 input->refreshPosition(curPos.x() - 200, curPos.y(), true);
             }
         }
@@ -1390,7 +1298,7 @@ ExtractNodeUndoRedoCommand::undo()
 
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
             NodeGuiPtr node = it2->lock();
-            QPointF curPos = node->getPos_mt_safe();
+            QPointF curPos = node->pos();
             node->refreshPosition(curPos.x() - 200, curPos.y(), true);
         }
 
@@ -1462,7 +1370,7 @@ ExtractNodeUndoRedoCommand::redo()
             }
         }
 
-        QPointF curPos = output->getPos_mt_safe();
+        QPointF curPos = output->pos();
         output->refreshPosition(curPos.x() + 200, curPos.y(), true);
 
 
@@ -1475,7 +1383,7 @@ ExtractNodeUndoRedoCommand::redo()
                 }
             }
             if (node != output) {
-                QPointF curPos = node->getPos_mt_safe();
+                QPointF curPos = node->pos();
                 node->refreshPosition(curPos.x() + 200, curPos.y(), true);
             }
         }
@@ -1484,7 +1392,7 @@ ExtractNodeUndoRedoCommand::redo()
 
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
             NodeGuiPtr node = it2->lock();
-            QPointF curPos = node->getPos_mt_safe();
+            QPointF curPos = node->pos();
             node->refreshPosition(curPos.x() + 200, curPos.y(), true);
         }
     }
@@ -1570,7 +1478,7 @@ GroupFromSelectionCommand::redo()
         }
         originalNodes.push_back(n);
 
-        QPointF nodePos = n->getPos_mt_safe();
+        QPointF nodePos = n->pos();
         groupPosition += nodePos;
     }
 
@@ -1810,7 +1718,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         /*
          * First-off copy all the nodes within the group, except the Inputs and Ouput nodes
          */
-        NodeClipBoard cb;
+        SERIALIZATION_NAMESPACE::NodeClipBoard cb;
         NodesList nodes = group->getNodes();
         std::vector<NodePtr> groupInputs;
         NodePtr groupOutput = group->getOutputNode(true);
@@ -1849,14 +1757,14 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         assert(groupGui);
         expandedGroup.group = groupGui;
 
-        QPointF groupNodePos = groupGui->mapToScene( groupGui->mapFromParent( groupGui->getPos_mt_safe() ) );
+        QPointF groupNodePos = groupGui->mapToScene( groupGui->mapFromParent( groupGui->pos() ) );
 
         //This is the BBox of the new inlined nodes
         RectD bbox;
         bbox.setupInfinity();
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
-            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->getPos_mt_safe() ) );
+            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->pos() ) );
             bbox.x1 = std::min( bbox.x1, p.x() );
             bbox.x2 = std::max( bbox.x2, p.x() );
 
@@ -1888,7 +1796,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 assert(inputGui);
                 ntc.input = inputGui;
 
-                QPointF p = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
+                QPointF p = inputGui->mapToScene( inputGui->mapFromParent( inputGui->pos() ) );
                 if (p.y() > inputY) {
                     inputY = p.y();
                 }
@@ -1931,7 +1839,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 if (!inputGui) {
                     continue;
                 }
-                firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
+                firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->pos() ) );
                 outputConnection.input = inputGui;
 
                 std::map<NodePtr, int> outputConnected;
@@ -1943,7 +1851,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     assert(outputGui);
                     outputsConnectedToGroup.push_back(outputGui);
 
-                    QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->getPos_mt_safe() ) );
+                    QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->pos() ) );
                     if (p.y() < outputY) {
                         outputY = p.y();
                     }
@@ -1972,7 +1880,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         // Move all created nodes by this delta to fit in the space we've just made
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
-            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->getPos_mt_safe() ) );
+            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->pos() ) );
             QPointF delta = p - bboxCenter;
             p = groupNodePos + delta;
             p = it2->second->mapToParent( it2->second->mapFromScene(p) );
@@ -2071,5 +1979,58 @@ InlineGroupCommand::redo()
     _graph->getGui()->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 }
+
+RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & nodes)
+: QUndoCommand()
+, _nodes()
+{
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodeDefaults d;
+        d.node = *it;
+        d.serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        (*it)->getNode()->toSerialization(d.serialization.get());
+        _nodes.push_back(d);
+    }
+    setText(tr("Restore node(s) to default"));
+}
+
+RestoreNodeToDefaultCommand::~RestoreNodeToDefaultCommand()
+{
+    
+}
+
+void
+RestoreNodeToDefaultCommand::undo()
+{
+    for (std::list<NodeDefaults>::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        NodeGuiPtr node = it->node.lock();
+        if (!node) {
+            continue;
+        }
+        NodePtr internalNode = node->getNode();
+        if (!internalNode) {
+            continue;
+        }
+        internalNode->loadKnobsFromSerialization(*it->serialization);
+    }
+}
+
+void
+RestoreNodeToDefaultCommand::redo()
+{
+    for (std::list<NodeDefaults>::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        NodeGuiPtr node = it->node.lock();
+        if (!node) {
+            continue;
+        }
+        NodePtr internalNode = node->getNode();
+        if (!internalNode) {
+            continue;
+        }
+        internalNode->restoreNodeToDefaultState();
+    }
+}
+
+
 
 NATRON_NAMESPACE_EXIT;

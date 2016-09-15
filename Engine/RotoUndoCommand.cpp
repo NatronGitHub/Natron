@@ -133,11 +133,10 @@ MoveControlPointsUndoCommand::undo()
     }
 
     for (std::set<Bezier*>::iterator it = beziers.begin(); it != beziers.end(); ++it) {
-        (*it)->incrementNodesAge();
+        (*it)->invalidateCacheHashAndEvaluate(true, false);
     }
 
     RotoPaintInteractPtr roto = _roto.lock();
-    roto->evaluate(true);
     roto->setCurrentTool( _selectedTool.lock() );
     roto->setSelection(_selectedCurves, _selectedPoints);
 }
@@ -176,9 +175,18 @@ MoveControlPointsUndoCommand::redo()
         qDebug() << "Exception while operating MoveControlPointsUndoCommand::redo(): " << e.what();
     }
 
+    std::set<Bezier*> beziers;
+
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it) {
+        beziers.insert( it->first->getBezier().get() );
+    }
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it != beziers.end(); ++it) {
+        (*it)->invalidateCacheHashAndEvaluate(true, false);
+    }
+
+
     if (_firstRedoCalled) {
         roto->setSelection(_selectedCurves, _selectedPoints);
-        roto->evaluate(true);
     }
 
     _firstRedoCalled = true;
@@ -271,10 +279,6 @@ TransformUndoCommand::undo()
         beziers.insert( it->first->getBezier().get() );
     }
 
-    for (std::set<Bezier*>::iterator it = beziers.begin(); it != beziers.end(); ++it) {
-        (*it)->incrementNodesAge();
-    }
-
 
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
@@ -288,7 +292,10 @@ TransformUndoCommand::undo()
         return;
     }
 
-    roto->evaluate(true);
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it != beziers.end(); ++it) {
+        (*it)->invalidateCacheHashAndEvaluate(true, false);
+    }
+
     roto->setCurrentTool( _selectedTool.lock() );
     roto->setSelection(_selectedCurves, _selectedPoints);
 }
@@ -313,9 +320,17 @@ TransformUndoCommand::redo()
     if (!roto) {
         return;
     }
+    std::set<Bezier*> beziers;
+
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
+        beziers.insert( it->first->getBezier().get() );
+    }
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it != beziers.end(); ++it) {
+        (*it)->invalidateCacheHashAndEvaluate(true, false);
+    }
+
     if (_firstRedoCalled) {
         roto->setSelection(_selectedCurves, _selectedPoints);
-        roto->evaluate(true);
     } else {
         roto->computeSelectedCpsBBOX();
         roto->redrawOverlays();
@@ -382,7 +397,7 @@ AddPointUndoCommand::undo()
     }
     _curve->removeControlPointByIndex(_index + 1);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-    roto->evaluate(true);
+
 }
 
 void
@@ -396,9 +411,7 @@ AddPointUndoCommand::redo()
         return;
     }
     roto->setSelection( _curve, std::make_pair(cp, newFp) );
-    if (_firstRedoCalled) {
-        roto->evaluate(true);
-    }
+
 
     _firstRedoCalled = true;
 }
@@ -511,7 +524,7 @@ RemovePointUndoCommand::undo()
     }
 
     roto->setSelection(selection, cpSelection);
-    roto->evaluate(true);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -559,7 +572,7 @@ RemovePointUndoCommand::redo()
 
 
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-    roto->evaluate(_firstRedoCalled);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     _firstRedoCalled = true;
 }
 
@@ -610,7 +623,7 @@ RemoveCurveUndoCommand::undo()
     if ( !selection.empty() ) {
         roto->setSelection(selection, cpList);
     }
-    roto->evaluate(true);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -625,7 +638,7 @@ RemoveCurveUndoCommand::redo()
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         roto->removeCurve(it->curve);
     }
-    roto->evaluate(_firstRedoCalled);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
 }
@@ -660,7 +673,7 @@ AddStrokeUndoCommand::undo()
     }
 
     roto->removeCurve(_item);
-    roto->evaluate(true);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -675,9 +688,7 @@ AddStrokeUndoCommand::redo()
     if (_firstRedoCalled) {
         roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
     }
-    if (_firstRedoCalled) {
-        roto->evaluate(true);
-    }
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     _firstRedoCalled = true;
 }
 
@@ -713,7 +724,7 @@ AddMultiStrokeUndoCommand::undo()
         isRemoved = true;
     }
 
-    roto->evaluate(true);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -732,8 +743,8 @@ AddMultiStrokeUndoCommand::redo()
         if (isRemoved) {
             roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
         }
-        roto->evaluate(true);
     }
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
 
     _firstRedoCalled = true;
 }
@@ -879,12 +890,12 @@ MoveTangentUndoCommand::undo()
         }
         _tangentBeingDragged->clone(*_oldCp);
     }
-    _tangentBeingDragged->getBezier()->incrementNodesAge();
+    _tangentBeingDragged->getBezier()->invalidateHashCache();
     if (_firstRedoCalled) {
         roto->setSelection(_selectedCurves, _selectedPoints);
     }
 
-    roto->evaluate(true);
+    _tangentBeingDragged->getBezier()->invalidateCacheHashAndEvaluate(true, false);
 }
 
 void
@@ -912,7 +923,7 @@ MoveTangentUndoCommand::redo()
         _oldCp->clone(*cp);
     }
 
-    _tangentBeingDragged->getBezier()->incrementNodesAge();
+    _tangentBeingDragged->getBezier()->invalidateHashCache();
 
     Transform::Matrix3x3 transform;
     _tangentBeingDragged->getBezier()->getTransformAtTime(_time, &transform);
@@ -925,10 +936,10 @@ MoveTangentUndoCommand::redo()
 
     if (_firstRedoCalled) {
         roto->setSelection(_selectedCurves, _selectedPoints);
-        roto->evaluate(true);
     } else {
         roto->computeSelectedCpsBBOX();
     }
+    _tangentBeingDragged->getBezier()->invalidateCacheHashAndEvaluate(true, false);
 
 
     _firstRedoCalled = true;
@@ -992,8 +1003,7 @@ MoveFeatherBarUndoCommand::undo()
     }
     _newPoint.first->clone(*_oldPoint.first);
     _newPoint.second->clone(*_oldPoint.second);
-    _newPoint.first->getBezier()->incrementNodesAge();
-    roto->evaluate(true);
+    _newPoint.first->getBezier()->invalidateCacheHashAndEvaluate(true, false);
     roto->setSelection(_curve, _newPoint);
 }
 
@@ -1087,9 +1097,7 @@ MoveFeatherBarUndoCommand::redo()
         fp->getBezier()->moveFeatherByIndex(index, _time, delta.x, delta.y);
     }
 
-    if (_firstRedoCalled) {
-        roto->evaluate(true);
-    }
+    _newPoint.first->getBezier()->invalidateCacheHashAndEvaluate(true, false);
 
     roto->setSelection(_curve, _newPoint);
 
@@ -1145,13 +1153,12 @@ RemoveFeatherUndoCommand::undo()
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itNew)->clone(**itOld);
         }
-        it->curve->incrementNodesAge();
+        it->curve->invalidateCacheHashAndEvaluate(true, false);
     }
     RotoPaintInteractPtr roto = _roto.lock();
     if (!roto) {
         return;
     }
-    roto->evaluate(true);
 }
 
 void
@@ -1174,9 +1181,6 @@ RemoveFeatherUndoCommand::redo()
     if (!roto) {
         return;
     }
-
-    roto->evaluate(_firstRedocalled);
-
 
     _firstRedocalled = true;
 }
@@ -1214,7 +1218,7 @@ OpenCloseUndoCommand::undo()
         }
     }
     _curve->setCurveFinished( !_curve->isCurveFinished() );
-    roto->evaluate(true);
+
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
 }
 
@@ -1230,7 +1234,6 @@ OpenCloseUndoCommand::redo()
         roto->setCurrentTool( _selectedTool.lock() );
     }
     _curve->setCurveFinished( !_curve->isCurveFinished() );
-    roto->evaluate(_firstRedoCalled);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
 }
@@ -1283,11 +1286,10 @@ SmoothCuspUndoCommand::undo()
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             itNew->first->clone(*itOld->first);
             itNew->second->clone(*itOld->second);
-            it->curve->incrementNodesAge();
+            it->curve->invalidateCacheHashAndEvaluate(true, false);
         }
     }
 
-    roto->evaluate(true);
 }
 
 void
@@ -1317,8 +1319,6 @@ SmoothCuspUndoCommand::redo()
             }
         }
     }
-
-    roto->evaluate(_firstRedoCalled);
 
     _firstRedoCalled = true;
 }
@@ -1419,7 +1419,6 @@ MakeBezierUndoCommand::undo()
     } else {
         roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     }
-    roto->evaluate(true);
 }
 
 void
@@ -1474,6 +1473,7 @@ MakeBezierUndoCommand::redo()
         if (_curveNonExistant) {
             roto->getContext()->addItem(_parentLayer, _indexInLayer, _newCurve, RotoItem::eSelectionReasonOverlayInteract);
         }
+        roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     }
 
 
@@ -1550,7 +1550,7 @@ MakeEllipseUndoCommand::undo()
         return;
     }
     roto->removeCurve(_curve);
-    roto->evaluate(true);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
 }
 
@@ -1564,7 +1564,7 @@ MakeEllipseUndoCommand::redo()
     }
     if (_firstRedoCalled) {
         roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
-        roto->evaluate(true);
+        roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     } else {
         double ytop, xright, ybottom, xleft;
         xright = _tox;
@@ -1706,7 +1706,7 @@ MakeRectangleUndoCommand::undo()
         return;
     }
     roto->removeCurve(_curve);
-    roto->evaluate(true);
+    roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
 }
 
@@ -1720,7 +1720,7 @@ MakeRectangleUndoCommand::redo()
     }
     if (_firstRedoCalled) {
         roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
-        roto->evaluate(true);
+        roto->getContext()->getNode()->getEffectInstance()->invalidateCacheHashAndEvaluate(true, false);
     } else {
         double ytop, xright, ybottom, xleft;
         xright = _tox;

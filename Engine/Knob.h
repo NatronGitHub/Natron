@@ -44,7 +44,9 @@
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
+#include "Engine/HashableObject.h"
 #include "Engine/OverlaySupport.h"
+#include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -372,6 +374,8 @@ typedef std::list<KnobChange> KnobChanges;
 class KnobI
     : public OverlaySupport
     , public boost::enable_shared_from_this<KnobI>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    , public HashableObject
 {
     friend class KnobHolder;
 
@@ -429,6 +433,7 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const = 0;
+    virtual void setDeclaredByPlugin(bool b) = 0;
 
     /**
      * @brief Must flag that the knob was dynamically created to warn the gui it should handle it correctly
@@ -454,6 +459,11 @@ public:
      * Some parameters cannot animate, for example a file selector.
      **/
     virtual bool canAnimate() const = 0;
+
+    /**
+     * @brief Returns true if by default this knob has the animated flag on
+     **/
+    virtual bool isAnimatedByDefault() const = 0;
 
     /**
      * @brief Returns true if the knob has had modifications
@@ -810,7 +820,7 @@ public:
      * @param modeOff If true, this icon will be used when the parameter is an unchecked state (only relevant for
      * buttons/booleans parameters), otherwise the icon will be used when the parameter is in a checked state
      **/
-    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) = 0;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false, bool alsoSetViewerUIIcon = true) = 0;
     virtual const std::string& getIconLabel(bool checked = false) const = 0;
 
     /**
@@ -818,6 +828,15 @@ public:
      **/
     virtual KnobHolderPtr getHolder() const = 0;
     virtual void setHolder(const KnobHolderPtr& holder) = 0;
+
+
+    /**
+     * @brief Controls the knob hashing stragey. @See KnobFrameViewHashingStrategyEnum
+     **/
+    virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) = 0;
+    virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const = 0;
+
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
 
     /**
      * @brief Get the knob dimension. MT-safe as it is static and never changes.
@@ -849,12 +868,30 @@ public:
     virtual void setInViewerContextLabel(const QString& label) = 0;
 
     /**
+     * @brief Set the icon instead of the label for the viewer GUI
+     **/
+    virtual std::string getInViewerContextIconFilePath(bool checked) const = 0;
+    virtual void setInViewerContextIconFilePath(const std::string& icon, bool checked = true) = 0;
+
+    /**
      * @brief Determines whether this knob can be assigned a shortcut or not via the shortcut editor.
      * If true, Natron will look for a shortcut in the shortcuts database with an ID matching the name of this
      * parameter. To set default values for shortcuts, implement EffectInstance::getPluginShortcuts(...)
      **/
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) = 0;
     virtual bool getInViewerContextHasShortcut() const = 0;
+
+    /**
+     * @brief If this knob has a viewer UI and it has an associated shortcut, the tooltip
+     * will indicate to the viewer the shortcuts. The plug-in may also want to reference
+     * other action shorcuts via this tooltip, and can add them here.
+     * e.g: The Refresh button of the viewer shortcut is SHIFT+U but SHIFT+CTRL+U can also
+     * be used to refresh but also enable in-depth render statistics
+     * In the hint text, each additional shortcut must be reference with a %2, %3, %4, starting
+     * from 2 since 1 is reserved for this knob's own shortcut.
+     **/
+    virtual void addInViewerContextShortcutsReference(const std::string& actionID) = 0;
+    virtual const std::list<std::string>& getInViewerContextAdditionalShortcuts() const = 0;
 
     /**
      * @brief Returns whether this type of knob can be instantiated in the viewer UI
@@ -871,16 +908,10 @@ public:
     virtual int  getInViewerContextItemSpacing() const = 0;
 
     /**
-     * @brief Set whether the knob should have a vertical separator after or not in the viewer
+     * @brief Controls whether to add horizontal stretch before or after (or none) stretch
      **/
-    virtual void setInViewerContextAddSeparator(bool addSeparator) = 0;
-    virtual bool  getInViewerContextAddSeparator() const = 0;
-
-    /**
-     * @brief Set whether the viewer UI should create a new line after this parameter or not
-     **/
-    virtual void setInViewerContextNewLineActivated(bool activated) = 0;
-    virtual bool  getInViewerContextNewLineActivated() const = 0;
+    virtual void setInViewerContextLayoutType(ViewerContextLayoutTypeEnum type) = 0;
+    virtual ViewerContextLayoutTypeEnum getInViewerContextLayoutType() const = 0;
 
     /**
      * @brief Set whether the knob should have its viewer GUI secret or not
@@ -892,31 +923,26 @@ public:
      * @brief Enables/disables user interaction with the given dimension.
      **/
     virtual void setEnabled(int dimension, bool b) = 0;
-    virtual void setDefaultEnabled(int dimension, bool b) = 0;
 
     /**
      * @brief Is the dimension enabled ?
      **/
     virtual bool isEnabled(int dimension) const = 0;
-    virtual bool isDefaultEnabled(int dimension) const = 0;
 
     /**
      * @brief Convenience function, same as calling setEnabled(int,bool) for all dimensions.
      **/
     virtual void setAllDimensionsEnabled(bool b) = 0;
-    virtual void setDefaultAllDimensionsEnabled(bool b) = 0;
 
     /**
      * @brief Set the knob visible/invisible on the GUI representing it.
      **/
     virtual void setSecret(bool b) = 0;
-    virtual void setSecretByDefault(bool b) = 0;
 
     /**
      * @brief Is the knob visible to the user ?
      **/
     virtual bool getIsSecret() const = 0;
-    virtual bool getDefaultIsSecret() const = 0;
 
     /**
      * @brief Returns true if a knob is secret because it is either itself secret or one of its parent, recursively
@@ -1056,6 +1082,7 @@ public:
     virtual OfxParamOverlayInteractPtr getCustomInteract() const = 0;
     virtual void swapOpenGLBuffers() OVERRIDE = 0;
     virtual void redraw() OVERRIDE = 0;
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
@@ -1122,6 +1149,7 @@ public:
     virtual ViewIdx getCurrentView() const = 0;
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
+
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is now listening to the values/keyframes of "this" either via a hard-link (slave/master) or via its expressions
@@ -1135,7 +1163,20 @@ public:
                              const KnobIPtr& listener) = 0;
     virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
 
+    /**
+     * @brief Implement to save the content of the object to the serialization object
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE = 0;
+
+    /**
+     * @brief Implement to load the content of the serialization object onto this object
+     **/
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&  serializationBase) OVERRIDE = 0;
+
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, int targetDimension, bool restoreDefaultValue) = 0;
+
 private:
+
     virtual void removeListener(const KnobIPtr& listener, int listenerDimension) = 0;
 
 public:
@@ -1229,7 +1270,6 @@ public:
      * @brief Restores the default value
      **/
     virtual void resetToDefaultValue(int dimension) = 0;
-    virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) = 0;
 
     /**
      * @brief Must return true if this Lnob holds a POD (plain old data) type, i.e. int, bool, or double.
@@ -1305,6 +1345,7 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
+    virtual void setDeclaredByPlugin(bool b) OVERRIDE FINAL;
     virtual void setAsInstanceSpecific() OVERRIDE FINAL;
     virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDynamicallyCreated() OVERRIDE FINAL;
@@ -1456,10 +1497,12 @@ public:
     void setLabel(const std::string& label) OVERRIDE FINAL;
     void setLabel(const QString & label) { setLabel( label.toStdString() ); }
 
-    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) OVERRIDE FINAL;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false, bool alsoSetViewerUIIcon = true) OVERRIDE FINAL;
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolderPtr getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHolder(const KnobHolderPtr& holder) OVERRIDE FINAL;
+    virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) OVERRIDE FINAL;
+    virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const OVERRIDE FINAL;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAddNewLine(bool newLine) OVERRIDE FINAL;
     virtual void setAddSeparator(bool addSep) OVERRIDE FINAL;
@@ -1469,27 +1512,24 @@ public:
     virtual int getSpacingBetweenitems() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextLabel(const QString& label) OVERRIDE FINAL;
+    virtual std::string getInViewerContextIconFilePath(bool checked) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextIconFilePath(const std::string& icon, bool checked = false) OVERRIDE FINAL;
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
     virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void addInViewerContextShortcutsReference(const std::string& actionID) OVERRIDE FINAL;
+    virtual const std::list<std::string>& getInViewerContextAdditionalShortcuts() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
     virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextAddSeparator(bool addSeparator) OVERRIDE FINAL;
-    virtual bool  getInViewerContextAddSeparator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextNewLineActivated(bool activated) OVERRIDE FINAL;
-    virtual bool  getInViewerContextNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextLayoutType(ViewerContextLayoutTypeEnum type) OVERRIDE FINAL;
+    virtual ViewerContextLayoutTypeEnum getInViewerContextLayoutType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEnabled(int dimension, bool b) OVERRIDE FINAL;
-    virtual void setDefaultEnabled(int dimension, bool b) OVERRIDE FINAL;
     virtual bool isEnabled(int dimension) const OVERRIDE FINAL;
-    virtual bool isDefaultEnabled(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsEnabled(bool b) OVERRIDE FINAL;
-    virtual void setDefaultAllDimensionsEnabled(bool b) OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
-    virtual void setSecretByDefault(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;
     virtual void setName(const std::string & name, bool throwExceptions = false) OVERRIDE FINAL;
@@ -1518,6 +1558,7 @@ public:
     virtual OfxParamOverlayInteractPtr getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
@@ -1554,6 +1595,9 @@ public:
     virtual KnobIPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
 
+    virtual bool hasDefaultValueChanged(int dimension) const = 0;
+
+
 private:
 
 
@@ -1564,7 +1608,6 @@ protected:
 
     virtual bool setHasModifications(int dimension, bool value, bool lock) OVERRIDE FINAL;
 
-    virtual bool hasDefaultValueChanged(int dimension) const = 0;
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
@@ -1614,6 +1657,18 @@ public:
             _k->decrementExpressionRecursionLevel();
         }
     };
+
+    /**
+     * @brief Implement to save the content of the object to the serialization object
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    /**
+     * @brief Implement to load the content of the serialization object onto this object
+     **/
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, int targetDimension, bool restoreDefaultValue) OVERRIDE FINAL;
 
 protected:
 
@@ -1700,7 +1755,6 @@ protected:
 
     void setGuiCurveHasChanged(ViewSpec view, int dimension, bool changed);
     bool hasGuiCurveChanged(ViewSpec view, int dimension) const;
-    void clearExpressionsResultsIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions);
 
 
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
@@ -1796,6 +1850,8 @@ private:
                                  bool copyState) OVERRIDE FINAL;
 
 public:
+
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
 
 
     /**
@@ -1972,7 +2028,11 @@ public:
     std::vector<T> getDefaultValues_mt_safe() const WARN_UNUSED_RETURN;
     T getDefaultValue(int dimension) const WARN_UNUSED_RETURN;
 
+    T getInitialDefaultValue(int dimension) const WARN_UNUSED_RETURN;
+
     bool isDefaultValueSet(int dimension) const WARN_UNUSED_RETURN;
+
+    void setCurrentDefaultValueAsInitialValue();
 
     /**
      * @brief Set a default value and set the knob value to it for the particular dimension.
@@ -2015,7 +2075,6 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
-    virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) OVERRIDE FINAL;
     virtual void clone(const KnobIPtr& other, int dimension = -1, int otherDimension = -1)  OVERRIDE FINAL;
     virtual void clone(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
@@ -2057,15 +2116,16 @@ public:
 
     bool getValueFromCurve(double time, ViewSpec view, int dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret);
 
+    virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
+
 protected:
 
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
 
+
 private:
 
     virtual void copyValuesFromCurve(int dim) OVERRIDE FINAL;
-
-    virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
 
     void initMinMax();
 
@@ -2286,6 +2346,7 @@ private:
 class KnobHolder
     : public QObject
     , public boost::enable_shared_from_this<KnobHolder>
+    , public HashableObject
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -2346,6 +2407,17 @@ public:
      **/
     void deleteKnob(const KnobIPtr& knob, bool alsoDeleteGui);
 
+
+    /**
+     * @brief Flag that the overlays should be redrawn when this knob changes.
+     **/
+    void addOverlaySlaveParam(const KnobIPtr& knob);
+
+    bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
+
+    virtual void redrawOverlayInteract();
+    
+
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(const KnobIPtr& knob);
     bool moveKnobOneStepDown(const KnobIPtr& knob);
@@ -2390,8 +2462,14 @@ public:
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
 
+    void setViewerUIKnobs(const KnobsVec& knobs);
     void addKnobToViewerUI(const KnobIPtr& knob);
-    bool isInViewerUIKnob(const KnobIPtr& knob) const;
+    void insertKnobToViewerUI(const KnobIPtr& knob, int index);
+    void removeKnobViewerUI(const KnobIPtr& knob);
+    bool moveViewerUIKnobOneStepUp(const KnobIPtr& knob);
+    bool moveViewerUIOneStepDown(const KnobIPtr& knob);
+
+    int getInViewerContextKnobIndex(const KnobIConstPtr& knob) const;
     KnobsVec getViewerUIKnobs() const;
 
 protected:
@@ -2419,13 +2497,6 @@ public:
         return true;
     }
 
-    /**
-     * @brief Restore all knobs to their default values
-     **/
-    void restoreDefaultValues();
-    virtual void aboutToRestoreDefaultValues()
-    {
-    }
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
@@ -2509,7 +2580,16 @@ public:
 
     void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
 
+
+    /**
+     * @brief To implement if you need to make the hash vary at a specific time/view
+     **/
+
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
+
 protected:
+
+    void onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob);
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2641,7 +2721,7 @@ public:
 
 
     //Calls onSignificantEvaluateAboutToBeCalled + evaluate
-    void incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
+    void invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
 
 protected:
 
@@ -2689,7 +2769,7 @@ protected:
         return false;
     }
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& /*knob*/) {}
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& /*knob*/, ValueChangedReasonEnum /*reason*/, int /*dimension*/, double /*time*/, ViewSpec /*view*/) {}
 
     /**
      * @brief Called when the knobHolder is made slave or unslaved.

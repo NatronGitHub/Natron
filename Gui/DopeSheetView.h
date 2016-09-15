@@ -122,6 +122,8 @@ public:
      */
     void centerOn(double xMin, double xMax);
 
+    bool hasDrawnOnce() const;
+
     /**
      * @brief Returns a pair composed of the first keyframe (or the starting
      * time of the first reader) displayed in the view and the last.
@@ -138,6 +140,7 @@ public:
     SequenceTime getCurrentFrame() const;
 
     void swapOpenGLBuffers() OVERRIDE FINAL;
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
@@ -167,6 +170,17 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+    /**
+     * @brief Get the current orthographic projection
+     **/
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const ;
+
+    /**
+     * @brief Set the current orthographic projection
+     **/
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio) ;
 
     void refreshSelectionBboxAndRedraw();
 

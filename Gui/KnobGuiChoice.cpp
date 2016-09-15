@@ -55,16 +55,20 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Plugin.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
@@ -203,6 +207,53 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
     ComboBox::focusOutEvent(e);
 }
 
+void
+ChannelsComboBox::paintEvent(QPaintEvent* event)
+{
+    ComboBox::paintEvent(event);
+    int idx = activeIndex();
+
+    if (idx != 1) {
+        QColor color;
+        QPainter p(this);
+        QPen pen;
+
+        switch (idx) {
+            case 0:
+                //luminance
+                color.setRgbF(0.5, 0.5, 0.5);
+                break;
+            case 2:
+                //r
+                color.setRgbF(1., 0, 0);
+                break;
+            case 3:
+                //g
+                color.setRgbF(0., 1., 0.);
+                break;
+            case 4:
+                //b
+                color.setRgbF(0., 0., 1.);
+                break;
+            case 5:
+                //a
+                color.setRgbF(1., 1., 1.);
+                break;
+        }
+
+        pen.setColor(color);
+        p.setPen(pen);
+
+
+        QRectF bRect = rect();
+        QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+        double roundPixels = 3;
+        QPainterPath path;
+        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+        p.drawPath(path);
+    }
+}
+
 KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
@@ -229,9 +280,22 @@ KnobGuiChoice::removeSpecificGui()
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
-    _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
+    KnobChoicePtr knob = _knob.lock();
+    if (knob->isDisplayChannelsKnob()) {
+        _comboBox = new ChannelsComboBox( shared_from_this(), 0, layout->parentWidget() );
+    } else {
+        _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
+    }
+
     _comboBox->setCascading( _knob.lock()->isCascading() );
     onEntriesPopulated();
+
+    std::string textToFitHorizontally = knob->getTextToFitHorizontally();
+    if (!textToFitHorizontally.empty()) {
+        QFontMetrics fm = _comboBox->fontMetrics();
+        _comboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        _comboBox->setFixedWidth(fm.width(QString::fromUtf8(textToFitHorizontally.c_str())) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
+    }
 
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
     QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()) );
@@ -312,6 +376,39 @@ KnobGuiChoice::onRefreshMenuActionTriggered()
     }
 }
 
+QPixmap
+KnobGuiChoice::getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
+{
+    QString customFilePath = filePath;
+
+    if ( !QFile::exists(filePath) ) {
+        EffectInstancePtr instance = toEffectInstance(holder);
+        if (instance) {
+            QString resourcesPath = QString::fromUtf8( instance->getNode()->getPluginResourcesPath().c_str() );
+            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+                resourcesPath += QLatin1Char('/');
+            }
+            customFilePath.prepend(resourcesPath);
+        }
+    }
+
+    if ( !QFile::exists(customFilePath) ) {
+        return false;
+    }
+
+    QPixmap pix(customFilePath);
+    if ( pix.isNull() ) {
+        return false;
+    }
+    return pix;
+}
+
+QPixmap
+KnobGuiChoice::getPixmapFromFilePath(const QString &filePath) const
+{
+    return getPixmapFromFilePath(_knob.lock()->getHolder(),filePath);
+}
+
 void
 KnobGuiChoice::onEntriesPopulated()
 {
@@ -322,14 +419,72 @@ KnobGuiChoice::onEntriesPopulated()
     const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
     std::string activeEntry = knob->getActiveEntryText_mt_safe();
 
+    QString pluginShortcutGroup;
+    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+    if (isEffect) {
+        PluginPtr plugin = isEffect->getNode()->getPlugin();
+        if (plugin) {
+            pluginShortcutGroup = plugin->getPluginShortcutGroup();
+        }
+    }
+
+
+    const std::map<int, std::string>& shortcutsMap = knob->getShortcuts();
+    const std::map<int, std::string>& iconsMap = knob->getIcons();
+
     for (U32 i = 0; i < entries.size(); ++i) {
         std::string helpStr;
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
 
-        _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+        std::string shortcutID;
+        std::string iconFilePath;
+        if (!pluginShortcutGroup.isEmpty()) {
+            std::map<int, std::string>::const_iterator foundShortcut = shortcutsMap.find(i);
+            if (foundShortcut != shortcutsMap.end()) {
+                shortcutID = foundShortcut->second;
+            }
+        }
+
+        std::map<int, std::string>::const_iterator foundIcon = iconsMap.find(i);
+        if (foundIcon != iconsMap.end()) {
+            iconFilePath = foundIcon->second;
+        }
+
+        
+        QIcon icon;
+        if (!iconFilePath.empty()) {
+            QPixmap pix = getPixmapFromFilePath(QString::fromUtf8(iconFilePath.c_str()));
+            if (!pix.isNull()) {
+                pix = pix.scaled(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+                icon.addPixmap(pix);
+            }
+        }
+
+        if (!shortcutID.empty() && !pluginShortcutGroup.isEmpty() && !_comboBox->isCascading()) {
+            QAction* action = new ActionWithShortcut(pluginShortcutGroup.toStdString(),
+                                                     shortcutID,
+                                                     entries[i],
+                                                     _comboBox);
+            if (!icon.isNull()) {
+                action->setIcon(icon);
+            }
+            _comboBox->addAction(action);
+
+        } else {
+            _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), icon, QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+            
+        }
+        
+        
     }
+
+    const std::vector<int>& separators = knob->getSeparators();
+    for (std::size_t i = 0; i < separators.size(); ++i) {
+        _comboBox->insertSeparator(separators[i]);
+    }
+
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if ( knob->getHostCanAddOptions() &&
          ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
@@ -393,9 +548,8 @@ KnobGuiChoice::reflectExpressionState(int /*dimension*/,
 void
 KnobGuiChoice::updateToolTip()
 {
-    QString tt = toolTip();
+    toolTip(_comboBox);
 
-    _comboBox->setToolTip( tt );
 }
 
 void

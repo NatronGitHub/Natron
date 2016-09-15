@@ -52,12 +52,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <boost/bind.hpp>
 
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerFrameAccessor.h"
 
+#include "Serialization/NodeSerialization.h"
 
 #define kTrackBaseName "track"
 

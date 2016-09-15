@@ -30,6 +30,12 @@ Functions
 *    def :meth:`getParent<NatronEngine.Param.getParent>` ()
 *    def :meth:`getScriptName<NatronEngine.Param.getScriptName>` ()
 *    def :meth:`getTypeName<NatronEngine.Param.getTypeName>` ()
+*    def :meth:`getViewerUILayoutType<NatronEngine.Param.getViewerUILayoutType>` ()
+*    def :meth:`getViewerUIItemSpacing<NatronEngine.Param.getViewerUIItemSpacing>` ()
+*    def :meth:`getViewerUIIconFilePath<NatronEngine.Param.getViewerUIIconFilePath>` ([checked=False])
+*    def :meth:`getViewerUILabel<NatronEngine.Param.getViewerUILabel>` ()
+*    def :meth:`getHasViewerUI<NatronEngine.Param.getHasViewerUI>` ()
+*    def :meth:`getViewerUIVisible<NatronEngine.Param.getViewerUIVisible>` ()
 *	 def :meth:`random<NatronEngine.Param.random>` ([min=0.,max=1.])
 *	 def :meth:`random<NatronEngine.Param.random>` (seed)
 *	 def :meth:`randomInt<NatronEngine.Param.randomInt>` (min,max)
@@ -37,14 +43,17 @@ Functions
 *    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
 *    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
-*    def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
-*    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
+*    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon [,checked=False])
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
-*    def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
 *    def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
+*    def :meth:`setViewerUILayoutType<NatronEngine.Param.setViewerUILayoutType>` (type)
+*    def :meth:`setViewerUIItemSpacing<NatronEngine.Param.setViewerUIItemSpacing>` (spacingPx)
+*    def :meth:`setViewerUIIconFilePath<NatronEngine.Param.setViewerUIIconFilePath>` (filePath[, checked])
+*    def :meth:`setViewerUILabel<NatronEngine.Param.setViewerUILabel>` (label)
+*    def :meth:`setViewerUIVisible<NatronEngine.Param.setViewerUIVisible>` (visible)
 *    def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam, thisDimension, otherDimension)
 *    def :meth:`unslave<NatronEngine.Param.unslave>` (dimension)
 
@@ -95,7 +104,7 @@ they need to be set before calling :func:`refreshUserParamsGUI()<NatronEngine.Ef
 
 .. warning::
 
-	A non-dynamic property can no longer be changed once refreshUserParamsGUI() has been called.
+	A non-dynamic property requires a call to :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` to reflect changes.
 	
 For non *user-parameters* (i.e: parameters that were defined by the underlying OpenFX plug-in), only 
 their **dynamic** properties can be changed since  :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
@@ -177,6 +186,24 @@ it has no effect on already declared non-user parameters.
     
     Note that ParametricParam , GroupParam, PageParam, ButtonParam, FileParam, OutputFileParam,
     PathParam cannot animate at all.
+
+	
+Parameter in-viewer interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In Natron, each :ref:`Effect<Effect>` may have an interface in the Viewer, like the Roto or Tracker
+nodes have.
+
+You may add parameters on the viewer UI for any Effect as well as edit it. This also apply
+to the Viewer node UI as well, so one can completely customize the Viewer toolbars. The user
+ guide covers in detail how to customize the Viewer UI for an Effect.
+
+To add a parameter to the Viewer UI of an Effect, use the function :func:`insertParamInViewerUI(parameter, index)<NatronEngine.Effect.insertParamInViewerUI>`.
+You may then control its layout, using the :func:`setViewerUILayoutType(type)<NatronEngine.Param.setViewerUILayoutType>` function and the spacing
+between parameters in pixels with :func:`setViewerUIItemSpacing(spacingPx)<NatronEngine.Param.setViewerUIItemSpacing>`.
+You may set the text label or icon of the parameter specifically in the viewer UI by calling 
+:func:`setViewerUIIconFilePath(filePath,checked)<NatronEngine.Param.setViewerUIIconFilePath>`
+and :func:`setViewerUILabel(label)<NatronEngine.Param.setViewerUILabel>`.
 
 	
 Member functions description
@@ -367,7 +394,48 @@ the *label* and the *script name*
 
 Returns the type-name of the parameter.
 
+.. method:: NatronEngine.Param.getViewerUILayoutType ()
 
+	:rtype: :class:`ViewerContextLayoutTypeEnum<NatronEngine.Natron.ViewerContextLayoutTypeEnum>`
+	
+	
+	Returns the layout type of this parameter if it is present in the viewer interface of the Effect holding it.
+
+.. method:: NatronEngine.Param.getViewerUIItemSpacing ()
+
+	:rtype: :class:`int<PySide.QtCore.int>`	
+	
+	
+	Returns the item spacing after this parameter if it is present in the viewer interface of the Effect holding it.
+	
+.. method:: NatronEngine.Param.getViewerUIIconFilePath ([checked=False])
+
+	:param checked: :class:`bool<PySide.QtCore.bool>
+	:rtype: :class:`str<NatronEngine.std::string>`
+	
+	Returns the icon file path of this parameter if it is present in the viewer interface of the Effect holding it.
+	For buttons, if checked it false, the icon will be used when the button is unchecked, if checked it will be used
+    when the button is checked.
+	
+.. method:: NatronEngine.Param.getHasViewerUI ()
+
+	:rtype: :class:`bool<PySide.QtCore.bool>
+
+	Returns whether this parameter has an interface in the Viewer UI of it's holding Effect.
+	
+.. method:: NatronEngine.Param.getViewerUIVisible ()
+
+	:rtype: :class:`bool<PySide.QtCore.bool>
+
+	Returns whether this parameter is visible in the Viewer UI. Only valid for parameters with a viewer ui
+	
+	
+.. method:: NatronEngine.Param.getViewerUILabel ()
+
+	:rtype: :class:`str<NatronEngine.std::string>`
+	
+	Returns the label of this parameter if it is present in the viewer interface of the Effect holding it.
+	
 .. method:: NatronEngine.Param.random([min=0., max=1.])
 
 	:param min: :class:`float<PySide.QtCore.float>`
@@ -453,15 +521,6 @@ When disabled, the parameter will be displayed in black and the user will not be
 to edit it.
 See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
 
-.. method:: NatronEngine.Param.setEnabledByDefault(enabled)
-
-
-    :param enabled: :class:`bool<PySide.QtCore.bool>`
-
-Set whether the parameter should be enabled or not by default.
-When disabled, the parameter will be displayed in black and the user will not be able
-to edit it.
-
 
 .. method:: NatronEngine.Param.setEvaluateOnChange(eval)
 
@@ -473,15 +532,17 @@ function that change the value of the parameter will trigger a new render.
 See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
 
 
-.. method:: NatronEngine.Param.setIconFilePath(icon)
+.. method:: NatronEngine.Param.setIconFilePath(icon [,checked])
 
 
     :param icon: :class:`str<NatronEngine.std::string>`
+    :param checked: :class:`bool<PySide.QtCore.bool>`
 
 Set here the icon file path for the label. This should be either an absolute path or
 a file-path relative to a path in the NATRON_PLUGIN_PATH. The icon will replace the
-label of the parameter.
-
+label of the parameter. If this parameter is a :ref:`ButtonParam<ButtonParam>` then
+if *checked* is *True* the icon will be used when the button is down. Similarily if
+*checked* is *False* the icon will be used when the button is up.
 
 
 
@@ -515,14 +576,6 @@ See :func:`getIsPersistent<NatronEngine.Param.getIsPersistent>`
 Set whether this parameter should be visible or not to the user.
 See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 
-.. method:: NatronEngine.Param.setVisibleByDefault(visible)
-
-
-    :param visible: :class:`bool<PySide.QtCore.bool>`
-	
-Set whether this parameter should be visible or not to the user in its default state.
-
-
 .. method:: NatronEngine.Param.setAsAlias(otherParam)
 
 	:param otherParam: :class:`Param<NatronEngine.Param>`
@@ -536,6 +589,48 @@ drop-down menu will be updated whenever the *otherParam* menu is updated.
 
 This is used generally to make user parameters on groups with the "Pick" option of the
 "Manage User Parameters" dialog.
+
+
+.. method:: NatronEngine.Param.setViewerUILayoutType (type)
+
+	:param type: :class:`NatronEngine.Natron.ViewerContextLayoutTypeEnum<NatronEngine.Natron.ViewerContextLayoutTypeEnum>`
+	
+	
+	Set the layout type of this parameter if it is present in the viewer interface of the Effect holding it.
+
+.. method:: NatronEngine.Param.setViewerUIItemSpacing (spacing)
+
+	:param spacing: :class:`int<PySide.QtCore.int>`	
+	
+	
+	Set the item spacing after this parameter if it is present in the viewer interface of the Effect holding it.
+	
+.. method:: NatronEngine.Param.setViewerUIIconFilePath (filePath[,checked=False])
+
+
+	:param filePath: :class:`str<NatronEngine.std::string>`
+	:param checked: :class:`bool<PySide.QtCore.bool>`
+	
+	Set the icon file path of this parameter if it is present in the viewer interface of the Effect holding it.
+	For buttons, if checked it false, the icon will be used when the button is unchecked, if checked it will be used
+    when the button is checked.
+    This function only has an effect on user created parameters.
+	
+	
+.. method:: NatronEngine.Param.setViewerUILabel (label)
+
+	:param label: :class:`str<NatronEngine.std::string>`
+	
+	Set the label of this parameter if it is present in the viewer interface of the Effect holding it.
+	This function only has an effect on user created parameters.
+	
+	
+.. method:: NatronEngine.Param.setViewerUIVisible (visible)
+
+	:param visible: :class:`bool<PySide.QtCore.bool>`
+	
+	Set this parameter visible or not in the Viewer UI. Only valid for parameters for which
+	the function :func:`getHasViewerUI()<NatronEngine.Param.getHasViewerUI>` returns *True*.
 
 
 .. method:: NatronEngine.Param.slaveTo(otherParam, thisDimension, otherDimension)

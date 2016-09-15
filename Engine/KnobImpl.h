@@ -56,8 +56,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Hash64.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/StringAnimationManager.h"
 
 
 #define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
@@ -1986,6 +1988,28 @@ Knob<T>::getDefaultValue(int dimension) const
 }
 
 template<typename T>
+T
+Knob<T>::getInitialDefaultValue(int dimension) const
+{
+    QMutexLocker l(&_valueMutex);
+
+    return _defaultValues[dimension].initialValue;
+
+}
+
+template<typename T>
+void
+Knob<T>::setCurrentDefaultValueAsInitialValue()
+{
+    int nDims = getDimension();
+    QMutexLocker l(&_valueMutex);
+    for (int i = 0; i < nDims; ++i) {
+        _defaultValues[i].initialValue = _defaultValues[i].value;
+        _defaultValues[i].defaultValueSet = true;
+    }
+}
+
+template<typename T>
 bool
 Knob<T>::hasDefaultValueChanged(int dimension) const
 {
@@ -2015,7 +2039,8 @@ Knob<T>::setDefaultValue(const T & v,
             _defaultValues[dimension].initialValue = v;
         }
     }
-    resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    resetToDefaultValue(dimension);
+    computeHasModifications();
 }
 
 template <typename T>
@@ -2410,48 +2435,9 @@ KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
 }
 
 
-template<>
-void
-KnobDoubleBase::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
-{
-    KnobI::removeAnimation(ViewSpec::all(), dimension);
-    double defaultV;
-    {
-        QMutexLocker l(&_valueMutex);
-        defaultV = _defaultValues[dimension].value;
-    }
-
-    ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
-    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
-
-
-    clearExpression(dimension, true);
-    resetExtraToDefaultValue(dimension);
-    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
-    if (isDouble) {
-        if ( isDouble->getDefaultValuesAreNormalized() ) {
-            if (isDouble->getValueIsNormalized(dimension) == eValueIsNormalizedNone) {
-                // default is normalized, value is non-normalized: denormalize it!
-                double time = getCurrentTime();
-                defaultV = isDouble->denormalize(dimension, time, defaultV);
-            }
-        } else {
-            if (isDouble->getValueIsNormalized(dimension) != eValueIsNormalizedNone) {
-                // default is non-normalized, value is normalized: normalize it!
-                double time = getCurrentTime();
-                defaultV = isDouble->normalize(dimension, time, defaultV);
-            }
-        }
-    }
-    ignore_result( setValue(defaultV, ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault, NULL) );
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault);
-    }
-}
-
 template<typename T>
 void
-Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
+Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(ViewSpec::all(), dimension);
     T defaultV;
@@ -2468,14 +2454,6 @@ Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
     }
 }
 
-template<typename T>
-void
-Knob<T>::resetToDefaultValue(int dimension)
-{
-    resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
-    setSecret( getDefaultIsSecret() );
-    setEnabled( dimension, isDefaultEnabled(dimension) );
-}
 
 // If *all* the following conditions hold:
 // - this is a double value
@@ -2534,8 +2512,7 @@ KnobDoubleBase::resetToDefaultValue(int dimension)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault);
     }
-    setSecret( getDefaultIsSecret() );
-    setEnabled( dimension, isDefaultEnabled(dimension) );
+
 }
 
 template<typename T>
@@ -2906,8 +2883,6 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     }
     cloneInternalCurvesIfNeeded(dimensionChanged);
 
-    clearExpressionsResultsIfNeeded(dimensionChanged);
-
     ret |= !dimensionChanged.empty();
 
     if ( !disableEvaluation && !dimensionChanged.empty() ) {
@@ -2935,6 +2910,7 @@ template <typename T>
 void
 Knob<T>::computeHasModifications()
 {
+
     bool oneChanged = false;
 
     for (int i = 0; i < getDimension(); ++i) {
@@ -2958,7 +2934,6 @@ Knob<T>::computeHasModifications()
             }
         }
 
-        ///Check expressions too in the future
         if (!hasModif) {
             QMutexLocker k(&_valueMutex);
             if ( computeValuesHaveModifications(i, _values[i], _defaultValues[i].value) ) {
@@ -2988,6 +2963,73 @@ Knob<T>::copyValuesFromCurve(int dim)
     QMutexLocker l(&_valueMutex);
     _guiValues[dim] = _values[dim] = v;
 
+}
+
+template <typename T>
+void handleAnimatedHashing(Knob<T>* knob, ViewIdx view, int dimension, Hash64* hash)
+{
+    CurvePtr curve = knob->getCurve(view, dimension);
+    assert(curve);
+    Hash64::appendCurve(curve, hash);
+
+}
+
+template <>
+void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, int dimension, Hash64* hash)
+{
+    AnimatingKnobStringHelper* isAnimated = dynamic_cast<AnimatingKnobStringHelper*>(knob);
+    assert(isAnimated);
+    if (isAnimated) {
+        const StringAnimationManager& mng = isAnimated->getAnimation();
+        std::map<int, std::string> keys;
+        mng.save(&keys);
+        for (std::map<int, std::string>::iterator it = keys.begin(); it!=keys.end(); ++it) {
+            Hash64::appendQString(QString::fromUtf8(it->second.c_str()), hash);
+        }
+    } else {
+        CurvePtr curve = knob->getCurve(view, dimension);
+        assert(curve);
+        Hash64::appendCurve(curve, hash);
+    }
+
+}
+
+template <typename T>
+void appendValueToHash(const T& v, Hash64* hash)
+{
+    hash->append(v);
+}
+
+template <>
+void appendValueToHash(const bool& v, Hash64* hash)
+{
+    hash->append(v);
+}
+
+
+template <>
+void appendValueToHash(const std::string& v, Hash64* hash)
+{
+    Hash64::appendQString(QString::fromUtf8(v.c_str()), hash);
+}
+
+template <typename T>
+void
+Knob<T>::appendToHash(double time, ViewIdx view, Hash64* hash)
+{
+    int nDims = getDimension();
+
+    KnobFrameViewHashingStrategyEnum hashingStrat = getHashingStrategy();
+
+
+    for (int i = 0; i < nDims; ++i) {
+        if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(i)) {
+            handleAnimatedHashing(this, view, i, hash);
+        } else {
+            T v = getValueAtTime(time, i, view);
+            appendValueToHash(v, hash);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

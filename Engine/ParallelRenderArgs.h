@@ -41,9 +41,9 @@
 #include "Engine/EngineFwd.h"
 
 
-//This controls how many frames a plug-in can pre-fetch (per view and per input)
-//This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
-//do not all stick altogether in memory
+// This controls how many frames a plug-in can pre-fetch (per view and per input)
+// This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
+// do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
 
 NATRON_NAMESPACE_ENTER;
@@ -67,6 +67,51 @@ typedef boost::shared_ptr<ReRoutesMap> ReRoutesMapPtr;
 
 class NodeFrameRequest;
 
+struct FrameViewPair
+{
+    double time;
+    ViewIdx view;
+};
+
+
+struct FrameView_compare_less
+{
+    bool operator() (const FrameViewPair & lhs,
+                     const FrameViewPair & rhs) const
+    {
+        if (lhs.time < rhs.time) {
+            return true;
+        } else if (lhs.time > rhs.time) {
+            return false;
+        } else {
+            if (lhs.view == -1 || rhs.view == -1 || lhs.view == rhs.view) {
+                return false;
+            }
+            if (lhs.view < rhs.view) {
+                return true;
+            } else {
+                // lhs.view > rhs.view
+                return false;
+            }
+        }
+    }
+};
+
+typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;
+
+inline bool findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap& table, U64* hash)
+{
+    FrameViewPair fv = {time, view};
+    FrameViewHashMap::const_iterator it = table.find(fv);
+    if (it != table.end()) {
+        *hash = it->second;
+        return true;
+    }
+    *hash = 0;
+    return false;
+
+}
+
 /**
  * @brief Thread-local arguments given to render a frame by the tree.
  * This is different than the RenderArgs because it is not local to a
@@ -86,9 +131,6 @@ public:
 
     ///To check the current time on the timeline
     TimeLinePtr timeline;
-
-    ///The hash of the node at the time we started rendering
-    U64 nodeHash;
 
     ///If set, contains data for all frame/view pair that are going to be computed
     ///for this frame/view pair with the overall RoI to avoid rendering several times with this node.
@@ -110,11 +152,12 @@ public:
     ///if we should cache the output and whether we should do GPU rendering or not
     int visitsCount;
 
-    ///List of the nodes in the rotopaint tree
-    NodesList rotoPaintNodes;
 
     ///Various stats local to the render of a frame
     RenderStatsPtr stats;
+
+    // Hash of this node for a frame/view pair
+    FrameViewHashMap frameViewHash;
 
     ///The OpenGL context to use for the render of this frame
     boost::weak_ptr<OSGLContext> openGLContext;
@@ -157,13 +200,10 @@ public:
     ParallelRenderArgs();
 
     bool isCurrentFrameRenderNotAbortable() const;
+
+    bool getFrameViewHash(double time, ViewIdx view, U64* hash) const;
 };
 
-struct FrameViewPair
-{
-    double time;
-    ViewIdx view;
-};
 
 struct FrameViewRequestGlobalData
 {
@@ -176,13 +216,15 @@ struct FrameViewRequestGlobalData
 
     ///Set when the first request is made, set on first request
     RectD rod;
-    bool isProjectFormat;
 
     //Identity data, set on first request
     bool isIdentity;
     int identityInputNb;
     ViewIdx identityView;
     double inputIdentityTime;
+
+    // If this node or one of its inputs is frame varying, this is set to true
+    bool isFrameVaryingRecursive;
 };
 
 struct FrameViewRequestFinalData
@@ -207,27 +249,6 @@ struct FrameViewRequest
     FrameViewRequestGlobalData globalData;
 };
 
-struct FrameView_compare_less
-{
-    bool operator() (const FrameViewPair & lhs,
-                     const FrameViewPair & rhs) const
-    {
-        if (lhs.time < rhs.time) {
-            return true;
-        } else if (lhs.time > rhs.time) {
-            return false;
-        } else {
-            if (lhs.view < rhs.view) {
-                return true;
-            } else if (lhs.view > rhs.view) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-};
-
 typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFrameViewRequestData;
 
 class NodeFrameRequest
@@ -235,8 +256,7 @@ class NodeFrameRequest
 public:
     NodeFrameViewRequestData frames;
 
-    ///Set on first request
-    U64 nodeHash;
+    // Set on first request
     RenderScale mappedScale;
 
     bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
@@ -247,13 +267,19 @@ public:
 typedef std::map<NodePtr, NodeFrameRequestPtr > FrameRequestMap;
 
 
+/**
+ * @brief Setup thread local storage through a render tree starting from the tree root.
+ * This is mandatory to create an instance of this class before calling renderRoI on the treeRoot. 
+ * Without this a lot of the compositing engine intelligence cannot work properly.
+ * Dependencies are computed recursively. The constructor may throw an exception upon failure.
+ **/
 class ParallelRenderArgsSetter
 {
     boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > > argsMap;
     NodesList nodes;
-
-protected:
-
+    NodeWPtr _treeRoot;
+    double _time;
+    ViewIdx _view;
     boost::weak_ptr<OSGLContext> _openGLContext, _cpuOpenGLContext;
 
 public:
@@ -292,9 +318,13 @@ public:
 
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args);
 
-    void updateNodesRequest(const FrameRequestMap& request);
+    StatusEnum computeRequestPass(unsigned int mipMapLevel, const RectD& canonicalRoI);
 
     virtual ~ParallelRenderArgsSetter();
+
+private:
+
+    void fetchOpenGLContext(const CtorArgsPtr& inArgs);
 };
 
 NATRON_NAMESPACE_EXIT;

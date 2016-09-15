@@ -155,7 +155,6 @@ public:
         EffectInstancePtr holder = getKnobHolder();
 
         assert(holder);
-#ifdef NATRON_ENABLE_IO_META_NODES
         boost::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
         if (isType) {
             //Remove from the parent if it exists, because it will be added again afterwards
@@ -163,9 +162,7 @@ public:
 
             return isType;
         }
-#else
-        Q_UNUSED(scriptName);
-#endif
+
         boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder, getParamLabel(param), dimension);
         ret->setName(scriptName);
 

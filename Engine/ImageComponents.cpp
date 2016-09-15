@@ -29,6 +29,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Serialization/ImageParamsSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 static const char* rgbaComps[4] = {"R", "G", "B", "A"};
@@ -388,6 +390,31 @@ ImageComponents::getPairedStereoDisparity()
     static const ImageComponents comp(kNatronDisparityLeftPlaneUserName, kNatronDisparityRightPlaneUserName, kNatronDisparityComponentsName, xyComps, 2);
 
     return comp;
+}
+
+void
+ImageComponents::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::ImageComponentsSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::ImageComponentsSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    s->layerName = _layerName;
+    s->globalCompsName = _globalComponentsName;
+    s->channelNames = _componentNames;
+}
+
+void
+ImageComponents::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::ImageComponentsSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::ImageComponentsSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    _layerName = s->layerName;
+    _globalComponentsName = s->globalCompsName;
+    _componentNames = s->channelNames;
+
 }
 
 NATRON_NAMESPACE_EXIT;

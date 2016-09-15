@@ -114,6 +114,11 @@ public:
         return KnobIntPtr(new KnobInt(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     void disableSlider();
 
     bool isSliderDisabled() const;
@@ -133,6 +138,9 @@ public:
         return _isRectangle;
     }
 
+    void setValueCenteredInSpinBox(bool enabled) { _isValueCenteredInSpinbox = enabled; }
+
+    bool isValueCenteredInSpinBox() const { return _isValueCenteredInSpinbox; }
 public:
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -163,6 +171,7 @@ private:
     std::vector<int> _increments;
     bool _disableSlider;
     bool _isRectangle;
+    bool _isValueCenteredInSpinbox;
     static const std::string _typeNameStr;
 };
 
@@ -201,6 +210,11 @@ public:
                                 bool declaredByPlugin = true)
     {
         return KnobBoolPtr(new KnobBool(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
     }
 
     /// Can this type be animated?
@@ -268,6 +282,11 @@ public:
     }
 
     virtual ~KnobDouble();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -502,6 +521,11 @@ public:
         return _isToolButtonAction;
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
 private:
 
 
@@ -563,6 +587,7 @@ private: // derives from KnobI
                bool declaredByPlugin);
 
 public:
+
     static KnobHelperPtr create(const KnobHolderPtr& holder,
                                 const std::string &label,
                                 int dimension,
@@ -580,6 +605,11 @@ public:
     }
 
     virtual ~KnobChoice();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -601,6 +631,31 @@ public:
                          KnobChoiceMergeEntriesData* mergingData = 0,
                          bool restoreOldChoice = true);
 
+    /**
+     * @brief Set optional shortcuts visible for menu entries. All items in the menu don't need a shortcut
+     * so they are mapped against their index. The string corresponds to a shortcut ID that was registered
+     * on the node during the getPluginShortcuts function on the same node.
+     **/
+    void setShortcuts(const std::map<int, std::string>& shortcuts);
+
+    /**
+     * @brief Set optional icons for menu entries. All items in the menu don't need an icon
+     * so they are mapped against their index.
+     **/
+    void setIcons(const std::map<int, std::string>& icons);
+
+    const std::map<int, std::string>& getIcons() const;
+
+    const std::map<int, std::string>& getShortcuts() const;
+
+    /**
+     * @brief Set a list of separators. Each item in the list will add a separator after the index
+     * specified by the integer.
+     **/
+    void setSeparators(const std::vector<int>& separators);
+
+    const std::vector<int>& getSeparators() const;
+
     void resetChoices();
 
     void appendChoice( const std::string& entry, const std::string& help = std::string() );
@@ -613,6 +668,7 @@ public:
     const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
     std::string getActiveEntryText_mt_safe();
+    void setActiveEntry(const std::string& entry);
 
     int getNumEntries() const;
 
@@ -626,8 +682,6 @@ public:
 
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
-
-    void choiceRestoration(const KnobChoicePtr& knob, const ChoiceExtraData* data);
 
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
@@ -655,6 +709,15 @@ public:
     void setDefaultValueFromLabel(const std::string & value, int dimension = 0);
     void setDefaultValueFromLabelWithoutApplying(const std::string & value, int dimension = 0);
 
+    void setMissingEntryWarningEnabled(bool enabled);
+    bool isMissingEntryWarningEnabled() const;
+
+    void setIsDisplayChannelsKnob(bool b);
+    bool isDisplayChannelsKnob() const;
+
+    void setTextToFitHorizontally(const std::string& text);
+    std::string getTextToFitHorizontally() const;
+
 public Q_SLOTS:
 
     void onOriginalKnobPopulated();
@@ -668,6 +731,8 @@ Q_SIGNALS:
     void entryAppended(QString, QString);
 
 private:
+
+    virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
 
     virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
@@ -687,10 +752,18 @@ private:
     mutable QMutex _entriesMutex;
     std::vector<std::string> _newEntries, _mergedEntries;
     std::vector<std::string> _newEntriesHelp, _mergedEntriesHelp;
+    std::vector<int> _separators;
+    std::map<int, std::string> _shortcuts;
+    std::map<int, std::string> _menuIcons;
     std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
+    std::string _textToFitHorizontally; // < this is so that the combobox can have a fixed custom width
     bool _isCascading;
+    bool _showMissingEntryWarning;
+
+    // This knob gets special display of its entries with a coloured frame border
+    bool _isDisplayChannelKnob;
 };
 
 inline KnobChoicePtr
@@ -734,6 +807,11 @@ public:
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
+    }
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
     }
 
 private:
@@ -818,6 +896,11 @@ public:
         return true;
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
 public Q_SLOTS:
 
     void onDimensionSwitchToggled(bool b);
@@ -884,6 +967,11 @@ public:
 
     virtual ~KnobString();
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     /// Can this type be animated?
     /// String animation consists in setting constant strings at
     /// each keyframe, which are valid until the next keyframe.
@@ -947,11 +1035,99 @@ public:
         return !_multiLine;
     }
 
+    int getFontSize() const
+    {
+        return _fontSize;
+    }
+
+    void setFontSize(int size)
+    {
+        _fontSize = size;
+    }
+
+    std::string getFontFamily() const
+    {
+        return _fontFamily;
+    }
+
+    void setFontFamily(const std::string& family) {
+        _fontFamily = family;
+    }
+
+    void getFontColor(double* r, double* g, double* b) const
+    {
+        *r = _fontColor[0];
+        *g = _fontColor[1];
+        *b = _fontColor[2];
+    }
+
+    void setFontColor(double r, double g, double b)
+    {
+        _fontColor[0] = r;
+        _fontColor[1] = g;
+        _fontColor[2] = b;
+    }
+
+    bool getItalicActivated() const
+    {
+        return _italicActivated;
+    }
+
+    void setItalicActivated(bool b) {
+        _italicActivated = b;
+    }
+
+    bool getBoldActivated() const
+    {
+        return _boldActivated;
+    }
+
+    void setBoldActivated(bool b) {
+        _boldActivated = b;
+    }
+
     /**
      * @brief Relevant for multi-lines with rich text enables. It tells if
      * the string has content without the html tags
      **/
     bool hasContentWithoutHtmlTags();
+
+    static int getDefaultFontPointSize();
+
+    static bool parseFont(const QString & s, int *fontSize, QString* fontFamily, bool* isBold, bool* isItalic, double* r, double *g, double* b);
+
+    /**
+     * @brief Make a html friendly font tag from font properties
+     **/
+    static QString makeFontTag(const QString& family, int fontSize, double r, double g, double b);
+
+    /**
+     * @brief Surround the given text by the given font tag
+     **/
+    static QString decorateTextWithFontTag(const QString& family, int fontSize, double r, double g, double b, bool isBold, bool isItalic, const QString& text);
+
+    /**
+     * @brief Remove any custom Natron html tag content from the given text and returned a stripped version of it.
+     **/
+    static QString removeNatronHtmlTag(QString text);
+
+    /**
+     * @brief Get the content in between custom Natron html tags if any
+     **/
+    static QString getNatronHtmlTagContent(QString text);
+
+    /**
+     * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
+     * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
+     **/
+    static QString removeAutoAddedHtmlTags(QString text, bool removeNatronTag = true);
+
+    QString decorateStringWithCurrentState(const QString& str);
+
+    /**
+     * @brief Same as getValue() but decorates the string with the current font state. Only useful if rich text has been enabled
+     **/
+    QString getValueDecorated(double time, ViewSpec view);
 
 private:
 
@@ -965,6 +1141,11 @@ private:
     bool _customHtmlText;
     bool _isLabel;
     bool _isCustom;
+    int _fontSize;
+    bool _boldActivated;
+    bool _italicActivated;
+    std::string _fontFamily;
+    double _fontColor[3];
 };
 
 inline KnobStringPtr
@@ -1010,6 +1191,11 @@ public:
                                 bool declaredByPlugin = true)
     {
         return KnobGroupPtr(new KnobGroup(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
     }
 
     void addKnob(const KnobIPtr& k);
@@ -1083,6 +1269,11 @@ public:
                                 bool declaredByPlugin = true)
     {
         return KnobPagePtr(new KnobPage(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
     }
 
     void addKnob(const KnobIPtr& k);
@@ -1166,6 +1357,11 @@ public:
         return KnobParametricPtr(new KnobParametric(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     void setCurveColor(int dimension, double r, double g, double b);
 
     void getCurveColor(int dimension, double* r, double* g, double* b);
@@ -1216,9 +1412,11 @@ public:
     StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::list< Curve >* curves) const;
+    void saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const;
 
-    void loadParametricCurves(const std::list< Curve > & curves);
+    void loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::CurveSerialization > & curves);
+
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 Q_SIGNALS:
 
@@ -1269,6 +1467,11 @@ protected: // derives from KnobI, parent of KnobLayer, KnobPath
 
 public:
     virtual ~KnobTable();
+
+    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
     void getTable(std::list<std::vector<std::string> >* table);
     void getTableSingleCol(std::list<std::string>* table);
@@ -1350,6 +1553,7 @@ public:
     virtual ~KnobLayers()
     {
     }
+
 
     virtual int getColumnsCount() const OVERRIDE FINAL
     {

@@ -69,7 +69,8 @@ public:
         eDisplayModeB
     };
 
-    Histogram(Gui* gui,
+    Histogram(const std::string& scriptName,
+              Gui* gui,
               const QGLWidget* shareWidget = NULL);
 
     virtual ~Histogram();
@@ -80,6 +81,10 @@ public:
     void hideViewerCursor();
 
     int getViewerTextureInputDisplayed() const;
+
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
 public Q_SLOTS:
 

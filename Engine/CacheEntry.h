@@ -50,7 +50,6 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Engine/Hash64.h"
-#include "Engine/CacheEntryHolder.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
 #include "Engine/Texture.h"
@@ -159,6 +158,35 @@ struct TileCacheFile
 
 typedef boost::shared_ptr<TileCacheFile> TileCacheFilePtr;
 
+class AbstractCacheEntryBase : boost::noncopyable
+{
+public:
+
+    AbstractCacheEntryBase()
+    {
+
+    }
+
+    virtual ~AbstractCacheEntryBase()
+    {
+
+    }
+
+    virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) = 0;
+    virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) = 0;
+    virtual TileCacheFilePtr getTileCacheFile(const std::string& filepath, std::size_t dataOffset) = 0;
+    virtual std::size_t getCacheTileSizeBytes() const = 0;
+
+    virtual size_t size() const = 0;
+    virtual double getTime() const = 0;
+    virtual U64 getElementsCountFromParams() const = 0;
+
+    virtual void syncBackingFile() const = 0;
+};
+
+typedef boost::shared_ptr<AbstractCacheEntryBase> AbstractCacheEntryBasePtr;
+
+
 /**
  * @brief Defines the API of the Cache as seen by the cache entries
  **/
@@ -216,10 +244,9 @@ public:
                                            double time, size_t size) const = 0;
 
     /**
-     * @brief Remove from the cache all entries that matches the holderID and have a different nodeHash than the given one.
-     * @param removeAll If true, remove even entries that match the nodeHash
+     * @brief Remove from the cache all entries that matches the pluginID.
      **/
-    virtual void removeAllEntriesWithDifferentNodeHashForHolderPrivate(const std::string& holderID, U64 nodeHash, bool removeAll) = 0;
+    virtual void removeAllEntriesForPluginPrivate(const std::string& pluginID, std::list<AbstractCacheEntryBasePtr> *removedEntriesList = 0) = 0;
 
     /**
      * @brief Relevant only for tiled caches. This will allocate the memory required for a tile in the cache and lock it.
@@ -313,31 +340,6 @@ public:
     }
 };
 
-class AbstractCacheEntryBase : boost::noncopyable
-{
-public:
-
-    AbstractCacheEntryBase()
-    {
-
-    }
-
-    virtual ~AbstractCacheEntryBase()
-    {
-
-    }
-
-    virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) = 0;
-    virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) = 0;
-    virtual TileCacheFilePtr getTileCacheFile(const std::string& filepath, std::size_t dataOffset) = 0;
-    virtual std::size_t getCacheTileSizeBytes() const = 0;
-
-    virtual size_t size() const = 0;
-    virtual double getTime() const = 0;
-    virtual U64 getElementsCountFromParams() const = 0;
-
-    virtual void syncBackingFile() const = 0;
-};
 
 
 /** @brief Abstract interface for cache entries.
@@ -763,6 +765,8 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
     typedef ParamsType param_t;
+    typedef typename KeyType::SerializationType key_serialization_t;
+    typedef typename ParamsType::SerializationType params_serialization_t;
 
     /**
      * @brief Ctor

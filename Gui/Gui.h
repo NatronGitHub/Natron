@@ -45,8 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ScriptObject.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/SerializableWindow.h"
 
-#include "Gui/SerializableWindow.h"
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
 #endif
@@ -99,7 +99,7 @@ public:
 
     const NodesGuiList & getSelectedNodes() const;
 
-    void createViewerGui(const NodePtr& viewer);
+    void createViewerGui(const NodeGuiPtr& viewer);
 
     void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);
 
@@ -129,7 +129,7 @@ public:
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(const ViewerInstancePtr& node, TabWidget* where);
+    ViewerTab* addNewViewerTab(const NodeGuiPtr& node, TabWidget* where);
 
     void addViewerTab(ViewerTab* tab, TabWidget* where);
 
@@ -154,7 +154,7 @@ public:
 
     static void loadStyleSheet();
     ToolButton* findExistingToolButton(const QString & name) const;
-    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& plugin);
+    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& treeNode);
 
     void sortAllPluginsToolButtons();
 
@@ -223,43 +223,14 @@ public:
     ///Make the layout according to the serialization.
     ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
     ///prior to restoring. This is because older projects didn't have as much info to recreate the entire layout.
-    void restoreLayout(bool wipePrevious, bool enableOldProjectCompatibility,
-                       const GuiLayoutSerialization & layoutSerialization);
+    void restoreLayout(bool wipePrevious, bool enableOldProjectCompatibility, const SERIALIZATION_NAMESPACE::WorkspaceSerialization& layoutSerialization);
 
-    const std::list<TabWidget*> & getPanes() const;
-    std::list<TabWidget*> getPanes_mt_safe() const;
 
-    int getPanesCount() const;
-
-    /**
-     * @brief If baseName is already used by another pane or it is empty,this function will return a new pane name that is not already
-     * used by another pane. Otherwise it will return baseName.
-     **/
-    QString getAvailablePaneName( const QString & baseName = QString() ) const;
-
-    void registerPane(TabWidget* pane);
-    void unregisterPane(TabWidget* pane);
+    void onPaneRegistered(TabWidgetI* pane);
+    void onPaneUnRegistered(TabWidgetI* pane);
 
     void registerTab(PanelWidget* tab, ScriptObject* obj);
     void unregisterTab(PanelWidget* tab);
-
-    void registerFloatingWindow(FloatingWidget* window);
-    void unregisterFloatingWindow(FloatingWidget* window);
-
-
-    void registerSplitter(Splitter* s);
-    void unregisterSplitter(Splitter* s);
-
-    void registerPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel, const std::string& pythonFunction);
-    void unregisterPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel);
-
-    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> getPythonPanels() const;
-
-
-    /**
-     * @brief MT-Safe
-     **/
-    std::list<FloatingWidget*> getFloatingWindows() const;
 
 
     /*Returns a valid tab if a tab with a matching name has been
@@ -305,7 +276,9 @@ public:
 
     static QPixmap screenShot(QWidget* w);
 
-    void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
+    ProjectGui* getProjectGui() const;
+
+    void loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
@@ -321,21 +294,16 @@ public:
 
     void initProjectGuiKnobs();
 
-    void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
-
     void setViewersCurrentView(ViewIdx view);
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
 
-    void setMasterSyncViewer(ViewerTab* master);
-    ViewerTab* getMasterSyncViewer() const;
+    void activateViewerTab(const ViewerNodePtr& viewer);
 
-    void activateViewerTab(const ViewerInstancePtr& viewer);
+    void deactivateViewerTab(const ViewerNodePtr& viewer);
 
-    void deactivateViewerTab(const ViewerInstancePtr& viewer);
-
-    ViewerTab* getViewerTabForInstance(const ViewerInstancePtr& node) const;
+    ViewerTab* getViewerTabForInstance(const ViewerNodePtr& node) const;
     const NodesGuiList & getVisibleNodes() const;
     NodesGuiList getVisibleNodes_mt_safe() const;
 
@@ -369,6 +337,8 @@ public:
 
     void setUndoRedoStackLimit(int limit);
 
+    NodeGuiPtr getCurrentNodeViewerInterface(const std::string& pluginID) const;
+
     /**
      * @brief Make a new viewer interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.
@@ -386,6 +356,12 @@ public:
      **/
     void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanantly);
 
+    /**
+     * @brief Same as removeNodeViewerInterface but for the Viewer node UI only
+     **/
+    void removeViewerInterface(const NodeGuiPtr& n,
+                               bool permanently);
+
     void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 
     void progressEnd(const NodePtr& node);
@@ -402,12 +378,12 @@ public:
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
 
-    const std::list<DockablePanel*>& getVisiblePanels() const;
-    std::list<DockablePanel*> getVisiblePanels_mt_safe() const;
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
     QToolButton* getToolButtonMenuOpened() const;
+
+    static bool getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, int pixSize, QPixmap* pixmap);
 
     void connectViewersToViewerCache();
 
@@ -539,7 +515,16 @@ public:
 
     void updateAboutWindowLibrariesVersion();
 
+    virtual TabWidgetI* isMainWidgetTab() const OVERRIDE FINAL;
+
+    virtual SplitterI* isMainWidgetSplitter() const OVERRIDE FINAL;
+
+    virtual DockablePanelI* isMainWidgetPanel() const OVERRIDE FINAL;
+
 protected:
+
+    virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) OVERRIDE FINAL;
+    
     // Reimplemented Protected Functions
 
     //bool event(QEvent* event) OVERRIDE;
@@ -695,6 +680,8 @@ public Q_SLOTS:
 
 private:
 
+    void importLayoutInternal(const std::string& filename);
+
     void setCurrentPanelFocus(PanelWidget* widget);
 
     AppInstancePtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
@@ -710,6 +697,7 @@ private:
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;

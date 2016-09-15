@@ -38,7 +38,6 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
@@ -46,6 +45,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -57,11 +57,15 @@
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiFile.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/Histogram.h"
 #include "Gui/ProgressPanel.h"
+#include "Gui/RenderStatsDialog.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
+
+#include "Serialization/WorkspaceSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -137,6 +141,9 @@ struct GuiAppInstancePrivate
     std::list<SequenceTime> timelineKeyframes, timelineUserKeys;
     KnobDnDData knobDnd;
 
+    // The viewer that's mastering others when all viewports are in sync
+    NodeWPtr masterSyncViewer;
+
     GuiAppInstancePrivate()
         : _gui(NULL)
         , _isClosing(false)
@@ -153,6 +160,7 @@ struct GuiAppInstancePrivate
         , timelineKeyframes()
         , timelineUserKeys()
         , knobDnd()
+        , masterSyncViewer()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -187,19 +195,11 @@ GuiAppInstance::deletePreviewProvider()
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-        for (std::map<std::string, NodePtr>::iterator it =
-                 _imp->_previewProvider->readerNodes.begin();
-             it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second->destroyNode(false);
-        }
-        _imp->_previewProvider->readerNodes.clear();
-#else
+
         if (_imp->_previewProvider->readerNode) {
             _imp->_previewProvider->readerNode->destroyNode(false);
             _imp->_previewProvider->readerNode.reset();
         }
-#endif
 
         _imp->_previewProvider.reset();
     }
@@ -255,6 +255,16 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const PluginGroupNodePtr&
 }
 
 void
+GuiAppInstance::createMainWindow()
+{
+    boost::shared_ptr<GuiAppInstance> thisShared = toGuiAppInstance( shared_from_this() );
+    assert(thisShared);
+    _imp->_gui = new Gui(thisShared);
+    _imp->_gui->createGui();
+    setMainWindowPointer(_imp->_gui);
+}
+
+void
 GuiAppInstance::loadInternal(const CLArgs& cl,
                              bool makeEmptyInstance)
 {
@@ -268,10 +278,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = toGuiAppInstance( shared_from_this() );
-    assert(thisShared);
-    _imp->_gui = new Gui(thisShared);
-    _imp->_gui->createGui();
+    createMainWindow();
 
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 
@@ -469,7 +476,10 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     if (group) {
         NodeGraphI* graph_i = group->getNodeGraph();
-        assert(graph_i);
+        if (!graph_i) {
+            // If the container does not have a graph UI, do not create the node UI
+            return;
+        }
         graph = dynamic_cast<NodeGraph*>(graph_i);
         assert(graph);
     } else {
@@ -492,13 +502,17 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
 
-    bool isViewer = node->isEffectViewerInstance() != 0;
+    bool isViewer = node->isEffectViewerNode() != 0;
     if (isViewer) {
-        _imp->_gui->createViewerGui(node);
+        _imp->_gui->createViewerGui(nodegui);
     }
 
     // Must be done after the viewer gui has been created
-    _imp->_gui->createNodeViewerInterface(nodegui);
+    // For viewers, they create their own viewer interface.
+    // For PyPlugs, they call this later once the Group has been setup to be a PyPlug
+    if (!isViewer && !isCreatingPythonGroup()) {
+        _imp->_gui->createNodeViewerInterface(nodegui);
+    }
 
 
     NodeGroupPtr isGroup = node->isEffectNodeGroup();
@@ -511,7 +525,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->initializeInputs();
     }
     
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     if ( !serialization && !isViewer ) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
@@ -789,23 +803,16 @@ GuiAppInstance::isShowingDialog() const
 }
 
 void
-GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const
 {
-    _imp->_gui->loadProjectGui(isAutosave, archive);
+    _imp->_gui->loadProjectGui(isAutosave, serialization);
 }
 
-void
-GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
-{
-    if (_imp->_gui) {
-        _imp->_gui->saveProjectGui(archive);
-    }
-}
 
 void
 GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
 {
-    _imp->_gui->updateViewersViewsMenu(viewNames);
+    _imp->_gui->updateViewsActions(viewNames.size());
 }
 
 void
@@ -1057,6 +1064,15 @@ GuiAppInstance::abortAllViewers()
 }
 
 void
+GuiAppInstance::getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const
+{
+    ViewerTab* viewer = _imp->_gui->getActiveViewer();
+    if (viewer) {
+        return viewer->getViewer()->getOpenGLContextFormat(bitdepthPerComponent, hasAlpha);
+    }
+}
+
+void
 GuiAppInstance::reloadStylesheet()
 {
     if (_imp->_gui) {
@@ -1088,10 +1104,20 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const NodeSerializationPtr& serialization, bool autoConnect)
+                                        const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization,
+                                        const CreateNodeArgs& args)
 {
     NodeGuiIPtr node_gui_i = node->getNodeGui();
-    if (autoConnect && !serialization && node_gui_i) {
+    NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+
+    if (node_gui_i) {
+        _imp->_gui->createNodeViewerInterface(nodeGui);
+    }
+
+    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+    //double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+    //double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+    if (autoConnect && !serialization && node_gui_i /*&& (xPosHint == INT_MIN || yPosHint == INT_MIN)*/) {
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
@@ -1115,11 +1141,10 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                 selectedNode.reset();
             }
         }
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
  
-    AppInstance::onGroupCreationFinished(node, serialization, autoConnect);
+    AppInstance::onGroupCreationFinished(node, serialization, args);
 
     /*std::list<ViewerInstancePtr> viewers;
        node->hasViewersConnected(&viewers);
@@ -1231,7 +1256,6 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
                                   const RotoStrokeItemPtr& stroke,
                                   bool isPainting)
 {
-    qDebug() << "setUserIsPainting: " << isPainting;
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         bool newStroke = stroke != _imp->rotoData.stroke;
@@ -1662,9 +1686,72 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
 }
 
 void
+GuiAppInstance::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
+{
+    _imp->_gui->refreshAllTimeEvaluationParams(onlyTimeEvaluationKnobs);
+}
+
+void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+void
+GuiAppInstance::setMasterSyncViewer(const NodePtr& viewerNode)
+{
+    _imp->masterSyncViewer = viewerNode;
+}
+
+NodePtr
+GuiAppInstance::getMasterSyncViewer() const
+{
+    return _imp->masterSyncViewer.lock();
+}
+
+void
+GuiAppInstance::showRenderStatsWindow()
+{
+    getGui()->getOrCreateRenderStatsDialog()->show();
+}
+
+void
+GuiAppInstance::setGuiFrozen(bool frozen)
+{
+    getGui()->onFreezeUIButtonClicked(frozen);
+}
+
+void
+GuiAppInstance::onTabWidgetRegistered(TabWidgetI* tabWidget)
+{
+    getGui()->onPaneRegistered(tabWidget);
+}
+
+void
+GuiAppInstance::onTabWidgetUnregistered(TabWidgetI* tabWidget)
+{
+    getGui()->onPaneUnRegistered(tabWidget);
+}
+
+void
+GuiAppInstance::getHistogramScriptNames(std::list<std::string>* histograms) const
+{
+    const std::list<Histogram*>& histos = getGui()->getHistograms();
+    for (std::list<Histogram*>::const_iterator it = histos.begin(); it!=histos.end(); ++it) {
+        histograms->push_back((*it)->getScriptName());
+    }
+}
+
+void
+GuiAppInstance::getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* projections) const
+{
+    RegisteredTabs tabs = getGui()->getRegisteredTabs();
+    for (RegisteredTabs::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+        SERIALIZATION_NAMESPACE::ViewportData data;
+        if (it->second.first->saveProjection(&data)) {
+            (*projections)[it->first] = data;
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

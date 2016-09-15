@@ -107,11 +107,6 @@ Param::setVisible(bool visible)
     getInternalKnob()->setSecret(!visible);
 }
 
-void
-Param::setVisibleByDefault(bool visible)
-{
-    getInternalKnob()->setSecretByDefault(!visible);
-}
 
 bool
 Param::getIsEnabled(int dimension) const
@@ -124,12 +119,6 @@ Param::setEnabled(bool enabled,
                   int dimension)
 {
     getInternalKnob()->setEnabled(dimension, enabled);
-}
-
-void
-Param::setEnabledByDefault(bool enabled)
-{
-    getInternalKnob()->setDefaultAllDimensionsEnabled(enabled);
 }
 
 bool
@@ -218,6 +207,135 @@ Param::setAddNewLine(bool a)
             }
         }
     }
+}
+
+bool
+Param::getHasViewerUI() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return false;
+    }
+    return holder->getInViewerContextKnobIndex(knob) != -1;
+}
+
+void
+Param::setViewerUIVisible(bool visible)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret(!visible);
+}
+
+
+bool
+Param::getViewerUIVisible() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getInViewerContextSecret();
+}
+
+void
+Param::setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum type)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLayoutType(type);
+}
+
+NATRON_NAMESPACE::ViewerContextLayoutTypeEnum
+Param::getViewerUILayoutType() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return eViewerContextLayoutTypeSpacing;
+    }
+    return knob->getInViewerContextLayoutType();
+}
+
+
+void
+Param::setViewerUIItemSpacing(int spacingPx)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextItemSpacing(spacingPx);
+}
+
+int
+Param::getViewerUIItemSpacing() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    return knob->getInViewerContextItemSpacing();
+}
+
+
+void
+Param::setViewerUIIconFilePath(const QString& icon, bool checked)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob || !knob->isUserKnob()) {
+        return;
+    }
+    knob->setInViewerContextIconFilePath(icon.toStdString(), checked);
+}
+
+QString
+Param::getViewerUIIconFilePath(bool checked) const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8(knob->getInViewerContextIconFilePath(checked).c_str());
+}
+
+
+void
+Param::setViewerUILabel(const QString& label)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob || !knob->isUserKnob()) {
+        return;
+    }
+    knob->setInViewerContextLabel(label);
+}
+
+QString
+Param::getViewerUILabel() const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8(knob->getInViewerContextLabel().c_str());
 }
 
 bool
@@ -334,9 +452,9 @@ Param::setAsAlias(Param* other)
 }
 
 void
-Param::setIconFilePath(const QString& icon)
+Param::setIconFilePath(const QString& icon, bool checked)
 {
-    _knob.lock()->setIconLabel( icon.toStdString() );
+    _knob.lock()->setIconLabel( icon.toStdString(), checked, false );
 }
 
 AnimatedParam::AnimatedParam(const KnobIPtr& knob)
@@ -655,7 +773,7 @@ IntParam::getDefaultValue(int dimension) const
 void
 IntParam::restoreDefaultValue(int dimension)
 {
-    _intKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    _intKnob.lock()->resetToDefaultValue(dimension);
 }
 
 void
@@ -907,7 +1025,7 @@ DoubleParam::getDefaultValue(int dimension) const
 void
 DoubleParam::restoreDefaultValue(int dimension)
 {
-    _doubleKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    _doubleKnob.lock()->resetToDefaultValue(dimension);
 }
 
 void
@@ -1100,7 +1218,7 @@ ColorParam::getDefaultValue(int dimension) const
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    _colorKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    _colorKnob.lock()->resetToDefaultValue(dimension);
 }
 
 void
@@ -1261,7 +1379,7 @@ ChoiceParam::getDefaultValue() const
 void
 ChoiceParam::restoreDefaultValue()
 {
-    _choiceKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    _choiceKnob.lock()->resetToDefaultValue(0);
 }
 
 void
@@ -1414,7 +1532,7 @@ BooleanParam::getDefaultValue() const
 void
 BooleanParam::restoreDefaultValue()
 {
-    _boolKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    _boolKnob.lock()->resetToDefaultValue(0);
 }
 
 bool
@@ -1505,7 +1623,7 @@ StringParamBase::getDefaultValue() const
 void
 StringParamBase::restoreDefaultValue()
 {
-    _stringKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    _stringKnob.lock()->resetToDefaultValue(0);
 }
 
 QString
@@ -1667,6 +1785,25 @@ ButtonParam::ButtonParam(const KnobButtonPtr& knob)
 
 ButtonParam::~ButtonParam()
 {
+}
+
+bool
+ButtonParam::isCheckable() const
+{
+    return _buttonKnob.lock()->getIsCheckable();
+}
+
+void
+ButtonParam::setDown(bool down)
+{
+    _buttonKnob.lock()->setValue(down);
+}
+
+
+bool
+ButtonParam::isDown() const
+{
+    return _buttonKnob.lock()->getValue();
 }
 
 void

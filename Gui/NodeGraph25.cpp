@@ -230,7 +230,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     bool groupEdited = true;
 
     if (isGroup) {
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
 
     if (!groupEdited) {
@@ -241,13 +241,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     bool accept = true;
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
-        getGui()->createReader();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, modifiers, key) ) {
-        getGui()->createWriter();
-    } else
-#endif
     if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key) ) {
         deleteSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, modifiers, key) ) {
@@ -255,7 +248,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy, modifiers, key) ) {
         copySelectedNodes();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste, modifiers, key) ) {
-        if ( !pasteNodeClipBoards() ) {
+        if ( !pasteClipboard() ) {
             accept = false;
         }
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCut, modifiers, key) ) {
@@ -335,34 +328,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 } // firstOutput
             }
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->firstFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->lastFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->previousIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->nextIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->nextFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->previousFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        getGui()->getApp()->goToPreviousKeyframe();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        getGui()->getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, modifiers, key) ) {
         if ( !_imp->rearrangeSelectedNodes() ) {
             accept = false;
@@ -385,10 +350,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+    } else if ( key == Qt::Key_Plus) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+    } else if ( key == Qt::Key_Minus ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
@@ -397,6 +362,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         } else {
             accept = false;
         }
+    } else if (key == Qt::Key_Left || key == Qt::Key_Right || key == Qt::Key_Up || key == Qt::Key_Down) {
+        // These shortcuts are caught by QGraphicsView to scroll the area. Prevent it.
+        qApp->sendEvent(parentWidget(), e);
+        return;
     } else {
         bool intercepted = false;
 
@@ -410,26 +379,51 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             const PluginsMap & allPlugins = appPTR->getPluginsList();
             for (PluginsMap::const_iterator it = allPlugins.begin(); it != allPlugins.end(); ++it) {
                 assert( !it->second.empty() );
-                Plugin* plugin = *it->second.rbegin();
+                PluginPtr plugin = *it->second.rbegin();
 
-                if ( plugin->getHasShortcut() ) {
-                    QString group = QString::fromUtf8(kShortcutGroupNodes);
-                    QStringList groupingSplit = plugin->getGrouping();
-                    for (int j = 0; j < groupingSplit.size(); ++j) {
-                        group.push_back( QLatin1Char('/') );
-                        group.push_back(groupingSplit[j]);
-                    }
-                    if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
+                QString group = QString::fromUtf8(kShortcutGroupNodes);
+                QStringList groupingSplit = plugin->getGrouping();
+                for (int j = 0; j < groupingSplit.size(); ++j) {
+                    group.push_back( QLatin1Char('/') );
+                    group.push_back(groupingSplit[j]);
+                }
+                if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
+                    QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                    CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
+                    args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                    args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
+                    getGui()->getApp()->createNode(args);
+
+                    intercepted = true;
+                    break;
+                }
+
+                // Also check for presets shortcuts
+                bool mustBreak = false;
+                const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+                for (std::vector<PluginPresetDescriptor>::const_iterator it2 = presets.begin(); it2 != presets.end(); ++it2) {
+
+                    std::string shortcutKey = plugin->getPluginID().toStdString();
+                    shortcutKey += "_preset_";
+                    shortcutKey += it2->presetLabel.toStdString();
+
+                    if ( isKeybind(group.toStdString(), shortcutKey, modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
                         CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
                         args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
                         args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
+                        args.setProperty<std::string>(kCreateNodeArgsPropPreset, it2->presetLabel.toStdString());
                         getGui()->getApp()->createNode(args);
 
                         intercepted = true;
+                        mustBreak = true;
                         break;
                     }
                 }
+                if (mustBreak) {
+                    break;
+                }
+
             }
         }
 

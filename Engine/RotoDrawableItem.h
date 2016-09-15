@@ -44,11 +44,35 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
-#include "Engine/CacheEntryHolder.h"
 #include "Engine/RotoItem.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+
+#define kMergeParamOutputChannelsR      "OutputChannelsR"
+#define kMergeParamOutputChannelsG      "OutputChannelsG"
+#define kMergeParamOutputChannelsB      "OutputChannelsB"
+#define kMergeParamOutputChannelsA      "OutputChannelsA"
+
+#define kMergeOFXParamMix "mix"
+#define kMergeOFXParamOperation "operation"
+#define kMergeOFXParamInvertMask "maskInvert"
+#define kBlurCImgParamSize "size"
+#define kTimeOffsetParamOffset "timeOffset"
+#define kFrameHoldParamFirstFrame "firstFrame"
+
+#define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
+#define kTransformParamUniform "uniform"
+#define kTransformParamSkewX "skewX"
+#define kTransformParamSkewY "skewY"
+#define kTransformParamSkewOrder "skewOrder"
+#define kTransformParamCenter "center"
+#define kTransformParamFilter "filter"
+#define kTransformParamResetCenter "resetCenter"
+#define kTransformParamBlackOutside "black_outside"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -62,7 +86,6 @@ NATRON_NAMESPACE_ENTER;
 struct RotoDrawableItemPrivate;
 class RotoDrawableItem
     : public RotoItem
-      , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -73,16 +96,16 @@ public:
 
     RotoDrawableItem(const RotoContextPtr& context,
                      const std::string & name,
-                     const RotoLayerPtr& parent,
-                     bool isStroke);
+                     const RotoLayerPtr& parent);
+
 
     virtual ~RotoDrawableItem();
+
+    static void getDefaultOverlayColor(double *r, double *g, double *b);
 
     void createNodes(bool connectNodes = true);
 
     void setNodesThreadSafetyForRotopainting();
-
-    void incrementNodesAge();
 
     void refreshNodesConnections(bool isTreeConcatenated);
 
@@ -95,14 +118,14 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
@@ -177,10 +200,6 @@ public:
 
     void setKeyframeOnAllTransformParameters(double time);
 
-    const std::list<KnobIPtr >& getKnobs() const;
-
-    KnobIPtr getKnobByName(const std::string& name) const;
-
     virtual RectD getBoundingBox(double time) const = 0;
 
     void getTransformAtTime(double time, Transform::Matrix3x3* matrix) const;
@@ -203,34 +222,39 @@ public:
     void activateNodes();
     void disconnectNodes();
 
-    virtual std::string getCacheID() const OVERRIDE FINAL;
-
     void resetTransformCenter();
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
 
+    virtual void initializeKnobs() OVERRIDE;
+
+
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE;
+
+    virtual void dequeueGuiActions(bool /*force*/) {}
 
 Q_SIGNALS:
 
     void invertedStateChanged();
 
-    void overlayColorChanged();
-
     void shapeColorChanged();
 
     void compositingOperatorChanged(ViewSpec, int, int);
-
-public Q_SLOTS:
 
 
     void onRotoKnobChanged(ViewSpec, int, int);
 
 protected:
 
-    void rotoKnobChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
+                                    bool originatedFromMainThread) OVERRIDE;
 
     virtual void onTransformSet(double /*time*/) {}
-
-    void addKnob(const KnobIPtr& knob);
 
 private:
 

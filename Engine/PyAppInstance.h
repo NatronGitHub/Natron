@@ -294,10 +294,17 @@ public:
 
     int timelineGetRightBound() const;
 
+    void timelineGoTo(int frame);
+    
     void addFormat(const QString& formatSpec);
 
     void render(Effect* writeNode, int firstFrame, int lastFrame, int frameStep = 1);
+
     void render(const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames, const std::list<int>& frameSteps);
+
+    void redrawViewer(Effect* viewerNode);
+
+    void refreshViewer(Effect* viewerNode,bool useCache = true);
 
     Param* getProjectParam(const QString& name) const;
 

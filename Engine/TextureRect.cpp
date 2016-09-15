@@ -30,6 +30,8 @@
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 
+#include "Serialization/TextureRectSerialization.h"
+
 NATRON_NAMESPACE_ENTER;
 
 TextureRect::TextureRect()
@@ -57,6 +59,31 @@ TextureRect::reset()
     set(0, 0, 0, 0);
     par = 1;
     closestPo2 = 1;
+}
+
+
+void
+TextureRect::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::TextureRectSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::TextureRectSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    RectI::toSerialization(&s->rect);
+    s->closestPo2 = closestPo2;
+    s->par = par;
+}
+
+void
+TextureRect::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::TextureRectSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::TextureRectSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    RectI::fromSerialization(s->rect);
+    closestPo2 = s->closestPo2;
+    par = s->par;
 }
 
 

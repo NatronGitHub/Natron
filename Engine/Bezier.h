@@ -210,8 +210,8 @@ public:
 
 private:
 
-    void movePointByIndexInternal(bool useGuiCurve, int index, double time, double dx, double dy, bool onlyFeather);
-    void setPointByIndexInternal(bool useGuiCurve, int index, double time, double dx, double dy);
+    void movePointByIndexInternal(int index, double time, double dx, double dy, bool onlyFeather);
+    void setPointByIndexInternal(int index, double time, double dx, double dy);
 
 public:
 
@@ -593,7 +593,7 @@ public:
 
     void setAutoOrientationComputation(bool autoCompute);
 
-    bool dequeueGuiActions();
+    virtual void dequeueGuiActions(bool force) OVERRIDE FINAL;
 
 private:
 
@@ -603,12 +603,7 @@ private:
 
     void computePolygonOrientation(bool useGuiCurves, double time, bool isStatic) const;
 
-    /*
-     * @brief If the node is currently involved in a render, returns false, otherwise returns true
-     */
-    bool canSetInternalPoints() const;
-
-    void copyInternalPointsToGuiPoints();
+    void evaluateCurveModified();
 
 public:
 
@@ -618,14 +613,14 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(const RotoItemSerializationPtr& obj) const OVERRIDE;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to load the state from
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
     void getKeyframeTimes(std::set<double> *times) const;
 
@@ -647,6 +642,7 @@ public:
 
     void setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 
+    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 Q_SIGNALS:
 
@@ -668,7 +664,7 @@ private:
 };
 
 inline BezierPtr
-toBezier(const RotoItemPtr& item)
+toBezier(const KnobHolderPtr& item)
 {
     return boost::dynamic_pointer_cast<Bezier>(item);
 }

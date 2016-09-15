@@ -67,7 +67,7 @@ public Q_SLOTS:
 
     void resetStats();
     void refreshAdvancedColsVisibility();
-    void onSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+    void onKnobsTreeSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 
     void updateVisibleRows();
     void onNameLineEditChanged(const QString& filter);

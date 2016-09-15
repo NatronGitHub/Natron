@@ -88,7 +88,8 @@ class DopeSheetEditor
     : public QWidget, public PanelWidget
 {
 public:
-    DopeSheetEditor(Gui *gui,
+    DopeSheetEditor(const std::string& scriptName,
+                    Gui *gui,
                     const TimeLinePtr& timeline,
                     QWidget *parent = 0);
     ~DopeSheetEditor();
@@ -126,6 +127,11 @@ public:
     int getTreeWidgetWidth() const;
 
     void onInputEventCalled();
+
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
+
 
 private:
 

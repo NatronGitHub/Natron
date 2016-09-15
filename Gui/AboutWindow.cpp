@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLContext_osmesa.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
@@ -555,7 +556,12 @@ AboutWindow::updateLibrariesVersions()
                          QLatin1String("</p>") );
         }
     }
-#pragma message WARN("TODO: print Mesa OpenGL renderer info")
+#ifdef HAVE_OSMESA
+    int mesaMajor, mesaMinor, mesaRev;
+    OSGLContext_osmesa::getOSMesaVersion(&mesaMajor, &mesaMinor, &mesaRev);
+    libsText += QString::fromUtf8("<p> OSMesa %1.%2.%3 </p>").arg(mesaMajor).arg(mesaMinor).arg(mesaRev);
+#endif
+
     _libsText->setText(libsText);
 }
 

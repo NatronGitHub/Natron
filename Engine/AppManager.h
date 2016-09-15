@@ -157,12 +157,7 @@ public:
     }
 
     EffectInstancePtr createOFXEffect(const NodePtr& node,
-                                  const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                  , bool allowFileDialogs,
-                                  bool *hasUsedFileDialog
-#endif
-                                  ) const;
+                                  const CreateNodeArgs& args) const;
 
     AppInstancePtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
@@ -175,11 +170,11 @@ public:
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
     AppInstancePtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinary(const QString & pluginId,
+    PluginPtr getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
                             bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
+    PluginPtr getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -222,20 +217,40 @@ public:
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
 
+    /**
+     * @brief Removes from the node cache the given image.
+     **/
     void removeFromNodeCache(const ImagePtr & image);
+
+    /**
+     * @brief Removes from the texture cache the given texture.
+     **/
     void removeFromViewerCache(const FrameEntryPtr & texture);
 
-    void removeFromNodeCache(U64 hash);
-    void removeFromViewerCache(U64 hash);
     /**
-     * @brief Given the following tree version, removes all images from the node cache with a matching
-     * tree version. This is useful to wipe the cache for one particular node.
+     * @brief Removes from the node cache all images matching the same hash
      **/
-    void  removeAllImagesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-    void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-    void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
+    void removeFromNodeCache(U64 hash);
 
-    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
+    /**
+     * @brief Removes from the texture cache all textures matching the same hash
+     **/
+    void removeFromViewerCache(U64 hash);
+
+    /**
+     * @brief Removes from the cache all entries associated to the given holder.
+     * The entries are destroyed in a separate thread.
+     **/
+    void removeAllCacheEntriesForPlugin(const std::string& pluginID);
+
+
+    /**
+     * @brief Adds images to delete in a separate thread
+     **/
+    void queueEntriesForDeletion(const std::list<ImagePtr>& images);
+    void queueEntriesForDeletion(const std::list<FrameEntryPtr>& images);
+
+
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
@@ -321,7 +336,7 @@ public:
     {
     }
 
-    Plugin* registerPlugin(const QString& resourcesPath,
+    PluginPtr registerPlugin(const QString& resourcesPath,
                            const QStringList & groups,
                            const QString & pluginID,
                            const QString & pluginLabel,
@@ -478,9 +493,6 @@ public:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
 
-    void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
-                                           std::size_t* ramOccupied,
-                                           std::size_t* diskOccupied) const;
 
     void setOFXHostHandle(void* handle);
 
@@ -587,7 +599,13 @@ public:
     std::string getReaderPluginIDForFileType(const std::string & extension) const;
     std::string getWriterPluginIDForFileType(const std::string & extension) const;
 
+    virtual NodePtr createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group);
+
+    virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* /*serialization*/) {}
+
 public Q_SLOTS:
+
+    void printCacheMemoryStats() const;
 
     void exitAppWithSaveWarning()
     {
@@ -652,11 +670,11 @@ protected:
     {
     }
 
-    virtual void ignorePlugin(Plugin* /*plugin*/)
+    virtual void ignorePlugin(const PluginPtr& /*plugin*/)
     {
     }
 
-    virtual void onPluginLoaded(Plugin* /*plugin*/) {}
+    virtual void onPluginLoaded(const PluginPtr& /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
     virtual void clearLastRenderedTextures() {}
@@ -665,12 +683,26 @@ protected:
 
     bool loadInternalAfterInitGui(const CLArgs& cl);
 
+    /*
+     * @brief Derived by NatronProjectConverter to load using boost serialization instead
+     */
+    virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
+
+    /**
+     * @brief Check if the project is an older project made prior Natron 2.2.
+     * If this is an older project, it converts the file to a new file.
+     **/
+    virtual bool checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut);
+
 private:
 
     void findAllScriptsRecursive(const QDir& directory,
                             QStringList& allPlugins,
                             QStringList *foundInit,
                             QStringList *foundInitGui);
+
+    void findAllPresetsRecursive(const QDir& directory,
+                                 QStringList& presetFiles);
 
     bool findAndRunScriptFile(const QString& path,
                          const QStringList& files,
@@ -683,6 +715,8 @@ private:
 
     void loadPythonGroups();
 
+    void loadNodesPresets();
+
     void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
@@ -690,6 +724,9 @@ private:
     void initPython(int argc, char* argv[]);
 
     void tearDownPython();
+
+    // To access loadProjectFromFileFunction
+    friend class Project;
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
@@ -766,13 +803,13 @@ std::string PyStringToStdString(PyObject* obj);
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
 
-bool getGroupInfos(const std::string& modulePath,
-                   const std::string& pythonModule,
+bool getGroupInfos(const std::string& pythonModule,
                    std::string* pluginID,
                    std::string* pluginLabel,
                    std::string* iconFilePath,
                    std::string* grouping,
                    std::string* description,
+                   std::string* pythonScriptDirPath,
                    bool* isToolset,
                    unsigned int* version);
 

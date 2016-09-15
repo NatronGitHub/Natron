@@ -84,7 +84,7 @@ public:
      * @brief Set the icon file-path that should be used for the button.
      * This can only be called right away after the parameter has been created.
      **/
-    void setIconFilePath(const QString& icon);
+    void setIconFilePath(const QString& icon, bool checked = false);
 
     /**
      * @brief Returns the type of the parameter. The list of known type is:
@@ -108,8 +108,6 @@ public:
      **/
     void setVisible(bool visible);
 
-    void setVisibleByDefault(bool visible);
-
     /**
      * @brief Returns whether the given dimension is enabled, i.e: whether the user can interact with it or not.
      **/
@@ -119,8 +117,6 @@ public:
      * @brief Set the given dimension enabledness
      **/
     void setEnabled(bool enabled, int dimension = 0);
-
-    void setEnabledByDefault(bool enabled = 0);
 
     /**
      * @brief Returns whether this parameter is persistent or not. A persistent parameter will be saved into the project.
@@ -161,6 +157,43 @@ public:
      **/
     bool getAddNewLine();
     void setAddNewLine(bool a);
+
+    /**
+     * @brief Does this parameter have a viewer interface ?
+     **/
+    bool getHasViewerUI() const;
+
+    /**
+     * @brief Is this parameter visible in the Viewer UI? Only valid for parameters with a viewer ui
+     **/
+    void setViewerUIVisible(bool visible);
+    bool getViewerUIVisible() const;
+
+    /**
+     * @brief Controls the layout type of this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum type);
+    NATRON_NAMESPACE::ViewerContextLayoutTypeEnum getViewerUILayoutType() const;
+
+    /**
+     * @brief Controls the item spacing after this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUIItemSpacing(int spacingPx);
+    int getViewerUIItemSpacing() const;
+
+    /**
+     * @brief Controls the label icon of this parameter in the viewer interface of the Effect holding it.
+     * For buttons, if checked it false, the icon will be used when the button is unchecked, if checked it will be used
+     * when the button is checked.
+     **/
+    void setViewerUIIconFilePath(const QString& icon, bool checked = false);
+    QString getViewerUIIconFilePath(bool checked = false) const;
+
+    /**
+     * @brief Controls the label of this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUILabel(const QString& label);
+    QString getViewerUILabel() const;
 
     /**
      * @brief Copies all the content of the other param: animation, expression and value.
@@ -1078,6 +1111,11 @@ public:
 
     virtual ~ButtonParam();
 
+    bool isCheckable() const;
+
+    void setDown(bool down);
+
+    bool isDown() const;
 
     void trigger();
 };

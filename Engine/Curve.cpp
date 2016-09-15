@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Interpolation.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Serialization/CurveSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -199,13 +200,15 @@ KeyFrame::getRightDerivative() const
 /************************************CURVEPATH************************************/
 
 Curve::Curve()
-    : _imp(new CurvePrivate)
+    : SERIALIZATION_NAMESPACE::SerializableObjectBase()
+    , _imp(new CurvePrivate)
 {
 }
 
 Curve::Curve(const KnobIPtr& owner,
              int dimensionInOwner)
-    : _imp(new CurvePrivate)
+    : SERIALIZATION_NAMESPACE::SerializableObjectBase()
+    , _imp(new CurvePrivate)
 {
     assert(owner);
     _imp->owner = owner;
@@ -1583,6 +1586,120 @@ Curve::onCurveChanged()
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();
 #endif
+}
+
+void
+Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& obj)
+{
+    const SERIALIZATION_NAMESPACE::CurveSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::CurveSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    QMutexLocker l(&_imp->_lock);
+    _imp->keyFrames.clear();
+    for (std::list<SERIALIZATION_NAMESPACE::KeyFrameSerialization>::const_iterator it = s->keys.begin(); it != s->keys.end(); ++it) {
+        KeyFrame k;
+        k.setTime(it->time);
+        k.setValue(it->value);
+        KeyframeTypeEnum t = eKeyframeTypeSmooth;
+        if (it->interpolation == kKeyframeSerializationTypeBroken) {
+            t = eKeyframeTypeBroken;
+        } else if (it->interpolation == kKeyframeSerializationTypeCatmullRom) {
+            t = eKeyframeTypeCatmullRom;
+        } else if (it->interpolation == kKeyframeSerializationTypeConstant) {
+            t = eKeyframeTypeConstant;
+        } else if (it->interpolation == kKeyframeSerializationTypeCubic) {
+            t = eKeyframeTypeCubic;
+        } else if (it->interpolation == kKeyframeSerializationTypeFree) {
+            t = eKeyframeTypeFree;
+        } else if (it->interpolation == kKeyframeSerializationTypeHorizontal) {
+            t = eKeyframeTypeHorizontal;
+        } else if (it->interpolation == kKeyframeSerializationTypeLinear) {
+            t = eKeyframeTypeLinear;
+        } else if (it->interpolation == kKeyframeSerializationTypeSmooth) {
+            t = eKeyframeTypeSmooth;
+        }
+        k.setInterpolation(t);
+        if (t == eKeyframeTypeBroken || t == eKeyframeTypeFree) {
+            k.setRightDerivative(it->rightDerivative);
+            if (t == eKeyframeTypeBroken) {
+                k.setLeftDerivative(it->leftDerivative);
+            } else {
+                k.setLeftDerivative(-it->rightDerivative);
+            }
+        }
+        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(k);
+        if (ret.second) {
+            (void)evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
+        }
+    }
+    onCurveChanged();
+}
+
+void
+Curve::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::CurveSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::CurveSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    KeyFrameSet keys = getKeyFrames_mt_safe();
+    for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
+        QMutexLocker l(&_imp->_lock);
+        SERIALIZATION_NAMESPACE::KeyFrameSerialization k;
+        k.time = it->getTime();
+        k.value = it->getValue();
+        KeyframeTypeEnum t = it->getInterpolation();
+        switch (t) {
+            case eKeyframeTypeSmooth:
+                k.interpolation = kKeyframeSerializationTypeSmooth;
+                break;
+            case eKeyframeTypeLinear:
+                k.interpolation = kKeyframeSerializationTypeLinear;
+                break;
+            case eKeyframeTypeBroken:
+                k.interpolation = kKeyframeSerializationTypeBroken;
+                break;
+            case eKeyframeTypeFree:
+                k.interpolation = kKeyframeSerializationTypeFree;
+                break;
+            case eKeyframeTypeCatmullRom:
+                k.interpolation = kKeyframeSerializationTypeCatmullRom;
+                break;
+            case eKeyframeTypeCubic:
+                k.interpolation = kKeyframeSerializationTypeCubic;
+                break;
+            case eKeyframeTypeHorizontal:
+                k.interpolation = kKeyframeSerializationTypeHorizontal;
+                break;
+            case eKeyframeTypeConstant:
+                k.interpolation = kKeyframeSerializationTypeConstant;
+                break;
+            default:
+                break;
+        }
+        k.leftDerivative = it->getLeftDerivative();
+        k.rightDerivative = it->getRightDerivative();
+        s->keys.push_back(k);
+    }
+}
+
+bool
+Curve::operator==(const Curve & other) const
+{
+    KeyFrameSet keys = getKeyFrames_mt_safe();
+    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    if (keys.size() != otherKeys.size()) {
+        return false;
+    }
+
+    KeyFrameSet::const_iterator itOther = otherKeys.begin();
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it, ++itOther) {
+        if (*it != *itOther) {
+            return false;
+        }
+    }
+    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -84,13 +84,8 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               OFX::Host::ImageEffect::Descriptor* desc,
                                               ContextEnum context,
-                                              const NodeSerialization* serialization,
-                                              const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                              , bool allowFileDialogs,
-                                              bool *hasUsedFileDialog
-#endif
-                                              ) = 0;
+                                              const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
+                                              const CreateNodeArgs& args) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -126,13 +121,8 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       OFX::Host::ImageEffect::Descriptor* desc,
                                       ContextEnum context,
-                                      const NodeSerialization* serialization,
-                                      const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                      , bool allowFileDialogs,
-                                      bool *hasUsedFileDialog
-#endif
-                                      ) OVERRIDE FINAL;
+                                      const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
+                                      const CreateNodeArgs& args) OVERRIDE FINAL;
 
     OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
     const OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
@@ -180,10 +170,10 @@ public:
     virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, ViewIdx view, RectD *rod)  OVERRIDE;
+    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD *rod)  OVERRIDE;
     virtual void getRegionsOfInterest(double time,
                                       const RenderScale & scale,
                                       const RectD & outputRoD, //!< full RoD in canonical coordinates

@@ -23,9 +23,11 @@ Functions
 *    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
-*    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
+*    def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
 *    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
+*    def :meth:`redrawViewer<NatronEngine.App.redrawViewer>` (viewerNode)
+*    def :meth:`refreshViewer<NatronEngine.App.refreshViewer>` (viewerNode [, useCache])
 *    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
 *    def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
 *    def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
@@ -258,7 +260,7 @@ Here is an example on how to pass properties to the createNode function::
   the parameter (e.g: int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).
   
   
-- *Name*: **CreateNodeArgsPropOutOfProject**
+- *Name*: **CreateNodeArgsPropVolatile**
 
   	*Dimension*: 1
   	
@@ -266,10 +268,23 @@ Here is an example on how to pass properties to the createNode function::
 	
 	*Default*: False
 	
-	*Description*: When True the node will not be part of the project. The node can be used for internal used, e.g in a Python script but will
-  not appear to the user. It will also not be saved in the project.
-  
-  
+	*Description*: When True the node will not be part visible and not saved into any project.
+    The node can be used for internal use, e.g in a Python script.
+
+
+- *Name*: **CreateNodeArgsPropPreset**
+
+    *Dimension*: 1
+
+    *Type*: string
+
+    *Default*: None
+
+    *Description*: Indicates the name of the presets to use when loading the node.
+    The preset name must correspond to a valid label of a preset file (.nps) that was found by Natron.
+    The preset name is NOT the filename of the preset file, but the string in the file found next to the key "PresetLabel"
+    If the preset cannot be found, the presets will not be loaded and the node will have its default state.
+
 - *Name*: **CreateNodeArgsPropNoNodeGUI**
 
 	*Dimension*: 1
@@ -278,7 +293,7 @@ Here is an example on how to pass properties to the createNode function::
 	
 	*Default*: False
 	
-	*Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropOutOfProject set to True implies this.
+	*Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropVolatile set to True implies this.
 
 
 - *Name*: **CreateNodeArgsPropSettingsOpened**
@@ -290,7 +305,7 @@ Here is an example on how to pass properties to the createNode function::
 	*Default*: False
 	
 	*Description*:  * If True, the node settings panel will not be opened by default when created.
-  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effet.
 
 
@@ -303,7 +318,7 @@ Here is an example on how to pass properties to the createNode function::
 	*Default*: False
 	
 	*Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection. 
-  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effet.
 
 
@@ -316,7 +331,7 @@ Here is an example on how to pass properties to the createNode function::
   	  *Default*: False
   	  
  	  *Description*:  Natron will push a undo/redo command to the stack when creating this node. 
-  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effect.
     
     
@@ -443,6 +458,24 @@ multiple writers.
 
 This is a blocking call only in background mode.
 
+
+.. method:: NatronEngine.App.redrawViewer(viewerNode)
+	
+	:param vieweNode: :class:`Effect<Effect>`
+	
+Just redraws the OpenGL viewer associated to the given *viewerNode*.
+The internal texture displayed will not be re-evaluated.
+If the node passed in parameter is not a viewer, this function has no effect.
+
+.. method:: NatronEngine.App.refreshViewer(viewerNode [, useCache])
+	
+	:param vieweNode: :class:`Effect<Effect>`
+	:param useCache: :class:`bool<PySide.QtCore.bool>`
+	
+Refresh the viewer texture. This causes a re-evaluation of the node-graph.
+If *useCache* is set to **True**, the render will not attempt
+to retrieve a texture from the cache if there is any.
+If the node passed in parameter is not a viewer, this function has no effect.
 
 
 .. method:: NatronEngine.App.timelineGetLeftBound()

@@ -47,6 +47,14 @@ struct OSGLContext_osmesaPrivate
     }
 };
 
+void
+OSGLContext_osmesa::getOSMesaVersion(int* major, int* minor, int* rev)
+{
+    *major = OSMESA_MAJOR_VERSION;
+    *minor = OSMESA_MINOR_VERSION;
+    *rev = OSMESA_PATCH_VERSION;
+}
+
 OSGLContext_osmesa::OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs,
                                        int /*major*/,
                                        int /*minor*/,
@@ -84,9 +92,9 @@ OSGLContext_osmesa::OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs
     Q_UNUSED(rendererID);
 #if OSMESA_MAJOR_VERSION * 100 + OSMESA_MINOR_VERSION >= 305
     /* specify Z, stencil, accum sizes */
-    _imp->ctx = OSMesaCreateContextExt( format, depthBits, stencilBits, accumBits, shareContex->_imp->ctx );
+    _imp->ctx = OSMesaCreateContextExt( format, depthBits, stencilBits, accumBits, shareContex ? shareContex->_imp->ctx : 0);
 #else
-    _imp->ctx = OSMesaCreateContext( format, shareContex->_imp->ctx );
+    _imp->ctx = OSMesaCreateContext( format, shareContex ? shareContex->_imp->ctx : 0);
 #endif
 #endif
     

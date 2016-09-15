@@ -38,6 +38,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
@@ -46,7 +47,7 @@ GCC_DIAG_OFF(strict-overflow)
 
 NATRON_NAMESPACE_ENTER;
 
-class RectD
+class RectD : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -56,8 +57,7 @@ public:
     double y2; // top
 
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
+    void serialize(Archive & ar, const unsigned int version);
 
     RectD()
         : x1(0), y1(0), x2(0), y2(0)
@@ -320,6 +320,10 @@ public:
         ret->y1 = r.y1;
         ret->y2 = r.y2;
     }
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 };
 
 /// equality of boxes

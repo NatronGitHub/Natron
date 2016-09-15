@@ -35,29 +35,32 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_Roto(PyObject* module);
+void init_Track(PyObject* module);
+void init_Tracker(PyObject* module);
 void init_ImageLayer(PyObject* module);
 void init_UserParamHolder(PyObject* module);
 void init_Param(PyObject* module);
+void init_ButtonParam(PyObject* module);
+void init_SeparatorParam(PyObject* module);
 void init_GroupParam(PyObject* module);
 void init_AnimatedParam(PyObject* module);
-void init_StringParamBase(PyObject* module);
-void init_StringParam(PyObject* module);
-void init_FileParam(PyObject* module);
-void init_OutputFileParam(PyObject* module);
-void init_PathParam(PyObject* module);
-void init_IntParam(PyObject* module);
-void init_Int2DParam(PyObject* module);
-void init_Int3DParam(PyObject* module);
 void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
 void init_ColorParam(PyObject* module);
 void init_ChoiceParam(PyObject* module);
 void init_BooleanParam(PyObject* module);
+void init_StringParamBase(PyObject* module);
+void init_PathParam(PyObject* module);
+void init_StringParam(PyObject* module);
+void init_FileParam(PyObject* module);
+void init_OutputFileParam(PyObject* module);
+void init_IntParam(PyObject* module);
+void init_Int2DParam(PyObject* module);
+void init_Int3DParam(PyObject* module);
 void init_PageParam(PyObject* module);
-void init_ButtonParam(PyObject* module);
 void init_ParametricParam(PyObject* module);
-void init_SeparatorParam(PyObject* module);
 void init_Int2DTuple(PyObject* module);
 void init_Int3DTuple(PyObject* module);
 void init_Double2DTuple(PyObject* module);
@@ -78,9 +81,6 @@ void init_StringNodeCreationProperty(PyObject* module);
 void init_ItemBase(PyObject* module);
 void init_Layer(PyObject* module);
 void init_BezierCurve(PyObject* module);
-void init_Roto(PyObject* module);
-void init_Track(PyObject* module);
-void init_Tracker(PyObject* module);
 void init_NATRON_NAMESPACE(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -112,74 +112,6 @@ static PythonToCppFunc is_PyLong_PythonToCpp_std_size_t_Convertible(PyObject* py
 
 
 // Container Type converters.
-
-// C++ to Python conversion for type 'std::list<Track * > *'.
-static PyObject* std_list_TrackPTR_PTR_CppToPython_std_list_TrackPTR_PTR(const void* cppIn) {
-    ::std::list<Track * >& cppInRef = *((::std::list<Track * >*)cppIn);
-
-                    // TEMPLATE - stdListToPyList - START
-            PyObject* pyOut = PyList_New((int) cppInRef.size());
-            ::std::list<Track * >::const_iterator it = cppInRef.begin();
-            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::Track* cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], cppItem));
-            }
-            return pyOut;
-        // TEMPLATE - stdListToPyList - END
-
-}
-static void std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR(PyObject* pyIn, void* cppOut) {
-    ::std::list<Track * >& cppOutRef = *((::std::list<Track * >*)cppOut);
-
-                    // TEMPLATE - pyListToStdList - START
-        for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::Track* cppItem = ((::Track*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], pyItem, &(cppItem));
-        cppOutRef.push_back(cppItem);
-        }
-    // TEMPLATE - pyListToStdList - END
-
-}
-static PythonToCppFunc is_std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR_Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_TRACK_IDX], pyIn))
-        return std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR;
-    return 0;
-}
-
-// C++ to Python conversion for type 'std::list<Param * >'.
-static PyObject* std_list_ParamPTR__CppToPython_std_list_ParamPTR_(const void* cppIn) {
-    ::std::list<Param * >& cppInRef = *((::std::list<Param * >*)cppIn);
-
-                    // TEMPLATE - stdListToPyList - START
-            PyObject* pyOut = PyList_New((int) cppInRef.size());
-            ::std::list<Param * >::const_iterator it = cppInRef.begin();
-            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::Param* cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppItem));
-            }
-            return pyOut;
-        // TEMPLATE - stdListToPyList - END
-
-}
-static void std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_(PyObject* pyIn, void* cppOut) {
-    ::std::list<Param * >& cppOutRef = *((::std::list<Param * >*)cppOut);
-
-                    // TEMPLATE - pyListToStdList - START
-        for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::Param* cppItem = ((::Param*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], pyItem, &(cppItem));
-        cppOutRef.push_back(cppItem);
-        }
-    // TEMPLATE - pyListToStdList - END
-
-}
-static PythonToCppFunc is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_PARAM_IDX], pyIn))
-        return std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_;
-    return 0;
-}
 
 // C++ to Python conversion for type 'std::list<double > *'.
 static PyObject* std_list_double_PTR_CppToPython_std_list_double_PTR(const void* cppIn) {
@@ -390,6 +322,40 @@ static void conststd_vector_int_REF_PythonToCpp_conststd_vector_int_REF(PyObject
 static PythonToCppFunc is_conststd_vector_int_REF_PythonToCpp_conststd_vector_int_REF_Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyIn))
         return conststd_vector_int_REF_PythonToCpp_conststd_vector_int_REF;
+    return 0;
+}
+
+// C++ to Python conversion for type 'std::list<Param * >'.
+static PyObject* std_list_ParamPTR__CppToPython_std_list_ParamPTR_(const void* cppIn) {
+    ::std::list<Param * >& cppInRef = *((::std::list<Param * >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<Param * >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::Param* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_(PyObject* pyIn, void* cppOut) {
+    ::std::list<Param * >& cppOutRef = *((::std::list<Param * >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::Param* cppItem = ((::Param*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_PARAM_IDX], pyIn))
+        return std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_;
     return 0;
 }
 
@@ -674,6 +640,40 @@ static PythonToCppFunc is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_Imag
     return 0;
 }
 
+// C++ to Python conversion for type 'std::list<Track * > *'.
+static PyObject* std_list_TrackPTR_PTR_CppToPython_std_list_TrackPTR_PTR(const void* cppIn) {
+    ::std::list<Track * >& cppInRef = *((::std::list<Track * >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<Track * >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::Track* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR(PyObject* pyIn, void* cppOut) {
+    ::std::list<Track * >& cppOutRef = *((::std::list<Track * >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::Track* cppItem = ((::Track*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is_std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR_Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_TRACK_IDX], pyIn))
+        return std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR;
+    return 0;
+}
+
 // C++ to Python conversion for type 'QList<QVariant >'.
 static PyObject* _QList_QVariant__CppToPython__QList_QVariant_(const void* cppIn) {
     ::QList<QVariant >& cppInRef = *((::QList<QVariant >*)cppIn);
@@ -832,29 +832,32 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_Roto(module);
+    init_Track(module);
+    init_Tracker(module);
     init_ImageLayer(module);
     init_UserParamHolder(module);
     init_Param(module);
+    init_ButtonParam(module);
+    init_SeparatorParam(module);
     init_GroupParam(module);
     init_AnimatedParam(module);
-    init_StringParamBase(module);
-    init_StringParam(module);
-    init_FileParam(module);
-    init_OutputFileParam(module);
-    init_PathParam(module);
-    init_IntParam(module);
-    init_Int2DParam(module);
-    init_Int3DParam(module);
     init_DoubleParam(module);
     init_Double2DParam(module);
     init_Double3DParam(module);
     init_ColorParam(module);
     init_ChoiceParam(module);
     init_BooleanParam(module);
+    init_StringParamBase(module);
+    init_PathParam(module);
+    init_StringParam(module);
+    init_FileParam(module);
+    init_OutputFileParam(module);
+    init_IntParam(module);
+    init_Int2DParam(module);
+    init_Int3DParam(module);
     init_PageParam(module);
-    init_ButtonParam(module);
     init_ParametricParam(module);
-    init_SeparatorParam(module);
     init_Int2DTuple(module);
     init_Int3DTuple(module);
     init_Double2DTuple(module);
@@ -875,9 +878,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_ItemBase(module);
     init_Layer(module);
     init_BezierCurve(module);
-    init_Roto(module);
-    init_Track(module);
-    init_Tracker(module);
     init_NATRON_NAMESPACE(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.
@@ -888,20 +888,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         PyLong_PythonToCpp_std_size_t,
         is_PyLong_PythonToCpp_std_size_t_Convertible);
 
-
-    // Register converter for type 'std::list<Track*>*'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_TrackPTR_PTR_CppToPython_std_list_TrackPTR_PTR);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX], "std::list<Track*>*");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX],
-        std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR,
-        is_std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR_Convertible);
-
-    // Register converter for type 'std::list<Param*>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ParamPTR__CppToPython_std_list_ParamPTR_);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX], "std::list<Param*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX],
-        std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_,
-        is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible);
 
     // Register converter for type 'std::list<double>*'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_DOUBLE_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_double_PTR_CppToPython_std_list_double_PTR);
@@ -948,6 +934,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_INT_IDX],
         conststd_vector_int_REF_PythonToCpp_conststd_vector_int_REF,
         is_conststd_vector_int_REF_PythonToCpp_conststd_vector_int_REF_Convertible);
+
+    // Register converter for type 'std::list<Param*>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ParamPTR__CppToPython_std_list_ParamPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX], "std::list<Param*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX],
+        std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_,
+        is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible);
 
     // Register converter for type 'std::list<Effect*>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_EffectPTR__CppToPython_std_list_EffectPTR_);
@@ -1007,6 +1000,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX],
         std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_,
         is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible);
+
+    // Register converter for type 'std::list<Track*>*'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_TrackPTR_PTR_CppToPython_std_list_TrackPTR_PTR);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX], "std::list<Track*>*");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_TRACKPTR_IDX],
+        std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR,
+        is_std_list_TrackPTR_PTR_PythonToCpp_std_list_TrackPTR_PTR_Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

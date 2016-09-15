@@ -913,7 +913,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     refreshAdvancedColsVisibility();
     QItemSelectionModel* selModel = _imp->view->selectionModel();
-    QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
+    QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onKnobsTreeSelectionChanged(QItemSelection,QItemSelection)) );
     _imp->mainLayout->addWidget(_imp->view);
 }
 
@@ -922,7 +922,7 @@ RenderStatsDialog::~RenderStatsDialog()
 }
 
 void
-RenderStatsDialog::onSelectionChanged(const QItemSelection &selected,
+RenderStatsDialog::onKnobsTreeSelectionChanged(const QItemSelection &selected,
                                       const QItemSelection & /*deselected*/)
 {
     QModelIndexList indexes = selected.indexes();

@@ -95,7 +95,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -110,6 +109,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/ThreadPool.h"
+
+#include "Serialization/NodeSerialization.h"
+
 
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
@@ -704,16 +706,10 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(const NodePtr& node,
-                         const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                         ,
-                         bool allowFileDialogs,
-                         bool *hasUsedFileDialog
-#endif
-                         )
+                         const CreateNodeArgs& args)
 {
     assert(node);
-    const Plugin* natronPlugin = node->getPlugin();
+    PluginPtr natronPlugin = node->getPlugin();
     assert(natronPlugin);
     ContextEnum ctx;
     OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&ctx);
@@ -723,7 +719,7 @@ OfxHost::createOfxEffect(const NodePtr& node,
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect = boost::dynamic_pointer_cast<AbstractOfxEffectInstance>( OfxEffectInstance::create(node) );
     assert(hostSideEffect);
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     if ( node && !node->getEffectInstance() ) {
@@ -731,12 +727,7 @@ OfxHost::createOfxEffect(const NodePtr& node,
         node->initNodeScriptName(serialization.get(), QString::fromUtf8(fixedName.c_str()));
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization.get(), args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                                 , allowFileDialogs,
-                                                 hasUsedFileDialog
-#endif
-                                                 );
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization.get(), args);
 
     return hostSideEffect;
 }
@@ -974,7 +965,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         const bool isDeprecated = p->getDescriptor().isDeprecated();
-        Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
+        PluginPtr natronPlugin = appPTR->registerPlugin( resourcesPath,
                                                        groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
                                                        QString::fromUtf8( pluginLabel.c_str() ),

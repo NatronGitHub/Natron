@@ -30,7 +30,7 @@ CONFIG -= app_bundle
 CONFIG += moc
 CONFIG += boost qt python shiboken pyside 
 enable-cairo: CONFIG += cairo
-CONFIG += static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
+CONFIG += static-yaml-cpp static-engine static-host-support static-serialization static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 
 !noexpat: CONFIG += expat
 

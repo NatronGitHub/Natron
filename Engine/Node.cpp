@@ -33,11 +33,14 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
@@ -56,11 +59,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Backdrop.h"
+#include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
@@ -76,7 +81,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Lut.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OpenGLViewerI.h"
@@ -86,7 +90,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/StubNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
@@ -97,11 +103,17 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/WriteNode.h"
+
+#include "Serialization/KnobSerialization.h"
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/SerializationIO.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -195,20 +207,16 @@ struct FormatKnob
 struct PyPlugInfo
 {
     std::string pluginPythonModule; // the absolute filename of the python script
-
-    //Set to true when the user has edited a PyPlug
-    bool pyplugChangedSinceScript;
-
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
     std::string pyPlugLabel;
     std::string pyPlugDesc;
     std::string pyPlugIconFilePath;
+    std::string pyPlugPluginPath; //< the directory in which the PyPlug python script is located
     std::list<std::string> pyPlugGrouping;
     int pyPlugVersion;
 
     PyPlugInfo()
-    : pyplugChangedSinceScript(false)
-    , pyPlugVersion(0)
+    :  pyPlugVersion(0)
     {
 
     }
@@ -225,12 +233,12 @@ public:
     Implementation(Node* publicInterface,
                    const AppInstancePtr& app_,
                    const NodeCollectionPtr& collection,
-                   Plugin* plugin_)
+                   const PluginPtr& plugin_)
         : _publicInterface(publicInterface)
         , group(collection)
         , precomp()
         , app(app_)
-        , isPartOfProject(true)
+        , isPersistent(true)
         , knobsInitialized(false)
         , inputsInitialized(false)
         , outputsMutex()
@@ -246,7 +254,6 @@ public:
         , inputLabels()
         , scriptName()
         , label()
-        , cacheID()
         , deactivatedState()
         , activatedMutex()
         , activated(true)
@@ -262,14 +269,10 @@ public:
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
         , renderInstancesSharedMutex(QMutex::Recursive)
-        , knobsAge(0)
-        , knobsAgeMutex()
         , masterNodeMutex()
         , masterNode()
         , nodeLinks()
-#ifdef NATRON_ENABLE_IO_META_NODES
         , ioContainer()
-#endif
         , frameIncrKnob()
         , nodeSettingsPage()
         , nodeLabelKnob()
@@ -333,7 +336,6 @@ public:
         , lastStrokeMovementMutex()
         , strokeBitmapCleared(false)
         , paintBuffer()
-        , useAlpha0ToConvertFromRGBToRGBA(false)
         , isBeingDestroyedMutex()
         , isBeingDestroyed(false)
         , inputModifiedRecursion(0)
@@ -342,7 +344,19 @@ public:
         , isRefreshingInputRelatedData(false)
         , streamWarnings()
         , requiresGLFinishBeforeRender(false)
+        , nodePositionCoords()
+        , nodeSize()
+        , nodeColor()
+        , overlayColor()
+        , nodeIsSelected(false)
+        , restoringDefaults(false)
     {
+        nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
+        nodeSize[0] = nodeSize[1] = -1;
+        nodeColor[0] = nodeColor[1] = nodeColor[2] = -1;
+        overlayColor[0] = overlayColor[1] = overlayColor[2] = -1;
+
+
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
         gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
@@ -360,16 +374,6 @@ public:
 
         computingPreview = v;
     }
-
-    void restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
-                                   const KnobGroupPtr& group,
-                                   const KnobPagePtr& page);
-
-    void restoreKnobLinksRecursive(const GroupKnobSerializationConstPtr& group,
-                                   const NodesList & allNodes,
-                                   const std::map<std::string, std::string>& oldNewScriptNamesMapping);
-
-    void ifGroupForceHashChangeOfInputs();
 
     void runOnNodeCreatedCB(bool userEdited);
 
@@ -392,12 +396,28 @@ public:
 
     bool getSelectedLayerInternal(int inputNb, const ChannelSelector& selector, ImageComponents* comp) const;
 
+    bool isPyPlugInternal() const;
 
-    Node* _publicInterface; // can not be a smart ptr
+    void refreshDefaultPagesOrder();
+
+    void refreshDefaultViewerKnobsOrder();
+
+    ////////////////////////////////////////////////
+
+    // Ptr to public interface, can not be a smart ptr
+    Node* _publicInterface;
+
+    // The group containing this node
     boost::weak_ptr<NodeCollection> group;
+
+    // If this node is part of a precomp, this is a pointer to it
     boost::weak_ptr<PrecompNode> precomp;
-    AppInstanceWPtr app; // pointer to the app: needed to access the application's default-project's format
-    bool isPartOfProject;
+
+    // pointer to the app: needed to access project stuff
+    AppInstanceWPtr app;
+
+    // If true, the node is serialized
+    bool isPersistent;
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
@@ -424,15 +444,10 @@ public:
     std::string scriptName; //node name internally and as visible to python
     std::string label; // node label as visible in the GUI
 
-    ///The cacheID is the first script name that was given to a node
-    ///it is then used in the cache to identify images that belong to this node
-    ///In order for the cache to be persistent, the cacheID is serialized with the node
-    ///and 2 nodes cannot have the same cacheID.
-    std::string cacheID;
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
-    Plugin* plugin; //< the plugin which stores the function to instantiate the effect
+    PluginWPtr plugin; //< the plugin which stores the function to instantiate the effect
     mutable QMutex pyPluginInfoMutex;
     PyPlugInfo pyPlugInfo;
     bool computingPreview;
@@ -444,22 +459,18 @@ public:
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
-    //only 1 clone can render at any time
-    U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the effect has its evaluate() function called.
-    mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
-    Hash64 hash; //< recomputed everytime knobsAge is changed.
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
     NodeWPtr masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodeWPtr ioContainer;
-#endif
+
 
     KnobIntWPtr frameIncrKnob;
     KnobPageWPtr nodeSettingsPage;
-    KnobStringWPtr nodeLabelKnob;
+
+    KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
     KnobBoolWPtr previewEnabledKnob;
     KnobBoolWPtr disableNodeKnob;
     KnobChoiceWPtr openglRenderingEnabledKnob;
@@ -543,12 +554,6 @@ public:
     // During painting this is the buffer we use
     ImagePtr paintBuffer;
 
-    // These are dynamic props
-
-    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
-    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
-    //won't be able to paint the alpha channel
-    bool useAlpha0ToConvertFromRGBToRGBA;
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
     boost::shared_ptr<NodeRenderWatcher> renderWatcher;
@@ -570,6 +575,28 @@ public:
     // Some plug-ins (mainly Hitfilm Ignite detected for now) use their own OpenGL context that is sharing resources with our OpenGL contexT.
     // as a result if we don't call glFinish() before calling the render action, the plug-in context might use textures that were not finished yet.
     bool requiresGLFinishBeforeRender;
+
+    // UI
+    mutable QMutex nodeUIDataMutex;
+    double nodePositionCoords[2]; // x,y  X=Y=INT_MIN if there is no position info
+    double nodeSize[2]; // width, height, W=H=-1 if there is no size info
+    double nodeColor[3]; // node color (RGB), between 0. and 1. If R=G=B=-1 then no color
+    double overlayColor[3]; // overlay color (RGB), between 0. and 1. If R=G=B=-1 then no color
+    bool nodeIsSelected; // is this node selected by the user ?
+
+    // The name of the preset with which this node was created
+    mutable QMutex nodePresetMutex;
+    std::string initialNodePreset;
+
+    // This is a list of KnobPage script-names defining the ordering of the pages in the settings panel.
+    // This is used to determine if the ordering has changed or not for serialization purpose
+    std::list<std::string> defaultPagesOrder;
+
+    // This is a list of Knob script-names which are by default in the viewer interface.
+    // This is used to determine if the ordering has changed or not for serialization purpose
+    std::list<std::string> defaultViewerKnobsOrder;
+
+    bool restoringDefaults;
 };
 
 class RefreshingInputData_RAII
@@ -607,13 +634,12 @@ toBGRA(unsigned char r,
 
 Node::Node(const AppInstancePtr& app,
            const NodeCollectionPtr& group,
-           Plugin* plugin)
+           const PluginPtr& plugin)
     : QObject()
     , _imp( new Implementation(this, app, group, plugin) )
 {
     QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
-    QObject::connect( this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 
     if (plugin && plugin->getPluginID().startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
@@ -628,9 +654,9 @@ Node::isGLFinishRequiredBeforeRender() const
 }
 
 bool
-Node::isPartOfProject() const
+Node::isPersistent() const
 {
-    return _imp->isPartOfProject;
+    return _imp->isPersistent;
 }
 
 void
@@ -658,16 +684,10 @@ Node::createTrackerContextConditionnally()
     }
 }
 
-const Plugin*
+const PluginPtr
 Node::getPlugin() const
 {
-    return _imp->plugin;
-}
-
-void
-Node::switchInternalPlugin(Plugin* plugin)
-{
-    _imp->plugin = plugin;
+    return _imp->plugin.lock();
 }
 
 void
@@ -685,7 +705,7 @@ Node::isPartOfPrecomp() const
 }
 
 void
-Node::initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName)
+Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName)
 {
     /*
      If the serialization is not null, we are either pasting a node or loading it from a project.
@@ -716,11 +736,8 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
         setScriptName_no_error_check(name);
 
     } else if (serialization) {
-        if ( group && !group->isCacheIDAlreadyTaken( serialization->getCacheID() ) ) {
-            QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = serialization->getCacheID();
-        }
-        const std::string& baseName = serialization->getNodeScriptName();
+
+        const std::string& baseName = serialization->_nodeScriptName;
         std::string name = baseName;
         int no = 1;
         do {
@@ -736,19 +753,20 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
-        setLabel( serialization->getNodeLabel() );
+        setLabel( serialization->_nodeLabel );
 
     } else {
         std::string name;
         QString pluginLabel;
         AppManager::AppTypeEnum appType = appPTR->getAppType();
-        if ( _imp->plugin &&
+        PluginPtr plugin = getPlugin();
+        if ( plugin &&
             ( ( appType == AppManager::eAppTypeBackground) ||
              ( appType == AppManager::eAppTypeGui) ||
              ( appType == AppManager::eAppTypeInterpreter) ) ) {
-                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+                pluginLabel = plugin->getLabelWithoutSuffix();
             } else {
-                pluginLabel = _imp->plugin->getPluginLabel();
+                pluginLabel = plugin->getPluginLabel();
             }
         try {
             if (group) {
@@ -774,11 +792,9 @@ Node::load(const CreateNodeArgs& args)
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPartOfProject = !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
+    _imp->isPersistent = !args.getProperty<bool>(kCreateNodeArgsPropVolatile);
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
-#endif
 
     NodeCollectionPtr group = getGroup();
     std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
@@ -792,19 +808,34 @@ Node::load(const CreateNodeArgs& args)
     _imp->wasCreatedSilently = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 
     NodePtr thisShared = shared_from_this();
-    LibraryBinary* binary = _imp->plugin->getLibraryBinary();
+
+    LibraryBinary* binary = _imp->plugin.lock()->getLibraryBinary();
     std::pair<bool, EffectBuilder> func(false, NULL);
     if (binary) {
         func = binary->findFunction<EffectBuilder>("create");
     }
 
 
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    std::string presetLabel = args.getProperty<std::string>(kCreateNodeArgsPropPreset);
+
+    if (!presetLabel.empty()) {
+        // If there's a preset specified, load serialization from preset
+        const std::vector<PluginPresetDescriptor>& presets = getPlugin()->getPresetFiles();
+        for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+            if (it->presetLabel.toStdString() == presetLabel) {
+
+                // We found a matching preset, should we notify user if not found ?
+                QMutexLocker k(&_imp->nodePresetMutex);
+                _imp->initialNodePreset = presetLabel;
+                break;
+            }
+        }
+
+    }
+
     bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
-#ifndef NATRON_ENABLE_IO_META_NODES
-    bool hasUsedFileDialog = false;
-#endif
+
 
     bool hasDefaultFilename = false;
     {
@@ -817,7 +848,7 @@ Node::load(const CreateNodeArgs& args)
             hasDefaultFilename = !args.getProperty<std::string>(propName).empty();
         }
     }
-    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
+    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
 
     std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
@@ -830,7 +861,6 @@ Node::load(const CreateNodeArgs& args)
         assert(_imp->effect);
 
 
-#ifdef NATRON_ENABLE_IO_META_NODES
         NodePtr ioContainer = _imp->ioContainer.lock();
         if (ioContainer) {
             ReadNodePtr isReader = ioContainer->isEffectReadNode();
@@ -844,7 +874,7 @@ Node::load(const CreateNodeArgs& args)
                 }
             }
         }
-#endif
+
         initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
         
         _imp->effect->initializeData();
@@ -859,42 +889,15 @@ Node::load(const CreateNodeArgs& args)
         _imp->effect->setDefaultMetadata();
 
         if (serialization) {
-
-            _imp->effect->onKnobsAboutToBeLoaded(serialization);
-            loadKnobs(*serialization);
+            fromSerialization(*serialization);
+        } else if (!_imp->initialNodePreset.empty()) {
+            loadPresets(_imp->initialNodePreset);
         }
         setValuesFromSerialization(args);
-        
 
-
-#ifndef NATRON_ENABLE_IO_META_NODES
-        std::string images;
-        if (_imp->effect->isReader() && canOpenFileDialog) {
-            images = getApp()->openImageFileDialog();
-        } else if (_imp->effect->isWriter() && canOpenFileDialog) {
-            images = getApp()->saveImageFileDialog();
-        }
-        if ( !images.empty() ) {
-            hasUsedFileDialog = true;
-            KnobSerializationPtr defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
-            CreateNodeArgs::DefaultValuesList list;
-            list.push_back(defaultFile);
-
-            std::string canonicalFilename = images;
-            getApp()->getProject()->canonicalizePath(canonicalFilename);
-            int firstFrame, lastFrame;
-            Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
-            list.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
-            setValuesFromSerialization(args);
-        }
-#endif
     } else {
         //ofx plugin
-#ifndef NATRON_ENABLE_IO_META_NODES
-        _imp->effect = appPTR->createOFXEffect(thisShared, args, canOpenFileDialog, &hasUsedFileDialog);
-#else
         _imp->effect = appPTR->createOFXEffect(thisShared, args);
-#endif
         assert(_imp->effect);
     }
 
@@ -926,9 +929,7 @@ Node::load(const CreateNodeArgs& args)
         _imp->isMultiInstance = true;
     }
 
-    /*if (isMultiInstanceChild && !args.serialization) {
-        updateEffectLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
-     }*/
+ 
     restoreSublabel();
 
     declarePythonFields();
@@ -944,16 +945,6 @@ Node::load(const CreateNodeArgs& args)
         group->notifyNodeActivated(thisShared);
     }
 
-    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
-    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
-    //won't be able to paint the alpha channel
-    if ( isRotoPaintingNode() ) {
-        _imp->useAlpha0ToConvertFromRGBToRGBA = true;
-    }
-
-    if (!serialization) {
-        computeHash();
-    }
 
     assert(_imp->effect);
 
@@ -965,6 +956,9 @@ Node::load(const CreateNodeArgs& args)
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args);
 
+    _imp->refreshDefaultPagesOrder();
+    _imp->refreshDefaultViewerKnobsOrder();
+
     _imp->nodeCreated = true;
 
     if ( !getApp()->isCreatingNodeTree() ) {
@@ -975,11 +969,13 @@ Node::load(const CreateNodeArgs& args)
     _imp->runOnNodeCreatedCB(!serialization && !isLoadingPyPlug);
 } // load
 
-bool
-Node::usesAlpha0ToConvertFromRGBToRGBA() const
+std::string
+Node::getCurrentNodePresets() const
 {
-    return _imp->useAlpha0ToConvertFromRGBToRGBA;
+    QMutexLocker k(&_imp->nodePresetMutex);
+    return _imp->initialNodePreset;
 }
+
 
 void
 Node::setWhileCreatingPaintStroke(bool creating)
@@ -1035,9 +1031,9 @@ Node::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 PluginOpenGLRenderSupport
 Node::getCurrentOpenGLRenderSupport() const
 {
-
-    if (_imp->plugin) {
-        PluginOpenGLRenderSupport pluginProp = _imp->plugin->getPluginOpenGLRenderSupport();
+    PluginPtr plugin = getPlugin();
+    if (plugin) {
+        PluginOpenGLRenderSupport pluginProp = plugin->getPluginOpenGLRenderSupport();
         if (pluginProp != ePluginOpenGLRenderSupportYes) {
             return pluginProp;
         }
@@ -1116,9 +1112,10 @@ void
 Node::refreshDynamicProperties()
 {
     PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
-    if (_imp->plugin) {
-        pluginGLSupport = _imp->plugin->getPluginOpenGLRenderSupport();
-        if (_imp->plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+    PluginPtr plugin = getPlugin();
+    if (plugin) {
+        pluginGLSupport = plugin->getPluginOpenGLRenderSupport();
+        if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
             pluginGLSupport = _imp->effect->supportsOpenGLRender();
         }
@@ -1139,13 +1136,15 @@ Node::refreshDynamicProperties()
 bool
 Node::isRenderScaleSupportEnabledForPlugin() const
 {
-    return _imp->plugin ? _imp->plugin->isRenderScaleEnabled() : true;
+    PluginPtr plugin = getPlugin();
+    return plugin ? plugin->isRenderScaleEnabled() : true;
 }
 
 bool
 Node::isMultiThreadingSupportEnabledForPlugin() const
 {
-    return _imp->plugin ? _imp->plugin->isMultiThreadingEnabled() : true;
+    PluginPtr plugin = getPlugin();
+    return plugin ? plugin->isMultiThreadingEnabled() : true;
 }
 
 void
@@ -1484,150 +1483,9 @@ Node::getChildrenMultiInstance(NodesList* children) const
     }
 }
 
-U64
-Node::getHashValue() const
-{
-    QReadLocker l(&_imp->knobsAgeMutex);
-
-    return _imp->hash.value();
-}
-
-std::string
-Node::getCacheID() const
-{
-    QMutexLocker k(&_imp->nameMutex);
-
-    return _imp->cacheID;
-}
-
-bool
-Node::computeHashInternal()
-{
-    if (!_imp->effect) {
-        return false;
-    }
-    ///Always called in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!_imp->inputsInitialized) {
-        qDebug() << "Node::computeHash(): inputs not initialized";
-    }
-
-    U64 oldHash, newHash;
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-
-        oldHash = _imp->hash.value();
-
-        ///reset the hash value
-        _imp->hash.reset();
-
-        ///append the effect's own age
-        _imp->hash.append(_imp->knobsAge);
-
-        ///append all inputs hash
-        {
-            ViewerInstancePtr isViewer = isEffectViewerInstance();
-
-            if (isViewer) {
-                int activeInput[2];
-                isViewer->getActiveInputs(activeInput[0], activeInput[1]);
-
-                for (int i = 0; i < 2; ++i) {
-                    NodePtr input = getInput(activeInput[i]);
-                    if (input) {
-                        _imp->hash.append( input->getHashValue() );
-                    }
-                }
-            } else {
-                for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                    NodePtr input = getInput(i);
-                    if (input) {
-
-                        ///Add the index of the input to its hash.
-                        ///Explanation: if we didn't add this, just switching inputs would produce a similar
-                        ///hash.
-                        _imp->hash.append(input->getHashValue() + i);
-                    }
-                }
-            }
-        }
-
-        // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
-        // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
-        // node respecitively have their hash correctly set.
-
-        ///Also append the effect's label to distinguish 2 instances with the same parameters
-        Hash64_appendQString( &_imp->hash, QString::fromUtf8( getScriptName().c_str() ) );
-
-        ///Also append the project's creation time in the hash because 2 projects openend concurrently
-        ///could reproduce the same (especially simple graphs like Viewer-Reader)
-        qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
-        _imp->hash.append(creationTime);
-
-        _imp->hash.computeHash();
-
-        newHash = _imp->hash.value();
-    } // QWriteLocker l(&_imp->knobsAgeMutex);
-    bool hashChanged = oldHash != newHash;
-
-    if (hashChanged) {
-        _imp->effect->onNodeHashChanged(newHash);
-        if ( _imp->nodeCreated && !getApp()->getProject()->isProjectClosing() ) {
-            /*
-             * We changed the node hash. That means all cache entries for this node with a different hash
-             * are impossible to re-create again. Just discard them all. This is done in a separate thread.
-             */
-            removeAllImagesFromCacheWithMatchingIDAndDifferentKey(newHash);
-        }
-    }
-
-    return hashChanged;
-} // Node::computeHashInternal
 
 void
-Node::computeHashRecursive(std::list<NodePtr>& marked)
-{
-    if ( std::find(marked.begin(), marked.end(), shared_from_this()) != marked.end() ) {
-        return;
-    }
-
-    bool hasChanged = computeHashInternal();
-    marked.push_back( shared_from_this() );
-    if (!hasChanged) {
-        //Nothing changed, no need to recurse on outputs
-        return;
-    }
-
-
-    bool isRotoPaint = _imp->effect->isRotoPaintNode();
-
-    ///call it on all the outputs
-    NodesList outputs;
-    getOutputsWithGroupRedirection(outputs);
-    for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        assert(*it);
-
-        //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-        RotoDrawableItemPtr attachedStroke = (*it)->getAttachedRotoItem();
-        if ( isRotoPaint && attachedStroke && (attachedStroke->getContext()->getNode().get() == this) ) {
-            continue;
-        }
-        (*it)->computeHashRecursive(marked);
-    }
-
-
-    ///If the node has a rotopaint tree, compute the hash of the nodes in the tree
-    if (_imp->rotoContext) {
-        NodesList allItems;
-        _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
-        for (NodesList::iterator it = allItems.begin(); it != allItems.end(); ++it) {
-            (*it)->computeHashRecursive(marked);
-        }
-    }
-}
-
-void
-Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
+Node::removeAllImagesFromCache()
 {
     AppInstancePtr app = getApp();
 
@@ -1639,49 +1497,9 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
     }
-    appPTR->removeAllImagesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
-    appPTR->removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
-    ViewerInstancePtr isViewer = isEffectViewerInstance();
-    if (isViewer) {
-        //Also remove from viewer cache
-        appPTR->removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
-    }
+    appPTR->removeAllCacheEntriesForPlugin(getPluginID());
 }
 
-void
-Node::removeAllImagesFromCache(bool blocking)
-{
-    AppInstancePtr app = getApp();
-
-    if (!app) {
-        return;
-    }
-    ProjectPtr proj = app->getProject();
-
-    if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
-        return;
-    }
-    appPTR->removeAllCacheEntriesForHolder(this, blocking);
-}
-
-void
-Node::doComputeHashOnMainThread()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    computeHash();
-}
-
-void
-Node::computeHash()
-{
-    if ( QThread::currentThread() != qApp->thread() ) {
-        Q_EMIT mustComputeHashOnMainThread();
-
-        return;
-    }
-    std::list<NodePtr> marked;
-    computeHashRecursive(marked);
-} // computeHash
 
 void
 Node::setValuesFromSerialization(const CreateNodeArgs& args)
@@ -1739,243 +1557,1074 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
     
 }
 
-void
-Node::loadKnobs(const NodeSerialization & serialization,
-                bool updateKnobGui)
+
+
+static KnobIPtr
+findMasterKnob(const KnobIPtr & knob,
+           const NodesList & allNodes,
+           const std::string& masterKnobName,
+           const std::string& masterNodeName,
+           const std::string& masterTrackName,
+           const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
-    ///Only called from the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->knobsInitialized);
-    if ( serialization.isNull() ) {
+    ///we need to cycle through all the nodes of the project to find the real master
+    NodePtr masterNode;
+    std::string masterNodeNameToFind = masterNodeName;
+
+    /*
+     When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
+     nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping
+     */
+    std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
+
+    if ( foundMapping != oldNewScriptNamesMapping.end() ) {
+        masterNodeNameToFind = foundMapping->second;
+    }
+
+    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+        if ( (*it2)->getScriptName() == masterNodeNameToFind ) {
+            masterNode = *it2;
+            break;
+        }
+    }
+    if (!masterNode) {
+        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
+
+        return KnobIPtr();
+    }
+
+    if ( !masterTrackName.empty() ) {
+        TrackerContextPtr context = masterNode->getTrackerContext();
+        if (context) {
+            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
+            if (marker) {
+                return marker->getKnobByName(masterKnobName);
+            }
+        }
+    } else {
+        ///now that we have the master node, find the corresponding knob
+        const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
+        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
+            if ( (otherKnobs[j]->getName() == masterKnobName) ) {
+                return otherKnobs[j];
+                break;
+            }
+        }
+    }
+
+    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
+
+    return KnobIPtr();
+}
+
+
+void
+Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
+                       const NodesList & allNodes,
+                      const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+{
+
+    SERIALIZATION_NAMESPACE::KnobSerialization* isKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobSerialization*>(serialization.get());
+    SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroupKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(serialization.get());
+
+    if (isGroupKnobSerialization) {
+        for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
+            try {
+                restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
+            } catch (const std::exception& e) {
+                LogEntry::LogEntryColor c;
+                if (getColor(&c.r, &c.g, &c.b)) {
+                    c.colorSet = true;
+                }
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
+
+
+            }
+        }
+    } else if (isKnobSerialization) {
+        KnobIPtr knob =  getKnobByName(isKnobSerialization->_scriptName);
+        if (!knob) {
+            throw std::invalid_argument(tr("Could not find a parameter named \"%1\"").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
+
+            return;
+        }
+
+
+        // Restore slave/master links first
+        {
+            if (isKnobSerialization->_masterIsAlias) {
+                if (!isKnobSerialization->_values.empty()) {
+                    const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
+                    const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
+                    const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
+                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
+                    if (alias) {
+                        knob->setKnobAsAliasOfThis(alias, true);
+                    }
+                }
+            } else {
+                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
+                    if (!isKnobSerialization->_values[i]._slaveMasterLink.hasLink) {
+                        continue;
+                    }
+
+                    std::string masterKnobName, masterNodeName, masterTrackName;
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName.empty()) {
+                         // Node name empty, assume this is the same node
+                        masterNodeName = getScriptName_mt_safe();
+                    }
+
+                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.empty()) {
+                        // Knob name empty, assume this is the same knob unless it has a single dimension
+                        if (knob->getDimension() == 1) {
+                            continue;
+                        }
+                        masterKnobName = knob->getName();
+                    }
+
+                    masterTrackName = isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName;
+                    KnobIPtr master = findMasterKnob(knob,
+                                                     allNodes,
+                                                     masterKnobName,
+                                                     masterNodeName,
+                                                     masterTrackName,
+                                                     oldNewScriptNamesMapping);
+                    if (master) {
+                        // Find dimension in master by name
+                        int dimIndex = -1;
+                        if (master->getDimension() == 1) {
+                            dimIndex = 0;
+                        } else {
+                            for (int d = 0; d < master->getDimension(); ++d) {
+                                if ( boost::iequals(master->getDimensionName(d), isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName) ) {
+                                    dimIndex = d;
+                                    break;
+                                }
+                            }
+                            if (dimIndex == -1) {
+                                // Before Natron 2.2 we serialized the dimension index. Try converting to an int
+                                dimIndex = QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
+                            }
+                        }
+                        if (dimIndex >=0 && dimIndex < master->getDimension()) {
+                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, dimIndex);
+                        } else {
+                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
+                        }
+                    }
+
+                }
+
+            }
+        }
+
+        // Restore expressions
+        {
+
+            try {
+                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
+                    if ( !isKnobSerialization->_values[i]._expression.empty() ) {
+                        QString expr( QString::fromUtf8( isKnobSerialization->_values[i]._expression.c_str() ) );
+
+                        //Replace all occurrences of script-names that we know have changed
+                        for (std::map<std::string, std::string>::const_iterator it = oldNewScriptNamesMapping.begin();
+                             it != oldNewScriptNamesMapping.end(); ++it) {
+                            expr.replace( QString::fromUtf8( it->first.c_str() ), QString::fromUtf8( it->second.c_str() ) );
+                        }
+                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
+                    }
+                }
+            } catch (const std::exception& e) {
+                QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
+            }
+        }
+    }
+}
+
+
+void
+Node::restoreUserKnob(const KnobGroupPtr& group,
+                      const KnobPagePtr& page,
+                      const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase,
+                      unsigned int recursionLevel)
+{
+    
+    const SERIALIZATION_NAMESPACE::KnobSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::KnobSerialization*>(&serializationBase);
+    const SERIALIZATION_NAMESPACE::GroupKnobSerialization* groupSerialization = dynamic_cast<const SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(&serializationBase);
+    assert(serialization || groupSerialization);
+    if (!serialization && !groupSerialization) {
         return;
     }
 
+    if (groupSerialization) {
+        KnobIPtr found = getKnobByName(groupSerialization->_name);
+
+        bool isPage = false;
+        bool isGroup = false;
+        if (groupSerialization->_typeName == KnobPage::typeNameStatic()) {
+            isPage = true;
+        } else if (groupSerialization->_typeName == KnobGroup::typeNameStatic()) {
+            isGroup = true;
+        } else {
+            if (recursionLevel == 0) {
+                // Recursion level is 0, so we are a page since pages all knobs must live in a page.
+                // We use it because in the past we didn't serialize the typename so we could not know if this was
+                // a page or a group.
+                isPage = true;
+            } else {
+                isGroup = true;
+            }
+        }
+        if (isPage) {
+            KnobPagePtr page;
+            if (!found) {
+                page = AppManager::createKnob<KnobPage>(_imp->effect, groupSerialization->_label, 1, false);
+                page->setAsUserKnob(true);
+                page->setName(groupSerialization->_name);
+            } else {
+                page = toKnobPage(found);
+            }
+            if (!page) {
+                return;
+            }
+            for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
+                restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
+            }
+
+        } else { //!ispage
+            KnobGroupPtr grp;
+            if (!found) {
+                grp = AppManager::createKnob<KnobGroup>(_imp->effect, groupSerialization->_label, 1, false);
+            } else {
+                grp = toKnobGroup(found);
+
+            }
+            if (!grp) {
+                return;
+            }
+            grp->setAsUserKnob(true);
+            grp->setName(groupSerialization->_name);
+            if (groupSerialization->_isSetAsTab) {
+                grp->setAsTab();
+            }
+            assert(page);
+            if (page) {
+                page->addKnob(grp);
+            }
+            if (group) {
+                group->addKnob(grp);
+            }
+            grp->setValue(groupSerialization->_isOpened);
+            for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
+                restoreUserKnob(grp, page, **it, recursionLevel + 1);
+            }
+        } // ispage
+
+    } else {
+
+
+
+        assert(serialization->_isUserKnob);
+        if (!serialization->_isUserKnob) {
+            return;
+        }
+
+
+        bool isFile = serialization->_typeName == KnobFile::typeNameStatic();
+        bool isOutFile = serialization->_typeName == KnobOutputFile::typeNameStatic();
+        bool isPath = serialization->_typeName == KnobPath::typeNameStatic();
+        bool isString = serialization->_typeName == KnobString::typeNameStatic();
+        bool isParametric = serialization->_typeName == KnobParametric::typeNameStatic();
+        bool isChoice = serialization->_typeName == KnobChoice::typeNameStatic();
+        bool isDouble = serialization->_typeName == KnobDouble::typeNameStatic();
+        bool isColor = serialization->_typeName == KnobColor::typeNameStatic();
+        bool isInt = serialization->_typeName == KnobInt::typeNameStatic();
+        bool isBool = serialization->_typeName == KnobBool::typeNameStatic();
+        bool isSeparator = serialization->_typeName == KnobSeparator::typeNameStatic();
+        bool isButton = serialization->_typeName == KnobButton::typeNameStatic();
+
+        assert(isInt || isDouble || isBool || isChoice || isColor || isString || isFile || isOutFile || isPath || isButton || isSeparator || isParametric);
+
+        KnobIPtr knob;
+        KnobIPtr found = getKnobByName(serialization->_scriptName);
+        if (found) {
+            knob = found;
+        } else {
+            if (isInt) {
+                knob = AppManager::createKnob<KnobInt>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isDouble) {
+                knob = AppManager::createKnob<KnobDouble>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isBool) {
+                knob = AppManager::createKnob<KnobBool>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isChoice) {
+                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isColor) {
+                knob = AppManager::createKnob<KnobColor>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isString) {
+                knob = AppManager::createKnob<KnobString>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isFile) {
+                knob = AppManager::createKnob<KnobFile>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isOutFile) {
+                knob = AppManager::createKnob<KnobOutputFile>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isPath) {
+                knob = AppManager::createKnob<KnobPath>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isButton) {
+                knob = AppManager::createKnob<KnobButton>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isSeparator) {
+                knob = AppManager::createKnob<KnobSeparator>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isParametric) {
+                knob = AppManager::createKnob<KnobParametric>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isChoice) {
+                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            } else if (isChoice) {
+                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            }
+        } // found
+
+
+        assert(knob);
+        if (!knob) {
+            return;
+        }
+
+        knob->fromSerialization(*serialization);
+
+        if (group) {
+            group->addKnob(knob);
+        } else if (page) {
+            page->addKnob(knob);
+        }
+    } // groupSerialization
+
+} // restoreUserKnob
+
+std::string
+Node::getContainerGroupFullyQualifiedName() const
+{
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr containerIsGroup = toNodeGroup(collection);
+    if (containerIsGroup) {
+        return  containerIsGroup->getNode()->getFullyQualifiedName();
+    }
+    return std::string();
+}
+
+void
+Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+{
+
+    SERIALIZATION_NAMESPACE::NodeSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::NodeSerialization*>(serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    // All this code is MT-safe as it runs in the serialization thread
+
+    OfxEffectInstancePtr isOfxEffect = boost::dynamic_pointer_cast<OfxEffectInstance>(getEffectInstance());
+
+    if (isOfxEffect) {
+        // For OpenFX nodes, we call the sync private data action now to let a chance to the plug-in to synchronize it's
+        // private data to parameters that will be saved with the project.
+        isOfxEffect->syncPrivateData_other_thread();
+    }
+
+    // Check if pages ordering changed, if not do not serialize
+    bool pageOrderChanged = hasPageOrderChangedSinceDefault();
+
+    bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
+
+    KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
+    std::list<KnobIPtr > userPages;
+    for (std::size_t i  = 0; i < knobs.size(); ++i) {
+        KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
+        KnobPagePtr isPage = toKnobPage(knobs[i]);
+
+        // For pages, check if it is a user knob, if so serialialize user knobs recursively
+        if (isPage) {
+            if (pageOrderChanged) {
+                serialization->_pagesIndexes.push_back( knobs[i]->getName() );
+            }
+            if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
+                userPages.push_back(knobs[i]);
+            }
+        }
+
+        if (!knobs[i]->getIsPersistent()) {
+            // Don't serialize non persistant knobs
+            continue;
+        }
+
+        if (knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin()) {
+            // Don't serialize user knobs, its taken care of by user pages
+            continue;
+        }
+
+        if (isGroup || isPage) {
+            // Don't serialize these, they don't hold anything
+            continue;
+        }
+
+
+        if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
+            // This knob was not modified by the user, don't serialize it
+            continue;
+        }
+
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        knobs[i]->toSerialization(newKnobSer.get());
+        if (newKnobSer->_mustSerialize) {
+            serialization->_knobsValues.push_back(newKnobSer);
+        }
+
+    }
+
+    // Serialize user pages now
+    for (std::list<KnobIPtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> s( new SERIALIZATION_NAMESPACE::GroupKnobSerialization );
+        (*it)->toSerialization(s.get());
+        serialization->_userPages.push_back(s);
+    }
+
+
+    serialization->_groupFullyQualifiedScriptName = getContainerGroupFullyQualifiedName();
+
+    serialization->_nodeLabel = getLabel_mt_safe();
+
+    serialization->_nodeScriptName = getScriptName_mt_safe();
+
+    serialization->_pluginID = getPluginID();
+
+    bool subGraphEdited = isSubGraphEditedByUser();
+    
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        serialization->_presetLabel = _imp->initialNodePreset;
+    }
+
+    serialization->_pluginMajorVersion = getMajorVersion();
+
+    serialization->_pluginMinorVersion = getMinorVersion();
+
+    getInputNames(serialization->_inputs);
+
+
+    NodePtr masterNode = getMasterNode();
+    if (masterNode) {
+        serialization->_masterNodeFullyQualifiedScriptName = masterNode->getFullyQualifiedName();
+    }
+
+    RotoContextPtr roto = getRotoContext();
+    if ( roto && !roto->isEmpty() ) {
+        serialization->_rotoContext.reset(new SERIALIZATION_NAMESPACE::RotoContextSerialization);
+        roto->toSerialization(serialization->_rotoContext.get());
+    }
+
+    TrackerContextPtr tracker = getTrackerContext();
+    if (tracker) {
+        serialization->_trackerContext.reset(new SERIALIZATION_NAMESPACE::TrackerContextSerialization);
+        tracker->toSerialization(serialization->_trackerContext.get());
+    }
+
+
+    // For groups, serialize its children if the graph was edited
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+    if (isGrp && subGraphEdited) {
+        NodesList nodes;
+        isGrp->getActiveNodes(&nodes);
+
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if ( (*it)->isPersistent() ) {
+                
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state;
+                StubNodePtr isStub = toStubNode((*it)->getEffectInstance());
+                if (isStub) {
+                    state = isStub->getNodeSerialization();
+                    if (!state) {
+                        continue;
+                    }
+                } else {
+                    state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                    (*it)->toSerialization(state.get());
+                }
+                
+                serialization->_children.push_back(state);
+            }
+        }
+    }
+
+    // This is to support the old Tracker node in Natron v1, this is deprecated
+    serialization->_multiInstanceParentName = getParentMultiInstanceName();
+    NodesList childrenMultiInstance;
+    getChildrenMultiInstance(&childrenMultiInstance);
+    if ( !childrenMultiInstance.empty() ) {
+        assert(!isGrp);
+        for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
+            assert( (*it)->getParentMultiInstance() );
+            if ( (*it)->isActivated() ) {
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                (*it)->toSerialization(state.get());
+                serialization->_children.push_back(state);
+            }
+        }
+    }
+
+    // User created components
+    std::list<ImageComponents> userComps;
+    getUserCreatedComponents(&userComps);
+    for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+        SERIALIZATION_NAMESPACE::ImageComponentsSerialization s;
+        s.layerName = it->getLayerName();
+        s.globalCompsName = it->getComponentsGlobalName();
+        s.channelNames = it->getComponentsNames();
+        serialization->_userComponents.push_back(s);
+    }
+
+    getPosition(&serialization->_nodePositionCoords[0], &serialization->_nodePositionCoords[1]);
+
+    // Only save the size for backdrops, that's the only node where the user can resize
+    if (isEffectBackdrop()) {
+        getSize(&serialization->_nodeSize[0], &serialization->_nodeSize[1]);
+    }
+
+    if (hasColorChangedSinceDefault()) {
+        getColor(&serialization->_nodeColor[0], &serialization->_nodeColor[1], &serialization->_nodeColor[2]);
+    }
+    getOverlayColor(&serialization->_overlayColor[0], &serialization->_overlayColor[1], &serialization->_overlayColor[2]);
+
+    // Only serialize viewer UI knobs order if it has changed
+
+    KnobsVec viewerUIKnobs = getEffectInstance()->getViewerUIKnobs();
+    if (viewerUIKnobs.size() != _imp->defaultViewerKnobsOrder.size()) {
+        std::list<std::string>::const_iterator it2 = _imp->defaultViewerKnobsOrder.begin();
+        bool hasChanged = false;
+        for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it, ++it2) {
+            if ((*it)->getName() != *it2) {
+                hasChanged = true;
+                break;
+            }
+        }
+        if (hasChanged) {
+            for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it, ++it2) {
+                serialization->_viewerUIKnobsOrder.push_back((*it)->getName());
+            }
+        }
+    }
+    
+} // Node::toSerialization
+
+void
+Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+{
+    const SERIALIZATION_NAMESPACE::NodeSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::NodeSerialization*>(&serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    loadKnobsFromSerialization(*serialization);
+
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        _imp->initialNodePreset = serialization->_presetLabel;
+    }
+
+    {
+        QMutexLocker k(&_imp->nodeUIDataMutex);
+        _imp->nodePositionCoords[0] = serialization->_nodePositionCoords[0];
+        _imp->nodePositionCoords[1] = serialization->_nodePositionCoords[1];
+        _imp->nodeSize[0] = serialization->_nodeSize[0];
+        _imp->nodeSize[1] = serialization->_nodeSize[1];
+        _imp->nodeColor[0] = serialization->_nodeColor[0];
+        _imp->nodeColor[1] = serialization->_nodeColor[1];
+        _imp->nodeColor[2] = serialization->_nodeColor[2];
+        _imp->overlayColor[0] = serialization->_overlayColor[0];
+        _imp->overlayColor[1] = serialization->_overlayColor[1];
+        _imp->overlayColor[2] = serialization->_overlayColor[2];
+    }
+
+
+
+    
+} // Node::fromSerialization
+
+void
+Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+{
+    assert(_imp->knobsInitialized);
+
+    _imp->effect->beginChanges();
+    _imp->effect->onKnobsAboutToBeLoaded(serialization);
 
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
-        _imp->createdComponents = serialization.getUserCreatedComponents();
+        for (std::list<SERIALIZATION_NAMESPACE::ImageComponentsSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
+            ImageComponents s(it->layerName, it->globalCompsName, it->channelNames);
+            _imp->createdComponents.push_back(s);
+        }
+    }
+  
+    {
+        // Load all knobs
+
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization._knobsValues.begin(); it!=serialization._knobsValues.end(); ++it) {
+            KnobIPtr knob = getKnobByName((*it)->_scriptName);
+            if (!knob) {
+                continue;
+                // Prior to Natron 1.2 RGBA checkboxes had simple script-names that could be already taken by
+                // plug-in declared parameters. We changed them to kNatronOfxParamProcessR/G/B/A
+                /*bool isR = (*it)->_scriptName == "r";
+                bool isG = (*it)->_scriptName == "g";
+                bool isB = (*it)->_scriptName == "b";
+                bool isA = (*it)->_scriptName == "a";
+
+                KnobBoolPtr isBoolean = toKnobBool(knob);
+                if (isBoolean && (isR || isG || isB || isA)) {
+                    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+                        if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
+                            ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
+                            ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
+                            ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
+                            knob->fromSerialization(**it);
+                        }
+                    }
+                }*/
+            }
+            knob->fromSerialization(**it);
+
+        }
+
+
     }
 
-    const std::vector< KnobIPtr > & nodeKnobs = getKnobs();
-    ///for all knobs of the node
-    for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        loadKnob(nodeKnobs[j], serialization.getKnobsValues(), updateKnobGui);
-    }
-    ///now restore the roto context if the node has a roto context
-    if (serialization.hasRotoContext() && _imp->rotoContext) {
-        _imp->rotoContext->load( serialization.getRotoContext() );
+    KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
+    if (filenameParam) {
+        computeFrameRangeForReader(filenameParam);
     }
 
-    if (serialization.hasTrackerContext() && _imp->trackContext) {
-        _imp->trackContext->load( serialization.getTrackerContext() );
+    // now restore the roto context if the node has a roto context
+    if (serialization._rotoContext && _imp->rotoContext) {
+        _imp->rotoContext->resetToDefault();
+        _imp->rotoContext->fromSerialization(*serialization._rotoContext);
     }
 
-    restoreUserKnobs(serialization);
+    // same for tracker context
+    if (serialization._trackerContext && _imp->trackContext) {
+        _imp->trackContext->clearMarkers();
+        _imp->trackContext->fromSerialization(*serialization._trackerContext);
+    }
 
-    setKnobsAge( serialization.getKnobsAge() );
+    {
+        for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >::const_iterator it = serialization._userPages.begin(); it != serialization._userPages.end(); ++it) {
+            restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0);
+        }
+    }
+    if (!serialization._pagesIndexes.empty()) {
+        setPagesOrder( serialization._pagesIndexes );
+    }
+
+    if (!serialization._viewerUIKnobsOrder.empty()) {
+        KnobsVec viewerUIknobs;
+        for (std::list<std::string>::const_iterator it = serialization._viewerUIKnobsOrder.begin(); it!=serialization._viewerUIKnobsOrder.end(); ++it) {
+            KnobIPtr knob = getKnobByName(*it);
+            if (knob) {
+                viewerUIknobs.push_back(knob);
+            }
+        }
+        _imp->effect->setViewerUIKnobs(viewerUIknobs);
+    }
 
 
     _imp->effect->onKnobsLoaded();
+    _imp->effect->endChanges();
+
+} // Node::fromSerializationInternal
+
+void
+Node::loadPresets(const std::string& presetsLabel)
+{
+
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        _imp->initialNodePreset = presetsLabel;
+    }
+    Q_EMIT nodePresetsChanged();
+    restoreNodeToDefaultState();
 }
+
+void
+Node::loadPresetsFromFile(const std::string& presetsFile)
+{
+
+    assert(QThread::currentThread() == qApp->thread());
+
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
+
+    // Throws on failure
+    std::string presetsLabel;
+    getNodeSerializationFromPresetFile(presetsFile, serialization.get(), &presetsLabel);
+
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        _imp->initialNodePreset = presetsLabel;
+    }
+    Q_EMIT nodePresetsChanged();
+    restoreNodeToDefaultState();
+}
+
+void
+Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization, std::string* presetsLabel)
+{
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open(&ifile, presetFile);
+    if (!ifile || presetFile.empty()) {
+        std::string message = tr("Failed to open file: ").toStdString() + presetFile;
+        throw std::runtime_error(message);
+    }
+
+    SERIALIZATION_NAMESPACE::NodePresetSerialization obj;
+    SERIALIZATION_NAMESPACE::read(ifile,&obj);
+
+    if (serialization) {
+        *serialization = obj.node;
+    }
+    if (presetsLabel) {
+        *presetsLabel = obj.presetLabel;
+    }
+    std::string thisPluginID = getPluginID();
+    if (obj.pluginID != thisPluginID) {
+        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+    }
+
+}
+
+
+
+void
+Node::getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
+{
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        throw std::invalid_argument("Invalid plug-in");
+    }
+
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin() ;it!=presets.end(); ++it) {
+        if (it->presetLabel.toStdString() == presetName) {
+            std::string presetsLabel;
+            getNodeSerializationFromPresetFile(it->presetFilePath.toStdString(), serialization, &presetsLabel);
+            assert(presetsLabel == presetName);
+            return;
+        }
+    }
+
+
+    std::string message = tr("Cannot find loaded preset named %1").arg(QString::fromUtf8(presetName.c_str())).toStdString();
+    throw std::invalid_argument(message);
+}
+
+void
+Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    assert(!_imp->initialNodePreset.empty());
+
+    loadKnobsFromSerialization(serialization);
+
+    // set non animated knobs to be their default values
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobButtonPtr isBtn = toKnobButton(*it);
+        KnobPagePtr isPage = toKnobPage(*it);
+        KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+        if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
+            continue;
+        }
+
+        if ((*it)->getIsPersistent()) {
+            KnobIntBasePtr isInt = toKnobIntBase(*it);
+            KnobBoolBasePtr isBool = toKnobBoolBase(*it);
+            KnobStringBasePtr isString = toKnobStringBase(*it);
+            KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                if ((*it)->isAnimated(d)) {
+                    continue;
+                }
+                if (isInt) {
+                    isInt->setDefaultValue(isInt->getValue(d), d);
+                } else if (isBool) {
+                    isBool->setDefaultValue(isBool->getValue(d), d);
+                } else if (isString) {
+                    isString->setDefaultValue(isString->getValue(d), d);
+                } else if (isDouble) {
+                    isDouble->setDefaultValue(isDouble->getValue(d), d);
+                }
+            }
+        }
+    }
+
+
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+
+    // For Groups only (not PyPlugs) also restore the internal graph as the user set it up.
+    // This is mainly useful for the Viewer group
+    if (isGrp && !getApp()->isCreatingPythonGroup() && !isPyPlug()) {
+
+        {
+            // Deactivate all internal nodes for group first
+            NodesList nodes = isGrp->getNodes();
+            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                (*it)->destroyNode(false);
+            }
+        }
+
+        std::map<std::string, bool> moduleUpdatesProcessed;
+        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
+    }
+
+} // Node::loadPresetsInternal
+
+void
+Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods)
+{
+    if (presetsLabel.empty()) {
+        throw std::runtime_error(tr("The preset label cannot be empty").toStdString());
+    }
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, filePath);
+    if (!ofile || filePath.empty()) {
+        std::string message = tr("Failed to open file: ").toStdString() + filePath;
+        throw std::runtime_error(message);
+    }
+
+    SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
+    // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
+    // we just have to read the plugin id
+    serialization.pluginID = getPluginID();
+    serialization.presetLabel = presetsLabel;
+    serialization.presetIcon = presetsIcon;
+    serialization.presetSymbol = (int)symbol;
+    serialization.presetModifiers = (int)mods;
+    toSerialization(&serialization.node);
+
+    // No need to save node UI nor inputs
+    serialization.node._inputs.clear();
+    serialization.node._nodePositionCoords[0] = serialization.node._nodePositionCoords[1] = INT_MIN;
+    serialization.node._nodeSize[0] = serialization.node._nodeSize[1] = -1;
+
+    SERIALIZATION_NAMESPACE::write(ofile, serialization);
+
+} // Node::saveNodeToPresets
+
+void
+Node::restoreNodeToDefaultState()
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    FlagSetter setter(true, &_imp->restoringDefaults);
+
+    _imp->effect->beginChanges();
+
+    if (isNodeCreated()) {
+        _imp->effect->purgeCaches();
+    }
+
+    std::string nodePreset = getCurrentNodePresets();
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
+    if (!nodePreset.empty()) {
+        try {
+            serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+            getNodeSerializationFromPresetName(nodePreset, serialization.get());
+        } catch (...) {
+
+        }
+    }
+
+    // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
+    // if all parameters are actually to the good value
+    {
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            
+            KnobButtonPtr isBtn = toKnobButton(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
+            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator || ( (*it)->getName() == kUserLabelKnobName ) ) {
+                continue;
+            }
+            (*it)->blockValueChanges();
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                (*it)->resetToDefaultValue(d);
+            }
+            (*it)->unblockValueChanges();
+        }
+    }
+
+    if (serialization) {
+        // Load presets from serialization if any
+        loadPresetsInternal(*serialization);
+    } else {
+        // Reset knob default values to their initial default value if we had a different preset before
+
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            KnobButtonPtr isBtn = toKnobButton(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
+            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
+                continue;
+            }
+
+            if ((*it)->getIsPersistent()) {
+                KnobIntBasePtr isInt = toKnobIntBase(*it);
+                KnobBoolBasePtr isBool = toKnobBoolBase(*it);
+                KnobStringBasePtr isString = toKnobStringBase(*it);
+                KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
+                for (int d = 0; d < (*it)->getDimension(); ++d) {
+                    if ((*it)->isAnimated(d)) {
+                        continue;
+                    }
+                    if (isInt) {
+                        isInt->setDefaultValue(isInt->getInitialDefaultValue(d), d);
+                    } else if (isBool) {
+                        isBool->setDefaultValue(isBool->getInitialDefaultValue(d), d);
+                    } else if (isString) {
+                        isString->setDefaultValue(isString->getInitialDefaultValue(d), d);
+                    } else if (isDouble) {
+                        isDouble->setDefaultValue(isDouble->getInitialDefaultValue(d), d);
+                    }
+                }
+            }
+        }
+    }
+
+
+    // Ensure the state of the node is consistent with what the plug-in expects
+    int time = getApp()->getTimeLine()->currentFrame();
+    {
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+        }
+    }
+
+    _imp->effect->endChanges();
+
+    // Refresh hash & meta-data and trigger a render
+    _imp->effect->invalidateCacheHashAndEvaluate(true, true);
+
+} // Node::restoreNodeToDefaultState
 
 void
 Node::restoreSublabel()
 {
+
+    KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
+    if (!sublabelKnob) {
+        return;
+    }
+    
+    // Make sure the knob is not persistent
+    sublabelKnob->setIsPersistent(false);
+    
+    KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
+    _imp->ofxSubLabelKnob = sublabelKnobIsString;
+
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        ioContainer->_imp->ofxSubLabelKnob = sublabelKnobIsString;
+    }
+    if (!sublabelKnobIsString) {
+        return;
+    }
     //Check if natron custom tags are present and insert them if needed
     /// If the node has a sublabel, restore it in the label
     KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-
-    if (labelKnob) {
-        QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
-        int foundNatronCustomTag = labeltext.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-        if (foundNatronCustomTag == -1) {
-            KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
-            if (sublabelKnob) {
-                KnobStringPtr sublabelKnobIsString = toKnobString(sublabelKnob);
-                if (sublabelKnobIsString) {
-                    QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
-                    if ( !sublabel.isEmpty() ) {
-                        int fontEndTagFound = labeltext.lastIndexOf( QString::fromUtf8(kFontEndTag) );
-                        if (fontEndTagFound == -1) {
-                            labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                            labeltext.append( QLatin1Char('(') + sublabel + QLatin1Char(')') );
-                            labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
-                        } else {
-                            QString toAppend( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                            toAppend += QLatin1Char('(');
-                            toAppend += sublabel;
-                            toAppend += QLatin1Char(')');
-                            toAppend += QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
-                            labeltext.insert(fontEndTagFound, toAppend);
-                        }
-                        labelKnob->setValue( labeltext.toStdString() );
-                    }
-                }
-            }
-        }
+    if (!labelKnob) {
+        return;
     }
+
+    /*
+    QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
+    int foundNatronCustomTag = labeltext.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+    if (foundNatronCustomTag == -1) {
+        QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
+        if ( !sublabel.isEmpty() ) {
+            int fontEndTagFound = labeltext.lastIndexOf( QString::fromUtf8(kFontEndTag) );
+            if (fontEndTagFound == -1) {
+                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+                labeltext.append( QLatin1Char('(') + sublabel + QLatin1Char(')') );
+                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
+            } else {
+                QString toAppend( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
+                toAppend += QLatin1Char('(');
+                toAppend += sublabel;
+                toAppend += QLatin1Char(')');
+                toAppend += QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
+                labeltext.insert(fontEndTagFound, toAppend);
+            }
+            labelKnob->setValue( labeltext.toStdString() );
+        }
+    }*/
+
 }
 
 void
 Node::loadKnob(const KnobIPtr & knob,
-               const std::list<KnobSerializationPtr> & knobsValues,
-               bool /*updateKnobGui*/)
+               const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues)
 {
-    ///try to find a serialized value for this knob
-    bool found = false;
+    // Try to find a serialized value for this knob
 
-    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
-            found = true;
-            // don't load the value if the Knob is not persistent! (it is just the default value in this case)
-            ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
-            //if ( knob->getIsPersistent() ) {
-            KnobIPtr serializedKnob = (*it)->getKnob();
-
-            // A knob might change its type between versions, do not load it
-            if ( knob->typeName() != serializedKnob->typeName() ) {
-                continue;
-            }
-
-            if (knob->getName() == "filename") {
-                assert(true);
-            }
-
-            knob->cloneDefaultValues(serializedKnob);
-
-            KnobChoicePtr isChoice = toKnobChoice(knob);
-            if (isChoice) {
-                const TypeExtraData* extraData = (*it)->getExtraData();
-                const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
-                assert(choiceData);
-                if (choiceData) {
-                    KnobChoicePtr choiceSerialized = toKnobChoice(serializedKnob);
-                    assert(choiceSerialized);
-                    if (choiceSerialized) {
-                        isChoice->choiceRestoration(choiceSerialized, choiceData);
-                    }
-                }
-            } else {
-                // There is a case where the dimension of a parameter might have changed between versions, e.g:
-                // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
-                // both dimensions.
-                // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
-                // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
-                // knob's dimensions.
-                if ( serializedKnob->getDimension() < knob->getDimension() ) {
-                    int nSerDims = serializedKnob->getDimension();
-                    for (int i = 0; i < nSerDims; ++i) {
-                        knob->cloneAndUpdateGui(serializedKnob, i);
-                    }
-                    for (int i = nSerDims; i < knob->getDimension(); ++i) {
-                        knob->cloneAndUpdateGui(serializedKnob, i, nSerDims - 1);
-                    }
-                } else {
-                    knob->cloneAndUpdateGui(serializedKnob);
-                }
-                knob->setSecret( serializedKnob->getIsSecret() );
-                if ( knob->getDimension() == serializedKnob->getDimension() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
-                        knob->setEnabled( i, serializedKnob->isEnabled(i) );
-                    }
-                }
-            }
-
-            if (knob->getName() == kOfxImageEffectFileParamName) {
-                computeFrameRangeForReader(knob);
-            }
-
-            //}
+            knob->fromSerialization(**it);
             break;
         }
     }
-    if (!found) {
-        ///Hack for old RGBA checkboxes which have a different name now
-        bool isR = knob->getName() == "r";
-        bool isG = knob->getName() == "g";
-        bool isB = knob->getName() == "b";
-        bool isA = knob->getName() == "a";
-        if (isR || isG || isB || isA) {
-            for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-                if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
-                     ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
-                     ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
-                     ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
-                    KnobIPtr serializedKnob = (*it)->getKnob();
-                    knob->cloneAndUpdateGui(serializedKnob);
 
-                    knob->setSecret( serializedKnob->getIsSecret() );
-                    if ( knob->getDimension() == serializedKnob->getDimension() ) {
-                        for (int i = 0; i < knob->getDimension(); ++i) {
-                            knob->setEnabled( i, serializedKnob->isEnabled(i) );
-                        }
-                    }
-                }
-            }
-        }
-    }
 } // Node::loadKnob
 
-void
-Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerializationConstPtr& group,
-                                                const NodesList & allNodes,
-                                                const std::map<std::string, std::string>& oldNewScriptNamesMapping)
-{
-    const std::list <boost::shared_ptr<KnobSerializationBase> >&  children = group->getChildren();
-
-    for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = children.begin(); it != children.end(); ++it) {
-        GroupKnobSerializationPtr isGrp = boost::dynamic_pointer_cast<GroupKnobSerialization>(*it);
-        KnobSerializationPtr isRegular = boost::dynamic_pointer_cast<KnobSerialization>(*it);
-        assert(isGrp || isRegular);
-        if (isGrp) {
-            restoreKnobLinksRecursive(isGrp, allNodes, oldNewScriptNamesMapping);
-        } else if (isRegular) {
-            KnobIPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
-            if (!knob) {
-                LogEntry::LogEntryColor c;
-                if (_publicInterface->getColor(&c.r, &c.g, &c.b)) {
-                    c.colorSet = true;
-                }
-
-                QString err = tr("Could not find a parameter named %1").arg( QString::fromUtf8( (*it)->getName().c_str() ) );
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), err, false, c);
-                continue;
-            }
-            isRegular->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
-            isRegular->restoreExpressions(knob, oldNewScriptNamesMapping);
-        }
-    }
-}
 
 void
-Node::restoreKnobsLinks(const NodeSerialization & serialization,
+Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
                         const NodesList & allNodes,
                         const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    const NodeSerialization::KnobValues & knobsValues = serialization.getKnobsValues();
+    const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues = serialization._knobsValues;
     ///try to find a serialized value for this knob
-    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-        KnobIPtr knob = getKnobByName( (*it)->getName() );
-        if (!knob) {
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+        try {
+            restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
+        } catch (const std::exception& e) {
+            // For stub nodes don't report errors
+            if (!isEffectStubNode()) {
+                LogEntry::LogEntryColor c;
+                if (getColor(&c.r, &c.g, &c.b)) {
+                    c.colorSet = true;
+                }
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
+            }
+        }
+    }
+
+    const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >& userKnobs = serialization._userPages;
+    for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+        try {
+            restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
+        } catch (const std::exception& e) {
             LogEntry::LogEntryColor c;
             if (getColor(&c.r, &c.g, &c.b)) {
                 c.colorSet = true;
             }
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
 
-            QString err = tr("Could not find a parameter named %1").arg( QString::fromUtf8( (*it)->getName().c_str() ) );
-            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), err, false, c);
-            continue;
         }
-        (*it)->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
-        (*it)->restoreExpressions(knob, oldNewScriptNamesMapping);
-    }
-
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
-    for (std::list<boost::shared_ptr<GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
-        _imp->restoreKnobLinksRecursive(*it, allNodes, oldNewScriptNamesMapping);
     }
 }
 
@@ -2001,15 +2650,47 @@ Node::setPagesOrder(const std::list<std::string>& pages)
     }
 }
 
+void
+Node::Implementation::refreshDefaultPagesOrder()
+{
+    const KnobsVec& knobs = effect->getKnobs();
+    defaultPagesOrder.clear();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr ispage = toKnobPage(*it);
+        if (ispage && !ispage->getChildren().empty()) {
+            defaultPagesOrder.push_back( ispage->getName() );
+        }
+    }
+
+}
+
+void
+Node::refreshDefaultPagesOrder()
+{
+    _imp->refreshDefaultPagesOrder();
+}
+
+
+void
+Node::Implementation::refreshDefaultViewerKnobsOrder()
+{
+    KnobsVec knobs = effect->getViewerUIKnobs();
+    defaultViewerKnobsOrder.clear();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        defaultViewerKnobsOrder.push_back( (*it)->getName() );
+    }
+}
+
+
 std::list<std::string>
 Node::getPagesOrder() const
 {
-    const KnobsVec& knobs = getKnobs();
+    KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
     std::list<std::string> ret;
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr ispage = toKnobPage(*it);
-        if (ispage) {
+        if (ispage && !ispage->getChildren().empty()) {
             ret.push_back( ispage->getName() );
         }
     }
@@ -2017,405 +2698,20 @@ Node::getPagesOrder() const
     return ret;
 }
 
-void
-Node::restoreUserKnobs(const NodeSerialization& serialization)
+bool
+Node::hasPageOrderChangedSinceDefault() const
 {
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
-
-    for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-        KnobIPtr found = getKnobByName( (*it)->getName() );
-        KnobPagePtr page;
-        if (!found) {
-            page = AppManager::createKnob<KnobPage>(_imp->effect, (*it)->getLabel(), 1, false);
-            page->setAsUserKnob(true);
-            page->setName( (*it)->getName() );
-        } else {
-            page = toKnobPage(found);
-        }
-        if (page) {
-            _imp->restoreUserKnobsRecursive( (*it)->getChildren(), KnobGroupPtr(), page );
+    std::list<std::string> pagesOrder = getPagesOrder();
+    if (pagesOrder.size() != _imp->defaultPagesOrder.size()) {
+        return true;
+    }
+    std::list<std::string>::const_iterator it2 = _imp->defaultPagesOrder.begin();
+    for (std::list<std::string>::const_iterator it = pagesOrder.begin(); it!=pagesOrder.end(); ++it, ++it2) {
+        if (*it != *it2) {
+            return true;
         }
     }
-    setPagesOrder( serialization.getPagesOrdered() );
-}
-
-void
-Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
-                                                const KnobGroupPtr& group,
-                                                const KnobPagePtr& page)
-{
-    for (std::list<boost::shared_ptr<KnobSerializationBase> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        GroupKnobSerializationPtr isGrp = boost::dynamic_pointer_cast<GroupKnobSerialization>(*it);
-        KnobSerializationPtr isRegular = boost::dynamic_pointer_cast<KnobSerialization>(*it);
-        assert(isGrp || isRegular);
-
-        KnobIPtr found = _publicInterface->getKnobByName( (*it)->getName() );
-
-        if (isGrp) {
-            KnobGroupPtr grp;
-            if (!found) {
-                grp = AppManager::createKnob<KnobGroup>(effect, isGrp->getLabel(), 1, false);
-            } else {
-                grp = toKnobGroup(found);
-                if (!grp) {
-                    continue;
-                }
-            }
-            grp->setAsUserKnob(true);
-            grp->setName( (*it)->getName() );
-            if ( isGrp && isGrp->isSetAsTab() ) {
-                grp->setAsTab();
-            }
-            page->addKnob(grp);
-            if (group) {
-                group->addKnob(grp);
-            }
-            grp->setValue( isGrp->isOpened() );
-            restoreUserKnobsRecursive(isGrp->getChildren(), grp, page);
-        } else if (isRegular) {
-            assert( isRegular->isUserKnob() );
-            KnobIPtr sKnob = isRegular->getKnob();
-            KnobIPtr knob;
-            KnobIntPtr isInt = toKnobInt(sKnob);
-            KnobDoublePtr isDbl = toKnobDouble(sKnob);
-            KnobBoolPtr isBool = toKnobBool(sKnob);
-            KnobChoicePtr isChoice = toKnobChoice(sKnob);
-            KnobColorPtr isColor = toKnobColor(sKnob);
-            KnobStringPtr isStr = toKnobString(sKnob);
-            KnobFilePtr isFile = toKnobFile(sKnob);
-            KnobOutputFilePtr isOutFile = toKnobOutputFile(sKnob);
-            KnobPathPtr isPath = toKnobPath(sKnob);
-            KnobButtonPtr isBtn = toKnobButton(sKnob);
-            KnobSeparatorPtr isSep = toKnobSeparator(sKnob);
-            KnobParametricPtr isParametric = toKnobParametric(sKnob);
-
-            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep || isParametric);
-
-            if (isInt) {
-                KnobIntPtr k;
-
-                if (!found) {
-                    k = AppManager::createKnob<KnobInt>(effect, isRegular->getLabel(),
-                                                        sKnob->getDimension(), false);
-                } else {
-                    k = toKnobInt(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data) {
-                    std::vector<int> minimums, maximums, dminimums, dmaximums;
-                    for (int i = 0; i < k->getDimension(); ++i) {
-                        minimums.push_back(data->min);
-                        maximums.push_back(data->max);
-                        dminimums.push_back(data->dmin);
-                        dmaximums.push_back(data->dmax);
-                    }
-                    k->setMinimumsAndMaximums(minimums, maximums);
-                    k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
-                }
-                knob = k;
-            } else if (isDbl) {
-                KnobDoublePtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobDouble>(effect, isRegular->getLabel(),
-                                                           sKnob->getDimension(), false);
-                } else {
-                    k = toKnobDouble(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data) {
-                    std::vector<double> minimums, maximums, dminimums, dmaximums;
-                    for (int i = 0; i < k->getDimension(); ++i) {
-                        minimums.push_back(data->min);
-                        maximums.push_back(data->max);
-                        dminimums.push_back(data->dmin);
-                        dmaximums.push_back(data->dmax);
-                    }
-                    k->setMinimumsAndMaximums(minimums, maximums);
-                    k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
-                }
-                knob = k;
-
-                if ( isRegular->getUseHostOverlayHandle() ) {
-                    KnobDoublePtr isDbl = toKnobDouble(knob);
-                    if (isDbl) {
-                        isDbl->setHasHostOverlayHandle(true);
-                    }
-                }
-            } else if (isBool) {
-                KnobBoolPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobBool>(effect, isRegular->getLabel(),
-                                                         sKnob->getDimension(), false);
-                } else {
-                    k = toKnobBool(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                knob = k;
-            } else if (isChoice) {
-                KnobChoicePtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobChoice>(effect, isRegular->getLabel(),
-                                                           sKnob->getDimension(), false);
-                } else {
-                    k = toKnobChoice(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data) {
-                    k->populateChoices(data->_entries, data->_helpStrings);
-                }
-                knob = k;
-            } else if (isColor) {
-                KnobColorPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobColor>(effect, isRegular->getLabel(),
-                                                          sKnob->getDimension(), false);
-                } else {
-                    k = toKnobColor(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data) {
-                    std::vector<double> minimums, maximums, dminimums, dmaximums;
-                    for (int i = 0; i < k->getDimension(); ++i) {
-                        minimums.push_back(data->min);
-                        maximums.push_back(data->max);
-                        dminimums.push_back(data->dmin);
-                        dmaximums.push_back(data->dmax);
-                    }
-                    k->setMinimumsAndMaximums(minimums, maximums);
-                    k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
-                }
-                knob = k;
-            } else if (isStr) {
-                KnobStringPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobString>(effect, isRegular->getLabel(),
-                                                           sKnob->getDimension(), false);
-                } else {
-                    k = toKnobString(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const TextExtraData* data = dynamic_cast<const TextExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data) {
-                    if (data->label) {
-                        k->setAsLabel();
-                    } else if (data->multiLine) {
-                        k->setAsMultiLine();
-                        if (data->richText) {
-                            k->setUsesRichText(true);
-                        }
-                    }
-                }
-                knob = k;
-            } else if (isFile) {
-                KnobFilePtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobFile>(effect, isRegular->getLabel(),
-                                                         sKnob->getDimension(), false);
-                } else {
-                    k = toKnobFile(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const FileExtraData* data = dynamic_cast<const FileExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data && data->useSequences) {
-                    k->setAsInputImage();
-                }
-                knob = k;
-            } else if (isOutFile) {
-                KnobOutputFilePtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobOutputFile>(effect, isRegular->getLabel(),
-                                                               sKnob->getDimension(), false);
-                } else {
-                    k = toKnobOutputFile(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const FileExtraData* data = dynamic_cast<const FileExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data && data->useSequences) {
-                    k->setAsOutputImageFile();
-                }
-                knob = k;
-            } else if (isPath) {
-                KnobPathPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobPath>(effect, isRegular->getLabel(),
-                                                         sKnob->getDimension(), false);
-                } else {
-                    k = toKnobPath(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                const PathExtraData* data = dynamic_cast<const PathExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                if (data && data->multiPath) {
-                    k->setMultiPath(true);
-                }
-                knob = k;
-            } else if (isBtn) {
-                KnobButtonPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobButton>(effect, isRegular->getLabel(),
-                                                           sKnob->getDimension(), false);
-                } else {
-                    k = toKnobButton(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                knob = k;
-            } else if (isSep) {
-                KnobSeparatorPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobSeparator>(effect, isRegular->getLabel(),
-                                                              sKnob->getDimension(), false);
-                } else {
-                    k = toKnobSeparator(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                knob = k;
-            } else if (isParametric) {
-                KnobParametricPtr k;
-                if (!found) {
-                    k = AppManager::createKnob<KnobParametric>(effect, isRegular->getLabel(), sKnob->getDimension(), false);
-                } else {
-                    k = toKnobParametric(found);
-                    if (!k) {
-                        continue;
-                    }
-                }
-                knob = k;
-            }
-
-            assert(knob);
-            if (!knob) {
-                continue;
-            }
-            knob->cloneDefaultValues(sKnob);
-            if (isChoice) {
-                const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
-                assert(data);
-                KnobChoicePtr createdKnob = toKnobChoice(knob);
-                assert(createdKnob);
-                if (data && createdKnob) {
-                    KnobChoicePtr sKnobChoice = toKnobChoice(sKnob);
-                    if (sKnobChoice) {
-                        createdKnob->choiceRestoration(sKnobChoice, data);
-                    }
-                }
-            } else {
-                knob->clone(sKnob);
-            }
-            knob->setAsUserKnob(true);
-            if (group) {
-                group->addKnob(knob);
-            } else if (page) {
-                page->addKnob(knob);
-            }
-
-            knob->setIsPersistent( isRegular->isPersistent() );
-            knob->setAnimationEnabled( isRegular->isAnimationEnabled() );
-            knob->setEvaluateOnChange( isRegular->getEvaluatesOnChange() );
-            knob->setName( isRegular->getName() );
-            knob->setHintToolTip( isRegular->getHintToolTip() );
-            if ( !isRegular->triggerNewLine() ) {
-                knob->setAddNewLine(false);
-            }
-        }
-    }
-} // Node::Implementation::restoreUserKnobsRecursive
-
-void
-Node::setKnobsAge(U64 newAge)
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool changed;
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-        changed = _imp->knobsAge != newAge || !_imp->hash.value();
-        if (changed) {
-            _imp->knobsAge = newAge;
-        }
-    }
-    if (changed) {
-        Q_EMIT knobsAgeChanged(newAge);
-        computeHash();
-    }
-}
-
-void
-Node::incrementKnobsAge_internal()
-{
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
-    }
-}
-
-void
-Node::incrementKnobsAge()
-{
-    U32 newAge;
-    {
-        QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
-        newAge = _imp->knobsAge;
-    }
-    Q_EMIT knobsAgeChanged(newAge);
-
-    computeHash();
-}
-
-U64
-Node::getKnobsAge() const
-{
-    QReadLocker l(&_imp->knobsAgeMutex);
-
-    return _imp->knobsAge;
+    return false;
 }
 
 bool
@@ -2569,9 +2865,10 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 
     if (isOutput) {
         RenderEnginePtr engine = isOutput->getRenderEngine();
-        assert(engine);
-        engine->quitEngine(allowThreadsToRestart);
-        engine->waitForEngineToQuit_enforce_blocking();
+        if (engine) {
+            engine->quitEngine(allowThreadsToRestart);
+            engine->waitForEngineToQuit_enforce_blocking();
+        }
     }
 
     //Returns when the preview is done computign
@@ -3089,11 +3386,9 @@ Node::setNameInternal(const std::string& name,
         }
     }
 
-    bool mustSetCacheID;
     {
         QMutexLocker l(&_imp->nameMutex);
         _imp->scriptName = newName;
-        mustSetCacheID = _imp->cacheID.empty();
         ///Set the label at the same time if the label is empty
         if ( _imp->label.empty() ) {
             _imp->label = newName;
@@ -3101,20 +3396,6 @@ Node::setNameInternal(const std::string& name,
     }
     std::string fullySpecifiedName = getFullyQualifiedName();
 
-    if (mustSetCacheID) {
-        std::string baseName = fullySpecifiedName;
-        std::string cacheID = fullySpecifiedName;
-        int i = 1;
-        while ( getGroup() && getGroup()->isCacheIDAlreadyTaken(cacheID) ) {
-            std::stringstream ss;
-            ss << baseName;
-            ss << i;
-            cacheID = ss.str();
-            ++i;
-        }
-        QMutexLocker l(&_imp->nameMutex);
-        _imp->cacheID = cacheID;
-    }
 
     if (collection) {
         if ( !oldName.empty() ) {
@@ -3152,6 +3433,7 @@ Node::setNameInternal(const std::string& name,
     Q_EMIT labelChanged(qnewName);
 } // Node::setNameInternal
 
+
 void
 Node::setScriptName(const std::string& name)
 {
@@ -3187,19 +3469,6 @@ Node::isActivated() const
     return _imp->activated;
 }
 
-std::string
-Node::makeCacheInfo() const
-{
-    std::size_t ram, disk;
-
-    appPTR->getMemoryStatsForCacheEntryHolder(this, &ram, &disk);
-    QString ramSizeStr = printAsRAM( (U64)ram );
-    QString diskSizeStr = printAsRAM( (U64)disk );
-    std::stringstream ss;
-    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: <font color=#c8c8c8>" << ramSizeStr.toStdString() << "</font> / Disk: <font color=#c8c8c8>" << diskSizeStr.toStdString() << "</font>";
-
-    return ss.str();
-}
 
 std::string
 Node::makeInfoForInput(int inputNumber) const
@@ -3289,16 +3558,15 @@ Node::makeInfoForInput(int inputNumber) const
     }
     {
         double first = 1., last = 1.;
-        input->getFrameRange_public(getHashValue(), &first, &last);
+        input->getFrameRange_public(0, &first, &last);
         ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
         RenderScale scale(1.);
         RectD rod;
-        bool isProjectFormat;
-        StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
+        StatusEnum stat = input->getRegionOfDefinition_public(0,
                                                               time,
-                                                              scale, ViewIdx(0), &rod, &isProjectFormat);
+                                                              scale, ViewIdx(0), &rod);
         if (stat != eStatusFailed) {
             ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
@@ -3362,9 +3630,7 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
             formatSize->setEvaluateOnChange(false);
             formatPar->setEvaluateOnChange(false);
             formatSize->setSecret(true);
-            formatSize->setSecretByDefault(true);
             formatPar->setSecret(true);
-            formatPar->setSecretByDefault(true);
             _imp->pluginFormatKnobs.size = toKnobInt(formatSize);
             _imp->pluginFormatKnobs.par = toKnobDouble(formatPar);
 
@@ -3422,6 +3688,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
+    _imp->effect->addOverlaySlaveParam(disableNodeKnob);
     disableNodeKnob->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
@@ -3440,7 +3707,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
                                                                      "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
                                                                      "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
     if ( ( isRenderScaleSupportEnabledForPlugin() ) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
-        useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
+        useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
@@ -3469,8 +3736,10 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
 
     PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
-    if (_imp->plugin && _imp->plugin->isOpenGLEnabled()) {
-        glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
+
+    PluginPtr plugin = getPlugin();
+    if (plugin && plugin->isOpenGLEnabled()) {
+        glSupport = plugin->getPluginOpenGLRenderSupport();
     }
     // The Roto node needs to have a "GPU enabled" knob to control the nodes internally
     if (glSupport != ePluginOpenGLRenderSupportNone || dynamic_cast<RotoPaint*>(_imp->effect.get())) {
@@ -3647,7 +3916,7 @@ Node::createHostMixKnob(const KnobPagePtr& mainPage)
 {
     KnobDoublePtr mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect, tr("Mix"), 1, false);
 
-    mixKnob->setName("hostMix");
+    mixKnob->setName(kHostMixingKnobName);
     mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
     mixKnob->setMinimum(0.);
     mixKnob->setMaximum(1.);
@@ -3746,36 +4015,6 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
     } // for (int i = 0; i < inputsCount; ++i) {
 } // Node::createMaskSelectors
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-void
-Node::createWriterFrameStepKnob(const KnobPagePtr& mainPage)
-{
-    ///Find a  "lastFrame" parameter and add it after it
-    KnobIntPtr frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect, tr(kNatronWriteParamFrameStepLabel), 1, false);
-
-    frameIncrKnob->setName(kNatronWriteParamFrameStep);
-    frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
-    frameIncrKnob->setAnimationEnabled(false);
-    frameIncrKnob->setMinimum(1);
-    frameIncrKnob->setDefaultValue(1);
-    if (mainPage) {
-        std::vector< KnobIPtr > children = mainPage->getChildren();
-        bool foundLastFrame = false;
-        for (std::size_t i = 0; i < children.size(); ++i) {
-            if (children[i]->getName() == "lastFrame") {
-                mainPage->insertKnob(i + 1, frameIncrKnob);
-                foundLastFrame = true;
-                break;
-            }
-        }
-        if (!foundLastFrame) {
-            mainPage->addKnob(frameIncrKnob);
-        }
-    }
-    _imp->frameIncrKnob = frameIncrKnob;
-}
-
-#endif
 
 KnobPagePtr
 Node::getOrCreateMainPage()
@@ -3878,7 +4117,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
-        premultWarning->setSecretByDefault(true);
+        premultWarning->setSecret(true);
         premultWarning->setAsLabel();
         premultWarning->setEvaluateOnChange(false);
         premultWarning->setIsPersistent(false);
@@ -3912,9 +4151,7 @@ void
 Node::initializeDefaultKnobs(bool loadingSerialization)
 {
     //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr ioContainer = getIOContainer();
-#endif
 
     //Add the "Node" page
     KnobPagePtr settingsPage = AppManager::createKnob<KnobPage>(_imp->effect, tr(NATRON_PARAMETER_PAGE_NAME_EXTRA), 1, false);
@@ -3925,7 +4162,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     QString labelKnobLabel = isBackdropNode ? tr("Name label") : tr("Label");
     createLabelKnob( settingsPage, labelKnobLabel.toStdString() );
 
-    if (isBackdropNode) {
+    if (isBackdropNode || isEffectStubNode()) {
         //backdrops just have a label
         return;
     }
@@ -4030,17 +4267,15 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
 
     createNodePage(settingsPage);
-    createInfoPage();
+
+    bool createInfo = !isEffectNodeGroup();
+    if (createInfo) {
+        createInfoPage();
+    }
 
     if (_imp->effect->isWriter()
-#ifdef NATRON_ENABLE_IO_META_NODES
-        && !ioContainer
-#endif
-        ) {
+        && !ioContainer) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
-#ifndef NATRON_ENABLE_IO_META_NODES
-        createWriterFrameStepKnob(mainPage);
-#endif
 
         KnobButtonPtr renderButton = AppManager::createKnob<KnobButton>(_imp->effect, tr("Render"), 1, false);
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
@@ -4114,7 +4349,7 @@ Node::Implementation::createChannelSelector(int inputNb,
         layer->setHintToolTip( tr("Select here the layer that will be used in input by %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
     }
     layer->setAnimationEnabled(false);
-    layer->setSecretByDefault(!isOutput);
+    layer->setSecret(!isOutput);
     page->addKnob(layer);
     sel.layer = layer;
     std::vector<std::string> baseLayers;
@@ -4230,6 +4465,10 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     choice->populateChoices(entries);
     choice->beginChanges();
     choice->setDefaultValue(defValue);
+
+    // We don't want to serialize the default value even if it changed, because it will be restored by the project
+    choice->setCurrentDefaultValueAsInitialValue();
+
     if (!loadingProject) {
         //changedKnob was not called because we are initializing knobs
         handleFormatKnob(choice);
@@ -4267,8 +4506,8 @@ Node::makeDocumentation(bool genHTML) const
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        bool isPyPlug = !_imp->pyPlugInfo.pyPlugID.empty();
-        if (isPyPlug) {
+        bool pyplug = _imp->isPyPlugInternal();
+        if (pyplug) {
             pluginID = QString::fromUtf8( _imp->pyPlugInfo.pyPlugID.c_str() );
             pluginLabel =  QString::fromUtf8( _imp->pyPlugInfo.pyPlugLabel.c_str() );
             pluginDescription = QString::fromUtf8( _imp->pyPlugInfo.pyPlugDesc.c_str() );
@@ -4277,11 +4516,12 @@ Node::makeDocumentation(bool genHTML) const
                 pluginGroup.push_back(QString::fromUtf8(it->c_str()));
             }
         } else {
-            pluginID = _imp->plugin->getPluginID();
-            pluginLabel =  _imp->plugin->getPluginLabel();
+            PluginPtr plugin = getPlugin();
+            pluginID = plugin->getPluginID();
+            pluginLabel =  plugin->getPluginLabel();
             pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
-            pluginIcon = _imp->plugin->getIconFilePath();
-            pluginGroup = _imp->plugin->getGrouping();
+            pluginIcon = plugin->getIconFilePath();
+            pluginGroup = plugin->getGrouping();
             pluginDescriptionIsMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
         }
 
@@ -4325,7 +4565,7 @@ Node::makeDocumentation(bool genHTML) const
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
-        if ( (*it)->getDefaultIsSecret() ) {
+        if ( (*it)->getIsSecret() ) {
             continue;
         }
         QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
@@ -4567,7 +4807,6 @@ Node::onSetSupportRenderScaleMaybeSet(int support)
     if ( (EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes ) {
         KnobBoolPtr b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
         if (b) {
-            b->setSecretByDefault(true);
             b->setSecret(true);
         }
     }
@@ -4595,8 +4834,6 @@ Node::setEffect(const EffectInstancePtr& effect)
     _imp->effect = effect;
     _imp->effect->initializeData();
 
-
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr thisShared = shared_from_this();
     NodePtr ioContainer = _imp->ioContainer.lock();
     if (ioContainer) {
@@ -4611,7 +4848,6 @@ Node::setEffect(const EffectInstancePtr& effect)
             }
         }
     }
-#endif
 }
 
 EffectInstancePtr
@@ -4808,32 +5044,35 @@ Node::getMajorVersion() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugVersion;
         }
     }
-    if (!_imp->plugin) {
+
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return 0;
     }
 
-    return _imp->plugin->getMajorVersion();
+    return plugin->getMajorVersion();
 }
 
 int
 Node::getMinorVersion() const
 {
     ///Thread safe as it never changes
-    if (!_imp->plugin) {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return 0;
     }
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return 0;
         }
     }
 
-    return _imp->plugin->getMinorVersion();
+    return plugin->getMinorVersion();
 }
 
 void
@@ -5258,12 +5497,14 @@ checkCanConnectNoMultiRes(const Node* output,
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
     RenderScale scale(1.);
     RectD rod;
-    bool isProjectFormat;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(),
+    U64 inputHash;
+    bool gotHash = input->getEffectInstance()->getRenderHash(input->getEffectInstance()->getCurrentTime(), ViewIdx(0), &inputHash);
+    (void)gotHash;
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(inputHash,
                                                                                output->getApp()->getTimeLine()->currentFrame(),
                                                                                scale,
                                                                                ViewIdx(0),
-                                                                               &rod, &isProjectFormat);
+                                                                               &rod);
 
     if ( (stat == eStatusFailed) && !rod.isNull() ) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
@@ -5276,7 +5517,7 @@ checkCanConnectNoMultiRes(const Node* output,
     // with a RoD different from the input
 
     /*RectD outputRod;
-       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod, &isProjectFormat);
+       stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getCacheID(), output->getApp()->getTimeLine()->currentFrame(), scale, ViewIdx(0), &outputRod);
        Q_UNUSED(stat);
 
        if ( !outputRod.isNull() && (rod != outputRod) ) {
@@ -5287,11 +5528,11 @@ checkCanConnectNoMultiRes(const Node* output,
         NodePtr inputNode = output->getInput(i);
         if (inputNode) {
             RectD inputRod;
-            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(),
+            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(0,
                                                                                 output->getApp()->getTimeLine()->currentFrame(),
                                                                                 scale,
                                                                                 ViewIdx(0),
-                                                                                &inputRod, &isProjectFormat);
+                                                                                &inputRod);
             if ( (stat == eStatusFailed) && !inputRod.isNull() ) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
             }
@@ -5434,11 +5675,8 @@ Node::connectInput(const NodePtr & input,
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        _imp->effect->invalidateHashCache();
     }
-
-    _imp->ifGroupForceHashChangeOfInputs();
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
@@ -5452,21 +5690,6 @@ Node::connectInput(const NodePtr & input,
     return true;
 } // Node::connectInput
 
-void
-Node::Implementation::ifGroupForceHashChangeOfInputs()
-{
-    ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
-    NodeGroupPtr isGrp = toNodeGroup(effect);
-
-    if ( isGrp && !isGrp->getApp()->isCreatingNodeTree() ) {
-        NodesList inputsOutputs;
-        isGrp->getInputsOutputs(&inputsOutputs, false);
-        for (NodesList::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
-            (*it)->incrementKnobsAge_internal();
-            (*it)->computeHash();
-        }
-    }
-}
 
 bool
 Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
@@ -5495,6 +5718,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
             return false;
         }
     }
+
 
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5534,11 +5758,10 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        // Notify cache
+        _imp->effect->invalidateHashCache();
     }
 
-    _imp->ifGroupForceHashChangeOfInputs();
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
@@ -5612,19 +5835,22 @@ Node::switchInput0And1()
     {
         QMutexLocker l(&_imp->inputsMutex);
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
-        NodePtr input0;
+        NodePtr input0, input1;
 
         if (!useGuiInputs) {
             input0 = _imp->inputs[inputAIndex].lock();
+            input1 = _imp->inputs[inputBIndex].lock();
             _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
             _imp->inputs[inputBIndex] = input0;
             _imp->guiInputs[inputAIndex] = _imp->inputs[inputAIndex];
             _imp->guiInputs[inputBIndex] = _imp->inputs[inputBIndex];
         } else {
             input0 = _imp->guiInputs[inputAIndex].lock();
+            input1 = _imp->guiInputs[inputBIndex].lock();
             _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
             _imp->guiInputs[inputBIndex] = input0;
         }
+
     }
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
@@ -5637,8 +5863,9 @@ Node::switchInput0And1()
     }
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        // Notify cache
+        _imp->effect->invalidateHashCache();
+
     }
 
     std::string inputChangedCB = getInputChangedCallback();
@@ -5647,8 +5874,6 @@ Node::switchInput0And1()
         _imp->runInputChangedCallback(inputBIndex, inputChangedCB);
     }
 
-
-    _imp->ifGroupForceHashChangeOfInputs();
 
     if (mustCallEnd) {
         endInputEdition(true);
@@ -5756,11 +5981,10 @@ Node::disconnectInput(int inputNumber)
     }
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
+        // Notify cache
+        _imp->effect->invalidateHashCache();
     }
 
-    _imp->ifGroupForceHashChangeOfInputs();
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
@@ -5823,12 +6047,11 @@ Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
         if (!creatingNodeTree) {
             ///Recompute the hash
             if ( !getApp()->getProject()->isProjectClosing() ) {
-                computeHash();
+                _imp->effect->invalidateHashCache();
             }
         }
 
 
-        _imp->ifGroupForceHashChangeOfInputs();
 
         std::string inputChangedCB = getInputChangedCallback();
         if ( !inputChangedCB.empty() ) {
@@ -6317,7 +6540,7 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
 
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
-    removeAllImagesFromCache(false);
+    removeAllImagesFromCache();
 
     AppInstancePtr app = getApp();
     if (app) {
@@ -6554,42 +6777,27 @@ Node::makePreviewImage(SequenceTime time,
 
     /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
-    RectD rod;
-    bool isProjectFormat;
-    RenderScale scale(1.);
-    U64 nodeHash = getHashValue();
+
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getEffectInstance();
+        NodePtr outputNode = isGroup->getOutputNode(false);
+        if (outputNode) {
+            effect = outputNode->getEffectInstance();
+        }
     } else {
         effect = _imp->effect;
     }
 
-    if (!_imp->effect) {
+    if (!effect) {
         return false;
     }
 
     effect->clearPersistentMessage(false);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
-    if ( (stat == eStatusFailed) || rod.isNull() ) {
-        return false;
-    }
-    assert( !rod.isNull() );
-    double yZoomFactor = (double)*height / (double)rod.height();
-    double xZoomFactor = (double)*width / (double)rod.width();
-    double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
-    double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
-    int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
-    unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
-
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
 
     const double par = effect->getAspectRatio(-1);
-    RectI renderWindow;
-    rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
+
 
     NodePtr thisNode = shared_from_this();
     RenderingFlagSetter flagIsRendering(thisNode);
@@ -6621,14 +6829,43 @@ Node::makePreviewImage(SequenceTime time,
         tlsArgs->draftMode = true;
         tlsArgs->stats = RenderStatsPtr();
 
-        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
-        FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
-        if (stat == eStatusFailed) {
+        boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+        try {
+            frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+        } catch (...) {
             return false;
         }
 
-        frameRenderArgs.updateNodesRequest(request);
+        U64 nodeHash;
+        bool gotHash = effect->getRenderHash(time, ViewIdx(0), &nodeHash);
+        assert(gotHash);
+        (void)gotHash;
+
+        RenderScale scale(1.);
+        RectD rod;
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod);
+        if ( (stat == eStatusFailed) || rod.isNull() ) {
+            return false;
+        }
+        assert( !rod.isNull() );
+
+        double yZoomFactor = (double)*height / (double)rod.height();
+        double xZoomFactor = (double)*width / (double)rod.width();
+        double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
+        double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
+        int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
+        unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
+        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.y = scale.x;
+
+
+        RectI renderWindow;
+        rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
+
+        stat = frameRenderArgs->computeRequestPass(mipMapLevel, rod);
+        if (stat == eStatusFailed) {
+            return false;
+        }
 
         std::list<ImageComponents> requestedComps;
         ImageBitDepthEnum depth = effect->getBitDepth(-1);
@@ -6729,6 +6966,12 @@ Node::isRotoPaintingNode() const
     return _imp->effect ? _imp->effect->isRotoPaintNode() : false;
 }
 
+ViewerNodePtr
+Node::isEffectViewerNode() const
+{
+    return toViewerNode(_imp->effect);
+}
+
 ViewerInstancePtr
 Node::isEffectViewerInstance() const
 {
@@ -6740,6 +6983,13 @@ Node::isEffectNodeGroup() const
 {
     return toNodeGroup(_imp->effect);
 }
+
+StubNodePtr
+Node::isEffectStubNode() const
+{
+    return toStubNode(_imp->effect);
+}
+
 
 PrecompNodePtr
 Node::isEffectPrecompNode() const
@@ -6801,21 +7051,6 @@ Node::getTrackerContext() const
     return _imp->trackContext;
 }
 
-U64
-Node::getRotoAge() const
-{
-    if (_imp->rotoContext) {
-        return _imp->rotoContext->getAge();
-    }
-
-    RotoDrawableItemPtr item = _imp->paintStroke.lock();
-    if (item) {
-        return item->getContext()->getAge();
-    }
-
-    return 0;
-}
-
 const KnobsVec &
 Node::getKnobs() const
 {
@@ -6841,34 +7076,66 @@ Node::setKnobsFrozen(bool frozen)
 std::string
 Node::getPluginIconFilePath() const
 {
-    if (!_imp->plugin) {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return std::string();
     }
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugIconFilePath.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugIconFilePath;
         }
     }
-    return _imp->plugin->getIconFilePath().toStdString();
+    return plugin->getIconFilePath().toStdString();
+}
+
+bool
+Node::Implementation::isPyPlugInternal() const
+{
+    assert(!pyPluginInfoMutex.tryLock());
+    if (pyPlugInfo.pyPlugID.empty()) {
+        return false;
+    }
+    NodeGroupPtr isGrp = toNodeGroup(effect);
+    if (!isGrp) {
+        return false;
+    }
+    return !isGrp->isSubGraphEditedByUser();
+}
+
+bool
+Node::isPyPlug() const
+{
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        return _imp->isPyPlugInternal();
+    }
 }
 
 std::string
 Node::getPluginID() const
 {
-    if (!_imp->plugin) {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
         return std::string();
     }
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugID;
         }
     }
 
-    return _imp->plugin->getPluginID().toStdString();
+    return plugin->getPluginID().toStdString();
+}
+
+std::string
+Node::getPyPlugID() const
+{
+    QMutexLocker k(&_imp->pyPluginInfoMutex);
+    return _imp->pyPlugInfo.pyPlugID;
 }
 
 std::string
@@ -6876,7 +7143,7 @@ Node::getPluginLabel() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugLabel.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugLabel;
         }
     }
@@ -6887,17 +7154,18 @@ Node::getPluginLabel() const
 std::string
 Node::getPluginResourcesPath() const
 {
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        return std::string();
+    }
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pluginPythonModule.empty() ) {
-            std::size_t foundSlash = _imp->pyPlugInfo.pluginPythonModule.find_last_of("/");
-            if (foundSlash != std::string::npos) {
-                return _imp->pyPlugInfo.pluginPythonModule.substr(0, foundSlash);
-            }
+        if ( _imp->isPyPlugInternal() ) {
+            return _imp->pyPlugInfo.pyPlugPluginPath;
         }
     }
 
-    return _imp->plugin->getResourcesPath().toStdString();
+    return plugin->getResourcesPath().toStdString();
 }
 
 std::string
@@ -6905,7 +7173,7 @@ Node::getPluginDescription() const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             return _imp->pyPlugInfo.pyPlugDesc;
         }
     }
@@ -6918,7 +7186,7 @@ Node::getPluginGrouping(std::list<std::string>* grouping) const
 {
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( !_imp->pyPlugInfo.pyPlugGrouping.empty() ) {
+        if ( _imp->isPyPlugInternal() ) {
             *grouping =  _imp->pyPlugInfo.pyPlugGrouping;
             return;
         }
@@ -6985,7 +7253,7 @@ Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
-    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
+    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently) || _imp->restoringDefaults) {
         return false;
     }
 
@@ -7004,15 +7272,13 @@ Node::message(MessageTypeEnum type,
         return true;
     }
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
         ioContainer->message(type, content);
         return true;
     }
-#endif
     // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
-    if ( !isPartOfProject() && getGroup() ) {
+    if ( !isPersistent() && getGroup() ) {
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
         if (isGroup) {
             isGroup->message(type, content);
@@ -7051,16 +7317,14 @@ Node::setPersistentMessage(MessageTypeEnum type,
 
     if ( !appPTR->isBackground() ) {
         //if the message is just an information, display a popup instead.
-#ifdef NATRON_ENABLE_IO_META_NODES
         NodePtr ioContainer = getIOContainer();
         if (ioContainer) {
             ioContainer->setPersistentMessage(type, content);
 
             return;
         }
-#endif
         // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
-        if ( !isPartOfProject() && getGroup() ) {
+        if ( !isPersistent() && getGroup() ) {
             NodeGroupPtr isGroup = toNodeGroup(getGroup());
             if (isGroup) {
                 isGroup->setPersistentMessage(type, content);
@@ -7363,13 +7627,10 @@ refreshPreviewsRecursivelyDownstreamInternal(double time,
 
     marked.push_back(node);
 
-    NodesWList outputs;
-    node->getOutputs_mt_safe(outputs);
-    for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (output) {
-            output->refreshPreviewsRecursivelyDownstream(time);
-        }
+    NodesList outputs;
+    node->getOutputsWithGroupRedirection(outputs);
+    for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        (*it)->refreshPreviewsRecursivelyDownstream(time);
     }
 }
 
@@ -7400,13 +7661,11 @@ Node::onAllKnobsSlaved(bool isSlave,
                 _imp->masterNode = masterNode;
             }
             QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-            QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
             QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         }
     } else {
         NodePtr master = getMasterNode();
         QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-        QObject::disconnect( master.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
         QObject::disconnect( master.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
@@ -7506,14 +7765,12 @@ Node::onMasterNodeDeactivated()
     _imp->effect->unslaveAllKnobs();
 }
 
-#ifdef NATRON_ENABLE_IO_META_NODES
 NodePtr
 Node::getIOContainer() const
 {
     return _imp->ioContainer.lock();
 }
 
-#endif
 
 NodePtr
 Node::getMasterNode() const
@@ -7730,8 +7987,7 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb,
-                     bool isInputA)
+Node::onInputChanged(int inputNb)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -7746,11 +8002,6 @@ Node::onInputChanged(int inputNb,
     refreshMaskEnabledNess(inputNb);
     refreshLayersChoiceSecretness(inputNb);
 
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
-    if (isInspector) {
-        isInspector->refreshActiveInputs(inputNb, isInputA);
-    }
-
     bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() ) ||
                                 _imp->effect->isRotoPaintNode();
 
@@ -7758,35 +8009,6 @@ Node::onInputChanged(int inputNb,
         ///When loading a group (or project) just wait until everything is setup to actually compute input
         ///related data such as clip preferences
         ///Exception for the Rotopaint node which needs to setup its own graph internally
-
-        /**
-         * The plug-in might call getImage, set a valid thread storage on the tree.
-         **/
-        double time = getApp()->getTimeLine()->currentFrame();
-        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-        const bool isRenderUserInteraction = true;
-        const bool isSequentialRender = false;
-        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-        if (isAbortable) {
-            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
-        }
-
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = time;
-        tlsArgs->view = ViewIdx(0);
-        tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
-        tlsArgs->isSequential = isSequentialRender;
-        tlsArgs->abortInfo = abortInfo;
-        tlsArgs->treeRoot = shared_from_this();
-        tlsArgs->textureIndex = 0;
-        tlsArgs->timeline = getApp()->getTimeLine();
-        tlsArgs->activeRotoPaintNode = NodePtr();
-        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isDoingRotoNeatRender = false;
-        tlsArgs->isAnalysis = false;
-        tlsArgs->draftMode = false;
-        tlsArgs->stats = RenderStatsPtr();
-        ParallelRenderArgsSetter frameRenderArgs(tlsArgs);
 
 
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
@@ -7875,14 +8097,12 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         computeFrameRangeForReader(fileKnob);
 
         ///Refresh the preview automatically if the filename changed
-        incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-        //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
 
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
             double leftBound = INT_MIN, rightBound = INT_MAX;
-            _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
+            _imp->effect->getFrameRange_public(0, &leftBound, &rightBound);
 
             if ( (leftBound != INT_MIN) && (rightBound != INT_MAX) ) {
                 if ( getGroup() || getIOContainer() ) {
@@ -7891,10 +8111,9 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
             }
         }
     } else if ( _imp->effect->isWriter() ) {
-        KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
         KnobOutputFilePtr isFile = toKnobOutputFile(fileKnob);
-        if (isFile && sublabelKnob) {
-            KnobStringBasePtr isString = toKnobStringBase(sublabelKnob);
+        if (isFile && _imp->ofxSubLabelKnob.lock()) {
+            KnobStringBasePtr isString = _imp->ofxSubLabelKnob.lock();
 
             std::string pattern = isFile->getValue();
             if (isString) {
@@ -8016,27 +8235,13 @@ Node::canHandleRenderScaleForOverlays() const
 }
 
 bool
-Node::getOverlayColor(double* r,
-                      double* g,
-                      double* b) const
-{
-    NodeGuiIPtr gui_i = getNodeGui();
-
-    if (!gui_i) {
-        return false;
-    }
-
-    return gui_i->getOverlayColor(r, g, b);
-}
-
-bool
 Node::shouldDrawOverlay() const
 {
-    if ( !hasOverlay() && !getRotoContext() ) {
+    if ( !hasOverlay() ) {
         return false;
     }
 
-    if (!_imp->isPartOfProject) {
+    if (!_imp->isPersistent) {
         return false;
     }
 
@@ -8052,7 +8257,7 @@ Node::shouldDrawOverlay() const
         return false;
     }
 
-    if ( !isSettingsPanelVisible() ) {
+    if ( !isEffectViewerNode() && !isSettingsPanelVisible() ) {
         return false;
     }
 
@@ -8364,8 +8569,16 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
                                   const std::string& pluginID,
                                   const std::string& pluginDesc,
                                   const std::string& pluginIconFilePath,
+                                  const std::string& pluginPath,
                                   unsigned int version)
 {
+    // Only works for group nodes...
+    NodeGroupPtr isGroup = isEffectNodeGroup();
+    if (!isGroup) {
+        assert(false);
+        return;
+    }
+
     assert( QThread::currentThread() == qApp->thread() );
     NodeGuiIPtr nodeGui = getNodeGui();
 
@@ -8375,37 +8588,33 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
         _imp->pyPlugInfo.pyPlugID = pluginID;
         _imp->pyPlugInfo.pyPlugDesc = pluginDesc;
         _imp->pyPlugInfo.pyPlugLabel = pluginLabel;
+        _imp->pyPlugInfo.pyPlugPluginPath = pluginPath;
         _imp->pyPlugInfo.pyPlugGrouping = grouping;
         _imp->pyPlugInfo.pyPlugIconFilePath = pluginIconFilePath;
     }
 
+    // For PyPlugs, start with the subgraph unedited
+    isGroup->setSubGraphEditedByUser(false);
+
     if (!nodeGui) {
         return;
     }
+    
 
     nodeGui->setPluginIDAndVersion(grouping, pluginLabel, pluginID, pluginDesc, pluginIconFilePath, version);
 }
 
 bool
-Node::hasPyPlugBeenEdited() const
+Node::isSubGraphEditedByUser() const
 {
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-
-    return _imp->pyPlugInfo.pyplugChangedSinceScript || _imp->pyPlugInfo.pluginPythonModule.empty();
+    
+    NodeGroupPtr isGroup = isEffectNodeGroup();
+    if (!isGroup) {
+        return false;
+    }
+    return isGroup->isSubGraphEditedByUser();
 }
 
-void
-Node::setPyPlugEdited(bool edited)
-{
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-
-    _imp->pyPlugInfo.pyplugChangedSinceScript = edited;
-    _imp->pyPlugInfo.pyPlugID.clear();
-    _imp->pyPlugInfo.pyPlugLabel.clear();
-    _imp->pyPlugInfo.pyPlugDesc.clear();
-    _imp->pyPlugInfo.pyPlugGrouping.clear();
-    _imp->pyPlugInfo.pyPlugIconFilePath.clear();
-}
 
 void
 Node::setPluginPythonModule(const std::string& pythonModule)
@@ -8593,6 +8802,7 @@ Node::setHideInputsKnobValue(bool hidden)
 void
 Node::onRefreshIdentityStateRequestReceived()
 {
+
     assert( QThread::currentThread() == qApp->thread() );
     if ( (_imp->refreshIdentityStateRequestsCount == 0) || !_imp->effect ) {
         //was already processed
@@ -8601,10 +8811,13 @@ Node::onRefreshIdentityStateRequestReceived()
     _imp->refreshIdentityStateRequestsCount = 0;
 
     ProjectPtr project = getApp()->getProject();
+    if (project->isLoadingProject()) {
+        return;
+    }
     double time = project->currentFrame();
     RenderScale scale(1.);
     double inputTime = 0;
-    U64 hash = getHashValue();
+    U64 hash = 0;
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
     Format frmt;
@@ -8657,6 +8870,18 @@ Node::refreshIdentityState()
     Q_EMIT refreshIdentityStateRequested();
 }
 
+KnobStringPtr
+Node::getExtraLabelKnob() const
+{
+    return _imp->nodeLabelKnob.lock();
+}
+
+KnobStringPtr
+Node::getOFXSubLabelKnob() const
+{
+    return _imp->ofxSubLabelKnob.lock();
+}
+
 /*
    This is called AFTER the instanceChanged action has been called on the plug-in
  */
@@ -8694,34 +8919,8 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         }
     } else if ( ( what == _imp->disableNodeKnob.lock() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
-        if ( QThread::currentThread() == qApp->thread() ) {
-            getApp()->redrawAllViewers();
-        }
-        NodeGroupPtr isGroup = isEffectNodeGroup();
-        if (isGroup) {
-            ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
-
-            NodesList nodes = isGroup->getNodes();
-            std::list<NodePtr> markedNodes;
-            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                //This will not trigger a hash recomputation
-                (*it)->incrementKnobsAge_internal();
-                (*it)->computeHashRecursive(markedNodes);
-            }
-        }
-    } else if ( what == _imp->nodeLabelKnob.lock() ) {
-        Q_EMIT nodeExtraLabelChanged( QString::fromUtf8( _imp->nodeLabelKnob.lock()->getValue().c_str() ) );
-    } else if (what->getName() == kNatronOfxParamStringSublabelName) {
-        //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
-        KnobStringPtr strKnob = toKnobString(what);
-        if (strKnob) {
-            QString operation = QString::fromUtf8( strKnob->getValue().c_str() );
-            if ( !operation.isEmpty() ) {
-                operation.prepend( QString::fromUtf8("(") );
-                operation.append( QString::fromUtf8(")") );
-            }
-            replaceCustomDataInlabel(operation);
-        }
+    } else if ( what == _imp->nodeLabelKnob.lock() || what == _imp->ofxSubLabelKnob.lock() ) {
+        Q_EMIT nodeExtraLabelChanged();
     } else if ( what == _imp->hideInputs.lock() ) {
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
@@ -8737,8 +8936,6 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         }
         std::string outputInfo = makeInfoForInput(-1);
         ssinfo << outputInfo << "<br />";
-        std::string cacheInfo = makeCacheInfo();
-        ssinfo << cacheInfo << "<br />";
         ssinfo << "<b>" << tr("Supports tiles:").toStdString() << "</b> <font color=#c8c8c8>";
         ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         if (_imp->effect) {
@@ -8819,7 +9016,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     if (!ret) {
         KnobGroupPtr isGroup = toKnobGroup(what);
-        if ( isGroup && isGroup->getIsDialog() ) {
+        if ( isGroup && isGroup->getIsDialog() && reason == eValueChangedReasonNatronInternalEdited) {
             NodeGuiIPtr gui = getNodeGui();
             if (gui) {
                 gui->showGroupKnobAsDialog(isGroup);
@@ -9187,40 +9384,6 @@ Node::hasAtLeastOneChannelToProcess() const
     return true;
 }
 
-void
-Node::replaceCustomDataInlabel(const QString & data)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-    if (!labelKnob) {
-        return;
-    }
-    QString label = QString::fromUtf8( labelKnob->getValue().c_str() );
-    ///Since the label is html encoded, find the text's start
-    int foundFontTag = label.indexOf( QString::fromUtf8("<font") );
-    bool htmlPresent =  (foundFontTag != -1);
-    ///we're sure this end tag is the one of the font tag
-    QString endFont( QString::fromUtf8("\">") );
-    int endFontTag = label.indexOf(endFont, foundFontTag);
-    QString customTagStart( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-    QString customTagEnd( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
-    int foundNatronCustomDataTag = label.indexOf(customTagStart, endFontTag == -1 ? 0 : endFontTag);
-    if (foundNatronCustomDataTag != -1) {
-        ///remove the current custom data
-        int foundNatronEndTag = label.indexOf(customTagEnd, foundNatronCustomDataTag);
-        assert(foundNatronEndTag != -1);
-
-        foundNatronEndTag += customTagEnd.size();
-        label.remove(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
-    }
-
-    int i = htmlPresent ? endFontTag + endFont.size() : 0;
-    label.insert(i, customTagStart);
-    label.insert(i + customTagStart.size(), data);
-    label.insert(i + customTagStart.size() + data.size(), customTagEnd);
-    labelKnob->setValue( label.toStdString() );
-}
-
 KnobBoolPtr
 Node::getDisabledKnob() const
 {
@@ -9256,12 +9419,10 @@ Node::isNodeDisabled() const
     if (isContainerGrp) {
         return thisDisabled || isContainerGrp->getNode()->isNodeDisabled();
     }
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
         return ioContainer->isNodeDisabled();
     }
-#endif
 
     int lifeTimeFirst, lifeTimeEnd;
     bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
@@ -9501,13 +9662,12 @@ Node::isBackdropNode() const
 }
 
 void
-Node::updateEffectLabelKnob(const QString & name)
+Node::updateEffectSubLabelKnob(const QString & name)
 {
     if (!_imp->effect) {
         return;
     }
-    KnobIPtr knob = getKnobByName(kNatronOfxParamStringSublabelName);
-    KnobStringPtr strKnob = toKnobString(knob);
+    KnobStringPtr strKnob = _imp->ofxSubLabelKnob.lock();
     if (strKnob) {
         strKnob->setValue( name.toStdString() );
     }
@@ -9619,6 +9779,24 @@ Node::unsetNodeIsRendering()
 }
 
 bool
+Node::isNodeRendering_nolock() const
+{
+    return _imp->nodeIsRendering > 0;
+}
+
+void
+Node::lockNodeRenderingMutex()
+{
+    _imp->nodeIsRenderingMutex.lock();
+}
+
+void
+Node::unlockNodeRenderingMutex()
+{
+    _imp->nodeIsRenderingMutex.unlock();
+}
+
+bool
 Node::isNodeRendering() const
 {
     QMutexLocker k(&_imp->nodeIsRenderingMutex);
@@ -9645,8 +9823,9 @@ Node::dequeueActions()
             isGroup->dequeueConnexions();
         }
     }
-    if (_imp->rotoContext) {
-        _imp->rotoContext->dequeueGuiActions();
+    RotoDrawableItemPtr strokeItem = getAttachedRotoItem();
+    if (strokeItem) {
+        strokeItem->dequeueGuiActions(false);
     }
 
 
@@ -9678,7 +9857,7 @@ Node::dequeueActions()
         endInputEdition(true);
     }
     if (hasChanged) {
-        computeHash();
+        _imp->effect->invalidateHashCache();
         refreshIdentityState();
     }
 
@@ -9728,9 +9907,8 @@ addIdentityNodesRecursively(NodeConstPtr caller,
             double inputTimeId;
             ViewIdx identityView;
             int inputNbId;
-            U64 renderHash;
+            U64 renderHash = 0;
 
-            renderHash = node->getEffectInstance()->getRenderHash();
 
             Format f;
             node->getEffectInstance()->getRenderFormat(&f);
@@ -9825,12 +10003,11 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
     } else {
         if (sz == 1) {
             NodeConstPtr output = outputs.front();
-            ViewerInstancePtr isViewer = output->isEffectViewerInstance();
+            ViewerNodePtr isViewer = output->isEffectViewerNode();
             if (isViewer) {
-                int activeInputs[2];
-                isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
-                if ( (output->getInput(activeInputs[0]).get() == this) ||
-                     ( output->getInput(activeInputs[1]).get() == this) ) {
+
+                if (isViewer->getCurrentAInput().get() == this ||
+                    isViewer->getCurrentBInput().get() == this) {
                     ///The node is a direct input of the viewer. Cache it because it is likely the user will make
 
                     ///changes to the viewer that will need this image.
@@ -10021,10 +10198,10 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scaleOne, ViewIdx(0), &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(time, scaleOne, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
                 RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scale, ViewIdx(0), &rod);
+                stat = _imp->effect->getRegionOfDefinition(time, scale, ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {
@@ -10038,12 +10215,6 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     hasChanged |= refreshChannelSelectors();
 
     refreshIdentityState();
-
-    if (loadingProject) {
-        //When loading the project, refresh the hash of the nodes in a recursive manner in the proper order
-        //for the disk cache to work
-        hasChanged |= computeHashInternal();
-    }
 
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
@@ -10086,15 +10257,6 @@ Node::refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes)
     markedNodes.push_back(shared_from_this());
 
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
-
-    if ( isRotoPaintingNode() ) {
-        RotoContextPtr roto = getRotoContext();
-        assert(roto);
-        NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
-        if (bottomMerge) {
-            bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
-        }
-    }
 
     return hasChanged;
 }
@@ -10212,6 +10374,8 @@ Node::setPosition(double x,
 
     if (gui) {
         gui->setPosition(x, y);
+    } else {
+        onNodeUIPositionChanged(x,y);
     }
 }
 
@@ -10219,15 +10383,28 @@ void
 Node::getPosition(double *x,
                   double *y) const
 {
-    NodeGuiIPtr gui = _imp->guiPointer.lock();
-
-    if (gui) {
-        gui->getPosition(x, y);
-    } else {
-        *x = 0.;
-        *y = 0.;
-    }
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    *x = _imp->nodePositionCoords[0];
+    *y = _imp->nodePositionCoords[1];
 }
+
+void
+Node::onNodeUIPositionChanged(double x, double y)
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    _imp->nodePositionCoords[0] = x;
+    _imp->nodePositionCoords[1] = y;
+}
+
+void
+Node::onNodeUISizeChanged(double w,
+              double h)
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    _imp->nodeSize[0] = w;
+    _imp->nodeSize[1] = h;
+}
+
 
 void
 Node::setSize(double w,
@@ -10237,21 +10414,19 @@ Node::setSize(double w,
 
     if (gui) {
         gui->setSize(w, h);
+    } else {
+        onNodeUISizeChanged(w,h);
     }
 }
+
 
 void
 Node::getSize(double* w,
               double* h) const
 {
-    NodeGuiIPtr gui = _imp->guiPointer.lock();
-
-    if (gui) {
-        gui->getSize(w, h);
-    } else {
-        *w = 0.;
-        *h = 0.;
-    }
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    *w = _imp->nodeSize[0];
+    *h = _imp->nodeSize[1];
 }
 
 bool
@@ -10259,18 +10434,74 @@ Node::getColor(double* r,
                double *g,
                double* b) const
 {
-    NodeGuiIPtr gui = _imp->guiPointer.lock();
-
-    if (gui) {
-        gui->getColor(r, g, b);
-        return true;
-    } else {
-        *r = 0.;
-        *g = 0.;
-        *b = 0.;
-        return false;
-    }
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    *r = _imp->nodeColor[0];
+    *g = _imp->nodeColor[1];
+    *b = _imp->nodeColor[2];
+    return true;
 }
+
+bool
+Node::hasColorChangedSinceDefault() const
+{
+    std::list<std::string> grouping;
+    getPluginGrouping(&grouping);
+    std::string majGroup = grouping.empty() ? "" : grouping.front();
+    float defR, defG, defB;
+
+    SettingsPtr settings = appPTR->getCurrentSettings();
+
+    if ( _imp->effect->isReader() ) {
+        settings->getReaderColor(&defR, &defG, &defB);
+    } else if ( _imp->effect->isWriter() ) {
+        settings->getWriterColor(&defR, &defG, &defB);
+    } else if ( _imp->effect->isGenerator() ) {
+        settings->getGeneratorColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_COLOR) {
+        settings->getColorGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_FILTER) {
+        settings->getFilterGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+        settings->getChannelGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_KEYER) {
+        settings->getKeyerGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_MERGE) {
+        settings->getMergeGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_PAINT) {
+        settings->getDrawGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_TIME) {
+        settings->getTimeGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+        settings->getTransformGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+        settings->getViewsGroupColor(&defR, &defG, &defB);
+    } else if (majGroup == PLUGIN_GROUP_DEEP) {
+        settings->getDeepGroupColor(&defR, &defG, &defB);
+    } else if (dynamic_cast<Backdrop*>(_imp->effect.get())) {
+        settings->getDefaultBackdropColor(&defR, &defG, &defB);
+    } else {
+        settings->getDefaultNodeColor(&defR, &defG, &defB);
+    }
+
+    if ( (std::abs(_imp->nodeColor[0] - defR) > 0.01) || (std::abs(_imp->nodeColor[1] - defG) > 0.01) || (std::abs(_imp->nodeColor[2] - defB) > 0.01) ) {
+        return true;
+    }
+
+    return false;
+}
+
+void
+Node::onNodeUIColorChanged(double r,
+                           double g,
+                           double b)
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    _imp->nodeColor[0] = r;
+    _imp->nodeColor[1] = g;
+    _imp->nodeColor[2] = b;
+
+}
+
 
 void
 Node::setColor(double r,
@@ -10281,8 +10512,76 @@ Node::setColor(double r,
 
     if (gui) {
         gui->setColor(r, g, b);
+    } else {
+        onNodeUIColorChanged(r,g,b);
     }
 }
+
+bool
+Node::getOverlayColor(double* r,
+                      double *g,
+                      double* b) const
+{
+    NodeGuiIPtr node_ui = getNodeGui();
+    if (node_ui && node_ui->isOverlayLocked()) {
+        *r = 0.5;
+        *g = 0.5;
+        *b = 0.5;
+        return true;
+    }
+
+    {
+        QMutexLocker k(&_imp->nodeUIDataMutex);
+        *r = _imp->overlayColor[0];
+        *g = _imp->overlayColor[1];
+        *b = _imp->overlayColor[2];
+    }
+    if (*r == -1 && *g == -1 && *b == -1) {
+        // No overlay color
+        return false;
+    }
+
+    return true;
+}
+
+void
+Node::onNodeUISelectionChanged(bool isSelected)
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    _imp->nodeIsSelected = isSelected;
+}
+
+bool
+Node::getNodeIsSelected() const
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    return _imp->nodeIsSelected;
+}
+
+void
+Node::onNodeUIOverlayColorChanged(double r,
+                           double g,
+                           double b)
+{
+    QMutexLocker k(&_imp->nodeUIDataMutex);
+    _imp->overlayColor[0] = r;
+    _imp->overlayColor[1] = g;
+    _imp->overlayColor[2] = b;
+
+}
+
+void
+Node::setOverlayColor(double r, double g, double b)
+{
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
+
+    if (gui) {
+        gui->setOverlayColor(r, g, b);
+    } else {
+        onNodeUIOverlayColorChanged(r,g,b);
+    }
+}
+
 
 void
 Node::setNodeGuiPointer(const NodeGuiIPtr& gui)
@@ -10369,15 +10668,7 @@ Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->paintStroke = stroke;
-    _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     setProcessChannelsValues(true, true, true, true);
-}
-
-void
-Node::setUseAlpha0ToConvertFromRGBToRGBA(bool use)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->useAlpha0ToConvertFromRGBToRGBA = use;
 }
 
 RotoDrawableItemPtr
@@ -10740,9 +11031,7 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 void
 Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 {
-    if (!isPartOfProject) {
-        return;
-    }
+
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
     NodeCollectionPtr group = _publicInterface->getGroup();
 
@@ -10768,9 +11057,6 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 void
 Node::Implementation::runOnNodeDeleteCB()
 {
-    if (!isPartOfProject) {
-        return;
-    }
 
     if (_publicInterface->getScriptName_mt_safe().empty()) {
         return;
@@ -10952,7 +11238,7 @@ Node::getChannelSelectorKnob(int inputNb) const
 void
 Node::checkForPremultWarningAndCheckboxes()
 {
-    if ( isOutputNode() ) {
+    if ( isOutputNode() || _imp->effect->isGenerator() || _imp->effect->isReader() ) {
         return;
     }
     KnobBoolPtr chans[4];
@@ -11506,10 +11792,6 @@ Node::refreshChannelSelectors()
             hasChanged |= channelKnob->populateChoices(choices, std::vector<std::string>(), maskChannelEqualityFunctor, &tmpData);
         }
     }
-
-    //Notify the effect channels have changed (the viewer needs this)
-    _imp->effect->onChannelsSelectorRefreshed();
-
     return hasChanged;
 } // Node::refreshChannelSelectors()
 
@@ -11579,12 +11861,10 @@ Node::getHostMixingValue(double time,
 
 InspectorNode::InspectorNode(const AppInstancePtr& app,
                              const NodeCollectionPtr& group,
-                             Plugin* plugin)
+                             const PluginPtr& plugin)
     : Node(app, group, plugin)
 {
-    for (int i = 0; i < 2; ++i) {
-        _activeInputs[i] = -1;
-    }
+
 }
 
 InspectorNode::~InspectorNode()
@@ -11598,7 +11878,7 @@ InspectorNode::connectInput(const NodePtr& input,
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( !isEffectViewerInstance() ) {
+    if ( !isEffectViewerNode() ) {
         return connectInputBase(input, inputNumber);
     }
 
@@ -11635,84 +11915,11 @@ InspectorNode::connectInput(const NodePtr& input,
     if ( !Node::connectInput(input, inputNumber) ) {
         bool creatingNodeTree = getApp()->isCreatingNodeTree();
         if (!creatingNodeTree) {
-            ///Recompute the hash
-            computeHash();
+            getEffectInstance()->invalidateHashCache();
         }
     }
 
     return true;
-}
-
-void
-InspectorNode::setActiveInputAndRefresh(int inputNb,
-                                        bool isASide)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    int maxInputs = getMaxInputCount();
-    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || ( !getInput(inputNb) ) ) {
-        return;
-    }
-
-    bool creatingNodeTree = getApp()->isCreatingNodeTree();
-    if (!creatingNodeTree) {
-        ///Recompute the hash
-        computeHash();
-    }
-
-    Q_EMIT inputChanged(inputNb);
-    onInputChanged(inputNb, isASide);
-
-    runInputChangedCallback(inputNb);
-
-
-    if ( isOutputNode() ) {
-        OutputEffectInstancePtr oei = isEffectOutput();
-        assert(oei);
-        if (oei) {
-            oei->renderCurrentFrame(true);
-        }
-    }
-}
-
-void
-InspectorNode::refreshActiveInputs(int inputNbChanged,
-                                   bool isASide)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    NodePtr inputNode = getRealInput(inputNbChanged);
-    {
-        QMutexLocker l(&_activeInputsMutex);
-        if (!inputNode) {
-            ///check if the input was one of the active ones if so set to -1
-            if (_activeInputs[0] == inputNbChanged) {
-                _activeInputs[0] = -1;
-            } else if (_activeInputs[1] == inputNbChanged) {
-                _activeInputs[1] = -1;
-            }
-        } else {
-            if ( !isASide && (_activeInputs[0] != -1) ) {
-                ViewerInstancePtr isViewer = isEffectViewerInstance();
-                if (isViewer) {
-                    OpenGLViewerI* viewerUI = isViewer->getUiContext();
-                    if (viewerUI) {
-                        ViewerCompositingOperatorEnum op = viewerUI->getCompositingOperator();
-                        if (op == eViewerCompositingOperatorNone) {
-                            viewerUI->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
-                        }
-                    }
-                }
-                _activeInputs[1] = inputNbChanged;
-            } else {
-                _activeInputs[0] = inputNbChanged;
-                if (_activeInputs[1] == -1) {
-                    _activeInputs[1] = inputNbChanged;
-                }
-            }
-        }
-    }
-    Q_EMIT activeInputsChanged();
-    Q_EMIT refreshOptionalState();
 }
 
 int
@@ -11773,37 +11980,6 @@ InspectorNode::getPreferredInputForConnection() const
     return getPreferredInputInternal(false);
 }
 
-void
-InspectorNode::getActiveInputs(int & a,
-                               int &b) const
-{
-    QMutexLocker l(&_activeInputsMutex);
-
-    a = _activeInputs[0];
-    b = _activeInputs[1];
-}
-
-void
-InspectorNode::setInputA(int inputNb)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_activeInputsMutex);
-        _activeInputs[0] = inputNb;
-    }
-    Q_EMIT refreshOptionalState();
-}
-
-void
-InspectorNode::setInputB(int inputNb)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_activeInputsMutex);
-        _activeInputs[1] = inputNb;
-    }
-    Q_EMIT refreshOptionalState();
-}
 
 NATRON_NAMESPACE_EXIT;
 

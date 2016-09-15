@@ -38,6 +38,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
@@ -111,8 +112,7 @@ private:
 
     friend class ::boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
+    void serialize(Archive & ar, const unsigned int version);
 };
 
 struct KeyFrame_compare_time
@@ -124,12 +124,14 @@ struct KeyFrame_compare_time
     }
 };
 
+
+
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
 struct CurvePrivate;
 
-class Curve
+class Curve : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     enum CurveChangedReasonEnum
     {
@@ -164,7 +166,18 @@ public:
 
     ~Curve();
 
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serialization) OVERRIDE FINAL;
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serialization) OVERRIDE FINAL;
+
     void operator=(const Curve & other);
+
+    bool operator==(const Curve & other) const;
+
+    bool operator!=(const Curve & other) const
+    {
+        return !(*this == other);
+    }
 
     /**
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
@@ -294,6 +307,7 @@ public:
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, double time);
 
 private:
+
     friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

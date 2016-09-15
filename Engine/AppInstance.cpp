@@ -56,18 +56,28 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/DiskCacheNode.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/KnobFile.h"
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/SerializableWindow.h"
 #include "Engine/Settings.h"
+#include "Engine/PyPanelI.h"
+#include "Engine/TabWidgetI.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/ProjectSerialization.h"
+
+#include <SequenceParsing.h>
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -163,7 +173,16 @@ public:
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobIWPtr> invalidExprKnobs;
 
-    ProjectBeingLoadedInfo projectBeingLoaded;
+    SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectBeingLoaded;
+
+    mutable QMutex uiInfoMutex;
+
+    SerializableWindow* mainWindow;
+    std::list<SerializableWindow*> floatingWindows;
+    std::list<TabWidgetI*> tabWidgets;
+    std::list<SplitterI*> splitters;
+    std::list<PyPanelI*> pythonPanels;
+    std::list<DockablePanelI*> openedSettingsPanels;
 
     AppInstancePrivate(int appID,
                        AppInstance* app)
@@ -183,6 +202,10 @@ public:
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , projectBeingLoaded()
+        , mainWindow(0)
+        , floatingWindows()
+        , tabWidgets()
+        , pythonPanels()
     {
     }
 
@@ -199,6 +222,9 @@ public:
     void getSequenceNameFromWriter(const OutputEffectInstancePtr& writer, QString* sequenceName);
 
     void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
+
+    void checkNumberOfNonFloatingPanes();
+
 };
 
 AppInstance::AppInstance(int appID)
@@ -212,7 +238,7 @@ AppInstance::~AppInstance()
     _imp->_currentProject->clearNodes(false);
 }
 
-const ProjectBeingLoadedInfo&
+const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo&
 AppInstance::getProjectBeingLoadedInfo() const
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -220,7 +246,7 @@ AppInstance::getProjectBeingLoadedInfo() const
 }
 
 void
-AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
+AppInstance::setProjectBeingLoadedInfo(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& info)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->projectBeingLoaded = info;
@@ -834,7 +860,7 @@ public:
 };
 
 NodePtr
-AppInstance::createNodeFromPythonModule(Plugin* plugin,
+AppInstance::createNodeFromPythonModule(const PluginPtr& plugin,
                                         const CreateNodeArgs& args)
 
 {
@@ -842,12 +868,18 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     bool istoolsetScript = plugin->getToolsetScript();
     NodePtr node;
 
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args.getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
+
+
+    QString moduleName;
+    QString modulePath;
+    plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
+
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
-            bool createGui = !args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI) && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
+            bool createGui = !args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI) && !args.getProperty<bool>(kCreateNodeArgsPropVolatile);
             _imp->_creatingInternalNode = !createGui;
         }
         CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
@@ -858,6 +890,10 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;
+            }
+
+            if ( !moduleName.isEmpty() ) {
+                setGroupLabelIDAndVersion(containerNode, moduleName, false);
             }
 
             if (!serialization && args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName).empty()) {
@@ -880,9 +916,6 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         }
 
 
-        QString moduleName;
-        QString modulePath;
-        plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
 
         int appID = getAppID() + 1;
         std::stringstream ss;
@@ -913,33 +946,48 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             return NodePtr();
         }
 
-        if ( !moduleName.isEmpty() ) {
-            setGroupLabelIDAndVersion(node, modulePath, moduleName);
-        }
+
 
         // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
         if (serialization) {
-            containerNode->loadKnobs(*serialization);
+            containerNode->fromSerialization(*serialization);
         }
+
+        // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
+        containerNode->refreshDefaultPagesOrder();
+
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
 
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-    onGroupCreationFinished(node, serialization, autoConnect);
+    onGroupCreationFinished(node, serialization, args);
 
     return node;
 } // AppInstance::createNodeFromPythonModule
 
 void
 AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
-                                       const QString& pythonModulePath,
-                                       const QString &pythonModule)
+                                       const QString &pythonModule,
+                                       bool pythonModuleIsAbsoluteScriptFilePath)
 {
-    std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
+    std::string pythonModuleName;
+    if (!pythonModuleIsAbsoluteScriptFilePath) {
+        pythonModuleName = pythonModule.toStdString();
+    } else {
+        // In Previous versions of Natron, the pythonModule was the absolute file path of the python script in which the module was
+        // defined. Now this is only the module name
+        QString str = pythonModule;
+        QtCompat::removeFileExtension(str);
+        int foundLastSlash = str.lastIndexOf( QChar::fromLatin1('/') );
+        if (foundLastSlash != -1) {
+            pythonModuleName = str.mid(foundLastSlash + 1).toStdString();
+        }
+    }
+
+    std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description, pluginPath;
     unsigned int version;
     bool istoolset;
 
-    if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModulePath.toStdString(), pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version) ) {
+    if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
         QString groupingStr = QString::fromUtf8( pluginGrouping.c_str() );
         QStringList groupingSplits = groupingStr.split( QLatin1Char('/') );
         std::list<std::string> stdGrouping;
@@ -947,8 +995,8 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
             stdGrouping.push_back( it->toStdString() );
         }
 
-        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, version);
-        node->setPluginPythonModule( QString( pythonModulePath + pythonModule + QString::fromUtf8(".py") ).toStdString() );
+        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, pluginPath, version);
+        node->setPluginPythonModule(pythonModuleName);
     }
 }
 
@@ -957,24 +1005,6 @@ AppInstance::createReader(const std::string& filename,
                           CreateNodeArgs& args)
 {
     std::string pluginID;
-
-#ifndef NATRON_ENABLE_IO_META_NODES
-
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    QString fileCpy = QString::fromUtf8( filename.c_str() );
-    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
-    std::string ext = extq.toStdString();
-    std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
-    if ( found == readersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Reader").toStdString(),
-                              tr("No plugin capable of decoding %1 was found").arg(extq).toStdString(), false );
-
-        return NodePtr();
-    }
-    pluginID = found->second;
-    CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, group);
-#endif
 
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     std::string canonicalFilename = filename;
@@ -996,24 +1026,7 @@ AppInstance::createWriter(const std::string& filename,
                           int firstFrame,
                           int lastFrame)
 {
-#ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
 
-    QString fileCpy = QString::fromUtf8( filename.c_str() );
-    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
-    std::string ext = extq.toStdString();
-    std::map<std::string, std::string>::iterator found = writersForFormat.find(ext);
-    if ( found == writersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Writer").toStdString(),
-                              tr("No plugin capable of encoding %1 was found.").arg(extq).toStdString(), false );
-
-        return NodePtr();
-    }
-
-
-    CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, collection);
-#endif
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     if ( (firstFrame != INT_MIN) && (lastFrame != INT_MAX) ) {
         args.addParamDefaultValue<int>("frameRange", 2);
@@ -1029,10 +1042,10 @@ AppInstance::createWriter(const std::string& filename,
  * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
  **/
 static bool
-isEntitledForInspector(Plugin* plugin,
+isEntitledForInspector(const PluginPtr& plugin,
                        OFX::Host::ImageEffect::Descriptor* ofxDesc)
 {
-    if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER) ) ||
+    if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP) ) ||
          ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ) ||
          ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) ) {
         return true;
@@ -1068,9 +1081,9 @@ NodePtr
 AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     NodePtr node;
-    Plugin* plugin = 0;
+    PluginPtr plugin;
 
-    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
@@ -1080,7 +1093,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     QString findId = argsPluginID;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     //If it is a reader or writer, create a ReadNode or WriteNode
     if (!argsIOContainer) {
@@ -1092,7 +1104,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
-#endif
 
     try {
         plugin = appPTR->getPluginBinary(findId, versionMajor, versionMinor, _imp->_projectCreatedWithLowerCaseIDs && serialization);
@@ -1278,61 +1289,21 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
     NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance()->shared_from_this() );
-
     if (isGrp) {
-        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
 
-        if (serialization) {
-            if ( serialization && !serialization->getPythonModule().empty() ) {
-                QString pythonModulePath = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
-                QString moduleName;
-                QString modulePath;
-                int foundLastSlash = pythonModulePath.lastIndexOf( QChar::fromLatin1('/') );
-                if (foundLastSlash != -1) {
-                    modulePath = pythonModulePath.mid(0, foundLastSlash + 1);
-                    moduleName = pythonModulePath.remove(0, foundLastSlash + 1);
-                }
-                QtCompat::removeFileExtension(moduleName);
-                setGroupLabelIDAndVersion(node, modulePath, moduleName);
+        try {
+            isGrp->onGroupCreated(serialization);
+        } catch (const std::exception & e) {
+            if (argsGroup) {
+                argsGroup->removeNode(node);
             }
-            onGroupCreationFinished(node, serialization, autoConnect);
-        } else if ( !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
-            //if the node is a group and we're not loading the project, create one input and one output
-            NodePtr input, output;
-
-            {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
-                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
-                output = createNode(args);
-                try {
-                    output->setScriptName("Output");
-                } catch (...) {
-                }
-
-                assert(output);
-            }
-            {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
-                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
-                input = createNode(args);
-                assert(input);
-            }
-            if ( input && output && !output->getInput(0) ) {
-                output->connectInput(input, 0);
-
-                double x, y;
-                output->getPosition(&x, &y);
-                y -= 100;
-                input->setPosition(x, y);
-            }
-            onGroupCreationFinished(node, serialization, autoConnect);
-
-            ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
+            return NodePtr();
         }
+        if (!isCreatingPythonGroup()) {
+            // For PyPlugs do it in createNodeFromPythonModule
+            onGroupCreationFinished(node, serialization, args);
+        }
+
     }
 
     return node;
@@ -1362,7 +1333,7 @@ AppInstance::exportDocs(const QString path)
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
             if ( !pluginID.isEmpty() ) {
-                Plugin* plugin = 0;
+                PluginPtr plugin;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 if (plugin) {
@@ -1374,7 +1345,7 @@ AppInstance::exportDocs(const QString path)
                         plugins << plugList;
                         CreateNodeArgs args( pluginID.toStdString(), NodeCollectionPtr() );
                         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-                        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+                        args.setProperty(kCreateNodeArgsPropVolatile, true);
                         args.setProperty(kCreateNodeArgsPropSilent, true);
                         qDebug() << pluginID;
                         NodePtr node = createNode(args);
@@ -1741,7 +1712,7 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
     ///validate the frame range to render
     if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
         double firstFrameD, lastFrameD;
-        w.writer->getFrameRange_public(w.writer->getHash(), &firstFrameD, &lastFrameD, true);
+        w.writer->getFrameRange_public(0, &firstFrameD, &lastFrameD);
         if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
             _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
         }
@@ -2065,7 +2036,7 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const NodeSerializationPtr& serialization, bool /*autoConnect*/)
+                                     const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& /*args*/)
 {
     assert(node);
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
@@ -2216,6 +2187,298 @@ AppInstance::recheckInvalidExpressions()
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
         _imp->invalidExprKnobs = newInvalidKnobs;
     }
+}
+
+void
+AppInstance::setMainWindowPointer(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->mainWindow = window;
+}
+
+SerializableWindow*
+AppInstance::getMainWindowSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->mainWindow;
+}
+
+std::list<SerializableWindow*>
+AppInstance::getFloatingWindowsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->floatingWindows;
+}
+
+std::list<SplitterI*>
+AppInstance::getSplittersSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->splitters;
+}
+
+std::list<TabWidgetI*>
+AppInstance::getTabWidgetsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->tabWidgets;
+}
+
+std::list<PyPanelI*>
+AppInstance::getPyPanelsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->pythonPanels;
+}
+
+void
+AppInstance::registerFloatingWindow(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SerializableWindow*>::iterator found = std::find(_imp->floatingWindows.begin(), _imp->floatingWindows.end(), window);
+
+    if ( found == _imp->floatingWindows.end() ) {
+        _imp->floatingWindows.push_back(window);
+    }
+}
+
+void
+AppInstance::unregisterFloatingWindow(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SerializableWindow*>::iterator found = std::find(_imp->floatingWindows.begin(), _imp->floatingWindows.end(), window);
+
+    if ( found != _imp->floatingWindows.end() ) {
+        _imp->floatingWindows.erase(found);
+    }
+}
+
+void
+AppInstance::registerSplitter(SplitterI* splitter)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SplitterI*>::iterator found = std::find(_imp->splitters.begin(), _imp->splitters.end(), splitter);
+
+    if ( found == _imp->splitters.end() ) {
+        _imp->splitters.push_back(splitter);
+    }
+}
+
+void
+AppInstance::unregisterSplitter(SplitterI* splitter)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SplitterI*>::iterator found = std::find(_imp->splitters.begin(), _imp->splitters.end(), splitter);
+
+    if ( found != _imp->splitters.end() ) {
+        _imp->splitters.erase(found);
+    }
+}
+
+void
+AppInstance::registerTabWidget(TabWidgetI* tabWidget)
+{
+
+    onTabWidgetRegistered(tabWidget);
+    {
+        QMutexLocker k(&_imp->uiInfoMutex);
+        bool hasAnchor = false;
+
+        for (std::list<TabWidgetI*>::iterator it = _imp->tabWidgets.begin(); it != _imp->tabWidgets.end(); ++it) {
+            if ( (*it)->isAnchor() ) {
+                hasAnchor = true;
+                break;
+            }
+        }
+        std::list<TabWidgetI*>::iterator found = std::find(_imp->tabWidgets.begin(), _imp->tabWidgets.end(), tabWidget);
+
+        if ( found == _imp->tabWidgets.end() ) {
+            if ( _imp->tabWidgets.empty() ) {
+                tabWidget->setClosable(false);
+            }
+            _imp->tabWidgets.push_back(tabWidget);
+
+            if (!hasAnchor) {
+                tabWidget->setAsAnchor(true);
+            }
+        }
+    }
+
+}
+
+void
+AppInstance::unregisterTabWidget(TabWidgetI* tabWidget)
+{
+    {
+        QMutexLocker k(&_imp->uiInfoMutex);
+        std::list<TabWidgetI*>::iterator found = std::find(_imp->tabWidgets.begin(), _imp->tabWidgets.end(), tabWidget);
+
+        if ( found != _imp->tabWidgets.end() ) {
+            _imp->tabWidgets.erase(found);
+        }
+        if ( ( tabWidget->isAnchor() ) && !_imp->tabWidgets.empty() ) {
+            _imp->tabWidgets.front()->setAsAnchor(true);
+        }
+    }
+    onTabWidgetUnregistered(tabWidget);
+}
+
+void
+AppInstance::clearTabWidgets()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->tabWidgets.clear();
+}
+
+void
+AppInstance::clearFloatingWindows()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->floatingWindows.clear();
+}
+
+void
+AppInstance::clearSplitters()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->splitters.clear();
+}
+
+void
+AppInstance::registerPyPanel(PyPanelI* panel, const std::string& pythonFunction)
+{
+    panel->setPythonFunction(QString::fromUtf8(pythonFunction.c_str()));
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<PyPanelI*>::iterator found = std::find(_imp->pythonPanels.begin(), _imp->pythonPanels.end(), panel);
+
+    if ( found == _imp->pythonPanels.end() ) {
+        _imp->pythonPanels.push_back(panel);
+    }
+}
+
+void
+AppInstance::unregisterPyPanel(PyPanelI* panel)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<PyPanelI*>::iterator found = std::find(_imp->pythonPanels.begin(), _imp->pythonPanels.end(), panel);
+
+    if ( found != _imp->pythonPanels.end() ) {
+        _imp->pythonPanels.erase(found);
+    }
+
+}
+
+void
+AppInstance::registerSettingsPanel(DockablePanelI* panel, int index)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<DockablePanelI*>::iterator found = std::find(_imp->openedSettingsPanels.begin(), _imp->openedSettingsPanels.end(), panel);
+
+    if ( found == _imp->openedSettingsPanels.end() ) {
+        if (index == -1 || index >= (int)_imp->openedSettingsPanels.size()) {
+            _imp->openedSettingsPanels.push_back(panel);
+        } else {
+            std::list<DockablePanelI*>::iterator it = _imp->openedSettingsPanels.begin();
+            std::advance(it, index);
+            _imp->openedSettingsPanels.insert(it, panel);
+        }
+    }
+}
+
+void
+AppInstance::unregisterSettingsPanel(DockablePanelI* panel)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<DockablePanelI*>::iterator found = std::find(_imp->openedSettingsPanels.begin(), _imp->openedSettingsPanels.end(), panel);
+
+    if ( found != _imp->openedSettingsPanels.end() ) {
+        _imp->openedSettingsPanels.erase(found);
+    }
+}
+
+void
+AppInstance::clearSettingsPanels()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->openedSettingsPanels.clear();
+}
+
+std::list<DockablePanelI*>
+AppInstance::getOpenedSettingsPanels() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->openedSettingsPanels;
+}
+
+void
+AppInstance::setOpenedSettingsPanelsInternal(const std::list<DockablePanelI*>& panels)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->openedSettingsPanels = panels;
+}
+
+QString
+AppInstance::getAvailablePaneName(const QString & baseName) const
+{
+    std::string name = baseName.toStdString();
+    QMutexLocker l(&_imp->uiInfoMutex);
+    int baseNumber = _imp->tabWidgets.size();
+
+    if ( name.empty() ) {
+        name.append("pane");
+        name.append( QString::number(baseNumber).toStdString() );
+    }
+
+    for (;;) {
+        bool foundName = false;
+        for (std::list<TabWidgetI*>::const_iterator it = _imp->tabWidgets.begin(); it != _imp->tabWidgets.end(); ++it) {
+            if ( (*it)->getScriptName() == name ) {
+                foundName = true;
+                break;
+            }
+        }
+        if (foundName) {
+            ++baseNumber;
+            name = QString::fromUtf8("pane%1").arg(baseNumber).toStdString();
+        } else {
+            break;
+        }
+    }
+
+    return QString::fromUtf8(name.c_str());
+}
+
+void
+AppInstance::saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization)
+{
+
+    // Main window
+    SerializableWindow* mainWindow = getMainWindowSerialization();
+    if (mainWindow) {
+        serialization->_mainWindowSerialization.reset(new SERIALIZATION_NAMESPACE::WindowSerialization);
+        mainWindow->toSerialization(serialization->_mainWindowSerialization.get());
+    }
+
+    // Floating windows
+    std::list<SerializableWindow*> floatingWindows = getFloatingWindowsSerialization();
+    for (std::list<SerializableWindow*>::iterator it = floatingWindows.begin(); it!=floatingWindows.end(); ++it) {
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> s(new SERIALIZATION_NAMESPACE::WindowSerialization);
+        (*it)->toSerialization(s.get());
+        serialization->_floatingWindowsSerialization.push_back(s);
+
+    }
+
+    // Save active python panels
+    std::list<PyPanelI*> pythonPanels = getPyPanelsSerialization();
+    for (std::list<PyPanelI*>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+        SERIALIZATION_NAMESPACE::PythonPanelSerialization s;
+        (*it)->toSerialization(&s);
+        serialization->_pythonPanels.push_back(s);
+    }
+
+    // Save opened histograms
+    getHistogramScriptNames(&serialization->_histograms);
+
 }
 
 NATRON_NAMESPACE_EXIT;

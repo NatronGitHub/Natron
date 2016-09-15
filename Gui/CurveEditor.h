@@ -329,7 +329,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    CurveEditor(Gui* gui,
+    CurveEditor(const std::string& scriptName,
+                Gui* gui,
                 const TimeLinePtr& timeline,
                 QWidget* parent = 0);
 
@@ -369,6 +370,10 @@ public:
     void setSelectedCurveExpression(const QString& expression);
 
     void onInputEventCalled();
+
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
 public Q_SLOTS:
 

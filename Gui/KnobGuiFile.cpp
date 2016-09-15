@@ -118,7 +118,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip( toolTip() );
+    toolTip(_openFileButton);
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
 
@@ -223,7 +223,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
 
             _lastModificationDates[newValue] = dateTime;
 
-            QString tt = toolTip();
+            QString tt = toolTip(0);
             tt.append( QString::fromUtf8("\n\nLast modified: ") );
             tt.append( dateTime.toString(Qt::SystemLocaleShortDate) );
             _lineEdit->setToolTip(tt);
@@ -286,7 +286,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
                 effect->abortAnyEvaluation();
             }
             effect->purgeCaches();
-            effect->getNode()->removeAllImagesFromCache(true);
+            effect->getNode()->removeAllImagesFromCache();
             _lastModificationDates.clear();
             ret = true;
         } else {
@@ -463,8 +463,7 @@ void
 KnobGuiFile::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
-        _lineEdit->setToolTip(tt);
+        toolTip(_lineEdit);
     }
 }
 
@@ -717,9 +716,9 @@ void
 KnobGuiOutputFile::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
+
         if (_lineEdit) {
-            _lineEdit->setToolTip(tt);
+            toolTip(_lineEdit);
         }
     }
 }
@@ -1076,9 +1075,9 @@ void
 KnobGuiPath::updateToolTip()
 {
     if ( hasToolTip() ) {
-        QString tt = toolTip();
+
         if ( !_knob.lock()->isMultiPath() ) {
-            _lineEdit->setToolTip(tt);
+            toolTip(_lineEdit);
         } else {
             KnobGuiTable::updateToolTip();
         }

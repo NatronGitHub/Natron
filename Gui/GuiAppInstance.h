@@ -53,21 +53,13 @@ public:
     ViewerTab* viewerUI;
     NodePtr viewerNodeInternal;
     NodeGuiPtr viewerNode;
-#ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, NodePtr > readerNodes;
-#else
     NodePtr readerNode;
-#endif
 
     FileDialogPreviewProvider()
         : viewerUI(0)
         , viewerNodeInternal()
         , viewerNode()
-#ifndef NATRON_ENABLE_IO_META_NODES
-        , readerNodes()
-#else
         , readerNode()
-#endif
     {}
 };
 
@@ -142,8 +134,7 @@ public:
                                               StandardButtons buttons,
                                               StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void loadProjectGui(bool isAutosave,  boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
-    virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
+    virtual void loadProjectGui(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
@@ -159,8 +150,10 @@ public:
 
     bool isClosing() const;
 
+    virtual void setGuiFrozen(bool frozen) OVERRIDE FINAL;
     virtual bool isGuiFrozen() const OVERRIDE FINAL;
     virtual bool isShowingDialog() const OVERRIDE FINAL;
+    virtual void refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs) OVERRIDE FINAL;
     virtual void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true) OVERRIDE FINAL;
     virtual void progressEnd(const NodePtr& node) OVERRIDE FINAL;
     virtual bool progressUpdate(const NodePtr& node, double t) OVERRIDE FINAL;
@@ -187,6 +180,7 @@ public:
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
     virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
     virtual void refreshAllPreviews() OVERRIDE FINAL;
+    virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const OVERRIDE FINAL;
     virtual void abortAllViewers() OVERRIDE FINAL;
     virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
 
@@ -197,7 +191,17 @@ public:
     void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
     void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
 
-    bool checkAllReadersModificationDate(bool errorAndWarn);
+    virtual bool checkAllReadersModificationDate(bool errorAndWarn) OVERRIDE FINAL;
+
+    virtual void setMasterSyncViewer(const NodePtr& viewerNode) OVERRIDE FINAL;
+
+    virtual NodePtr getMasterSyncViewer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void showRenderStatsWindow() OVERRIDE FINAL;
+
+    virtual void getHistogramScriptNames(std::list<std::string>* histograms) const OVERRIDE FINAL;
+
+    virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* projections) const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -285,7 +289,13 @@ public:
 
 private:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect) OVERRIDE FINAL;
+    virtual void onTabWidgetRegistered(TabWidgetI* tabWidget) OVERRIDE FINAL;
+
+    virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) OVERRIDE FINAL;
+
+    virtual void createMainWindow() OVERRIDE FINAL;
+
+    virtual void onGroupCreationFinished(const NodePtr& node, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& args) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;

@@ -92,16 +92,6 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
 }
 
 void
-RotoPaintInteract::evaluate(bool redraw)
-{
-    if (redraw) {
-        p->publicInterface->redrawOverlayInteract();
-    }
-    p->publicInterface->getNode()->getRotoContext()->evaluateChange();
-    p->publicInterface->getApp()->triggerAutoSave();
-}
-
-void
 RotoPaintInteract::autoSaveAndRedraw()
 {
     p->publicInterface->redrawOverlayInteract();
@@ -797,7 +787,7 @@ RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
     selectedToolAction = tool;
     selectedToolRole = parentGroup;
     if (parentGroup != curGroup) {
-        if (parentGroup->getValue() != true) {
+        if (!parentGroup->getValue()) {
             parentGroup->setValue(true);
         } else {
             onRoleChangedInternal(parentGroup);
@@ -1816,7 +1806,6 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
         p->publicInterface->pushUndoCommand( new MoveControlPointsUndoCommand(shared_from_this(), points, (double)x * pixelScale.first,
                                                                               (double)y * pixelScale.second, time) );
         computeSelectedCpsBBOX();
-        p->publicInterface->getNode()->getRotoContext()->evaluateChange();
 
         return true;
     }

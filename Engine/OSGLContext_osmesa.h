@@ -75,6 +75,8 @@ public:
 
     static bool unSetContext(const OSGLContext_osmesa* context);
 
+    static void getOSMesaVersion(int* major, int* minor, int* rev);
+
 private:
     friend struct OSGLContext_osmesaPrivate;
     boost::scoped_ptr<OSGLContext_osmesaPrivate> _imp;

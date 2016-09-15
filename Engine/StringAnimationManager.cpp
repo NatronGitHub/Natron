@@ -325,7 +325,7 @@ StringAnimationManager::load(const std::map<int, std::string> & keyframes)
 {
     QMutexLocker l(&_imp->keyframesMutex);
 
-    assert( _imp->keyframes.empty() );
+    _imp->keyframes.clear();
     for (std::map<int, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         StringKeyFrame k;
         k.time = it->first;

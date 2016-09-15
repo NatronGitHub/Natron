@@ -96,6 +96,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , savedTexture(0)
     , sizeH()
     , zoomOrPannedSinceLastFit(false)
+    , drawnOnce(false)
     , _timelineTopPoly()
     , _timelineBtmPoly()
     , _widget(widget)

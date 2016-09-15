@@ -61,7 +61,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -79,6 +78,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #ifdef DEBUG
 #include "Engine/TLSHolder.h"
 #endif
+
+#include "Serialization/NodeSerialization.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -344,14 +345,8 @@ void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 OFX::Host::ImageEffect::Descriptor* desc,
                                                 ContextEnum context,
-                                                const NodeSerialization* serialization,
-                                                const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                                ,
-                                                bool allowFileDialogs,
-                                                bool *hasUsedFileDialog
-#endif
-                                                )
+                                                const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
+                                                const CreateNodeArgs& args)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -508,36 +503,15 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 }
             }
             ///before calling the createInstanceAction, load values
-            if ( serialization && !serialization->isNull() ) {
-                getNode()->loadKnobs(*serialization);
+            std::string initialPresets = getNode()->getCurrentNodePresets();
+            if (serialization) {
+                getNode()->fromSerialization(*serialization);
+            } else if (!initialPresets.empty()) {
+                getNode()->loadPresets(initialPresets);
             }
 
             getNode()->setValuesFromSerialization(args);
             
-
-#ifndef NATRON_ENABLE_IO_META_NODES
-            //////////////////////////////////////////////////////
-            ///////For READERS & WRITERS only we open an image file dialog
-            if ( !getApp()->isCreatingPythonGroup() && allowFileDialogs && isReader() && !( serialization && !serialization->isNull() ) && paramValues.empty() ) {
-                images = getApp()->openImageFileDialog();
-            } else if ( !getApp()->isCreatingPythonGroup() && allowFileDialogs && isWriter() && !( serialization && !serialization->isNull() )  && paramValues.empty() ) {
-                images = getApp()->saveImageFileDialog();
-            }
-            if ( !images.empty() ) {
-                *hasUsedFileDialog = true;
-                KnobSerializationPtr defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
-                CreateNodeArgs::DefaultValuesList list;
-                list.push_back(defaultFile);
-
-                std::string canonicalFilename = images;
-                getApp()->getProject()->canonicalizePath(canonicalFilename);
-                int firstFrame, lastFrame;
-                Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
-                list.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
-                getNode()->setValuesFromSerialization(list);
-            }
-            //////////////////////////////////////////////////////
-#endif
 
             ///Set default metadata since the OpenFX plug-in may fetch images in its constructor
             setDefaultMetadata();
@@ -555,12 +529,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             QString message;
             int type;
             NodePtr messageContainer = getNode();
-#ifdef NATRON_ENABLE_IO_META_NODES
             NodePtr ioContainer = messageContainer->getIOContainer();
             if (ioContainer) {
                 messageContainer = ioContainer;
             }
-#endif
             messageContainer->getPersistentMessage(&message, &type);
             if (message.isEmpty()) {
                 throw std::runtime_error("Could not create effect instance for plugin");
@@ -601,7 +573,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
 
 
-        if ( isReader() && serialization && !serialization->isNull() ) {
+        if ( isReader() && serialization  ) {
             getNode()->refreshCreatedViews();
         }
     } catch (const std::exception & e) {
@@ -764,9 +736,13 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
-#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
-        interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
+
+        int bitdepthPerComponent;
+        bool hasAlpha;
+        getApp()->getViewersOpenGLContextFormat(&bitdepthPerComponent, &hasAlpha);
+        interactDesc.describe(bitdepthPerComponent, hasAlpha);
         OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
+
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -1350,8 +1326,7 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 }
 
 StatusEnum
-OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
-                                         double time,
+OfxEffectInstance::getRegionOfDefinition(double time,
                                          const RenderScale & scale,
                                          ViewIdx view,
                                          RectD* rod)
@@ -1492,8 +1467,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
 } // getRegionOfDefinition
 
 void
-OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
-                                                 double time,
+OfxEffectInstance::calcDefaultRegionOfDefinition(double time,
                                                  const RenderScale & scale,
                                                  ViewIdx view,
                                                  RectD *rod)
@@ -1751,8 +1725,15 @@ OfxEffectInstance::getFrameRange(double *first,
                 //if (!isInputOptional(i)) {
                 EffectInstancePtr inputEffect = getInput(i);
                 if (inputEffect) {
+
+                    double time;
+                    ViewIdx view;
+                    inputEffect->getCurrentTimeView(&time, &view);
+                    U64 hash;
+                    bool gotHash = inputEffect->getRenderHash(time, view, &hash);
+                    (void)gotHash;
                     double f, l;
-                    inputEffect->getFrameRange_public(inputEffect->getRenderHash(), &f, &l);
+                    inputEffect->getFrameRange_public(hash, &f, &l);
                     if (!firstValidInput) {
                         if ( (f < *first) && (f != INT_MIN) ) {
                             *first = f;
@@ -2623,6 +2604,9 @@ OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
 void
 OfxEffectInstance::purgeCaches()
 {
+    if (!_imp->initialized) {
+        return;
+    }
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat;
     {
@@ -2711,7 +2695,7 @@ OfxEffectInstance::supportsOpenGLRender() const
 void
 OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
 {
-    const Plugin* p = getNode()->getPlugin();
+    PluginPtr p = getNode()->getPlugin();
     if (p->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportYes) {
         // The property may only change if the plug-in has the property set to yes on the descriptor
         if (activated) {

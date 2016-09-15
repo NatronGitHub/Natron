@@ -28,60 +28,37 @@
 #include <stdexcept>
 
 #include "Engine/ViewIdx.h"
+#include "Serialization/FrameKeySerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
 FrameKey::FrameKey()
-    : KeyHelper<U64>()
-    , _time(0)
-    , _treeVersion(0)
-    , _gain(1)
-    , _gamma(1)
-    , _lut(0)
-    , _bitDepth(0)
-    , _channels(0)
-    , _view(0)
-    , _textureRect()
-    , _mipMapLevel(0)
-    , _layer()
-    , _alphaChannelFullName()
-    , _useShaders(false)
-    , _draftMode(false)
+: KeyHelper<U64>()
+, _time(0)
+, _view(0)
+, _treeVersion(0)
+, _bitDepth(0)
+, _textureRect()
+, _useShaders(false)
+, _draftMode(false)
 {
 }
 
-FrameKey::FrameKey(const CacheEntryHolder* holder,
-                   SequenceTime time,
-                   U64 treeVersion,
-                   double gain,
-                   double gamma,
-                   int lut,
-                   int bitDepth,
-                   int channels,
+FrameKey::FrameKey(SequenceTime time,
                    ViewIdx view,
+                   U64 treeVersion,
+                   int bitDepth,
                    const TextureRect & textureRect,
-                   unsigned int mipMapLevel,
-                   const std::string & inputName,
-                   const ImageComponents& layer,
-                   const std::string& alphaChannelFullName,
                    bool useShaders,
                    bool draftMode)
-    : KeyHelper<U64>(holder)
-    , _time(time)
-    , _treeVersion(treeVersion)
-    , _gain(gain)
-    , _gamma(gamma)
-    , _lut(lut)
-    , _bitDepth(bitDepth)
-    , _channels(channels)
-    , _view(view)
-    , _textureRect(textureRect)
-    , _mipMapLevel(mipMapLevel)
-    , _inputName(inputName)
-    , _layer(layer)
-    , _alphaChannelFullName(alphaChannelFullName)
-    , _useShaders(useShaders)
-    , _draftMode(draftMode)
+: KeyHelper<U64>(std::string())
+, _time(time)
+, _view(view)
+, _treeVersion(treeVersion)
+, _bitDepth(bitDepth)
+, _textureRect(textureRect)
+, _useShaders(useShaders)
+, _draftMode(draftMode)
 {
 }
 
@@ -89,31 +66,15 @@ void
 FrameKey::fillHash(Hash64* hash) const
 {
     hash->append(_time);
+    hash->append((int)_view);
     hash->append(_treeVersion);
-    if (!_useShaders) {
-        hash->append(_gain);
-        hash->append(_gamma);
-        hash->append(_lut);
-    }
     hash->append(_bitDepth);
-    hash->append(_channels);
-    hash->append(_view);
     hash->append(_textureRect.x1);
     hash->append(_textureRect.y1);
     hash->append(_textureRect.x2);
     hash->append(_textureRect.y2);
     hash->append(_textureRect.closestPo2);
-    hash->append(_mipMapLevel);
-    Hash64_appendQString( hash, QString::fromUtf8( _layer.getLayerName().c_str() ) );
-    const std::vector<std::string>& channels = _layer.getComponentsNames();
-    for (std::size_t i = 0; i < channels.size(); ++i) {
-        Hash64_appendQString( hash, QString::fromUtf8( channels[i].c_str() ) );
-    }
-    if ( !_alphaChannelFullName.empty() ) {
-        Hash64_appendQString( hash, QString::fromUtf8( _alphaChannelFullName.c_str() ) );
-    }
-
-    Hash64_appendQString( hash, QString::fromUtf8( _inputName.c_str() ) );
+    hash->append(_useShaders);
     hash->append(_draftMode);
 }
 
@@ -122,18 +83,65 @@ FrameKey::operator==(const FrameKey & other) const
 {
     return _time == other._time &&
            _treeVersion == other._treeVersion &&
-           ( (_gain == other._gain &&
-              _gamma == other._gamma &&
-              _lut == other._lut) || (_useShaders && other._useShaders) ) &&
+           _useShaders == other._useShaders &&
            _bitDepth == other._bitDepth &&
-           _channels == other._channels &&
            _view == other._view &&
            _textureRect == other._textureRect &&
-           _mipMapLevel == other._mipMapLevel &&
-           _inputName == other._inputName &&
-           _layer == other._layer &&
-           _alphaChannelFullName == other._alphaChannelFullName &&
            _draftMode == other._draftMode;
 }
 
+void
+FrameKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::FrameKeySerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::FrameKeySerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    s->frame = _time;
+    s->view = (int)_view;
+    s->treeHash = _treeVersion;
+    switch ((ImageBitDepthEnum)_bitDepth) {
+        case eImageBitDepthByte:
+            s->bitdepth = kBitDepthSerializationByte;
+            break;
+        case eImageBitDepthShort:
+            s->bitdepth = kBitDepthSerializationShort;
+            break;
+        case eImageBitDepthHalf:
+            s->bitdepth = kBitDepthSerializationHalf;
+            break;
+        case eImageBitDepthFloat:
+            s->bitdepth = kBitDepthSerializationFloat;
+            break;
+        default:
+            break;
+    }
+    _textureRect.toSerialization(&s->textureRect);
+    s->draftMode = _draftMode;
+    s->useShader = _useShaders;
+}
+
+void
+FrameKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::FrameKeySerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::FrameKeySerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    _time = s->frame;
+    _view = ViewIdx(s->view);
+    _treeVersion = s->treeHash;
+    if (s->bitdepth == kBitDepthSerializationByte) {
+        _bitDepth = (int)eImageBitDepthByte;
+    } else if (s->bitdepth == kBitDepthSerializationShort) {
+        _bitDepth = (int)eImageBitDepthShort;
+    } else if (s->bitdepth == kBitDepthSerializationHalf) {
+        _bitDepth = (int)eImageBitDepthHalf;
+    } else if (s->bitdepth == kBitDepthSerializationFloat) {
+        _bitDepth = (int)eImageBitDepthFloat;
+    }
+    _textureRect.fromSerialization(s->textureRect);
+    _draftMode = s->draftMode;
+    _useShaders = s->useShader;
+}
 NATRON_NAMESPACE_EXIT;

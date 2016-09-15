@@ -36,13 +36,16 @@
 
 NATRON_NAMESPACE_ENTER;
 
-PanelWidget::PanelWidget(QWidget* thisWidget,
+PanelWidget::PanelWidget(const std::string& scriptName,
+                         QWidget* thisWidget,
                          Gui* gui)
     : ScriptObject()
     , _thisWidget(thisWidget)
     , _gui(gui)
 {
     assert(_gui && _thisWidget);
+    setScriptNameInternal(scriptName, false);
+    _gui->registerTab(this, this);
 }
 
 PanelWidget::~PanelWidget()
@@ -196,5 +199,19 @@ PanelWidget::handleUnCaughtKeyPressEvent(QKeyEvent* e)
         qApp->sendEvent(_gui, e);
     }
 }
+
+void
+PanelWidget::onScriptNameChanged()
+{
+    getGui()->unregisterTab(this);
+    getGui()->registerTab(this, this);
+}
+
+void
+PanelWidget::onLabelChanged()
+{
+
+}
+
 
 NATRON_NAMESPACE_EXIT;

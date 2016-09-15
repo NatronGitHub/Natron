@@ -29,7 +29,6 @@
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
@@ -37,11 +36,11 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
-#include "Gui/NodeGuiSerialization.h"
 
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -192,11 +191,10 @@ NodeGraphPrivate::resetAllClipboards()
 
 void
 NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
-                                    NodeClipBoard & clipboard)
+                                   SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard)
 {
     ///Clear clipboard
     clipboard.nodes.clear();
-    clipboard.nodesUI.clear();
 
     NodesGuiList nodesToCopy = selection;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
@@ -212,11 +210,9 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
 
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            NodeSerializationPtr ns( new NodeSerialization( (*it)->getNode(), true ) );
-            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-            (*it)->serialize( nGuiS.get() );
+            SERIALIZATION_NAMESPACE::NodeSerializationPtr ns( new SERIALIZATION_NAMESPACE::NodeSerialization);
+            (*it)->getNode()->toSerialization(ns.get());
             clipboard.nodes.push_back(ns);
-            clipboard.nodesUI.push_back(nGuiS);
         }
     }
 }

@@ -215,16 +215,11 @@
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
     <enum-type name="KeyframeTypeEnum"/>
     <enum-type name="PixmapEnum"/>
-    <enum-type name="ValueChangedReasonEnum"/>
     <enum-type name="AnimationLevelEnum"/>
-    <enum-type name="ImageComponentsEnum"/>
     <enum-type name="ImageBitDepthEnum"/>
     <enum-type name="ImagePremultiplicationEnum"/>
-    <enum-type name="ViewerCompositingOperatorEnum"/>
-    <enum-type name="ViewerColorSpaceEnum"/>
     <enum-type name="OrientationEnum"/>
-    <enum-type name="PlaybackModeEnum"/>
-    <enum-type name="DisplayChannelsEnum"/>
+    <enum-type name="ViewerContextLayoutTypeEnum"/>
     </namespace-type>
     
    

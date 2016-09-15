@@ -378,6 +378,8 @@ public:
 
     bool isDriveLetterToUNCPathConversionEnabled() const;
 
+    bool getIsFullRecoverySaveModeEnabled() const;
+
 Q_SIGNALS:
 
     void settingChanged(const KnobIPtr& knob);
@@ -425,6 +427,7 @@ private:
     KnobButtonPtr _testCrashReportButton;
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobIntPtr _autoSaveDelay;
+    KnobBoolPtr _saveSafetyMode;
     KnobChoicePtr _hostName;
     KnobStringPtr _customHostName;
 
@@ -470,9 +473,8 @@ private:
     KnobPagePtr _uiPage;
     KnobBoolPtr _notifyOnFileChange;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
     KnobBoolPtr _filedialogForWriters;
-#endif
+
     KnobBoolPtr _renderOnEditingFinished;
     KnobBoolPtr _linearPickers;
     KnobIntPtr _maxPanelsOpened;

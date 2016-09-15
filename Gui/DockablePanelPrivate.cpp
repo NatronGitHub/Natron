@@ -88,8 +88,6 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
     , _hideUnmodifiedButton(NULL)
     , _floatButton(NULL)
     , _cross(NULL)
-    , _overlayColor()
-    , _hasOverlayColor(false)
     , _colorButton(NULL)
     , _overlayButton(NULL)
     , _undoButton(NULL)

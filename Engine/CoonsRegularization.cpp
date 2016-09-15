@@ -474,9 +474,9 @@ makeBezierCPFromPoint(const Point& p,
 {
     BezierCPPtr ret(new BezierCP);
 
-    ret->setStaticPosition(false, p.x, p.y);
-    ret->setLeftBezierStaticPosition(false, left.x, left.y);
-    ret->setRightBezierStaticPosition(false, right.x, right.y);
+    ret->setStaticPosition(p.x, p.y);
+    ret->setLeftBezierStaticPosition(left.x, left.y);
+    ret->setRightBezierStaticPosition(right.x, right.y);
 
     return ret;
 }

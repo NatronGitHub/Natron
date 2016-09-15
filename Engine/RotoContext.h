@@ -50,7 +50,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-
+#include "Serialization/SerializationBase.h"
 
 //#define NATRON_ROTO_INVERTIBLE
 //#define NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -69,8 +69,11 @@ struct RotoContextPrivate;
 class RotoContext
     : public QObject
     , public boost::enable_shared_from_this<RotoContext>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -197,27 +200,14 @@ private:
 public:
 
 
-    /**
-     * @brief To be called when a change was made to trigger a new render.
-     **/
-    void evaluateChange();
-    void evaluateChange_noIncrement();
-
-    void incrementAge();
-
     void clearViewersLastRenderedStrokes();
 
-    /**
-     *@brief Returns the age of the roto context
-     **/
-    U64 getAge();
 
-    ///Serialization
-    void save(RotoContextSerialization* obj) const;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
-    ///Deserialization
-    void load(const RotoContextSerialization & obj);
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
+    void resetToDefault();
 
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
@@ -329,8 +319,6 @@ public:
     void onItemScriptNameChanged(const RotoItemPtr& item);
     void onItemLabelChanged(const RotoItemPtr& item);
 
-    void onItemKnobChanged();
-
     void declarePythonFields();
 
     void changeItemScriptName(const std::string& oldFullyQualifiedName, const std::string& newFullyQUalifiedName);
@@ -339,6 +327,9 @@ public:
     void removeItemAsPythonField(const RotoItemPtr& item);
 
     bool canConcatenatedRotoPaintTree() const;
+
+    // It is animated if at least one of the item is animated
+    bool isAnimated() const;
 
     /**
      * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
@@ -350,8 +341,6 @@ public:
 
     void getRotoPaintTreeNodes(NodesList* nodes) const;
 
-    NodePtr getRotoPaintBottomMergeNode() const;
-
     void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
 
     /**
@@ -360,7 +349,6 @@ public:
      **/
     RotoLayerPtr findDeepestSelectedLayer() const;
 
-    void dequeueGuiActions();
 
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
 
@@ -412,7 +400,7 @@ public Q_SLOTS:
 private:
 
 
-    NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
+    NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
 
     void selectInternal(const RotoItemPtr& b);
     void deselectInternal(RotoItemPtr b);

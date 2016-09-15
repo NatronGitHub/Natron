@@ -42,6 +42,7 @@
 
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -65,6 +66,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 struct BezierCPPrivate;
 class BezierCP
+: public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     ///This is the unique class allowed to call the setters.
     friend class Bezier;
@@ -80,6 +82,22 @@ public:
 
     virtual ~BezierCP();
 
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
+
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
+    
+
+
     CurvePtr getXCurve() const;
     CurvePtr getYCurve() const;
     CurvePtr getLeftXCurve() const;
@@ -89,27 +107,27 @@ public:
 
     void clone(const BezierCP & other);
 
-    void setPositionAtTime(bool useGuiCurves, double time, double x, double y);
+    void setPositionAtTime(double time, double x, double y);
 
-    void setLeftBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
+    void setLeftBezierPointAtTime(double time, double x, double y);
 
-    void setRightBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
+    void setRightBezierPointAtTime(double time, double x, double y);
 
-    void setStaticPosition(bool useGuiCurves, double x, double y);
+    void setStaticPosition(double x, double y);
 
-    void setLeftBezierStaticPosition(bool useGuiCurves, double x, double y);
+    void setLeftBezierStaticPosition(double x, double y);
 
-    void setRightBezierStaticPosition(bool useGuiCurves, double x, double y);
+    void setRightBezierStaticPosition(double x, double y);
 
-    void removeKeyframe(bool useGuiCurves, double time);
+    void removeKeyframe(double time);
 
-    void removeAnimation(bool useGuiCurves, double currentTime);
-
-    ///returns true if a keyframe was set
-    bool cuspPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    void removeAnimation(double currentTime);
 
     ///returns true if a keyframe was set
-    bool smoothPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    bool cuspPoint(double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+
+    ///returns true if a keyframe was set
+    bool smoothPoint(double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const
@@ -118,6 +136,13 @@ public:
     }
 
     bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
+
+    bool operator==(const BezierCP& other) const;
+
+    bool operator!=(const BezierCP& other) const
+    {
+        return !(*this == other);
+    }
 
     bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
 
