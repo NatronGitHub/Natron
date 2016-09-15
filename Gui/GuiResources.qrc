@@ -372,9 +372,10 @@
         <file>Resources/Images/prevUserKey.png</file>
         <file>Resources/Images/nextUserKey.png</file>
         <file>Resources/Images/motionTypeAffine.png</file>
+        <file>Resources/Images/motionTypePerspective.png</file>
         <file>Resources/Images/motionTypeRT.png</file>
         <file>Resources/Images/motionTypeRTS.png</file>
-        <file>Resources/Images/motionTypeS.png</file>
+        <file>Resources/Images/motionTypeTS.png</file>
         <file>Resources/Images/motionTypeT.png</file>
         <file>Resources/Images/patternSize.png</file>
         <file>Resources/Images/searchSize.png</file>

@@ -72,7 +72,7 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
     (*icons)[1] = NATRON_IMAGES_PATH "motionTypeRT.png";
     models->push_back("Trans.+Scale");
     tooltips->push_back(kTrackerParamMotionModelTransScale);
-    //(*icons)[0] = NATRON_IMAGES_PATH "motionTypeTS.png";
+    (*icons)[2] = NATRON_IMAGES_PATH "motionTypeTS.png";
     models->push_back("Trans.+Rot.+Scale");
     tooltips->push_back(kTrackerParamMotionModelTransRotScale);
     (*icons)[3] = NATRON_IMAGES_PATH "motionTypeRTS.png";
@@ -82,7 +82,7 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
     if (addPerspective) {
         models->push_back("Perspective");
         tooltips->push_back(kTrackerParamMotionModelPerspective);
-        //(*icons)[5] = NATRON_IMAGES_PATH "motionTypePerspective.png";
+        (*icons)[5] = NATRON_IMAGES_PATH "motionTypePerspective.png";
     }
 }
 
