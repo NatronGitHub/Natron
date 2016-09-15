@@ -120,8 +120,7 @@ TEST(ImageKeyTest, Equality) {
     int randomHashKey1 = rand();
     SequenceTime time1 = 0;
     ViewIdx view1(0);
-    double pa1 = 1.;
-    ImageKey key1(0, randomHashKey1, false, time1, view1, pa1, false, false);
+    ImageKey key1(std::string(), randomHashKey1, time1, view1, false);
     U64 keyHash1 = key1.getHash();
 
 
@@ -129,8 +128,7 @@ TEST(ImageKeyTest, Equality) {
     int randomHashKey2 = randomHashKey1;
     SequenceTime time2 = time1;
     ViewIdx view2(view1);
-    double pa2 = pa1;
-    ImageKey key2(0, randomHashKey2, false, time2, view2, pa2, false, false);
+    ImageKey key2(std::string(), randomHashKey2, time2, view2, false);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 }
@@ -141,8 +139,7 @@ TEST(ImageKeyTest, Difference) {
     int randomHashKey1 = rand() % 100;
     SequenceTime time1 = 0;
     ViewIdx view1(0);
-    double pa1 = 1.;
-    ImageKey key1(0, randomHashKey1, false, time1, view1, pa1, false, false);
+    ImageKey key1(std::string(), randomHashKey1, time1, view1, false);
     U64 keyHash1 = key1.getHash();
 
 
@@ -151,8 +148,7 @@ TEST(ImageKeyTest, Difference) {
     int randomHashKey2 = rand() % 1000  + 150;
     SequenceTime time2 = time1;
     ViewIdx view2(view1);
-    double pa2 = pa1;
-    ImageKey key2(0, randomHashKey2, false, time2, view2, pa2, false, false);
+    ImageKey key2(std::string(), randomHashKey2, time2, view2, false);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 != keyHash2);
 }
