@@ -133,19 +133,23 @@ NodeGraph::getFullSceneScreenShot()
 
     int xOffset = ( img.width() - renderImage.width() ) / 2;
     int yOffset = ( img.height() - renderImage.height() ) / 2;
-    int yDest = yOffset;
-    for (int y = 0; y < renderImage.height(); ++y, ++yDest) {
-        if ( yDest >= img.height() ) {
+    int dstY = yOffset;
+    for (int srcY = 0; srcY < renderImage.height(); ++srcY, ++dstY) {
+        if ( dstY < 0 || dstY >= img.height() ) {
             break;
         }
-        QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
-        const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
-        int xDest = xOffset;
-        for (int x = 0; x < renderImage.width(); ++x, ++xDest) {
-            if ( xDest >= img.width() ) {
-                dst_pixels[xDest] = qRgba(0, 0, 0, 0);
+        QRgb* dst_pixels = (QRgb*)img.scanLine(dstY);
+        assert(dst_pixels);
+
+        const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(srcY);
+        assert(src_pixels);
+
+        int dstX = xOffset;
+        for (int srcX = 0; srcX < renderImage.width(); ++srcX, ++dstX) {
+            if ( dstX < 0 || dstX >= img.width() ) {
+                dst_pixels[dstX] = qRgba(0, 0, 0, 0);
             } else {
-                dst_pixels[xDest] = src_pixels[x];
+                dst_pixels[dstX] = src_pixels[srcX];
             }
         }
     }

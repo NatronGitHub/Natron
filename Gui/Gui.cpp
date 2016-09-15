@@ -102,6 +102,8 @@ Gui::Gui(const GuiAppInstancePtr& app,
     QObject::connect (this, SIGNAL(s_showLogOnMainThread()), this, SLOT(onShowLogOnMainThreadReceived()));
 
     setAcceptDrops(true);
+
+    setAttribute(Qt::WA_DeleteOnClose, true);
 }
 
 Gui::~Gui()

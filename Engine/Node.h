@@ -724,7 +724,6 @@ public:
      * @brief Switches the 2 first inputs that are not a mask, if and only if they have compatible components/bitdepths
      **/
     void switchInput0And1();
-    /*============================*/
 
     /**
      * @brief Forwarded to the live effect instance
@@ -759,7 +758,7 @@ public:
      **/
     bool isPyPlug() const;
 
-    /*============================*/
+
     AppInstancePtr getApp() const;
 
     /* @brief Make this node inactive. It will appear
