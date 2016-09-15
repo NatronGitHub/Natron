@@ -639,7 +639,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         std::vector<std::string> choices, helps;
         std::map<int, std::string> icons;
         TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
-        cb->setCurrentIndex( motionModel->getValue() );
+
         QObject::connect( cb, SIGNAL(currentIndexChanged(int)), _publicInterface, SLOT(onItemMotionModelChanged(int)) );
         assert( choices.size() == helps.size() );
         for (std::size_t i = 0; i < choices.size(); ++i) {
@@ -660,6 +660,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
 
             cb->addItem( QString::fromUtf8( choices[i].c_str() ), icon, QKeySequence(), QString::fromUtf8( helps[i].c_str() ) );
         }
+        cb->setCurrentIndex( motionModel->getValue() );
         TableItem* newItem = new TableItem;
         newItem->setToolTip( tooltipFromKnob(motionModel) );
         newItem->setText( QString::fromUtf8( marker.getScriptName_mt_safe().c_str() ) );
