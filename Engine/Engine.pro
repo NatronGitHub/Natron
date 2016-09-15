@@ -132,6 +132,7 @@ SOURCES += \
     NodeSerialization.cpp \
     NodeGroupSerialization.cpp \
     NoOpBase.cpp \
+    Noise.cpp \
     OSGLContext.cpp \
     OSGLContext_mac.cpp \
     OSGLContext_win.cpp \
@@ -157,6 +158,7 @@ SOURCES += \
     PyAppInstance.cpp \
     PyNodeGroup.cpp \
     PyNode.cpp \
+    PyExprUtils.cpp \
     PyParameter.cpp \
     PyRoto.cpp \
     PySideCompat.cpp \
@@ -245,7 +247,8 @@ SOURCES += \
     NatronEngine/floatnodecreationproperty_wrapper.cpp \
     NatronEngine/intnodecreationproperty_wrapper.cpp \
     NatronEngine/nodecreationproperty_wrapper.cpp \
-    NatronEngine/stringnodecreationproperty_wrapper.cpp
+    NatronEngine/stringnodecreationproperty_wrapper.cpp \
+    NatronEngine/exprutils_wrapper.cpp
 
 
 HEADERS += \
@@ -328,6 +331,8 @@ HEADERS += \
     MemoryFile.h \
     MergingEnum.h \
     Node.h \
+    Noise.h \
+    NoiseTables.h \
     NodeGroup.h \
     NodeGroupSerialization.h \
     NodeGraphI.h \
@@ -366,6 +371,7 @@ HEADERS += \
     PyGlobalFunctions.h \
     PyNodeGroup.h \
     PyNode.h \
+    PyExprUtils.h \
     PyParameter.h \
     PyRoto.h \
     PyTracker.h \
@@ -504,7 +510,9 @@ HEADERS += \
     NatronEngine/floatnodecreationproperty_wrapper.h \
     NatronEngine/intnodecreationproperty_wrapper.h \
     NatronEngine/nodecreationproperty_wrapper.h \
-    NatronEngine/stringnodecreationproperty_wrapper.h
+    NatronEngine/stringnodecreationproperty_wrapper.h \
+    NatronEngine/exprutils_wrapper.h
+
 
 
 

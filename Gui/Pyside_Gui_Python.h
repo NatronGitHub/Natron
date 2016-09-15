@@ -38,6 +38,7 @@
 #include <Enums.h>
 
 //Engine
+#include "PyExprUtils.h"
 #include "MergingEnum.h"
 #include "PyGlobalFunctions.h"
 #include "PyNodeGroup.h"

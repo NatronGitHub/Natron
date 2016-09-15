@@ -29,6 +29,7 @@ without importing anything.
 	Double3DTuple
 	DoubleParam
 	Effect
+	ExprUtils
 	FileParam
 	Group
 	GroupParam

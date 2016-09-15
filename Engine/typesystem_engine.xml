@@ -269,7 +269,9 @@
            </inject-code>
        </modify-function>
    </object-type>
-   
+
+   <object-type name="ExprUtils">
+   </object-type>
    <object-type name="RectD">
        <modify-function signature="operator=(RectD)" remove="all"/>
        <modify-function signature="debug()const" remove="all"/>

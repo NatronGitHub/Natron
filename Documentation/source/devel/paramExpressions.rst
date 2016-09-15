@@ -248,6 +248,12 @@ For integers, use the :func:`randomInt(min,max)<>` function instead::
 	#Using the randomInt function with a given seed
 	seed = 5
 	randomInt(seed)
+	
+Advanced expressions:
+----------------------
+
+To write more advanced expressions based on fractal noise or perlin noise you may use
+the functions available in the :ref:`ExprUtils<ExprUtils>` class.
 
 	
 Expressions persistence
