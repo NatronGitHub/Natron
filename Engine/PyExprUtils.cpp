@@ -26,10 +26,12 @@
 #include "PyExprUtils.h"
 
 #include <cmath>
-#include <cstdint>
+#include <boost/cstdint.hpp>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Noise.h"
+
+using boost::uint32_t;
 
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
