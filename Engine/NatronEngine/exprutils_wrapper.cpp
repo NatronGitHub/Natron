@@ -118,7 +118,7 @@ static PyObject* Sbk_ExprUtilsFunc_ccellnoise(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: ccellnoise(Double3DTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // ccellnoise(Double3DTuple)
     }
 
@@ -127,15 +127,33 @@ static PyObject* Sbk_ExprUtilsFunc_ccellnoise(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // ccellnoise(Double3DTuple)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::ccellnoise(*cppArg0));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::ccellnoise(p);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -160,7 +178,7 @@ static PyObject* Sbk_ExprUtilsFunc_cellnoise(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: cellnoise(Double3DTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // cellnoise(Double3DTuple)
     }
 
@@ -169,15 +187,30 @@ static PyObject* Sbk_ExprUtilsFunc_cellnoise(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // cellnoise(Double3DTuple)
-            double cppResult = ::ExprUtils::cellnoise(*cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            double ret = ExprUtils::cellnoise(p);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -218,7 +251,7 @@ static PyObject* Sbk_ExprUtilsFunc_cfbm(PyObject* self, PyObject* args, PyObject
 
     // Overloaded function decisor
     // 0: cfbm(Double3DTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // cfbm(Double3DTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -268,10 +301,6 @@ static PyObject* Sbk_ExprUtilsFunc_cfbm(PyObject* self, PyObject* args, PyObject
                     goto Sbk_ExprUtilsFunc_cfbm_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -281,8 +310,30 @@ static PyObject* Sbk_ExprUtilsFunc_cfbm(PyObject* self, PyObject* args, PyObject
 
         if (!PyErr_Occurred()) {
             // cfbm(Double3DTuple,int,double,double)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::cfbm(*cppArg0, cppArg1, cppArg2, cppArg3));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::cfbm(p, cppArg1, cppArg2, cppArg3);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -323,7 +374,7 @@ static PyObject* Sbk_ExprUtilsFunc_cfbm4(PyObject* self, PyObject* args, PyObjec
 
     // Overloaded function decisor
     // 0: cfbm4(ColorTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // cfbm4(ColorTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -373,10 +424,6 @@ static PyObject* Sbk_ExprUtilsFunc_cfbm4(PyObject* self, PyObject* args, PyObjec
                     goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::ColorTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -386,8 +433,32 @@ static PyObject* Sbk_ExprUtilsFunc_cfbm4(PyObject* self, PyObject* args, PyObjec
 
         if (!PyErr_Occurred()) {
             // cfbm4(ColorTuple,int,double,double)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::cfbm4(*cppArg0, cppArg1, cppArg2, cppArg3));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 4) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            double x4;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 3), &(x4));
+            ColorTuple p = {x1, x2, x3, x4};
+            Double3DTuple ret = ExprUtils::cfbm4(p, cppArg1, cppArg2, cppArg3);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -412,7 +483,7 @@ static PyObject* Sbk_ExprUtilsFunc_cnoise(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: cnoise(Double3DTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // cnoise(Double3DTuple)
     }
 
@@ -421,15 +492,33 @@ static PyObject* Sbk_ExprUtilsFunc_cnoise(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // cnoise(Double3DTuple)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::cnoise(*cppArg0));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::cnoise(p);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -454,7 +543,7 @@ static PyObject* Sbk_ExprUtilsFunc_cnoise4(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: cnoise4(ColorTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // cnoise4(ColorTuple)
     }
 
@@ -463,15 +552,35 @@ static PyObject* Sbk_ExprUtilsFunc_cnoise4(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::ColorTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // cnoise4(ColorTuple)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::cnoise4(*cppArg0));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 4) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            double x4;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 3), &(x4));
+            ColorTuple p = {x1, x2, x3, x4};
+            Double3DTuple ret = ExprUtils::cnoise4(p);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -512,7 +621,7 @@ static PyObject* Sbk_ExprUtilsFunc_cturbulence(PyObject* self, PyObject* args, P
 
     // Overloaded function decisor
     // 0: cturbulence(Double3DTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // cturbulence(Double3DTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -562,10 +671,6 @@ static PyObject* Sbk_ExprUtilsFunc_cturbulence(PyObject* self, PyObject* args, P
                     goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -575,8 +680,30 @@ static PyObject* Sbk_ExprUtilsFunc_cturbulence(PyObject* self, PyObject* args, P
 
         if (!PyErr_Occurred()) {
             // cturbulence(Double3DTuple,int,double,double)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::cturbulence(*cppArg0, cppArg1, cppArg2, cppArg3));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::cturbulence(p, cppArg1, cppArg2, cppArg3);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -617,7 +744,7 @@ static PyObject* Sbk_ExprUtilsFunc_fbm(PyObject* self, PyObject* args, PyObject*
 
     // Overloaded function decisor
     // 0: fbm(Double3DTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // fbm(Double3DTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -667,10 +794,6 @@ static PyObject* Sbk_ExprUtilsFunc_fbm(PyObject* self, PyObject* args, PyObject*
                     goto Sbk_ExprUtilsFunc_fbm_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -680,8 +803,27 @@ static PyObject* Sbk_ExprUtilsFunc_fbm(PyObject* self, PyObject* args, PyObject*
 
         if (!PyErr_Occurred()) {
             // fbm(Double3DTuple,int,double,double)
-            double cppResult = ::ExprUtils::fbm(*cppArg0, cppArg1, cppArg2, cppArg3);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            double ret = ExprUtils::fbm(p, cppArg1, cppArg2, cppArg3);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -722,7 +864,7 @@ static PyObject* Sbk_ExprUtilsFunc_fbm4(PyObject* self, PyObject* args, PyObject
 
     // Overloaded function decisor
     // 0: fbm4(ColorTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // fbm4(ColorTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -772,10 +914,6 @@ static PyObject* Sbk_ExprUtilsFunc_fbm4(PyObject* self, PyObject* args, PyObject
                     goto Sbk_ExprUtilsFunc_fbm4_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::ColorTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -785,8 +923,29 @@ static PyObject* Sbk_ExprUtilsFunc_fbm4(PyObject* self, PyObject* args, PyObject
 
         if (!PyErr_Occurred()) {
             // fbm4(ColorTuple,int,double,double)
-            double cppResult = ::ExprUtils::fbm4(*cppArg0, cppArg1, cppArg2, cppArg3);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 4) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            double x4;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 3), &(x4));
+            ColorTuple p = {x1, x2, x3, x4};
+            double ret = ExprUtils::fbm4(p, cppArg1, cppArg2, cppArg3);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1018,18 +1177,12 @@ static PyObject* Sbk_ExprUtilsFunc_noise(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: noise(ColorTuple)
-    // 1: noise(Double2DTuple)
-    // 2: noise(Double3DTuple)
-    // 3: noise(double)
+    // 0: noise(Double2DTuple)
+    // 1: noise(double)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
-        overloadId = 3; // noise(double)
-    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArg)))) {
-        overloadId = 2; // noise(Double3DTuple)
-    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], (pyArg)))) {
-        overloadId = 1; // noise(Double2DTuple)
-    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArg)))) {
-        overloadId = 0; // noise(ColorTuple)
+        overloadId = 1; // noise(double)
+    } else if (true) {
+        overloadId = 0; // noise(Double2DTuple)
     }
 
     // Function signature not found.
@@ -1037,49 +1190,55 @@ static PyObject* Sbk_ExprUtilsFunc_noise(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // noise(const ColorTuple & p)
+        case 0: // noise(const Double2DTuple & p)
         {
-            if (!Shiboken::Object::isValid(pyArg))
-                return 0;
-            ::ColorTuple* cppArg0;
-            pythonToCpp(pyArg, &cppArg0);
-
-            if (!PyErr_Occurred()) {
-                // noise(ColorTuple)
-                double cppResult = ::ExprUtils::noise(*cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-            }
-            break;
-        }
-        case 1: // noise(const Double2DTuple & p)
-        {
-            if (!Shiboken::Object::isValid(pyArg))
-                return 0;
-            ::Double2DTuple* cppArg0;
-            pythonToCpp(pyArg, &cppArg0);
 
             if (!PyErr_Occurred()) {
                 // noise(Double2DTuple)
-                double cppResult = ::ExprUtils::noise(*cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-            }
-            break;
-        }
-        case 2: // noise(const Double3DTuple & p)
-        {
-            if (!Shiboken::Object::isValid(pyArg))
-                return 0;
-            ::Double3DTuple* cppArg0;
-            pythonToCpp(pyArg, &cppArg0);
+                // Begin code injection
 
-            if (!PyErr_Occurred()) {
-                // noise(Double3DTuple)
-                double cppResult = ::ExprUtils::noise(*cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+                int tupleSize = PyTuple_GET_SIZE(pyArg);
+                if (tupleSize != 4 && tupleSize != 3  && tupleSize != 2) {
+                 PyErr_SetString(PyExc_TypeError, "the tuple must have 2, 3 or 4 items.");
+                 return 0;
+                }
+
+                double ret = 0.;
+                double x1;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+                if (tupleSize == 2) {
+                 double x2;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+                 Double2DTuple p = {x1, x2};
+                 ret = ExprUtils::noise(p);
+                } else if (tupleSize == 3) {
+                 double x2;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+                 double x3;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+                 Double3DTuple p = {x1, x2, x3};
+                 ret = ExprUtils::noise(p);
+                } else if (tupleSize == 4) {
+                 double x2;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+                 double x3;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+                 double x4;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 3), &(x4));
+                 ColorTuple p = {x1, x2, x3, x4};
+                 ret = ExprUtils::noise(p);
+                }
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+
+                return pyResult;
+
+                // End of code injection
+
+
             }
             break;
         }
-        case 3: // noise(double x)
+        case 1: // noise(double x)
         {
             double cppArg0;
             pythonToCpp(pyArg, &cppArg0);
@@ -1100,7 +1259,7 @@ static PyObject* Sbk_ExprUtilsFunc_noise(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_noise_TypeError:
-        const char* overloads[] = {"NatronEngine.ColorTuple", "NatronEngine.Double2DTuple", "NatronEngine.Double3DTuple", "float", 0};
+        const char* overloads[] = {"NatronEngine.Double2DTuple", "float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.noise", overloads);
         return 0;
 }
@@ -1123,9 +1282,7 @@ static PyObject* Sbk_ExprUtilsFunc_pnoise(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: pnoise(Double3DTuple,Double3DTuple)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[1])))) {
+    if (numArgs == 2) {
         overloadId = 0; // pnoise(Double3DTuple,Double3DTuple)
     }
 
@@ -1134,19 +1291,42 @@ static PyObject* Sbk_ExprUtilsFunc_pnoise(PyObject* self, PyObject* args)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        if (!Shiboken::Object::isValid(pyArgs[1]))
-            return 0;
-        ::Double3DTuple* cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
             // pnoise(Double3DTuple,Double3DTuple)
-            double cppResult = ::ExprUtils::pnoise(*cppArg0, *cppArg1);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            tupleSize = PyTuple_GET_SIZE(pyArgs[2-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            double p1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[2-1], 0), &(p1));
+            double p2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[2-1], 1), &(p2));
+            double p3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[2-1], 2), &(p3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple period = {p1, p2, p3};
+            double ret = ExprUtils::pnoise(p, period);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1294,7 +1474,7 @@ static PyObject* Sbk_ExprUtilsFunc_snoise(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: snoise(Double3DTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // snoise(Double3DTuple)
     }
 
@@ -1303,15 +1483,30 @@ static PyObject* Sbk_ExprUtilsFunc_snoise(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // snoise(Double3DTuple)
-            double cppResult = cppSelf->snoise(*cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            double ret = cppSelf->snoise(p);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1336,7 +1531,7 @@ static PyObject* Sbk_ExprUtilsFunc_snoise4(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: snoise4(ColorTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // snoise4(ColorTuple)
     }
 
@@ -1345,15 +1540,32 @@ static PyObject* Sbk_ExprUtilsFunc_snoise4(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::ColorTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // snoise4(ColorTuple)
-            double cppResult = ::ExprUtils::snoise4(*cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 4) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            double x4;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 3), &(x4));
+            ColorTuple p = {x1, x2, x3, x4};
+            double ret = ExprUtils::snoise4(p);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1394,7 +1606,7 @@ static PyObject* Sbk_ExprUtilsFunc_turbulence(PyObject* self, PyObject* args, Py
 
     // Overloaded function decisor
     // 0: turbulence(Double3DTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // turbulence(Double3DTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -1444,10 +1656,6 @@ static PyObject* Sbk_ExprUtilsFunc_turbulence(PyObject* self, PyObject* args, Py
                     goto Sbk_ExprUtilsFunc_turbulence_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -1457,8 +1665,27 @@ static PyObject* Sbk_ExprUtilsFunc_turbulence(PyObject* self, PyObject* args, Py
 
         if (!PyErr_Occurred()) {
             // turbulence(Double3DTuple,int,double,double)
-            double cppResult = ::ExprUtils::turbulence(*cppArg0, cppArg1, cppArg2, cppArg3);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            double ret = ExprUtils::turbulence(p, cppArg1, cppArg2, cppArg3);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret);
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1499,7 +1726,7 @@ static PyObject* Sbk_ExprUtilsFunc_vfbm(PyObject* self, PyObject* args, PyObject
 
     // Overloaded function decisor
     // 0: vfbm(Double3DTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // vfbm(Double3DTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -1549,10 +1776,6 @@ static PyObject* Sbk_ExprUtilsFunc_vfbm(PyObject* self, PyObject* args, PyObject
                     goto Sbk_ExprUtilsFunc_vfbm_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -1562,8 +1785,30 @@ static PyObject* Sbk_ExprUtilsFunc_vfbm(PyObject* self, PyObject* args, PyObject
 
         if (!PyErr_Occurred()) {
             // vfbm(Double3DTuple,int,double,double)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::vfbm(*cppArg0, cppArg1, cppArg2, cppArg3));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::vfbm(p, cppArg1, cppArg2, cppArg3);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1604,7 +1849,7 @@ static PyObject* Sbk_ExprUtilsFunc_vfbm4(PyObject* self, PyObject* args, PyObjec
 
     // Overloaded function decisor
     // 0: vfbm4(ColorTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // vfbm4(ColorTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -1654,10 +1899,6 @@ static PyObject* Sbk_ExprUtilsFunc_vfbm4(PyObject* self, PyObject* args, PyObjec
                     goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::ColorTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -1667,8 +1908,32 @@ static PyObject* Sbk_ExprUtilsFunc_vfbm4(PyObject* self, PyObject* args, PyObjec
 
         if (!PyErr_Occurred()) {
             // vfbm4(ColorTuple,int,double,double)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::vfbm4(*cppArg0, cppArg1, cppArg2, cppArg3));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 4) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            double x4;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 3), &(x4));
+            ColorTuple p = {x1, x2, x3, x4};
+            Double3DTuple ret = ExprUtils::vfbm4(p, cppArg1, cppArg2, cppArg3);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1693,7 +1958,7 @@ static PyObject* Sbk_ExprUtilsFunc_vnoise(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: vnoise(Double3DTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // vnoise(Double3DTuple)
     }
 
@@ -1702,15 +1967,33 @@ static PyObject* Sbk_ExprUtilsFunc_vnoise(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // vnoise(Double3DTuple)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::vnoise(*cppArg0));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::vnoise(p);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1735,7 +2018,7 @@ static PyObject* Sbk_ExprUtilsFunc_vnoise4(PyObject* self, PyObject* pyArg)
 
     // Overloaded function decisor
     // 0: vnoise4(ColorTuple)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], (pyArg)))) {
+    if (true) {
         overloadId = 0; // vnoise4(ColorTuple)
     }
 
@@ -1744,15 +2027,35 @@ static PyObject* Sbk_ExprUtilsFunc_vnoise4(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
-            return 0;
-        ::ColorTuple* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // vnoise4(ColorTuple)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::vnoise4(*cppArg0));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArg);
+            if (tupleSize != 4) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 2), &(x3));
+            double x4;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArg, 3), &(x4));
+            ColorTuple p = {x1, x2, x3, x4};
+            Double3DTuple ret = ExprUtils::vnoise4(p);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -1793,7 +2096,7 @@ static PyObject* Sbk_ExprUtilsFunc_vturbulence(PyObject* self, PyObject* args, P
 
     // Overloaded function decisor
     // 0: vturbulence(Double3DTuple,int,double,double)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], (pyArgs[0])))) {
+    if (true) {
         if (numArgs == 1) {
             overloadId = 0; // vturbulence(Double3DTuple,int,double,double)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -1843,10 +2146,6 @@ static PyObject* Sbk_ExprUtilsFunc_vturbulence(PyObject* self, PyObject* args, P
                     goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
             }
         }
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::Double3DTuple* cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 6;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2 = 2.;
@@ -1856,8 +2155,30 @@ static PyObject* Sbk_ExprUtilsFunc_vturbulence(PyObject* self, PyObject* args, P
 
         if (!PyErr_Occurred()) {
             // vturbulence(Double3DTuple,int,double,double)
-            Double3DTuple* cppResult = new Double3DTuple(::ExprUtils::vturbulence(*cppArg0, cppArg1, cppArg2, cppArg3));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
+            // Begin code injection
+
+            int tupleSize = PyTuple_GET_SIZE(pyArgs[1-1]);
+            if (tupleSize != 3) {
+            PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+            return 0;
+            }
+            double x1;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 0), &(x1));
+            double x2;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 1), &(x2));
+            double x3;
+                Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<double>(), PyTuple_GET_ITEM(pyArgs[1-1], 2), &(x3));
+            Double3DTuple p = {x1, x2, x3};
+            Double3DTuple ret = ExprUtils::vturbulence(p, cppArg1, cppArg2, cppArg3);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.x));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.y));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &ret.z));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
