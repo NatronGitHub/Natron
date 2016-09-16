@@ -61,9 +61,11 @@
 			isa = PBXAggregateTarget;
 			buildConfigurationList = AC4AA6341C480E7F00C92E12 /* Build configuration list for PBXAggregateTarget "Natron" */;
 			buildPhases = (
+				1E11781C1D8BD83E00024C91 /* CopyFiles */,
 			);
 			dependencies = (
 				AC4AA6381C480E8700C92E12 /* PBXTargetDependency */,
+				1E1178141D8BD50E00024C91 /* PBXTargetDependency */,
 				1E306E051C4949D700BAC6E3 /* PBXTargetDependency */,
 			);
 			name = Natron;
@@ -71,7 +73,25 @@
 		};
 /* End PBXAggregateTarget section */
 
+/* Begin PBXBuildFile section */
+		1E11781D1D8BD87100024C91 /* NatronProjectConverter in CopyFiles */ = {isa = PBXBuildFile; fileRef = AC07FAE21D6F65D100A5A9D8 /* NatronProjectConverter */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		1E1178131D8BD50E00024C91 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 923D21C3763E39C9804AEAFB;
+			remoteInfo = NatronProjectConverter;
+		};
+		1E1178161D8BD50E00024C91 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1E1178031D8BD49C00024C91;
+			remoteInfo = "libyaml-cpp-natron";
+		};
 		1E12F4BA1CC6593300105A34 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
@@ -254,13 +274,6 @@
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
 		};
-		1EDADF301D8B0C4D00D47689 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1EDADF2D1D8B0C4D00D47689;
-			remoteInfo = "yaml-cpp-natron";
-		};
 		1EDADF321D8B0C6500D47689 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
@@ -339,6 +352,19 @@
 			remoteInfo = HostSupport;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1E11781C1D8BD83E00024C91 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(SOURCE_ROOT)/App/build/$(CONFIGURATION)/Natron.app/Contents/MacOS";
+			dstSubfolderSpec = 0;
+			files = (
+				1E11781D1D8BD87100024C91 /* NatronProjectConverter in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = qhttpserver.xcodeproj; path = libs/qhttpserver/src/qhttpserver.xcodeproj; sourceTree = "<group>"; };
@@ -607,7 +633,7 @@
 		1EDADF2B1D8B0C4D00D47689 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1EDADF311D8B0C4D00D47689 /* libyaml-cpp-natron.a */,
+				1E1178171D8BD50E00024C91 /* libyaml-cpp-natron.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -820,6 +846,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		1E1178171D8BD50E00024C91 /* libyaml-cpp-natron.dylib */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.dylib";
+			path = "libyaml-cpp-natron.dylib";
+			remoteRef = 1E1178161D8BD50E00024C91 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		1E12F4BB1CC6593300105A34 /* libqhttpserver.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -897,13 +930,6 @@
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1EDADF311D8B0C4D00D47689 /* libyaml-cpp-natron.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = "libyaml-cpp-natron.a";
-			remoteRef = 1EDADF301D8B0C4D00D47689 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		AC07FADA1D6F65BE00A5A9D8 /* libSerialization.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -959,6 +985,11 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1E1178141D8BD50E00024C91 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NatronProjectConverter;
+			targetProxy = 1E1178131D8BD50E00024C91 /* PBXContainerItemProxy */;
+		};
 		1E12F4BD1CC6594E00105A34 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = qhttpserver;

@@ -26,6 +26,7 @@
 #include "Serialization/NodeGuiSerialization.h"
 #include "Serialization/NodeBackdropSerialization.h"
 #include "Serialization/WorkspaceSerialization.h"
+#include "Serialization/SerializationCompat.h"
 #include "Serialization/SerializationFwd.h"
 
 
