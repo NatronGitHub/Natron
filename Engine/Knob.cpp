@@ -6251,6 +6251,9 @@ KnobHolder::endChanges(bool discardRendering)
     // Call instanceChanged on each knob
     bool ret = false;
     for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
+
+        it->knob->computeHasModifications();
+
         if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
             if ( !it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread() ) {
                 Q_EMIT doValueChangeOnMainThread(it->knob, it->originalReason, it->time, it->view, it->originatedFromMainThread);
@@ -6259,7 +6262,6 @@ KnobHolder::endChanges(bool discardRendering)
             }
         }
 
-        it->knob->computeHasModifications();
 
         int dimension = -1;
         if (it->dimensionChanged.size() == 1) {

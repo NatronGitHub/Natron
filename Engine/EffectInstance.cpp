@@ -5623,7 +5623,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
     }
     // default to a reasonable value if there is no input
-    if (!premultSet) {
+    if (!premultSet || !inputParSet) {
         premult = eImagePremultiplicationOpaque;
     }
     // set output premultiplication
@@ -5730,6 +5730,9 @@ EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
         node->refreshChannelSelectors();
     }
 
+    node->checkForPremultWarningAndCheckboxes();
+    node->refreshLayersSelectorsVisibility();
+
     markedNodes.push_back( node.get() );
 
     NodesList outputs;
@@ -5796,12 +5799,7 @@ EffectInstance::refreshMetaDatas_internal()
         }
     }
     onMetaDatasRefreshed(metadata);
-    if (ret) {
-        NodePtr node = getNode();
-        node->checkForPremultWarningAndCheckboxes();
-        node->refreshEnabledKnobsLabel(getComponents(-1));
-    }
-
+  
     return ret;
 }
 
@@ -5873,7 +5871,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             if (isRGB) {
                 md.setOutputPremult(eImagePremultiplicationOpaque);
             } else if (isAlpha) {
-                md.setOutputPremult(eImagePremultiplicationPremultiplied);
+                md.setOutputPremult(eImagePremultiplicationUnPremultiplied);
             }
         }
     }
