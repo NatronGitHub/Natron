@@ -4,7 +4,7 @@
 
 TEMPLATE = lib
 TARGET = yaml-cpp-natron
-CONFIG+= staticlib
+CONFIG+= staticlibn yaml-cpp-flags
 CONFIG-= qt
 
 
@@ -13,8 +13,6 @@ include(../../libs.pri)
 include(../../config.pri)
 
 DEFINES += YAML_CPP_NO_CONTRIB
-
-CONFIG += yaml-cpp-flags
 
 #DEFINES += LABEL_SUFFIX="static"
 
