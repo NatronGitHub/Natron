@@ -22,7 +22,9 @@
 #include <smmintrin.h>
 #endif
 #include <cmath>
-#include <cstdint>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/cstdint.hpp>
+#endif
 #include "Global/Macros.h"
 
 namespace {
