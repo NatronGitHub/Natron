@@ -24,6 +24,7 @@
 #include <cmath>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/cstdint.hpp>
+#include <boost/math/special_functions/round.hpp>
 #endif
 #include "Global/Macros.h"
 
@@ -45,7 +46,7 @@ inline double roundSSE(double val) {
 #ifdef  SEEXPR_USE_SSE
     return _mm_cvtsd_f64(_mm_round_sd(_mm_set_sd(0.0), _mm_set_sd(val), _MM_FROUND_TO_NEAREST_INT));
 #else
-    return std::round(val);
+    return boost::math::round(val);
 #endif
 }
 
