@@ -453,11 +453,11 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
         throw std::invalid_argument(message.toStdString());
     }
 
-    bool isProjectFile = filename.endsWith(QLatin1String(".ntp"));
+    bool isProjectFile = filename.endsWith(QLatin1String(".ntp")) || filename.endsWith(QLatin1String(".ntp.autosave"));
     bool isWorkspaceFile = filename.endsWith(QLatin1String(".nl"));
 
     if (!isProjectFile && !isWorkspaceFile) {
-        QString message = QString::fromUtf8("%1 does not appear to be a .ntp or .nl file.");
+        QString message = QString::fromUtf8("%1 does not appear to be a .ntp or .nl file.").arg(filename);
         throw std::invalid_argument(message.toStdString());
     }
 
