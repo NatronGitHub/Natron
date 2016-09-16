@@ -35,6 +35,8 @@
 #include <string>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
@@ -53,6 +55,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 //ofx
 #include <ofxParametricParam.h>

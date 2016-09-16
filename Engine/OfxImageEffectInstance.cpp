@@ -33,8 +33,12 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
