@@ -24,10 +24,12 @@
 #include <smmintrin.h>
 #endif
 #include <cmath>
-#include <cstdint>
 
 #ifndef  SEEXPR_USE_SSE
 #include <boost/math/special_functions/round.hpp> // std::round appeared in C++11
+#endif
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/cstdint.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -36,7 +38,7 @@ namespace {
 #include "NoiseTables.h"
 }
 
-using std::uint32_t;
+using boost::uint32_t;
 
 NATRON_NAMESPACE_ENTER
 
