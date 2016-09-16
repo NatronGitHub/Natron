@@ -26,8 +26,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
 #include <QtCore/QDateTime>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
