@@ -4,7 +4,7 @@
 
 TEMPLATE = lib
 TARGET = tess
-CONFIG+= staticlib
+CONFIG+= staticlib libtess-flags
 CONFIG-= qt
 
 
