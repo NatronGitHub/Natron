@@ -235,6 +235,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged()), this, SLOT(refreshNodeText()) );
     QObject::connect( internalNode.get(), SIGNAL(nodePresetsChanged()), this, SLOT(refreshNodeText()) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(enabledChannelCheckboxChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(rightClickMenuKnobPopulated()), this, SLOT(onRightClickMenuKnobPopulated()) );
@@ -2787,24 +2788,80 @@ NodeGui::getOutputArrow() const
 void
 NodeGui::onOutputLayerChanged()
 {
-    QString extraLayerStr;
-    std::string selectedLayer;
-    bool foundLayer = getNode()->getSelectedLayerChoiceRaw(-1, selectedLayer);
-
-    if (!foundLayer) {
+    NodePtr internalNode = getNode();
+    if (!internalNode) {
         return;
     }
 
-    bool isCurLayerColorComp = selectedLayer == kNatronAlphaPlaneUserName || selectedLayer == kNatronRGBPlaneUserName || selectedLayer == kNatronRGBAPlaneUserName;
-
-    if ( !isCurLayerColorComp &&
-         ( selectedLayer != "None") &&
-         ( selectedLayer != "All") ) {
-        extraLayerStr.append( QString::fromUtf8("<br>") );
-        extraLayerStr.push_back( QLatin1Char('(') );
-        extraLayerStr.append( QString::fromUtf8( selectedLayer.c_str() ) );
-        extraLayerStr.push_back( QLatin1Char(')') );
+    QString extraLayerStr;
+    KnobBoolPtr processAllKnob = internalNode->getProcessAllLayersKnob();
+    bool processAll = false;
+    if (processAllKnob && processAllKnob->hasModifications()) {
+        processAll = processAllKnob->getValue();
+        if (processAll) {
+            //extraLayerStr.append( QString::fromUtf8("<br>") );
+            extraLayerStr += tr("(All)");
+        }
     }
+    KnobChoicePtr layerKnob = internalNode->getLayerChoiceKnob(-1);
+    ImageComponents outputLayer;
+    {
+        bool isAll;
+        internalNode->getSelectedLayer(-1, 0, &isAll, &outputLayer);
+    }
+    if (!processAll && outputLayer.getNumComponents() > 0) {
+        if (!outputLayer.isColorPlane()) {
+            if (!extraLayerStr.isEmpty()) {
+                extraLayerStr.append( QString::fromUtf8("<br>") );
+            }
+            extraLayerStr.push_back( QLatin1Char('(') );
+            extraLayerStr.append( QString::fromUtf8( outputLayer.getLayerName().c_str() ) );
+            extraLayerStr.push_back( QLatin1Char(')') );
+        }
+    }
+
+    // Enable to display RGBA checkbox state on the node. Currently not working good enough because e.g a blur by default is RGB and not A
+    // but the plug-in automatically sets the A checked which displays it... needs some fine tuning
+#if 0
+    KnobBoolPtr enabledKnob[4];
+    bool hasChannelChanged = false;
+    for (int i = 0; i < 4; ++i) {
+        enabledKnob[i] = internalNode->getProcessChannelKnob(i);
+        if (!enabledKnob[i]) {
+            break;
+        }
+        hasChannelChanged |= enabledKnob[i]->hasModifications();
+    }
+
+    if (hasChannelChanged && outputLayer.getNumComponents() > 0) {
+        if (!extraLayerStr.isEmpty()) {
+            extraLayerStr.append( QString::fromUtf8("<br>") );
+        }
+        extraLayerStr.push_back( QLatin1Char('(') );
+
+        const std::vector<std::string>& channelNames = outputLayer.getComponentsNames();
+        for (int i = 0; i < 4; ++i) {
+            if (enabledKnob[i]->getIsSecret()) {
+                continue;
+            }
+
+            assert(i < (int)channelNames.size());
+            if (i >= (int)channelNames.size()) {
+                continue;
+            }
+            bool enabled = enabledKnob[i]->getValue();
+            if (enabled) {
+                extraLayerStr.append( QString::fromUtf8( channelNames[i].c_str() ) );
+            }
+
+        }
+        extraLayerStr.push_back( QLatin1Char(')') );
+
+    }
+#endif
+
+
+
     if (extraLayerStr == _channelsExtraLabel) {
         return;
     }

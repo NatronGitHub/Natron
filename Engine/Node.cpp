@@ -9056,6 +9056,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             if (enabled == what) {
                 checkForPremultWarningAndCheckboxes();
                 ret = true;
+                Q_EMIT enabledChannelCheckboxChanged();
                 break;
             }
         }
@@ -9110,19 +9111,15 @@ Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
     
 }
 
-bool
-Node::getSelectedLayerChoiceRaw(int inputNb,
-                                std::string& layer) const
+KnobChoicePtr
+Node::getLayerChoiceKnob(int inputNb) const
 {
     std::map<int, ChannelSelector>::iterator found = _imp->channelsSelectors.find(inputNb);
 
     if ( found == _imp->channelsSelectors.end() ) {
-        return false;
+        return KnobChoicePtr();
     }
-    KnobChoicePtr layerKnob = found->second.layer.lock();
-    layer = layerKnob->getActiveEntryText_mt_safe();
-
-    return true;
+    return found->second.layer.lock();
 }
 
 ImageComponents
@@ -9137,7 +9134,9 @@ Node::Implementation::getSelectedLayerInternal(int inputNb, const ChannelSelecto
     }
 
     KnobChoicePtr layerKnob = selector.layer.lock();
-    assert(layerKnob);
+    if (!layerKnob) {
+        return ImageComponents();
+    }
     std::string layer = layerKnob->getActiveEntryText_mt_safe();
 
     
@@ -9371,6 +9370,13 @@ Node::getProcessChannel(int channelIndex) const
     return true;
 }
 
+KnobBoolPtr
+Node::getProcessChannelKnob(int channelIndex) const
+{
+    assert(channelIndex >= 0 && channelIndex < 4);
+    return _imp->enabledChan[channelIndex].lock();
+}
+
 bool
 Node::getSelectedLayer(int inputNb,
                        std::bitset<4> *processChannels,
@@ -9387,10 +9393,12 @@ Node::getSelectedLayer(int inputNb,
     if (chanIndex != -1) {
         *isAll = false;
         Q_UNUSED(chanIndex);
-        (*processChannels)[0] = true;
-        (*processChannels)[1] = true;
-        (*processChannels)[2] = true;
-        (*processChannels)[3] = true;
+        if (processChannels) {
+            (*processChannels)[0] = true;
+            (*processChannels)[1] = true;
+            (*processChannels)[2] = true;
+            (*processChannels)[3] = true;
+        }
 
         return true;
     } else {
@@ -9413,18 +9421,19 @@ Node::getSelectedLayer(int inputNb,
         *layer = _imp->getSelectedLayerInternal(inputNb, foundSelector->second);
     }
 
-    if ( _imp->enabledChan[0].lock() ) {
-        (*processChannels)[0] = _imp->enabledChan[0].lock()->getValue();
-        (*processChannels)[1] = _imp->enabledChan[1].lock()->getValue();
-        (*processChannels)[2] = _imp->enabledChan[2].lock()->getValue();
-        (*processChannels)[3] = _imp->enabledChan[3].lock()->getValue();
-    } else {
-        (*processChannels)[0] = true;
-        (*processChannels)[1] = true;
-        (*processChannels)[2] = true;
-        (*processChannels)[3] = true;
+    if (processChannels) {
+        if ( _imp->enabledChan[0].lock() ) {
+            (*processChannels)[0] = _imp->enabledChan[0].lock()->getValue();
+            (*processChannels)[1] = _imp->enabledChan[1].lock()->getValue();
+            (*processChannels)[2] = _imp->enabledChan[2].lock()->getValue();
+            (*processChannels)[3] = _imp->enabledChan[3].lock()->getValue();
+        } else {
+            (*processChannels)[0] = true;
+            (*processChannels)[1] = true;
+            (*processChannels)[2] = true;
+            (*processChannels)[3] = true;
+        }
     }
-
     return hasChannelSelector;
 }
 
@@ -11269,6 +11278,12 @@ Node::getChannelSelectorKnob(int inputNb) const
     }
 
     return found->second.layer.lock();
+}
+
+KnobBoolPtr
+Node::getProcessAllLayersKnob() const
+{
+    return _imp->processAllLayersKnob.lock();
 }
 
 void

@@ -1312,7 +1312,11 @@ public:
 
     bool getProcessChannel(int channelIndex) const;
 
+    KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
+
     KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
+
+    KnobBoolPtr getProcessAllLayersKnob() const;
 
     bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, ImageComponents *layer) const;
 
@@ -1341,7 +1345,7 @@ public:
 
     void markAllInputRelatedDataDirty();
 
-    bool getSelectedLayerChoiceRaw(int inputNb, std::string& layer) const;
+    KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
 
     const std::vector<std::string>& getCreatedViews() const;
 
@@ -1532,6 +1536,7 @@ Q_SIGNALS:
 
     void mustDequeueActions();
 
+    void enabledChannelCheckboxChanged();
 
 private:
 
