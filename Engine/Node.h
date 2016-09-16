@@ -1308,6 +1308,8 @@ public:
     //Returns true if changed
     bool refreshChannelSelectors();
 
+    void refreshLayersSelectorsVisibility();
+
     bool getProcessChannel(int channelIndex) const;
 
     KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
@@ -1378,7 +1380,7 @@ public:
     void clearStreamWarning(StreamWarningEnum warning);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
-    void refreshEnabledKnobsLabel(const ImageComponents& layer);
+    void refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps);
 
 private:
 
@@ -1393,8 +1395,6 @@ private:
     void refreshAllInputRelatedData(bool canChangeValues);
 
     bool refreshMaskEnabledNess(int inpubNb);
-
-    bool refreshLayersChoiceSecretness(int inpubNb);
 
     void markInputRelatedDataDirtyRecursive();
 
