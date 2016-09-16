@@ -22,7 +22,7 @@
 #include <smmintrin.h>
 #endif
 #include <cmath>
-
+#include <cstdint>
 #include "Global/Macros.h"
 
 namespace {
