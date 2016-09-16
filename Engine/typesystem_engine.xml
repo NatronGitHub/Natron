@@ -266,6 +266,470 @@
    </object-type>
 
    <object-type name="ExprUtils">
+       <modify-function signature="noise(Double2DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4 &amp;&amp; tupleSize != 3  &amp;&amp; tupleSize != 2) {
+                PyErr_SetString(PyExc_TypeError, "the tuple must have 2, 3 or 4 items.");
+                return 0;
+               }
+
+               double ret = 0.;
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               if (tupleSize == 2) {
+                double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+                Double2DTuple p = {x1, x2};
+                ret = %CPPSELF.%FUNCTION_NAME(p);
+               } else if (tupleSize == 3) {
+                double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+                double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+                Double3DTuple p = {x1, x2, x3};
+                ret = %CPPSELF.%FUNCTION_NAME(p);
+               } else if (tupleSize == 4) {
+                double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+                double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+                double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+                ColorTuple p = {x1, x2, x3, x4};
+                ret = %CPPSELF.%FUNCTION_NAME(p);
+               }
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+
+               return %PYARG_0;
+           </inject-code>
+
+       </modify-function>
+       <modify-function signature="noise(Double3DTuple)" remove="all"/>
+       <modify-function signature="noise(ColorTuple)" remove="all"/>
+       <modify-function signature="snoise(Double3DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               double ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="vnoise(Double3DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="cnoise(Double3DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="snoise4(ColorTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+               ColorTuple p = {x1, x2, x3, x4};
+               double ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="vnoise4(ColorTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+               ColorTuple p = {x1, x2, x3, x4};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="cnoise4(ColorTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+               ColorTuple p = {x1, x2, x3, x4};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="turbulence(Double3DTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               double ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="vturbulence(Double3DTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="cturbulence(Double3DTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="fbm(Double3DTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               double ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="vfbm(Double3DTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="fbm4(ColorTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+               ColorTuple p = {x1, x2, x3, x4};
+               double ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="vfbm4(ColorTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+               ColorTuple p = {x1, x2, x3, x4};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="cfbm(Double3DTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="cfbm4(ColorTuple,int,double,double)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 4) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
+               ColorTuple p = {x1, x2, x3, x4};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="cellnoise(Double3DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               double ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="ccellnoise(Double3DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
+               %PYARG_0 = PyTuple_New(3);
+               PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
+               PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](ret.y));
+               PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](ret.z));
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="pnoise(Double3DTuple,Double3DTuple)">
+           <modify-argument index="1">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <modify-argument index="2">
+               <replace-type modified-type="PyObject"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               tupleSize = PyTuple_GET_SIZE(%PYARG_2);
+               if (tupleSize != 3) {
+               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
+               return 0;
+               }
+               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
+               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
+               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
+               double p1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_2, 0));
+               double p2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_2, 1));
+               double p3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_2, 2));
+               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple period = {p1, p2, p3};
+               double ret = %CPPSELF.%FUNCTION_NAME(p, period);
+               %PYARG_0 = %CONVERTTOPYTHON[double](ret);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+
    </object-type>
    <object-type name="RectD">
        <modify-function signature="operator=(RectD)" remove="all"/>
