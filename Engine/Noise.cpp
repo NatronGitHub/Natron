@@ -17,11 +17,15 @@
 
 //#define SEEXPR_USE_SSE
 
+#include "Noise.h"
+
 #include <iostream>
 #ifdef SEEXPR_USE_SSE
 #include <smmintrin.h>
 #endif
 #include <cmath>
+#include <cstdint>
+
 #ifndef  SEEXPR_USE_SSE
 #include <boost/math/special_functions/round.hpp> // std::round appeared in C++11
 #endif
@@ -31,7 +35,9 @@
 namespace {
 #include "NoiseTables.h"
 }
-#include "Noise.h"
+
+using std::uint32_t;
+
 NATRON_NAMESPACE_ENTER
 
 inline double floorSSE(double val) {
