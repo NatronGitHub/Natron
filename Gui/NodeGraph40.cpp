@@ -228,7 +228,7 @@ NodeGraph::pasteClipboard(const QPointF& pos)
 {
     QPointF position;
     if (pos.x() == INT_MIN || pos.y() == INT_MIN) {
-        position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+        position =  mapToScene( mapFromGlobal( QCursor::pos() ) );
     } else {
         position = pos;
     }

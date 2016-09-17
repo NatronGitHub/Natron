@@ -969,15 +969,10 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 } // ViewerInstance::getViewerRoIAndTexture
 
 
-static U64 makeViewerCacheHash(double time, ViewIdx view, const ViewerInstance* viewer)
+static U64 makeViewerCacheHash(double time, ViewIdx view, U64 viewerInputHash, const ViewerInstance* viewer)
 {
     Hash64 hash;
-    U64 viewerProcessHash;
-    bool gotIt = viewer->getRenderHash(time, view, &viewerProcessHash);
-    if (!gotIt) {
-        return 0;
-    }
-    hash.append(viewerProcessHash);
+    hash.append(viewerInputHash);
 
     // Also append the viewer group node hash because it has all knobs settings on it
     ViewerNodePtr group = viewer->getViewerNodeGroup();
@@ -1008,7 +1003,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     // Get the hash to see if we can lookup the cache. We may not have a valid hash computed yet in which case its value is 0
     bool gotInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->activeInputHash);
     (void)gotInputHash;
-    outArgs->params->frameViewHash = makeViewerCacheHash(outArgs->params->time, outArgs->params->view, this);
+    outArgs->params->frameViewHash = makeViewerCacheHash(outArgs->params->time, outArgs->params->view, outArgs->activeInputHash, this);
 
 
     // When in draft mode first try to get a texture without draft and then try with draft
@@ -1168,11 +1163,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }
 
         // Refresh hash
-        inArgs.params->frameViewHash = makeViewerCacheHash(inArgs.params->time, inArgs.params->view, this);
 
         bool gotHash = inArgs.activeInputToRender->getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.activeInputHash);
         assert(gotHash);
         (void)gotHash;
+        inArgs.params->frameViewHash = makeViewerCacheHash(inArgs.params->time, inArgs.params->view, inArgs.activeInputHash, this);
+
     }
 
 

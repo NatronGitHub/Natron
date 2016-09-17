@@ -4055,6 +4055,21 @@ FramesNeededMap
 EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
 {
 
+    // For the viewer add frames needed depending on the input being rendered (this is a special case
+    // For the viewer we cannot compute a hash and cache it because it varies from the branch we choose to render
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
+    if (isViewer) {
+        int viewerIndex = getViewerIndexThreadLocal();
+        EffectInstancePtr viewerInput = isViewer->getInput(viewerIndex);
+        if (viewerInput) {
+            *retHash = 0;
+            U64 inputHash;
+            return viewerInput->getFramesNeeded_public(time, view, &inputHash);
+        } else {
+            return FramesNeededMap();
+        }
+
+    }
     /*
      Compute the frame/view hash if needed
      */
@@ -4080,16 +4095,7 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
 
 
     // Follow the frames needed to compute the hash
-    // For the viewer add frames needed depending on the input being rendered (this is a special case
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
-    if (isViewer) {
-        int viewerIndex = getViewerIndexThreadLocal();
-        FrameRangesMap &frameRange = framesNeeded[viewerIndex] ;
-        std::vector<RangeD>& ranges = frameRange[view];
-        RangeD r = {time, time};
-        ranges.push_back(r);
-    } else {
-        // Use getFramesNeeded to know where to recurse
+    {
         NON_RECURSIVE_ACTION();
         try {
             framesNeeded = getFramesNeeded(time, view);
@@ -4099,8 +4105,8 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
             }
             return framesNeeded;
         }
-
     }
+
 
     if (!isHashCached) {
 

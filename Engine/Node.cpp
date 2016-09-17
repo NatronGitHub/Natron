@@ -953,6 +953,7 @@ Node::load(const CreateNodeArgs& args)
     _imp->pluginSafety = _imp->effect->renderThreadSafety();
     _imp->currentThreadSafety = _imp->pluginSafety;
 
+
     // Create gui if needed
     bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
     if (!argsNoNodeGui) {
@@ -961,10 +962,12 @@ Node::load(const CreateNodeArgs& args)
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args);
 
+    _imp->nodeCreated = true;
+
+    
     _imp->refreshDefaultPagesOrder();
     _imp->refreshDefaultViewerKnobsOrder();
 
-    _imp->nodeCreated = true;
 
     if ( !getApp()->isCreatingNodeTree() ) {
         refreshAllInputRelatedData(!serialization);
@@ -972,6 +975,8 @@ Node::load(const CreateNodeArgs& args)
 
 
     _imp->runOnNodeCreatedCB(!serialization);
+
+    computePreviewImage( getApp()->getTimeLine()->currentFrame() );
 } // load
 
 std::string
@@ -2540,39 +2545,9 @@ Node::restoreSublabel()
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
         ioContainer->_imp->ofxSubLabelKnob = sublabelKnobIsString;
+        Q_EMIT ioContainer->nodeExtraLabelChanged();
     }
-    if (!sublabelKnobIsString) {
-        return;
-    }
-    //Check if natron custom tags are present and insert them if needed
-    /// If the node has a sublabel, restore it in the label
-    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-    if (!labelKnob) {
-        return;
-    }
-
-    /*
-    QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
-    int foundNatronCustomTag = labeltext.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-    if (foundNatronCustomTag == -1) {
-        QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
-        if ( !sublabel.isEmpty() ) {
-            int fontEndTagFound = labeltext.lastIndexOf( QString::fromUtf8(kFontEndTag) );
-            if (fontEndTagFound == -1) {
-                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                labeltext.append( QLatin1Char('(') + sublabel + QLatin1Char(')') );
-                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
-            } else {
-                QString toAppend( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                toAppend += QLatin1Char('(');
-                toAppend += sublabel;
-                toAppend += QLatin1Char(')');
-                toAppend += QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
-                labeltext.insert(fontEndTagFound, toAppend);
-            }
-            labelKnob->setValue( labeltext.toStdString() );
-        }
-    }*/
+ 
 
 }
 
@@ -6769,6 +6744,9 @@ Node::makePreviewImage(SequenceTime time,
                        int *height,
                        unsigned int* buf)
 {
+    if (!isNodeCreated()) {
+        return false;
+    }
     assert(_imp->knobsInitialized);
 
 
@@ -9385,8 +9363,7 @@ Node::getSelectedLayer(int inputNb,
                        bool* isAll,
                        ImageComponents* layer) const
 {
-    //If the effect is multi-planar, it is expected to handle itself all the planes
-    assert( !_imp->effect->isMultiPlanar() );
+
 
     std::map<int, ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
     NodePtr maskInput;

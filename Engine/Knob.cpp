@@ -4803,47 +4803,53 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
         if (restoreDefaultValue) {
             isInt->setDefaultValueWithoutApplying(obj._defaultValue.isInt, targetDimension);
         }
-        isInt->setValue(obj._value.isInt, ViewSpec::all(), targetDimension);
+        if (obj._serializeValue) {
+            isInt->setValue(obj._value.isInt, ViewSpec::all(), targetDimension);
+        }
     } else if (isBool || isGrp || isButton) {
         assert(isBoolBase);
         if (restoreDefaultValue) {
             isBoolBase->setDefaultValueWithoutApplying(obj._defaultValue.isBool, targetDimension);
         }
-        isBoolBase->setValue(obj._value.isBool, ViewSpec::all(), targetDimension);
+        if (obj._serializeValue) {
+            isBoolBase->setValue(obj._value.isBool, ViewSpec::all(), targetDimension);
+        }
     } else if (isColor || isDouble) {
         assert(isDoubleBase);
         if (restoreDefaultValue) {
             isDoubleBase->setDefaultValueWithoutApplying(obj._defaultValue.isDouble, targetDimension);
         }
-        isDoubleBase->setValue(obj._value.isDouble, ViewSpec::all(), targetDimension);
+        if (obj._serializeValue) {
+            isDoubleBase->setValue(obj._value.isDouble, ViewSpec::all(), targetDimension);
+        }
 
     } else if (isStringBase) {
         if (restoreDefaultValue) {
             isStringBase->setDefaultValueWithoutApplying(obj._defaultValue.isString, targetDimension);
         }
-        isStringBase->setValue(obj._value.isString, ViewSpec::all(), targetDimension);
+        if (obj._serializeValue) {
+            isStringBase->setValue(obj._value.isString, ViewSpec::all(), targetDimension);
+        }
 
     } else if (isChoice) {
         bool found = false;
-        bool foundDefault = false;
+        int foundDefault = -1;
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if ( boost::iequals(entries[i], obj._value.isString) ) {
+            if ( obj._serializeValue && boost::iequals(entries[i], obj._value.isString) ) {
                 isChoice->setValue(i);
                 found = true;
                 break;
-            } else if (boost::iequals(entries[i], obj._defaultValue.isString)) {
-                foundDefault = true;
+            } else if (restoreDefaultValue && boost::iequals(entries[i], obj._defaultValue.isString)) {
+                foundDefault = i;
             }
         }
+        if (foundDefault != -1) {
+            isChoice->setDefaultValueWithoutApplying(foundDefault);
+        }
         if (!found) {
-            // Fallback on default if found, otherwise just remember the active entry if the entries happen
-            // to have it again in the future
-            if (foundDefault) {
-                isChoice->setValueFromLabel(obj._defaultValue.isString, 0);
-            } else {
-                isChoice->setActiveEntry(obj._value.isString);
-            }
+            // just remember the active entry if not found
+            isChoice->setActiveEntry(obj._value.isString);
         }
     }
 

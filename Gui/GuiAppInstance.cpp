@@ -528,8 +528,6 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
     
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     if ( !serialization && !isViewer ) {
-        ///we make sure we can have a clean preview.
-        node->computePreviewImage( getTimeLine()->currentFrame() );
         triggerAutoSave();
     }
 

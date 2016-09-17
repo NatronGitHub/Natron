@@ -255,7 +255,10 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect( isInspector.get(), SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }
 
+    double x,y;
+    internalNode->getPosition(&x, &y);
     createGui();
+    refreshPosition(x, y, true);
 
     NodePtr parent = internalNode->getParentMultiInstance();
     if (parent) {
@@ -378,6 +381,7 @@ NodeGui::restoreStateAfterCreation()
     }
 
     refreshNodeText();
+
 
     ///Refresh the name in the line edit
     onInternalNameChanged( QString::fromUtf8( internalNode->getLabel().c_str() ) );
@@ -1661,7 +1665,11 @@ NodeGui::isSelectedInParentMultiInstance(const NodeConstPtr& node) const
 void
 NodeGui::setUserSelected(bool b)
 {
-    getNode()->onNodeUISelectionChanged(b);
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    node->onNodeUISelectionChanged(b);
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
@@ -1933,12 +1941,13 @@ NodeGui::hideGui()
             viewerGui->clearLastRenderedTexture();
             _graph->getGui()->deactivateViewerTab(isViewer);
         }
-    } else {
+    }
+    {
         _panelOpenedBeforeDeactivate = isSettingsPanelVisible();
         if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(false);
         }
-
+        
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->removeNodeViewerInterface(thisShared, false);
     }

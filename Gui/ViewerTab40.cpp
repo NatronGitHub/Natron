@@ -417,7 +417,10 @@ ViewerTab::onPanelMadeCurrent()
     ViewerNodePtr viewerNode = _imp->viewerNode.lock();
     // Refresh the image since so far the viewer was probably not in sync with internal data
     if ( viewerNode && !app->getProject()->isLoadingProject() && !app->isTopLevelNodeBeingCreated(viewerNode->getNode())) {
-        viewerNode->getInternalViewerNode()->renderCurrentFrame(true);
+        ViewerInstancePtr viewer = viewerNode->getInternalViewerNode();
+        if (viewer) {
+            viewer->renderCurrentFrame(true);
+        }
     }
 }
 

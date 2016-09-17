@@ -181,7 +181,7 @@ public:
     bool isGuiDisabledRecursive() const
     {
         assert(args);
-        if (!args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI)) {
+        if (args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI)) {
             return true;
         }
         boost::shared_ptr<CreateNodeStackItem> p = parent.lock();
@@ -251,6 +251,7 @@ public:
         , _projectCreatedWithLowerCaseIDs(false)
         , creatingGroupMutex()
         , createNodeStack()
+        , _creatingTree(0)
         , renderQueueMutex()
         , renderQueue()
         , activeRenders()
@@ -832,11 +833,15 @@ public:
             _item->parent  = parent;
         }
 
+        if (!_imp->createNodeStack.root) {
+            _imp->createNodeStack.root = _item;
+        }
+
 
         // Check recursively if we should create the node UI or not
         bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
-        if (!argsNoNodeGui && _imp->createNodeStack.root) {
-            argsNoNodeGui |= _imp->createNodeStack.root->isGuiDisabledRecursive();
+        if (!argsNoNodeGui && _item->parent.lock()) {
+            argsNoNodeGui |= _item->parent.lock()->isGuiDisabledRecursive();
             if (argsNoNodeGui) {
                 args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             }
@@ -863,6 +868,10 @@ public:
         NodeGroupPtr isGrp = toNodeGroup(_item->node->getEffectInstance());
         if (isGrp) {
             _imp->_publicInterface->onGroupCreationFinished(_item->node, *_item->args);
+        }
+
+        if (_item == _imp->createNodeStack.root) {
+            _imp->createNodeStack.root.reset();
         }
         
     }

@@ -82,7 +82,7 @@ NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializ
     }
     
     
-    QPointF offset((xmin + xmax) / 2., (ymin + ymax) / 2.);
+    QPointF avgNodesPosition((xmin + xmax) / 2., (ymin + ymax) / 2.);
     
     NodesGuiList newNodesList;
     std::list<std::pair<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr > > newNodesMap;
@@ -95,7 +95,7 @@ NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializ
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
              it != clipboard.end(); ++it) {
             const std::string& oldScriptName = (*it)->_nodeScriptName;
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, offset, scenePos, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, avgNodesPosition, scenePos, group.lock(), std::string(), NodePtr(), &oldNewScriptNamesMap);
             
             if (!node) {
                 continue;
