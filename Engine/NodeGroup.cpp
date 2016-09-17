@@ -1544,15 +1544,15 @@ NodeGroup::clearLastRenderedImage()
 void
 NodeGroup::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& args)
 {
-    if (getPluginID() != PLUGINID_NATRON_GROUP) {
-        return;
-    }
+
     // Group nodes are always considered "edited"
     setSubGraphEditedByUser(true);
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
-    if (!serialization) {
+    bool createInitialNodes = !args.getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
+
+    if (!serialization && createInitialNodes) {
         //if the node is a group and we're not loading the project, create one input and one output
         NodePtr input, output;
 

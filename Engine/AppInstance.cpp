@@ -902,6 +902,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             CreateNodeArgsPtr groupArgs(new CreateNodeArgs(*args));
             groupArgs->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID,PLUGINID_NATRON_GROUP);
+            groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;

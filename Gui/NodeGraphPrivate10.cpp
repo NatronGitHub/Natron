@@ -1,4 +1,4 @@
-/* ***** BEGIN LICENSE BLOCK *****
+    /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
@@ -222,11 +222,13 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
     }
 
     // Position the node to the indicated position with the same offset of the selection center than the original node
-    QPointF duplicatedNodeInitialPos = duplicateNodeUI->scenePos();
-    QPointF offset = duplicatedNodeInitialPos - averageNodesPosition;
-    QPointF newPos = position + offset;
-    newPos = duplicateNodeUI->mapToParent(duplicateNodeUI->mapFromScene(newPos));
-    duplicateNodeUI->setPosition( newPos.x(), newPos.y() );
+    if (position.x() != INT_MIN && position.y() != INT_MIN) {
+        QPointF duplicatedNodeInitialPos = duplicateNodeUI->scenePos();
+        QPointF offset = duplicatedNodeInitialPos - averageNodesPosition;
+        QPointF newPos = position + offset;
+        newPos = duplicateNodeUI->mapToParent(duplicateNodeUI->mapFromScene(newPos));
+        duplicateNodeUI->setPosition( newPos.x(), newPos.y() );
+    }
     duplicateNodeUI->forceComputePreview( groupContainer->getApplication()->getProject()->currentFrame() );
 
     if (cloneMaster) {
