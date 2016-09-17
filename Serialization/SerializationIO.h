@@ -27,7 +27,7 @@
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/emitter.h>
-#include <yaml-cpp/node/node.h>
+#include <yaml-cpp/node/impl.h>
 #include <yaml-cpp/node/parse.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
