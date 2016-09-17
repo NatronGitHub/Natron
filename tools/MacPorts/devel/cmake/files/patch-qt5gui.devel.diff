@@ -77,7 +77,7 @@
    install(CODE "
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -654,12 +654,6 @@
+@@ -657,12 +657,6 @@
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")

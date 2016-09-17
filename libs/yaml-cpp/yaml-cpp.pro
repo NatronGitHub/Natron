@@ -4,7 +4,7 @@
 
 TEMPLATE = lib
 TARGET = yaml-cpp-natron
-CONFIG+= staticlibn yaml-cpp-flags
+CONFIG+= staticlib yaml-cpp-flags
 CONFIG-= qt
 
 
