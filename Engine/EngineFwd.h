@@ -280,6 +280,7 @@ typedef boost::shared_ptr<Bezier> BezierPtr;
 typedef boost::shared_ptr<BezierCP> BezierCPPtr;
 typedef boost::shared_ptr<BufferableObject> BufferableObjectPtr;
 typedef boost::shared_ptr<Curve> CurvePtr;
+typedef boost::shared_ptr<CreateNodeArgs> CreateNodeArgsPtr;
 typedef boost::shared_ptr<DiskCacheNode> DiskCacheNodePtr;
 typedef boost::shared_ptr<Dot> DotPtr;
 typedef boost::shared_ptr<EffectInstance> EffectInstancePtr;

@@ -1250,9 +1250,9 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() );
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+    CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() ));
+    args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     ignore_result( getApp()->createNode(args) );
 }
 
@@ -1275,7 +1275,7 @@ Gui::createReader()
         NodeCollectionPtr group = graph->getGroup();
         assert(group);
 
-        CreateNodeArgs args(PLUGINID_NATRON_READ, group);
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_READ, group));
         ret = getApp()->createReader(pattern, args);
     }
 
@@ -1315,7 +1315,7 @@ Gui::createWriter()
     NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
-    CreateNodeArgs args(PLUGINID_NATRON_WRITE, group);
+    CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_WRITE, group));
     ret =  getApp()->createWriter(file, args);
 
 

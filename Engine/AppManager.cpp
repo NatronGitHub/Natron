@@ -1785,12 +1785,34 @@ AppManager::loadNodesPresets()
             continue;
         }
 
+        // If the presetID is set, make a new plug-in, otherwise append as a preset of the original plugin
+        if (!obj.presetID.empty()) {
+            QString path;
+            {
+                int foundSlash = presetFile.lastIndexOf(QLatin1Char('/'));
+                path = presetFile.mid(0, foundSlash);
+            }
+            QStringList grouping;
+            if (!obj.presetGrouping.empty()) {
+                grouping = QString::fromUtf8(obj.presetGrouping.c_str()).split(QChar::fromLatin1('/'));
+            } else {
+                // Use the original plugin grouping
+                PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(obj.originalPluginID.c_str()), -1, -1, false);
+                if (!foundPlugin) {
+                    continue;
+                }
+                grouping = foundPlugin->getGrouping();
+            }
+            PluginPtr p = registerPlugin(path, grouping, QString::fromUtf8( obj.presetID.c_str() ), QString::fromUtf8( obj.presetLabel.c_str() ), QString::fromUtf8( obj.presetIcon.c_str() ), QStringList(), false, false, 0, false, obj.version, 0, false);
+            (void)p;
+        } else {
 
-        PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(obj.pluginID.c_str()), -1, -1, false);
-        if (!foundPlugin) {
-            continue;
+            PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(obj.originalPluginID.c_str()), -1, -1, false);
+            if (!foundPlugin) {
+                continue;
+            }
+            foundPlugin->addPresetFile(presetFile, QString::fromUtf8(obj.presetLabel.c_str()), QString::fromUtf8(obj.presetIcon.c_str()), (Key)obj.presetSymbol, KeyboardModifiers(obj.presetModifiers));
         }
-        foundPlugin->addPresetFile(presetFile, QString::fromUtf8(obj.presetLabel.c_str()), QString::fromUtf8(obj.presetIcon.c_str()), (Key)obj.presetSymbol, KeyboardModifiers(obj.presetModifiers));
     }
 }
 
@@ -2175,16 +2197,16 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
 {
     NodePtr retNode;
     {
-        CreateNodeArgs args(serialization->_pluginID, group);
-        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
-        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
-        args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
-        args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        CreateNodeArgsPtr args(new CreateNodeArgs(serialization->_pluginID, group));
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
+        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
         if (!serialization->_multiInstanceParentName.empty()) {
-            args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, serialization->_multiInstanceParentName);
+            args->setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, serialization->_multiInstanceParentName);
         }
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         retNode =  group->getApplication()->createNode(args);
     }
     if (retNode) {
@@ -2193,7 +2215,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     
     // If the node could not be created, make a Stub node
     {
-        CreateNodeArgs args(PLUGINID_NATRON_STUB, group);
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_STUB, group));
 
         std::stringstream ss;
         try {
@@ -2202,11 +2224,11 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
             return retNode;
         }
         
-        args.addParamDefaultValue<std::string>(kStubNodeParamSerialization, ss.str());
-        args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, serialization->_nodeScriptName);
+        args->addParamDefaultValue<std::string>(kStubNodeParamSerialization, ss.str());
+        args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, serialization->_nodeScriptName);
         retNode = group->getApplication()->createNode(args);
 
     }

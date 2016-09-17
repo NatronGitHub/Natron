@@ -155,13 +155,13 @@ public:
 
     /** @brief Create a new node  in the node graph.
     **/
-    NodePtr createNode(CreateNodeArgs & args);
+    NodePtr createNode(const CreateNodeArgsPtr& args);
     NodePtr createReader(const std::string& filename,
-                         CreateNodeArgs& args);
+                         const CreateNodeArgsPtr& args);
 
 
     NodePtr createWriter(const std::string& filename,
-                         CreateNodeArgs& args,
+                         const CreateNodeArgsPtr& args,
                          int firstFrame = INT_MIN, int lastFrame = INT_MAX);
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
@@ -324,10 +324,15 @@ public:
     void setProjectWasCreatedWithLowerCaseIDs(bool b);
     bool wasProjectCreatedWithLowerCaseIDs() const;
 
-    bool isCreatingPythonGroup() const;
+    /**
+     * @brief Returns true if the project is currently in the process of creating a node
+     **/
+    bool isCreatingNode() const;
 
+    /**
+     * @brief @see CreatingNodeTreeFlag_RAII
+     **/
     bool isCreatingNodeTree() const;
-
     void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
@@ -340,6 +345,9 @@ public:
     virtual ViewerInstancePtr getLastViewerUsingTimeline() const { return ViewerInstancePtr(); }
 
     bool loadPythonScript(const QFileInfo& file);
+
+    bool loadPythonScriptAndReportToScriptEditor(const QString& script);
+
     virtual void queueRedrawForAllViewers() {}
 
     virtual void renderAllViewers(bool /* canAbort*/) {}
@@ -361,7 +369,9 @@ public:
     virtual void closeLoadPRojectSplashScreen() {}
 
     std::string getAppIDString() const;
-    const NodesList& getNodesBeingCreated() const;
+
+    bool isTopLevelNodeBeingCreated(const NodePtr& node) const;
+
     virtual bool isDraftRenderEnabled() const { return false; }
 
     virtual void setDraftRenderEnabled(bool /*b*/) {}
@@ -470,6 +480,15 @@ public:
 
     virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* /*projections*/) const {}
 
+    virtual void createNodeGui(const NodePtr& /*node*/,
+                           const NodePtr& /*parentmultiinstance*/,
+                           const CreateNodeArgs& /*args*/)
+    {
+    }
+
+    virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args);
+
+
     void saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization);
 
 
@@ -508,13 +527,6 @@ protected:
 
     virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& args);
-    virtual void createNodeGui(const NodePtr& /*node*/,
-                               const NodePtr& /*parentmultiinstance*/,
-                               const CreateNodeArgs& /*args*/)
-    {
-    }
-
     virtual void createMainWindow() { }
 
     void setMainWindowPointer(SerializableWindow* window);
@@ -527,15 +539,20 @@ private:
     void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
 
 
-    NodePtr createNodeInternal(CreateNodeArgs& args);
+    NodePtr createNodeInternal(const CreateNodeArgsPtr& args);
 
 
-    NodePtr createNodeFromPythonModule(const PluginPtr& plugin,
-                                       const CreateNodeArgs& args);
+    NodePtr createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsPtr& args);
 
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
+/**
+ * @brief Small RAII style class that flags the project is currently creating a tree with potentially a lot of nodes and 
+ * that each node itself shouldn't try to refresh their meta-data whilst the tree is undergoing big changes.
+ * After this object is destroyed, the caller should ensure to call Project::forceComputeInputDependentDataOnAllTrees()
+ * to ensure the tree has correct meta-data flowing through.
+ **/
 class CreatingNodeTreeFlag_RAII
 {
     AppInstanceWPtr _app;

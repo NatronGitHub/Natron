@@ -506,11 +506,7 @@ NodeGui::createPanel(QVBoxLayout* container,
         panel = new NodeSettingsPanel( multiPanel, _graph->getGui(), thisAsShared, container, container->parentWidget() );
 
         if (panel) {
-            bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();
-            std::string pluginID = node->getPluginID();
-            if ( (pluginID == PLUGINID_NATRON_OUTPUT) ||
-                 ( isCreatingPythonGroup && ( pluginID != PLUGINID_NATRON_GROUP) ) ||
-                 !node->getParentMultiInstanceName().empty() ) {
+            if (!node->getApp()->isTopLevelNodeBeingCreated(node)) {
                 panel->setClosed(true);
             } else {
                 _graph->getGui()->addVisibleDockablePanel(panel);

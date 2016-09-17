@@ -1311,10 +1311,10 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
             } else {
                 std::string pattern = sequence->generateValidSequencePattern();
-                CreateNodeArgs args(readerPluginID, graph->getGroup() );
-                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
-                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
-                args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
+                CreateNodeArgsPtr args(new CreateNodeArgs(readerPluginID, graph->getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
+                args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
                 NodePtr n = getApp()->createNode(args);
 

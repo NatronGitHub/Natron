@@ -466,17 +466,17 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgs args(READ_NODE_DEFAULT_READER, NodeCollectionPtr() );
+    CreateNodeArgsPtr args(new CreateNodeArgs(READ_NODE_DEFAULT_READER, NodeCollectionPtr() ));
 
-    args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty(kCreateNodeArgsPropSilent, true);
-    args.setProperty(kCreateNodeArgsPropVolatile, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
-    args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
-    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+    args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty(kCreateNodeArgsPropSilent, true);
+    args->setProperty(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
+    args->setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
+    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
     // This will avoid throwing errors when creating the reader
-    args.addParamDefaultValue<bool>("ParamExistingInstance", true);
+    args->addParamDefaultValue<bool>("ParamExistingInstance", true);
 
 
     NodePtr node  = _publicInterface->getApp()->createNode(args);
@@ -614,27 +614,27 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
 
-        CreateNodeArgs args(readerPluginID, NodeCollectionPtr() );
-        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty(kCreateNodeArgsPropVolatile, true);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
-        args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
+        CreateNodeArgsPtr args(new CreateNodeArgs(readerPluginID, NodeCollectionPtr() ));
+        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
+        args->setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
 
         SERIALIZATION_NAMESPACE::NodeSerializationPtr s(new SERIALIZATION_NAMESPACE::NodeSerialization);
         if (serialization) {
             *s = *serialization;
-            args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
+            args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
         }
 
-        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         if (serialization || wasCreatedAsHiddenNode) {
-            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+            args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
         }
 
         //Set a pre-value for the inputfile knob only if it did not exist
         if (!filename.empty() && !serialization) {
-            args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+            args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
 
             std::string canonicalFilename = filename;
             _publicInterface->getApp()->getProject()->canonicalizePath(canonicalFilename);
@@ -644,7 +644,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             std::vector<int> originalRange(2);
             originalRange[0] = firstFrame;
             originalRange[1] = lastFrame;
-            args.addParamDefaultValueN(kReaderParamNameOriginalFrameRange, originalRange);
+            args->addParamDefaultValueN(kReaderParamNameOriginalFrameRange, originalRange);
         }
 
 

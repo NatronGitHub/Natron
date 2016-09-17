@@ -1682,10 +1682,12 @@ public:
     virtual void onKnobsLoaded() {}
 
     /**
-     * @brief Called after all knobs have been loaded and the nod ehas been created
+     * @brief Called after all knobs have been loaded and the node has been created
      **/
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
                                  const CreateNodeArgs& /*args*/) {}
+
+
 
     virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
                               int dimension,

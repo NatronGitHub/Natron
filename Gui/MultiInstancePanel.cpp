@@ -638,10 +638,10 @@ NodePtr
 MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
 {
     NodePtr mainInstance = _imp->getMainInstance();
-    CreateNodeArgs args(mainInstance->getPluginID() ,mainInstance->getGroup() );
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-    args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, mainInstance->getScriptName());
+    CreateNodeArgsPtr args(new CreateNodeArgs(mainInstance->getPluginID() ,mainInstance->getGroup() ));
+    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args->setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, mainInstance->getScriptName());
     NodePtr newInstance = _imp->getMainInstance()->getApp()->createNode(args);
 
     if (useUndoRedoStack) {
@@ -2252,9 +2252,9 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<NodePtr> & s
         assert(centers[i]);
     }
     GuiAppInstancePtr app = publicInterface->getGui()->getApp();
-    CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, publicInterface->getMainInstance()->getGroup() );
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_CORNERPIN, publicInterface->getMainInstance()->getGroup() ));
+    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     NodePtr cornerPin = app->createNode(args);
 
     if (!cornerPin) {

@@ -2042,10 +2042,10 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
     fixedNamePrefix.append( QLatin1Char('_') );
 
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE,  rotoPaintEffect );
-    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_OFX_MERGE,  rotoPaintEffect ));
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
     
     NodePtr mergeNode = node->getApp()->createNode(args);
     if (!mergeNode) {

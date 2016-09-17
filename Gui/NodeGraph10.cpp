@@ -296,10 +296,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             return;
         }
 
-        CreateNodeArgs args( PLUGINID_NATRON_DOT, _imp->group.lock() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_DOT, _imp->group.lock() ));
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
 
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);

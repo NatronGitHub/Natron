@@ -166,9 +166,9 @@ DocumentationManager::handler(QHttpRequest *req,
 
                         if (plugin) {
         
-                            CreateNodeArgs args( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() );
-                            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-                            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+                            CreateNodeArgsPtr args(new CreateNodeArgs( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() ));
+                            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+                            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {

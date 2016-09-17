@@ -134,7 +134,7 @@ public:
 
     bool isDoingNeatRender() const;
 
-    virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization) OVERRIDE FINAL;
+    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE FINAL;
 
     NodePtr getPremultNode() const;
 

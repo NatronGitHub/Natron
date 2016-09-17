@@ -942,7 +942,7 @@ OfxImageEffectInstance::editBegin(const std::string & /*name*/)
     ///Don't push undo/redo actions while creating a group
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( !effect->getApp()->isCreatingNode() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
     }
 
@@ -958,7 +958,7 @@ OfxImageEffectInstance::editEnd()
     ///Don't push undo/redo actions while creating a group
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( !effect->getApp()->isCreatingNode() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 

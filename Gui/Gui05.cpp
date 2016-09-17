@@ -241,7 +241,7 @@ Gui::createGroupGui(const NodePtr & group,
     
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     bool showSubGraph = args.getProperty<bool>(kCreateNodeArgsPropSubGraphOpened);
-    if ( showSubGraph && where && !serialization && !getApp()->isCreatingPythonGroup() ) {
+    if ( showSubGraph && where && !serialization ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {

@@ -91,14 +91,6 @@
  **/
 #define kCreateNodeArgsPropPreset "CreateNodeArgsPropPreset"
 
-/**
- * @brief optional x1 bool property
- * Default Value - false
- * If copy/pasting, we don't want to paste a PyPlug and create copy from the Python script,
- * we want it to copy the group directly and keep the modifications the user may have made.
- * This is only relevant and valid if the property kCreateNodeArgsPropNodeSerialization has been set.
- **/
-#define kCreateNodeArgsPropDoNotLoadPyPlugFromScript "CreateNodeArgsPropDoNotLoadPyPlugFromScript"
 
 /**
  * @brief optional x1 bool property
@@ -309,7 +301,6 @@ class CreateNodeArgs
         createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
         createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
-        createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
         createProperty<bool>(kCreateNodeArgsPropVolatile, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);

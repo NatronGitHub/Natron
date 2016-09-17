@@ -180,7 +180,7 @@ RotoPaint::getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b,
 }
 
 void
-RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /*serialization*/)
+RotoPaint::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /*args*/)
 {
     RotoPaintPtr thisShared = boost::dynamic_pointer_cast<RotoPaint>(shared_from_this());
     for (int i = 0; i < ROTOPAINT_MAX_INPUTS_COUNT; ++i) {
@@ -194,13 +194,13 @@ RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /
             ss << "Bg" << i + 1;
         }
         {
-            CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
-            args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, thisShared));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
+            args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
             if (i == ROTOPAINT_MASK_INPUT_INDEX) {
-                args.addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
+                args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
                 
             }
             NodePtr input = getApp()->createNode(args);
@@ -210,25 +210,25 @@ RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /
     }
     NodePtr outputNode;
     {
-        CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, thisShared);
-        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Output");
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Output");
 
         outputNode = getApp()->createNode(args);
         assert(outputNode);
     }
     NodePtr premultNode;
     {
-        CreateNodeArgs args(PLUGINID_OFX_PREMULT, thisShared);
-        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_PREMULT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         // Set premult node to be identity by default
-        args.addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
-        args.addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
-        args.addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
-        args.addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
+        args->addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
 
         premultNode = getApp()->createNode(args);
         _imp->premultNode = premultNode;
@@ -245,11 +245,11 @@ RotoPaint::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& /
     // Make a no-op that fixes the output premultiplication state
     NodePtr noopNode;
     {
-        CreateNodeArgs args(PLUGINID_OFX_NOOP, thisShared);
-        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_NOOP, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         // Set premult node to be identity by default
-        args.addParamDefaultValue<bool>("setPremult", true);
+        args->addParamDefaultValue<bool>("setPremult", true);
         noopNode = getApp()->createNode(args);
         _imp->premultFixerNode = noopNode;
 
@@ -1256,8 +1256,16 @@ RotoPaint::shouldDrawHostOverlay() const
 void
 RotoPaint::onKnobsLoaded()
 {
-    _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
-#pragma message WARN("Set autokeying, featherlink and rippleedit on context from buttons")
+    RotoContextPtr ctx = getNode()->getRotoContext();
+    _imp->ui->selectedItems = ctx->getSelectedCurves();
+    bool autoKeying = _imp->ui->autoKeyingEnabledButton.lock()->getValue();
+    bool featherLink = _imp->ui->featherLinkEnabledButton.lock()->getValue();
+    bool rippleEdit = _imp->ui->rippleEditEnabledButton.lock()->getValue();
+
+    ctx->onAutoKeyingChanged(autoKeying);
+    ctx->onFeatherLinkChanged(featherLink);
+    ctx->onRippleEditChanged(rippleEdit);
+
     // Figure out which toolbutton was selected last
     KnobPagePtr toolbar = _imp->ui->toolbarPage.lock();
     if (toolbar) {

@@ -953,8 +953,11 @@ Node::load(const CreateNodeArgs& args)
     _imp->pluginSafety = _imp->effect->renderThreadSafety();
     _imp->currentThreadSafety = _imp->pluginSafety;
 
-
-    bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
+    // Create gui if needed
+    bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    if (!argsNoNodeGui) {
+        getApp()->createNodeGui(shared_from_this(), getParentMultiInstance(), args);
+    }
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args);
 
@@ -968,7 +971,7 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    _imp->runOnNodeCreatedCB(!serialization && !isLoadingPyPlug);
+    _imp->runOnNodeCreatedCB(!serialization);
 } // load
 
 std::string
@@ -2296,8 +2299,8 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZ
         *presetsLabel = obj.presetLabel;
     }
     std::string thisPluginID = getPluginID();
-    if (obj.pluginID != thisPluginID) {
-        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+    if (obj.originalPluginID != thisPluginID) {
+        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.originalPluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
     }
 
 }
@@ -2371,9 +2374,8 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& seri
 
     NodeGroupPtr isGrp = isEffectNodeGroup();
 
-    // For Groups only (not PyPlugs) also restore the internal graph as the user set it up.
-    // This is mainly useful for the Viewer group
-    if (isGrp && !getApp()->isCreatingPythonGroup() && !isPyPlug()) {
+    // Restore internal nodes for groups
+    if (isGrp && !isPyPlug()) {
 
         {
             // Deactivate all internal nodes for group first
@@ -2405,7 +2407,7 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
     SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
     // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
     // we just have to read the plugin id
-    serialization.pluginID = getPluginID();
+    serialization.originalPluginID = getPluginID();
     serialization.presetLabel = presetsLabel;
     serialization.presetIcon = presetsIcon;
     serialization.presetSymbol = (int)symbol;
@@ -7974,6 +7976,7 @@ Node::endInputEdition(bool triggerRender)
         _imp->inputsModified.clear();
 
         if (hasChanged) {
+            // When creating a node tree, the refresh is done on all the tree when done
             if ( !getApp()->isCreatingNodeTree() ) {
                 forceRefreshAllInputRelatedData();
             }
@@ -8008,8 +8011,7 @@ Node::onInputChanged(int inputNb)
     refreshMaskEnabledNess(inputNb);
     //refreshLayersSelectorsVisibility();
 
-    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() ) ||
-                                _imp->effect->isRotoPaintNode();
+    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() );
 
     if (shouldDoInputChanged) {
         ///When loading a group (or project) just wait until everything is setup to actually compute input

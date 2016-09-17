@@ -278,8 +278,15 @@ void
 NodePresetSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
-    em << YAML::Key << "PluginID" << YAML::Value << pluginID;
+    em << YAML::Key << "BasePluginID" << YAML::Value << originalPluginID;
+    if (!presetID.empty()) {
+        em << YAML::Key << "PresetID" << YAML::Value << presetID;
+        em << YAML::Key << "PresetVersion" << YAML::Value << version;
+    }
     em << YAML::Key << "PresetLabel" << YAML::Value << presetLabel;
+    if (!presetGrouping.empty()) {
+        em << YAML::Key << "PresetGrouping" << YAML::Value << presetGrouping;
+    }
     if (!presetIcon.empty()) {
         em << YAML::Key << "Icon" << YAML::Value << presetIcon;
     }
@@ -300,7 +307,14 @@ NodePresetSerialization::decode(const YAML::Node& node)
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }
-    pluginID = node["PluginID"].as<std::string>();
+    originalPluginID = node["BasePluginID"].as<std::string>();
+    if (node["PresetID"]) {
+        presetID = node["PresetID"].as<std::string>();
+        version = node["PresetVersion"].as<int>();
+    }
+    if (node["PresetGrouping"]) {
+        presetGrouping = node["PresetGrouping"].as<std::string>();
+    }
     presetLabel = node["PresetLabel"].as<std::string>();
     if (node["Icon"]) {
         presetIcon = node["Icon"].as<std::string>();

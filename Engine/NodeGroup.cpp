@@ -1542,7 +1542,7 @@ NodeGroup::clearLastRenderedImage()
 }
 
 void
-NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
+NodeGroup::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& args)
 {
     if (getPluginID() != PLUGINID_NATRON_GROUP) {
         return;
@@ -1550,16 +1550,18 @@ NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
     // Group nodes are always considered "edited"
     setSubGraphEditedByUser(true);
 
-    if ( !serialization && !getApp()->isCreatingPythonGroup()) {
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+
+    if (!serialization) {
         //if the node is a group and we're not loading the project, create one input and one output
         NodePtr input, output;
 
         NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
         {
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, thisShared);
-            args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-            args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, thisShared));
+            args->setProperty(kCreateNodeArgsPropAutoConnect, false);
+            args->setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
             output = getApp()->createNode(args);
             try {
                 output->setScriptName("Output");
@@ -1569,10 +1571,10 @@ NodeGroup::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
             assert(output);
         }
         {
-            CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
-            args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-            args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, thisShared));
+            args->setProperty(kCreateNodeArgsPropAutoConnect, false);
+            args->setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
             input = getApp()->createNode(args);
             assert(input);
         }

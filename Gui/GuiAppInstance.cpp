@@ -502,17 +502,18 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
 
+    // For viewers, they create their own viewer interface.
     bool isViewer = node->isEffectViewerNode() != 0;
     if (isViewer) {
         _imp->_gui->createViewerGui(nodegui);
+    } else {
+        // Must be done after the viewer gui has been created
+        //if (!isDuringPyPlugCreation()) {
+            _imp->_gui->createNodeViewerInterface(nodegui);
+        //}
     }
 
-    // Must be done after the viewer gui has been created
-    // For viewers, they create their own viewer interface.
-    // For PyPlugs, they call this later once the Group has been setup to be a PyPlug
-    if (!isViewer && !isCreatingPythonGroup()) {
-        _imp->_gui->createNodeViewerInterface(nodegui);
-    }
+
 
 
     NodeGroupPtr isGroup = node->isEffectNodeGroup();
@@ -1104,20 +1105,18 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization,
                                         const CreateNodeArgs& args)
 {
     NodeGuiIPtr node_gui_i = node->getNodeGui();
     NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
 
-    if (node_gui_i) {
+    /*if (node_gui_i) {
         _imp->_gui->createNodeViewerInterface(nodeGui);
-    }
+    }*/
 
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-    //double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-    //double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-    if (autoConnect && !serialization && node_gui_i /*&& (xPosHint == INT_MIN || yPosHint == INT_MIN)*/) {
+    if (autoConnect && !serialization && node_gui_i) {
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
@@ -1144,13 +1143,8 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
  
-    AppInstance::onGroupCreationFinished(node, serialization, args);
+    AppInstance::onGroupCreationFinished(node, args);
 
-    /*std::list<ViewerInstancePtr> viewers;
-       node->hasViewersConnected(&viewers);
-       for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-        (*it2)->renderCurrentFrame(false);
-       }*/
 }
 
 bool

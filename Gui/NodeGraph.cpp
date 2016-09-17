@@ -402,12 +402,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         _imp->_nodes.push_back(node_ui);
     }
 
-    //NodeGroupPtr parentIsGroup = toNodeGroup(node->getGroup());;
-    const NodesList& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
-    bool isTopLevelNodeBeingCreated = false;
-    if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
-        isTopLevelNodeBeingCreated = true;
-    }
+    bool isTopLevelNodeBeingCreated = getGui()->getApp()->isTopLevelNodeBeingCreated(node);
     
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 

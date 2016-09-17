@@ -158,11 +158,11 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    CreateNodeArgs args((*it)->_pluginID, group);
-                    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
-                    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+                    CreateNodeArgsPtr args(new CreateNodeArgs((*it)->_pluginID, group));
+                    args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+                    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {

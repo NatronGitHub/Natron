@@ -190,11 +190,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if ( !pluginId.isEmpty() ) {
         fixedNamePrefix.append( QString::fromUtf8("Effect") );
 
-        CreateNodeArgs args( pluginId.toStdString(), rotoPaintEffect );
-        args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        CreateNodeArgsPtr args(new CreateNodeArgs( pluginId.toStdString(), rotoPaintEffect ));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         _imp->effectNode = app->createNode(args);
         if (!_imp->effectNode) {
@@ -266,10 +266,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect );
-                args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-                args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-                args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+                CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect ));
+                args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+                args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
                 _imp->timeOffsetNode = app->createNode(args);
                 assert(_imp->timeOffsetNode);
@@ -284,10 +284,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
-                CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect );
-                args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-                args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-                args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+                CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect ));
+                args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+                args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
                 _imp->frameHoldNode = app->createNode(args);
                 assert(_imp->frameHoldNode);
                 if (!_imp->frameHoldNode) {
@@ -303,10 +303,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE, rotoPaintEffect );
-    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_OFX_MERGE, rotoPaintEffect ));
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
     assert(_imp->mergeNode);
@@ -349,11 +349,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
         {
             fixedNamePrefix = baseFixedName;
             fixedNamePrefix.append( QString::fromUtf8("Mask") );
-            CreateNodeArgs args( maskPluginID.toStdString(), rotoPaintEffect );
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+            CreateNodeArgsPtr args(new CreateNodeArgs( maskPluginID.toStdString(), rotoPaintEffect ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
             _imp->maskNode = app->createNode(args);
             assert(_imp->maskNode);
             if (!_imp->maskNode) {

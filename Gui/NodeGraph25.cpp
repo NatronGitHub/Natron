@@ -207,10 +207,10 @@ NodeGraph::onNodeCreationDialogFinished()
             PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
             if ( found != allPlugins.end() ) {
                 QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                CreateNodeArgs args( res.toStdString(), getGroup() );
-                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
-                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
+                CreateNodeArgsPtr args(new CreateNodeArgs( res.toStdString(), getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
+                args->setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
                 getGui()->getApp()->createNode(args);
             }
             break;
@@ -389,9 +389,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
                 if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                     QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
-                    args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
-                    args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
+                    CreateNodeArgsPtr args(new CreateNodeArgs( plugin->getPluginID().toStdString(), getGroup() ));
+                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
                     getGui()->getApp()->createNode(args);
 
                     intercepted = true;
@@ -409,10 +409,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
 
                     if ( isKeybind(group.toStdString(), shortcutKey, modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
-                        args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
-                        args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
-                        args.setProperty<std::string>(kCreateNodeArgsPropPreset, it2->presetLabel.toStdString());
+                        CreateNodeArgsPtr args(new CreateNodeArgs( plugin->getPluginID().toStdString(), getGroup() ));
+                        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
+                        args->setProperty<std::string>(kCreateNodeArgsPropPreset, it2->presetLabel.toStdString());
                         getGui()->getApp()->createNode(args);
 
                         intercepted = true;

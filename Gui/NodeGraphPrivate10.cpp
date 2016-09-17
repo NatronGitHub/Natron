@@ -149,16 +149,16 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
     // Create the duplicate node
     NodePtr duplicateNode;
     {
-        CreateNodeArgs args(internalSerialization->_pluginID, groupContainer);
-        args.setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
+        CreateNodeArgsPtr args(new CreateNodeArgs(internalSerialization->_pluginID, groupContainer));
+        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
         if (!parentName.empty()) {
-            args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, parentName);
+            args->setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, parentName);
         }
-        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMajorVersion, 0);
-        args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMinorVersion, 1);
-        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMajorVersion, 0);
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMinorVersion, 1);
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
 
         duplicateNode = groupContainer->getApplication()->createNode(args);
 

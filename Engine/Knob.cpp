@@ -5879,32 +5879,24 @@ KnobHolder::getOrCreateUserPageKnob()
         return ret;
     }
     ret = AppManager::createKnob<KnobPage>(shared_from_this(), tr(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL), 1, false);
-    bool isDeclaredByPlugin = getApp()->isCreatingPythonGroup();
-    ret->setAsUserKnob(true);
-    ret->setDeclaredByPlugin(isDeclaredByPlugin);
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
-
-
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
+    onUserKnobCreated(ret, true);
     return ret;
 }
 
 void
 KnobHolder::onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob)
 {
-    if (getApp() && getApp()->isCreatingPythonGroup()) {
-        knob->setDeclaredByPlugin(true);
-    }
+
     knob->setAsUserKnob(isUserKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-     Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && isUserKnob) {
-        isEffect->getNode()->declarePythonFields();
+    if (isEffect) {
+        if (isEffect->getNode()->isPyPlug() && getApp()->isCreatingNode()) {
+            knob->setDeclaredByPlugin(true);
+        }
+        if (isUserKnob) {
+            isEffect->getNode()->declarePythonFields();
+        }
     }
 
 }
