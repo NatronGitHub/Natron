@@ -1556,9 +1556,9 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 } // Project::onKnobValueChanged
 
 void
-Project::invalidateHashCache()
+Project::invalidateHashCache(bool invalidateParent)
 {
-    KnobHolder::invalidateHashCache();
+    KnobHolder::invalidateHashCache(invalidateParent);
 
     // Also invalidate the hash of all nodes
 
@@ -1566,7 +1566,7 @@ Project::invalidateHashCache()
     getNodes_recursive(nodes, true);
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        invalidateHashCache();
+        (*it)->getEffectInstance()->invalidateHashCache(invalidateParent);
     }
 }
 

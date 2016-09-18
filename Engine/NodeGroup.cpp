@@ -1256,13 +1256,13 @@ NodeGroup::isInputMask(int inputNb) const
 }
 
 void
-NodeGroup::invalidateHashCache()
+NodeGroup::invalidateHashCache(bool invalidateParent)
 {
-    invalidateHashNotRecursive();
+    invalidateHashNotRecursive(invalidateParent);
     NodesList nodes = getNodes();
     std::list<EffectInstancePtr> markedNodes;
     for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        invalidateHashRecursive((*it)->getEffectInstance(), markedNodes);
+        invalidateHashRecursive((*it)->getEffectInstance(), invalidateParent, markedNodes);
     }
 }
 

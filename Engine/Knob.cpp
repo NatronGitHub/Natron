@@ -6369,6 +6369,8 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         if (dimension == -1) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 foundChange->dimensionChanged.insert(i);
+                // Make sure expressions are invalidated
+                knob->clearExpressionsResults(i);
             }
         } else {
             foundChange->dimensionChanged.insert(dimension);

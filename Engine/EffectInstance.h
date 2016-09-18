@@ -287,14 +287,14 @@ public:
      **/
     bool getRenderHash(double time, ViewIdx view, U64* hash) const WARN_UNUSED_RETURN;
 
-    void invalidateHashNotRecursive();
+    void invalidateHashNotRecursive(bool invalidateParent);
 
     /**
      * @brief Recursively invalidates the hash of this node and the nodes downstream.
      **/
-    virtual void invalidateHashCache() OVERRIDE ;
+    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE ;
 
-    static void invalidateHashRecursive(const EffectInstancePtr& effect, std::list<EffectInstancePtr>& markedNodes);
+    static void invalidateHashRecursive(const EffectInstancePtr& effect, bool invalidateParent, std::list<EffectInstancePtr>& markedNodes);
 
     /**
      * @brief Forwarded to the node's name
@@ -1430,12 +1430,6 @@ public:
                                       RectI* renderWindow) const;
 
     bool getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const;
-
-    /**
-     * @brief Called when the associated node's hash has changed.
-     * This is always called on the main-thread.
-     **/
-    void onNodeHashChanged(U64 hash);
 
 
     virtual void initializeData()

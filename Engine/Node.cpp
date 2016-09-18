@@ -1945,6 +1945,9 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
+    // Non empty if this is a pyplug
+    std::string pyPlugID = getPyPlugID();
+
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
     for (std::size_t i  = 0; i < knobs.size(); ++i) {
@@ -1956,7 +1959,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             if (pageOrderChanged) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
-            if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
+            if ( knobs[i]->isUserKnob() && (pyPlugID.empty() || !knobs[i]->isDeclaredByPlugin()) ) {
                 userPages.push_back(knobs[i]);
             }
         }
@@ -1966,7 +1969,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin()) {
+        if (knobs[i]->isUserKnob() && (pyPlugID.empty() || !knobs[i]->isDeclaredByPlugin())) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
         }
