@@ -1592,6 +1592,7 @@ GroupFromSelectionCommand::redo()
         NodesList internalNewNodes;
         // Create the actual Group node
         CreateNodeArgs groupArgs( PLUGINID_NATRON_GROUP, _graph->getGroup() );
+        groupArgs.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
         groupArgs.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         groupArgs.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         groupArgs.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);

@@ -855,6 +855,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         if (!istoolsetScript) {
             CreateNodeArgs groupArgs = args;
             groupArgs.setProperty<std::string>(kCreateNodeArgsPropPluginID,PLUGINID_NATRON_GROUP);
+            groupArgs.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;
@@ -1289,7 +1290,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-
+        bool createInitialNodes = !args.getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
         if (serialization) {
             if ( serialization && !serialization->getPythonModule().empty() ) {
                 QString pythonModulePath = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
@@ -1304,7 +1305,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
             onGroupCreationFinished(node, serialization, autoConnect);
-        } else if ( !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
+        } else if ( createInitialNodes && !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
             //if the node is a group and we're not loading the project, create one input and one output
             NodePtr input, output;
 
