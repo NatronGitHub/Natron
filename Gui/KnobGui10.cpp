@@ -190,6 +190,13 @@ KnobGui::setSecret()
             k->setSecret();
         }
     }
+
+    KnobPagePtr isParentPage = toKnobPage(getKnob()->getParentKnob());
+    if (isParentPage) {
+        if (getContainer()) {
+            getContainer()->refreshPageVisibility(isParentPage);
+        }
+    }
 }
 
 void

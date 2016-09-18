@@ -1371,9 +1371,12 @@ NodeGui::onPreviewImageComputed()
     }
     const QPointF topLeft = mapFromParent( pos() );
     double width, height;
-    getNode()->getSize(&width, &height);
-    QRectF bbox(topLeft.x(), topLeft.y(), width, height);
-    refreshPreviewAndLabelPosition(bbox);
+    NodePtr internalNode = getNode();
+    if (internalNode) {
+        internalNode->getSize(&width, &height);
+        QRectF bbox(topLeft.x(), topLeft.y(), width, height);
+        refreshPreviewAndLabelPosition(bbox);
+    }
 }
 
 void

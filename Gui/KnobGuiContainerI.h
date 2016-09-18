@@ -63,6 +63,12 @@ public:
         return _containerWidget;
     }
 
+    /**
+     * @brief Refresh whether a page should be made visible or not. A page is considered to be visible
+     * when at least one of its children (recursively) is not secret.
+     **/
+    virtual void refreshPageVisibility(const KnobPagePtr& /*page*/) {}
+
 protected:
 
     void setContainerWidget(QWidget* widget)
