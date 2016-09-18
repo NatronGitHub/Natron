@@ -77,8 +77,8 @@ public:
     static void makeFullyQualifiedLabel(const NodePtr& node, std::string* ret);
     NodeCollectionPtr getGroup() const;
     const std::list< NodeGuiPtr > & getSelectedNodes() const;
-    NodeGuiPtr createNodeGUI(const NodePtr & node,
-                             const CreateNodeArgs& args);
+
+    virtual void createNodeGui(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
 
     void selectNode(const NodeGuiPtr & n, bool addToSelection);
 
@@ -152,15 +152,16 @@ public:
     ViewerTab* getLastSelectedViewer() const;
 
     /**
-     * @brief Given the node, it tries to move it to the ideal position
-     * according to the position of the selected node and its inputs/outputs.
-     * This is used when creating a node to position it correctly.
-     * It will move the inputs / outputs slightly to fit this node into the nodegraph
-     * so they do not overlap.
+     * @brief Tries to automatically connect the given node n according to the 
+     * current selection. If there are no selected nodes or multiple selected nodes
+     * this method should not be called. 
+     * @returns True if auto-connecting worked, false otherwise
      **/
-    void moveNodesForIdealPosition(const NodeGuiPtr &n,
-                                   const NodeGuiPtr& selected,
-                                   bool autoConnect);
+    bool doAutoConnectHeuristic(const NodeGuiPtr &n, const NodeGuiPtr& selected);
+
+    void moveNodeToCenterOfVisiblePortion(const NodeGuiPtr &n);
+
+    void setNodeToDefaultPosition(const NodeGuiPtr& n, const NodesGuiList& selectedNodes, const CreateNodeArgs& args);
 
     void copyNodes(const NodesGuiList& nodes, SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard);
 

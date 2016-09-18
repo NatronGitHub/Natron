@@ -480,11 +480,6 @@ public:
 
     virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* /*projections*/) const {}
 
-    virtual void createNodeGui(const NodePtr& /*node*/,
-                           const NodePtr& /*parentmultiinstance*/,
-                           const CreateNodeArgs& /*args*/)
-    {
-    }
 
     virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args);
 

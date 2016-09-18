@@ -466,100 +466,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     return true;
 } // findAndTryLoadAutoSave
 
-void
-GuiAppInstance::createNodeGui(const NodePtr &node,
-                              const NodePtr& parentMultiInstance,
-                              const CreateNodeArgs& args)
-{
-    NodeCollectionPtr group = node->getGroup();
-    NodeGraph* graph;
 
-    if (group) {
-        NodeGraphI* graph_i = group->getNodeGraph();
-        if (!graph_i) {
-            // If the container does not have a graph UI, do not create the node UI
-            return;
-        }
-        graph = dynamic_cast<NodeGraph*>(graph_i);
-        assert(graph);
-    } else {
-        graph = _imp->_gui->getNodeGraph();
-    }
-    if (!graph) {
-        throw std::logic_error("");
-    }
-
-    NodesGuiList selectedNodes = graph->getSelectedNodes();
-    NodeGuiPtr nodegui = _imp->_gui->createNodeGUI(node, args);
-    assert(nodegui);
-
-    if (parentMultiInstance && nodegui) {
-        nodegui->hideGui();
-
-
-        NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
-        assert(parentNodeGui_i);
-        nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
-    }
-
-    // For viewers, they create their own viewer interface.
-    bool isViewer = node->isEffectViewerNode() != 0;
-    if (isViewer) {
-        _imp->_gui->createViewerGui(nodegui);
-    } else {
-        // Must be done after the viewer gui has been created
-        //if (!isDuringPyPlugCreation()) {
-            _imp->_gui->createNodeViewerInterface(nodegui);
-        //}
-    }
-
-
-
-
-    NodeGroupPtr isGroup = node->isEffectNodeGroup();
-    if ( isGroup && isGroup->isSubGraphUserVisible() ) {
-        _imp->_gui->createGroupGui(node, args);
-    }
-
-    ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
-    if (!parentMultiInstance) {
-        nodegui->initializeInputs();
-    }
-    
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    if ( !serialization && !isViewer ) {
-        triggerAutoSave();
-    }
-
-
-    ///only move main instances
-    if ( node->getParentMultiInstanceName().empty() && !serialization) {
-        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-
-        if ( selectedNodes.empty() || serialization) {
-            autoConnect = false;
-        }
-        double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-        double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
-            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
-            nodegui->refreshPosition( pos.x(), pos.y(), true );
-        } else {
-            BackdropGuiPtr isBd = toBackdropGui(nodegui);
-            if (!isBd) {
-                NodeGuiPtr selectedNode;
-                if ( !serialization && (selectedNodes.size() == 1) ) {
-                    selectedNode = selectedNodes.front();
-                    BackdropGuiPtr isBdGui = toBackdropGui(selectedNode);
-                    if (isBdGui) {
-                        selectedNode.reset();
-                    }
-                }
-                nodegui->getDagGui()->moveNodesForIdealPosition(nodegui, selectedNode, autoConnect);
-            }
-        }
-    }
-} // createNodeGui
 
 std::string
 GuiAppInstance::openImageFileDialog()
@@ -1105,42 +1012,20 @@ void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                                         const CreateNodeArgs& args)
 {
-    NodeGuiIPtr node_gui_i = node->getNodeGui();
-    NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
-
-    /*if (node_gui_i) {
-        _imp->_gui->createNodeViewerInterface(nodeGui);
-    }*/
-
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-    if (autoConnect && !serialization && node_gui_i) {
-        NodeGraph* graph = 0;
-        NodeCollectionPtr collection = node->getGroup();
-        assert(collection);
-        NodeGroupPtr isGrp = toNodeGroup(collection);
-        if (isGrp) {
-            NodeGraphI* graph_i = isGrp->getNodeGraph();
+    NodeGuiPtr nodeGui;
+    {
+        NodeGuiIPtr node_gui_i = node->getNodeGui();
+        nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+    }
+    if (nodeGui) {
+        NodeGraph* graph;
+        {
+            NodeGraphI* graph_i = node->getGroup()->getNodeGraph();
             assert(graph_i);
             graph = dynamic_cast<NodeGraph*>(graph_i);
-        } else {
-            graph = _imp->_gui->getNodeGraph();
         }
-        assert(graph);
-        if (!graph) {
-            throw std::logic_error("");
-        }
-        NodesGuiList selectedNodes = graph->getSelectedNodes();
-        NodeGuiPtr selectedNode;
-        if ( !selectedNodes.empty() ) {
-            selectedNode = selectedNodes.front();
-            if (toBackdropGui(selectedNode) ) {
-                selectedNode.reset();
-            }
-        }
-        graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
+        graph->setNodeToDefaultPosition(nodeGui, graph->getSelectedNodes(), args);
     }
- 
     AppInstance::onGroupCreationFinished(node, args);
 
 }

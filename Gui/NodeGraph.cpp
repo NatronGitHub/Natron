@@ -353,80 +353,65 @@ NodeGraph::visibleWidgetRect() const
     return viewport()->rect();
 }
 
-NodeGuiPtr
-NodeGraph::createNodeGUI(const NodePtr & node,
-                         const CreateNodeArgs& args)
+void
+NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
 {
+    // Save current selection
+    NodesGuiList selectedNodes = getSelectedNodes();
+
+    // Create the correct node gui class according to type
     NodeGuiPtr node_ui;
-    DotPtr isDotNode = toDot( node->getEffectInstance() );
-    BackdropPtr isBd = toBackdrop( node->getEffectInstance() );
-    NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance() );
+    {
+        DotPtr isDotNode = toDot( node->getEffectInstance() );
+        BackdropPtr isBd = toBackdrop( node->getEffectInstance() );
+        NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance() );
 
-
-    if (isDotNode) {
-        node_ui = DotGui::create(_imp->_nodeRoot);
-    } else if (isBd) {
-        node_ui = BackdropGui::create(_imp->_nodeRoot);
-    } else {
-        node_ui = NodeGui::create(_imp->_nodeRoot);
-    }
-    assert(node_ui);
-    node_ui->initialize(this, node);
-
-    if (isBd) {
-        BackdropGuiPtr bd = toBackdropGui(node_ui);
-        assert(bd);
-        NodesGuiList selectedNodes = _imp->_selection;
-        if ( bd && !selectedNodes.empty() ) {
-            ///make the backdrop large enough to contain the selected nodes and position it correctly
-            QRectF bbox;
-            for (NodesGuiList::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-                QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-                bbox = bbox.united(nodeBbox);
-            }
-
-            double border50 = mapToScene( QPoint(50, 0) ).x();
-            double border0 = mapToScene( QPoint(0, 0) ).x();
-            double border = border50 - border0;
-            double headerHeight = bd->getFrameNameHeight();
-            QPointF scenePos(bbox.x() - border, bbox.y() - border);
-
-            bd->setPos( bd->mapToParent( bd->mapFromScene(scenePos) ) );
-            bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
+        if (isDotNode) {
+            node_ui = DotGui::create(_imp->_nodeRoot);
+        } else if (isBd) {
+            node_ui = BackdropGui::create(_imp->_nodeRoot);
+        } else {
+            node_ui = NodeGui::create(_imp->_nodeRoot);
         }
     }
+    assert(node_ui);
 
-
+    // Add the node to the list. The shared pointer is held as a strong ref on the NodeGraph object.
     {
         QMutexLocker l(&_imp->_nodesMutex);
         _imp->_nodes.push_back(node_ui);
     }
 
-    bool isTopLevelNodeBeingCreated = getGui()->getApp()->isTopLevelNodeBeingCreated(node);
-    
+    // This will create the node GUI across all Natron
+    node_ui->initialize(this, node, args);
+
+
+    // For groups do it in GuiAppInstance::onGroupCreationFinished once all internal nodes
+    // have been created
+    NodeGroupPtr isGroup = node->isEffectNodeGroup();
+    if (!isGroup) {
+        setNodeToDefaultPosition(node_ui, selectedNodes, args);
+    }
+
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-
-    bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
-    if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {
-        node_ui->ensurePanelCreated();
-    }
-
-
-    boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
-    if (nodeStack) {
-        getGui()->registerNewUndoStack( nodeStack.get() );
-    }
-
     bool addUndoRedo = args.getProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
     if (addUndoRedo) {
         pushUndoCommand( new AddMultipleNodesCommand(this, node_ui) );
-    } else if ( !serialization && !isGrp ) {
-        selectNode(node_ui, false);
+    } else if (!serialization ) {
+
+        // For groups don't select the nodes otherwise we cannot retrieve the old selection
+        // in GuiAppInstance::onGroupCreationFinished
+        if (!isGroup) {
+            selectNode(node_ui, false);
+        }
+
+        getGui()->getApp()->triggerAutoSave();
     }
+
+    
 
     _imp->_evtState = eEventStateNone;
 
-    return node_ui;
 } // NodeGraph::createNodeGUI
 
 QUndoStack*

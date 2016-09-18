@@ -253,9 +253,12 @@ ViewerTab::removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
         return;
     }
 
+    NodePtr internalNode = n->getNode();
+    if (!internalNode) {
+        return;
+    }
 
-
-    std::string pluginID = n->getNode()->getPluginID();
+    std::string pluginID = internalNode->getPluginID();
     NodeGuiPtr activeNodeForPlugin;
     QToolBar* activeItemToolBar = 0;
     QWidget* activeItemContainer = 0;
@@ -264,12 +267,12 @@ ViewerTab::removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
         // Keep the iterator under this scope since we erase it
         std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
 
-        if (foundActive == _imp->currentNodeContext.end() && n->getNode()->isEffectNodeGroup()) {
+        if (foundActive == _imp->currentNodeContext.end() && internalNode->isEffectNodeGroup()) {
             /*
              There might be a case where the plug-in ID of a node changed if it's a PyPlug and the user clicked the "Unlock" button to transform
              it to a Group. Check with the PyPlug ID again
              */
-            foundActive = _imp->findActiveNodeContextForPlugin(n->getNode()->getPyPlugID());
+            foundActive = _imp->findActiveNodeContextForPlugin(internalNode->getPyPlugID());
         }
 
         if ( foundActive != _imp->currentNodeContext.end() ) {
@@ -366,7 +369,8 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
                                      bool permanently,
                                      bool setAnotherFromSamePlugin)
 {
-    if (n->getNode()->isEffectViewerNode()) {
+    NodePtr node = n->getNode();
+    if (node && node->isEffectViewerNode()) {
         return;
     }
     removeNodeViewerInterfaceInternal(n, permanently, setAnotherFromSamePlugin);

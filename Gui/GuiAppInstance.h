@@ -269,10 +269,6 @@ public:
     virtual bool isDuringPainting() const OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
 
-    virtual void createNodeGui(const NodePtr &node,
-                               const NodePtr&  parentMultiInstance,
-                               const CreateNodeArgs& args) OVERRIDE FINAL;
-
     virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
 
     

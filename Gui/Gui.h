@@ -87,8 +87,6 @@ public:
      **/
     void createGui();
 
-    NodeGuiPtr createNodeGUI(const NodePtr& node,
-                             const CreateNodeArgs& args);
 
     void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
 

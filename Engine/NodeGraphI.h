@@ -40,6 +40,8 @@ public:
     virtual ~NodeGraphI() {}
 
     virtual void onNodesCleared() = 0;
+
+    virtual void createNodeGui(const NodePtr& node, const CreateNodeArgs& args) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -80,6 +80,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
@@ -957,7 +958,17 @@ Node::load(const CreateNodeArgs& args)
     // Create gui if needed
     bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
     if (!argsNoNodeGui) {
-        getApp()->createNodeGui(shared_from_this(), getParentMultiInstance(), args);
+        NodeGraphI* graph_i = group->getNodeGraph();
+        if (graph_i) {
+            graph_i->createNodeGui(thisShared, args);
+
+            // The gui pointer is set in the constructor of NodeGui
+            if (!_imp->guiPointer.lock()) {
+                throw std::runtime_error(tr("Could not create GUI for node %1").arg(QString::fromUtf8(getScriptName_mt_safe().c_str())).toStdString());
+            }
+
+        }
+
     }
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args);
@@ -1940,13 +1951,14 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         isOfxEffect->syncPrivateData_other_thread();
     }
 
+
     // Check if pages ordering changed, if not do not serialize
     bool pageOrderChanged = hasPageOrderChangedSinceDefault();
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
-    // Non empty if this is a pyplug
-    std::string pyPlugID = getPyPlugID();
+    bool subGraphEdited = isSubGraphEditedByUser();
+
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
@@ -1956,10 +1968,10 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         // For pages, check if it is a user knob, if so serialialize user knobs recursively
         if (isPage) {
-            if (pageOrderChanged) {
+            if (pageOrderChanged || subGraphEdited) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
-            if ( knobs[i]->isUserKnob() && (pyPlugID.empty() || !knobs[i]->isDeclaredByPlugin()) ) {
+            if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
                 userPages.push_back(knobs[i]);
             }
         }
@@ -1969,7 +1981,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (knobs[i]->isUserKnob() && (pyPlugID.empty() || !knobs[i]->isDeclaredByPlugin())) {
+        if (knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin()) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
         }
@@ -2009,8 +2021,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     serialization->_pluginID = getPluginID();
 
-    bool subGraphEdited = isSubGraphEditedByUser();
-    
+
     {
         QMutexLocker k(&_imp->nodePresetMutex);
         serialization->_presetLabel = _imp->initialNodePreset;

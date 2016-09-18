@@ -148,8 +148,7 @@ public:
         return NodeGuiPtr( new NodeGui(parent) );
     }
 
-    void initialize(NodeGraph* dag,
-                    const NodePtr & internalNode);
+    void initialize(NodeGraph* dag, const NodePtr &internalNode, const CreateNodeArgs& args);
 
     //Creates panel if needed, might be expensive
     void ensurePanelCreated();

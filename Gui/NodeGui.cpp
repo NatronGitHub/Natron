@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Backdrop.h"
 #include "Engine/Image.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
 #include "Engine/Image.h"
@@ -206,7 +207,8 @@ NodeGui::~NodeGui()
 
 void
 NodeGui::initialize(NodeGraph* dag,
-                    const NodePtr & internalNode)
+                    const NodePtr & internalNode,
+                    const CreateNodeArgs& args)
 {
     _internalNode = internalNode;
     assert(internalNode);
@@ -242,6 +244,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(inputEdgeLabelChanged(int, QString)), this, SLOT(onInputLabelChanged(int,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(inputVisibilityChanged(int)), this, SLOT(onInputVisibilityChanged(int)) );
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
+    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), dag->getGui(), SLOT(onNodeNameChanged(QString)) );
     setCacheMode(DeviceCoordinateCache);
 
 
@@ -271,9 +274,20 @@ NodeGui::initialize(NodeGraph* dag,
             assert(panel);
             panel->onChildCreated(internalNode);
         }
-    } else if ( internalNode->getEffectInstance()->isBuiltinTrackerNode() ) {
-        ensurePanelCreated();
     }
+
+    // For the tracker node, it needs the panel created by default for the tracks panel
+    {
+        const bool panelAlwaysCreatedByDefault = internalNode->getEffectInstance()->isBuiltinTrackerNode();
+        bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
+        if (panelAlwaysCreatedByDefault ||
+            (!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
+            ensurePanelCreated();
+        }
+    }
+
 
     if ( internalNode->makePreviewByDefault() ) {
         ///It calls resize
@@ -300,20 +314,44 @@ NodeGui::initialize(NodeGraph* dag,
 
     restoreStateAfterCreation();
 
-    ///Link the position of the node to the position of the parent multi-instance
-    const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
-    if ( !parentMultiInstanceName.empty() ) {
-        NodePtr parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
-        NodeGuiIPtr parentNodeGui_I = parentNode->getNodeGui();
-        assert(parentNode && parentNodeGui_I);
-        NodeGui* parentNodeGui = dynamic_cast<NodeGui*>( parentNodeGui_I.get() );
-        assert(parentNodeGui);
-        QObject::connect( parentNodeGui, SIGNAL(positionChanged(int,int)), this, SLOT(onParentMultiInstancePositionChanged(int,int)) );
+    // Link the position of the node to the position of the parent multi-instance
+    NodePtr parentMultiInstance = internalNode->getParentMultiInstance();
+    if (parentMultiInstance) {
+
+        hideGui();
+        NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
+        assert(parentNodeGui_i);
+        NodeGuiPtr parentNodeGui = boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i);
+        setParentMultiInstance(parentNodeGui);
+
+        QObject::connect( parentNodeGui.get(), SIGNAL(positionChanged(int,int)), this, SLOT(onParentMultiInstancePositionChanged(int,int)) );
         QPointF p = parentNodeGui->pos();
         refreshPosition(p.x(), p.y(), true);
     }
 
     getNode()->initializeHostOverlays();
+
+    initializeInputs();
+
+    if (_undoStack) {
+        getDagGui()->getGui()->registerNewUndoStack( _undoStack.get() );
+    }
+
+    // For a viewer, it creates its own viewer knobs in createViewerGui
+    if (internalNode->isEffectViewerNode()) {
+        getDagGui()->getGui()->createViewerGui(thisAsShared);
+    } else {
+        // Must be done after the viewer gui has been created
+        getDagGui()->getGui()->createNodeViewerInterface(thisAsShared);
+
+    }
+
+    // For a group create its node graph
+    NodeGroupPtr isGroup = internalNode->isEffectNodeGroup();
+    if ( isGroup && isGroup->isSubGraphUserVisible() ) {
+        getDagGui()->getGui()->createGroupGui(internalNode, args);
+    }
+
 } // initialize
 
 void
@@ -2478,8 +2516,6 @@ NodeGui::destroyGui()
         ///Remove from the nodegraph containers
         _graph->deleteNodePermanantly(thisShared);
     }
-    NodePtr internalNode = _internalNode.lock();
-    assert(internalNode);
 
     //Remove viewer UI
     guiObj->removeNodeViewerInterface(thisShared, true);
@@ -2493,7 +2529,8 @@ NodeGui::destroyGui()
 
 
     //Remove nodegraph if group
-    if ( internalNode->getEffectInstance() ) {
+    NodePtr internalNode = _internalNode.lock();
+    if ( internalNode && internalNode->getEffectInstance() ) {
         NodeGroupPtr isGrp = internalNode->isEffectNodeGroup();
         if (isGrp) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();

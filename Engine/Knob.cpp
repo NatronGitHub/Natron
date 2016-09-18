@@ -4716,24 +4716,23 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
     KnobSeparatorPtr isSep = toKnobSeparator(knob);
     KnobButtonPtr btn = toKnobButton(knob);
 
-    bool isFullRecoverySave = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
     if (isInt) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeInteger;
         serialization->_defaultValue.isInt = isInt->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isInt->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isInt->hasDefaultValueChanged(dimension);
     } else if (isBool || isGrp || isButton) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeBoolean;
         serialization->_defaultValue.isBool = isBoolBase->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isBoolBase->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isBoolBase->hasDefaultValueChanged(dimension);
     } else if (isColor || isDouble) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeDouble;
         serialization->_defaultValue.isDouble = isDoubleBase->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isDoubleBase->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
     } else if (isStringBase) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
         serialization->_defaultValue.isString = isStringBase->getDefaultValue(dimension);
-        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isStringBase->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
 
     } else if (isChoice) {
         serialization->_type = ValueSerialization::eSerializationValueVariantTypeString;
@@ -4745,7 +4744,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
             defValue = entries[defIndex];
         }
         serialization->_defaultValue.isString = defValue;
-        serialization->_serializeDefaultValue = isFullRecoverySave ? true : isChoice->hasDefaultValueChanged(dimension);
+        serialization->_serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
 
     }
 
@@ -4800,56 +4799,81 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
 
     // We do the opposite of what is done in initializeValueSerializationStorage()
     if (isInt) {
-        if (restoreDefaultValue) {
-            isInt->setDefaultValueWithoutApplying(obj._defaultValue.isInt, targetDimension);
-        }
         if (obj._serializeValue) {
             isInt->setValue(obj._value.isInt, ViewSpec::all(), targetDimension);
         }
+        if (restoreDefaultValue) {
+            if (obj._serializeValue) {
+                isInt->setDefaultValueWithoutApplying(obj._defaultValue.isInt, targetDimension);
+            } else {
+                isInt->setDefaultValue(obj._defaultValue.isInt, targetDimension);
+            }
+        }
+
     } else if (isBool || isGrp || isButton) {
         assert(isBoolBase);
-        if (restoreDefaultValue) {
-            isBoolBase->setDefaultValueWithoutApplying(obj._defaultValue.isBool, targetDimension);
-        }
         if (obj._serializeValue) {
             isBoolBase->setValue(obj._value.isBool, ViewSpec::all(), targetDimension);
         }
+        if (restoreDefaultValue) {
+            if (obj._serializeValue) {
+                isBoolBase->setDefaultValueWithoutApplying(obj._defaultValue.isBool, targetDimension);
+            } else {
+                isBoolBase->setDefaultValue(obj._defaultValue.isBool, targetDimension);
+            }
+        }
     } else if (isColor || isDouble) {
         assert(isDoubleBase);
-        if (restoreDefaultValue) {
-            isDoubleBase->setDefaultValueWithoutApplying(obj._defaultValue.isDouble, targetDimension);
-        }
+
         if (obj._serializeValue) {
             isDoubleBase->setValue(obj._value.isDouble, ViewSpec::all(), targetDimension);
         }
+        if (restoreDefaultValue) {
+            if (obj._serializeValue) {
+                isDoubleBase->setDefaultValueWithoutApplying(obj._defaultValue.isDouble, targetDimension);
+            } else {
+                isDoubleBase->setDefaultValue(obj._defaultValue.isDouble, targetDimension);
+            }
+        }
 
     } else if (isStringBase) {
-        if (restoreDefaultValue) {
-            isStringBase->setDefaultValueWithoutApplying(obj._defaultValue.isString, targetDimension);
-        }
+
         if (obj._serializeValue) {
             isStringBase->setValue(obj._value.isString, ViewSpec::all(), targetDimension);
         }
-
+        if (restoreDefaultValue) {
+            if (obj._serializeValue) {
+                isStringBase->setDefaultValueWithoutApplying(obj._defaultValue.isString, targetDimension);
+            } else {
+                isStringBase->setDefaultValue(obj._defaultValue.isString, targetDimension);
+            }
+        }
     } else if (isChoice) {
-        bool found = false;
+        int foundValue = -1;
         int foundDefault = -1;
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if ( obj._serializeValue && boost::iequals(entries[i], obj._value.isString) ) {
-                isChoice->setValue(i);
-                found = true;
-                break;
-            } else if (restoreDefaultValue && boost::iequals(entries[i], obj._defaultValue.isString)) {
+            if (foundValue == -1 && obj._serializeValue && boost::iequals(entries[i], obj._value.isString) ) {
+                foundValue = i;
+            } else if (foundDefault == -1 && restoreDefaultValue && boost::iequals(entries[i], obj._defaultValue.isString)) {
                 foundDefault = i;
             }
         }
+
+        if (obj._serializeValue) {
+            if (foundValue == -1) {
+                // Just remember the active entry if not found
+                isChoice->setActiveEntry(obj._value.isString);
+            } else {
+                isChoice->setValue(foundValue);
+            }
+         }
         if (foundDefault != -1) {
-            isChoice->setDefaultValueWithoutApplying(foundDefault);
-        }
-        if (!found) {
-            // just remember the active entry if not found
-            isChoice->setActiveEntry(obj._value.isString);
+            if (obj._serializeValue) {
+                isChoice->setDefaultValueWithoutApplying(foundDefault);
+            } else {
+                isChoice->setDefaultValue(foundDefault);
+            }
         }
     }
 
@@ -4890,25 +4914,27 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             children = isPage->getChildren();
         }
         for (std::size_t i = 0; i < children.size(); ++i) {
+            const KnobIPtr& child = children[i];
             if (isPage) {
                 // If page, check that the child is a top level child and not child of a sub-group
                 // otherwise let the sub group register the child
-                KnobIPtr parent = children[i]->getParentKnob();
+                KnobIPtr parent = child->getParentKnob();
                 if (parent.get() != isPage) {
                     continue;
                 }
             }
-            KnobGroupPtr isGrp = toKnobGroup(children[i]);
+            KnobGroupPtr isGrp = toKnobGroup(child);
             if (isGrp) {
-                boost::shared_ptr<GroupKnobSerialization> serialisation( new GroupKnobSerialization );
-                isGrp->toSerialization(serialisation.get());
-                groupSerialization->_children.push_back(serialisation);
+                boost::shared_ptr<GroupKnobSerialization> childSer( new GroupKnobSerialization );
+                isGrp->toSerialization(childSer.get());
+                groupSerialization->_children.push_back(childSer);
             } else {
                 //KnobChoicePtr isChoice = toKnobChoice(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                KnobSerializationPtr serialisation( new KnobSerialization );
-                children[i]->toSerialization(serialisation.get());
-                groupSerialization->_children.push_back(serialisation);
+                KnobSerializationPtr childSer( new KnobSerialization );
+                child->toSerialization(childSer.get());
+                assert(childSer->_isUserKnob);
+                groupSerialization->_children.push_back(childSer);
             }
         }
     } else {
@@ -4920,6 +4946,10 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_dimension = getDimension();
         serialization->_scriptName = getName();
 
+        serialization->_isUserKnob = isUserKnob() && !isDeclaredByPlugin();
+
+        bool isFullRecoverySave = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
+
 
         // Values bits
         serialization->_values.resize(serialization->_dimension);
@@ -4927,12 +4957,17 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             serialization->_values[i]._serialization = serialization;
             serialization->_values[i]._dimension = i;
             initializeValueSerializationStorage(thisShared, i, &serialization->_values[i]);
+
+            // Force default value serialization in those cases
+            if (serialization->_isUserKnob || isFullRecoverySave) {
+                serialization->_values[i]._serializeDefaultValue = true;
+                serialization->_values[i]._mustSerialize = true;
+            }
         }
 
         serialization->_masterIsAlias = getAliasMaster().get() != 0;
 
         // User knobs bits
-        serialization->_isUserKnob = isUserKnob() && !isDeclaredByPlugin();
         serialization->_label = getLabel();
         serialization->_triggerNewLine = isNewLineActivated();
         serialization->_evaluatesOnChange = getEvaluateOnChange();
@@ -5114,33 +5149,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     beginChanges();
 
 
-    // There is a case where the dimension of a parameter might have changed between versions, e.g:
-    // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
-    // both dimensions.
-    // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
-    // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
-    // knob's dimensions.
-
-
-    // The number of serialized dimension does not necessarily equals the number of dimensions of the knob because some dimensions
-    // may had no modification to serialize.
-    for (std::size_t d = 0; d < serialization->_values.size(); ++d) {
-        int dimensionIndex = serialization->_values[d]._dimension;
-
-
-
-        // Clone animation
-        if (!serialization->_values[d]._animationCurve.keys.empty()) {
-            CurvePtr curve = getCurve(ViewIdx(0), dimensionIndex);
-            if (curve) {
-                curve->fromSerialization(serialization->_values[d]._animationCurve);
-            }
-        } else if (serialization->_values[d]._expression.empty() && !serialization->_values[d]._slaveMasterLink.hasLink) {
-            restoreValueFromSerialization(serialization->_values[d], dimensionIndex, serialization->_values[d]._serializeDefaultValue);
-        }
-
-    } // for all dims
-
 
     // Restore extra datas
     KnobFile* isInFile = dynamic_cast<KnobFile*>(this);
@@ -5279,6 +5287,29 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     } // isUserKnob
 
+
+    // There is a case where the dimension of a parameter might have changed between versions, e.g:
+    // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
+    // both dimensions.
+    // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
+    // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
+    // knob's dimensions.
+    for (std::size_t d = 0; d < serialization->_values.size(); ++d) {
+        int dimensionIndex = serialization->_values[d]._dimension;
+
+        // Clone animation
+        if (!serialization->_values[d]._animationCurve.keys.empty()) {
+            CurvePtr curve = getCurve(ViewIdx(0), dimensionIndex);
+            if (curve) {
+                curve->fromSerialization(serialization->_values[d]._animationCurve);
+            }
+        } else if (serialization->_values[d]._expression.empty() && !serialization->_values[d]._slaveMasterLink.hasLink) {
+            restoreValueFromSerialization(serialization->_values[d], dimensionIndex, serialization->_values[d]._serializeDefaultValue);
+        }
+        
+    } // for all dims
+
+
     // Restore viewer UI context
     if (serialization->_hasViewerInterface) {
         setInViewerContextItemSpacing(serialization->_inViewerContextItemSpacing);
@@ -5301,7 +5332,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         }
     }
     
-    //allow changes again
+    // Allow changes again
     endChanges();
     unblockValueChanges();
     computeHasModifications();

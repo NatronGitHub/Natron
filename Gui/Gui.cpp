@@ -288,31 +288,6 @@ Gui::getProjectGui() const
     return _imp->_projectGui;
 }
 
-NodeGuiPtr
-Gui::createNodeGUI(const NodePtr& node,
-                   const CreateNodeArgs& args)
-{
-    assert(_imp->_nodeGraphArea);
-
-    NodeCollectionPtr group = node->getGroup();
-    NodeGraph* graph;
-    if (group) {
-        NodeGraphI* graph_i = group->getNodeGraph();
-        assert(graph_i);
-        graph = dynamic_cast<NodeGraph*>(graph_i);
-        assert(graph);
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    if (!graph) {
-        throw std::logic_error("");
-    }
-    NodeGuiPtr nodeGui = graph->createNodeGUI(node, args);
-    QObject::connect( node.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeNameChanged(QString)) );
-    assert(nodeGui);
-
-    return nodeGui;
-}
 
 void
 Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
