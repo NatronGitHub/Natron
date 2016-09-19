@@ -30,6 +30,7 @@
 #endif
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/cstdint.hpp>
+#include <boost/math/special_functions/round.hpp>
 #endif
 
 #include "Global/Macros.h"
