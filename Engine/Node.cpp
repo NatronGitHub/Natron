@@ -4322,6 +4322,11 @@ Node::makeDocumentation(bool genHTML) const
             QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
             input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
             inputs.push_back(input);
+
+            // Don't show more than doc for 4 inputs otherwise it will just clutter the page
+            if (i == 3) {
+                break;
+            }
         }
     }
 
