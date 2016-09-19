@@ -219,7 +219,7 @@ public:
     void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard);
     void pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializationList & clipboard, const QPointF& scenPos,
                             bool useUndoCommand,
-                            std::list<std::pair<std::string, NodeGuiPtr > > *newNodes);
+                            std::list<std::pair<std::string, NodeGuiPtr > > *newNodes = 0);
 
     /**
      * @brief Create a new node given the serialization of another one
@@ -230,8 +230,7 @@ public:
                                 const QPointF& position,
                                 const NodeCollectionPtr& group,
                                 const std::string& parentName,
-                                const NodePtr& cloneMaster,
-                                std::map<std::string, std::string>* oldNewScriptNameMapping);
+                                const NodePtr& cloneMaster);
     
     
     /**

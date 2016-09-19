@@ -599,6 +599,10 @@ public:
     // This is used to determine if the ordering has changed or not for serialization purpose
     std::list<std::string> defaultViewerKnobsOrder;
 
+    // When deserializing a Group, the internal nodes are built before the Group UI is created, hence we store them in this
+    // list temporarily to create their GUI once the Group creates its own
+    std::list<std::pair<NodePtr, CreateNodeArgsPtr> > nodesToCreateGui;
+
     bool restoringDefaults;
 };
 
@@ -707,6 +711,25 @@ Node::isPartOfPrecomp() const
     return _imp->precomp.lock();
 }
 
+static bool findAvailableName(const std::string &baseName, const NodeCollectionPtr& group, const NodePtr& node, std::string* name)
+{
+    *name = baseName;
+    int no = 1;
+    do {
+        if (no > 1) {
+            std::stringstream ss;
+            ss << baseName;
+            ss << '_';
+            ss << no;
+            *name = ss.str();
+        }
+        ++no;
+    } while ( group && group->checkIfNodeNameExists(*name, node) );
+
+    // When no == 2 the name was available
+    return no == 2;
+}
+
 void
 Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName)
 {
@@ -721,42 +744,31 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
 
     if (!fixedName.isEmpty()) {
 
-        std::string baseName = fixedName.toStdString();
-        std::string name = baseName;
-        int no = 1;
-        do {
-            if (no > 1) {
-                std::stringstream ss;
-                ss << baseName;
-                ss << '_';
-                ss << no;
-                name = ss.str();
-            }
-            ++no;
-        } while ( group && group->checkIfNodeNameExists(name, shared_from_this()) );
+        std::string name;
+        findAvailableName(fixedName.toStdString(), group, shared_from_this(), &name);
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
+
+        setLabel(name);
+
 
     } else if (serialization) {
 
-        const std::string& baseName = serialization->_nodeScriptName;
-        std::string name = baseName;
-        int no = 1;
-        do {
-            if (no > 1) {
-                std::stringstream ss;
-                ss << baseName;
-                ss << '_';
-                ss << no;
-                name = ss.str();
-            }
-            ++no;
-        } while ( group && group->checkIfNodeNameExists(name, shared_from_this()) );
+        std::string name;
+        bool nameAvailable = findAvailableName(serialization->_nodeScriptName, group, shared_from_this(), &name);
 
-        //This version of setScriptName will not error if the name is invalid or already taken
+        // This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
-        setLabel( serialization->_nodeLabel );
+
+        // If the script name was not available, give the same script name to the label, most likely this is a copy/paste operation.
+        if (!nameAvailable) {
+            setLabel(name);
+        } else {
+            setLabel(serialization->_nodeLabel);
+        }
+
+
 
     } else {
         std::string name;
@@ -788,19 +800,62 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
 }
 
 void
-Node::load(const CreateNodeArgs& args)
+Node::createNodeGuiInternal(const CreateNodeArgsPtr& args)
+{
+
+    // If this node is in a group and the group UI is not yet created, append it to the group list.
+    // Otherwise create the node UI directly
+    NodePtr thisShared = shared_from_this();
+    NodeCollectionPtr group = getGroup();
+    NodeGraphI* graph_i = group->getNodeGraph();
+    if (graph_i) {
+        graph_i->createNodeGui(thisShared, *args);
+
+        // The gui pointer is set in the constructor of NodeGui
+        if (!_imp->guiPointer.lock()) {
+            throw std::runtime_error(tr("Could not create GUI for node %1").arg(QString::fromUtf8(getScriptName_mt_safe().c_str())).toStdString());
+        }
+
+        NodeGroupPtr isNodeGroup = toNodeGroup(_imp->effect);
+        if (isNodeGroup) {
+            NodeGraphI* graph_i = isNodeGroup->getNodeGraph();
+            if (graph_i) {
+                // If recursively we created internal nodes but the Group GUI was not yet created, create their gui now
+                for (std::list<std::pair<NodePtr, CreateNodeArgsPtr> >::const_iterator it = _imp->nodesToCreateGui.begin(); it!=_imp->nodesToCreateGui.end(); ++it) {
+                    graph_i->createNodeGui(it->first, *it->second);
+                }
+
+                // As a second- pass refresh all GUI inputs for the nodes now that they have been created
+                for (std::list<std::pair<NodePtr, CreateNodeArgsPtr> >::const_iterator it = _imp->nodesToCreateGui.begin(); it!=_imp->nodesToCreateGui.end(); ++it) {
+                    Q_EMIT it->first->inputsInitialized();
+                }
+                _imp->nodesToCreateGui.clear();
+            }
+        }
+    } else {
+        // The group is probably being created, append to its list
+        NodeGroupPtr containerIsGroup = toNodeGroup(group);
+        if (containerIsGroup) {
+            containerIsGroup->getNode()->_imp->nodesToCreateGui.push_back(std::make_pair(thisShared, args));
+        }
+
+    }
+}
+
+void
+Node::load(const CreateNodeArgsPtr& args)
 {
     ///Called from the main thread. MT-safe
     assert( QThread::currentThread() == qApp->thread() );
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPersistent = !args.getProperty<bool>(kCreateNodeArgsPropVolatile);
+    _imp->isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
 
-    _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
+    _imp->ioContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 
     NodeCollectionPtr group = getGroup();
-    std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
+    std::string multiInstanceParentName = args->getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
     if ( !multiInstanceParentName.empty() ) {
         _imp->multiInstanceParentName = multiInstanceParentName;
         _imp->isMultiInstance = false;
@@ -808,7 +863,7 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    _imp->wasCreatedSilently = args.getProperty<bool>(kCreateNodeArgsPropSilent);
+    _imp->wasCreatedSilently = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
     NodePtr thisShared = shared_from_this();
 
@@ -819,8 +874,8 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    std::string presetLabel = args.getProperty<std::string>(kCreateNodeArgsPropPreset);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    std::string presetLabel = args->getProperty<std::string>(kCreateNodeArgsPropPreset);
 
     if (!presetLabel.empty()) {
         // If there's a preset specified, load serialization from preset
@@ -837,23 +892,23 @@ Node::load(const CreateNodeArgs& args)
 
     }
 
-    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
+    bool isSilentCreation = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
 
     bool hasDefaultFilename = false;
     {
-        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string> defaultParamValues = args->getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
         if (foundFileName != defaultParamValues.end()) {
             std::string propName(kCreateNodeArgsPropParamValue);
             propName += "_";
             propName += kOfxImageEffectFileParamName;
-            hasDefaultFilename = !args.getProperty<std::string>(propName).empty();
+            hasDefaultFilename = !args->getProperty<std::string>(propName).empty();
         }
     }
     bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
 
-    std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+    std::string argFixedName = args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     
     if (func.first) {
@@ -896,11 +951,11 @@ Node::load(const CreateNodeArgs& args)
         } else if (!_imp->initialNodePreset.empty()) {
             loadPresets(_imp->initialNodePreset);
         }
-        setValuesFromSerialization(args);
+        setValuesFromSerialization(*args);
 
     } else {
         //ofx plugin
-        _imp->effect = appPTR->createOFXEffect(thisShared, args);
+        _imp->effect = appPTR->createOFXEffect(thisShared, *args);
         assert(_imp->effect);
     }
 
@@ -956,22 +1011,12 @@ Node::load(const CreateNodeArgs& args)
 
 
     // Create gui if needed
-    bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
     if (!argsNoNodeGui) {
-        NodeGraphI* graph_i = group->getNodeGraph();
-        if (graph_i) {
-            graph_i->createNodeGui(thisShared, args);
-
-            // The gui pointer is set in the constructor of NodeGui
-            if (!_imp->guiPointer.lock()) {
-                throw std::runtime_error(tr("Could not create GUI for node %1").arg(QString::fromUtf8(getScriptName_mt_safe().c_str())).toStdString());
-            }
-
-        }
-
+        createNodeGuiInternal(args);
     }
 
-    _imp->effect->onEffectCreated(canOpenFileDialog, args);
+    _imp->effect->onEffectCreated(canOpenFileDialog, *args);
 
     _imp->nodeCreated = true;
 
@@ -2168,10 +2213,32 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
         _imp->overlayColor[2] = serialization->_overlayColor[2];
     }
 
-
+    loadInternalNodesFromSerialization(*serialization);
 
     
 } // Node::fromSerialization
+
+void
+Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+{
+
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+
+    // Restore internal nodes for groups
+    if (isGrp && !isPyPlug()) {
+
+        {
+            // Deactivate all internal nodes for group first
+            NodesList nodes = isGrp->getNodes();
+            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                (*it)->destroyNode(false);
+            }
+        }
+
+        std::map<std::string, bool> moduleUpdatesProcessed;
+        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
+    }
+}
 
 void
 Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
@@ -2391,22 +2458,9 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& seri
     }
 
 
-    NodeGroupPtr isGrp = isEffectNodeGroup();
+    loadInternalNodesFromSerialization(serialization);
 
-    // Restore internal nodes for groups
-    if (isGrp && !isPyPlug()) {
 
-        {
-            // Deactivate all internal nodes for group first
-            NodesList nodes = isGrp->getNodes();
-            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                (*it)->destroyNode(false);
-            }
-        }
-
-        std::map<std::string, bool> moduleUpdatesProcessed;
-        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
-    }
 
 } // Node::loadPresetsInternal
 
@@ -2588,6 +2642,29 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+
+
+    const std::string & masterNodeName = serialization._masterNodeFullyQualifiedScriptName;
+    if ( !masterNodeName.empty() ) {
+        // Find master node
+        NodePtr masterNode = getApp()->getNodeByFullySpecifiedName(masterNodeName);
+
+        if (!masterNode) {
+            LogEntry::LogEntryColor c;
+            if (getColor(&c.r, &c.g, &c.b)) {
+                c.colorSet = true;
+            }
+
+            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                            tr("Cannot restore the link between %1 and %2.")
+                                            .arg( QString::fromUtf8( serialization._nodeScriptName.c_str() ) )
+                                            .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
+        } else {
+            _imp->effect->slaveAllKnobs( masterNode->getEffectInstance(), true );
+        }
+        return;
+    }
+
 
     const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues = serialization._knobsValues;
     ///try to find a serialized value for this knob

@@ -126,7 +126,7 @@ public:
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.
      **/
-    void load(const CreateNodeArgs& args);
+    void load(const CreateNodeArgsPtr& args);
 
 
     void initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName);
@@ -135,6 +135,8 @@ public:
     void loadKnob(const KnobIPtr & knob, const std::list<SERIALIZATION_NAMESPACE::KnobSerializationPtr> & serialization);
 
 private:
+
+    void createNodeGuiInternal(const CreateNodeArgsPtr& args);
 
     /**
      * @brief Restores all links for the given knob if it has masters or expressions.
@@ -164,6 +166,7 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
+    void loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 
     void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 

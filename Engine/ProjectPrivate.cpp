@@ -255,38 +255,11 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
     // Connect the nodes together
     for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        /*if ( appPTR->isBackground() && ( it->first->isEffectViewerInstance() ) ) {
-            //ignore viewers on background mode
-            continue;
-        }*/
 
         // Deprecated: For all nodes that are part of a multi-instance, fetch the main instance node pointer
-        const std::string & parentName = it->second->_multiInstanceParentName;
-        if ( !parentName.empty() ) {
+        if ( !it->second->_multiInstanceParentName.empty() ) {
             it->first->fetchParentMultiInstancePointer();
             //Do not restore connections as we just use the ones of the parent anyway
-            continue;
-        }
-
-        // Restore clone state if this node is a clone
-        const std::string & masterNodeName = it->second->_masterNodeFullyQualifiedScriptName;
-        if ( !masterNodeName.empty() ) {
-            // Find master node
-            NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
-
-            if (!masterNode) {
-                appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
-                                                tr("Cannot restore the link between %1 and %2.")
-                                                .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
-                                                .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
-                mustShowErrorsLog = true;
-            } else {
-                it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance(), true );
-            }
-        }
-
-        if ( !parentName.empty() ) {
-            //The parent will have connection mades for its children
             continue;
         }
 
