@@ -4424,6 +4424,17 @@ Node::makeDocumentation(bool genHTML) const
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
                         }
+                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+                        if ( entries.size() == entriesHelp.size() ) {
+                            valueStr.append( QString::fromUtf8("\n\n") );
+                            for (size_t i = 0; i < entries.size(); i++) {
+                                QString entry = QString::fromUtf8( entries[i].c_str() );
+                                QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
+                                if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
+                                    valueStr.append( QString::fromUtf8("**%1**: %2\n").arg(entry).arg(entryHelp) );
+                                }
+                            }
+                        }
                     } else if (isInt) {
                         valueStr = QString::number( isInt->getDefaultValue(i) );
                     } else if (isDbl) {
