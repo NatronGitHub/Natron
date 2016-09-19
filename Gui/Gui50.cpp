@@ -1260,6 +1260,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
     std::vector< SequenceParsing::SequenceFromFilesPtr > sequences;
+
     fileSequencesFromUrls(urls, &sequences);
     QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);
     NodeGraph* graph = isNodeGraphChild(widgetUnderMouse);
@@ -1303,12 +1304,12 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
 
 
                 std::string pattern = sequence->generateValidSequencePattern();
-                qDebug() << "creating reader for" << pattern.c_str() << QDateTime::currentDateTime().toString();
 
                 CreateNodeArgsPtr args(new CreateNodeArgs(readerPluginID, graph->getGroup() ));
                 args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
                 args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
                 args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
+
 
                 NodePtr n = getApp()->createNode(args);
 
@@ -1317,7 +1318,6 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                 n->getSize(&w, &h);
                 graphScenePos.rx() += (w + 10);
 
-                 qDebug() << "end creating reader for" << pattern.c_str() << QDateTime::currentDateTime().toString();
             }
         }
     }
