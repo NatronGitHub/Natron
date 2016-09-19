@@ -4360,6 +4360,10 @@ Node::makeDocumentation(bool genHTML) const
         if ( (*it)->getDefaultIsSecret() ) {
             continue;
         }
+
+        if (!(*it)->isDeclaredByPlugin()) {
+            continue;
+        }
         QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
