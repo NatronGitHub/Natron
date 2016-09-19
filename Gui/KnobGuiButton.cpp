@@ -145,8 +145,8 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 
     if ( !icon.isNull() ) {
         _button = new Button( icon, QString(), layout->parentWidget() );
-        _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _button->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+        _button->setFixedSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+        _button->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
     } else {
         _button = new Button( label, layout->parentWidget() );
     }
