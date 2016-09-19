@@ -29,6 +29,7 @@
 #include <QtCore/QString>
 #include <QtCore/QDir>
 
+#include "Engine/FileSystemModel.h"
 #include "Engine/StandardPaths.h"
 #include <SequenceParsing.h>
 
@@ -58,16 +59,16 @@ TEST(SequenceParsing, TestHashCharacter) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     SequenceFromPattern sequence;
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_#.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_#.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_##.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_##.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 0, (int)sequence.size() );
 
     ///test that a single file matching pattern would match a single file only.
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_0.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_0.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 1, (int)sequence.size() );
 
     ///delete files
@@ -86,7 +87,7 @@ TEST(SequenceParsing, TestHashCharacter) {
     }
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_##.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_##.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 1, (int)sequence.size() );
 
     ///delete files
@@ -109,7 +110,7 @@ TEST(SequenceParsing, TestHashCharacter) {
     }
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_##.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_##.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 11, (int)sequence.size() );
 
     ///delete files
@@ -131,11 +132,11 @@ TEST(SequenceParsing, TestHashCharacter) {
     }
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#test_##.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#test_##.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 11, (int)sequence.size() );
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("##test_##.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("##test_##.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 1, (int)sequence.size() );
 
     ///delete files
@@ -157,7 +158,7 @@ TEST(SequenceParsing, TestHashCharacter) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#test_##.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#test_##.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 0, (int)sequence.size() );
     ///delete files
     for (int i = 0; i < fileNames.size(); ++i) {
@@ -188,7 +189,7 @@ TEST(SequenceParsing, TestHashCharacter) {
     }
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#####.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#####.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 3, (int)sequence.size() );
 
     for (int i = 0; i < fileNames.size(); ++i) {
@@ -197,7 +198,7 @@ TEST(SequenceParsing, TestHashCharacter) {
 
     ///test with an empty pattern
     sequence.clear();
-    filesListFromPattern("", &sequence);
+    FileSystemModel::filesListFromPattern("", &sequence);
     EXPECT_EQ( 0, (int)sequence.size() );
 }
 
@@ -216,11 +217,11 @@ TEST(SequenceParsing, TestPrintfLikeSyntax) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     SequenceFromPattern sequence;
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%01d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%01d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%02d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%02d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 0, (int)sequence.size() );
 
     ///delete files
@@ -241,12 +242,12 @@ TEST(SequenceParsing, TestPrintfLikeSyntax) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%04d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%04d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
 
     ///testing wrong pattern
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("%02dtest_%04d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("%02dtest_%04d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 0, (int)sequence.size() );
 
     ///delete files
@@ -276,17 +277,17 @@ TEST(SequenceParsing, TestPrintfLikeSyntax) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("%02dtest_%04d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("%02dtest_%04d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
 
 
     ///try mixing printf-like syntax with hashes characters (###)
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("##test_%04d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("##test_%04d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
 
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#test_%04d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("#test_%04d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( 1, (int)sequence.size() );
 
     ///delete files
@@ -327,7 +328,7 @@ TEST(SequenceParsing, TestViews) {
     }
 
     SequenceFromPattern sequence;
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%01d.%V.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%01d.%V.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
     for (SequenceFromPattern::iterator it = sequence.begin(); it != sequence.end(); ++it) {
         EXPECT_EQ( 2, (int)it->second.size() );
@@ -349,7 +350,7 @@ TEST(SequenceParsing, TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird.%V.test_%01d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird.%V.test_%01d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
     for (SequenceFromPattern::iterator it = sequence.begin(); it != sequence.end(); ++it) {
         EXPECT_EQ( 2, (int)it->second.size() );
@@ -373,7 +374,7 @@ TEST(SequenceParsing, TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%01d.%v.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("test_%01d.%v.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
     for (SequenceFromPattern::iterator it = sequence.begin(); it != sequence.end(); ++it) {
         EXPECT_EQ( 2, (int)it->second.size() );
@@ -396,7 +397,7 @@ TEST(SequenceParsing, TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird%vtest_%01d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird%vtest_%01d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
 
     for (int i = 0; i < filesCreated.size(); ++i) {
@@ -416,7 +417,7 @@ TEST(SequenceParsing, TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird.%v.test_%01d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird.%v.test_%01d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
     for (SequenceFromPattern::iterator it = sequence.begin(); it != sequence.end(); ++it) {
         EXPECT_EQ( 2, (int)it->second.size() );
@@ -459,7 +460,7 @@ TEST(SequenceParsing, TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird.%v.test_%01d.unittest") ).toStdString(), &sequence);
+    FileSystemModel::filesListFromPattern(dir.absoluteFilePath( QString::fromUtf8("weird.%v.test_%01d.unittest") ).toStdString(), &sequence);
     EXPECT_EQ( sequenceItemsCount, (int)sequence.size() );
     for (SequenceFromPattern::iterator it = sequence.begin(); it != sequence.end(); ++it) {
         EXPECT_EQ( 5, (int)it->second.size() );

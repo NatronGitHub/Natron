@@ -1564,7 +1564,7 @@ SequenceFileDialog::openSelectedFiles()
                 }
 
                 SequenceParsing::SequenceFromPattern sequence;
-                SequenceParsing::filesListFromPattern(str.toStdString(), &sequence);
+                FileSystemModel::filesListFromPattern(str.toStdString(), &sequence);
                 if (sequence.size() > 0) {
                     QString text;
                     if (sequence.size() == 1) {
@@ -2867,10 +2867,9 @@ SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,
             continue;
         }
 
-        //else if it is a file, append it
-        if ( QFile::exists(entryWithPath) ) {
-            files->append(entryWithPath);
-        }
+
+        files->append(entryWithPath);
+
     }
 }
 

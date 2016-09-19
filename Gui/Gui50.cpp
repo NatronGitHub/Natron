@@ -1134,6 +1134,7 @@ void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
                            std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
 {
+
     QStringList filesList;
 
     for (int i = 0; i < urls.size(); ++i) {
@@ -1170,40 +1171,32 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
         supportedExtensions.push_back( QString::fromUtf8( it->c_str() ) );
     }
     *sequences = SequenceFileDialog::fileSequencesFromFilesList(filesList, supportedExtensions);
+
 }
 
 void
 Gui::dragEnterEvent(QDragEnterEvent* e)
 {
+
     if ( !e->mimeData()->hasUrls() ) {
         return;
     }
 
-    QList<QUrl> urls = e->mimeData()->urls();
+    e->accept();
 
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
-    fileSequencesFromUrls(urls, &sequences);
-
-    if ( !sequences.empty() ) {
-        e->accept();
-    }
 }
 
 void
 Gui::dragMoveEvent(QDragMoveEvent* e)
 {
+
     if ( !e->mimeData()->hasUrls() ) {
         return;
     }
 
-    QList<QUrl> urls = e->mimeData()->urls();
 
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
-    fileSequencesFromUrls(urls, &sequences);
+    e->accept();
 
-    if ( !sequences.empty() ) {
-        e->accept();
-    }
 }
 
 void
@@ -1235,8 +1228,8 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
 {
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
 
-    fileSequencesFromUrls(urls, &sequences);
 
+    fileSequencesFromUrls(urls, &sequences);
     QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);
     NodeGraph* graph = isNodeGraphChild(widgetUnderMouse);
 
@@ -1276,11 +1269,14 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
             if ( readerPluginID.empty() ) {
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
             } else {
+
+
                 std::string pattern = sequence->generateValidSequencePattern();
                 CreateNodeArgs args(readerPluginID, graph->getGroup() );
                 args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
                 args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
                 args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
+
 
                 NodePtr n = getApp()->createNode(args);
 
@@ -1288,6 +1284,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                 double w, h;
                 n->getSize(&w, &h);
                 graphScenePos.rx() += (w + 10);
+
             }
         }
     }

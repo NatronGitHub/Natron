@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#include <map>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -36,6 +38,8 @@
 #include <QtCore/QThread>
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QDir>
+
+
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
@@ -130,6 +134,7 @@ public:
      **/
     boost::shared_ptr<FileSystemItem> matchPath(const QStringList& path,
                                                 int startIndex = 0) const;
+
 
 private:
 
@@ -321,6 +326,9 @@ public:
     void onSortIndicatorChanged(int logicalIndex, Qt::SortOrder order);
 
     void resetCompletly(bool rebuild);
+
+    static bool filesListFromPattern(const std::string& pattern,  std::map<int,std::map<int,std::string> >* sequence);
+
 
 public Q_SLOTS:
 

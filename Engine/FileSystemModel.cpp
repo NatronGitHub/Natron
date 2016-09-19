@@ -1682,6 +1682,26 @@ FileGathererThread::fetchDirectory(const boost::shared_ptr<FileSystemItem>& item
     }
 }
 
+bool
+FileSystemModel::filesListFromPattern(const std::string& pattern, SequenceParsing::SequenceFromPattern* sequence)
+{
+    std::string patternCpy = pattern;
+    std::string patternPath = SequenceParsing::removePath(patternCpy);
+
+    QDir dir(QString::fromUtf8(patternPath.c_str()));
+    if (!dir.exists()) {
+        return false;
+    }
+
+    QStringList files = dir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+
+    StringList filesList;
+    for (QStringList::iterator it = files.begin(); it!=files.end(); ++it) {
+        filesList.push_back(it->toStdString());
+    }
+    return SequenceParsing::filesListFromPattern_fast(pattern, filesList, sequence);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
