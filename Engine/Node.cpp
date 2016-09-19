@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
@@ -8239,7 +8240,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
         *lastFrame = INT_MAX;
     } else {
         SequenceParsing::SequenceFromPattern seq;
-        SequenceParsing::filesListFromPattern(canonicalFileName, &seq);
+        FileSystemModel::filesListFromPattern(canonicalFileName, &seq);
         if ( seq.empty() || (seq.size() == 1) ) {
             *firstFrame = 1;
             *lastFrame = 1;
@@ -8291,7 +8292,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
                 SequenceParsing::SequenceFromPattern seq;
-                SequenceParsing::filesListFromPattern(pattern, &seq);
+                FileSystemModel::filesListFromPattern(pattern, &seq);
                 if ( seq.empty() || (seq.size() == 1) ) {
                     leftBound = 1;
                     rightBound = 1;
