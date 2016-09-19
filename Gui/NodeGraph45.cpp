@@ -642,41 +642,18 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         SERIALIZATION_NAMESPACE::NodeClipBoard clipboard;
         _imp->copyNodesInternal(nodes, clipboard);
 
-        std::map<std::string, std::string> oldNewScriptNamesMapping;
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
              it != clipboard.nodes.end(); ++it) {
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, std::string(), NodePtr(), &oldNewScriptNamesMapping);
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, std::string(), NodePtr());
             assert(node);
             if (node) {
-                oldNewScriptNamesMapping[(*it)->_nodeScriptName] = node->getNode()->getScriptName();
                 createdNodes.push_back( std::make_pair( (*it)->_nodeScriptName, node ) );
             }
         }
-        assert( clipboard.nodes.size() == createdNodes.size() );
-        if ( clipboard.nodes.size() != createdNodes.size() ) {
-            return;
-        }
 
-        ///Now that all nodes have been duplicated, try to restore nodes connections
-        NodeGraphPrivate::restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
-
-        //Restore links once all children are created for alias knobs/expressions
-        NodesList allNodes;
-        group->getActiveNodes(&allNodes);
-        // If the group is a Group node, append to all nodes reachable through links
-        NodeGroupPtr isGroupNode = toNodeGroup(group);
-        if (isGroupNode) {
-            allNodes.push_back(isGroupNode->getNode());
-        }
-
-        SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator itSerialization = clipboard.nodes.begin();
-        for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
-            it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
-        }
 
     }
 
-    getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
 }
 
 QPointF

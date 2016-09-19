@@ -341,24 +341,16 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
         return;
     }
 
-    // If there's a position hint, use it to position the node
-    double xPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-    double yPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-
     bool hasPositionnedNode = false;
-    if ((xPosHint != INT_MIN) && (yPosHint != INT_MIN)) {
-        QPointF pos = node->mapToParent( node->mapFromScene( QPointF(xPosHint, yPosHint) ) );
-        node->refreshPosition( pos.x(), pos.y(), true );
-        hasPositionnedNode = true;
-    }
 
 
-    // No hint, try to autoconnect
+    // Try to autoconnect if there is a selection
     bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
     if ( selectedNodes.empty() || serialization) {
         autoConnect = false;
     }
-    if (!hasPositionnedNode && autoConnect) {
+
+    if (autoConnect) {
         BackdropGuiPtr isBd = toBackdropGui(node);
         if (!isBd) {
             NodeGuiPtr selectedNode;
@@ -374,6 +366,20 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
             }
         }
     }
+
+    if (!hasPositionnedNode) {
+        // If there's a position hint, use it to position the node
+        double xPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+
+        if ((xPosHint != INT_MIN) && (yPosHint != INT_MIN)) {
+            QPointF pos = node->mapToParent( node->mapFromScene( QPointF(xPosHint, yPosHint) ) );
+            node->refreshPosition( pos.x(), pos.y(), true );
+            hasPositionnedNode = true;
+        }
+    }
+    
+    
 
     // Ok fallback with the node in the middle of the node graph
     if (!hasPositionnedNode) {

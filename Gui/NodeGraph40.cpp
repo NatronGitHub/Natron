@@ -164,7 +164,6 @@ NodeGraph::pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard
 bool
 NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
 {
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
 
     SERIALIZATION_NAMESPACE::NodeSerializationList nodes;
     
@@ -217,7 +216,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
         }
     }
     
-    _imp->pasteNodesInternal(nodes, pos, true, &newNodes);
+    _imp->pasteNodesInternal(nodes, pos, true);
     
     return true;
 
@@ -266,8 +265,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     ///Don't use the member clipboard as the user might have something copied
     SERIALIZATION_NAMESPACE::NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    _imp->pasteNodesInternal(tmpClipboard.nodes, pos, true, &newNodes);
+    _imp->pasteNodesInternal(tmpClipboard.nodes, pos, true);
 }
 
 void
@@ -348,37 +346,18 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     }
 
     QPointF offset((xmax + xmin) / 2.,(ymax + ymin) / 2.);
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    SERIALIZATION_NAMESPACE::NodeSerializationList serializations;
-    std::list <NodeGuiPtr > newNodesList;
-    std::map<std::string, std::string> oldNewScriptNameMapping;
+
+    NodesGuiList newNodesList;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         SERIALIZATION_NAMESPACE::NodeSerializationPtr  internalSerialization( new SERIALIZATION_NAMESPACE::NodeSerialization );
         (*it)->getNode()->toSerialization(internalSerialization.get());
         NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset, scenePos,
-                                           _imp->group.lock(), std::string(), (*it)->getNode(), &oldNewScriptNameMapping );
+                                           _imp->group.lock(), std::string(), (*it)->getNode());
 
-        newNodes.push_back( std::make_pair(internalSerialization->_nodeScriptName, clone) );
-        newNodesList.push_back(clone);
-        serializations.push_back(internalSerialization);
+        if (clone) {
+            newNodesList.push_back(clone);
+        }
 
-        oldNewScriptNameMapping[internalSerialization->_nodeScriptName] = clone->getNode()->getScriptName();
-    }
-
-
-    assert( serializations.size() == newNodes.size() );
-    ///restore connections
-    NodeGraphPrivate::restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
-
-
-    NodesList allNodes;
-    getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
-
-
-    //Restore links once all children are created for alias knobs/expressions
-    SERIALIZATION_NAMESPACE::NodeSerializationList::iterator itS = serializations.begin();
-    for (std::list <NodeGuiPtr > ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
-        (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
     }
 
 

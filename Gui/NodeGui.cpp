@@ -1463,10 +1463,11 @@ NodeGui::initializeInputs()
         NodePtr input = inputs[i].lock();
         if (input) {
             NodeGuiIPtr gui_i = input->getNodeGui();
-            assert(gui_i);
-            NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            assert(gui);
-            edge->setSource(gui);
+            if (gui_i) {
+                NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                assert(gui);
+                edge->setSource(gui);
+            }
         }
         if ( !node->getEffectInstance()->isInputMask(i) ) {
             if (!input) {

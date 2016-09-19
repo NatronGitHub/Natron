@@ -165,7 +165,7 @@ public:
 
     void copyNodes(const NodesGuiList& nodes, SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard);
 
-    void pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard, std::list<std::pair<std::string, NodeGuiPtr > >* newNodes);
+    void pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard, std::list<std::pair<std::string, NodeGuiPtr > >* newNodes = 0);
 
     void duplicateSelectedNodes(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);

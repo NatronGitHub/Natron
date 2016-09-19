@@ -1248,7 +1248,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     assert(node);
     // Call load: this will setup the node from the plug-in and its knobs. It also read from the serialization object if any
     try {
-        node->load(*args);
+        node->load(args);
     } catch (const std::exception & e) {
         if (argsGroup) {
             argsGroup->removeNode(node);

@@ -310,48 +310,53 @@ ViewerGL::paintGL()
 
         glCheckError(GL_GPU);
 
-
         ViewerNodePtr viewerNode = _imp->viewerTab->getInternalNode();
-        if (!viewerNode) {
-            return;
-        }
-        // don't even bind the shader on 8-bits gamma-compressed textures
-        ViewerCompositingOperatorEnum compOperator = viewerNode->getCurrentOperator();
 
-        ///Determine whether we need to draw each texture or not
-        ViewerInstancePtr internalViewer = viewerNode->getInternalViewerNode();
-        if (!internalViewer || !internalViewer->getNode()) {
-            return;
-        }
+        NodePtr aInputNode,bInputNode;
 
 
-        NodePtr aInputNode = viewerNode->getCurrentAInput();
-        NodePtr bInputNode = viewerNode->getCurrentBInput();
-
-        bool drawTexture[2];
-        drawTexture[0] = _imp->displayTextures[0].isVisible;
-        drawTexture[1] = _imp->displayTextures[1].isVisible && compOperator != eViewerCompositingOperatorNone;
-        if ( (aInputNode == bInputNode) &&
-             (compOperator != eViewerCompositingOperatorWipeMinus) &&
-             (compOperator != eViewerCompositingOperatorStackMinus) ) {
-            drawTexture[1] = false;
-        }
-
-        double wipeMix = viewerNode->getWipeAmount();
-    
         GLuint savedTexture;
-        bool stack = (compOperator == eViewerCompositingOperatorStackUnder ||
-                      compOperator == eViewerCompositingOperatorStackOver ||
-                      compOperator == eViewerCompositingOperatorStackMinus ||
-                      compOperator == eViewerCompositingOperatorStackOnionSkin ||
-                      false);
-
         GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
         {
             GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
             clearColorBuffer( _imp->clearColor.redF(), _imp->clearColor.greenF(), _imp->clearColor.blueF(), _imp->clearColor.alphaF() );
             glCheckErrorIgnoreOSXBug(GL_GPU);
+
+
+            if (!viewerNode) {
+                return;
+            }
+            // don't even bind the shader on 8-bits gamma-compressed textures
+            ViewerCompositingOperatorEnum compOperator = viewerNode->getCurrentOperator();
+
+            ///Determine whether we need to draw each texture or not
+            ViewerInstancePtr internalViewer = viewerNode->getInternalViewerNode();
+            if (!internalViewer || !internalViewer->getNode()) {
+                return;
+            }
+
+            aInputNode = viewerNode->getCurrentAInput();
+            bInputNode = viewerNode->getCurrentBInput();
+
+
+            bool drawTexture[2];
+            drawTexture[0] = _imp->displayTextures[0].isVisible;
+            drawTexture[1] = _imp->displayTextures[1].isVisible && compOperator != eViewerCompositingOperatorNone;
+            if ( (aInputNode == bInputNode) &&
+                (compOperator != eViewerCompositingOperatorWipeMinus) &&
+                (compOperator != eViewerCompositingOperatorStackMinus) ) {
+                drawTexture[1] = false;
+            }
+
+            double wipeMix = viewerNode->getWipeAmount();
+
+            bool stack = (compOperator == eViewerCompositingOperatorStackUnder ||
+                          compOperator == eViewerCompositingOperatorStackOver ||
+                          compOperator == eViewerCompositingOperatorStackMinus ||
+                          compOperator == eViewerCompositingOperatorStackOnionSkin ||
+                          false);
+
 
             GL_GPU::glEnable (GL_TEXTURE_2D);
             GL_GPU::glColor4d(1., 1., 1., 1.);
