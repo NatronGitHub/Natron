@@ -5238,7 +5238,7 @@ Node::checkIfConnectingInputIsOk(Node* input) const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    if (input == this) {
+    if (!input || input == this) {
         return false;
     }
     bool found;
