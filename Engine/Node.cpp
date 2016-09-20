@@ -4605,6 +4605,11 @@ Node::makeDocumentation(bool genHTML) const
             QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
             input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
             inputs.push_back(input);
+
+            // Don't show more than doc for 4 inputs otherwise it will just clutter the page
+            if (i == 3) {
+                break;
+            }
         }
     }
 
@@ -4641,6 +4646,10 @@ Node::makeDocumentation(bool genHTML) const
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
         if ( (*it)->getIsSecret() ) {
+            continue;
+        }
+
+        if (!(*it)->isDeclaredByPlugin()) {
             continue;
         }
         QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
@@ -4697,6 +4706,17 @@ Node::makeDocumentation(bool genHTML) const
                         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
+                        }
+                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+                        if ( entries.size() == entriesHelp.size() ) {
+                            knobHint.append( QString::fromUtf8("\n\n") );
+                            for (size_t i = 0; i < entries.size(); i++) {
+                                QString entry = QString::fromUtf8( entries[i].c_str() );
+                                QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
+                                if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
+                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg(entry).arg(entryHelp) );
+                                }
+                            }
                         }
                     } else if (isInt) {
                         valueStr = QString::number( isInt->getDefaultValue(i) );
@@ -5521,7 +5541,7 @@ Node::checkIfConnectingInputIsOk(const NodePtr& input) const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    if (input.get() == this) {
+    if (!input || input.get() == this) {
         return false;
     }
     bool found;

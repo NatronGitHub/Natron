@@ -189,6 +189,7 @@ SOURCES += \
     Settings.cpp \
     SerializableWindow.cpp \
     SplitterI.cpp \
+    Smooth1D.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
     StubNode.cpp \
@@ -401,6 +402,7 @@ HEADERS += \
     RotoShapeRenderGL.h \
     RotoStrokeItem.h \
     RotoUndoCommand.h \
+    Smooth1D.h \
     ScriptObject.h \
     Settings.h \
     SerializableWindow.h \

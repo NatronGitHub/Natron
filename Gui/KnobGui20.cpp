@@ -901,9 +901,9 @@ KnobGui::onExprChanged(int dimension)
                 setWarningValue( eKnobWarningExpressionInvalid, QString() );
             }
         }
-        onHelpChanged();
         Q_EMIT expressionChanged();
     }
+    onHelpChanged();
     updateGUI(dimension);
 } // KnobGui::onExprChanged
 

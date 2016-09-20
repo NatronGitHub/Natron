@@ -1475,8 +1475,10 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     // The bounds of the image at the moment we peak the rowBytes and the internal buffer pointer.
     // Note that when the ReadAccess, or WriteAccess object is released, the image may be resized afterwards (only bigger)
-    RectI bounds;
     RectI pluginsSeenBounds;
+
+    int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
+
 
     if (isSrcImage) {
         // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
@@ -1488,34 +1490,54 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
 
         // data ptr
-        bounds = internalImage->getBounds();
+        const RectI bounds = internalImage->getBounds();
         renderWindow.intersect(bounds, &pluginsSeenBounds);
+        const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
+
+        // row bytes
+        ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
 
         if (storage == eStorageModeGLTex) {
             _imp->access = access;
         } else {
-            const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-            assert(ptr);
+
 
             if (!copySrcToPluginLocalData) {
+                const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+                assert(ptr);
                 ofxImageBase->setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );
                 _imp->access = access;
             } else {
-                int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
-                std::size_t bufferSize = bounds.area() * dataSizeOf * nComps;
+                std::size_t dstRowSize = pluginsSeenBounds.width() * dataSizeOf * nComps;
+                std::size_t bufferSize = dstRowSize * pluginsSeenBounds.height();
                 _imp->localBuffer.reset( new RamBuffer<unsigned char>() );
                 _imp->localBuffer->resize(bufferSize);
                 unsigned char* localBufferData = _imp->localBuffer->getData();
                 assert(localBufferData);
                 if (localBufferData) {
-                    memcpy(localBufferData, ptr, bufferSize);
+                    unsigned char* dstPixels = localBufferData;
+                    const unsigned char* srcPix = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+                    assert(srcPix);
+                    for (int y = pluginsSeenBounds.y1; y < pluginsSeenBounds.y2; ++y,
+                         dstPixels += dstRowSize,
+                         srcPix += srcRowSize) {
+
+                        memcpy(dstPixels, srcPix, dstRowSize);
+                    }
+
                 }
-                unsigned char* bufferStart = NATRON_NAMESPACE::Image::pixelAtStatic(pluginsSeenBounds.left(), pluginsSeenBounds.bottom(), bounds, nComps, dataSizeOf, localBufferData);
-                ofxImageBase->setPointerProperty( kOfxImagePropData, bufferStart );
+                ofxImageBase->setPointerProperty( kOfxImagePropData, localBufferData );
+                // we changed row bytes
+                ofxImageBase->setIntProperty(kOfxImagePropRowBytes, dstRowSize);
             }
         }
     } else {
-        bounds = internalImage->getBounds();
+        const RectI bounds = internalImage->getBounds();
+        const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
+
+        // row bytes
+        ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
+        
         boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
 
         // data ptr
@@ -1526,6 +1548,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
             assert(ptr);
             ofxImageBase->setPointerProperty( kOfxImagePropData, ptr);
         }
+
         _imp->access = access;
     } // isSrcImage
 
@@ -1555,9 +1578,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     assert( pluginsSeenBounds.left() >= pixelRod.left() && pluginsSeenBounds.right() <= pixelRod.right() &&
             pluginsSeenBounds.bottom() >= pixelRod.bottom() && pluginsSeenBounds.top() <= pixelRod.top() );
 
-    // row bytes
-    ofxImageBase->setIntProperty( kOfxImagePropRowBytes, bounds.width() * nComps *
-                                  getSizeOfForBitDepth( internalImage->getBitDepth() ) );
+
     ofxImageBase->setStringProperty( kOfxImageEffectPropComponents, components);
     ofxImageBase->setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
     ofxImageBase->setStringProperty( kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult( internalImage->getPremultiplication() ) );
