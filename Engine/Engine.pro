@@ -178,6 +178,7 @@ SOURCES += \
     RotoUndoCommand.cpp \
     ScriptObject.cpp \
     Settings.cpp \
+    Smooth1D.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
     Texture.cpp \
@@ -398,6 +399,7 @@ HEADERS += \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \
     RotoUndoCommand.h \
+    Smooth1D.h \
     ScriptObject.h \
     Settings.h \
     Singleton.h \

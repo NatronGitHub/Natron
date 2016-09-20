@@ -293,6 +293,14 @@ public:
 
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, double time);
 
+    /**
+     * @brief Smooth the curve.
+     * @param range, if non null the curve will only be smoothed over the given range (intersected to the keyframes range)
+     **/
+    void smooth(const RangeD* range);
+
+    void setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives);
+
 private:
     friend class ::boost::serialization::access;
     template<class Archive>
@@ -308,6 +316,8 @@ private:
     void removeKeyFrame(KeyFrameSet::const_iterator it);
 
     double clampValueToCurveYRange(double v) const WARN_UNUSED_RETURN;
+
+    void setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives);
 
     ///returns an iterator to the new keyframe in the keyframe set and
     ///a boolean indicating whether it removed a keyframe already existing at this time or not

@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Interpolation.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Smooth1D.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1610,6 +1611,85 @@ Curve::onCurveChanged()
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();
 #endif
+}
+
+void
+Curve::setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives)
+{
+    if (!refreshDerivatives) {
+        _imp->keyFrames = keys;
+    } else {
+        _imp->keyFrames.clear();
+
+        // Now recompute auto tangents
+        for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+            std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
+            ret.first = evaluateCurveChanged(Curve::eCurveChangedReasonKeyframeChanged, ret.first);
+        }
+
+
+    }
+    onCurveChanged();
+
+}
+
+void
+Curve::setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives)
+{
+    QMutexLocker k(&_imp->_lock);
+    setKeyframesInternal(keys, refreshDerivatives);
+}
+
+void
+Curve::smooth(const RangeD* range)
+{
+    std::vector<float> smoothedCurve;
+
+    QMutexLocker l(&_imp->_lock);
+
+    KeyFrameSet::iterator start = _imp->keyFrames.end();
+
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        double time = it->getTime();
+        if ( range != 0 ) {
+            if (time < range->min) {
+                continue;
+            }
+            if (time > range->max) {
+                break;
+            }
+        }
+        if (start == _imp->keyFrames.end()) {
+            start = it;
+        }
+        smoothedCurve.push_back(it->getValue());
+    }
+
+    Smooth1D::laplacian_1D(smoothedCurve);
+
+    KeyFrameSet newSet;
+    if (start != _imp->keyFrames.end()) {
+
+        // Add keyframes before range first
+        for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != start; ++it) {
+            newSet.insert(*it);
+        }
+
+        // Now insert modified keyframes
+        for (std::size_t i = 0; i < smoothedCurve.size(); ++i, ++start) {
+            KeyFrame k(*start);
+            k.setValue(smoothedCurve[i]);
+            newSet.insert(k);
+        }
+
+        // Now insert original keys after range
+        for (KeyFrameSet::iterator it = start; it != _imp->keyFrames.end(); ++it) {
+            newSet.insert(*it);
+        }
+
+        setKeyframesInternal(newSet, true);
+
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -6,7 +6,10 @@
 
 ## Version 2.1.4
 
+
 - Windows: Fix a bug where the UI would freeze for a long time when reading files over a network share
+- Python: Add ExprUtils class that adds helpers for FBM and Perlin noise (taken from Walt Disney Animation SeExpr library)
+- Tracker: fix add/remove jitter motion types
 - Fix creation of SeNoise node
 - Fix a bug where the data-window would not be read correctly with auto-crop EXR image sequences
 - Fix a bug where the group expand/fold feature would not work correctly
@@ -14,7 +17,6 @@
 
 ## Version 2.1.3
 
-- Python: Add ExprUtils class that adds helpers for FBM and Perlin noise (taken from Walt Disney Animation SeExpr library)
 - Gui: sliders have a cleaner look with less ticks and a round handle 231c7f7
 - fix bug where the OFX plugin cache could be wrong if OpenGL was disabled 32c1532
 - fix dynamic kOfxSupportsTiles handling
