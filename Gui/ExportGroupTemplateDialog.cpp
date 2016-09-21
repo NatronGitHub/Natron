@@ -262,7 +262,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->mainLayout->addWidget(_imp->descriptionEdit, 5, 1, 1, 2);
     _imp->mainLayout->addWidget(_imp->fileLabel, 6, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->fileEdit, 6, 1, 1, 1);
-    _imp->mainLayout->addWidget(_imp->openButton, 7, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 6, 2, 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 3);
 
     // If this node is already a PyPlug, pre-fill the dialog with existing information
