@@ -1154,7 +1154,7 @@ natronCustomCompToOfxComp(const ImageComponents &comp)
 }
 
 static ImageComponents
-ofxCustomCompToNatronComp(const std::string& comp)
+ofxCustomCompToNatronComp(const std::string& comp, bool throwOnFailure)
 {
     std::string layerName;
     std::string compsName;
@@ -1164,12 +1164,20 @@ ofxCustomCompToNatronComp(const std::string& comp)
     std::size_t foundPlane = comp.find(foundPlaneStr);
 
     if (foundPlane == std::string::npos) {
-        throw std::runtime_error("Unsupported components type: " + comp);
+        if (throwOnFailure) {
+            throw std::runtime_error("Unsupported components type: " + comp);
+        } else {
+            return ImageComponents::getNoneComponents();
+        }
     }
 
     std::size_t foundChannel = comp.find( foundChannelStr, foundPlane + foundPlaneStr.size() );
     if (foundChannel == std::string::npos) {
-        throw std::runtime_error("Unsupported components type: " + comp);
+        if (throwOnFailure) {
+            throw std::runtime_error("Unsupported components type: " + comp);
+        } else {
+            return ImageComponents::getNoneComponents();
+        }
     }
 
 
@@ -1207,13 +1215,9 @@ OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
         return ImageComponents::getDisparityLeftComponents();
     } else if ( (plane == kFnOfxImagePlaneStereoDisparityRight) || (plane == kNatronDisparityRightPlaneName) ) {
         return ImageComponents::getDisparityRightComponents();
-    } else {
-        try {
-            return ofxCustomCompToNatronComp(plane);
-        } catch (...) {
-            return ImageComponents::getNoneComponents();
-        }
     }
+
+    return ofxCustomCompToNatronComp(plane, false);
 }
 
 void
@@ -1277,18 +1281,13 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
         return ImageComponents::getPairedStereoDisparity();
     } else if (comp == kNatronOfxImageComponentXY) {
         return ImageComponents::getXYComponents();
-    } else {
-        try {
-            return ofxCustomCompToNatronComp(comp);
-        } catch (...) {
-        }
     }
 
-    return ImageComponents::getNoneComponents();
+    return ofxCustomCompToNatronComp(comp, false);
 }
 
 ImageBitDepthEnum
-OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth)
+OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth, bool throwOnFailure)
 {
     if (depth == kOfxBitDepthByte) {
         return eImageBitDepthByte;
@@ -1300,9 +1299,10 @@ OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth)
         return eImageBitDepthFloat;
     } else if (depth == kOfxBitDepthNone) {
         return eImageBitDepthNone;
-    } else {
+    } else if (throwOnFailure) {
         throw std::runtime_error(depth + ": unsupported bitdepth");
     }
+    return eImageBitDepthNone;
 }
 
 const std::string&
