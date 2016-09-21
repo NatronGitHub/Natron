@@ -204,10 +204,10 @@ ToolButton::onTriggered()
     NodeCollectionPtr group = app->getGui()->getLastSelectedNodeCollection();
 
     assert(group);
-    CreateNodeArgs args(_imp->_id.toStdString(), group);
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, _imp->_major, 0);
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, _imp->_minor, 1);
-    args.setProperty<std::string>(kCreateNodeArgsPropPreset, presetLabel.toStdString());
+    CreateNodeArgsPtr args(new CreateNodeArgs(_imp->_id.toStdString(), group));
+    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, _imp->_major, 0);
+    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, _imp->_minor, 1);
+    args->setProperty<std::string>(kCreateNodeArgsPropPreset, presetLabel.toStdString());
     app->createNode(args);
 }
 

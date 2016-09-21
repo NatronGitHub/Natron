@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiString.h"
 #include "Gui/NodeGraphTextItem.h"
+#include "Gui/NodeGraph.h"
 
 
 #define NATRON_BACKDROP_DEFAULT_WIDTH 80
@@ -113,6 +114,24 @@ BackdropGui::createGui()
     QObject::connect( isBd, SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
 
     refreshTextLabelFromKnob();
+
+    // Make the backdrop large enough to contain the selected nodes and position it correctly
+    const NodesGuiList& selectedNodes =  getDagGui()->getSelectedNodes();
+    QRectF bbox;
+    for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+        QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+        bbox = bbox.united(nodeBbox);
+    }
+
+    double border50 = mapToScene( QPoint(50, 0) ).x();
+    double border0 = mapToScene( QPoint(0, 0) ).x();
+    double border = border50 - border0;
+    double headerHeight = getFrameNameHeight();
+    QPointF scenePos(bbox.x() - border, bbox.y() - border);
+
+    setPos( mapToParent( mapFromScene(scenePos) ) );
+    resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
+
 }
 
 void

@@ -407,10 +407,20 @@ ViewerTab::setTripleSyncEnabled(bool toggled)
 void
 ViewerTab::onPanelMadeCurrent()
 {
+    if (!getGui()) {
+        return;
+    }
+    GuiAppInstancePtr app = getGui()->getApp();
+    if (!app) {
+        return;
+    }
     ViewerNodePtr viewerNode = _imp->viewerNode.lock();
     // Refresh the image since so far the viewer was probably not in sync with internal data
-    if ( viewerNode && getGui() && !getGui()->getApp()->getProject()->isLoadingProject() && getGui()->getApp()->getNodesBeingCreated().empty() ) {
-        viewerNode->getInternalViewerNode()->renderCurrentFrame(true);
+    if ( viewerNode && !app->getProject()->isLoadingProject() && !app->isTopLevelNodeBeingCreated(viewerNode->getNode())) {
+        ViewerInstancePtr viewer = viewerNode->getInternalViewerNode();
+        if (viewer) {
+            viewer->renderCurrentFrame(true);
+        }
     }
 }
 

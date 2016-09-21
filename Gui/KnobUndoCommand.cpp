@@ -592,7 +592,9 @@ RestoreDefaultsCommand::redo()
        // itKnob->blockValueChanges();
 
         for (int d = 0; d < itKnob->getDimension(); ++d) {
-            itKnob->resetToDefaultValue(d);
+            if ( (d == _targetDim) || (_targetDim == -1) ) {
+                itKnob->resetToDefaultValue(d);
+            }
         }
 
         // itKnob->unblockValueChanges();

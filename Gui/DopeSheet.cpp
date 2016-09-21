@@ -498,7 +498,11 @@ DopeSheet::isPartOfGroup(const DSNodePtr& dsNode) const
 
 DSNodePtr DopeSheet::getGroupDSNode(const DSNodePtr& dsNode) const
 {
-    NodeGroupPtr parentGroup = toNodeGroup( dsNode->getInternalNode()->getGroup() );
+    NodePtr internalNode = dsNode->getInternalNode();
+    if (!internalNode) {
+        return DSNodePtr();
+    }
+    NodeGroupPtr parentGroup = toNodeGroup( internalNode->getGroup() );
     DSNodePtr parentGroupDSNode;
 
     if (parentGroup) {

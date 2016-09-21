@@ -108,6 +108,8 @@ struct CurvePrivate
         yMax = other.yMax;
         hasYRange = other.hasYRange;
     }
+
+    
 };
 
 NATRON_NAMESPACE_EXIT;

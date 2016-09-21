@@ -263,6 +263,12 @@ public:
 
     static void setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold);
 
+    /**
+     * @brief Refresh whether a page should be made visible or not. A page is considered to be visible
+     * when at least one of its children (recursively) is not secret.
+     **/
+    virtual void refreshPageVisibility(const KnobPagePtr& page) OVERRIDE;
+
 protected:
 
     /**

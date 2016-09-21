@@ -884,8 +884,10 @@ ViewerNode::onKnobsLoaded()
 }
 
 void
-ViewerNode::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization)
+ViewerNode::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& args)
 {
+
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     // Refresh the graph edited flag. The graph is considered edited if there's no serialization or there are children in the serialization
     setSubGraphEditedByUser(serialization && !serialization->_children.empty());
@@ -918,12 +920,12 @@ ViewerNode::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& 
     NodePtr internalViewerNode;
     {
         QString nodeName = QString::fromUtf8("ViewerProcess");
-        CreateNodeArgs args(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared);
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared));
         //args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
         internalViewerNode = getApp()->createNode(args);
 
     }
@@ -946,10 +948,10 @@ ViewerNode::onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& 
     // Create input nodes
     for (int i = 0; i < VIEWER_INITIAL_N_INPUTS; ++i) {
         QString inputName = QString::fromUtf8("Input%1").arg(i + 1);
-        CreateNodeArgs args(PLUGINID_NATRON_INPUT, thisShared);
-        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
         //args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
         inputNodes[i] = getApp()->createNode(args);
         assert(inputNodes[i]);

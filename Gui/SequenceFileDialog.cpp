@@ -1565,7 +1565,7 @@ SequenceFileDialog::openSelectedFiles()
                 }
 
                 SequenceParsing::SequenceFromPattern sequence;
-                SequenceParsing::filesListFromPattern(str.toStdString(), &sequence);
+                FileSystemModel::filesListFromPattern(str.toStdString(), &sequence);
                 if (sequence.size() > 0) {
                     QString text;
                     if (sequence.size() == 1) {
@@ -2868,10 +2868,9 @@ SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,
             continue;
         }
 
-        //else if it is a file, append it
-        if ( QFile::exists(entryWithPath) ) {
-            files->append(entryWithPath);
-        }
+
+        files->append(entryWithPath);
+
     }
 }
 
@@ -2917,10 +2916,10 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP, NodeCollectionPtr() );
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
-    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-    args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+    CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_VIEWER_GROUP, NodeCollectionPtr() ));
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
@@ -2970,11 +2969,11 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         return _preview->readerNode;
     }
     Q_UNUSED(filetype);
-    CreateNodeArgs args( PLUGINID_NATRON_READ, NodeCollectionPtr() );
-    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
+    CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_READ, NodeCollectionPtr() ));
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     NodePtr reader = _gui->getApp()->createNode(args);
     if (reader) {
         _preview->readerNode = reader;

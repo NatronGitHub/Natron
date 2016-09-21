@@ -268,6 +268,11 @@ public:
                                             bool* isPainting) const OVERRIDE FINAL;
     virtual bool isDuringPainting() const OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
+
+    virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
+
+    
+
     ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
     virtual void removeAllKeyframesIndicators() OVERRIDE FINAL;
     virtual void addKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;
@@ -295,10 +300,6 @@ private:
 
     virtual void createMainWindow() OVERRIDE FINAL;
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const CreateNodeArgs& args) OVERRIDE FINAL;
-    virtual void createNodeGui(const NodePtr &node,
-                               const NodePtr&  parentMultiInstance,
-                               const CreateNodeArgs& args) OVERRIDE FINAL;
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
 

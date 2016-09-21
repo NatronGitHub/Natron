@@ -855,9 +855,9 @@ TrackerContext::exportTrackDataFromExportOptions()
 
     NodePtr thisNode = getNode();
     AppInstancePtr app = thisNode->getApp();
-    CreateNodeArgs args( pluginID.toStdString(), thisNode->getGroup() );
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    CreateNodeArgsPtr args(new CreateNodeArgs( pluginID.toStdString(), thisNode->getGroup() ));
+    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
 
     NodePtr createdNode = app->createNode(args);
     if (!createdNode) {

@@ -88,10 +88,10 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     if (lastUsedViewer) {
         viewerNode = lastUsedViewer->getInternalNode();
     } else {
-        CreateNodeArgs args( PLUGINID_NATRON_VIEWER_GROUP,
-                             getGroup() );
-        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+        CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_VIEWER_GROUP,
+                             getGroup() ));
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
         NodePtr node = getGui()->getApp()->createNode(args);
 
         if (!node) {
@@ -403,6 +403,9 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
 
     n->setUserSelected(true);
 
+    if (!n->getNode()) {
+        return;
+    }
     ViewerInstancePtr isViewer =  n->getNode()->isEffectViewerInstance();
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();

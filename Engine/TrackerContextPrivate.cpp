@@ -118,9 +118,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         //NodePtr maskInput;
 
         {
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, isTrackerNode));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
             output = node->getApp()->createNode(args);
             try {
@@ -131,10 +131,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             assert(output);
         }
         {
-            CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, isTrackerNode));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
             assert(input);
         }
@@ -142,10 +142,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
-            CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_CORNERPIN, isTrackerNode));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
             NodePtr cpNode = node->getApp()->createNode(args);
             if (!cpNode) {
                 throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
@@ -156,10 +156,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             QString transformName = fixedNamePrefix + QLatin1String("Transform");
-            CreateNodeArgs args(PLUGINID_OFX_TRANSFORM, isTrackerNode);
-            args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
+            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_TRANSFORM, isTrackerNode));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);
             tNode->setNodeDisabled(true);
             transformNode = tNode;
@@ -1793,53 +1793,41 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
             perr.p2.y = centerKnob->getValueAtTime(time, 1);
         } else {
             // Average halfJitter frames before and after refTime and time together to smooth the center
-            std::vector<Point> x1PointJitter, x2PointJitter;
-            for (double t = refTime - halfJitter; t <= refTime + halfJitter; t += 1.) {
-                Point p;
-                p.x = centerKnob->getValueAtTime(t, 0);
-                p.y = centerKnob->getValueAtTime(t, 1);
-                x1PointJitter.push_back(p);
-            }
+            std::vector<Point> x2PointJitter;
+
             for (double t = time - halfJitter; t <= time + halfJitter; t += 1.) {
                 Point p;
                 p.x = centerKnob->getValueAtTime(t, 0);
                 p.y = centerKnob->getValueAtTime(t, 1);
                 x2PointJitter.push_back(p);
             }
-            assert( x1PointJitter.size() == x2PointJitter.size() );
-            Point x1AtTime = x1PointJitter[(x1PointJitter.size() - 1) / 2];
-            Point x2AtTime = x2PointJitter[(x2PointJitter.size() - 1) / 2];
-            Point x1avg = {0, 0}, x2avg = {0, 0};
-            for (std::size_t i = 0; i < x1PointJitter.size(); ++i) {
-                x1avg.x += x1PointJitter[i].x;
-                x1avg.y += x1PointJitter[i].y;
+            Point x2avg = {0, 0};
+            for (std::size_t i = 0; i < x2PointJitter.size(); ++i) {
                 x2avg.x += x2PointJitter[i].x;
                 x2avg.y += x2PointJitter[i].y;
             }
-            if ( !x1PointJitter.empty() ) {
-                x1avg.x /= x1PointJitter.size();
-                x1avg.y /= x1PointJitter.size();
-
-                x2avg.x /= x1PointJitter.size();
-                x2avg.y /= x1PointJitter.size();
+            if ( !x2PointJitter.empty() ) {
+                x2avg.x /= x2PointJitter.size();
+                x2avg.y /= x2PointJitter.size();
             }
             if (!jitterAdd) {
-                perr.p1.x = x1avg.x;
-                perr.p1.y = x1avg.y;
+                perr.p1.x = centerKnob->getValueAtTime(time, 0);
+                perr.p1.y = centerKnob->getValueAtTime(time, 1);
                 perr.p2.x = x2avg.x;
                 perr.p2.y = x2avg.y;
             } else {
-                Point highFreqX1, highFreqX2;
-                highFreqX1.x = x1AtTime.x - x1avg.x;
-                highFreqX1.y = x1AtTime.y - x1avg.y;
+                Point highFreqX2;
 
-                highFreqX2.x = x2AtTime.x - x2avg.x;
-                highFreqX2.y = x2AtTime.y - x2avg.y;
+                Point x2;
+                x2.x = centerKnob->getValueAtTime(time, 0);
+                x2.y = centerKnob->getValueAtTime(time, 1);
+                highFreqX2.x = x2.x - x2avg.x;
+                highFreqX2.y = x2.y - x2avg.y;
 
-                perr.p1.x = x1AtTime.x + highFreqX1.x;
-                perr.p1.y = x1AtTime.y + highFreqX1.y;
-                perr.p2.x = x2AtTime.x + highFreqX2.x;
-                perr.p2.y = x2AtTime.y + highFreqX2.y;
+                perr.p1.x = x2.x;
+                perr.p1.y = x2.y;
+                perr.p2.x = x2.x + highFreqX2.x;
+                perr.p2.y = x2.y + highFreqX2.y;
             }
         }
 
@@ -1851,11 +1839,7 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
 
     x1->resize( pointsWithErrors.size() );
     x2->resize( pointsWithErrors.size() );
-    /*int r = 0;
-       for (int i = (int)pointsWithErrors.size() - 1; i >= 0; --i, ++r) {
-        (*x1)[r] = pointsWithErrors[i].p1;
-        (*x2)[r] = pointsWithErrors[i].p2;
-       }*/
+
     for (std::size_t i =  0; i < pointsWithErrors.size(); ++i) {
         assert(i == 0 || pointsWithErrors[i].error >= pointsWithErrors[i - 1].error);
         (*x1)[i] = pointsWithErrors[i].p1;
@@ -1871,6 +1855,14 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
                                                               bool robustModel,
                                                               const std::vector<TrackMarkerPtr>& allMarkers)
 {
+
+    RectD rodRef = getInputRoDAtTime(refTime);
+    RectD rodTime = getInputRoDAtTime(time);
+    int w1 = rodRef.width();
+    int h1 = rodRef.height();
+    int w2 = rodTime.width();
+    int h2 = rodTime.height();
+
     std::vector<TrackMarkerPtr> markers;
 
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
@@ -1899,12 +1891,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
         return data;
     }
 
-    RectD rodRef = getInputRoDAtTime(refTime);
-    RectD rodTime = getInputRoDAtTime(time);
-    int w1 = rodRef.width();
-    int h1 = rodRef.height();
-    int w2 = rodTime.width();
-    int h2 = rodTime.height();
+
     const bool dataSetIsUserManual = true;
 
     try {
@@ -1930,6 +1917,14 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
                                                               bool robustModel,
                                                               const std::vector<TrackMarkerPtr>& allMarkers)
 {
+    RectD rodRef = getInputRoDAtTime(refTime);
+    RectD rodTime = getInputRoDAtTime(time);
+    int w1 = rodRef.width();
+    int h1 = rodRef.height();
+    int w2 = rodTime.width();
+    int h2 = rodTime.height();
+
+
     std::vector<TrackMarkerPtr> markers;
 
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
@@ -1957,12 +1952,6 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
         return data;
     }
 
-    RectD rodRef = getInputRoDAtTime(refTime);
-    RectD rodTime = getInputRoDAtTime(time);
-    int w1 = rodRef.width();
-    int h1 = rodRef.height();
-    int w2 = rodTime.width();
-    int h2 = rodTime.height();
 
     if (x1.size() == 1) {
         data.h.setTranslationFromOnePoint( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x2[0]) );
@@ -1986,11 +1975,260 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
     return data;
 } // TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime
 
+
+struct CornerPinPoints
+{
+    Point pts[4];
+};
+
+struct TranslateData
+{
+    Point p;
+};
+
+struct ScaleData
+{
+    double s;
+};
+
+struct RotateData
+{
+    double r;
+};
+
+template <typename DstDataType>
+void initializeResults(DstDataType* results);
+
+template <>
+void initializeResults(CornerPinPoints* results)
+{
+    for (int i = 0; i < 4; ++i) {
+        results->pts[i].x = results->pts[i].y = 0;
+    }
+}
+
+template <>
+void initializeResults(double* results)
+{
+    *results = 0;
+}
+
+template <>
+void initializeResults(TranslateData* results)
+{
+    results->p.x = results->p.y = 0.;
+}
+
+template <>
+void initializeResults(ScaleData* results)
+{
+    results->s = 0.;
+}
+
+template <>
+void initializeResults(RotateData* results)
+{
+    results->r = 0.;
+}
+
+template <typename SrcIterator, typename UserDataType, typename DstDataType>
+bool extractSample(SrcIterator it,
+                  const UserDataType* userData,
+                  DstDataType* sample);
+
+template <>
+bool extractSample(QList<TrackerContextPrivate::CornerPinData>::const_iterator it,
+                  const CornerPinPoints* userData,
+                  CornerPinPoints* sample)
+{
+    assert(userData);
+    for (int c = 0; c < 4; ++c) {
+        sample->pts[c] = applyHomography(userData->pts[c], it->h);
+    }
+    return true;
+}
+
+template <>
+bool extractSample(KeyFrameSet::const_iterator it,
+                   const void* /*userData*/,
+                   double* sample)
+{
+    *sample = it->getValue();
+    return true;
+}
+
+template <>
+bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator it,
+                   const void* /*userData*/,
+                   TranslateData* sample)
+{
+    sample->p = it->translation;
+    return true;
+}
+
+template <>
+bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator it,
+                   const void* /*userData*/,
+                   RotateData* sample)
+{
+    if (!it->hasRotationAndScale) {
+        return false;
+    }
+    sample->r = it->rotation;
+    return true;
+}
+
+template <>
+bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator it,
+                   const void* /*userData*/,
+                   ScaleData* sample)
+{
+    if (!it->hasRotationAndScale) {
+        return false;
+    }
+    sample->s = it->scale;
+    return true;
+}
+
+
+
+template <typename DstDataType>
+void appendSample(const DstDataType& sample, DstDataType* results);
+
+
+template <>
+void appendSample(const CornerPinPoints& sample, CornerPinPoints* results)
+{
+    for (int c = 0; c < 4; ++c) {
+        results->pts[c].x += sample.pts[c].x;
+        results->pts[c].y += sample.pts[c].y;
+    }
+}
+
+template <>
+void appendSample(const double& sample, double* results)
+{
+    *results += sample;
+}
+
+template <>
+void appendSample(const TranslateData& sample, TranslateData* results)
+{
+    results->p.x += sample.p.x;
+    results->p.y += sample.p.y;
+}
+
+template <>
+void appendSample(const RotateData& sample, RotateData* results)
+{
+    results->r += sample.r;
+}
+
+template <>
+void appendSample(const ScaleData& sample, ScaleData* results)
+{
+    results->s += sample.s;
+}
+
+template <typename DstDataType>
+void divideResults(int nSamples, DstDataType* results);
+
+template <>
+void divideResults(int nSamples, CornerPinPoints* results)
+{
+    for (int c = 0; c < 4; ++c) {
+        results->pts[c].x /= nSamples;
+        results->pts[c].y /= nSamples;
+    }
+}
+
+template <>
+void divideResults(int nSamples, double* results)
+{
+    *results /= nSamples;
+}
+
+template <>
+void divideResults(int nSamples, TranslateData* results)
+{
+    results->p.x /= nSamples;
+    results->p.y /= nSamples;
+}
+
+template <>
+void divideResults(int nSamples, RotateData* results)
+{
+    results->r /= nSamples;
+}
+
+template <>
+void divideResults(int nSamples, ScaleData* results)
+{
+    results->s /= nSamples;
+}
+
+template <typename SrcIterator, typename UserDataType, typename DstDataType>
+static void averageDataFunctor(SrcIterator srcBegin,
+                               SrcIterator srcEnd,
+                               SrcIterator itResults,
+                               const int halfJitter,
+                               const UserDataType* userData,
+                               DstDataType *results,
+                               DstDataType *dataAtIt)
+{
+    assert(results);
+    initializeResults<DstDataType>(results);
+
+    // Get halfJitter samples before the given time
+    int nSamplesBefore = 0;
+    {
+        SrcIterator prevHalfIt = itResults;
+        while (prevHalfIt != srcBegin && nSamplesBefore <= halfJitter) {
+
+            DstDataType sample;
+            if (extractSample<SrcIterator, UserDataType, DstDataType>(prevHalfIt, userData, &sample)) {
+                appendSample<DstDataType>(sample, results);
+
+                if (dataAtIt && prevHalfIt == itResults) {
+                    *dataAtIt = sample;
+                }
+                ++nSamplesBefore;
+            }
+            --prevHalfIt;
+        }
+    }
+    
+    // Get halfJitter samples after the given time
+    int nSamplesAfter = 0;
+    {
+        SrcIterator nextHalfIt = itResults;
+        ++nextHalfIt;
+        while (nextHalfIt != srcEnd && nSamplesAfter < halfJitter) {
+
+            DstDataType sample;
+            if (extractSample<SrcIterator, UserDataType, DstDataType>(nextHalfIt, userData, &sample)) {
+                appendSample<DstDataType>(sample, results);
+
+                ++nSamplesAfter;
+            }
+            ++nextHalfIt;
+        }
+    }
+
+    int nSamples = nSamplesAfter + nSamplesBefore;
+    assert(nSamples > 0);
+    if (nSamples > 0) {
+        divideResults<DstDataType>(nSamples, results);
+    }
+
+} // averageDataFunctor
+
 void
 TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
                                                         double maxFittingError,
                                                         const QList<CornerPinData>& results)
 {
+    // Make sure we get only valid results
     QList<CornerPinData> validResults;
     for (QList<CornerPinData>::const_iterator it = results.begin(); it != results.end(); ++it) {
         if (it->valid) {
@@ -1998,13 +2236,16 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         }
     }
 
+    // Get all knobs that we are going to write to and block any value changes on them
     KnobIntPtr smoothCornerPinKnob = smoothCornerPin.lock();
     int smoothJitter = smoothCornerPinKnob->getValue();
+    int halfJitter = smoothJitter / 2;
     KnobDoublePtr fittingErrorKnob = fittingError.lock();
     KnobDoublePtr fromPointsKnob[4];
     KnobDoublePtr toPointsKnob[4];
     KnobBoolPtr enabledPointsKnob[4];
     KnobStringPtr fittingWarningKnob = fittingErrorWarning.lock();
+
     for (int i = 0; i < 4; ++i) {
         fromPointsKnob[i] = fromPoints[i].lock();
         toPointsKnob[i] = toPoints[i].lock();
@@ -2021,10 +2262,11 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         animatedKnobsChanged.push_back(toPointsKnob[i]);
     }
 
-    Point refFrom[4];
+    // Get reference corner pin
+    CornerPinPoints refFrom;
     for (int c = 0; c < 4; ++c) {
-        refFrom[c].x = fromPointsKnob[c]->getValueAtTime(refTime, 0);
-        refFrom[c].y = fromPointsKnob[c]->getValueAtTime(refTime, 1);
+        refFrom.pts[c].x = fromPointsKnob[c]->getValueAtTime(refTime, 0);
+        refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(refTime, 1);
     }
 
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
@@ -2035,6 +2277,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const CornerPinData& dataAtTime = *itResults;
 
+        // Add the error to the curve and check if we need to turn on the RMS warning
         {
             KeyFrame kf(dataAtTime.time, dataAtTime.rms);
             if (dataAtTime.rms >= maxFittingError) {
@@ -2043,99 +2286,73 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
             tmpFittingErrorCurve.addKeyFrame(kf);
         }
 
-        if (smoothJitter > 1) {
-            int halfJitter = smoothJitter / 2;
-            Point avgTos[4] = {
-                {0, 0}, {0, 0}, {0, 0}, {0, 0}
-            };
 
-            // Get halfJitter samples before the given time
-            QList<CornerPinData>::const_iterator prevHalfIt = itResults;
-            int nSamplesBefore = 0;
-            const CornerPinData* lastCornerPinData = 0;
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], prevHalfIt->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                if (!lastCornerPinData) {
-                    lastCornerPinData = &(*prevHalfIt);
-                }
-                ++nSamplesBefore;
-                --prevHalfIt;
-            }
-
-            while (nSamplesBefore <= halfJitter && lastCornerPinData) {
-                assert( prevHalfIt == validResults.begin() );
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], lastCornerPinData->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                ++nSamplesBefore;
-            }
-
-            // Get halfJitter samples after the given time
-            QList<CornerPinData>::const_iterator nextHalfIt = itResults;
-            int nSamplesAfter = 0;
-            ++nextHalfIt;
-            lastCornerPinData = 0;
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], nextHalfIt->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                if (!lastCornerPinData) {
-                    lastCornerPinData = &(*nextHalfIt);
-                }
-                ++nSamplesAfter;
-                ++nextHalfIt;
-            }
-
-            while (nSamplesAfter < halfJitter && lastCornerPinData) {
-                assert( nextHalfIt == validResults.end() );
-                Point to[4];
-                for (int c = 0; c < 4; ++c) {
-                    to[c] = applyHomography(refFrom[c], lastCornerPinData->h);
-                    avgTos[c].x += to[c].x;
-                    avgTos[c].y += to[c].y;
-                }
-                ++nSamplesAfter;
-            }
-
-            const int nSamples = nSamplesAfter + nSamplesBefore;
-
-
-            if (nSamples > 0) {
-                for (int c = 0; c < 4; ++c) {
-                    avgTos[c].x /= nSamples;
-                    avgTos[c].y /= nSamples;
-                }
-
-                for (int c = 0; c < 4; ++c) {
-                    KeyFrame kx(dataAtTime.time, avgTos[c].x);
-                    KeyFrame ky(dataAtTime.time, avgTos[c].y);
-                    tmpToPointsCurveX[c].addKeyFrame(kx);
-                    tmpToPointsCurveY[c].addKeyFrame(ky);
-                }
-            }
-        } else {
+        if (smoothJitter <= 1) {
             for (int c = 0; c < 4; ++c) {
                 Point toPoint;
-                toPoint = applyHomography(refFrom[c], dataAtTime.h);
+                toPoint = applyHomography(refFrom.pts[c], dataAtTime.h);
                 KeyFrame kx(dataAtTime.time, toPoint.x);
                 KeyFrame ky(dataAtTime.time, toPoint.y);
                 tmpToPointsCurveX[c].addKeyFrame(kx);
                 tmpToPointsCurveY[c].addKeyFrame(ky);
                 //toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             }
+        } else {
+            // Average to points before and after if using jitter
+            CornerPinPoints avgTos;
+            averageDataFunctor<QList<CornerPinData>::const_iterator, CornerPinPoints, CornerPinPoints>(validResults.begin(), validResults.end(), itResults, halfJitter, &refFrom, &avgTos, 0);
+
+            for (int c = 0; c < 4; ++c) {
+                KeyFrame kx(dataAtTime.time, avgTos.pts[c].x);
+                KeyFrame ky(dataAtTime.time, avgTos.pts[c].y);
+                tmpToPointsCurveX[c].addKeyFrame(kx);
+                tmpToPointsCurveY[c].addKeyFrame(ky);
+            }
+
+
+        } // use jitter
+
+    } // for each result
+    
+    
+    
+    // If user wants a post-smooth, apply it
+    if (smoothJitter > 1) {
+
+        int halfSmoothJitter = smoothJitter / 2;
+
+
+        KeyFrameSet xSet[4], ySet[4];
+        KeyFrameSet newXSet[4], newYSet[4];
+        for (int c = 0; c < 4; ++c) {
+            xSet[c] = tmpToPointsCurveX[c].getKeyFrames_mt_safe();
+            ySet[c] = tmpToPointsCurveY[c].getKeyFrames_mt_safe();
         }
-    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+        for (int c = 0; c < 4; ++c) {
+
+            for (KeyFrameSet::const_iterator it = xSet[c].begin(); it != xSet[c].end(); ++it) {
+                double avg;
+                averageDataFunctor<KeyFrameSet::const_iterator, void, double>(xSet[c].begin(), xSet[c].end(), it, halfSmoothJitter, 0, &avg, 0);
+                KeyFrame k(*it);
+                k.setValue(avg);
+                newXSet[c].insert(k);
+            }
+            for (KeyFrameSet::const_iterator it = ySet[c].begin(); it != ySet[c].end(); ++it) {
+                double avg;
+                averageDataFunctor<KeyFrameSet::const_iterator, void, double>(ySet[c].begin(), ySet[c].end(), it, halfSmoothJitter, 0, &avg, 0);
+                KeyFrame k(*it);
+                k.setValue(avg);
+                newYSet[c].insert(k);
+            }
+
+        }
+
+        for (int c = 0; c < 4; ++c) {
+            tmpToPointsCurveX[c].setKeyframes(newXSet[c], true);
+            tmpToPointsCurveY[c].setKeyframes(newYSet[c], true);
+        }
+    }
+
     fittingWarningKnob->setSecret(!mustShowFittingWarn);
     fittingErrorKnob->cloneCurve( ViewSpec::all(), 0, tmpFittingErrorCurve);
     for (int c = 0; c < 4; ++c) {
@@ -2244,6 +2461,12 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     KnobDoublePtr rotationKnob = rotate.lock();
     KnobDoublePtr fittingErrorKnob = fittingError.lock();
     KnobStringPtr fittingWarningKnob = fittingErrorWarning.lock();
+    int halfTJitter = smoothTJitter / 2;
+    int halfRJitter = smoothRJitter / 2;
+    int halfSJitter = smoothSJitter / 2;
+
+
+
     translationKnob->blockValueChanges();
     scaleKnob->blockValueChanges();
     rotationKnob->blockValueChanges();
@@ -2267,207 +2490,44 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
             }
             tmpFittingErrorCurve.addKeyFrame(kf);
         }
-
         if (smoothTJitter > 1) {
-            int halfJitter = smoothTJitter / 2;
-            Point avgT = {0, 0};
-
-            // Get halfJitter samples before the given time
-            QList<TransformData>::const_iterator prevHalfIt = itResults;
-            int nSamplesBefore = 0;
-            Point lastSampleWithTranslation = {0, 0};
-            if ( itResults == validResults.begin() ) {
-                lastSampleWithTranslation = itResults->translation;
-            }
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                avgT.x += prevHalfIt->translation.x;
-                avgT.y += prevHalfIt->translation.y;
-                lastSampleWithTranslation = prevHalfIt->translation;
-                ++nSamplesBefore;
-                --prevHalfIt;
-            }
-
-            while (nSamplesBefore <= halfJitter) {
-                assert( prevHalfIt == validResults.begin() );
-                avgT.x += lastSampleWithTranslation.x;
-                avgT.y += lastSampleWithTranslation.y;
-                ++nSamplesBefore;
-            }
-
-            // Get halfJitter samples after the given time
-            QList<TransformData>::const_iterator nextHalfIt = itResults;
-            int nSamplesAfter = 0;
-            ++nextHalfIt;
-            lastSampleWithTranslation.x = lastSampleWithTranslation.y = 0.;
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                avgT.x += nextHalfIt->translation.x;
-                avgT.y += nextHalfIt->translation.y;
-                lastSampleWithTranslation = nextHalfIt->translation;
-                ++nSamplesAfter;
-                ++nextHalfIt;
-            }
-
-            while (nSamplesAfter < halfJitter) {
-                assert( nextHalfIt == validResults.end() );
-                avgT.x += lastSampleWithTranslation.x;
-                avgT.y += lastSampleWithTranslation.y;
-                ++nSamplesAfter;
-            }
-
-
-            const int nSamples = nSamplesBefore + nSamplesAfter;
-            if (nSamples) {
-                avgT.x /= nSamples;
-                avgT.y /= nSamples;
-            }
-            KeyFrame kx(dataAtTime.time, avgT.x);
-            KeyFrame ky(dataAtTime.time, avgT.y);
+            TranslateData avgT;
+            averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
+            KeyFrame kx(dataAtTime.time, avgT.p.x);
+            KeyFrame ky(dataAtTime.time, avgT.p.y);
             tmpTXCurve.addKeyFrame(kx);
             tmpTYCurve.addKeyFrame(ky);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, avgT.x, ViewSpec::all(), 0);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, avgT.y, ViewSpec::all(), 1);
         } else {
             KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
             KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
             tmpTXCurve.addKeyFrame(kx);
             tmpTYCurve.addKeyFrame(ky);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.x, ViewSpec::all(), 0);
-            //translationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.translation.y, ViewSpec::all(), 1);
+
         }
+        if (dataAtTime.hasRotationAndScale) {
+            if (smoothRJitter > 1) {
+                RotateData avgR;
+                averageDataFunctor<QList<TransformData>::const_iterator, void, RotateData>(validResults.begin(), validResults.end(), itResults, halfRJitter, 0, &avgR, 0);
 
-        if (smoothRJitter > 1) {
-            int halfJitter = smoothRJitter / 2;
-            double avg = 0;
-            double lastSampleWithRotation = 0;
-            if ( ( itResults == validResults.begin() ) && itResults->hasRotationAndScale ) {
-                lastSampleWithRotation = itResults->scale;
-            }
-            // Get halfJitter samples before the given time
-            int nSamplesBefore = 0;
-            {
-                QList<TransformData>::const_iterator prevHalfIt = itResults;
-                while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                    if (prevHalfIt->hasRotationAndScale) {
-                        avg += prevHalfIt->rotation;
-                        lastSampleWithRotation = prevHalfIt->rotation;
-                        ++nSamplesBefore;
-                    }
-                    --prevHalfIt;
-                }
-
-                while (nSamplesBefore <= halfJitter && lastSampleWithRotation != 0. && prevHalfIt->hasRotationAndScale) {
-                    assert( prevHalfIt == validResults.begin() );
-                    avg += prevHalfIt->rotation;
-                    ++nSamplesBefore;
-                }
-            }
-
-            // Get halfJitter samples after the given time
-            lastSampleWithRotation = 0.;
-            int nSamplesAfter = 0;
-            {
-                QList<TransformData>::const_iterator nextHalfIt = itResults;
-                ++nextHalfIt;
-
-                while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                    if (nextHalfIt->hasRotationAndScale) {
-                        avg += nextHalfIt->rotation;
-                        lastSampleWithRotation = nextHalfIt->rotation;
-                        ++nSamplesAfter;
-                    }
-                    ++nextHalfIt;
-                }
-
-                while (nSamplesAfter < halfJitter && lastSampleWithRotation != 0.) {
-                    assert( nextHalfIt == validResults.end() );
-                    avg += lastSampleWithRotation;
-                    ++nSamplesAfter;
-                }
-            }
-            const int nSamples = nSamplesBefore + nSamplesAfter;
-
-            if (nSamples) {
-                avg /= nSamples;
-                KeyFrame k(dataAtTime.time, avg);
+                KeyFrame k(dataAtTime.time, avgR.r);
                 tmpRotateCurve.addKeyFrame(k);
-            }
 
-
-            //rotationKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
-        } else {
-            if (dataAtTime.hasRotationAndScale) {
+            } else {
                 KeyFrame k(dataAtTime.time, dataAtTime.rotation);
                 tmpRotateCurve.addKeyFrame(k);
-
-                //  rotationKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.rotation, ViewSpec::all(), 0);
             }
-        }
-
-        if (smoothSJitter > 1) {
-            int halfJitter = smoothSJitter / 2;
-            double avg = 0;
-            double lastSampleWithScale = 0;
-            if ( ( itResults == validResults.begin() ) && itResults->hasRotationAndScale ) {
-                lastSampleWithScale = itResults->scale;
-            }
-            // Get halfJitter samples before the given time
-            int nSamplesBefore = 0;
-            {
-                QList<TransformData>::const_iterator prevHalfIt = itResults;
-                while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                    if (prevHalfIt->hasRotationAndScale) {
-                        avg += prevHalfIt->scale;
-                        lastSampleWithScale = prevHalfIt->scale;
-                        ++nSamplesBefore;
-                    }
-                    --prevHalfIt;
-                }
-
-                while (nSamplesBefore <= halfJitter && lastSampleWithScale != 0.) {
-                    assert( prevHalfIt == validResults.begin() );
-                    avg += lastSampleWithScale;
-                    ++nSamplesBefore;
-                }
-            }
-
-            // Get halfJitter samples after the given time
-            lastSampleWithScale = 0.;
-            int nSamplesAfter = 0;
-            {
-                QList<TransformData>::const_iterator nextHalfIt = itResults;
-                ++nextHalfIt;
-
-                while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                    if (nextHalfIt->hasRotationAndScale) {
-                        avg += nextHalfIt->scale;
-                        lastSampleWithScale = nextHalfIt->scale;
-                        ++nSamplesAfter;
-                    }
-                    ++nextHalfIt;
-                }
-
-                while (nSamplesAfter < halfJitter && lastSampleWithScale != 0.) {
-                    assert( nextHalfIt == validResults.end() );
-                    avg += lastSampleWithScale;
-                    ++nSamplesAfter;
-                }
-            }
-            const int nSamples = nSamplesBefore + nSamplesAfter;
-            if (nSamples) {
-                avg /= nSamples;
-
-                KeyFrame k(dataAtTime.time, avg);
+            if (smoothSJitter > 1) {
+                ScaleData avgR;
+                averageDataFunctor<QList<TransformData>::const_iterator, void, ScaleData>(validResults.begin(), validResults.end(), itResults, halfSJitter, 0, &avgR, 0);
+                KeyFrame k(dataAtTime.time, avgR.s);
                 tmpScaleCurve.addKeyFrame(k);
-                //scaleKnob->setValueAtTime(dataAtTime[i].time, avg, ViewSpec::all(), 0);
-            }
-        } else {
-            if (dataAtTime.hasRotationAndScale) {
+
+            } else {
                 KeyFrame k(dataAtTime.time, dataAtTime.scale);
                 tmpScaleCurve.addKeyFrame(k);
-                //scaleKnob->setValueAtTime(dataAtTime[i].time, dataAtTime[i].data.scale, ViewSpec::all(), 0);
             }
         }
-    } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+    } // for all samples
 
     fittingWarningKnob->setSecret(!mustShowFittingWarn);
     fittingErrorKnob->cloneCurve(ViewSpec::all(), 0, tmpFittingErrorCurve);

@@ -108,10 +108,10 @@ BaseTest::createNode(const QString & pluginID,
                      int majorVersion,
                      int minorVersion)
 {
-    CreateNodeArgs args( pluginID.toStdString(), getApp()->getProject() );
+    CreateNodeArgsPtr args(new CreateNodeArgs( pluginID.toStdString(), getApp()->getProject() ));
     
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
+    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
+    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
 
     NodePtr ret =  getApp()->createNode(args);
 

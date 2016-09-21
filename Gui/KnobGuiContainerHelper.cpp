@@ -1285,6 +1285,46 @@ KnobGuiContainerSignalsHandler::onPageLabelChangedInternally()
     }
 }
 
+void
+KnobGuiContainerHelper::refreshPageVisibility(const KnobPagePtr& page)
+{
+    // When all knobs of a page are hidden, if the container is a tabwidget, hide the tab
+
+    QTabWidget* isTabWidget = dynamic_cast<QTabWidget*>(getPagesContainer());
+    if (!isTabWidget) {
+        return;
+    }
+
+
+
+    const PagesMap& pages = getPages();
+
+    std::list<KnobPageGuiPtr> pagesToDisplay;
+    for (int i = 0; i < isTabWidget->count(); ++i) {
+        QWidget* w = isTabWidget->widget(i);
+        for (PagesMap::const_iterator it = pages.begin(); it!=pages.end(); ++it) {
+            if (it->second->tab == w) {
+                if (it->first.lock() != page) {
+                    pagesToDisplay.push_back(it->second);
+                } else {
+                    KnobsVec children = page->getChildren();
+                    bool visible = false;
+                    for (KnobsVec::const_iterator it = children.begin(); it!=children.end(); ++it) {
+                        visible |= !(*it)->getIsSecret();
+                    }
+                    if (visible) {
+                        pagesToDisplay.push_back(it->second);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    KnobPageGuiPtr curPage = getCurrentPage();
+    setPagesOrder(pagesToDisplay, curPage, true);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

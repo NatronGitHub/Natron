@@ -143,12 +143,35 @@ public:
 class NodePresetSerialization : public SerializationObjectBase
 {
 public:
-    
-    std::string pluginID;
+
+    // The plug-in ID of the node to create. For PyPlugs this should be the plug-in ID of a Group
+    std::string originalPluginID;
+
+    // If set the preset will appear as a different plug-in than the one set in originalPluginID.
+    // If not set it will appear as a preset of originalPluginID
+    std::string presetID;
+
+    // You may set a grouping into which the tool should be
+    // If not set it will default to the grouping of the plug-in set in originalPluginID
+    std::string presetGrouping;
+
+    // The label of the preset as it should appear in the GUI
     std::string presetLabel;
+
+    // Optionally the filename of an icon file (without path) that should be located next to the preset file
     std::string presetIcon;
+
+    // When setting a presetID may be useful to notify the user that the plug-in changed. Only relevant with
+    // a non empty presetID
+    int version;
+
+    // Optionally the default keyboard symbol (as in Natron::Key) and modifiers (as in Natron::KeyboardModifiers)
+    // that should by default be used to instantiate the plug-in. (Note that the user may still change it afterwards
+    // from the Shortcut Editor)
     int presetSymbol;
     int presetModifiers;
+
+    // The serialization that should set the state of the node by default
     NodeSerialization node;
 
     // This flag is used to speed-up preset parsing by Natron: it will only read relevant meta-data from this class
@@ -157,9 +180,12 @@ public:
 
     NodePresetSerialization()
     : SerializationObjectBase()
-    , pluginID()
+    , originalPluginID()
+    , presetID()
+    , presetGrouping()
     , presetLabel()
     , presetIcon()
+    , version(0)
     , presetSymbol(0)
     , presetModifiers(0)
     , node()

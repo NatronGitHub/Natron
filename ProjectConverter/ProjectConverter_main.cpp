@@ -248,10 +248,10 @@ private:
                         it->getSize(w, h);
 
                         SERIALIZATION_NAMESPACE::KnobSerializationPtr labelSerialization = it->getLabelSerialization();
-                        CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, app->getProject() );
-                        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                        CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_BACKDROP, app->getProject() ));
+                        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
                         NodePtr node = app->createNode(args);
                         assert(node);

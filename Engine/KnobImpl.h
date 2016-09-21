@@ -1250,7 +1250,7 @@ Knob<T>::setValues(const T& value0,
     if (holder) {
         effect = toEffectInstance(holder);
         if (effect) {
-            if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
+            if ( effect->isDoingInteractAction() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
                 doEditEnd = true;
             }
@@ -1313,7 +1313,7 @@ Knob<T>::setValues(const T& value0,
     if (holder) {
         effect = toEffectInstance(holder);
         if (effect) {
-            if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
+            if ( effect->isDoingInteractAction() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
                 doEditEnd = true;
             }
@@ -1356,7 +1356,7 @@ Knob<T>::setValues(const T& value0,
     if (holder) {
         effect = toEffectInstance(holder);
         if (effect) {
-            if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
+            if ( effect->isDoingInteractAction() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
                 doEditEnd = true;
             }
@@ -1602,7 +1602,7 @@ Knob<T>::setValuesAtTime(double time,
     if (holder) {
         effect = toEffectInstance(holder);
         if (effect) {
-            if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
+            if ( effect->isDoingInteractAction() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
                 doEditEnd = true;
             }
@@ -1655,7 +1655,7 @@ Knob<T>::setValuesAtTime(double time,
     if (holder) {
         effect = toEffectInstance(holder);
         if (effect) {
-            if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
+            if ( effect->isDoingInteractAction() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
                 doEditEnd = true;
             }
@@ -1710,7 +1710,7 @@ Knob<T>::setValuesAtTime(double time,
     if (holder) {
         effect = toEffectInstance(holder);
         if (effect) {
-            if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
+            if ( effect->isDoingInteractAction() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
                 doEditEnd = true;
             }

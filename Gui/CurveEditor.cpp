@@ -372,7 +372,11 @@ CurveEditor::addNode(NodeGuiPtr node)
 void
 CurveEditor::removeNode(const NodeGuiPtr& node)
 {
-    RotoContextPtr roto = node->getNode()->getRotoContext();
+    NodePtr internalNode = node->getNode();
+    RotoContextPtr roto;
+    if (internalNode) {
+        roto = internalNode->getRotoContext();
+    }
 
     if (!roto) {
         for (std::list<NodeCurveEditorContext*>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {

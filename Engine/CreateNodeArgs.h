@@ -83,6 +83,13 @@
 #define kCreateNodeArgsPropNodeSerialization "CreateNodeArgsPropNodeSerialization"
 
 /**
+ * @brief optional x1 bool If set to true when creating a node with the plug-in PLUGINID_NATRON_GROUP the inital Input and Output nodes
+ * will NOT be created. If the property kCreateNodeArgsPropNodeSerialization is set to a non null value it acts as if this property is set to true
+ * Default value - false
+ **/
+#define kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes "CreateNodeArgsPropNodeGroupDisableCreateInitialNodes"
+
+/**
  * @brief optional x1 std::string property indicating the label of the presets to use to load the node.
  * The preset label must correspond to a valid label of a a preset file (.nps) that was found by Natron.
  * The preset label is NOT the filename of the preset file, but the string in the file found next to the key "PresetLabel"
@@ -91,14 +98,6 @@
  **/
 #define kCreateNodeArgsPropPreset "CreateNodeArgsPropPreset"
 
-/**
- * @brief optional x1 bool property
- * Default Value - false
- * If copy/pasting, we don't want to paste a PyPlug and create copy from the Python script,
- * we want it to copy the group directly and keep the modifications the user may have made.
- * This is only relevant and valid if the property kCreateNodeArgsPropNodeSerialization has been set.
- **/
-#define kCreateNodeArgsPropDoNotLoadPyPlugFromScript "CreateNodeArgsPropDoNotLoadPyPlugFromScript"
 
 /**
  * @brief optional x1 bool property
@@ -309,7 +308,6 @@ class CreateNodeArgs
         createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
         createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
-        createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
         createProperty<bool>(kCreateNodeArgsPropVolatile, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
@@ -317,6 +315,7 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropAutoConnect, true);
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);
+        createProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, false);
         createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
         createProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
         createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());

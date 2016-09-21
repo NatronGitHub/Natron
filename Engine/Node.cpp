@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
@@ -80,6 +81,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
@@ -598,6 +600,10 @@ public:
     // This is used to determine if the ordering has changed or not for serialization purpose
     std::list<std::string> defaultViewerKnobsOrder;
 
+    // When deserializing a Group, the internal nodes are built before the Group UI is created, hence we store them in this
+    // list temporarily to create their GUI once the Group creates its own
+    std::list<std::pair<NodePtr, CreateNodeArgsPtr> > nodesToCreateGui;
+
     bool restoringDefaults;
 };
 
@@ -706,6 +712,25 @@ Node::isPartOfPrecomp() const
     return _imp->precomp.lock();
 }
 
+static bool findAvailableName(const std::string &baseName, const NodeCollectionPtr& group, const NodePtr& node, std::string* name)
+{
+    *name = baseName;
+    int no = 1;
+    do {
+        if (no > 1) {
+            std::stringstream ss;
+            ss << baseName;
+            ss << '_';
+            ss << no;
+            *name = ss.str();
+        }
+        ++no;
+    } while ( group && group->checkIfNodeNameExists(*name, node) );
+
+    // When no == 2 the name was available
+    return no == 2;
+}
+
 void
 Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName)
 {
@@ -720,42 +745,31 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
 
     if (!fixedName.isEmpty()) {
 
-        std::string baseName = fixedName.toStdString();
-        std::string name = baseName;
-        int no = 1;
-        do {
-            if (no > 1) {
-                std::stringstream ss;
-                ss << baseName;
-                ss << '_';
-                ss << no;
-                name = ss.str();
-            }
-            ++no;
-        } while ( group && group->checkIfNodeNameExists(name, shared_from_this()) );
+        std::string name;
+        findAvailableName(fixedName.toStdString(), group, shared_from_this(), &name);
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
+
+        setLabel(name);
+
 
     } else if (serialization) {
 
-        const std::string& baseName = serialization->_nodeScriptName;
-        std::string name = baseName;
-        int no = 1;
-        do {
-            if (no > 1) {
-                std::stringstream ss;
-                ss << baseName;
-                ss << '_';
-                ss << no;
-                name = ss.str();
-            }
-            ++no;
-        } while ( group && group->checkIfNodeNameExists(name, shared_from_this()) );
+        std::string name;
+        bool nameAvailable = findAvailableName(serialization->_nodeScriptName, group, shared_from_this(), &name);
 
-        //This version of setScriptName will not error if the name is invalid or already taken
+        // This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
-        setLabel( serialization->_nodeLabel );
+
+        // If the script name was not available, give the same script name to the label, most likely this is a copy/paste operation.
+        if (!nameAvailable) {
+            setLabel(name);
+        } else {
+            setLabel(serialization->_nodeLabel);
+        }
+
+
 
     } else {
         std::string name;
@@ -787,19 +801,62 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
 }
 
 void
-Node::load(const CreateNodeArgs& args)
+Node::createNodeGuiInternal(const CreateNodeArgsPtr& args)
+{
+
+    // If this node is in a group and the group UI is not yet created, append it to the group list.
+    // Otherwise create the node UI directly
+    NodePtr thisShared = shared_from_this();
+    NodeCollectionPtr group = getGroup();
+    NodeGraphI* graph_i = group->getNodeGraph();
+    if (graph_i) {
+        graph_i->createNodeGui(thisShared, *args);
+
+        // The gui pointer is set in the constructor of NodeGui
+        if (!_imp->guiPointer.lock()) {
+            throw std::runtime_error(tr("Could not create GUI for node %1").arg(QString::fromUtf8(getScriptName_mt_safe().c_str())).toStdString());
+        }
+
+        NodeGroupPtr isNodeGroup = toNodeGroup(_imp->effect);
+        if (isNodeGroup) {
+            NodeGraphI* graph_i = isNodeGroup->getNodeGraph();
+            if (graph_i) {
+                // If recursively we created internal nodes but the Group GUI was not yet created, create their gui now
+                for (std::list<std::pair<NodePtr, CreateNodeArgsPtr> >::const_iterator it = _imp->nodesToCreateGui.begin(); it!=_imp->nodesToCreateGui.end(); ++it) {
+                    graph_i->createNodeGui(it->first, *it->second);
+                }
+
+                // As a second- pass refresh all GUI inputs for the nodes now that they have been created
+                for (std::list<std::pair<NodePtr, CreateNodeArgsPtr> >::const_iterator it = _imp->nodesToCreateGui.begin(); it!=_imp->nodesToCreateGui.end(); ++it) {
+                    Q_EMIT it->first->inputsInitialized();
+                }
+                _imp->nodesToCreateGui.clear();
+            }
+        }
+    } else {
+        // The group is probably being created, append to its list
+        NodeGroupPtr containerIsGroup = toNodeGroup(group);
+        if (containerIsGroup) {
+            containerIsGroup->getNode()->_imp->nodesToCreateGui.push_back(std::make_pair(thisShared, args));
+        }
+
+    }
+}
+
+void
+Node::load(const CreateNodeArgsPtr& args)
 {
     ///Called from the main thread. MT-safe
     assert( QThread::currentThread() == qApp->thread() );
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPersistent = !args.getProperty<bool>(kCreateNodeArgsPropVolatile);
+    _imp->isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
 
-    _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
+    _imp->ioContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 
     NodeCollectionPtr group = getGroup();
-    std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
+    std::string multiInstanceParentName = args->getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
     if ( !multiInstanceParentName.empty() ) {
         _imp->multiInstanceParentName = multiInstanceParentName;
         _imp->isMultiInstance = false;
@@ -807,7 +864,7 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    _imp->wasCreatedSilently = args.getProperty<bool>(kCreateNodeArgsPropSilent);
+    _imp->wasCreatedSilently = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
     NodePtr thisShared = shared_from_this();
 
@@ -818,8 +875,8 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    std::string presetLabel = args.getProperty<std::string>(kCreateNodeArgsPropPreset);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    std::string presetLabel = args->getProperty<std::string>(kCreateNodeArgsPropPreset);
 
     if (!presetLabel.empty()) {
         // If there's a preset specified, load serialization from preset
@@ -836,23 +893,23 @@ Node::load(const CreateNodeArgs& args)
 
     }
 
-    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
+    bool isSilentCreation = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
 
     bool hasDefaultFilename = false;
     {
-        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string> defaultParamValues = args->getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
         if (foundFileName != defaultParamValues.end()) {
             std::string propName(kCreateNodeArgsPropParamValue);
             propName += "_";
             propName += kOfxImageEffectFileParamName;
-            hasDefaultFilename = !args.getProperty<std::string>(propName).empty();
+            hasDefaultFilename = !args->getProperty<std::string>(propName).empty();
         }
     }
     bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
 
-    std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+    std::string argFixedName = args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     
     if (func.first) {
@@ -895,11 +952,11 @@ Node::load(const CreateNodeArgs& args)
         } else if (!_imp->initialNodePreset.empty()) {
             loadPresets(_imp->initialNodePreset);
         }
-        setValuesFromSerialization(args);
+        setValuesFromSerialization(*args);
 
     } else {
         //ofx plugin
-        _imp->effect = appPTR->createOFXEffect(thisShared, args);
+        _imp->effect = appPTR->createOFXEffect(thisShared, *args);
         assert(_imp->effect);
     }
 
@@ -954,21 +1011,29 @@ Node::load(const CreateNodeArgs& args)
     _imp->currentThreadSafety = _imp->pluginSafety;
 
 
-    bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
+    // Create gui if needed
+    bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    if (!argsNoNodeGui) {
+        createNodeGuiInternal(args);
+    }
 
-    _imp->effect->onEffectCreated(canOpenFileDialog, args);
+    _imp->effect->onEffectCreated(canOpenFileDialog, *args);
 
+    _imp->nodeCreated = true;
+
+    
     _imp->refreshDefaultPagesOrder();
     _imp->refreshDefaultViewerKnobsOrder();
 
-    _imp->nodeCreated = true;
 
     if ( !getApp()->isCreatingNodeTree() ) {
         refreshAllInputRelatedData(!serialization);
     }
 
 
-    _imp->runOnNodeCreatedCB(!serialization && !isLoadingPyPlug);
+    _imp->runOnNodeCreatedCB(!serialization);
+
+    computePreviewImage( getApp()->getTimeLine()->currentFrame() );
 } // load
 
 std::string
@@ -1932,10 +1997,14 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         isOfxEffect->syncPrivateData_other_thread();
     }
 
+
     // Check if pages ordering changed, if not do not serialize
     bool pageOrderChanged = hasPageOrderChangedSinceDefault();
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
+
+    bool subGraphEdited = isSubGraphEditedByUser();
+
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
@@ -1945,7 +2014,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         // For pages, check if it is a user knob, if so serialialize user knobs recursively
         if (isPage) {
-            if (pageOrderChanged) {
+            if (pageOrderChanged || subGraphEdited) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
             if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
@@ -1998,8 +2067,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     serialization->_pluginID = getPluginID();
 
-    bool subGraphEdited = isSubGraphEditedByUser();
-    
+
     {
         QMutexLocker k(&_imp->nodePresetMutex);
         serialization->_presetLabel = _imp->initialNodePreset;
@@ -2146,10 +2214,32 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
         _imp->overlayColor[2] = serialization->_overlayColor[2];
     }
 
-
+    loadInternalNodesFromSerialization(*serialization);
 
     
 } // Node::fromSerialization
+
+void
+Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+{
+
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+
+    // Restore internal nodes for groups
+    if (isGrp && !isPyPlug()) {
+
+        {
+            // Deactivate all internal nodes for group first
+            NodesList nodes = isGrp->getNodes();
+            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                (*it)->destroyNode(false);
+            }
+        }
+
+        std::map<std::string, bool> moduleUpdatesProcessed;
+        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
+    }
+}
 
 void
 Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
@@ -2296,8 +2386,8 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZ
         *presetsLabel = obj.presetLabel;
     }
     std::string thisPluginID = getPluginID();
-    if (obj.pluginID != thisPluginID) {
-        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.pluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
+    if (obj.originalPluginID != thisPluginID) {
+        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.originalPluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
     }
 
 }
@@ -2369,23 +2459,9 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& seri
     }
 
 
-    NodeGroupPtr isGrp = isEffectNodeGroup();
+    loadInternalNodesFromSerialization(serialization);
 
-    // For Groups only (not PyPlugs) also restore the internal graph as the user set it up.
-    // This is mainly useful for the Viewer group
-    if (isGrp && !getApp()->isCreatingPythonGroup() && !isPyPlug()) {
 
-        {
-            // Deactivate all internal nodes for group first
-            NodesList nodes = isGrp->getNodes();
-            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                (*it)->destroyNode(false);
-            }
-        }
-
-        std::map<std::string, bool> moduleUpdatesProcessed;
-        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
-    }
 
 } // Node::loadPresetsInternal
 
@@ -2405,7 +2481,7 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
     SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
     // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
     // we just have to read the plugin id
-    serialization.pluginID = getPluginID();
+    serialization.originalPluginID = getPluginID();
     serialization.presetLabel = presetsLabel;
     serialization.presetIcon = presetsIcon;
     serialization.presetSymbol = (int)symbol;
@@ -2538,39 +2614,9 @@ Node::restoreSublabel()
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
         ioContainer->_imp->ofxSubLabelKnob = sublabelKnobIsString;
+        Q_EMIT ioContainer->nodeExtraLabelChanged();
     }
-    if (!sublabelKnobIsString) {
-        return;
-    }
-    //Check if natron custom tags are present and insert them if needed
-    /// If the node has a sublabel, restore it in the label
-    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
-    if (!labelKnob) {
-        return;
-    }
-
-    /*
-    QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
-    int foundNatronCustomTag = labeltext.indexOf( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-    if (foundNatronCustomTag == -1) {
-        QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
-        if ( !sublabel.isEmpty() ) {
-            int fontEndTagFound = labeltext.lastIndexOf( QString::fromUtf8(kFontEndTag) );
-            if (fontEndTagFound == -1) {
-                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                labeltext.append( QLatin1Char('(') + sublabel + QLatin1Char(')') );
-                labeltext.append( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END) );
-            } else {
-                QString toAppend( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
-                toAppend += QLatin1Char('(');
-                toAppend += sublabel;
-                toAppend += QLatin1Char(')');
-                toAppend += QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_END);
-                labeltext.insert(fontEndTagFound, toAppend);
-            }
-            labelKnob->setValue( labeltext.toStdString() );
-        }
-    }*/
+ 
 
 }
 
@@ -2597,6 +2643,29 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+
+
+    const std::string & masterNodeName = serialization._masterNodeFullyQualifiedScriptName;
+    if ( !masterNodeName.empty() ) {
+        // Find master node
+        NodePtr masterNode = getApp()->getNodeByFullySpecifiedName(masterNodeName);
+
+        if (!masterNode) {
+            LogEntry::LogEntryColor c;
+            if (getColor(&c.r, &c.g, &c.b)) {
+                c.colorSet = true;
+            }
+
+            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                            tr("Cannot restore the link between %1 and %2.")
+                                            .arg( QString::fromUtf8( serialization._nodeScriptName.c_str() ) )
+                                            .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
+        } else {
+            _imp->effect->slaveAllKnobs( masterNode->getEffectInstance(), true );
+        }
+        return;
+    }
+
 
     const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues = serialization._knobsValues;
     ///try to find a serialized value for this knob
@@ -4536,6 +4605,11 @@ Node::makeDocumentation(bool genHTML) const
             QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
             input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
             inputs.push_back(input);
+
+            // Don't show more than doc for 4 inputs otherwise it will just clutter the page
+            if (i == 3) {
+                break;
+            }
         }
     }
 
@@ -4572,6 +4646,10 @@ Node::makeDocumentation(bool genHTML) const
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
         if ( (*it)->getIsSecret() ) {
+            continue;
+        }
+
+        if (!(*it)->isDeclaredByPlugin()) {
             continue;
         }
         QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
@@ -4628,6 +4706,17 @@ Node::makeDocumentation(bool genHTML) const
                         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
+                        }
+                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+                        if ( entries.size() == entriesHelp.size() ) {
+                            knobHint.append( QString::fromUtf8("\n\n") );
+                            for (size_t i = 0; i < entries.size(); i++) {
+                                QString entry = QString::fromUtf8( entries[i].c_str() );
+                                QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
+                                if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
+                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg(entry).arg(entryHelp) );
+                                }
+                            }
                         }
                     } else if (isInt) {
                         valueStr = QString::number( isInt->getDefaultValue(i) );
@@ -5452,7 +5541,7 @@ Node::checkIfConnectingInputIsOk(const NodePtr& input) const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    if (input.get() == this) {
+    if (!input || input.get() == this) {
         return false;
     }
     bool found;
@@ -6767,6 +6856,9 @@ Node::makePreviewImage(SequenceTime time,
                        int *height,
                        unsigned int* buf)
 {
+    if (!isNodeCreated()) {
+        return false;
+    }
     assert(_imp->knobsInitialized);
 
 
@@ -7974,6 +8066,7 @@ Node::endInputEdition(bool triggerRender)
         _imp->inputsModified.clear();
 
         if (hasChanged) {
+            // When creating a node tree, the refresh is done on all the tree when done
             if ( !getApp()->isCreatingNodeTree() ) {
                 forceRefreshAllInputRelatedData();
             }
@@ -8008,8 +8101,7 @@ Node::onInputChanged(int inputNb)
     refreshMaskEnabledNess(inputNb);
     //refreshLayersSelectorsVisibility();
 
-    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() ) ||
-                                _imp->effect->isRotoPaintNode();
+    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() );
 
     if (shouldDoInputChanged) {
         ///When loading a group (or project) just wait until everything is setup to actually compute input
@@ -8168,7 +8260,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
         *lastFrame = INT_MAX;
     } else {
         SequenceParsing::SequenceFromPattern seq;
-        SequenceParsing::filesListFromPattern(canonicalFileName, &seq);
+        FileSystemModel::filesListFromPattern(canonicalFileName, &seq);
         if ( seq.empty() || (seq.size() == 1) ) {
             *firstFrame = 1;
             *lastFrame = 1;
@@ -8220,7 +8312,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
                 SequenceParsing::SequenceFromPattern seq;
-                SequenceParsing::filesListFromPattern(pattern, &seq);
+                FileSystemModel::filesListFromPattern(pattern, &seq);
                 if ( seq.empty() || (seq.size() == 1) ) {
                     leftBound = 1;
                     rightBound = 1;
@@ -9383,8 +9475,7 @@ Node::getSelectedLayer(int inputNb,
                        bool* isAll,
                        ImageComponents* layer) const
 {
-    //If the effect is multi-planar, it is expected to handle itself all the planes
-    assert( !_imp->effect->isMultiPlanar() );
+
 
     std::map<int, ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
     NodePtr maskInput;

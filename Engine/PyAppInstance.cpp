@@ -163,8 +163,8 @@ App::createNode(const QString& pluginID,
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
-    CreateNodeArgs args;
-    makeCreateNodeArgs(getInternalApp(), pluginID, majorVersion, collection, props, &args);
+    CreateNodeArgsPtr args(new CreateNodeArgs);
+    makeCreateNodeArgs(getInternalApp(), pluginID, majorVersion, collection, props, args.get());
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
@@ -183,8 +183,8 @@ App::createReader(const QString& filename,
 
     assert(collection);
 
-    CreateNodeArgs args;
-    makeCreateNodeArgs(getInternalApp(),  QString::fromUtf8(PLUGINID_NATRON_READ), -1, collection, props, &args);
+    CreateNodeArgsPtr args(new CreateNodeArgs);
+    makeCreateNodeArgs(getInternalApp(),  QString::fromUtf8(PLUGINID_NATRON_READ), -1, collection, props, args.get());
 
     NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
@@ -202,8 +202,8 @@ App::createWriter(const QString& filename,
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
-    CreateNodeArgs args;
-    makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, &args);
+    CreateNodeArgsPtr args(new CreateNodeArgs);
+    makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, args.get());
     NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
         return new Effect(node);

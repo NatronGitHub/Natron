@@ -33,9 +33,11 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
+CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
+CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 //ofx extension
@@ -942,7 +944,7 @@ OfxImageEffectInstance::editBegin(const std::string & /*name*/)
     ///Don't push undo/redo actions while creating a group
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( !effect->getApp()->isCreatingNode() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
     }
 
@@ -958,7 +960,7 @@ OfxImageEffectInstance::editEnd()
     ///Don't push undo/redo actions while creating a group
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( !effect->getApp()->isCreatingNode() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 

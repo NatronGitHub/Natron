@@ -313,7 +313,7 @@ public:
 
     void refreshOpenGLRenderingFlagOnNodes();
 
-    virtual void invalidateHashCache() OVERRIDE FINAL;
+    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE FINAL;
 
 private:
 

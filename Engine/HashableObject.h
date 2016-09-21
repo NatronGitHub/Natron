@@ -88,7 +88,7 @@ public:
      * This should be called after anything that the hash computation relies on has changed.
      * Derived implementations must call the base class version.
      **/
-    virtual void invalidateHashCache();
+    virtual void invalidateHashCache(bool invalidateParent = true);
 
 protected:
 

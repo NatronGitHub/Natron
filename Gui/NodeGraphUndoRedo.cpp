@@ -1498,10 +1498,11 @@ GroupFromSelectionCommand::redo()
     } else {
         NodesList internalNewNodes;
         // Create the actual Group node
-        CreateNodeArgs groupArgs( PLUGINID_NATRON_GROUP, _graph->getGroup() );
-        groupArgs.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        groupArgs.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        groupArgs.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        CreateNodeArgsPtr groupArgs(new CreateNodeArgs(PLUGINID_NATRON_GROUP, _graph->getGroup() ));
+        groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+        groupArgs->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        groupArgs->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        groupArgs->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
 
@@ -1567,10 +1568,10 @@ GroupFromSelectionCommand::redo()
                     NodePtr originalInput = originalNodeInputs[i].lock();
                     if (originalInput) {
                         //Create an input node corresponding to this input
-                        CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
-                        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, isGrp));
+                        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
 
                         NodePtr input = _graph->getGui()->getApp()->createNode(args);
@@ -1607,10 +1608,10 @@ GroupFromSelectionCommand::redo()
             //Create only a single output
 
             if (!hasCreatedOutput) {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
-                args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, isGrp));
+                args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 NodePtr output = _graph->getGui()->getApp()->createNode(args);
                 try {
                     output->setScriptName("Output");

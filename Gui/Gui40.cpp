@@ -723,10 +723,10 @@ Gui::renderSelectedNode()
                 ///create a node and connect it to the node and use it to render
 
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
-                CreateNodeArgs args(PLUGINID_NATRON_WRITE, graph->getGroup());
-                args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_WRITE, graph->getGroup()));
+                args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                 NodePtr writer = getApp()->createWriter( std::string(), args );
                 if (writer) {
                     AppInstance::RenderWork w;

@@ -1059,9 +1059,9 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
 }
 
 void
-RotoStrokeItem::invalidateHashCache()
+RotoStrokeItem::invalidateHashCache(bool invalidateParent)
 {
-    RotoDrawableItem::invalidateHashCache();
+    RotoDrawableItem::invalidateHashCache(invalidateParent);
 }
 
 

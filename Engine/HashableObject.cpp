@@ -134,15 +134,17 @@ HashableObject::computeHash(double time, ViewIdx view)
 }
 
 void
-HashableObject::invalidateHashCache()
+HashableObject::invalidateHashCache(bool invalidateParent)
 {
     {
         QMutexLocker k(&_imp->hashCacheMutex);
         _imp->hashCache.clear();
     }
-    HashableObjectPtr parent = getHashParent();
-    if (parent) {
-        parent->invalidateHashCache();
+    if (invalidateParent) {
+        HashableObjectPtr parent = getHashParent();
+        if (parent) {
+            parent->invalidateHashCache();
+        }
     }
 }
 

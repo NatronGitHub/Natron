@@ -397,7 +397,7 @@ public:
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE ;
 
-    virtual void invalidateHashCache() OVERRIDE ;
+    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE ;
 
     NodePtr getOutputNode(bool useGuiConnexions) const;
 
@@ -427,9 +427,9 @@ public:
     }
 
     /**
-     * @brief Callback called when the group gui has been created
+     * @brief Callback called when the node gui has been created
      **/
-    virtual void onGroupCreated(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization);
+    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE;
 
 Q_SIGNALS:
 

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NODEGRAPHI_H
-#define NODEGRAPHI_H
+#ifndef NATRON_ENGINE_SMOOTH_1D_H
+#define NATRON_ENGINE_SMOOTH_1D_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,25 +25,19 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
-class NodeGraphI
+namespace Smooth1D
 {
-public:
 
-    NodeGraphI() {}
+    void iir_gaussianFilter1D(std::vector<float>& curve, int smoothingKernelSize);
 
-    virtual ~NodeGraphI() {}
+    void laplacian_1D(std::vector<float>& curve);
 
-    virtual void onNodesCleared() = 0;
+}
 
-    virtual void createNodeGui(const NodePtr& node, const CreateNodeArgs& args) = 0;
-};
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_EXIT;
-
-#endif // NODEGRAPHI_H
+#endif // NATRON_ENGINE_SMOOTH_1D_H

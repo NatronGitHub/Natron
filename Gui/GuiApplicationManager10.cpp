@@ -319,10 +319,10 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
         return false;
     }
 
-    CreateNodeArgs args(readerFileType, mainInstance->getProject() );
-    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    CreateNodeArgsPtr args(new CreateNodeArgs(readerFileType, mainInstance->getProject() ));
+    args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
         mainInstance->quit();
@@ -342,11 +342,11 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 
     ///If no viewer is found, create it
     if (!viewerFound) {
-        CreateNodeArgs args(PLUGINID_NATRON_VIEWER_GROUP, mainInstance->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args.setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
-        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_GROUP, mainInstance->getProject() ));
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         viewerFound = mainInstance->createNode(args);
     }
     if (viewerFound) {

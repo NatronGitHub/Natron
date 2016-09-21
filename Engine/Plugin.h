@@ -137,6 +137,8 @@ class Plugin
     QStringList _groupIconFilePath;
     QStringList _grouping;
     QString _labelWithoutSuffix;
+
+    // Deprecated, PyPlugs are no longer python scripts
     QString _pythonModule;
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;

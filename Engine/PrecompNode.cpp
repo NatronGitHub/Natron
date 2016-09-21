@@ -576,11 +576,11 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append( QString::fromUtf8("readNode") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-    CreateNodeArgs args( readPluginID.toStdString(), app.lock()->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
+    CreateNodeArgsPtr args(new CreateNodeArgs( readPluginID.toStdString(), app.lock()->getProject() ));
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
 
     NodePtr read = app.lock()->createNode(args);

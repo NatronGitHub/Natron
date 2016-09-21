@@ -119,7 +119,7 @@ public:
 
     void setStrokeFinished();
 
-    virtual void invalidateHashCache() OVERRIDE;
+    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE;
 
 
     virtual void clone(const RotoItem* other) OVERRIDE FINAL;

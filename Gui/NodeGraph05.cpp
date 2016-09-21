@@ -33,6 +33,7 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/RotoDrawableItem.h"
@@ -48,77 +49,88 @@
 NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
-
 void
-NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
-                                     const NodeGuiPtr &selected,
-                                     bool autoConnect)
+NodeGraph::moveNodeToCenterOfVisiblePortion(const NodeGuiPtr &n)
+{
+    QRectF viewPos = visibleSceneRect();
+    QPointF position;
+    position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
+    position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
+
+    position = n->mapFromScene(position);
+    position = n->mapToParent(position);
+    n->setPosition( position.x(), position.y() );
+}
+
+bool
+NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &selected)
 {
     BackdropGuiPtr isBd = toBackdropGui(node);
 
     if (isBd) {
-        return;
+        return false;
     }
 
-    QRectF viewPos = visibleSceneRect();
 
-    ///3 possible values:
-    /// 0 = default , i.e: we pop the node in the middle of the graph's current view
-    /// 1 = pop the node above the selected node and move the inputs of the selected node a little
-    /// 2 = pop the node below the selected node and move the outputs of the selected node a little
-    int behavior = 0;
+    if (!selected) {
+        return false;
+    }
 
-    if (!selected || !autoConnect) {
-        behavior = 0;
-    } else {
-        ///this function is redundant with Project::autoConnect, depending on the node selected
-        ///and this node we make some assumptions on to where we could put the node.
+    // 2 possible values:
+    // 1 = pop the node above the selected node and move the inputs of the selected node a little
+    // 2 = pop the node below the selected node and move the outputs of the selected node a little
+    enum AutoConnectBehaviorEnum {
+        eAutoConnectBehaviorAbove,
+        eAutoConnectBehaviorBelow
+    };
 
-        //        1) selected is output
-        //          a) created is output --> fail
-        //          b) created is input --> connect input
-        //          c) created is regular --> connect input
-        //        2) selected is input
-        //          a) created is output --> connect output
-        //          b) created is input --> fail
-        //          c) created is regular --> connect output
-        //        3) selected is regular
-        //          a) created is output--> connect output
-        //          b) created is input --> connect input
-        //          c) created is regular --> connect output
+    AutoConnectBehaviorEnum behavior;
 
-        ///1)
-        if ( selected->getNode()->isOutputNode() ) {
-            ///case 1-a) just do default we don't know what else to do
-            if ( node->getNode()->isOutputNode() ) {
-                behavior = 0;
+    //        1) selected is output
+    //          a) created is output --> fail
+    //          b) created is input --> connect input
+    //          c) created is regular --> connect input
+    //        2) selected is input
+    //          a) created is output --> connect output
+    //          b) created is input --> fail
+    //          c) created is regular --> connect output
+    //        3) selected is regular
+    //          a) created is output--> connect output
+    //          b) created is input --> connect input
+    //          c) created is regular --> connect output
+
+    ///1)
+    if ( selected->getNode()->isOutputNode() ) {
+        ///case 1-a) just do default we don't know what else to do
+        if ( node->getNode()->isOutputNode() ) {
+            return false;
+        } else {
+            ///for either cases 1-b) or 1-c) we just connect the created node as input of the selected node.
+            behavior = eAutoConnectBehaviorAbove;
+        }
+    }
+    ///2) and 3) are similar except for case b)
+    else {
+        ///case 2 or 3- a): connect the created node as output of the selected node.
+        if ( node->getNode()->isOutputNode() ) {
+            behavior = eAutoConnectBehaviorBelow;
+        }
+        ///case b)
+        else if ( node->getNode()->isInputNode() ) {
+            if ( selected->getNode()->getEffectInstance()->isReader() ) {
+                ///case 2-b) just do default we don't know what else to do
+                return false;
             } else {
-                ///for either cases 1-b) or 1-c) we just connect the created node as input of the selected node.
-                behavior = 1;
+                ///case 3-b): connect the created node as input of the selected node
+                behavior = eAutoConnectBehaviorAbove;
             }
         }
-        ///2) and 3) are similar except for case b)
+        ///case c) connect created as output of the selected node
         else {
-            ///case 2 or 3- a): connect the created node as output of the selected node.
-            if ( node->getNode()->isOutputNode() ) {
-                behavior = 2;
-            }
-            ///case b)
-            else if ( node->getNode()->isInputNode() ) {
-                if ( selected->getNode()->getEffectInstance()->isReader() ) {
-                    ///case 2-b) just do default we don't know what else to do
-                    behavior = 0;
-                } else {
-                    ///case 3-b): connect the created node as input of the selected node
-                    behavior = 1;
-                }
-            }
-            ///case c) connect created as output of the selected node
-            else {
-                behavior = 2;
-            }
+            behavior = eAutoConnectBehaviorBelow;
         }
     }
+
 
     NodePtr createdNodeInternal = node->getNode();
     NodePtr selectedNodeInternal;
@@ -127,9 +139,9 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     }
 
 
-    ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
-    ///otherwise fallback on behaviour 0
-    if (behavior == 1) {
+    // If behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
+    // otherwise fail
+    if (behavior == eAutoConnectBehaviorAbove) {
         const std::vector<NodeWPtr > & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
@@ -139,7 +151,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             }
         }
         if (!oneInputEmpty) {
-            behavior = 0;
+            return false;
         }
     }
 
@@ -149,10 +161,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
 
     ///default
     QPointF position;
-    if (behavior == 0) {
-        position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
-        position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
-    } else if (behavior == 1) {
+    if (behavior == eAutoConnectBehaviorAbove) {
         ///pop it above the selected node
 
         ///If this is the first connected input, insert it in a "linear" way so the tree remains vertical
@@ -221,8 +230,9 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             }
             //} // if (isSelectedViewer) {*/
         } // if (nbConnectedInput == 0) {
-    } else {
-        ///pop it below the selected node
+    } else if (behavior == eAutoConnectBehaviorBelow) {
+
+        // Pop it below the selected node
 
         const NodesWList& outputs = selectedNodeInternal->getGuiOutputs();
         if ( !createdNodeInternal->isOutputNode() || outputs.empty() ) {
@@ -311,7 +321,73 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     position = node->mapFromScene(position);
     position = node->mapToParent(position);
     node->setPosition( position.x(), position.y() );
-} // moveNodesForIdealPosition
+
+    return true;
+} // doAutoConnectHeuristic
+
+void
+NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& selectedNodes, const CreateNodeArgs& args)
+{
+    NodePtr internalNode = node->getNode();
+
+    // Multi-instance child, don't do anything
+    if ( !internalNode->getParentMultiInstanceName().empty()) {
+        return;
+    }
+
+    // Serializatino, don't do anything
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    if (serialization) {
+        return;
+    }
+
+    bool hasPositionnedNode = false;
+
+
+    // Try to autoconnect if there is a selection
+    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+    if ( selectedNodes.empty() || serialization) {
+        autoConnect = false;
+    }
+
+    if (autoConnect) {
+        BackdropGuiPtr isBd = toBackdropGui(node);
+        if (!isBd) {
+            NodeGuiPtr selectedNode;
+            if ( !serialization && (selectedNodes.size() == 1) ) {
+                selectedNode = selectedNodes.front();
+                BackdropGuiPtr isBdGui = toBackdropGui(selectedNode);
+                if (isBdGui) {
+                    selectedNode.reset();
+                }
+            }
+            if (doAutoConnectHeuristic(node, selectedNode)) {
+                hasPositionnedNode = true;
+            }
+        }
+    }
+
+    if (!hasPositionnedNode) {
+        // If there's a position hint, use it to position the node
+        double xPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+
+        if ((xPosHint != INT_MIN) && (yPosHint != INT_MIN)) {
+            QPointF pos = node->mapToParent( node->mapFromScene( QPointF(xPosHint, yPosHint) ) );
+            node->refreshPosition( pos.x(), pos.y(), true );
+            hasPositionnedNode = true;
+        }
+    }
+    
+    
+
+    // Ok fallback with the node in the middle of the node graph
+    if (!hasPositionnedNode) {
+        moveNodeToCenterOfVisiblePortion(node);
+    }
+
+
+}
 
 NATRON_NAMESPACE_EXIT;
 
