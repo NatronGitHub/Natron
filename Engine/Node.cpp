@@ -4345,6 +4345,10 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         && !ioContainer) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
 
+        if (!mainPage) {
+            mainPage = getOrCreateMainPage();
+        }
+
         KnobButtonPtr renderButton = AppManager::createKnob<KnobButton>(_imp->effect, tr("Render"), 1, false);
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
