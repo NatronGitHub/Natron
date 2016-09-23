@@ -380,7 +380,7 @@ struct Plugin_compare_major
     bool operator() (const PluginPtr& lhs,
                      const PluginPtr& rhs) const
     {
-        return lhs->getProperty<unsigned int>(kNatronPluginPropVersion, 0) < rhs->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+        return lhs->getMajorVersion() < rhs->getMajorVersion();
     }
 };
 

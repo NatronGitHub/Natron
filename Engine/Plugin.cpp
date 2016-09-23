@@ -83,7 +83,7 @@ Plugin::create(void* createEffectFunc,
     ret->setProperty<std::string>(kNatronPluginPropID, pluginID);
     ret->setProperty<std::string>(kNatronPluginPropLabel, pluginLabel);
     ret->setProperty<unsigned int>(kNatronPluginPropVersion, majorVersion);
-    ret->setProperty<unsigned int>(kNatronPluginPropVersion, minorVersion);
+    ret->setProperty<unsigned int>(kNatronPluginPropVersion, minorVersion, 1);
     if (!pluginGrouping.empty()) {
         ret->setPropertyN<std::string>(kNatronPluginPropGrouping, pluginGrouping);
     }

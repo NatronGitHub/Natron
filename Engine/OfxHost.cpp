@@ -891,7 +891,9 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::vector<std::string> groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
-
+        if (openfxId == "net.sf.cimg.CImgBlur") {
+            assert(true);
+        }
         assert( p->getBinary() );
         std::string resourcesPath = bundlePath+ "/Contents/Resources/";
         std::string iconFileName;

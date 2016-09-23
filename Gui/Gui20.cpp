@@ -759,7 +759,13 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         }
     }
 
-    const QString& iconFilePath = treeNode->getTreeNodeIconFilePath();
+    QString resourcesPath;
+    if (internalPlugin) {
+        resourcesPath = QString::fromUtf8(internalPlugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    }
+    QString iconFilePath = resourcesPath;
+    Global::ensureLastPathSeparator(iconFilePath);
+    iconFilePath += treeNode->getTreeNodeIconFilePath();
 
     QIcon toolButtonIcon, menuIcon;
     // Create tool icon

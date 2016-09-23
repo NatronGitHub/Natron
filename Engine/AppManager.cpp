@@ -1368,6 +1368,9 @@ AppManager::onAllPluginsLoaded()
         if (it->second.empty()) {
             continue;
         }
+        if (it->first == "net.sf.cimg.CImgBlur") {
+            assert(true);
+        }
         PluginMajorsOrdered::iterator first = it->second.begin();
         bool isUserCreatable = false;
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1996,9 +1999,8 @@ AppManager::registerPlugin(const PluginPtr& plugin)
     if ( found != _imp->_plugins.end() ) {
         found->second.insert(plugin);
     } else {
-        PluginMajorsOrdered set;
+        PluginMajorsOrdered &set = _imp->_plugins[pluginID];
         set.insert(plugin);
-        _imp->_plugins.insert( std::make_pair(pluginID, set) );
     }
 
 }

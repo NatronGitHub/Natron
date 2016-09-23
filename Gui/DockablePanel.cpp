@@ -149,11 +149,18 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
+            PluginPtr plugin = isEffect->getNode()->getPlugin();
+            assert(plugin);
 
-            std::string iconFilePath = isEffect->getNode()->getPluginIconFilePath();
-            if ( !iconFilePath.empty() ) {
-                QPixmap ic;
-                if ( ic.load( QString::fromUtf8( iconFilePath.c_str() ) ) ) {
+            QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+
+            QString iconFilePath = resourcesPath;
+            Global::ensureLastPathSeparator(iconFilePath);
+            iconFilePath += QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+;
+            if (QFile::exists(iconFilePath)) {
+                QPixmap ic(iconFilePath);
+                if (!ic.isNull()) {
                     int size = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
                     if (std::max( ic.width(), ic.height() ) != size) {
                         ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -194,8 +201,7 @@ DockablePanel::DockablePanel(Gui* gui,
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET, iconSize, &pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp), QString(), _imp->_headerWidget);
 
-            PluginPtr plugin = isEffect->getNode()->getPlugin();
-            assert(plugin);
+
             _imp->_pluginID = QString::fromUtf8(plugin->getPluginID().c_str());
 
             _imp->_helpButton->setToolTip( helpString() );
