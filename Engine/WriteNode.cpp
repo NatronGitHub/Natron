@@ -185,7 +185,7 @@ WriteNode::createPlugin()
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_W);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "writeImage.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/writeImage.png");
     return ret;
 }
 

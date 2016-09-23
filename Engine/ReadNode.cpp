@@ -107,7 +107,7 @@ ReadNode::createPlugin()
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_R);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "readImage.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/readImage.png");
     return ret;
 }
 

@@ -2159,8 +2159,8 @@ Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSeri
 
     // For old PyPlugs based on Python scripts, the nodes are created by the Python script after the Group itself
     // gets created. So don't do anything
-    bool isPythonScriptPyPlug = pyPlug->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
-    if (pyPlug && isPythonScriptPyPlug) {
+    bool isPythonScriptPyPlug = pyPlug && pyPlug->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+    if (isPythonScriptPyPlug) {
         return;
     }
 
@@ -2175,6 +2175,7 @@ Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSeri
     // Restore rest of the group with the serialization
     Project::restoreGroupFromSerialization(serialization->_children, isGrp);
 
+    isGrp->onGroupLoaded();
 }
 
 void

@@ -1063,7 +1063,7 @@ NodeGroup::createPlugin()
                        "you may add multiple Input node within the group and exactly 1 Output node.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "group_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/group_icon.png");
 
     return ret;
 }

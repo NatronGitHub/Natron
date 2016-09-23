@@ -297,7 +297,7 @@ Plugin::generateUserFriendlyPluginID() const
     std::stringstream ss;
     ss << getLabelWithoutSuffix();
     ss << "  [";
-    ss << getProperty<unsigned int>(kNatronPluginPropGrouping, 0);
+    ss << getProperty<std::string>(kNatronPluginPropGrouping, 0);
     ss << ']';
     return ss.str();
 }
@@ -308,7 +308,7 @@ Plugin::generateUserFriendlyPluginIDMajorEncoded() const
     std::stringstream ss;
     ss << getLabelVersionMajorEncoded();
     ss << "  [";
-    ss << getProperty<unsigned int>(kNatronPluginPropGrouping, 0);
+    ss << getProperty<std::string>(kNatronPluginPropGrouping, 0);
     ss << ']';
     return ss.str();
 }

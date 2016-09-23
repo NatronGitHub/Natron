@@ -1998,6 +1998,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 
     ViewerNodePtr viewerNode = getInternalNode();
     ViewerInstancePtr instance = viewerNode->getInternalViewerNode();
+    assert(instance);
     unsigned int mipMapLevel = (unsigned int)std::max((int)instance->getMipMapLevelFromZoomFactor(), (int)viewerNode->getProxyModeKnobMipMapLevel());
     int closestPo2 = 1 << mipMapLevel;
     if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {

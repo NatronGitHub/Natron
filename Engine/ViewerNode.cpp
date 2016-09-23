@@ -889,6 +889,7 @@ ViewerNode::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSeriali
     if (serialization && !serialization->_children.empty()) {
         return;
     }
+
     ViewerNodePtr thisShared = shared_from_this();
 
     NodePtr internalViewerNode;
@@ -963,7 +964,7 @@ ViewerNodePrivate::onInternalViewerCreated()
 }
 
 void
-ViewerNode::onContainerGroupLoaded()
+ViewerNode::onGroupLoaded()
 {
     NodePtr internalViewerNode;
     NodesList nodes = getNodes();

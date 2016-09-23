@@ -398,6 +398,12 @@ public:
     virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE;
 
     /**
+     * @brief Callback called after the internal group has been restored completely. 
+     * Base implementation doesn't do anything
+     **/
+    virtual void onGroupLoaded() {}
+
+    /**
      * @brief Called when the Group is created or when the node is reset to default to re-initialize the node to its default state.
      **/
     virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization );

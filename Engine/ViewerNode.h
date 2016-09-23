@@ -257,7 +257,7 @@ public:
     }
 
     // Called when the group containing this viewer node has been fully restored, including graph links
-    void onContainerGroupLoaded();
+    virtual void onGroupLoaded() OVERRIDE FINAL;
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 

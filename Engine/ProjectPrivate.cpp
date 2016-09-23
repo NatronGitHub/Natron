@@ -224,20 +224,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         }
     }
 
-    // Viewers are specials and needs to be notified once all connections have been made in their container group in order
-    // to correctly link the internal nodes
-#pragma message WARN("Fix this")
-    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        ViewerNodePtr isViewer = it->first->isEffectViewerNode();
-        if (isViewer) {
-            try {
-                isViewer->onContainerGroupLoaded();
-            } catch (...) {
-                continue;
-            }
-        }
-    }
-
     return !mustShowErrorsLog;
 } // ProjectPrivate::restoreGroupFromSerialization
 
