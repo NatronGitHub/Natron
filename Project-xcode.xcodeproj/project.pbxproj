@@ -331,6 +331,7 @@
 		1E70D15F1CF33A0C000D2932 /* OpenColorIO-Configs.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "OpenColorIO-Configs.pri"; sourceTree = "<group>"; };
 		1E70D1601CF33A0C000D2932 /* Project.pro */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Project.pro; sourceTree = "<group>"; };
 		1E70D1611CF33A0C000D2932 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		1E7698DA1D951A0B00AF3860 /* LATEST_VERSION_README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LATEST_VERSION_README.txt; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
@@ -512,6 +513,7 @@
 				1E70D1571CF33A0C000D2932 /* INSTALL_OSX.md */,
 				1E70D1581CF33A0C000D2932 /* INSTALL_WINDOWS.md */,
 				1E70D1591CF33A0C000D2932 /* LATEST_VERSION.txt */,
+				1E7698DA1D951A0B00AF3860 /* LATEST_VERSION_README.txt */,
 				1E70D15B1CF33A0C000D2932 /* LICENSE_SHORT.txt */,
 				1E70D15C1CF33A0C000D2932 /* LICENSE.txt */,
 				1E70D15D1CF33A0C000D2932 /* Natron.rc */,
@@ -577,6 +579,7 @@
 		1EB121611D87F6BF009646F7 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				1EB121721D87F6EE009646F7 /* conf.py */,
 				1EB121621D87F6EE009646F7 /* _group.rst */,
 				1EB121631D87F6EE009646F7 /* _groupChannel.rst */,
 				1EB121641D87F6EE009646F7 /* _groupColor.rst */,
@@ -593,7 +596,6 @@
 				1EB1216F1D87F6EE009646F7 /* _prefs.rst */,
 				1EB121701D87F6EE009646F7 /* _static */,
 				1EB121711D87F6EE009646F7 /* _templates */,
-				1EB121721D87F6EE009646F7 /* conf.py */,
 				1EB121731D87F6EE009646F7 /* devel */,
 				1EB121741D87F6EE009646F7 /* guide */,
 				1EB121751D87F6EE009646F7 /* index.rst */,
