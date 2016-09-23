@@ -5840,13 +5840,8 @@ EffectInstance::setDefaultMetadata()
 }
 
 bool
-EffectInstance::refreshMetaDatas_internal()
+EffectInstance::setMetaDatasInternal(const NodeMetadata& metadata)
 {
-    NodeMetadata metadata;
-
-    getPreferredMetaDatas_public(metadata);
-    _imp->checkMetadata(metadata);
-
     bool ret;
     {
         QMutexLocker k(&_imp->metadatasMutex);
@@ -5855,6 +5850,18 @@ EffectInstance::refreshMetaDatas_internal()
             _imp->metadatas = metadata;
         }
     }
+    return ret;
+}
+
+bool
+EffectInstance::refreshMetaDatas_internal()
+{
+    NodeMetadata metadata;
+
+    getPreferredMetaDatas_public(metadata);
+    _imp->checkMetadata(metadata);
+
+    bool ret = setMetaDatasInternal(metadata);
     onMetaDatasRefreshed(metadata);
   
     return ret;

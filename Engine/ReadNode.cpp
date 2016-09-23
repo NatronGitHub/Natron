@@ -958,6 +958,7 @@ ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
+        p->getEffectInstance()->setMetaDatasInternal(metadata);
         p->getEffectInstance()->onMetaDatasRefreshed(metadata);
     }
 }
