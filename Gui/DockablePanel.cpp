@@ -1448,6 +1448,30 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 void
 DockablePanel::onManageUserParametersActionTriggered()
 {
+    KnobHolder* holder = getHolder();
+    if (!holder) {
+        return;
+    }
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    if (!isEffect) {
+        return;
+    }
+    NodePtr node = isEffect->getNode();
+    if (!node) {
+        return;
+    }
+    // If this is a pyplug, warn that the user is about to break it
+    if (!node->getPluginPythonModule().empty()) {
+        StandardButtons rep = Dialogs::questionDialog(tr("PyPlug").toStdString(), tr("You are about to edit parameters of this node which will "
+                                                                                     "automatically convert this node as a Group. Are you sure "
+                                                                                     "you want to edit it?").toStdString(), false);
+        if (rep != eStandardButtonYes) {
+            return;
+        }
+        node->setPyPlugEdited(true);
+
+
+    }
     ManageUserParamsDialog dialog(this, this);
 
     ignore_result( dialog.exec() );
