@@ -109,6 +109,7 @@ static void makeCreateNodeArgs(const AppInstPtr& app,
     args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
 
     bool skipNoNodeGuiProp = false;
     for (std::map<QString, NodeCreationProperty*>::const_iterator it = props.begin(); it!=props.end(); ++it) {
