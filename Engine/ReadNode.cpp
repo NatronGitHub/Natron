@@ -94,6 +94,24 @@ NATRON_NAMESPACE_ENTER;
 #define kOCIOHelpDisplaysButton "ocioHelpDisplays"
 #define kOCIOParamContext "Context"
 
+
+PluginPtr
+ReadNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_IMAGE);
+    PluginPtr ret = Plugin::create((void*)ReadNode::create, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
+
+    QString desc = tr("Node used to read images or videos from disk. The image/video is identified by its filename and "
+                      "its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_R);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "readImage.png");
+    return ret;
+}
+
+
 /*
    These are names of knobs that are defined in GenericReader and that should stay on the interface
    no matter what the internal Reader is.
@@ -466,7 +484,7 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgsPtr args(new CreateNodeArgs(READ_NODE_DEFAULT_READER, NodeCollectionPtr() ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create(READ_NODE_DEFAULT_READER, NodeCollectionPtr() ));
 
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty(kCreateNodeArgsPropSilent, true);
@@ -614,7 +632,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
 
-        CreateNodeArgsPtr args(new CreateNodeArgs(readerPluginID, NodeCollectionPtr() ));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, NodeCollectionPtr() ));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
@@ -737,10 +755,10 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
             PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
-            entries.push_back( plugin->getPluginID().toStdString() );
+            entries.push_back( plugin->getPluginID());
             std::stringstream ss;
-            ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
-            ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
+            ss << "Use " << plugin->getPluginLabel() << " version ";
+            ss << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0) << "." << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
             ss << " to read this file format";
             help.push_back( ss.str() );
         }
@@ -820,13 +838,6 @@ ReadNode::supportsMultipleClipDepths() const
     return p ? p->getEffectInstance()->supportsMultipleClipDepths() : EffectInstance::supportsMultipleClipDepths();
 }
 
-RenderSafetyEnum
-ReadNode::renderThreadSafety() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->renderThreadSafety() : eRenderSafetyFullySafe;
-}
-
 bool
 ReadNode::getCanTransform() const
 {
@@ -867,35 +878,6 @@ ReadNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
                                          bool* /*defaultA*/) const
 {
     return false;
-}
-
-int
-ReadNode::getMajorVersion() const
-{ return 1; }
-
-int
-ReadNode::getMinorVersion() const
-{ return 0; }
-
-std::string
-ReadNode::getPluginID() const
-{ return PLUGINID_NATRON_READ; }
-
-std::string
-ReadNode::getPluginLabel() const
-{ return "Read"; }
-
-std::string
-ReadNode::getPluginDescription() const
-{
-    return "Node used to read images or videos from disk. The image/video is identified by its filename and "
-           "its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used. ";
-}
-
-void
-ReadNode::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
 
 int

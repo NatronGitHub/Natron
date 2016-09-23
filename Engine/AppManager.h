@@ -156,8 +156,6 @@ public:
     {
     }
 
-    EffectInstancePtr createOFXEffect(const NodePtr& node,
-                                  const CreateNodeArgs& args) const;
 
     AppInstancePtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
@@ -336,19 +334,7 @@ public:
     {
     }
 
-    PluginPtr registerPlugin(const QString& resourcesPath,
-                           const QStringList & groups,
-                           const QString & pluginID,
-                           const QString & pluginLabel,
-                           const QString & pluginIconPath,
-                           const QStringList & groupIconPath,
-                           bool isReader,
-                           bool isWriter,
-                           LibraryBinary* binary,
-                           bool mustCreateMutex,
-                           int major,
-                           int minor,
-                           bool isDeprecated);
+    void registerPlugin(const PluginPtr& plugin);
 
     bool isNCacheFilesOpenedCapped() const;
     size_t getNCacheFilesOpened() const;
@@ -656,10 +642,6 @@ protected:
     virtual bool initGui(const CLArgs& cl);
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
                                         IOPluginsMap* writersMap);
-
-    template <typename PLUGIN>
-    void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
-
     virtual AppInstancePtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {

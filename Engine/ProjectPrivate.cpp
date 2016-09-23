@@ -103,9 +103,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
 
 bool
 Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
-                                       const NodeCollectionPtr& group,
-                                       bool createNodes,
-                                       std::map<std::string, bool>* moduleUpdatesProcessed)
+                                       const NodeCollectionPtr& group)
 {
     bool mustShowErrorsLog = false;
 
@@ -120,71 +118,11 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
     group->getApplication()->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupName) );
 
 
-    // Deprecated: Multi-instances are deprecated in Natron 2.1 and should not exist afterwards
-    // If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
-    // Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
-    // This map contains all the parents that must be reconnected and an iterator to the child serialization
-    std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator > parentsToReconnect;
-    SERIALIZATION_NAMESPACE::NodeSerializationList multiInstancesToRecurse;
-
-
     // Loop over all node serialization and create them first
     std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > createdNodes;
     for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-        /*if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER_GROUP) || (pluginID == "Viewer") ) ) {
-            // If the node is a viewer, don't try to load it in background mode
-            continue;
-        }*/
-
-        // If the node is a multiinstance child find in all the serialized nodes if the parent exists.
-        // If not, create it
-        // Multi-instances are deprecated in Natron 2.1 and should not exist afterwards
-        if ( !(*it)->_multiInstanceParentName.empty() ) {
-            bool foundParent = false;
-            for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it2 = serializedNodes.begin();
-                 it2 != serializedNodes.end(); ++it2) {
-                if ( (*it2)->_nodeScriptName == (*it)->_multiInstanceParentName ) {
-                    foundParent = true;
-                    break;
-                }
-            }
-            if (!foundParent) {
-                ///Maybe it was created so far by another child who created it so look into the nodes
-
-                NodePtr parent = group->getNodeByName( (*it)->_multiInstanceParentName );
-                if (parent) {
-                    foundParent = true;
-                }
-                ///Create the parent
-                if (!foundParent) {
-                    CreateNodeArgsPtr args(new CreateNodeArgs((*it)->_pluginID, group));
-                    args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
-                    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-
-                    NodePtr parent = group->getApplication()->createNode(args);
-                    try {
-                        parent->setScriptName((*it)->_multiInstanceParentName);
-                    } catch (...) {
-                    }
-
-                    parentsToReconnect.insert( std::make_pair(parent, it) );
-                }
-            }
-        } // if ( !(*it)->getMultiInstanceParentName().empty() ) {
-
-        NodePtr node;
-        if (!createNodes) {
-            // We are in the case where we loaded a PyPlug: it probably created all the nodes in the group already but didn't
-            // load their serialization
-            node = group->getNodeByName( (*it)->_nodeScriptName );
-        }
-
-        if (!node) {
-            node = appPTR->createNodeForProjectLoading(*it, group);
-        }
+        NodePtr node = appPTR->createNodeForProjectLoading(*it, group);
 
         if (!node) {
             QString text( tr("ERROR: The node %1 version %2.%3"
@@ -216,38 +154,17 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                              .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
                              .arg((*it)->_pluginMajorVersion)
                              .arg((*it)->_pluginMinorVersion)
-                             .arg( node->getPlugin()->getMajorVersion() )
-                             .arg( node->getPlugin()->getMinorVersion() ) );
+                             .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 0) )
+                             .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 1) ) );
                 appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
             }
         }
-        if (!createNodes && node) {
-            // If we created the node using a PyPlug, deserialize the project too to override any modification made by the user.
-            node->fromSerialization(**it);
-        }
+
         assert(node);
 
         createdNodes[node] = *it;
 
-        // For group, create children
-        const SERIALIZATION_NAMESPACE::NodeSerializationList& children = (*it)->_children;
-        bool usingPythonModule = !node->getPyPlugID().empty();
-        if ( !children.empty() && !usingPythonModule) {
-            NodeGroupPtr isGrp = node->isEffectNodeGroup();
-            if (isGrp) {
-                Project::restoreGroupFromSerialization(children, isGrp, !usingPythonModule, moduleUpdatesProcessed);
-            } else {
-                // For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
-                assert( node->isMultiInstance() );
-                multiInstancesToRecurse.push_back(*it);
-            }
-        }
     } // for all node serialization
-
-    // Deprecated: Multi-instances are deprecated in Natron 2.1 and should not exist afterwards
-    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
-        Project::restoreGroupFromSerialization( (*it)->_children, group, true, moduleUpdatesProcessed );
-    }
 
 
     group->getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupName) );
@@ -255,13 +172,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
     // Connect the nodes together
     for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-
-        // Deprecated: For all nodes that are part of a multi-instance, fetch the main instance node pointer
-        if ( !it->second->_multiInstanceParentName.empty() ) {
-            it->first->fetchParentMultiInstancePointer();
-            //Do not restore connections as we just use the ones of the parent anyway
-            continue;
-        }
 
         // Loop over the inputs map
         // This is a map <input label, input node name>
@@ -286,14 +196,15 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                 continue;
             }
             if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
-                if (createNodes) {
-                    qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
-                    .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
-                    .arg( QString::fromUtf8( it2->second.c_str() ) );
-                }
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
+                                                tr("Failed to connect node %1 to %2")
+                                                .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
+                                                .arg( QString::fromUtf8( it2->second.c_str() ) ));
             }
-        }
 
+
+        }
+        
     } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     // Now that the graph is setup, restore expressions and slave/master links for knobs
@@ -315,6 +226,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
     // Viewers are specials and needs to be notified once all connections have been made in their container group in order
     // to correctly link the internal nodes
+#pragma message WARN("Fix this")
     for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
         ViewerNodePtr isViewer = it->first->isEffectViewerNode();
         if (isViewer) {
@@ -324,40 +236,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                 continue;
             }
         }
-    }
-
-    // Deprecated: Also reconnect parents of multiinstance nodes that were created on the fly
-    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator >::const_iterator
-         it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
-
-        const std::map<std::string, std::string>& inputs = (*it->second)->_inputs;
-        for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-            if ( it2->second.empty() ) {
-                continue;
-            }
-            int index = it->first->getInputNumberFromLabel(it2->first);
-            if (index == -1) {
-                // Prior to Natron 1.1, input names were not serialized, try to convert to index
-                bool ok;
-                index = QString::fromUtf8(it2->first.c_str()).toInt(&ok);
-                if (!ok) {
-                    index = -1;
-                }
-                if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(it->first->getScriptName_mt_safe().c_str()), QDateTime::currentDateTime(),
-                                                    tr("Could not find input named %1").arg( QString::fromUtf8( it2->first.c_str() ) ) );
-                }
-                continue;
-            }
-            if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
-                if (createNodes) {
-                    qDebug() << tr("Failed to connect node %1 to %2 (this is normal if loading a PyPlug)")
-                    .arg( QString::fromUtf8( it->first->getPluginLabel().c_str() ) )
-                    .arg( QString::fromUtf8( it2->second.c_str() ) );
-                }
-            }
-        }
-
     }
 
     return !mustShowErrorsLog;

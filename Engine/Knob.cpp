@@ -2380,7 +2380,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     //Define all nodes in the same group reachable by their bare script-name
     NodesList siblings = collection->getNodes();
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
+        if ((*it)->isActivated()) {
             std::string scriptName = (*it)->getScriptName_mt_safe();
             std::string fullName = (*it)->getFullyQualifiedName();
             ss << tabStr << scriptName << " = " << appID << "." << fullName << "\n";
@@ -2409,7 +2409,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() && (*it)->isPersistent() ) {
+            if ( (*it)->isActivated() && (*it)->isPersistent() ) {
                 std::string scriptName = (*it)->getScriptName_mt_safe();
                 std::string fullName = (*it)->getFullyQualifiedName();
 

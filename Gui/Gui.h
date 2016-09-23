@@ -569,7 +569,6 @@ public Q_SLOTS:
     void openProject();
     bool saveProject();
     bool saveProjectAs();
-    void exportProjectAsGroup();
     void saveAndIncrVersion();
 
     void autoSave();

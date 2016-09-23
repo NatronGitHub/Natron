@@ -564,7 +564,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
                 }
             }
         } else {
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_WRITE, getProject()));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_WRITE, getProject()));
             args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -882,16 +882,46 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
 
 {
     /*If the plug-in is a toolset, execute the toolset script and don't actually create a node*/
-    bool istoolsetScript = plugin->getToolsetScript();
+    bool istoolsetScript = plugin->getProperty<bool>(kNatronPluginPropPyPlugIsToolset);
     NodePtr node;
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args->getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
 
+    std::string pyPlugFile = plugin->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+    std::string pyPlugDirPath;
 
-    QString moduleName;
-    QString modulePath;
-    plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
+    std::size_t foundSlash = pyPlugFile.find_last_of("/");
+    if (foundSlash != std::string::npos) {
+        pyPlugDirPath = pyPlugFile.substr(0, foundSlash);
+    }
+
+    std::string pyPlugID = plugin->getPluginID();
+
+    // Backward compat with older PyPlugs using Python scripts
+    bool isPyPlugEncodedWithPythonScript = plugin->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+
+    if (!isPyPlugEncodedWithPythonScript) {
+        // A pyplug might have custom functions defined in a Python script named after the plug-in ID, check if such
+        // file exists. If so import it
+        QString extPythonScript = QString::fromUtf8(pyPlugDirPath.c_str());
+        Global::ensureLastPathSeparator(extPythonScript);
+
+        QString qPlugID = QString::fromUtf8(pyPlugID.c_str());
+        extPythonScript += qPlugID;
+        extPythonScript += QLatin1String(".py");
+
+        if (QFile::exists(extPythonScript)) {
+            QString script = QString::fromUtf8("import %1").arg(qPlugID);
+            std::string error, output;
+            if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output)) {
+                appendToScriptEditor(error);
+            } else if (!output.empty()) {
+                appendToScriptEditor(output);
+            }
+
+        }
+    }
 
     {
 
@@ -903,20 +933,18 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             groupArgs->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID,PLUGINID_NATRON_GROUP);
             groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+            groupArgs->setProperty<std::string>(kCreateNodeArgsPropPyPlugID, pyPlugID);
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;
             }
 
-            if ( !moduleName.isEmpty() ) {
-                setGroupLabelIDAndVersion(containerNode, moduleName, false);
-            }
 
             if (!serialization && args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName).empty()) {
                 std::string containerName;
                 try {
                     if (group) {
-                        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(), &containerName);
+                        group->initNodeName(plugin->getLabelWithoutSuffix(), &containerName);
                     }
                     containerNode->setScriptName(containerName);
                     containerNode->setLabel(containerName);
@@ -925,93 +953,70 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             }
         }
 
-        AddCreateNode_RAII creatingNode_raii(_imp.get(), containerNode, args);
-        std::string containerFullySpecifiedName;
-        if (containerNode) {
-            containerFullySpecifiedName = containerNode->getFullyQualifiedName();
-        }
-
-
-
-        int appID = getAppID() + 1;
-        std::stringstream ss;
-        ss << moduleName.toStdString();
-        ss << ".createInstance(app" << appID;
-        if (istoolsetScript) {
-            ss << ",\"\"";
-        } else {
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
-        }
-        ss << ")\n";
-        std::string err;
-        std::string output;
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-            Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
+        // For older pyPlugs with Python script, we must create the nodes now.
+        // For newer pyPlugs this is taken care of in the Node::load function when creating
+        // the container group
+        if (isPyPlugEncodedWithPythonScript) {
+            AddCreateNode_RAII creatingNode_raii(_imp.get(), containerNode, args);
+            std::string containerFullySpecifiedName;
             if (containerNode) {
-                containerNode->destroyNode(false);
+                containerFullySpecifiedName = containerNode->getFullyQualifiedName();
             }
 
-            return node;
-        } else {
-            if ( !output.empty() ) {
-                appendToScriptEditor(output);
+            std::string pythonModuleName = pyPlugFile.substr(foundSlash + 1);
+
+            // Remove file exstension
+            std::size_t foundDot = pythonModuleName.find_last_of(".");
+            if (foundDot != std::string::npos) {
+                pythonModuleName = pythonModuleName.substr(0, foundDot);
             }
-            node = containerNode;
-        }
-        if (istoolsetScript) {
-            return NodePtr();
-        }
+
+            int appID = getAppID() + 1;
+            std::stringstream ss;
+            ss << pythonModuleName;
+            ss << ".createInstance(app" << appID;
+            if (istoolsetScript) {
+                ss << ",\"\"";
+            } else {
+                ss << ", app" << appID << "." << containerFullySpecifiedName;
+            }
+            ss << ")\n";
+            std::string err;
+            std::string output;
+            if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
+                Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
+                if (containerNode) {
+                    containerNode->destroyNode(false);
+                }
+
+                return node;
+            } else {
+                if ( !output.empty() ) {
+                    appendToScriptEditor(output);
+                }
+                node = containerNode;
+            }
+            if (istoolsetScript) {
+                return NodePtr();
+            }
 
 
 
-        // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
-        if (serialization) {
-            containerNode->fromSerialization(*serialization);
-        }
-
-        // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
-        containerNode->refreshDefaultPagesOrder();
-
-    } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
+            // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+            if (serialization) {
+                containerNode->fromSerialization(*serialization);
+            }
+            
+            // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
+            containerNode->refreshDefaultPagesOrder();
+        } // isPyPlugEncodedWithPythonScript
+        
+    } // CreatingNodeTreeFlag_RAII
 
     return node;
 } // AppInstance::createNodeFromPythonModule
 
-void
-AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
-                                       const QString &pythonModule,
-                                       bool pythonModuleIsAbsoluteScriptFilePath)
-{
-    std::string pythonModuleName;
-    if (!pythonModuleIsAbsoluteScriptFilePath) {
-        pythonModuleName = pythonModule.toStdString();
-    } else {
-        // In Previous versions of Natron, the pythonModule was the absolute file path of the python script in which the module was
-        // defined. Now this is only the module name
-        QString str = pythonModule;
-        QtCompat::removeFileExtension(str);
-        int foundLastSlash = str.lastIndexOf( QChar::fromLatin1('/') );
-        if (foundLastSlash != -1) {
-            pythonModuleName = str.mid(foundLastSlash + 1).toStdString();
-        }
-    }
 
-    std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description, pluginPath;
-    unsigned int version;
-    bool istoolset;
-
-    if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
-        QString groupingStr = QString::fromUtf8( pluginGrouping.c_str() );
-        QStringList groupingSplits = groupingStr.split( QLatin1Char('/') );
-        std::list<std::string> stdGrouping;
-        for (QStringList::iterator it = groupingSplits.begin(); it != groupingSplits.end(); ++it) {
-            stdGrouping.push_back( it->toStdString() );
-        }
-
-        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, pluginPath, version);
-        node->setPluginPythonModule(pythonModuleName);
-    }
-}
 
 NodePtr
 AppInstance::createReader(const std::string& filename,
@@ -1050,45 +1055,6 @@ AppInstance::createWriter(const std::string& filename,
     return createNode(args);
 }
 
-/**
- * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
- * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
- **/
-static bool
-isEntitledForInspector(const PluginPtr& plugin,
-                       OFX::Host::ImageEffect::Descriptor* ofxDesc)
-{
-    if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP) ) ||
-         ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ) ||
-         ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) ) {
-        return true;
-    }
-
-    if (!ofxDesc) {
-        return false;
-    }
-
-    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClipsByOrder();
-    int nInputs = 0;
-    bool firstInput = true;
-    for (std::vector<OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-        if ( !(*it)->isOutput() ) {
-            if ( !(*it)->isOptional() ) {
-                if (!firstInput) {                    // allow one non-optional input
-                    return false;
-                }
-            } else {
-                ++nInputs;
-            }
-            firstInput = false;
-        }
-    }
-    if (nInputs > 4) {
-        return true;
-    }
-
-    return false;
-}
 
 NodePtr
 AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
@@ -1147,9 +1113,9 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
 
 
-    // If the plug-in is a PyPlug create it with createNodeFromPythonModule()
-    const QString& pythonModule = plugin->getPythonModule();
-    if ( !pythonModule.isEmpty() ) {
+    // If the plug-in is a PyPlug create it with createNodeFromPyPlug()
+    std::string pyPlugFile = plugin->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+    if ( !pyPlugFile.empty() ) {
         try {
             return createNodeFromPyPlug(plugin, args);
         } catch (const std::exception& e) {
@@ -1161,44 +1127,17 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
         }
     }
 
-    std::string foundPluginID = plugin->getPluginID().toStdString();
-    ContextEnum ctx;
-    OFX::Host::ImageEffect::Descriptor* ofxDesc = plugin->getOfxDesc(&ctx);
+    std::string foundPluginID = plugin->getPluginID();
 
-    // For ofx plug-ins call describe & describeInContext.
-    if (!ofxDesc) {
-        OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = plugin->getOfxPlugin();
-        if (ofxPlugin) {
-            try {
-                //  Should this method be in AppManager?
-                ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
-            } catch (const std::exception& e) {
-                if (!isSilentCreation) {
-                    errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
-                            + '\n' + e.what(), false);
-                }
-                return NodePtr();
-            }
-
-            assert(ofxDesc);
-            plugin->setOfxDesc(ofxDesc, ctx);
-        }
-    }
 
     // Get the group container
     NodeCollectionPtr argsGroup = args->getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
     if (!argsGroup) {
         argsGroup = getProject();
     }
+    assert(argsGroup);
 
-    // Should we use inspector node (switch style) for this plug-in
-    bool useInspector = isEntitledForInspector(plugin, ofxDesc);
-
-    if (!useInspector) {
-        node = Node::create(shared_from_this(), argsGroup, plugin);
-    } else {
-        node = InspectorNode::create(shared_from_this(), argsGroup, plugin);
-    }
+    node = Node::create(shared_from_this(), argsGroup, plugin);
 
 
     // Flag that we are creating a node
@@ -1223,8 +1162,8 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
         // If this is a stereo plug-in, check that the project has been set for multi-view
         if (!isSilentCreation) {
-            const QStringList& grouping = plugin->getGrouping();
-            if ( !grouping.isEmpty() && ( grouping[0] == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) ) {
+            std::vector<std::string> grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            if (!grouping.empty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
                     StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
@@ -1241,9 +1180,8 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
 
     // Add the node to the group before calling load
-    if (argsGroup) {
-        argsGroup->addNode(node);
-    }
+    argsGroup->addNode(node);
+
 
     assert(node);
     // Call load: this will setup the node from the plug-in and its knobs. It also read from the serialization object if any
@@ -1292,57 +1230,64 @@ AppInstance::exportDocs(const QString path)
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
-            if ( !pluginID.isEmpty() ) {
-                PluginPtr plugin;
-                QString pluginID = QString::fromUtf8( it->c_str() );
-                plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                if (plugin) {
-                    if (!plugin->getIsForInternalUseOnly() ) {
-                        QStringList groups = plugin->getGrouping();
-                        categories << groups.at(0);
-                        QStringList plugList;
-                        plugList << plugin->getGrouping().at(0) << pluginID << plugin->getPluginLabel();
-                        plugins << plugList;
-                        CreateNodeArgsPtr args(new CreateNodeArgs(pluginID.toStdString(), NodeCollectionPtr() ));
-                        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-                        args->setProperty(kCreateNodeArgsPropVolatile, true);
-                        args->setProperty(kCreateNodeArgsPropSilent, true);
-                        qDebug() << pluginID;
-                        NodePtr node = createNode(args);
-                        if (node) {
-                            QDir mdDir(path);
-                            if ( !mdDir.exists() ) {
-                                mdDir.mkpath(path);
-                            }
+            if (pluginID.isEmpty()) {
+                continue;
+            }
+            PluginPtr plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+            if (!plugin) {
+                continue;
+            }
+            if (plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly) ) {
+                continue;
+            }
 
-                            mdDir.mkdir(QLatin1String("plugins"));
-                            mdDir.cd(QLatin1String("plugins"));
 
-                            QFile imgFile( plugin->getIconFilePath() );
-                            if ( imgFile.exists() ) {
-                                QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
-                                if (QFile::exists(dstPath)) {
-                                    QFile::remove(dstPath);
-                                }
-                                if ( !imgFile.copy(dstPath) ) {
-                                    std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
-                                }
-                            }
+            std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
 
-                            QString md = node->makeDocumentation(false);
-                            QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
-                            if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
-                                QTextStream out(&mdFile);
-                                out << md;
-                                mdFile.close();
-                            } else {
-                                std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
-                            }
-                        }
+            QString group0 = QString::fromUtf8(groups[0].c_str());
+            categories.push_back(group0);
+
+            QStringList plugList;
+            plugList << group0  << pluginID << QString::fromUtf8(plugin->getPluginLabel().c_str());
+            plugins << plugList;
+            CreateNodeArgsPtr args(CreateNodeArgs::create(pluginID.toStdString(), NodeCollectionPtr() ));
+            args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty(kCreateNodeArgsPropVolatile, true);
+            args->setProperty(kCreateNodeArgsPropSilent, true);
+            qDebug() << pluginID;
+            NodePtr node = createNode(args);
+            if (node) {
+                QDir mdDir(path);
+                if ( !mdDir.exists() ) {
+                    mdDir.mkpath(path);
+                }
+
+                mdDir.mkdir(QLatin1String("plugins"));
+                mdDir.cd(QLatin1String("plugins"));
+
+                QFile imgFile( QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str()) );
+                if ( imgFile.exists() ) {
+                    QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
+                    if (QFile::exists(dstPath)) {
+                        QFile::remove(dstPath);
                     }
+                    if ( !imgFile.copy(dstPath) ) {
+                        std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
+                    }
+                }
+
+                QString md = node->makeDocumentation(false);
+                QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
+                if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
+                    QTextStream out(&mdFile);
+                    out << md;
+                    mdFile.close();
+                } else {
+                    std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
                 }
             }
         }
+
 
         // Generate RST for plugin categories
         categories.removeDuplicates();

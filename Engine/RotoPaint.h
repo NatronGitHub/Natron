@@ -55,16 +55,13 @@ protected: // derives from EffectInstance, parent of RotoNode
               bool isPaintByDefault);
 
 public:
-    static EffectInstancePtr create(const NodePtr& node,
-                                    bool isPaintByDefault) WARN_UNUSED_RETURN
-    {
-        return EffectInstancePtr( new RotoPaint(node, isPaintByDefault) );
-    }
 
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new RotoPaint(node, true) );
     }
+
+    static PluginPtr createPlugin() WARN_UNUSED_RETURN;
 
     virtual ~RotoPaint();
 
@@ -72,33 +69,9 @@ public:
 
     virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
 
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
-    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
-    {
-        grouping->push_back(PLUGIN_GROUP_PAINT);
-    }
-
-
-    ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -134,7 +107,7 @@ public:
 
     bool isDoingNeatRender() const;
 
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE FINAL;
+    virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization) OVERRIDE FINAL;
 
     NodePtr getPremultNode() const;
 
@@ -169,7 +142,6 @@ private:
     }
 
 
-    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
@@ -224,11 +196,10 @@ public:
         return EffectInstancePtr( new RotoNode(node) );
     }
 
+    static PluginPtr createPlugin();
+
 private:
 
-    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
 

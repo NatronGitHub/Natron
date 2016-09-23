@@ -364,9 +364,7 @@ public:
 
 
     static bool restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
-                                          const NodeCollectionPtr& group,
-                                          bool createNodes,
-                                          std::map<std::string, bool>* moduleUpdatesProcessed);
+                                          const NodeCollectionPtr& group);
 
 public Q_SLOTS:
 

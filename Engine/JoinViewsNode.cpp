@@ -44,6 +44,21 @@ struct JoinViewsNodePrivate
     }
 };
 
+PluginPtr
+JoinViewsNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
+    PluginPtr ret = Plugin::create((void*)JoinViewsNode::create, PLUGINID_NATRON_JOINVIEWS, "JoinViews", 1, 0, grouping);
+
+    QString desc =  tr("Take in input separate views to make a multiple view stream output. "
+                       "The first view from each input is copied to one of the view of the output.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "joinViewsNode.png");
+    return ret;
+}
+
 JoinViewsNode::JoinViewsNode(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new JoinViewsNodePrivate() )

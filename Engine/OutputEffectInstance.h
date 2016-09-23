@@ -119,7 +119,7 @@ public:
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
 
-    virtual void initializeData() OVERRIDE FINAL;
+    virtual void initializeDataAfterCreate() OVERRIDE;
     virtual void reportStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
 
 protected:

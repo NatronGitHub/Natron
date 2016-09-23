@@ -419,7 +419,7 @@ KnobGuiChoice::onEntriesPopulated()
     const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
     std::string activeEntry = knob->getActiveEntryText_mt_safe();
 
-    QString pluginShortcutGroup;
+    std::string pluginShortcutGroup;
     EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
     if (isEffect) {
         PluginPtr plugin = isEffect->getNode()->getPlugin();
@@ -440,7 +440,7 @@ KnobGuiChoice::onEntriesPopulated()
 
         std::string shortcutID;
         std::string iconFilePath;
-        if (!pluginShortcutGroup.isEmpty()) {
+        if (!pluginShortcutGroup.empty()) {
             std::map<int, std::string>::const_iterator foundShortcut = shortcutsMap.find(i);
             if (foundShortcut != shortcutsMap.end()) {
                 shortcutID = foundShortcut->second;
@@ -462,8 +462,8 @@ KnobGuiChoice::onEntriesPopulated()
             }
         }
 
-        if (!shortcutID.empty() && !pluginShortcutGroup.isEmpty() && !_comboBox->isCascading()) {
-            QAction* action = new ActionWithShortcut(pluginShortcutGroup.toStdString(),
+        if (!shortcutID.empty() && !pluginShortcutGroup.empty() && !_comboBox->isCascading()) {
+            QAction* action = new ActionWithShortcut(pluginShortcutGroup,
                                                      shortcutID,
                                                      entries[i],
                                                      _comboBox);

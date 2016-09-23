@@ -723,7 +723,7 @@ Gui::renderSelectedNode()
                 ///create a node and connect it to the node and use it to render
 
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
-                CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_WRITE, graph->getGroup()));
+                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_WRITE, graph->getGroup()));
                 args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
                 args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -839,12 +839,6 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
             if (nodePanel) {
                 NodePtr node = nodePanel->getNode()->getNode();
                 node->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
-
-                NodesList children;
-                node->getChildrenMultiInstance(&children);
-                for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                    (*it2)->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
-                }
             }
         }
     }

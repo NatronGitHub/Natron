@@ -73,6 +73,11 @@ public:
 
     ~LibraryBinary();
 
+    void setType(LibraryTypeEnum type)
+    {
+        _type = type;
+    }
+
     bool loadBinary(const std::string & binaryPath);
 
     bool loadFunctions(const std::vector<std::string> & funcNames);

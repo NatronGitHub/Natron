@@ -166,7 +166,7 @@ DocumentationManager::handler(QHttpRequest *req,
 
                         if (plugin) {
         
-                            CreateNodeArgsPtr args(new CreateNodeArgs( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() ));
+                            CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() ));
                             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
@@ -260,10 +260,11 @@ DocumentationManager::handler(QHttpRequest *req,
                 }
 
                 if (plugin) {
-                    QStringList groupList = plugin->getGrouping();
-                    if (groupList.at(0) == group) {
+                    std::vector<std::string> groupList = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                    if (groupList.at(0) == group.toStdString()) {
                         QStringList result;
-                        result << pluginID << plugin->getPluginLabel();
+                        result.push_back(pluginID);
+                        result.push_back(QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropLabel).c_str()));
                         plugins.append(result);
                     }
                 }
@@ -334,8 +335,8 @@ DocumentationManager::handler(QHttpRequest *req,
                 }
 
                 if (plugin) {
-                    QStringList groupList = plugin->getGrouping();
-                    groups << groupList.at(0);
+                    std::vector<std::string> groupList = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                    groups.push_back(QString::fromUtf8(groupList[0].c_str()));
                 }
             }
             groups.removeDuplicates();

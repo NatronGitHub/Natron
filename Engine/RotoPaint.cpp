@@ -59,12 +59,82 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
-std::string
-RotoPaint::getPluginDescription() const
+static void addPluginShortcuts(const PluginPtr& plugin)
 {
-    return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...";
+
+
+    // Viewer buttons
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamAutoKeyingEnabled, kRotoUIParamAutoKeyingEnabledLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamFeatherLinkEnabled, kRotoUIParamFeatherLinkEnabledLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamDisplayFeather, kRotoUIParamDisplayFeatherLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamStickySelectionEnabled, kRotoUIParamStickySelectionEnabledLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamStickyBbox, kRotoUIParamStickyBboxLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRippleEdit, kRotoUIParamRippleEditLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamAddKeyFrame, kRotoUIParamAddKeyFrameLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRemoveKeyframe, kRotoUIParamRemoveKeyframeLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamShowTransform, kRotoUIParamShowTransformLabel, Key_T) );
+
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamPressureOpacity, kRotoUIParamPressureOpacityLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamPressureSize, kRotoUIParamPressureSizeLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamPressureHardness, kRotoUIParamPressureHardnessLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamBuildUp, kRotoUIParamBuildUpLabel) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamResetCloneOffset, kRotoUIParamResetCloneOffsetLabel) );
+
+    // Toolbuttons
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamSelectionToolButton, kRotoUIParamSelectionToolButtonLabel, Key_Q) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamEditPointsToolButton, kRotoUIParamEditPointsToolButtonLabel, Key_D) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamBezierEditionToolButton, kRotoUIParamBezierEditionToolButtonLabel, Key_V) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamPaintBrushToolButton, kRotoUIParamPaintBrushToolButtonLabel, Key_N) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamCloneBrushToolButton, kRotoUIParamCloneBrushToolButtonLabel, Key_C) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamEffectBrushToolButton, kRotoUIParamEffectBrushToolButtonLabel, Key_X) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamMergeBrushToolButton, kRotoUIParamMergeBrushToolButtonLabel, Key_E) );
+
+    // Right click actions
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionRemoveItems, kRotoUIParamRightClickMenuActionRemoveItemsLabel, Key_BackSpace) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionCuspItems, kRotoUIParamRightClickMenuActionCuspItemsLabel, Key_Z, eKeyboardModifierShift) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionSmoothItems, kRotoUIParamRightClickMenuActionSmoothItemsLabel, Key_Z) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionRemoveItemsFeather, kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel, Key_E, eKeyboardModifierShift) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeLeft, kRotoUIParamRightClickMenuActionNudgeLeftLabel, Key_Left, eKeyboardModifierShift) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeBottom, kRotoUIParamRightClickMenuActionNudgeBottomLabel, Key_Down, eKeyboardModifierShift) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeTop, kRotoUIParamRightClickMenuActionNudgeTopLabel, Key_Up, eKeyboardModifierShift) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeRight, kRotoUIParamRightClickMenuActionNudgeRightLabel, Key_Right, eKeyboardModifierShift) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionSelectAll, kRotoUIParamRightClickMenuActionSelectAllLabel, Key_A, eKeyboardModifierControl) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionOpenClose, kRotoUIParamRightClickMenuActionOpenCloseLabel, Key_Return) );
+    plugin->addActionShortcut( PluginActionShortcut(kRotoUIParamRightClickMenuActionLockShapes, kRotoUIParamRightClickMenuActionLockShapesLabel, Key_L, eKeyboardModifierShift) );
+
+} // addPluginShortcuts
+
+PluginPtr
+RotoPaint::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_PAINT);
+    PluginPtr ret = Plugin::create((void*)RotoPaint::create, PLUGINID_NATRON_ROTOPAINT, "RotoPaint", 1, 0, grouping);
+
+    QString desc = tr("RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png");
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_P);
+    return ret;
 }
+
+PluginPtr
+RotoNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_PAINT);
+    PluginPtr ret = Plugin::create((void*)RotoNode::create, PLUGINID_NATRON_ROTO, "Roto", 1, 0, grouping);
+
+    QString desc = tr("Create masks and shapes.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "rotoNodeIcon.png");
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_O);
+    return ret;
+}
+
+
 
 RotoPaint::RotoPaint(const NodePtr& node,
                      bool isPaintByDefault)
@@ -90,35 +160,7 @@ RotoPaint::isDefaultBehaviourPaintContext() const
     return _imp->isPaintByDefault;
 }
 
-std::string
-RotoPaint::getPluginID() const
-{
-    return PLUGINID_NATRON_ROTOPAINT;
-}
 
-std::string
-RotoPaint::getPluginLabel() const
-{
-    return "RotoPaint";
-}
-
-std::string
-RotoNode::getPluginID() const
-{
-    return PLUGINID_NATRON_ROTO;
-}
-
-std::string
-RotoNode::getPluginLabel() const
-{
-    return "Roto";
-}
-
-std::string
-RotoNode::getPluginDescription() const
-{
-    return "Create masks and shapes";
-}
 
 bool
 RotoPaint::isHostChannelSelectorSupported(bool* defaultR,
@@ -180,7 +222,7 @@ RotoPaint::getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b,
 }
 
 void
-RotoPaint::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /*args*/)
+RotoPaint::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* /*serialization*/)
 {
     RotoPaintPtr thisShared = boost::dynamic_pointer_cast<RotoPaint>(shared_from_this());
     for (int i = 0; i < ROTOPAINT_MAX_INPUTS_COUNT; ++i) {
@@ -194,14 +236,14 @@ RotoPaint::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /
             ss << "Bg" << i + 1;
         }
         {
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, thisShared));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
             args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
             if (i == ROTOPAINT_MASK_INPUT_INDEX) {
                 args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
-                
+
             }
             NodePtr input = getApp()->createNode(args);
             assert(input);
@@ -210,7 +252,7 @@ RotoPaint::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /
     }
     NodePtr outputNode;
     {
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, thisShared));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Output");
@@ -220,7 +262,7 @@ RotoPaint::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /
     }
     NodePtr premultNode;
     {
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_PREMULT, thisShared));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_PREMULT, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         // Set premult node to be identity by default
@@ -245,7 +287,7 @@ RotoPaint::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /
     // Make a no-op that fixes the output premultiplication state
     NodePtr noopNode;
     {
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_NOOP, thisShared));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_NOOP, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         // Set premult node to be identity by default
@@ -1193,48 +1235,6 @@ RotoPaint::initializeKnobs()
     _imp->ui->onToolChangedInternal(defaultAction);
 } // RotoPaint::initializeKnobs
 
-void
-RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
-{
-    // Viewer buttons
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamAutoKeyingEnabled, kRotoUIParamAutoKeyingEnabledLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamFeatherLinkEnabled, kRotoUIParamFeatherLinkEnabledLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamDisplayFeather, kRotoUIParamDisplayFeatherLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamStickySelectionEnabled, kRotoUIParamStickySelectionEnabledLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamStickyBbox, kRotoUIParamStickyBboxLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRippleEdit, kRotoUIParamRippleEditLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamAddKeyFrame, kRotoUIParamAddKeyFrameLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRemoveKeyframe, kRotoUIParamRemoveKeyframeLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamShowTransform, kRotoUIParamShowTransformLabel, Key_T) );
-
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureOpacity, kRotoUIParamPressureOpacityLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureSize, kRotoUIParamPressureSizeLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureHardness, kRotoUIParamPressureHardnessLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamBuildUp, kRotoUIParamBuildUpLabel) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamResetCloneOffset, kRotoUIParamResetCloneOffsetLabel) );
-
-    // Toolbuttons
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamSelectionToolButton, kRotoUIParamSelectionToolButtonLabel, Key_Q) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamEditPointsToolButton, kRotoUIParamEditPointsToolButtonLabel, Key_D) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamBezierEditionToolButton, kRotoUIParamBezierEditionToolButtonLabel, Key_V) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamPaintBrushToolButton, kRotoUIParamPaintBrushToolButtonLabel, Key_N) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamCloneBrushToolButton, kRotoUIParamCloneBrushToolButtonLabel, Key_C) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamEffectBrushToolButton, kRotoUIParamEffectBrushToolButtonLabel, Key_X) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamMergeBrushToolButton, kRotoUIParamMergeBrushToolButtonLabel, Key_E) );
-
-    // Right click actions
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionRemoveItems, kRotoUIParamRightClickMenuActionRemoveItemsLabel, Key_BackSpace) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionCuspItems, kRotoUIParamRightClickMenuActionCuspItemsLabel, Key_Z, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionSmoothItems, kRotoUIParamRightClickMenuActionSmoothItemsLabel, Key_Z) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionRemoveItemsFeather, kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel, Key_E, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeLeft, kRotoUIParamRightClickMenuActionNudgeLeftLabel, Key_Left, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeBottom, kRotoUIParamRightClickMenuActionNudgeBottomLabel, Key_Down, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeTop, kRotoUIParamRightClickMenuActionNudgeTopLabel, Key_Up, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionNudgeRight, kRotoUIParamRightClickMenuActionNudgeRightLabel, Key_Right, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionSelectAll, kRotoUIParamRightClickMenuActionSelectAllLabel, Key_A, eKeyboardModifierControl) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionOpenClose, kRotoUIParamRightClickMenuActionOpenCloseLabel, Key_Return) );
-    shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionLockShapes, kRotoUIParamRightClickMenuActionLockShapesLabel, Key_L, eKeyboardModifierShift) );
-}
 
 bool
 RotoPaint::shouldPreferPluginOverlayOverHostOverlay() const

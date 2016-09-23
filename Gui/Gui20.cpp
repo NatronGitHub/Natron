@@ -790,8 +790,8 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
     // At this point any plug-in MUST be in a toolbutton, so it must have a parent.
     assert(!treeNode->getChildren().empty() || treeNode->getParent());
 
-    int majorVersion = internalPlugin ? internalPlugin->getMajorVersion() : 1;
-    int minorVersion = internalPlugin ? internalPlugin->getMinorVersion() : 0;
+    int majorVersion = internalPlugin ? internalPlugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0) : 1;
+    int minorVersion = internalPlugin ? internalPlugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1) : 0;
 
     ToolButton* pluginsToolButton = new ToolButton(getApp(),
                                                    treeNode,
@@ -817,19 +817,19 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         // If this is the highest major version for this plug-in use normal label, otherwise also append the major version
         bool isHighestMajorVersionForPlugin = internalPlugin->getIsHighestMajorVersion();
 
-        QString pluginLabel = !isHighestMajorVersionForPlugin ? internalPlugin->getLabelVersionMajorEncoded() : internalPlugin->getLabelWithoutSuffix();
+        std::string pluginLabel = !isHighestMajorVersionForPlugin ? internalPlugin->getLabelVersionMajorEncoded() : internalPlugin->getLabelWithoutSuffix();
 
         QKeySequence defaultNodeShortcut;
         QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);
-        QStringList groupingSplit = internalPlugin->getGrouping();
-        for (int j = 0; j < groupingSplit.size(); ++j) {
+        std::vector<std::string> groupingSplit = internalPlugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+        for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
             shortcutGroup.push_back( QLatin1Char('/') );
-            shortcutGroup.push_back(groupingSplit[j]);
+            shortcutGroup.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
         }
         {
             // If the plug-in has a shortcut get it
 
-            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, internalPlugin->getPluginID());
+            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(internalPlugin->getPluginID().c_str()));
             if (!keybinds.empty()) {
                 defaultNodeShortcut = keybinds.front();
             }
@@ -838,7 +838,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         QAction* defaultPresetAction = new QAction(this);
         defaultPresetAction->setShortcut(defaultNodeShortcut);
         defaultPresetAction->setShortcutContext(Qt::WidgetShortcut);
-        defaultPresetAction->setText(pluginLabel);
+        defaultPresetAction->setText(QString::fromUtf8(pluginLabel.c_str()));
         defaultPresetAction->setIcon( pluginsToolButton->getMenuIcon() );
         QObject::connect( defaultPresetAction, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
 
@@ -856,7 +856,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
             pluginsToolButton->setMenu(menu);
             pluginsToolButton->setAction( menu->menuAction() );
 
-            defaultPresetAction->setText(pluginLabel + tr(" (Default)"));
+            defaultPresetAction->setText(QString::fromUtf8(pluginLabel.c_str()) + tr(" (Default)"));
             menu->addAction(defaultPresetAction);
 
             for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
@@ -865,7 +865,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
                 {
                     // If the preset has a shortcut get it
 
-                    std::string shortcutKey = internalPlugin->getPluginID().toStdString();
+                    std::string shortcutKey = internalPlugin->getPluginID();
                     shortcutKey += "_preset_";
                     shortcutKey += it->presetLabel.toStdString();
 
@@ -875,7 +875,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
                     }
                 }
 
-                QString presetLabel = pluginLabel;
+                QString presetLabel = QString::fromUtf8(pluginLabel.c_str());
                 presetLabel += QLatin1String(" (");
                 presetLabel += it->presetLabel;
                 presetLabel += QLatin1String(")");
@@ -1250,7 +1250,7 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() ));
     args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     ignore_result( getApp()->createNode(args) );
@@ -1275,7 +1275,7 @@ Gui::createReader()
         NodeCollectionPtr group = graph->getGroup();
         assert(group);
 
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_READ, group));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_READ, group));
         ret = getApp()->createReader(pattern, args);
     }
 
@@ -1315,7 +1315,7 @@ Gui::createWriter()
     NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
-    CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_WRITE, group));
+    CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_WRITE, group));
     ret =  getApp()->createWriter(file, args);
 
 

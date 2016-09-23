@@ -279,22 +279,11 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
 
                 for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
                      it != outputsConnectedToSelectedNode.end(); ++it) {
-                    if ( it->first->getParentMultiInstanceName().empty() && (it->first != createdNodeInternal) ) {
-                        /*
-                           Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
-                           internal nodes of the tree
-                         */
-                        RotoDrawableItemPtr stroke = it->first->getAttachedRotoItem();
-                        if ( stroke && (stroke->getContext()->getNode() == selectedNodeInternal) ) {
-                            continue;
-                        }
+                    if ( (it->first != createdNodeInternal) ) {
+
 
                         ignore_result( it->first->replaceInput(createdNodeInternal, it->second) );
-//                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
-//                        if (ok) {
-//                            ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
-//                        }
-                        //assert(ok); Might not be ok if the disconnectNodes() action above was queued
+
                     }
                 }
             }
@@ -329,11 +318,6 @@ void
 NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& selectedNodes, const CreateNodeArgs& args)
 {
     NodePtr internalNode = node->getNode();
-
-    // Multi-instance child, don't do anything
-    if ( !internalNode->getParentMultiInstanceName().empty()) {
-        return;
-    }
 
     // Serializatino, don't do anything
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);

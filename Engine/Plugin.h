@@ -42,6 +42,143 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/PluginActionShortcut.h"
+#include "Engine/PropertiesHolder.h"
+
+
+/**
+ * @brief x1 pointer property indicating the function used to create an instance of the plug-in.
+ * For OpenFX plug-in the actual OpenFX plug-in instance is created in the OfxEffectInstance class.
+ * Default value - NULL
+ * Must be set
+ **/
+#define kNatronPluginPropCreateFunc "NatronPluginPropCreateFunc"
+
+/**
+ * @brief x1 std::string property indicating the ID of the plug-in
+ * Default value - Empty
+ * Must be set
+ **/
+#define kNatronPluginPropID "NatronPluginPropID"
+
+/**
+ * @brief x1 std::string property indicating the label of the plug-in as it appears in the user interface
+ * Default value - Empty
+ * Must be set
+ **/
+#define kNatronPluginPropLabel "NatronPluginPropLabel"
+
+/**
+ * @brief x2 unsigned int property indicating the version of the plug-in.
+ * Default value - 0, 0
+ * Must be set
+ **/
+#define kNatronPluginPropVersion "NatronPluginPropVersion"
+
+/**
+ * @brief x1 std::string property (optional) indicating the description of the plug-in as seen in the documentation
+ * or help button of the plug-in.
+ * Default value - Empty
+ **/
+#define kNatronPluginPropDescription "NatronPluginPropDescription"
+
+/**
+ * @brief x1 bool property (optiona) indicating whether the kNatronPluginPropDescription is encoded in markdown or plain text.
+ * Default value - false
+ **/
+#define kNatronPluginPropDescriptionIsMarkdown "NatronPluginPropDescriptionIsMarkdown"
+
+/**
+ * @brief x1 std::string property (optional) indicating the absolute directory path where the resources of the plug-in should be found.
+ * For statically linked plug-ins, this may be left empty in which case Natron will look for resources in the Qt resources of the application.
+ * Default value - PLUGIN_DEFAULT_RESOURCES_PATH
+ **/
+#define kNatronPluginPropResourcesPath "NatronPluginPropResourcesPath"
+
+
+/**
+ * @brief x1 std::string property (optional) indicating the filename of a PNG icon to display for the plugin.
+ * The filename must be relative to the kNatronPluginPropResourcesPath location.
+ * Default value - Empty
+ **/
+#define kNatronPluginPropIconFilePath "NatronPluginPropIconFilePath"
+
+/**
+ * @brief xN std::string property (optional) indicating the grouping into which the plug-in should be set
+ * in the toolbar.
+ * Default value - PLUGIN_GROUP_DEFAULT
+ **/
+#define kNatronPluginPropGrouping "NatronPluginPropGrouping"
+
+/**
+ * @brief x2 int property (optional) indicating the shortcut to use to create an instance of this plug-in.
+ * The user can always change it from the shortcut editor.
+ * Default value - 0, 0
+ **/
+#define kNatronPluginPropShortcut "NatronPluginPropShortcut"
+
+/**
+ * @brief xN std::string property (optional) indicating for each grouping level the filename of a PNG icon
+ * to be used in sub-menus.
+ * This property must have the same dimension as kNatronPluginPropGrouping or be empty.
+ * The filename must be relative to the kNatronPluginPropResourcesPath location.
+ * Default value - Empty
+ **/
+#define kNatronPluginPropGroupIconFilePath "NatronPluginPropGroupIconFilePath"
+
+/**
+ * @brief x1 std::string property (optional) indicating for a PyPlug the absolute file path to the PyPlug script.
+ * Default value - Empty
+ **/
+#define kNatronPluginPropPyPlugScriptAbsoluteFilePath "NatronPluginPropPyPlugScriptAbsoluteFilePath"
+
+/**
+ * @brief x1 bool property (optional) indicating for a PyPlug whether it is encoded using old Python scripts or to
+ * the newer YAML-based format.
+ * Default value - false
+ **/
+#define kNatronPluginPropPyPlugIsPythonScript "NatronPluginPropPyPlugIsPythonScript"
+
+/**
+ * @brief x1 bool property (optional) indicating for a PyPlug if this is a toolset or not. 
+ * Toolsets are always encoded in Python.
+ * Default value - Empty
+ **/
+#define kNatronPluginPropPyPlugIsToolset "NatronPluginPropPyPlugIsToolset"
+
+/**
+ * @brief x1 pointer property (optional) indicating for an OpenFX plug-in the pointer to the internal
+ * OFX::Host::ImageEffect::ImageEffectPlugin structure.
+ * Default value - NULL
+ **/
+#define kNatronPluginPropOpenFXPluginPtr "NatronPluginPropOpenFXPluginPtr"
+
+/**
+ * @brief x1 bool property (optional) indicating whether a plug-in is deprecated or not.
+ * When true, the plug-in cannot be created by the user but can still be created when loading older projects.
+ * Default value - false
+ **/
+#define kNatronPluginPropIsDeprecated "NatronPluginPropIsDeprecated"
+
+/**
+ * @brief x1 bool property (optional) indicating whether a plug-in is for internal use or not.
+ * When true, the plug-in cannot be created by the user at all, only via Natron internally.
+ * Default value - false
+ **/
+#define kNatronPluginPropIsInternalOnly "NatronPluginPropIsInternalOnly"
+
+/**
+ * @brief x1 int property (optional) indicating that the plug-in supports OpenGL rendering or requires it or
+ * does not support it. This is of type  PluginOpenGLRenderSupport.
+ * Default value - 0
+ **/
+#define kNatronPluginPropOpenGLSupport "NatronPluginPropOpenGLSupport"
+
+/**
+ * @brief x1 int property (optional) indicating the plug-in render thread safety. Of type RenderSafetyEnum
+ * Default value - 0
+ **/
+#define kNatronPluginPropRenderSafety "NatronPluginPropRenderSafety"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -110,7 +247,7 @@ public:
     }
 
     // the node ID is the same as name for menu items and the pluginID if this is a leaf
-    const QString& getTreeNodeID() const;
+    QString getTreeNodeID() const;
     
 };
 
@@ -127,172 +264,115 @@ struct PluginPresetDescriptor
 /**
  * @brief A Natron plug-in that can be instantiated in nodes
  **/
-class Plugin
+class Plugin : public PropertiesHolder
 {
-    LibraryBinary* _binary;
-    QString _resourcesPath; // Path to the resources (images etc..) of the plug-in, or empty if statically linked  (epxected to be found in resources)
-    QString _id;
-    QString _label;
-    QString _iconFilePath;
-    QStringList _groupIconFilePath;
-    QStringList _grouping;
-    QString _labelWithoutSuffix;
+    // Plug-in label modified to reflect presence of multiple version of the same plug-in
+    std::string _labelWithoutSuffix;
 
-    // Deprecated, PyPlugs are no longer python scripts
-    QString _pythonModule;
-    OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
-    OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
-    boost::shared_ptr<QMutex> _lock;
-    int _majorVersion;
-    int _minorVersion;
-    ContextEnum _ofxContext;
+    // The shortcuts for the plug-in actions when it has knobs
+    // that can be instantiated in the Viewer interface (such as Roto or Tracker).
+    std::list<PluginActionShortcut> _actionShortcuts;
 
-    bool _isReader, _isWriter;
+    // List of presets
+    std::vector<PluginPresetDescriptor> _presets;
 
-    //Deprecated are by default Disabled in the Preferences.
-    bool _isDeprecated;
+    // The mutex to use for a plug-in that has
+    // an unsafe render thread safety.
+    boost::shared_ptr<QMutex> _pluginLock;
 
-    //Is not visible by the user, just for internal use
-    bool _isInternalOnly;
+    // OFX only: The context that was passed to describeInContext the first time
+    ContextEnum _openfxContext;
 
-    //When the plug-in is a PyPlug, if this is set to true, the script will not be embedded into a group
-    bool _toolSetScript;
-    mutable bool _activated;
+    // OFX only: The descriptor returned by the plug-in by describeInContext
+    OFX::Host::ImageEffect::Descriptor* _openfxDescriptor;
 
-    /*
-       These are shortcuts that the plug-in registered
-     */
-    std::list<PluginActionShortcut> _shortcuts;
-    bool _renderScaleEnabled;
-    bool _multiThreadingEnabled;
-    bool _openglActivated;
+    // When not enabled, the user cannot create an instance of this plug-in.
+    bool _isEnabled;
 
-    PluginOpenGLRenderSupport _openglRenderSupport;
-
-    std::vector<PluginPresetDescriptor> _presetsFiles;
-
+    // True if this plug-in is the highest major version of the plug-in
     bool _isHighestVersion;
+
+    // When disabled, even though the plug-in flags that it can handle OpenGL rendering, Natron will not permit
+    // any render issued to the plug-in to use OpenGL.
+    bool _openGLEnabled;
+
+    // When enabled, Natron follows what the plug-in specifies for the render-thread safety. When disabled Natron always
+    // assume the plug-in is unsafe.
+    bool _multiThreadEnabled;
+
+    // When enabled, Natron follows what the plug-in specifies for the render scale support. When disabled Natron always
+    // pass images of scale 1 to the plug-in.
+    bool _renderScaleEnabled;
+
+private:
+    
+    virtual void initializeProperties() const OVERRIDE FINAL;
+
+    Plugin();
 
 public:
 
-    Plugin(LibraryBinary* binary,
-           const QString& resourcesPath,
-           const QString & id,
-           const QString & label,
-           const QString & iconFilePath,
-           const QStringList & groupIconFilePath,
-           const QStringList & grouping,
-           bool mustCreateMutex,
-           int majorVersion,
-           int minorVersion,
-           bool isReader,
-           bool isWriter,
-           bool isDeprecated);
+    static PluginPtr create(void* createEffectFunc,
+                            const std::string &pluginID,
+                            const std::string &pluginLabel,
+                            unsigned int majorVersion,
+                            unsigned int minorVersion,
+                            const std::vector<std::string> &pluginGrouping,
+                            const std::vector<std::string> &groupIconFilePath = std::vector<std::string>());
 
-    ~Plugin();
+    virtual ~Plugin();
 
-    void setShorcuts(const std::list<PluginActionShortcut>& shortcuts)
-    {
-        _shortcuts = shortcuts;
-    }
+    boost::shared_ptr<QMutex> getPluginLock() const;
 
-    const std::list<PluginActionShortcut>& getShortcuts() const
-    {
-        return _shortcuts;
-    }
+    std::string getPluginID() const;
 
-    const QString& getResourcesPath() const
-    {
-        return _resourcesPath;
-    }
 
-    void addPresetFile(const QString& filePath, const QString& presetLabel, const QString& iconFilePath, Key symbol, const KeyboardModifiers& mods);
+    /**
+     * @brief Flag stored here so we don't have to recompute it.
+     **/
+    void setIsHighestMajorVersion(bool isHighest);
+    bool getIsHighestMajorVersion() const;
 
+
+    void addPresetFile(const PluginPresetDescriptor& preset);
+    void sortPresetsByLabel();
     const std::vector<PluginPresetDescriptor>& getPresetFiles() const;
 
-    void sortPresetsByLabel();
+    std::string getPluginShortcutGroup() const;
 
-    QString getPluginShortcutGroup() const;
+    static std::string makeLabelWithoutSuffix(const std::string& label);
+    std::string getLabelVersionMajorMinorEncoded() const;
+    std::string getLabelVersionMajorEncoded() const;
+    std::string getLabelWithoutSuffix() const;
+    void setLabelWithoutSuffix(const std::string& label);
+    std::string generateUserFriendlyPluginID() const;
+    std::string generateUserFriendlyPluginIDMajorEncoded() const;
+    std::string getPluginLabel() const;
 
-    bool getIsForInternalUseOnly() const { return _isInternalOnly; }
+    int getMajorVersion() const;
+    int getMinorVersion() const;
 
-    void setForInternalUseOnly(bool b) { _isInternalOnly = b; }
-
-    bool getIsDeprecated() const { return _isDeprecated; }
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
 
     bool getIsUserCreatable() const;
 
-    void setPluginID(const QString & id);
-
-
-    const QString & getPluginID() const;
-
-    bool isReader() const;
-
-    bool isWriter() const;
-
-    void setPluginLabel(const QString & label);
-
-    const QString & getPluginLabel() const;
-    const QString getLabelVersionMajorMinorEncoded() const;
-    static QString makeLabelWithoutSuffix(const QString& label);
-    const QString& getLabelWithoutSuffix() const;
-    void setLabelWithoutSuffix(const QString& label);
-
-    const QString getLabelVersionMajorEncoded() const;
-
-    QString generateUserFriendlyPluginID() const;
-
-    QString generateUserFriendlyPluginIDMajorEncoded() const;
-
-    const QString & getIconFilePath() const;
-
-    void setIconFilePath(const QString& filePath);
-
-    const QStringList & getGroupIconFilePath() const;
-    const QStringList & getGrouping() const;
-
-    void setToolsetScript(bool isToolset);
-
-    bool getToolsetScript() const;
-
-    boost::shared_ptr<QMutex> getPluginLock() const;
-    LibraryBinary* getLibraryBinary() const;
-
-    int getMajorVersion() const;
-
-    int getMinorVersion() const;
-
-    void setPythonModule(const QString& module);
-
-    const QString& getPythonModule() const;
-
-    void getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const;
-
-    void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
-
-    OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
-    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
-
-    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
+    bool isEnabled() const;
+    void setEnabled(bool b);
 
     bool isRenderScaleEnabled() const;
-    void setRenderScaleEnabled(bool b);
-
     bool isMultiThreadingEnabled() const;
-    void setMultiThreadingEnabled(bool b);
-
-    bool isActivated() const;
-    void setActivated(bool b);
-
     bool isOpenGLEnabled() const;
+
+    void setRenderScaleEnabled(bool b);
+    void setMultiThreadingEnabled(bool b);
     void setOpenGLEnabled(bool b);
 
-    void setOpenGLRenderSupport(PluginOpenGLRenderSupport support);
-    PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
+    void addActionShortcut(const PluginActionShortcut& shortcut);
+    const std::list<PluginActionShortcut>& getShortcuts() const;
 
-    void setIsHighestMajorVersion(bool isHighest);
-    bool getIsHighestMajorVersion() const;
+    QStringList getGroupingAsQStringList() const;
+
 };
 
 struct Plugin_compare_major
@@ -300,7 +380,7 @@ struct Plugin_compare_major
     bool operator() (const PluginPtr& lhs,
                      const PluginPtr& rhs) const
     {
-        return lhs->getMajorVersion() < rhs->getMajorVersion();
+        return lhs->getProperty<unsigned int>(kNatronPluginPropVersion, 0) < rhs->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
     }
 };
 

@@ -229,7 +229,6 @@ public:
                                 const QPointF& averageNodesPosition,
                                 const QPointF& position,
                                 const NodeCollectionPtr& group,
-                                const std::string& parentName,
                                 const NodePtr& cloneMaster);
     
     

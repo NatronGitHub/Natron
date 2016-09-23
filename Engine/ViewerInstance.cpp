@@ -170,6 +170,20 @@ ViewerInstance::create(const NodePtr& node)
     return EffectInstancePtr( new ViewerInstance(node) );
 }
 
+PluginPtr
+ViewerInstance::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_IMAGE);
+    PluginPtr ret = Plugin::create((void*)ViewerInstance::create, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "viewer_icon.png");
+    QString desc =  tr("The Viewer node can display the output of a node graph.");
+    ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    return ret;
+}
+
 ViewerInstance::ViewerInstance(const NodePtr& node)
     : OutputEffectInstance(node)
     , _imp( new ViewerInstancePrivate(this) )
@@ -203,12 +217,6 @@ ViewerInstance::createRenderEngine()
     boost::shared_ptr<ViewerInstance> thisShared = toViewerInstance( shared_from_this() );
 
     return new ViewerRenderEngine(thisShared);
-}
-
-void
-ViewerInstance::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
 
 OpenGLViewerI*

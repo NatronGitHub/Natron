@@ -44,14 +44,18 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/SpinBox.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/PreferencesPanel.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -130,6 +134,10 @@ struct ExportGroupTemplateDialogPrivate
     LineEdit* iconPath;
     Label* descriptionLabel;
     PlaceHolderTextEdit* descriptionEdit;
+    Label* descriptionIsMarkdownLabel;
+    AnimatedCheckBox* descriptionIsMarkdownCheckbox;
+    Label* shortcutKeyLabel;
+    KeybindRecorder* shortcutKeyEditor;
     QDialogButtonBox *buttons;
 
     ExportGroupTemplateDialogPrivate(const NodeCollectionPtr& group,
@@ -152,6 +160,10 @@ struct ExportGroupTemplateDialogPrivate
         , iconPath(0)
         , descriptionLabel(0)
         , descriptionEdit(0)
+        , descriptionIsMarkdownLabel(0)
+        , descriptionIsMarkdownCheckbox(0)
+        , shortcutKeyLabel(0)
+        , shortcutKeyEditor(0)
         , buttons(0)
     {
     }
@@ -209,11 +221,12 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
 
     _imp->versionSpinbox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
     _imp->versionSpinbox->setMinimum(1);
+    _imp->versionSpinbox->setValue(1);
     _imp->versionSpinbox->setToolTip(versionTt);
 
     _imp->iconPathLabel = new Label(tr("Icon relative path"), this);
     QString iconTt = NATRON_NAMESPACE::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
-                                                       "The path is relative to the Python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
+                                                       "The path is relative to where you save the PyPlug script."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
     _imp->iconPath->setPlaceholderText( QString::fromUtf8("Label.png") );
@@ -226,7 +239,22 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceHolderText( tr("This plug-in can be used to produce XXX effect...") );
 
-    _imp->fileLabel = new Label(tr("Directory"), this);
+    _imp->descriptionIsMarkdownLabel = new Label(tr("Description Is Markdown"), this);
+    QString descIsmarkdownTt =  NATRON_NAMESPACE::convertFromPlainText(tr("When checked, the description is considered to be encoded in the Markdown. "
+                                                                "This is helpful to use rich text capabilities for the documentation."), NATRON_NAMESPACE::WhiteSpaceNormal);
+    _imp->descriptionIsMarkdownLabel->setToolTip(descIsmarkdownTt);
+
+    _imp->descriptionIsMarkdownCheckbox = new AnimatedCheckBox(this);
+    _imp->descriptionIsMarkdownCheckbox->setChecked(false);
+    _imp->descriptionIsMarkdownCheckbox->setToolTip(descIsmarkdownTt);
+    _imp->descriptionIsMarkdownCheckbox->setFixedSize(QSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE)));
+
+    QString shortcutTt = tr("This is the shortcut the user can use by default to instantiate this plug-in as a node."
+                            "The user can modify it in the shortcut editor in the Preferences of the application.");
+    _imp->shortcutKeyLabel = new Label(tr("Shortcut"), this);
+    _imp->shortcutKeyEditor = new KeybindRecorder(this);
+
+    _imp->fileLabel = new Label(tr("File"), this);
     QString fileTt  = NATRON_NAMESPACE::convertFromPlainText(tr("Specify here the directory where to export the Python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
@@ -260,64 +288,47 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->mainLayout->addWidget(_imp->iconPath, 4, 1, 1, 2);
     _imp->mainLayout->addWidget(_imp->descriptionLabel, 5, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->descriptionEdit, 5, 1, 1, 2);
-    _imp->mainLayout->addWidget(_imp->fileLabel, 6, 0, 1, 1);
-    _imp->mainLayout->addWidget(_imp->fileEdit, 6, 1, 1, 1);
-    _imp->mainLayout->addWidget(_imp->openButton, 6, 2, 1, 1);
-    _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 3);
+    _imp->mainLayout->addWidget(_imp->descriptionIsMarkdownLabel, 6, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->descriptionIsMarkdownCheckbox, 6, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->shortcutKeyLabel, 7, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->shortcutKeyEditor, 7, 1, 1, 2);
+    _imp->mainLayout->addWidget(_imp->fileLabel, 8, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->fileEdit, 8, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 8, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->buttons, 9, 0, 1, 3);
 
     // If this node is already a PyPlug, pre-fill the dialog with existing information
     NodeGroupPtr isGroupNode = toNodeGroup(group);
     if (isGroupNode) {
-        NodePtr pyPlug = isGroupNode->getNode();
-        std::string pluginID = pyPlug->getPluginID();
-        if (pluginID != PLUGINID_NATRON_GROUP) {
+        PluginPtr pyPlugHandle = isGroupNode->getNode()->getPyPlugPlugin();
+        if (pyPlugHandle) {
             // This is a pyplug for sure
-            std::string description = pyPlug->getPluginDescription();
-            std::string label = pyPlug->getPluginLabel();
-            std::string iconFilePath = pyPlug->getPluginIconFilePath();
-            std::string grouping;
-            std::list<std::string> groupingList;
-            pyPlug->getPluginGrouping(&groupingList);
+            QString pluginID = QString::fromUtf8(pyPlugHandle->getPluginID().c_str());
+            QString description = QString::fromUtf8(pyPlugHandle->getProperty<std::string>(kNatronPluginPropDescription).c_str());
+            QString label = QString::fromUtf8(pyPlugHandle->getPluginLabel().c_str());
+            QString iconFilePath = QString::fromUtf8(pyPlugHandle->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+            QString grouping;
+            std::vector<std::string> groupingList = pyPlugHandle->getPropertyN<std::string>(kNatronPluginPropGrouping);
             if (!groupingList.empty()) {
-                std::list<std::string>::iterator next = groupingList.begin();
+                std::vector<std::string>::const_iterator next = groupingList.begin();
                 ++next;
-                for (std::list<std::string>::iterator it = groupingList.begin(); it!=groupingList.end(); ++it) {
-                    grouping.append(*it);
-
+                for (std::vector<std::string>::const_iterator it = groupingList.begin(); it!=groupingList.end(); ++it) {
+                    grouping.append(QString::fromUtf8(it->c_str()));
                     if (next != groupingList.end()) {
-                        grouping += '/';
+                        grouping += QLatin1Char('/');
                         ++next;
                     }
                 }
             }
-            int version = pyPlug->getMajorVersion();
-            std::string pythonModuleName = pyPlug->getPluginPythonModule();
-            std::string pluginPath;
-            {
-                std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
-                unsigned int version;
-                bool istoolset;
-
-                if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModuleName, &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &pluginPath, &istoolset, &version) ) {
-                    
-                }
-            }
-
-            {
-                std::size_t foundLastSlash = iconFilePath.find_last_of("/");
-                if (foundLastSlash != std::string::npos) {
-                    iconFilePath = iconFilePath.substr(foundLastSlash + 1);
-                }
-                if (iconFilePath == "group_icon.png") {
-                    iconFilePath.clear();
-                }
-            }
-            _imp->idEdit->setText(QString::fromUtf8(pluginID.c_str()));
-            _imp->labelEdit->setText(QString::fromUtf8(label.c_str()));
-            _imp->groupingEdit->setText(QString::fromUtf8(grouping.c_str()));
-            _imp->descriptionEdit->setText(QString::fromUtf8(description.c_str()));
-            _imp->iconPath->setText(QString::fromUtf8(iconFilePath.c_str()));
-            _imp->fileEdit->setText(QString::fromUtf8(pluginPath.c_str()));
+            int version = pyPlugHandle->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+            QString scriptFilePath = QString::fromUtf8(pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath).c_str());
+            
+            _imp->idEdit->setText(pluginID);
+            _imp->labelEdit->setText(label);
+            _imp->groupingEdit->setText(grouping);
+            _imp->descriptionEdit->setText(description);
+            _imp->iconPath->setText(iconFilePath);
+            _imp->fileEdit->setText(scriptFilePath);
             _imp->versionSpinbox->setValue(version);
         }
     }
@@ -333,14 +344,14 @@ void
 ExportGroupTemplateDialog::onButtonClicked()
 {
     std::vector<std::string> filters;
+    filters.push_back(NATRON_PRESETS_FILE_EXT);
     const QString& path = _imp->gui->getLastPluginDirectory();
-    SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeDir, path.toStdString(), _imp->gui, false);
+    SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave, path.toStdString(), _imp->gui, false);
 
     if ( dialog.exec() ) {
-        std::string selection = dialog.selectedFiles();
-        _imp->fileEdit->setText( QString::fromUtf8( selection.c_str() ) );
-        QDir d = dialog.currentDirectory();
-        _imp->gui->updateLastPluginDirectory( d.absolutePath() );
+        QString selection = QString::fromUtf8(dialog.selectedFiles().c_str());
+        _imp->fileEdit->setText(selection);
+        _imp->gui->updateLastSavedProjectPath(selection);
     }
 }
 
@@ -355,84 +366,105 @@ ExportGroupTemplateDialog::onLabelEditingFinished()
 void
 ExportGroupTemplateDialog::onOkClicked()
 {
-    QString dirPath = _imp->fileEdit->text();
-
-    if ( !dirPath.isEmpty() && ( dirPath[dirPath.size() - 1] == QLatin1Char('/') ) ) {
-        dirPath.remove(dirPath.size() - 1, 1);
-    }
-    QDir d(dirPath);
-
-    if ( !d.exists() ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString() );
-
+    NodeGroupPtr isGroup = toNodeGroup(_imp->group);
+    if (!isGroup) {
         return;
     }
+
+    QString filePath = _imp->fileEdit->text();
+
+    // Ensure file has correct extension
+    QString presetsExt = QLatin1String("." NATRON_PRESETS_FILE_EXT);
+    if (!filePath.endsWith(presetsExt)) {
+        filePath += presetsExt;
+    }
+
+    // Check that the enclosing directory exists
+    QString dirPath;
+    {
+        int foundSlash = filePath.lastIndexOf(QLatin1Char('/'));
+        if (foundSlash != -1) {
+            dirPath = filePath.mid(0, foundSlash);
+            QDir d(dirPath);
+            if (!d.exists()) {
+                Dialogs::errorDialog( tr("Error").toStdString(), tr("%1: Directory does not exist").arg(dirPath).toStdString() );
+                return;
+            }
+        }
+    }
+
+
     QString pluginLabel = _imp->labelEdit->text();
     if ( pluginLabel.isEmpty() ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString() );
-
+        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a label to name the PyPlug").toStdString() );
         return;
     } else {
         pluginLabel = QString::fromUtf8( NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() ).c_str() );
     }
 
-    QString pluginID = _imp->idEdit->text();
-    if ( pluginID.isEmpty() ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString() );
-
+    std::string pluginID = _imp->idEdit->text().toStdString();
+    if ( pluginID.empty() ) {
+        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a unique ID to identify the PyPlug").toStdString() );
         return;
     }
+
+
+
+    // Check that the directory where the file will be is registered in Natron search paths.
+    {
+        bool foundInPath = false;
+        QStringList groupSearchPath = appPTR->getAllNonOFXPluginsPaths();
+        for (QStringList::iterator it = groupSearchPath.begin(); it != groupSearchPath.end(); ++it) {
+            if ( !it->isEmpty() && ( it->at(it->size() - 1) == QLatin1Char('/') ) ) {
+                it->remove(it->size() - 1, 1);
+            }
+            if (*it == dirPath) {
+                foundInPath = true;
+            }
+        }
+
+        if (!foundInPath) {
+            QString message = tr("Directory \"%1\" is not in the group plug-in search path, would you like to add it?").arg(dirPath);
+            StandardButtonEnum rep = Dialogs::questionDialog(tr("Plug-in path").toStdString(),
+                                                             message.toStdString(), false);
+
+            if  (rep == eStandardButtonYes) {
+                appPTR->getCurrentSettings()->appendPythonGroupsPath( dirPath.toStdString() );
+            }
+        }
+    }
+
 
     QString iconPath = _imp->iconPath->text();
     QString grouping = _imp->groupingEdit->text();
     QString description = _imp->descriptionEdit->getText();
-    QString filePath = d.absolutePath() + QLatin1Char('/') + pluginLabel + QString::fromUtf8(".py");
-    QStringList filters;
-    filters.push_back( QString( pluginLabel + QString::fromUtf8(".py") ) );
-    if ( !d.entryList(filters, QDir::Files | QDir::NoDotAndDotDot).isEmpty() ) {
-        StandardButtonEnum rep = Dialogs::questionDialog(tr("Existing plug-in").toStdString(),
-                                                         tr("A group plug-in with the name \"%1\" already exists "
-                                                            "would you like to "
-                                                            "overwrite it?").arg(pluginLabel).toStdString(), false);
-        if  (rep == eStandardButtonNo) {
-            return;
-        }
+    int version = _imp->versionSpinbox->value();
+    bool isMarkdown = _imp->descriptionIsMarkdownCheckbox->isChecked();
+
+    Qt::KeyboardModifiers qtMods;
+    Qt::Key qtKey;
+
+    {
+        QString presetShortcut = _imp->shortcutKeyEditor->text();
+        QKeySequence keySeq(presetShortcut, QKeySequence::NativeText);
+        extractKeySequence(keySeq, qtMods, qtKey);
     }
 
-    bool foundInPath = false;
-    QStringList groupSearchPath = appPTR->getAllNonOFXPluginsPaths();
-    for (QStringList::iterator it = groupSearchPath.begin(); it != groupSearchPath.end(); ++it) {
-        if ( !it->isEmpty() && ( it->at(it->size() - 1) == QLatin1Char('/') ) ) {
-            it->remove(it->size() - 1, 1);
-        }
-        if (*it == dirPath) {
-            foundInPath = true;
-        }
-    }
-
-    if (!foundInPath) {
-        QString message = tr("Directory \"%1\" is not in the group plug-in search path, would you like to add it?").arg(dirPath);
-        StandardButtonEnum rep = Dialogs::questionDialog(tr("Plug-in path").toStdString(),
-                                                         message.toStdString(), false);
-
-        if  (rep == eStandardButtonYes) {
-            appPTR->getCurrentSettings()->appendPythonGroupsPath( dirPath.toStdString() );
-        }
-    }
-
-    QFile file(filePath);
-    if ( !file.open(QIODevice::ReadWrite | QIODevice::Truncate) ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString() );
-
+    try {
+        isGroup->getNode()->saveNodeToPyPlug(filePath.toStdString(),
+                                             pluginID,
+                                             pluginLabel.toStdString(),
+                                             iconPath.toStdString(),
+                                             description.toStdString(),
+                                             isMarkdown,
+                                             grouping.toStdString(),
+                                             version,
+                                             QtEnumConvert::fromQtKey(qtKey),
+                                             QtEnumConvert::fromQtModifiers(qtMods));
+    } catch (const std::exception& e) {
+        Dialogs::errorDialog( tr("Error").toStdString(), e.what() );
         return;
     }
-
-    int version = _imp->versionSpinbox->value();
-
-    QTextStream ts(&file);
-    QString content;
-    _imp->group->exportGroupToPython(pluginID, pluginLabel, description, iconPath, grouping, version, content);
-    ts << content;
 
     accept();
 } // ExportGroupTemplateDialog::onOkClicked

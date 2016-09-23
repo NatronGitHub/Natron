@@ -571,10 +571,9 @@ void
 NodeGraph::expandSelectedGroups()
 {
     NodesGuiList nodes;
-
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         NodeGroupPtr isGroup = (*it)->getNode()->isEffectNodeGroup();
-        if ( isGroup && (isGroup->getPluginID() == PLUGINID_NATRON_GROUP) ) {
+        if ( isGroup && (isGroup->getNode()->getPluginID() == PLUGINID_NATRON_GROUP) ) {
             nodes.push_back(*it);
         }
     }
@@ -644,7 +643,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
 
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
              it != clipboard.nodes.end(); ++it) {
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, std::string(), NodePtr());
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, NodePtr());
             assert(node);
             if (node) {
                 createdNodes.push_back( std::make_pair( (*it)->_nodeScriptName, node ) );

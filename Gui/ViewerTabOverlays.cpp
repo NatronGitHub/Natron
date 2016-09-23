@@ -701,7 +701,7 @@ ViewerTab::checkForTimelinePlayerGlobalShortcut(Qt::Key qKey,
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             if ( (*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret() ) {
                 if ( pluginShortcutGroup.empty() ) {
-                    pluginShortcutGroup = node->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
+                    pluginShortcutGroup = node->getNode()->getPlugin()->getPluginShortcutGroup();
                 }
                 if ( isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey) ) {
                     // This only works for groups and buttons, as defined in the spec
@@ -752,7 +752,7 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ( (*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret() ) {
             if ( pluginShortcutGroup.empty() ) {
-                pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
+                pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup();
             }
             if ( isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey) ) {
                 // This only works for groups and buttons, as defined in the spec

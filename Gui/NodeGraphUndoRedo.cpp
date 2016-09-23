@@ -49,7 +49,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/MultiInstancePanel.h"
 
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/NodeClipBoard.h"
@@ -1498,7 +1497,7 @@ GroupFromSelectionCommand::redo()
     } else {
         NodesList internalNewNodes;
         // Create the actual Group node
-        CreateNodeArgsPtr groupArgs(new CreateNodeArgs(PLUGINID_NATRON_GROUP, _graph->getGroup() ));
+        CreateNodeArgsPtr groupArgs(CreateNodeArgs::create(PLUGINID_NATRON_GROUP, _graph->getGroup() ));
         groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
         groupArgs->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         groupArgs->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -1568,7 +1567,7 @@ GroupFromSelectionCommand::redo()
                     NodePtr originalInput = originalNodeInputs[i].lock();
                     if (originalInput) {
                         //Create an input node corresponding to this input
-                        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, isGrp));
+                        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, isGrp));
                         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
                         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -1608,7 +1607,7 @@ GroupFromSelectionCommand::redo()
             //Create only a single output
 
             if (!hasCreatedOutput) {
-                CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, isGrp));
+                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, isGrp));
                 args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
                 args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                 args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -1729,7 +1728,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         for (NodesList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
             GroupInputPtr inp = (*it2)->isEffectGroupInput();
             GroupOutputPtr output = (*it2)->isEffectGroupOutput();
-            if ( !inp && !output && !(*it2)->getParentMultiInstance() ) {
+            if ( !inp && !output) {
                 NodeGuiIPtr gui_i = (*it2)->getNodeGui();
                 assert(gui_i);
                 NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);

@@ -49,40 +49,14 @@ public:
         return EffectInstancePtr( new JoinViewsNode(node) );
     }
 
+
+    static PluginPtr createPlugin();
+
     virtual ~JoinViewsNode();
 
 
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_JOINVIEWS;
-    }
 
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "JoinViews";
-    }
-
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "Take in input separate views to make a multiple view stream output. "
-               "The first view from each input is copied to one of the view of the output.";
-    }
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
-    {
-        grouping->push_back(PLUGIN_GROUP_MULTIVIEW);
-    }
 
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -93,11 +67,6 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
 
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

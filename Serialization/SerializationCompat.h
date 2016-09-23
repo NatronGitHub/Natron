@@ -1157,10 +1157,8 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         }
     }
     if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
-        ar & ::boost::serialization::make_nvp("MultiInstanceParent", _multiInstanceParentName);
-        if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-            _multiInstanceParentName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_multiInstanceParentName);
-        }
+        std::string multiInstanceParentName;
+        ar & ::boost::serialization::make_nvp("MultiInstanceParent", multiInstanceParentName);
     }
 
     if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {

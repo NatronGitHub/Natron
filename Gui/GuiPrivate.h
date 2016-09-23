@@ -93,7 +93,6 @@ public:
     ActionWithShortcut *actionReload_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
-    ActionWithShortcut *actionExportAsGroup;
     ActionWithShortcut *actionSaveAndIncrementVersion;
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;

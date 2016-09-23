@@ -83,6 +83,8 @@ public:
         return EffectInstancePtr( new WriteNode(node) );
     }
 
+    static PluginPtr createPlugin() WARN_UNUSED_RETURN;
+
     virtual ~WriteNode();
 
     NodePtr getEmbeddedWriter() const;
@@ -95,12 +97,6 @@ public:
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

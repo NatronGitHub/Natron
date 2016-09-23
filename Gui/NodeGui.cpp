@@ -87,7 +87,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/QtEnumConvert.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
@@ -235,7 +234,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()), this, SLOT(onStreamWarningsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged()), this, SLOT(refreshNodeText()) );
-    QObject::connect( internalNode.get(), SIGNAL(nodePresetsChanged()), this, SLOT(refreshNodeText()) );
+    QObject::connect( internalNode.get(), SIGNAL(nodePresetsChanged()), this, SLOT(onNodePresetsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(enabledChannelCheckboxChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
@@ -253,28 +252,11 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
-    InspectorNodePtr isInspector = toInspectorNode(internalNode);
-    if (isInspector) {
-        QObject::connect( isInspector.get(), SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
-    }
 
     double x,y;
     internalNode->getPosition(&x, &y);
     createGui();
     refreshPosition(x, y, true);
-
-    NodePtr parent = internalNode->getParentMultiInstance();
-    if (parent) {
-        NodeGuiIPtr parentNodeGui_i = parent->getNodeGui();
-        NodeGui* parentGui = dynamic_cast<NodeGui*>( parentNodeGui_i.get() );
-        assert(parentGui);
-        if ( parentGui && parentGui->isSettingsPanelVisible() ) {
-            ensurePanelCreated();
-            MultiInstancePanelPtr panel = parentGui->getMultiInstancePanel();
-            assert(panel);
-            panel->onChildCreated(internalNode);
-        }
-    }
 
     // For the tracker node, it needs the panel created by default for the tracks panel
     {
@@ -314,20 +296,6 @@ NodeGui::initialize(NodeGraph* dag,
 
     restoreStateAfterCreation();
 
-    // Link the position of the node to the position of the parent multi-instance
-    NodePtr parentMultiInstance = internalNode->getParentMultiInstance();
-    if (parentMultiInstance) {
-
-        hideGui();
-        NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
-        assert(parentNodeGui_i);
-        NodeGuiPtr parentNodeGui = boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i);
-        setParentMultiInstance(parentNodeGui);
-
-        QObject::connect( parentNodeGui.get(), SIGNAL(positionChanged(int,int)), this, SLOT(onParentMultiInstancePositionChanged(int,int)) );
-        QPointF p = parentNodeGui->pos();
-        refreshPosition(p.x(), p.y(), true);
-    }
 
     getNode()->initializeHostOverlays();
 
@@ -358,50 +326,15 @@ void
 NodeGui::setColorFromGrouping()
 {
     NodePtr internalNode = getNode();
-    EffectInstancePtr iseffect = internalNode->getEffectInstance();
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    float r, g, b;
-    Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
-    std::list<std::string> grouping;
-
-    internalNode->getPluginGrouping(&grouping);
-    std::string majGroup = grouping.empty() ? "" : grouping.front();
-
-    if ( iseffect->isReader() ) {
-        settings->getReaderColor(&r, &g, &b);
-    } else if (isBd) {
-        settings->getDefaultBackdropColor(&r, &g, &b);
-    } else if ( iseffect->isWriter() ) {
-        settings->getWriterColor(&r, &g, &b);
-    } else if ( iseffect->isGenerator() ) {
-        settings->getGeneratorColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_COLOR) {
-        settings->getColorGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_FILTER) {
-        settings->getFilterGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
-        settings->getChannelGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_KEYER) {
-        settings->getKeyerGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_MERGE) {
-        settings->getMergeGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_PAINT) {
-        settings->getDrawGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_TIME) {
-        settings->getTimeGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
-        settings->getTransformGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
-        settings->getViewsGroupColor(&r, &g, &b);
-    } else if (majGroup == PLUGIN_GROUP_DEEP) {
-        settings->getDeepGroupColor(&r, &g, &b);
-    } else {
-        settings->getDefaultNodeColor(&r, &g, &b);
+    if (!internalNode) {
+        return;
     }
+    double r, g, b;
+    internalNode->getDefaultColor(&r, &g, &b);
     QColor color;
-    color.setRgbF( Image::clamp<qreal>(r, 0., 1.),
-                   Image::clamp<qreal>(g, 0., 1.),
-                   Image::clamp<qreal>(b, 0., 1.) );
+    color.setRgbF( Image::clamp<double>(r, 0., 1.),
+                   Image::clamp<double>(g, 0., 1.),
+                   Image::clamp<double>(b, 0., 1.) );
     setCurrentColor(color);
 }
 
@@ -409,7 +342,9 @@ void
 NodeGui::restoreStateAfterCreation()
 {
     NodePtr internalNode = getNode();
-
+    if (!internalNode) {
+        return;
+    }
     ///Refresh the disabled knob
 
     setColorFromGrouping();
@@ -476,28 +411,6 @@ NodeGui::ensurePanelCreated()
 
     //Ensure panel for all children if multi-instance
 
-    MultiInstancePanelPtr panel = getMultiInstancePanel();
-    if (_mainInstancePanel && panel) {
-        panel->setRedrawOnSelectionChanged(false);
-
-        /*
-         * If there are many children, each children may request for a redraw of the viewer which may
-         * very well freeze the UI.
-         * We just do one redraw when all children are created
-         */
-        NodesList children;
-        getNode()->getChildrenMultiInstance(&children);
-        for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            NodeGuiIPtr gui_i = (*it)->getNodeGui();
-            assert(gui_i);
-            NodeGui* gui = dynamic_cast<NodeGui*>( gui_i.get() );
-            assert(gui);
-            gui->ensurePanelCreated();
-
-            panel->onChildCreated(*it);
-        }
-        panel->setRedrawOnSelectionChanged(true);
-    }
 
     const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -531,21 +444,7 @@ NodeGui::createPanel(QVBoxLayout* container,
 
     if ( node->getEffectInstance()->getMakeSettingsPanel() ) {
         assert(container);
-        MultiInstancePanelPtr multiPanel;
-        if ( node->isTrackerNodePlugin() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
-            multiPanel = TrackerPanelV1::create(thisAsShared);
-
-            ///This is valid only if the node is a multi-instance and this is the main instance.
-            ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
-            ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
-
-            _mainInstancePanel = new NodeSettingsPanel( MultiInstancePanelPtr(), _graph->getGui(),
-                                                        thisAsShared, container, container->parentWidget() );
-            _mainInstancePanel->blockSignals(true);
-            _mainInstancePanel->setClosed(true);
-            _mainInstancePanel->initializeKnobs();
-        }
-        panel = new NodeSettingsPanel( multiPanel, _graph->getGui(), thisAsShared, container, container->parentWidget() );
+        panel = new NodeSettingsPanel(_graph->getGui(), thisAsShared, container, container->parentWidget() );
 
         if (panel) {
             if (!node->getApp()->isTopLevelNodeBeingCreated(node)) {
@@ -572,9 +471,15 @@ void
 NodeGui::getInitialSize(int *w,
                         int *h) const
 {
-    const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
+    PluginPtr plugin = getNode()->getPlugin();
+    if (!plugin) {
+        return;
+    }
+    QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    Global::ensureLastPathSeparator(resourcesPath);
+    resourcesPath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
 
-    if ( !iconFilePath.isEmpty() && QFile::exists(iconFilePath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
+    if ( !resourcesPath.isEmpty() && QFile::exists(resourcesPath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
         *w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
     } else {
         *w = TO_DPIX(NODE_WIDTH);
@@ -609,7 +514,13 @@ NodeGui::createGui()
         _resizeHandle->setZValue(depth + 1);
     }
 
-    const QString& iconFilePath = node->getPlugin()->getIconFilePath();
+    PluginPtr plugin = node->getPlugin();
+    
+    QString iconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    Global::ensureLastPathSeparator(iconFilePath);
+    iconFilePath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+
+
     BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
 
     if ( !isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
@@ -1436,6 +1347,7 @@ NodeGui::initializeInputs()
     if (_outputEdge) {
         _outputEdge->initLine();
     }
+    refreshOutputEdgeVisibility();
 
     NodePtr node = getNode();
 
@@ -1481,8 +1393,7 @@ NodeGui::initializeInputs()
 
     refreshDashedStateOfEdges();
 
-    InspectorNodePtr isInspector = toInspectorNode(node);
-    if (isInspector) {
+    if (node->isEntitledForInspectorInputsStyle()) {
         initializeInputsForInspector();
     } else {
         double piDividedbyX = M_PI / (inputsCount + 1);
@@ -1581,8 +1492,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     }
 
     NodePtr node = getNode();
-    InspectorNodePtr isInspector = toInspectorNode(node);
-    if (isInspector) {
+    if (node->isEntitledForInspectorInputsStyle()) {
         bool isViewer = node->isEffectViewerNode() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
         bool inputAsideDisplayed = false;
@@ -1684,25 +1594,6 @@ NodeGui::refreshCurrentBrush()
     }
 }
 
-bool
-NodeGui::isSelectedInParentMultiInstance(const NodeConstPtr& node) const
-{
-    MultiInstancePanelPtr multiInstance = getMultiInstancePanel();
-
-    if (!multiInstance) {
-        return false;
-    }
-
-    const std::list< std::pair<NodeWPtr, bool > >& instances = multiInstance->getInstances();
-    for (std::list< std::pair<NodeWPtr, bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        NodePtr instance = it->first.lock();
-        if (instance == node) {
-            return it->second;
-        }
-    }
-
-    return false;
-}
 
 void
 NodeGui::setUserSelected(bool b)
@@ -1769,7 +1660,7 @@ NodeGui::connectEdge(int edgeNumber)
 
     NodePtr node = getNode();
     assert(node);
-    if ( toInspectorNode(node) ) {
+    if (node->isEntitledForInspectorInputsStyle()) {
         initializeInputsForInspector();
     }
 
@@ -1924,21 +1815,13 @@ NodeGui::activate(bool triggerRender)
 {
     ///first activate all child instance if any
     NodePtr node = getNode();
-    bool isMultiInstanceChild = !node->getParentMultiInstanceName().empty();
 
-    if (!isMultiInstanceChild) {
-        showGui();
-    } else {
-        ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstancePtr ofxNode = toOfxEffectInstance( node->getEffectInstance() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
-        }
-    }
+    showGui();
+
     _graph->restoreFromTrash( shared_from_this() );
     //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
-    if (!isMultiInstanceChild && triggerRender) {
+    if (triggerRender) {
         std::list<ViewerInstancePtr> viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -2012,11 +1895,9 @@ NodeGui::deactivate(bool triggerRender)
 {
     ///first deactivate all child instance if any
     NodePtr node = getNode();
-    bool isMultiInstanceChild = node ? node->getParentMultiInstance().get() != NULL : false;
 
-    if (!isMultiInstanceChild) {
-        hideGui();
-    }
+    hideGui();
+
     OfxEffectInstancePtr ofxNode = !node ? OfxEffectInstancePtr() : toOfxEffectInstance( node->getEffectInstance() );
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
@@ -2029,7 +1910,7 @@ NodeGui::deactivate(bool triggerRender)
         }
     }
 
-    if (!isMultiInstanceChild && triggerRender) {
+    if (triggerRender) {
         std::list<ViewerInstancePtr> viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -2617,10 +2498,6 @@ NodeGui::onDisabledKnobToggled(bool disabled)
     }
 
     NodePtr node = getNode();
-    ///When received whilst the node is under a multi instance, let the MultiInstancePanel call this slot instead.
-    if ( ( sender() == node.get() ) && node->isMultiInstance() ) {
-        return;
-    }
 
     int firstFrame, lastFrame;
     bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
@@ -2940,7 +2817,7 @@ NodeGui::refreshNodeText()
     bool presetsIconSet = false;
 
     // For the merge node, set its operator icon
-    if ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
+    if (plugin->getPluginID() == PLUGINID_OFX_MERGE) {
         assert(_presetIcon);
         if (_presetIcon) {
             QPixmap pix;
@@ -3190,8 +3067,6 @@ NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs,
         } else {
             node->getEffectInstance()->refreshAfterTimeChange(false, time);
         }
-    } else if ( !node->getParentMultiInstanceName().empty() ) {
-        node->getEffectInstance()->refreshInstanceSpecificKnobsOnly(false, time);
     }
 }
 
@@ -3206,26 +3081,16 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
     assert(panel);
     if (panel == _settingsPanel) {
         ///if it is a multiinstance, notify the multi instance panel
-        if (_mainInstancePanel) {
-            _settingsPanel->getMultiInstancePanel()->onSettingsPanelClosed(closed);
-        } else {
-            if (!closed) {
-                NodePtr node = getNode();
-                SequenceTime time = node->getApp()->getTimeLine()->currentFrame();
-                node->getEffectInstance()->refreshAfterTimeChange(false, time);
-            }
+
+        if (!closed) {
+            NodePtr node = getNode();
+            SequenceTime time = node->getApp()->getTimeLine()->currentFrame();
+            node->getEffectInstance()->refreshAfterTimeChange(false, time);
         }
+
     }
 }
 
-MultiInstancePanelPtr NodeGui::getMultiInstancePanel() const
-{
-    if (_settingsPanel) {
-        return _settingsPanel->getMultiInstancePanel();
-    } else {
-        return MultiInstancePanelPtr();
-    }
-}
 
 TrackerPanel*
 NodeGui::getTrackerPanel() const
@@ -3556,65 +3421,6 @@ NodeGui::removePositionHostOverlay(const KnobIPtr& knob)
         }
     }
 }
-
-
-void
-NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
-                               const std::string& pluginLabel,
-                               const std::string& pluginID,
-                               const std::string& pluginDesc,
-                               const std::string& pluginIconFilePath,
-                               unsigned int version)
-{
-    setColorFromGrouping();
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, pluginDesc, version);
-    }
-
-    SettingsPtr currentSettings = appPTR->getCurrentSettings();
-    QPixmap p( QString::fromUtf8( pluginIconFilePath.c_str() ) );
-
-    if ( p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph() ) {
-        return;
-    }
-    int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
-    if (std::max( p.width(), p.height() ) != size) {
-        p = p.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    }
-
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginIcon(p);
-    }
-
-    if (!_pluginIcon) {
-        _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
-        _pluginIcon->setZValue(getBaseDepth() + 1);
-        _pluginIconFrame = new QGraphicsRectItem(this);
-        _pluginIconFrame->setZValue( getBaseDepth() );
-
-        int r, g, b;
-        currentSettings->getPluginIconFrameColor(&r, &g, &b);
-        _pluginIconFrame->setBrush( QColor(r, g, b) );
-    }
-
-    if (_pluginIcon) {
-        _pluginIcon->setPixmap(p);
-        if ( !_pluginIcon->isVisible() ) {
-            _pluginIcon->show();
-            _pluginIconFrame->show();
-        }
-        double w, h;
-        getSize(&w, &h);
-        w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
-        resize(w, h);
-
-        double x, y;
-        getPosition(&x, &y);
-        x -= TO_DPIX(NATRON_PLUGIN_ICON_SIZE) / 2. + TO_DPIX(PLUGIN_ICON_OFFSET);
-        setPosition(x, y);
-    }
-}
-
 
 void
 NodeGui::setOverlayLocked(bool locked)
@@ -3959,7 +3765,7 @@ static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr
             continue;
         }
         bool checkable = button->getIsCheckable();
-        ActionWithShortcut* action = new ActionWithShortcut(node->getPlugin()->getPluginShortcutGroup().toStdString(),
+        ActionWithShortcut* action = new ActionWithShortcut(node->getPlugin()->getPluginShortcutGroup(),
                                                             button->getName(),
                                                             button->getLabel(),
                                                             m);
@@ -4047,6 +3853,83 @@ void
 NodeGui::onInputVisibilityChanged(int /*inputNb*/)
 {
     refreshEdgesVisility();
+}
+
+void
+NodeGui::onNodePresetsChanged()
+{
+
+    NodePtr internalNode = getNode();
+    if (!internalNode) {
+        return;
+    }
+    PluginPtr plugin = internalNode->getPlugin();
+    if (!plugin) {
+        return;
+    }
+    setColorFromGrouping();
+    if ( getSettingPanel() ) {
+        getSettingPanel()->setPluginIDAndVersion(plugin->getPluginLabel(),
+                                                 plugin->getPluginID(),
+                                                 plugin->getProperty<std::string>(kNatronPluginPropDescription),
+                                                 plugin->getMajorVersion(),
+                                                 plugin->getMinorVersion());
+    }
+
+    QPixmap pixmap;
+    if (appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+
+        QString pluginIconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+        Global::ensureLastPathSeparator(pluginIconFilePath);
+        pluginIconFilePath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+
+        if (QFile::exists(pluginIconFilePath)) {
+            QPixmap pixmap(pluginIconFilePath);
+
+            if ( !pixmap.isNull() ) {
+                int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
+                if (std::max( pixmap.width(), pixmap.height() ) != size) {
+                    pixmap = pixmap.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                }
+                if ( getSettingPanel() ) {
+                    getSettingPanel()->setPluginIcon(pixmap);
+                }
+
+
+
+                if (!_pluginIcon) {
+                    _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
+                    _pluginIcon->setZValue(getBaseDepth() + 1);
+                    _pluginIconFrame = new QGraphicsRectItem(this);
+                    _pluginIconFrame->setZValue( getBaseDepth() );
+
+                    int r, g, b;
+                    appPTR->getCurrentSettings()->getPluginIconFrameColor(&r, &g, &b);
+                    _pluginIconFrame->setBrush( QColor(r, g, b) );
+                }
+
+                if (_pluginIcon) {
+                    _pluginIcon->setPixmap(pixmap);
+                    if ( !_pluginIcon->isVisible() ) {
+                        _pluginIcon->show();
+                        _pluginIconFrame->show();
+                    }
+
+                    double w, h;
+                    getSize(&w, &h);
+                    w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
+                    resize(w, h);
+                    
+                    double x, y;
+                    getPosition(&x, &y);
+                    x -= TO_DPIX(NATRON_PLUGIN_ICON_SIZE) / 2. + TO_DPIX(PLUGIN_ICON_OFFSET);
+                    setPosition(x, y);
+                }
+            }
+        }
+    }
+
+
 }
 
 NATRON_NAMESPACE_EXIT;

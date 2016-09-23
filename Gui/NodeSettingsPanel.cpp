@@ -56,7 +56,6 @@
 #include "Gui/Label.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/QtEnumConvert.h"
@@ -71,13 +70,12 @@ using std::make_pair;
 NATRON_NAMESPACE_ENTER;
 
 
-NodeSettingsPanel::NodeSettingsPanel(const MultiInstancePanelPtr & multiPanel,
-                                     Gui* gui,
+NodeSettingsPanel::NodeSettingsPanel(Gui* gui,
                                      const NodeGuiPtr &NodeUi,
                                      QVBoxLayout* container,
                                      QWidget *parent)
     : DockablePanel(gui,
-                    multiPanel ? boost::dynamic_pointer_cast<KnobHolder>( multiPanel ) : NodeUi->getNode()->getEffectInstance(),
+                    NodeUi->getNode()->getEffectInstance(),
                     container,
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
@@ -88,12 +86,7 @@ NodeSettingsPanel::NodeSettingsPanel(const MultiInstancePanelPtr & multiPanel,
     , _nodeGUI(NodeUi)
     , _selected(false)
     , _settingsButton(0)
-    , _multiPanel(multiPanel)
 {
-    if (multiPanel) {
-        multiPanel->initializeKnobsPublic();
-    }
-
 
     QObject::connect( this, SIGNAL(closeChanged(bool)), NodeUi.get(), SLOT(onSettingsPanelClosedChanged(bool)) );
     const QSize mediumBSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
@@ -160,13 +153,6 @@ NodeSettingsPanel::getCurrentColor() const
     return getNode()->getCurrentColor();
 }
 
-void
-NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
-{
-    if ( _multiPanel && !_multiPanel->isGuiCreated() ) {
-        _multiPanel->createMultiInstanceGui(layout);
-    }
-}
 
 void
 NodeSettingsPanel::onSettingsButtonClicked()
@@ -180,11 +166,15 @@ NodeSettingsPanel::onSettingsButtonClicked()
 
     PluginPtr internalPlugin = node->getNode()->getPlugin();
 
+    QString resourcesPath = QString::fromUtf8(internalPlugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    Global::ensureLastPathSeparator(resourcesPath);
+
+
     QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);
-    QStringList groupingSplit = internalPlugin->getGrouping();
-    for (int j = 0; j < groupingSplit.size(); ++j) {
+    std::vector<std::string> groupingSplit = internalPlugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
         shortcutGroup.push_back( QLatin1Char('/') );
-        shortcutGroup.push_back(groupingSplit[j]);
+        shortcutGroup.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
     }
 
     {
@@ -192,7 +182,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
         {
             // If the preset has a shortcut get it
 
-            std::string shortcutKey = internalPlugin->getPluginID().toStdString();
+            std::string shortcutKey = internalPlugin->getPluginID();
             std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
             if (!keybinds.empty()) {
                 presetShortcut = keybinds.front();
@@ -201,8 +191,13 @@ NodeSettingsPanel::onSettingsButtonClicked()
 
         QAction* action = new QAction(loadPresetsMenu);
         action->setText(tr("Default"));
-        if (!internalPlugin->getIconFilePath().isEmpty()) {
-        QPixmap presetPix(internalPlugin->getIconFilePath());
+        std::string iconFilePath = internalPlugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
+        if (!iconFilePath.empty()) {
+
+            QString filePath = resourcesPath;
+            filePath += QString::fromUtf8(iconFilePath.c_str());
+
+            QPixmap presetPix(filePath);
 
             int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
             if ( (std::max( presetPix.width(), presetPix.height() ) != menuSize) && !presetPix.isNull() ) {
@@ -224,7 +219,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
         {
             // If the preset has a shortcut get it
 
-            std::string shortcutKey = internalPlugin->getPluginID().toStdString();
+            std::string shortcutKey = internalPlugin->getPluginID();
             shortcutKey += "_preset_";
             shortcutKey += it->presetLabel.toStdString();
 

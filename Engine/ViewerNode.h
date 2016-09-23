@@ -118,6 +118,8 @@ private: // derives from EffectInstance
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN;
 
+    static PluginPtr createPlugin() WARN_UNUSED_RETURN;
+
     ViewerNodePtr shared_from_this() {
         return boost::dynamic_pointer_cast<ViewerNode>(KnobHolder::shared_from_this());
     }
@@ -223,30 +225,7 @@ public:
 
     KnobButtonPtr getTurboModeButtonKnob() const;
 
-    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
-
-    virtual int getMajorVersion() const OVERRIDE FINAL
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL
-    {
-        return 0;
-    }
-
-    virtual std::string getPluginID() const OVERRIDE FINAL
-    {
-        return PLUGINID_NATRON_VIEWER_GROUP;
-    }
-
-    virtual std::string getPluginLabel() const OVERRIDE FINAL;
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-
-    virtual std::string getPluginDescription() const OVERRIDE FINAL;
-
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE FINAL;
+    virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization ) OVERRIDE FINAL;
 
     virtual bool isOutput() const OVERRIDE FINAL
     {

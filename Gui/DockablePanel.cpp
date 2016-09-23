@@ -70,7 +70,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/LineEdit.h"
 #include "Gui/ManageUserParamsDialog.h"
 #include "Gui/Menu.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h" // RenameNodeUndoRedoCommand
 #include "Gui/NodeGui.h"
@@ -125,16 +124,11 @@ DockablePanel::DockablePanel(Gui* gui,
         }
 
         PluginPtr plugin = isEffect->getNode()->getPlugin();
-        pluginLabelVersioned = tr("%1 version %2.%3").arg( plugin->getPluginLabel() ).arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
+        _imp->_pluginVersionMajor = plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+        _imp->_pluginVersionMinor = plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
+        pluginLabelVersioned = tr("%1 version %2.%3").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
     }
-    MultiInstancePanelPtr isMultiInstance = boost::dynamic_pointer_cast<MultiInstancePanel>(holder);
-    if (isMultiInstance) {
-        isEffect = isMultiInstance->getMainInstance()->getEffectInstance();
-        assert(isEffect);
-        if (!isEffect) {
-            throw std::logic_error("");
-        }
-    }
+
 
     const QSize mediumBSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     const QSize mediumIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
@@ -202,9 +196,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
             PluginPtr plugin = isEffect->getNode()->getPlugin();
             assert(plugin);
-            _imp->_pluginID = plugin->getPluginID();
-            _imp->_pluginVersionMajor = plugin->getMajorVersion();
-            _imp->_pluginVersionMinor = plugin->getMinorVersion();
+            _imp->_pluginID = QString::fromUtf8(plugin->getPluginID().c_str());
 
             _imp->_helpButton->setToolTip( helpString() );
             _imp->_helpButton->setFixedSize(mediumBSize);
@@ -279,13 +271,12 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
 
-            if ( isEffect && !isEffect->getNode()->isMultiInstance() ) {
-                ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
-                isEffect->getNode()->showKeyframesOnTimeline(true);
-            }
+            //bShow timeline keyframe markers to be consistent with the fact that the panel is opened by default
+            isEffect->getNode()->showKeyframesOnTimeline(true);
 
 
-            if ( isEffect && isEffect->getNode()->hasOverlay() ) {
+
+            if (isEffect->getNode()->hasOverlay()) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
                 _imp->_overlayButton = new OverlayColorButton(this, QIcon(pixOverlay), _imp->_headerWidget);
@@ -297,7 +288,7 @@ DockablePanel::DockablePanel(Gui* gui,
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
                 QObject::connect( _imp->_overlayButton, SIGNAL(clicked()), this, SLOT(onOverlayButtonClicked()) );
             }
-        }
+        } // isEffect
         QPixmap pixUndo;
         appPTR->getIcon(NATRON_PIXMAP_UNDO, iconSize, &pixUndo);
         QPixmap pixUndo_gray;
@@ -601,10 +592,11 @@ void
 DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
                                      const std::string& pluginID,
                                      const std::string& pluginDesc,
-                                     unsigned int version)
+                                     unsigned int majorVersion,
+                                     unsigned int minorVersion)
 {
     if (_imp->_iconLabel) {
-        QString pluginLabelVersioned = tr("%1 version %2").arg( QString::fromUtf8( pluginLabel.c_str() ) ).arg(version);
+        QString pluginLabelVersioned = tr("%1 version %2.%3").arg( QString::fromUtf8( pluginLabel.c_str() ) ).arg(majorVersion).arg(minorVersion);
         _imp->_iconLabel->setToolTip(pluginLabelVersioned);
     }
     if (_imp->_helpButton) {
@@ -613,8 +605,8 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
         EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
         if (iseffect) {
             _imp->_pluginID = QString::fromUtf8( pluginID.c_str() );
-            _imp->_pluginVersionMajor = version;
-            _imp->_pluginVersionMinor = 0;
+            _imp->_pluginVersionMajor = majorVersion;
+            _imp->_pluginVersionMinor = minorVersion;
             _imp->_helpButton->setToolTip( helpString() );
         }
     }
@@ -748,7 +740,6 @@ DockablePanel::onKnobsInitialized()
         }
     }
 
-    initializeExtraGui(_imp->_rightContainerLayout);
 
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (isNodePanel) {
@@ -839,7 +830,7 @@ DockablePanel::helpString() const
     EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
 
     if (iseffect) {
-        isMarkdown = iseffect->isPluginDescriptionInMarkdown();
+        isMarkdown = iseffect->getNode()->getPlugin()->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
     }
 
     if (Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown) {
@@ -962,68 +953,24 @@ DockablePanel::setClosedInternal(bool c)
 
         NodeGuiPtr nodeGui = nodePanel->getNode();
         NodePtr internalNode = nodeGui->getNode();
-        MultiInstancePanelPtr panel = getMultiInstancePanel();
         Gui* gui = getGui();
 
         if (!c) {
             gui->addNodeGuiToCurveEditor(nodeGui);
             gui->addNodeGuiToDopeSheetEditor(nodeGui);
 
-            NodesList children;
-            internalNode->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                NodeGuiIPtr gui_i = (*it)->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                assert(childGui);
-                gui->addNodeGuiToCurveEditor(childGui);
-                gui->addNodeGuiToDopeSheetEditor(childGui);
-            }
         } else {
             gui->removeNodeGuiFromCurveEditor(nodeGui);
             gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
 
-            NodesList children;
-            internalNode->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                NodeGuiIPtr gui_i = (*it)->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                assert(childGui);
-                gui->removeNodeGuiFromCurveEditor(childGui);
-                gui->removeNodeGuiFromDopeSheetEditor(childGui);
-            }
         }
-
-        if (panel) {
-            ///show all selected instances
-            const std::list<std::pair<NodeWPtr, bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<NodeWPtr, bool> >::const_iterator next = childrenInstances.begin();
-            if ( next != childrenInstances.end() ) {
-                ++next;
-            }
-            for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end();
-                 ++it) {
-                if (c) {
-                    it->first.lock()->hideKeyframesFromTimeline( next == childrenInstances.end() );
-                } else if (!c && it->second) {
-                    it->first.lock()->showKeyframesOnTimeline( next == childrenInstances.end() );
-                }
-
-                // increment for next iteration
-                if ( next != childrenInstances.end() ) {
-                    ++next;
-                }
-            } // for(it)
+        ///Regular show/hide
+        if (c) {
+            internalNode->hideKeyframesFromTimeline(true);
         } else {
-            ///Regular show/hide
-            if (c) {
-                internalNode->hideKeyframesFromTimeline(true);
-            } else {
-                internalNode->showKeyframesOnTimeline(true);
-            }
+            internalNode->showKeyframesOnTimeline(true);
         }
+
     }
 
     Q_EMIT closeChanged(c);

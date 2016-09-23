@@ -83,6 +83,8 @@ public:
         return boost::dynamic_pointer_cast<ViewerInstance>(KnobHolder::shared_from_this());
     }
 
+    static PluginPtr createPlugin();
+
     virtual ~ViewerInstance();
 
     ViewerNodePtr getViewerNodeGroup() const;
@@ -305,38 +307,9 @@ private:
 
     virtual int getMaxInputCount() const OVERRIDE FINAL;
     virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL;
-    virtual int getMajorVersion() const OVERRIDE FINAL
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL
-    {
-        return 0;
-    }
-
-    virtual std::string getPluginID() const OVERRIDE FINAL
-    {
-        return PLUGINID_NATRON_VIEWER_INTERNAL;
-    }
-
-    virtual std::string getPluginLabel() const OVERRIDE FINAL
-    {
-        return "ViewerProcess";
-    }
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL
-    {
-        return "The Viewer node can display the output of a node graph.";
-    }
 
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL;
 
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
-    {
-        return eRenderSafetyFullySafe;
-    }
 
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;

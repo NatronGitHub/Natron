@@ -88,7 +88,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     if (lastUsedViewer) {
         viewerNode = lastUsedViewer->getInternalNode();
     } else {
-        CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_VIEWER_GROUP,
+        CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_NATRON_VIEWER_GROUP,
                              getGroup() ));
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);

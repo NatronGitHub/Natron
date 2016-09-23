@@ -191,16 +191,12 @@ private:
 struct OfxEffectInstancePrivate
 {
     boost::scoped_ptr<OfxImageEffectInstance> effect;
-    std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
     KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
     KnobBoolWPtr undoRedoStateKnob;
-    mutable QReadWriteLock preferencesLock;
-    mutable QReadWriteLock renderSafetyLock;
-    mutable RenderSafetyEnum renderSafety;
-    mutable bool wasRenderSafetySet;
+    mutable QReadWriteLock preferencesLock;;
     ContextEnum context;
     struct ClipsInfo
     {
@@ -230,7 +226,6 @@ struct OfxEffectInstancePrivate
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
-    bool created; // true after the call to createInstance
     bool initialized; //true when the image effect instance has been created and populated
 
     /*
@@ -246,16 +241,12 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate()
         : effect()
-        , natronPluginID()
         , overlayInteract()
         , cursorKnob()
         , selectionRectangleStateKnob()
         , undoRedoTextKnob()
         , undoRedoStateKnob()
         , preferencesLock(QReadWriteLock::Recursive)
-        , renderSafetyLock()
-        , renderSafety(eRenderSafetyUnsafe)
-        , wasRenderSafetySet(false)
         , context(eContextNone)
         , clipsInfos()
         , outputClip(0)
@@ -265,7 +256,6 @@ struct OfxEffectInstancePrivate
         , supportsConcurrentGLRenders(false)
         , isOutput(false)
         , penDown(false)
-        , created(false)
         , initialized(false)
         , overlaysCanHandleRenderScale(true)
         , supportsMultipleClipPARs(false)
@@ -277,12 +267,8 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
         : effect()
-        , natronPluginID(other.natronPluginID)
         , overlayInteract()
         , preferencesLock(QReadWriteLock::Recursive)
-        , renderSafetyLock()
-        , renderSafety(other.renderSafety)
-        , wasRenderSafetySet(other.wasRenderSafetySet)
         , context(other.context)
         , clipsInfos(other.clipsInfos)
         , outputClip(other.outputClip)
@@ -292,7 +278,6 @@ struct OfxEffectInstancePrivate
         , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
         , isOutput(other.isOutput)
         , penDown(other.penDown)
-        , created(other.created)
         , initialized(other.initialized)
         , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
         , supportsMultipleClipPARs(other.supportsMultipleClipPARs)
@@ -317,6 +302,204 @@ OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
+
+
+void
+OfxEffectInstance::initializeDataAfterCreate()
+{
+
+
+    OutputEffectInstance::initializeDataAfterCreate();
+
+    PluginPtr natronPlugin = getNode()->getPlugin();
+    assert(natronPlugin);
+
+    OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = (OFX::Host::ImageEffect::ImageEffectPlugin*)natronPlugin->getProperty<void*>(kNatronPluginPropOpenFXPluginPtr);
+    assert(ofxPlugin);
+    if (!ofxPlugin) {
+        throw std::logic_error("OfxEffectInstance::initializeDataAfterCreate kNatronPluginPropOpenFXPluginPtr is NULL");
+    }
+
+    // Check if we already called describe then describeInContext.
+    OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&_imp->context);
+
+    if (!desc) {
+        // Call the actions
+        try {
+            //  Should this method be in AppManager?
+            desc = appPTR->getPluginContextAndDescribe(ofxPlugin, &_imp->context);
+        } catch (const std::exception& e) {
+            std::string message = tr("Failed to create an instance of %1:").arg(QString::fromUtf8(natronPlugin->getPluginID().c_str())).toStdString()
+            + '\n' + e.what();
+            throw std::runtime_error(message);
+        }
+
+        assert(desc);
+        natronPlugin->setOfxDesc(desc, _imp->context);
+
+    }
+
+    assert(ofxPlugin && desc && _imp->context != eContextNone);
+
+    if (_imp->context == eContextWriter) {
+        _imp->isOutput = true;
+    }
+    if (_imp->context == eContextWriter) {
+        // Writers don't support render scale (full-resolution images are written to disk)
+        setSupportsRenderScaleMaybe(eSupportsNo);
+    }
+
+
+    if (_imp->context == eContextReader) {
+        // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
+        // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
+        std::string prefix("tuttle.");
+        if ( !ofxPlugin->getIdentifier().compare(0, prefix.size(), prefix) ) {
+            setSupportsRenderScaleMaybe(eSupportsNo);
+        }
+    }
+
+    _imp->effect.reset( new OfxImageEffectInstance(ofxPlugin, *desc, mapContextToString(_imp->context), false) );
+    assert(_imp->effect);
+
+    OfxEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
+    _imp->effect->setOfxEffectInstance(thisShared);
+
+    OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
+    _imp->nbSourceClips = (int)clips.size();
+
+    _imp->clipsInfos.resize( clips.size() );
+    for (unsigned i = 0; i < clips.size(); ++i) {
+        OfxEffectInstancePrivate::ClipsInfo info;
+        info.optional = clips[i]->isOptional();
+        info.mask = clips[i]->isMask();
+        info.clip = NULL;
+        // label, hint, visible are set below
+        _imp->clipsInfos[i] = info;
+    }
+
+    _imp->supportsMultipleClipPARs = _imp->effect->supportsMultipleClipPARs();
+    _imp->supportsMultipleClipDepths = _imp->effect->supportsMultipleClipDepths();
+    _imp->doesTemporalAccess = _imp->effect->temporalAccess();
+    _imp->multiplanar = _imp->effect->isMultiPlanar();
+    int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+    switch (sequential) {
+        case 0:
+            _imp->sequentialPref = eSequentialPreferenceNotSequential;
+            break;
+        case 1:
+            _imp->sequentialPref = eSequentialPreferenceOnlySequential;
+            break;
+        case 2:
+            _imp->sequentialPref = eSequentialPreferencePreferSequential;
+            break;
+        default:
+            _imp->sequentialPref =  eSequentialPreferenceNotSequential;
+            break;
+    }
+
+    SET_CAN_SET_VALUE(true);
+
+    ///Create clips & parameters
+    OfxStatus stat = _imp->effect->populate();
+    if (stat != kOfxStatOK) {
+        throw std::runtime_error("Failed to create parameters and clips");
+    }
+
+    for (unsigned i = 0; i < clips.size(); ++i) {
+        _imp->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip( clips[i]->getName() ) );
+        _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
+        _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
+        _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
+        assert(_imp->clipsInfos[i].clip);
+    }
+
+    _imp->outputClip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip(kOfxImageEffectOutputClipName) );
+    assert(_imp->outputClip);
+
+    _imp->effect->addParamsToTheirParents();
+
+    {
+        KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
+        if (foundCursorKnob) {
+            KnobStringPtr isStringKnob = toKnobString(foundCursorKnob);
+            _imp->cursorKnob = isStringKnob;
+        }
+    }
+
+    {
+
+        KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+        if (foundSelKnob) {
+            KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
+            _imp->selectionRectangleStateKnob = isIntKnob;
+        }
+    }
+    {
+        KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
+        if (foundTextKnob) {
+            KnobStringPtr isStringKnob = toKnobString(foundTextKnob);
+            _imp->undoRedoTextKnob = isStringKnob;
+        }
+    }
+    {
+        KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
+        if (foundUndoRedoKnob) {
+            KnobBoolPtr isBool = toKnobBool(foundUndoRedoKnob);
+            _imp->undoRedoStateKnob = isBool;
+        }
+    }
+
+
+    int nPages = _imp->effect->getDescriptor().getProps().getDimension(kOfxPluginPropParamPageOrder);
+    std::list<std::string> pagesOrder;
+    for (int i = 0; i < nPages; ++i) {
+        const std::string& pageName = _imp->effect->getDescriptor().getProps().getStringProperty(kOfxPluginPropParamPageOrder, i);
+        pagesOrder.push_back(pageName);
+    }
+    if ( !pagesOrder.empty() ) {
+        getNode()->setPagesOrder(pagesOrder);
+    }
+
+
+    assert( _imp->effect->getPlugin() );
+    assert( _imp->effect->getPlugin()->getPluginHandle() );
+    assert( _imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin() );
+    assert(_imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
+
+    
+}
+
+
+void
+OfxEffectInstance::createInstanceAction()
+{
+    OfxStatus stat;
+    {
+        // Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+        stat = _imp->effect->createInstanceAction();
+    }
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        QString message;
+        int type;
+        NodePtr messageContainer = getNode();
+        NodePtr ioContainer = messageContainer->getIOContainer();
+        if (ioContainer) {
+            messageContainer = ioContainer;
+        }
+        messageContainer->getPersistentMessage(&message, &type);
+        if (message.isEmpty()) {
+            throw std::runtime_error(tr("Could not create effect instance for plugin").toStdString());
+        } else {
+            throw std::runtime_error(message.toStdString());
+        }
+    }
+
+    _imp->initialized = true;
+
+}
+
 OfxImageEffectInstance*
 OfxEffectInstance::effectInstance()
 {
@@ -330,266 +513,11 @@ OfxEffectInstance::effectInstance() const
 }
 
 bool
-OfxEffectInstance::isCreated() const
-{
-    return _imp->created;
-}
-
-bool
 OfxEffectInstance::isInitialized() const
 {
     return _imp->initialized;
 }
 
-void
-OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                OFX::Host::ImageEffect::Descriptor* desc,
-                                                ContextEnum context,
-                                                const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
-                                                const CreateNodeArgs& args)
-{
-    /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
-       We need to pass more parameters to the constructor . That means we cannot
-       create it in the virtual function newInstance. Thus we create it before
-       instanciating the OfxImageEffect. The problem is that calling OFX::Host::ImageEffect::ImageEffectPlugin::createInstance
-       creates the OfxImageEffect and calls populate(). populate() will actually create all OfxClipInstance and OfxParamInstance.
-       All these subclasses need a valid pointer to an this. Hence we need to set the pointer to this in
-       OfxImageEffect BEFORE calling populate().
-     */
-
-    ///Only called from the main thread.
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(plugin && desc && context != eContextNone);
-
-
-    _imp->context = context;
-
-    if (context == eContextWriter) {
-        _imp->isOutput = true;
-    }
-    if (context == eContextWriter) {
-        // Writers don't support render scale (full-resolution images are written to disk)
-        setSupportsRenderScaleMaybe(eSupportsNo);
-    }
-
-
-    if (context == eContextReader) {
-        // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
-        // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
-        std::string prefix("tuttle.");
-        if ( !plugin->getIdentifier().compare(0, prefix.size(), prefix) ) {
-            setSupportsRenderScaleMaybe(eSupportsNo);
-        }
-    }
-
-    std::string images;
-
-    try {
-        _imp->effect.reset( new OfxImageEffectInstance(plugin, *desc, mapContextToString(context), false) );
-        assert(_imp->effect);
-
-        OfxEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
-        _imp->effect->setOfxEffectInstance(thisShared);
-
-        _imp->natronPluginID = plugin->getIdentifier();
-
-        OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
-        _imp->nbSourceClips = (int)clips.size();
-
-        _imp->clipsInfos.resize( clips.size() );
-        for (unsigned i = 0; i < clips.size(); ++i) {
-            OfxEffectInstancePrivate::ClipsInfo info;
-            info.optional = clips[i]->isOptional();
-            info.mask = clips[i]->isMask();
-            info.clip = NULL;
-            // label, hint, visible are set below
-            _imp->clipsInfos[i] = info;
-        }
-
-        getNode()->refreshAcceptedBitDepths();
-        _imp->supportsMultipleClipPARs = _imp->effect->supportsMultipleClipPARs();
-        _imp->supportsMultipleClipDepths = _imp->effect->supportsMultipleClipDepths();
-        _imp->doesTemporalAccess = _imp->effect->temporalAccess();
-        _imp->multiplanar = _imp->effect->isMultiPlanar();
-        int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
-        switch (sequential) {
-        case 0:
-            _imp->sequentialPref = eSequentialPreferenceNotSequential;
-            break;
-        case 1:
-            _imp->sequentialPref = eSequentialPreferenceOnlySequential;
-            break;
-        case 2:
-            _imp->sequentialPref = eSequentialPreferencePreferSequential;
-            break;
-        default:
-            _imp->sequentialPref =  eSequentialPreferenceNotSequential;
-            break;
-        }
-
-        beginChanges();
-        OfxStatus stat;
-        {
-            SET_CAN_SET_VALUE(true);
-
-            ///Create clips & parameters
-            stat = _imp->effect->populate();
-
-
-            for (unsigned i = 0; i < clips.size(); ++i) {
-                _imp->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip( clips[i]->getName() ) );
-                _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
-                _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
-                _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
-                assert(_imp->clipsInfos[i].clip);
-            }
-
-            _imp->outputClip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip(kOfxImageEffectOutputClipName) );
-            assert(_imp->outputClip);
-
-            _imp->effect->addParamsToTheirParents();
-
-            int nPages = _imp->effect->getDescriptor().getProps().getDimension(kOfxPluginPropParamPageOrder);
-            std::list<std::string> pagesOrder;
-            for (int i = 0; i < nPages; ++i) {
-                const std::string& pageName = _imp->effect->getDescriptor().getProps().getStringProperty(kOfxPluginPropParamPageOrder, i);
-                pagesOrder.push_back(pageName);
-            }
-            if ( !pagesOrder.empty() ) {
-                getNode()->setPagesOrder(pagesOrder);
-            }
-
-            if (stat != kOfxStatOK) {
-                throw std::runtime_error("Error while populating the Ofx image effect");
-            }
-            assert( _imp->effect->getPlugin() );
-            assert( _imp->effect->getPlugin()->getPluginHandle() );
-            assert( _imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin() );
-            assert(_imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
-
-            getNode()->createRotoContextConditionnally();
-
-            getNode()->initializeInputs();
-            getNode()->initializeKnobs(serialization != 0);
-
-            {
-                KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
-                if (foundCursorKnob) {
-                    KnobStringPtr isStringKnob = toKnobString(foundCursorKnob);
-                    _imp->cursorKnob = isStringKnob;
-                }
-            }
-            
-            {
-
-                KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
-                if (foundSelKnob) {
-                    KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
-                    _imp->selectionRectangleStateKnob = isIntKnob;
-                }
-            }
-            {
-                KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
-                if (foundTextKnob) {
-                    KnobStringPtr isStringKnob = toKnobString(foundTextKnob);
-                    _imp->undoRedoTextKnob = isStringKnob;
-                }
-            }
-            {
-                KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
-                if (foundUndoRedoKnob) {
-                    KnobBoolPtr isBool = toKnobBool(foundUndoRedoKnob);
-                    _imp->undoRedoStateKnob = isBool;
-                }
-            }
-            ///before calling the createInstanceAction, load values
-            std::string initialPresets = getNode()->getCurrentNodePresets();
-            if (serialization) {
-                getNode()->fromSerialization(*serialization);
-            } else if (!initialPresets.empty()) {
-                getNode()->loadPresets(initialPresets);
-            }
-
-            getNode()->setValuesFromSerialization(args);
-            
-
-            ///Set default metadata since the OpenFX plug-in may fetch images in its constructor
-            setDefaultMetadata();
-
-            {
-                ///Take the preferences lock so that it cannot be modified throughout the action.
-                QReadLocker preferencesLocker(&_imp->preferencesLock);
-                stat = _imp->effect->createInstanceAction();
-            }
-            _imp->created = true;
-        } // SET_CAN_SET_VALUE(true);
-
-
-        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            QString message;
-            int type;
-            NodePtr messageContainer = getNode();
-            NodePtr ioContainer = messageContainer->getIOContainer();
-            if (ioContainer) {
-                messageContainer = ioContainer;
-            }
-            messageContainer->getPersistentMessage(&message, &type);
-            if (message.isEmpty()) {
-                throw std::runtime_error("Could not create effect instance for plugin");
-            } else {
-                throw std::runtime_error(message.toStdString());
-            }
-        }
-
-        OfxPointD scaleOne;
-        scaleOne.x = 1.;
-        scaleOne.y = 1.;
-        // Try to set renderscale support at plugin creation.
-        // This is not always possible (e.g. if a param has a wrong value).
-        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
-            // does the effect support renderscale?
-            double first = INT_MIN, last = INT_MAX;
-            getFrameRange(&first, &last);
-            if ( (first == INT_MIN) || (last == INT_MAX) ) {
-                first = last = getApp()->getTimeLine()->currentFrame();
-            }
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                ViewIdx(0),
-                                                0);
-            double time = first;
-            OfxRectD rod;
-            OfxStatus rodstat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
-            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                OfxPointD scale;
-                scale.x = 0.5;
-                scale.y = 0.5;
-                rodstat = _imp->effect->getRegionOfDefinitionAction(time, scale, 0, rod);
-                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                    setSupportsRenderScaleMaybe(eSupportsYes);
-                } else {
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                }
-            }
-        }
-
-
-        if ( isReader() && serialization  ) {
-            getNode()->refreshCreatedViews();
-        }
-    } catch (const std::exception & e) {
-        qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
-        _imp->effect.reset();
-        throw;
-    } catch (...) {
-        qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
-        _imp->effect.reset();
-        throw;
-    }
-
-    _imp->initialized = true;
-
-    endChanges();
-} // createOfxImageEffectInstance
 
 OfxEffectInstance::~OfxEffectInstance()
 {
@@ -627,30 +555,9 @@ OfxEffectInstance::createRenderClone()
 bool
 OfxEffectInstance::isEffectCreated() const
 {
-    return _imp->created;
+    return _imp->initialized;
 }
 
-bool
-OfxEffectInstance::isPluginDescriptionInMarkdown() const
-{
-    assert(_imp->context != eContextNone);
-    if ( effectInstance() ) {
-        return effectInstance()->getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
-    } else {
-        return false;
-    }
-}
-
-std::string
-OfxEffectInstance::getPluginDescription() const
-{
-    assert(_imp->context != eContextNone);
-    if ( effectInstance() ) {
-        return effectInstance()->getProps().getStringProperty(kOfxPropPluginDescription);
-    } else {
-        return "";
-    }
-}
 
 void
 OfxEffectInstance::tryInitializeOverlayInteracts()
@@ -661,7 +568,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         return;
     }
 
-    QString pluginID = QString::fromUtf8( getPluginID().c_str() );
+    QString pluginID = QString::fromUtf8( getNode()->getPluginID().c_str() );
     /*
        Currently genarts plug-ins do not handle render scale properly for overlays
      */
@@ -711,10 +618,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             }
         }
 
-        //For multi-instances, redraw is already taken care of by the GUI
-        if ( !getNode()->getParentMultiInstance() ) {
-            getApp()->redrawAllViewers();
-        }
+        getApp()->redrawAllViewers();
     }
 
 
@@ -816,7 +720,7 @@ OfxEffectInstance::isReader() const
 bool
 OfxEffectInstance::isVideoWriter() const
 {
-    return isWriter() && getPluginID() == PLUGINID_OFX_WRITEFFMPEG;
+    return isWriter() && getNode()->getPluginID() == PLUGINID_OFX_WRITEFFMPEG;
 }
 
 bool
@@ -825,14 +729,6 @@ OfxEffectInstance::isWriter() const
     assert(_imp->context != eContextNone);
 
     return _imp->context == eContextWriter;
-}
-
-bool
-OfxEffectInstance::isTrackerNodePlugin() const
-{
-    assert(_imp->context != eContextNone);
-
-    return _imp->context == eContextTracker;
 }
 
 bool
@@ -996,7 +892,7 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     return out + s.split( QLatin1Char('/') );
 } // ofxExtractAllPartsOfGrouping
 
-QStringList
+std::vector<std::string>
 AbstractOfxEffectInstance::makePluginGrouping(const std::string & pluginIdentifier,
                                               int versionMajor,
                                               int versionMinor,
@@ -1004,7 +900,13 @@ AbstractOfxEffectInstance::makePluginGrouping(const std::string & pluginIdentifi
                                               const std::string & grouping)
 {
     //printf("%s,%s\n",pluginLabel.c_str(),grouping.c_str());
-    return ofxExtractAllPartsOfGrouping( QString::fromUtf8( pluginIdentifier.c_str() ), versionMajor, versionMinor, QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( grouping.c_str() ) );
+    QStringList list = ofxExtractAllPartsOfGrouping( QString::fromUtf8( pluginIdentifier.c_str() ), versionMajor, versionMinor, QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( grouping.c_str() ) );
+    std::vector<std::string> ret(list.size());
+    int i = 0;
+    for (QStringList::iterator it = list.begin(); it!=list.end(); ++it, ++i) {
+        ret[i] = it->trimmed().toStdString();
+    }
+    return ret;
 }
 
 std::string
@@ -1024,37 +926,6 @@ AbstractOfxEffectInstance::makePluginLabel(const std::string & shortLabel,
     return labelToUse;
 }
 
-std::string
-OfxEffectInstance::getPluginID() const
-{
-    assert(_imp->context != eContextNone);
-
-    return _imp->natronPluginID;
-}
-
-std::string
-OfxEffectInstance::getPluginLabel() const
-{
-    assert(_imp->context != eContextNone);
-    assert(_imp->effect);
-
-    return makePluginLabel( _imp->effect->getDescriptor().getShortLabel(),
-                            _imp->effect->getDescriptor().getLabel(),
-                            _imp->effect->getDescriptor().getLongLabel() );
-}
-
-void
-OfxEffectInstance::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    assert(_imp->context != eContextNone);
-    std::string groupStr = effectInstance()->getPluginGrouping();
-    std::string label = getPluginLabel();
-    const OFX::Host::ImageEffect::ImageEffectPlugin *p = effectInstance()->getPlugin();
-    QStringList groups = ofxExtractAllPartsOfGrouping( QString::fromUtf8( p->getIdentifier().c_str() ), p->getVersionMajor(), p->getVersionMinor(), QString::fromUtf8( label.c_str() ), QString::fromUtf8( groupStr.c_str() ) );
-    Q_FOREACH(const QString &group, groups) {
-        grouping->push_back( group.toStdString() );
-    }
-}
 
 void
 OfxEffectInstance::onClipLabelChanged(int inputNb, const std::string& label)
@@ -1294,7 +1165,7 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    if (!_imp->created || !_imp->effect) {
+    if (!_imp->initialized || !_imp->effect) {
         return eStatusFailed;
     }
     assert(_imp->context != eContextNone);
@@ -1763,7 +1634,7 @@ OfxEffectInstance::isIdentity(double time,
                               int* inputNb)
 {
     *inputView = view;
-    if (!_imp->created) {
+    if (!_imp->initialized) {
         *inputNb = -1;
         *inputTime = 0;
 
@@ -2089,40 +1960,42 @@ OfxEffectInstance::supportsMultipleClipDepths() const
     return _imp->supportsMultipleClipDepths;
 }
 
+PluginOpenGLRenderSupport
+OfxEffectInstance::getCurrentOpenGLSupport() const
+{
+    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+
+    if (str == "false") {
+        return ePluginOpenGLRenderSupportNone;
+    } else if (str == "true") {
+        return ePluginOpenGLRenderSupportYes;
+    } else {
+        assert(str == "needed");
+
+        return ePluginOpenGLRenderSupportNeeded;
+    }
+}
+
 RenderSafetyEnum
-OfxEffectInstance::renderThreadSafety() const
+OfxEffectInstance::getCurrentRenderThreadSafety() const
 {
     if (!_imp->effect) {
         return eRenderSafetyUnsafe;
     }
-    {
-        QReadLocker readL(&_imp->renderSafetyLock);
-        if (_imp->wasRenderSafetySet) {
-            return _imp->renderSafety;
-        }
-    }
-    {
-        QWriteLocker writeL(&_imp->renderSafetyLock);
-        assert(_imp->effect);
-
-        const std::string & safety = _imp->effect->getRenderThreadSafety();
-        if (safety == kOfxImageEffectRenderUnsafe) {
-            _imp->renderSafety =  eRenderSafetyUnsafe;
-        } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-            _imp->renderSafety = eRenderSafetyInstanceSafe;
-        } else if (safety == kOfxImageEffectRenderFullySafe) {
-            if ( _imp->effect->getHostFrameThreading() ) {
-                _imp->renderSafety =  eRenderSafetyFullySafeFrame;
-            } else {
-                _imp->renderSafety =  eRenderSafetyFullySafe;
-            }
+    const std::string & safety = _imp->effect->getRenderThreadSafety();
+    if (safety == kOfxImageEffectRenderUnsafe) {
+        return eRenderSafetyUnsafe;
+    } else if (safety == kOfxImageEffectRenderInstanceSafe) {
+        return  eRenderSafetyInstanceSafe;
+    } else if (safety == kOfxImageEffectRenderFullySafe) {
+        if ( _imp->effect->getHostFrameThreading() ) {
+            return eRenderSafetyFullySafeFrame;
         } else {
-            qDebug() << "Unknown thread safety level: " << safety.c_str();
-            _imp->renderSafety =  eRenderSafetyUnsafe;
+            return eRenderSafetyFullySafe;
         }
-        _imp->wasRenderSafetySet = true;
-
-        return _imp->renderSafety;
+    } else {
+        qDebug() << "Unknown thread safety level: " << safety.c_str();
+        return eRenderSafetyUnsafe;
     }
 }
 
@@ -2639,17 +2512,6 @@ OfxEffectInstance::purgeCaches()
 }
 
 
-int
-OfxEffectInstance::getMajorVersion() const
-{
-    return effectInstance()->getPlugin()->getVersionMajor();
-}
-
-int
-OfxEffectInstance::getMinorVersion() const
-{
-    return effectInstance()->getPlugin()->getVersionMinor();
-}
 
 bool
 OfxEffectInstance::supportsRenderQuality() const
@@ -2676,27 +2538,12 @@ OfxEffectInstance::supportsTiles() const
     return outputClip->supportsTiles();
 }
 
-PluginOpenGLRenderSupport
-OfxEffectInstance::supportsOpenGLRender() const
-{
-    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
-
-    if (str == "false") {
-        return ePluginOpenGLRenderSupportNone;
-    } else if (str == "true") {
-        return ePluginOpenGLRenderSupportYes;
-    } else {
-        assert(str == "needed");
-
-        return ePluginOpenGLRenderSupportNeeded;
-    }
-}
-
 void
 OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
 {
     PluginPtr p = getNode()->getPlugin();
-    if (p->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportYes) {
+    PluginOpenGLRenderSupport support = (PluginOpenGLRenderSupport)p->getProperty<int>(kNatronPluginPropOpenGLSupport);
+    if (support == ePluginOpenGLRenderSupportYes) {
         // The property may only change if the plug-in has the property set to yes on the descriptor
         if (activated) {
             effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true");

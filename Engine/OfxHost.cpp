@@ -708,33 +708,6 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
 
-boost::shared_ptr<AbstractOfxEffectInstance>
-OfxHost::createOfxEffect(const NodePtr& node,
-                         const CreateNodeArgs& args)
-{
-    assert(node);
-    PluginPtr natronPlugin = node->getPlugin();
-    assert(natronPlugin);
-    ContextEnum ctx;
-    OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&ctx);
-    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = natronPlugin->getOfxPlugin();
-    assert(plugin && desc && ctx != eContextNone);
-
-
-    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect = boost::dynamic_pointer_cast<AbstractOfxEffectInstance>( OfxEffectInstance::create(node) );
-    assert(hostSideEffect);
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
-
-    if ( node && !node->getEffectInstance() ) {
-        node->setEffect(hostSideEffect);
-        node->initNodeScriptName(serialization.get(), QString::fromUtf8(fixedName.c_str()));
-    }
-
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization.get(), args);
-
-    return hostSideEffect;
-}
 
 ///Return the xml cache file used before Natron 2 RC2
 static QString
@@ -915,75 +888,70 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
                                                                       p->getDescriptor().getLabel(),
                                                                       p->getDescriptor().getLongLabel() );
-        QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
+        std::vector<std::string> groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
-        for (int i = 0; i < groups.size(); ++i) {
-            groups[i] = groups[i].trimmed();
-        }
 
         assert( p->getBinary() );
-        QString resourcesPath = QString::fromUtf8( bundlePath.c_str() ) + QString::fromUtf8("/Contents/Resources/");
-        QString iconFileName;
-        std::string pngIcon;
-        try {
-            // kOfxPropIcon is normally only defined for parameter desctriptors
-            // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
-            // but let's assume it may also be defained on the plugin descriptor.
-            pngIcon = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
-        } catch (OFX::Host::Property::Exception) {
-        }
+        std::string resourcesPath = bundlePath+ "/Contents/Resources/";
+        std::string iconFileName;
+        {
+            try {
+                // kOfxPropIcon is normally only defined for parameter desctriptors
+                // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
+                // but let's assume it may also be defained on the plugin descriptor.
+                iconFileName = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
+            } catch (OFX::Host::Property::Exception) {
+            }
 
-        if ( pngIcon.empty() ) {
-            // no icon defined by kOfxPropIcon, use the default value
-            pngIcon = openfxId + ".png";
+            if ( iconFileName.empty() ) {
+                // no icon defined by kOfxPropIcon, use the plug-in id value
+                iconFileName = openfxId + ".png";
+            }
         }
-        iconFileName.append(resourcesPath);
-        iconFileName.append( QString::fromUtf8( pngIcon.c_str() ) );
-        QString groupIconFilename;
+        std::string groupIconFilename;
         if (groups.size() > 0) {
             groupIconFilename = resourcesPath;
             // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
-            groupIconFilename.append( QString::fromUtf8(".png") );
+            groupIconFilename.append(".png");
         } else {
             //Use default Misc group when the plug-in doesn't belong to a group
-            groups.push_back( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
+            groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
-        QStringList groupIcons;
-        groupIcons << groupIconFilename;
-        for (int i = 1; i < groups.size(); ++i) {
-            QString groupIconPath = resourcesPath;
-            for (int j = 0; j <= i; ++j) {
+        std::vector<std::string> groupIcons;
+        groupIcons.push_back(groupIconFilename);
+        for (std::size_t i = 1; i < groups.size(); ++i) {
+            std::string groupIconPath = resourcesPath;
+            for (std::size_t j = 0; j <= i; ++j) {
                 groupIconPath += groups[j];
                 if (j < i) {
-                    groupIconPath += QLatin1Char('/');
+                    groupIconPath += '/';
                 } else {
-                    groupIconPath.append( QString::fromUtf8(".png") );
+                    groupIconPath.append(".png");
                 }
             }
-            groupIcons << groupIconPath;
+            groupIcons.push_back(groupIconPath);
         }
 
-        const std::set<std::string> & contexts = p->getContexts();
-        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
-        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
-        const bool isDeprecated = p->getDescriptor().isDeprecated();
-        PluginPtr natronPlugin = appPTR->registerPlugin( resourcesPath,
-                                                       groups,
-                                                       QString::fromUtf8( openfxId.c_str() ),
-                                                       QString::fromUtf8( pluginLabel.c_str() ),
-                                                       iconFileName,
-                                                       groupIcons,
-                                                       foundReader != contexts.end(),
-                                                       foundWriter != contexts.end(),
-                                                       new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
-                                                       p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                       p->getVersionMajor(), p->getVersionMinor(), isDeprecated );
-        /*bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
-        if (isInternalOnly) {
-            natronPlugin->setForInternalUseOnly(true);
-        }*/
+        RenderSafetyEnum renderSafety;
+        {
+            std::string safety = p->getDescriptor().getRenderThreadSafety();
+            if (safety == kOfxImageEffectRenderUnsafe) {
+                renderSafety =  eRenderSafetyUnsafe;
+            } else if (safety == kOfxImageEffectRenderInstanceSafe) {
+                renderSafety = eRenderSafetyInstanceSafe;
+            } else if (safety == kOfxImageEffectRenderFullySafe) {
+                if ( p->getDescriptor().getHostFrameThreading() ) {
+                    renderSafety = eRenderSafetyFullySafeFrame;
+                } else {
+                    renderSafety = eRenderSafetyFullySafe;
+                }
+            } else {
+                qDebug() << "Unknown thread safety level: " << safety.c_str();
+                renderSafety = eRenderSafetyUnsafe;
+            }
+        }
 
         PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
         {
@@ -996,13 +964,47 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                 glSupport = ePluginOpenGLRenderSupportYes;
             }
         }
-        natronPlugin->setOpenGLRenderSupport(glSupport);
 
-        natronPlugin->setOfxPlugin(p);
+        const std::set<std::string> & contexts = p->getContexts();
+        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
+        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
+        const bool isDeprecated = p->getDescriptor().isDeprecated();
+        std::string description = p->getDescriptor().getProps().getStringProperty(kOfxPropPluginDescription);
+
+        bool isDescMarkdown = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
+
+        PluginPtr natronPlugin = Plugin::create((void*)OfxEffectInstance::create, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
+        natronPlugin->setProperty<std::string>(kNatronPluginPropDescription, description);
+        natronPlugin->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, isDescMarkdown);
+        natronPlugin->setProperty<std::string>(kNatronPluginPropResourcesPath, resourcesPath);
+        natronPlugin->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFileName);
+        natronPlugin->setProperty<int>(kNatronPluginPropRenderSafety, renderSafety);
+        natronPlugin->setProperty<bool>(kNatronPluginPropIsDeprecated, isDeprecated);
+        natronPlugin->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)glSupport);
+        natronPlugin->setProperty<void*>(kNatronPluginPropOpenFXPluginPtr, (void*)p);
 
         std::list<PluginActionShortcut> shortcuts;
         getPluginShortcuts(p->getDescriptor(), &shortcuts);
-        natronPlugin->setShorcuts(shortcuts);
+        for (std::list<PluginActionShortcut>::iterator it = shortcuts.begin(); it!=shortcuts.end(); ++it) {
+            natronPlugin->addActionShortcut(*it);
+        }
+
+        Key symbol = (Key)0;
+        KeyboardModifiers mods = eKeyboardModifierNone;
+        if (openfxId == PLUGINID_OFX_TRANSFORM) {
+            symbol = Key_T;
+        } else if (openfxId == PLUGINID_OFX_MERGE) {
+            symbol = Key_M;
+        } else if (openfxId == PLUGINID_OFX_GRADE) {
+            symbol = Key_G;
+        } else if (openfxId == PLUGINID_OFX_COLORCORRECT) {
+            symbol = Key_C;
+        } else if (openfxId == PLUGINID_OFX_BLURCIMG) {
+            symbol = Key_B;
+        }
+
+        natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)symbol, 0);
+        natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)mods, 1);
 
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,
         ///use it to fill the readersMap and writersMap

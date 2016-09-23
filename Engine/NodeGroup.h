@@ -194,6 +194,7 @@ public:
     void forceRefreshPreviews();
 
     void quitAnyProcessingForAllNodes_non_blocking();
+    void quitAnyProcessingForAllNodes_blocking();
 
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -277,13 +278,6 @@ public:
      **/
     virtual void notifyNodeNameChanged(const NodePtr& /*node*/) {}
 
-    void exportGroupToPython(const QString& pluginID,
-                             const QString& pluginLabel,
-                             const QString& pluginDescription,
-                             const QString& pluginIconPath,
-                             const QString& pluginGrouping,
-                             int version,
-                             QString& output);
 
 protected:
 
@@ -291,7 +285,7 @@ protected:
     virtual void onGraphEditableChanged(bool /*changed*/) {}
 
 private:
-    void quitAnyProcessingInternal();
+    void quitAnyProcessingInternal(bool blocking);
     void recomputeFrameRangeForAllReadersInternal(int* firstFrame,
                                                   int* lastFrame,
                                                   bool setFrameRange);
@@ -324,37 +318,10 @@ public:
         return EffectInstancePtr( new NodeGroup(node) );
     }
 
+    static PluginPtr createPlugin();
+
     virtual ~NodeGroup();
 
-    virtual int getMajorVersion() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
-    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_GROUP;
-    }
-
-    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return "Group";
-    }
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE
-    {
-        grouping->push_back(PLUGIN_GROUP_OTHER);
-    }
-
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
 
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
@@ -380,7 +347,6 @@ public:
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
@@ -430,6 +396,11 @@ public:
      * @brief Callback called when the node gui has been created
      **/
     virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE;
+
+    /**
+     * @brief Called when the Group is created or when the node is reset to default to re-initialize the node to its default state.
+     **/
+    virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization );
 
 Q_SIGNALS:
 

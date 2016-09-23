@@ -56,7 +56,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiFile.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/Histogram.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/RenderStatsDialog.h"

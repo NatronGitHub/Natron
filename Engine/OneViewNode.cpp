@@ -42,6 +42,20 @@ struct OneViewNodePrivate
     }
 };
 
+PluginPtr
+OneViewNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
+    PluginPtr ret = Plugin::create((void*)OneViewNode::create, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
+
+    QString desc =  tr("Takes one view from the input");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "oneViewNode.png");
+    return ret;
+}
+
 OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
@@ -57,29 +71,6 @@ OneViewNode::~OneViewNode()
 {
 }
 
-std::string
-OneViewNode::getPluginID() const
-{
-    return PLUGINID_NATRON_ONEVIEW;
-}
-
-std::string
-OneViewNode::getPluginLabel() const
-{
-    return "OneView";
-}
-
-std::string
-OneViewNode::getPluginDescription() const
-{
-    return "Takes one view from the input.";
-}
-
-void
-OneViewNode::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    grouping->push_back(PLUGIN_GROUP_MULTIVIEW);
-}
 
 std::string
 OneViewNode::getInputLabel (int /*inputNb*/) const

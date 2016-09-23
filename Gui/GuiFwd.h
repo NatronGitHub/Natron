@@ -147,7 +147,6 @@ class KnobWidgetDnD;
 class LineEdit;
 class LinkArrow;
 class MenuWithToolTips;
-class MultiInstancePanel;
 class NodeCollection;
 class NodeCurveEditorElement;
 class NodeGraph;
@@ -213,7 +212,6 @@ typedef boost::shared_ptr<KnobGuiDouble> KnobGuiDoublePtr;
 typedef boost::shared_ptr<KnobGuiColor> KnobGuiColorPtr;
 typedef boost::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
 
-typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
 typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;

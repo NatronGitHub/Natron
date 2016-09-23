@@ -45,7 +45,6 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/InfoViewerWidget.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeViewerContext.h"
 #include "Gui/ScaleSliderQWidget.h"
@@ -272,7 +271,10 @@ ViewerTab::removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
              There might be a case where the plug-in ID of a node changed if it's a PyPlug and the user clicked the "Unlock" button to transform
              it to a Group. Check with the PyPlug ID again
              */
-            foundActive = _imp->findActiveNodeContextForPlugin(internalNode->getPyPlugID());
+            PluginPtr hasPyPlug = internalNode->getPyPlugPlugin();
+            if (hasPyPlug) {
+                foundActive = _imp->findActiveNodeContextForPlugin(hasPyPlug->getPluginID());
+            }
         }
 
         if ( foundActive != _imp->currentNodeContext.end() ) {

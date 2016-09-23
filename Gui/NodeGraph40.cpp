@@ -190,7 +190,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
                 SERIALIZATION_NAMESPACE::NodePresetSerialization isPreset;
                 SERIALIZATION_NAMESPACE::read(ss, &isPreset);
                 SERIALIZATION_NAMESPACE::NodeSerializationPtr ns(new SERIALIZATION_NAMESPACE::NodeSerialization);
-                *ns = isPreset.node;
+                *ns = isPreset.nodeSerialization;
                 nodes.push_back(ns);
             } catch (...) {
                 
@@ -336,13 +336,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
             return;
         }
-        if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString::fromUtf8("%1 cannot be cloned.").arg( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) );
-            Dialogs::errorDialog( tr("Clone").toStdString(),
-                                  tr( err.toStdString().c_str() ).toStdString() );
 
-            return;
-        }
     }
 
     QPointF offset((xmax + xmin) / 2.,(ymax + ymin) / 2.);
@@ -352,7 +346,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         SERIALIZATION_NAMESPACE::NodeSerializationPtr  internalSerialization( new SERIALIZATION_NAMESPACE::NodeSerialization );
         (*it)->getNode()->toSerialization(internalSerialization.get());
         NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset, scenePos,
-                                           _imp->group.lock(), std::string(), (*it)->getNode());
+                                           _imp->group.lock(), (*it)->getNode());
 
         if (clone) {
             newNodesList.push_back(clone);

@@ -391,7 +391,7 @@ OutputEffectInstance::isDoingSequentialRender() const
 }
 
 void
-OutputEffectInstance::initializeData()
+OutputEffectInstance::initializeDataAfterCreate()
 {
     _engine.reset( createRenderEngine() );
 }

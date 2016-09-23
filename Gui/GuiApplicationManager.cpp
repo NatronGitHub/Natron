@@ -971,14 +971,14 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 void
 GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 {
-    QString shortcutGrouping = QString::fromUtf8(kShortcutGroupNodes);
-    const QStringList & groups = plugin->getGrouping();
-    const QString & pluginID = plugin->getPluginID();
-    const QString pluginLabel = plugin->getLabelWithoutSuffix();
+    std::string shortcutGrouping(kShortcutGroupNodes);
+    std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::string pluginID = plugin->getPluginID();
+    std::string pluginLabel = plugin->getLabelWithoutSuffix();
 
-    for (int i = 0; i < groups.size(); ++i) {
-        shortcutGrouping.push_back( QLatin1Char('/') );
-        shortcutGrouping.push_back(groups[i]);
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+        shortcutGrouping.append("/");
+        shortcutGrouping.append(groups[i]);
     }
 
     // Ensure the toolbutton is created for this plug-in with its grouping hierarchy
@@ -987,55 +987,38 @@ GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
-
-    // These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut
-    if ( pluginID == QString::fromUtf8(PLUGINID_OFX_TRANSFORM) ) {
-        symbol = Qt::Key_T;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) {
-        symbol = Qt::Key_O;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ) {
-        symbol = Qt::Key_P;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        symbol = Qt::Key_M;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_GRADE) ) {
-        symbol = Qt::Key_G;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_COLORCORRECT) ) {
-        symbol = Qt::Key_C;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_BLURCIMG) ) {
-        symbol = Qt::Key_B;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT) ) {
-        symbol = Qt::Key_Period;
-        modifiers |= Qt::ShiftModifier;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
-        symbol = Qt::Key_R;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
-        symbol = Qt::Key_W;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP) ) {
-        symbol = Qt::Key_I;
-        modifiers = Qt::ControlModifier;
+    {
+        int symbol_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 0);
+        int mods_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 1);
+        if (symbol_i != 0) {
+            symbol = QtEnumConvert::toQtKey((Key)symbol_i);
+        }
+        if (mods_i != 0) {
+            modifiers = QtEnumConvert::toQtModifiers((KeyboardModifiers)mods_i);
+        }
     }
 
     if ( plugin->getIsUserCreatable() ) {
-        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), modifiers, symbol);
+        _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
     }
 
     // If this plug-in has presets, add shortcuts as well
     plugin->sortPresetsByLabel();
     const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
     for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
-        std::string shortcutKey = pluginID.toStdString();
+        std::string shortcutKey = pluginID;
         shortcutKey += "_preset_";
         shortcutKey += it->presetLabel.toStdString();
 
-        std::string shortcutLabel = pluginLabel.toStdString();
+        std::string shortcutLabel = pluginLabel;
         shortcutLabel += " (";
         shortcutLabel += it->presetLabel.toStdString();
         shortcutLabel += ")";
-        _imp->addKeybind(shortcutGrouping.toStdString(), shortcutKey, shortcutLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->symbol));
+        _imp->addKeybind(shortcutGrouping, shortcutKey, shortcutLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->symbol));
     }
 
     const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
-    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup().toStdString();
+    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup();
     for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
         _imp->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->key) );
     }
@@ -1044,14 +1027,27 @@ GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 void
 GuiApplicationManager::ignorePlugin(const PluginPtr& plugin)
 {
-    _imp->removePluginToolButton( plugin->getGrouping() );
-    _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID() );
+    _imp->removePluginToolButton( plugin->getPropertyN<std::string>(kNatronPluginPropGrouping) );
+    _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), QString::fromUtf8(plugin->getPluginID().c_str()) );
 }
 
 PluginGroupNodePtr
 GuiApplicationManager::findPluginToolButtonOrCreate(const PluginPtr& plugin)
 {
-    return _imp->findPluginToolButtonOrCreateInternal(_imp->_topLevelToolButtons, PluginGroupNodePtr(), plugin, plugin->getGrouping(), plugin->getGroupIconFilePath());
+    std::vector<std::string> grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> iconGrouping = plugin->getPropertyN<std::string>(kNatronPluginPropGroupIconFilePath);
+    QStringList qGroup, qIconGrouping;
+    for (std::size_t i = 0; i < grouping.size(); ++i) {
+        qGroup.push_back(QString::fromUtf8(grouping[i].c_str()));
+    }
+    for (std::size_t i = 0; i < iconGrouping.size(); ++i) {
+        qIconGrouping.push_back(QString::fromUtf8(iconGrouping[i].c_str()));
+    }
+    return _imp->findPluginToolButtonOrCreateInternal(_imp->_topLevelToolButtons,
+                                                      PluginGroupNodePtr(),
+                                                      plugin,
+                                                      qGroup,
+                                                      qIconGrouping);
 }
 
 bool

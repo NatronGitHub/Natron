@@ -982,11 +982,6 @@ Gui::exportGroupAsPythonScript(const NodeCollectionPtr& collection)
     ignore_result( dialog.exec() );
 }
 
-void
-Gui::exportProjectAsGroup()
-{
-    exportGroupAsPythonScript( getApp()->getProject() );
-}
 
 void
 Gui::onUserCommandTriggered()
@@ -1305,7 +1300,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
 
                 std::string pattern = sequence->generateValidSequencePattern();
 
-                CreateNodeArgsPtr args(new CreateNodeArgs(readerPluginID, graph->getGroup() ));
+                CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, graph->getGroup() ));
                 args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
                 args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
                 args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);

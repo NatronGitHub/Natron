@@ -207,23 +207,6 @@ struct FormatKnob
     KnobChoiceWPtr formatChoice;
 };
 
-struct PyPlugInfo
-{
-    std::string pluginPythonModule; // the absolute filename of the python script
-    std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
-    std::string pyPlugLabel;
-    std::string pyPlugDesc;
-    std::string pyPlugIconFilePath;
-    std::string pyPlugPluginPath; //< the directory in which the PyPlug python script is located
-    std::list<std::string> pyPlugGrouping;
-    int pyPlugVersion;
-
-    PyPlugInfo()
-    :  pyPlugVersion(0)
-    {
-
-    }
-};
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -261,8 +244,8 @@ public:
         , activatedMutex()
         , activated(true)
         , plugin(plugin_)
-        , pyPluginInfoMutex()
-        , pyPlugInfo()
+        , pyPlugHandle()
+        , isPyPlug(false)
         , computingPreview(false)
         , previewThreadQuit(false)
         , computingPreviewMutex()
@@ -300,11 +283,6 @@ public:
         , imageBeingRenderedCond()
         , imagesBeingRendered()
         , supportedDepths()
-        , isMultiInstance(false)
-        , multiInstanceParent()
-        , childrenMutex()
-        , children()
-        , multiInstanceParentName()
         , keyframesDisplayedOnTimeline(false)
         , lastRenderStartedMutex()
         , lastRenderStartedSlotCallTime()
@@ -386,9 +364,6 @@ public:
 
     void runOnNodeDeleteCBInternal(const std::string& cb);
 
-
-    void appendChild(const NodePtr& child);
-
     void runInputChangedCallback(int index, const std::string& script);
 
     void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
@@ -404,6 +379,7 @@ public:
     void refreshDefaultPagesOrder();
 
     void refreshDefaultViewerKnobsOrder();
+
 
     ////////////////////////////////////////////////
 
@@ -450,9 +426,13 @@ public:
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
-    PluginWPtr plugin; //< the plugin which stores the function to instantiate the effect
-    mutable QMutex pyPluginInfoMutex;
-    PyPlugInfo pyPlugInfo;
+
+    // the plugin which stores the function to instantiate the effect
+    PluginWPtr plugin;
+
+    PluginWPtr pyPlugHandle;
+    bool isPyPlug;
+
     bool computingPreview;
     bool previewThreadQuit;
     mutable QMutex computingPreviewMutex;
@@ -508,14 +488,6 @@ public:
     std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list <ImageBitDepthEnum> supportedDepths;
 
-    ///True when several effect instances are represented under the same node.
-    bool isMultiInstance;
-    NodeWPtr multiInstanceParent;
-    mutable QMutex childrenMutex;
-    NodesWList children;
-
-    ///the name of the parent at the time this node was created
-    std::string multiInstanceParentName;
     bool keyframesDisplayedOnTimeline;
 
     ///This is to avoid the slots connected to the main-thread to be called too much
@@ -650,7 +622,7 @@ Node::Node(const AppInstancePtr& app,
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 
-    if (plugin && plugin->getPluginID().startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
+    if (plugin && QString::fromUtf8(plugin->getPluginID().c_str()).startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
         _imp->requiresGLFinishBeforeRender = true;
     }
 }
@@ -692,10 +664,20 @@ Node::createTrackerContextConditionnally()
     }
 }
 
-const PluginPtr
+PluginPtr
 Node::getPlugin() const
 {
-    return _imp->plugin.lock();
+    if (_imp->isPyPlugInternal()) {
+        return _imp->pyPlugHandle.lock();
+    } else {
+        return _imp->plugin.lock();
+    }
+}
+
+PluginPtr
+Node::getPyPlugPlugin() const
+{
+    return _imp->pyPlugHandle.lock();
 }
 
 void
@@ -738,10 +720,6 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
      If the serialization is not null, we are either pasting a node or loading it from a project.
      */
     NodeCollectionPtr group = getGroup();
-    bool isMultiInstanceChild = false;
-    if ( !_imp->multiInstanceParentName.empty() ) {
-        isMultiInstanceChild = true;
-    }
 
     if (!fixedName.isEmpty()) {
 
@@ -773,7 +751,7 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
 
     } else {
         std::string name;
-        QString pluginLabel;
+        std::string pluginLabel;
         AppManager::AppTypeEnum appType = appPTR->getAppType();
         PluginPtr plugin = getPlugin();
         if ( plugin &&
@@ -786,9 +764,9 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
             }
         try {
             if (group) {
-                group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
+                group->initNodeName(pluginLabel, &name);
             } else {
-                name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
+                name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(pluginLabel);
             }
         } catch (...) {
         }
@@ -846,38 +824,30 @@ Node::createNodeGuiInternal(const CreateNodeArgsPtr& args)
 void
 Node::load(const CreateNodeArgsPtr& args)
 {
-    ///Called from the main thread. MT-safe
+    // Called from the main thread. MT-safe
     assert( QThread::currentThread() == qApp->thread() );
 
-    ///cannot load twice
+    // Cannot load twice
     assert(!_imp->effect);
+
+    // Should this node be persistent
     _imp->isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
 
+    // For Readers & Writers this is a hack to enable the internal decoder/encoder node to have a pointer to the main node the user sees
     _imp->ioContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 
     NodeCollectionPtr group = getGroup();
-    std::string multiInstanceParentName = args->getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
-    if ( !multiInstanceParentName.empty() ) {
-        _imp->multiInstanceParentName = multiInstanceParentName;
-        _imp->isMultiInstance = false;
-        fetchParentMultiInstancePointer();
-    }
 
-
+    // Should we report errors if load fails ?
     _imp->wasCreatedSilently = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
     NodePtr thisShared = shared_from_this();
 
-    LibraryBinary* binary = _imp->plugin.lock()->getLibraryBinary();
-    std::pair<bool, EffectBuilder> func(false, NULL);
-    if (binary) {
-        func = binary->findFunction<EffectBuilder>("create");
-    }
-
-
+    // Any serialization from project load or copy/paste ?
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    std::string presetLabel = args->getProperty<std::string>(kCreateNodeArgsPropPreset);
 
+    // Should we load a preset ?
+    std::string presetLabel = args->getProperty<std::string>(kCreateNodeArgsPropPreset);
     if (!presetLabel.empty()) {
         // If there's a preset specified, load serialization from preset
         const std::vector<PluginPresetDescriptor>& presets = getPlugin()->getPresetFiles();
@@ -890,12 +860,11 @@ Node::load(const CreateNodeArgsPtr& args)
                 break;
             }
         }
-
     }
 
-    bool isSilentCreation = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
-
+    // True if the caller set a value for the kOfxImageEffectFileParamName parameter
+    // This is a hack so reader/writers can show dialogs
     bool hasDefaultFilename = false;
     {
         std::vector<std::string> defaultParamValues = args->getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
@@ -907,59 +876,93 @@ Node::load(const CreateNodeArgsPtr& args)
             hasDefaultFilename = !args->getProperty<std::string>(propName).empty();
         }
     }
-    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
+    bool canOpenFileDialog = !_imp->wasCreatedSilently && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
+
 
     std::string argFixedName = args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
-    
-    if (func.first) {
-        /*
-           We are creating a built-in plug-in
-         */
-        _imp->effect = func.second(thisShared);
-        assert(_imp->effect);
+    PluginPtr pluginPtr = _imp->plugin.lock();
 
-
-        NodePtr ioContainer = _imp->ioContainer.lock();
-        if (ioContainer) {
-            ReadNodePtr isReader = ioContainer->isEffectReadNode();
-            if (isReader) {
-                isReader->setEmbeddedReader(thisShared);
-            } else {
-                WriteNodePtr isWriter = ioContainer->isEffectWriteNode();
-                assert(isWriter);
-                if (isWriter) {
-                    isWriter->setEmbeddedWriter(thisShared);
-                }
-            }
-        }
-
-        initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
-        
-        _imp->effect->initializeData();
-
-        createRotoContextConditionnally();
-        createTrackerContextConditionnally();
-        initializeInputs();
-        initializeKnobs(serialization.get() != 0);
-
-        refreshAcceptedBitDepths();
-
-        _imp->effect->setDefaultMetadata();
-
-        if (serialization) {
-            fromSerialization(*serialization);
-        } else if (!_imp->initialNodePreset.empty()) {
-            loadPresets(_imp->initialNodePreset);
-        }
-        setValuesFromSerialization(*args);
-
-    } else {
-        //ofx plugin
-        _imp->effect = appPTR->createOFXEffect(thisShared, *args);
-        assert(_imp->effect);
+     // Get the function pointer to create the plug-in instance
+    EffectBuilder createFunc = (EffectBuilder)pluginPtr->getProperty<void*>(kNatronPluginPropCreateFunc);
+    assert(createFunc);
+    if (!createFunc) {
+        throw std::invalid_argument("Node::load: No kNatronPluginPropCreateFunc property set on plug-in!");
+    }
+    _imp->effect = createFunc(thisShared);
+    assert(_imp->effect);
+    if (!_imp->effect) {
+        throw std::runtime_error(tr("Could not create instance of %1").arg(QString::fromUtf8(getPluginID().c_str())).toStdString());
     }
 
+    // Hack for Reader/Writer node
+    NodePtr ioContainer = _imp->ioContainer.lock();
+    if (ioContainer) {
+        ReadNodePtr isReader = ioContainer->isEffectReadNode();
+        if (isReader) {
+            isReader->setEmbeddedReader(thisShared);
+        } else {
+            WriteNodePtr isWriter = ioContainer->isEffectWriteNode();
+            assert(isWriter);
+            if (isWriter) {
+                isWriter->setEmbeddedWriter(thisShared);
+            }
+        }
+    }
+
+    _imp->effect->beginChanges();
+
+    _imp->effect->initializeDataAfterCreate();
+
+    // Set the node name
+    initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
+
+    // Set plug-in accepted bitdepths and set default metadata
+    refreshAcceptedBitDepths();
+
+    if ( _imp->supportedDepths.empty() ) {
+        //From the spec:
+        //The default for a plugin is to have none set, the plugin must define at least one in its describe action.
+        throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
+    }
+
+
+    // Create RotoContext if needed
+    createRotoContextConditionnally();
+
+    // Create TrackerContext if needed
+    createTrackerContextConditionnally();
+
+    // Load inputs
+    initializeInputs();
+
+    // Create knobs
+    initializeKnobs(serialization.get() != 0);
+
+    // If this is a pyplug, load its properties
+    std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
+    if (!pyPlugID.empty()) {
+        _imp->pyPlugHandle = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, false);
+        _imp->isPyPlug = true;
+    }
+
+    // If there is either PyPlug info or a preset to load, do it now
+    // Since this is the same format, the same function handles it
+    if (_imp->pyPlugHandle.lock() || !_imp->initialNodePreset.empty()) {
+        loadPresets(_imp->initialNodePreset);
+    }
+
+    // If we have a serialization, load it now
+    if (serialization) {
+        fromSerialization(*serialization);
+    }
+
+    // if we have initial values set for Knobs in the CreateNodeArgs object, deserialize them now
+    setValuesFromSerialization(*args);
+
+    _imp->effect->setDefaultMetadata();
+
+    _imp->effect->createInstanceAction();
 
     // For readers, set their original frame range when creating them
     if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
@@ -971,27 +974,20 @@ Node::load(const CreateNodeArgsPtr& args)
 
     _imp->effect->initializeOverlayInteract();
 
-
-    if ( _imp->supportedDepths.empty() ) {
-        //From the spec:
-        //The default for a plugin is to have none set, the plugin \em must define at least one in its describe action.
-        throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
-    }
+    _imp->effect->refreshRenderScaleSupport();
 
     /*
        Set modifiable props
      */
     refreshDynamicProperties();
     onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
-
-    if ( isTrackerNodePlugin() ) {
-        _imp->isMultiInstance = true;
-    }
-
  
     restoreSublabel();
 
+    refreshCreatedViews();
+
     declarePythonFields();
+
     if  ( getRotoContext() ) {
         declareRotoPythonField();
     }
@@ -1005,9 +1001,7 @@ Node::load(const CreateNodeArgsPtr& args)
     }
 
 
-    assert(_imp->effect);
-
-    _imp->pluginSafety = _imp->effect->renderThreadSafety();
+    _imp->pluginSafety = (RenderSafetyEnum)pluginPtr->getProperty<int>(kNatronPluginPropRenderSafety);
     _imp->currentThreadSafety = _imp->pluginSafety;
 
 
@@ -1034,6 +1028,8 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->runOnNodeCreatedCB(!serialization);
 
     computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+
+    _imp->effect->endChanges();
 } // load
 
 std::string
@@ -1100,7 +1096,7 @@ Node::getCurrentOpenGLRenderSupport() const
 {
     PluginPtr plugin = getPlugin();
     if (plugin) {
-        PluginOpenGLRenderSupport pluginProp = plugin->getPluginOpenGLRenderSupport();
+        PluginOpenGLRenderSupport pluginProp = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
         if (pluginProp != ePluginOpenGLRenderSupportYes) {
             return pluginProp;
         }
@@ -1181,10 +1177,10 @@ Node::refreshDynamicProperties()
     PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
     PluginPtr plugin = getPlugin();
     if (plugin) {
-        pluginGLSupport = plugin->getPluginOpenGLRenderSupport();
+        pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
         if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
-            pluginGLSupport = _imp->effect->supportsOpenGLRender();
+            pluginGLSupport = _imp->effect->getCurrentOpenGLSupport();
         }
     }
 
@@ -1193,7 +1189,7 @@ Node::refreshDynamicProperties()
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canTransform = _imp->effect->getCanTransform();
-    RenderSafetyEnum safety = _imp->effect->renderThreadSafety();
+    RenderSafetyEnum safety = _imp->effect->getCurrentRenderThreadSafety();
     setRenderThreadSafety(safety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
@@ -1488,66 +1484,6 @@ NodeCollectionPtr
 Node::getGroup() const
 {
     return _imp->group.lock();
-}
-
-void
-Node::Implementation::appendChild(const NodePtr& child)
-{
-    QMutexLocker k(&childrenMutex);
-
-    for (NodesWList::iterator it = children.begin(); it != children.end(); ++it) {
-        if (it->lock() == child) {
-            return;
-        }
-    }
-    children.push_back(child);
-}
-
-void
-Node::fetchParentMultiInstancePointer()
-{
-    NodesList nodes = _imp->group.lock()->getNodes();
-    NodePtr thisShared = shared_from_this();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->getScriptName() == _imp->multiInstanceParentName ) {
-            ///no need to store the boost pointer because the main instance lives the same time
-            ///as the child
-            _imp->multiInstanceParent = *it;
-            (*it)->_imp->appendChild(thisShared);
-            QObject::connect( it->get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)) );
-            break;
-        }
-    }
-}
-
-NodePtr
-Node::getParentMultiInstance() const
-{
-    return _imp->multiInstanceParent.lock();
-}
-
-bool
-Node::isMultiInstance() const
-{
-    return _imp->isMultiInstance;
-}
-
-///Accessed by the serialization thread, but mt safe since never changed
-std::string
-Node::getParentMultiInstanceName() const
-{
-    return _imp->multiInstanceParentName;
-}
-
-void
-Node::getChildrenMultiInstance(NodesList* children) const
-{
-    QMutexLocker k(&_imp->childrenMutex);
-
-    for (NodesWList::const_iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        children->push_back( it->lock() );
-    }
 }
 
 
@@ -2124,22 +2060,6 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         }
     }
 
-    // This is to support the old Tracker node in Natron v1, this is deprecated
-    serialization->_multiInstanceParentName = getParentMultiInstanceName();
-    NodesList childrenMultiInstance;
-    getChildrenMultiInstance(&childrenMultiInstance);
-    if ( !childrenMultiInstance.empty() ) {
-        assert(!isGrp);
-        for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
-            assert( (*it)->getParentMultiInstance() );
-            if ( (*it)->isActivated() ) {
-                SERIALIZATION_NAMESPACE::NodeSerializationPtr state( new SERIALIZATION_NAMESPACE::NodeSerialization );
-                (*it)->toSerialization(state.get());
-                serialization->_children.push_back(state);
-            }
-        }
-    }
-
     // User created components
     std::list<ImageComponents> userComps;
     getUserCreatedComponents(&userComps);
@@ -2214,31 +2134,47 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
         _imp->overlayColor[2] = serialization->_overlayColor[2];
     }
 
-    loadInternalNodesFromSerialization(*serialization);
+    loadInternalNodesFromSerialization(serialization);
 
     
 } // Node::fromSerialization
 
 void
-Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
 {
 
     NodeGroupPtr isGrp = isEffectNodeGroup();
-
-    // Restore internal nodes for groups
-    if (isGrp && !isPyPlug()) {
-
-        {
-            // Deactivate all internal nodes for group first
-            NodesList nodes = isGrp->getNodes();
-            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                (*it)->destroyNode(false);
-            }
-        }
-
-        std::map<std::string, bool> moduleUpdatesProcessed;
-        Project::restoreGroupFromSerialization(serialization._children, isGrp, true, &moduleUpdatesProcessed);
+    if (!isGrp) {
+        return;
     }
+
+    // If the sub-graph is not visible, it is expected the group creates its internal nodes when it is created itself
+    if (!isGrp->isSubGraphUserVisible()) {
+        return;
+    }
+
+    // OK now this is a user-editable graph
+    // Restore internal nodes for groups and newer Pyplugs (post 2.2)
+    PluginPtr pyPlug = _imp->pyPlugHandle.lock();
+
+    // For old PyPlugs based on Python scripts, the nodes are created by the Python script after the Group itself
+    // gets created. So don't do anything
+    bool isPythonScriptPyPlug = pyPlug->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+    if (pyPlug && isPythonScriptPyPlug) {
+        return;
+    }
+
+    // Kill all existing nodes. This requires ensuring no thread is running
+    isGrp->quitAnyProcessingForAllNodes_blocking();
+    isGrp->clearNodes(false);
+
+    // Setup initial group state
+    isGrp->setSubGraphEditedByUser(false);
+    isGrp->setupInitialSubGraphState(serialization);
+
+    // Restore rest of the group with the serialization
+    Project::restoreGroupFromSerialization(serialization->_children, isGrp);
+
 }
 
 void
@@ -2264,24 +2200,6 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
             KnobIPtr knob = getKnobByName((*it)->_scriptName);
             if (!knob) {
                 continue;
-                // Prior to Natron 1.2 RGBA checkboxes had simple script-names that could be already taken by
-                // plug-in declared parameters. We changed them to kNatronOfxParamProcessR/G/B/A
-                /*bool isR = (*it)->_scriptName == "r";
-                bool isG = (*it)->_scriptName == "g";
-                bool isB = (*it)->_scriptName == "b";
-                bool isA = (*it)->_scriptName == "a";
-
-                KnobBoolPtr isBoolean = toKnobBool(knob);
-                if (isBoolean && (isR || isG || isB || isA)) {
-                    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-                        if ( ( isR && ( (*it)->getName() == kNatronOfxParamProcessR ) ) ||
-                            ( isG && ( (*it)->getName() == kNatronOfxParamProcessG ) ) ||
-                            ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
-                            ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
-                            knob->fromSerialization(**it);
-                        }
-                    }
-                }*/
             }
             knob->fromSerialization(**it);
 
@@ -2342,8 +2260,8 @@ Node::loadPresets(const std::string& presetsLabel)
         QMutexLocker k(&_imp->nodePresetMutex);
         _imp->initialNodePreset = presetsLabel;
     }
-    Q_EMIT nodePresetsChanged();
     restoreNodeToDefaultState();
+    Q_EMIT nodePresetsChanged();
 }
 
 void
@@ -2362,8 +2280,8 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
         QMutexLocker k(&_imp->nodePresetMutex);
         _imp->initialNodePreset = presetsLabel;
     }
-    Q_EMIT nodePresetsChanged();
     restoreNodeToDefaultState();
+    Q_EMIT nodePresetsChanged();
 }
 
 void
@@ -2380,16 +2298,11 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZ
     SERIALIZATION_NAMESPACE::read(ifile,&obj);
 
     if (serialization) {
-        *serialization = obj.node;
+        *serialization = obj.nodeSerialization;
     }
     if (presetsLabel) {
         *presetsLabel = obj.presetLabel;
     }
-    std::string thisPluginID = getPluginID();
-    if (obj.originalPluginID != thisPluginID) {
-        throw std::invalid_argument(tr("Trying to load a preset file for plug-in %1, but this node contains plug-in %2").arg(QString::fromUtf8(obj.originalPluginID.c_str())).arg(QString::fromUtf8(thisPluginID.c_str())).toStdString());
-    }
-
 }
 
 
@@ -2418,135 +2331,15 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZ
 }
 
 void
-Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization,bool setKnobsDefault)
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    assert(!_imp->initialNodePreset.empty());
 
-    loadKnobsFromSerialization(serialization);
+    loadKnobsFromSerialization(*serialization);
 
-    // set non animated knobs to be their default values
-    const KnobsVec& knobs = getKnobs();
-    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        KnobButtonPtr isBtn = toKnobButton(*it);
-        KnobPagePtr isPage = toKnobPage(*it);
-        KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
-        if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
-            continue;
-        }
-
-        if ((*it)->getIsPersistent()) {
-            KnobIntBasePtr isInt = toKnobIntBase(*it);
-            KnobBoolBasePtr isBool = toKnobBoolBase(*it);
-            KnobStringBasePtr isString = toKnobStringBase(*it);
-            KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
-            for (int d = 0; d < (*it)->getDimension(); ++d) {
-                if ((*it)->isAnimated(d)) {
-                    continue;
-                }
-                if (isInt) {
-                    isInt->setDefaultValue(isInt->getValue(d), d);
-                } else if (isBool) {
-                    isBool->setDefaultValue(isBool->getValue(d), d);
-                } else if (isString) {
-                    isString->setDefaultValue(isString->getValue(d), d);
-                } else if (isDouble) {
-                    isDouble->setDefaultValue(isDouble->getValue(d), d);
-                }
-            }
-        }
-    }
-
-
-    loadInternalNodesFromSerialization(serialization);
-
-
-
-} // Node::loadPresetsInternal
-
-void
-Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods)
-{
-    if (presetsLabel.empty()) {
-        throw std::runtime_error(tr("The preset label cannot be empty").toStdString());
-    }
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, filePath);
-    if (!ofile || filePath.empty()) {
-        std::string message = tr("Failed to open file: ").toStdString() + filePath;
-        throw std::runtime_error(message);
-    }
-
-    SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
-    // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
-    // we just have to read the plugin id
-    serialization.originalPluginID = getPluginID();
-    serialization.presetLabel = presetsLabel;
-    serialization.presetIcon = presetsIcon;
-    serialization.presetSymbol = (int)symbol;
-    serialization.presetModifiers = (int)mods;
-    toSerialization(&serialization.node);
-
-    // No need to save node UI nor inputs
-    serialization.node._inputs.clear();
-    serialization.node._nodePositionCoords[0] = serialization.node._nodePositionCoords[1] = INT_MIN;
-    serialization.node._nodeSize[0] = serialization.node._nodeSize[1] = -1;
-
-    SERIALIZATION_NAMESPACE::write(ofile, serialization);
-
-} // Node::saveNodeToPresets
-
-void
-Node::restoreNodeToDefaultState()
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    FlagSetter setter(true, &_imp->restoringDefaults);
-
-    _imp->effect->beginChanges();
-
-    if (isNodeCreated()) {
-        _imp->effect->purgeCaches();
-    }
-
-    std::string nodePreset = getCurrentNodePresets();
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
-    if (!nodePreset.empty()) {
-        try {
-            serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
-            getNodeSerializationFromPresetName(nodePreset, serialization.get());
-        } catch (...) {
-
-        }
-    }
-
-    // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
-    // if all parameters are actually to the good value
-    {
-        const KnobsVec& knobs = getKnobs();
-        for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-            
-            KnobButtonPtr isBtn = toKnobButton(*it);
-            KnobPagePtr isPage = toKnobPage(*it);
-            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
-            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator || ( (*it)->getName() == kUserLabelKnobName ) ) {
-                continue;
-            }
-            (*it)->blockValueChanges();
-            for (int d = 0; d < (*it)->getDimension(); ++d) {
-                (*it)->resetToDefaultValue(d);
-            }
-            (*it)->unblockValueChanges();
-        }
-    }
-
-    if (serialization) {
-        // Load presets from serialization if any
-        loadPresetsInternal(*serialization);
-    } else {
-        // Reset knob default values to their initial default value if we had a different preset before
-
+    if (setKnobsDefault) {
+        // set non animated knobs to be their default values
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             KnobButtonPtr isBtn = toKnobButton(*it);
@@ -2566,26 +2359,219 @@ Node::restoreNodeToDefaultState()
                         continue;
                     }
                     if (isInt) {
-                        isInt->setDefaultValue(isInt->getInitialDefaultValue(d), d);
+                        isInt->setDefaultValue(isInt->getValue(d), d);
                     } else if (isBool) {
-                        isBool->setDefaultValue(isBool->getInitialDefaultValue(d), d);
+                        isBool->setDefaultValue(isBool->getValue(d), d);
                     } else if (isString) {
-                        isString->setDefaultValue(isString->getInitialDefaultValue(d), d);
+                        isString->setDefaultValue(isString->getValue(d), d);
                     } else if (isDouble) {
-                        isDouble->setDefaultValue(isDouble->getInitialDefaultValue(d), d);
+                        isDouble->setDefaultValue(isDouble->getValue(d), d);
                     }
                 }
             }
         }
     }
+    
+    
+    loadInternalNodesFromSerialization(serialization.get());
+    
+    
+
+} // Node::loadPresetsInternal
 
 
-    // Ensure the state of the node is consistent with what the plug-in expects
-    int time = getApp()->getTimeLine()->currentFrame();
-    {
+void
+Node::saveNodeToFileInternal(const std::string& filePath,
+                             const std::string& pyPlugID,
+                             const std::string& pyPlugLabel,
+                             const std::string& pyPlugIcon,
+                             const std::string& pyPlugDesc,
+                             const bool pyPlugDescIsMarkdown,
+                             const std::string& pyPlugGrouping,
+                             int majorVersion,
+                             Key symbol,
+                             const KeyboardModifiers& mods)
+{
+
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, filePath);
+    if (!ofile || filePath.empty()) {
+        std::string message = tr("Failed to open file: ").toStdString() + filePath;
+        throw std::runtime_error(message);
+    }
+
+    SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
+
+    if (pyPlugID.empty()) {
+        // This is a preset.
+        // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
+        // we just have to read the plugin id
+        serialization.originalPluginID = getPluginID();
+    } else {
+        // this is a pyplug
+        serialization.pyPlugID = pyPlugID;
+        serialization.pyPlugGrouping = pyPlugGrouping;
+        serialization.pyPlugDescription = pyPlugDesc;
+        serialization.pyPlugDescriptionIsMarkdown = pyPlugDescIsMarkdown;
+        serialization.version = majorVersion;
+    }
+    serialization.presetLabel = pyPlugLabel;
+    serialization.presetIcon = pyPlugIcon;
+    serialization.presetSymbol = (int)symbol;
+    serialization.presetModifiers = (int)mods;
+    toSerialization(&serialization.nodeSerialization);
+
+    // No need to save node UI nor inputs
+    serialization.nodeSerialization._inputs.clear();
+    serialization.nodeSerialization._nodePositionCoords[0] = serialization.nodeSerialization._nodePositionCoords[1] = INT_MIN;
+    serialization.nodeSerialization._nodeSize[0] = serialization.nodeSerialization._nodeSize[1] = -1;
+
+    SERIALIZATION_NAMESPACE::write(ofile, serialization);
+} // saveNodeToFileInternal
+
+void
+Node::saveNodeToPyPlug(const std::string& filePath,
+                       const std::string& pyPlugID,
+                       const std::string& pyPlugLabel,
+                       const std::string& pyPlugIcon,
+                       const std::string& pyPlugDesc,
+                       const bool pyPlugDescIsMarkdown,
+                       const std::string& pyPlugGrouping,
+                       int majorVersion,
+                       Key symbol,
+                       const KeyboardModifiers& mods)
+{
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+    if (!isGrp) {
+        throw std::invalid_argument(tr("Exporting to PyPlug is only available for a Group node").toStdString());
+    }
+    saveNodeToFileInternal(filePath, pyPlugID, pyPlugLabel, pyPlugIcon, pyPlugDesc, pyPlugDescIsMarkdown, pyPlugGrouping, majorVersion, symbol, mods);
+}
+
+void
+Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods)
+{
+
+    if (presetsLabel.empty()) {
+        throw std::invalid_argument(tr("The preset label cannot be empty").toStdString());
+    }
+    saveNodeToFileInternal(filePath, std::string(), presetsLabel, presetsIcon, std::string(), false, std::string(), 0, symbol, mods);
+}
+
+void
+Node::restoreNodeToDefaultState()
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    FlagSetter setter(true, &_imp->restoringDefaults);
+
+    _imp->effect->beginChanges();
+
+    bool nodeCreated = isNodeCreated();
+    if (nodeCreated) {
+        _imp->effect->purgeCaches();
+    }
+
+    std::string nodePreset = getCurrentNodePresets();
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr presetSerialization;
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr pyPlugSerialization;
+    PluginPtr pyPlugHandle = _imp->pyPlugHandle.lock();
+    if (!nodePreset.empty()) {
+        try {
+            presetSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+            getNodeSerializationFromPresetName(nodePreset, presetSerialization.get());
+        } catch (...) {
+
+        }
+    } else if (pyPlugHandle) {
+        bool isPythonScriptPyPlug = pyPlugHandle->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+        if (!isPythonScriptPyPlug) {
+            std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugIsPythonScript);
+            pyPlugSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+            getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get(), 0);
+        }
+    }
+
+    // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
+    // if all parameters are actually to the good value
+    if (nodeCreated){
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-            _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+            
+            KnobButtonPtr isBtn = toKnobButton(*it);
+            KnobPagePtr isPage = toKnobPage(*it);
+            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator || ( (*it)->getName() == kUserLabelKnobName ) ) {
+                continue;
+            }
+            (*it)->blockValueChanges();
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                (*it)->resetToDefaultValue(d);
+            }
+            (*it)->unblockValueChanges();
+        }
+    }
+
+    if (pyPlugSerialization) {
+        // Load pyplug, set default values to knob only if there's no preset serialization
+        loadPresetsInternal(pyPlugSerialization, presetSerialization.get() == 0);
+
+        // For PyPlugs, start with the subgraph unedited
+        NodeGroupPtr isGrp = isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->setSubGraphEditedByUser(false);
+        }
+
+    }
+
+    if (presetSerialization) {
+        // Load presets from serialization if any
+        loadPresetsInternal(presetSerialization, true);
+    } else {
+        // Reset knob default values to their initial default value if we had a different preset before
+        if (nodeCreated) {
+            const KnobsVec& knobs = getKnobs();
+            for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+                KnobButtonPtr isBtn = toKnobButton(*it);
+                KnobPagePtr isPage = toKnobPage(*it);
+                KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
+                if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
+                    continue;
+                }
+
+                if ((*it)->getIsPersistent()) {
+                    KnobIntBasePtr isInt = toKnobIntBase(*it);
+                    KnobBoolBasePtr isBool = toKnobBoolBase(*it);
+                    KnobStringBasePtr isString = toKnobStringBase(*it);
+                    KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
+                    for (int d = 0; d < (*it)->getDimension(); ++d) {
+                        if ((*it)->isAnimated(d)) {
+                            continue;
+                        }
+                        if (isInt) {
+                            isInt->setDefaultValue(isInt->getInitialDefaultValue(d), d);
+                        } else if (isBool) {
+                            isBool->setDefaultValue(isBool->getInitialDefaultValue(d), d);
+                        } else if (isString) {
+                            isString->setDefaultValue(isString->getInitialDefaultValue(d), d);
+                        } else if (isDouble) {
+                            isDouble->setDefaultValue(isDouble->getInitialDefaultValue(d), d);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+
+    if (nodeCreated) {
+        // Ensure the state of the node is consistent with what the plug-in expects
+        int time = getApp()->getTimeLine()->currentFrame();
+        {
+            const KnobsVec& knobs = getKnobs();
+            for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+                _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+            }
         }
     }
 
@@ -3041,16 +3027,8 @@ Node::getOutputs_mt_safe(NodesWList& outputs) const
 void
 Node::getInputNames(std::map<std::string, std::string> & inputNames) const
 {
-    ///This is called by the serialization thread.
-    ///We use the guiInputs because we want to serialize exactly how the tree was to the user
-
-    NodePtr parent = _imp->multiInstanceParent.lock();
-
-    if (parent) {
-        parent->getInputNames(inputNames);
-
-        return;
-    }
+    // This is called by the serialization thread.
+    // We use the guiInputs because we want to serialize exactly how the tree was to the user
 
     QMutexLocker l(&_imp->inputsLabelsMutex);
     assert( _imp->inputs.size() == _imp->inputLabels.size() );
@@ -3274,20 +3252,17 @@ std::string
 Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
 {
     std::string ret = scriptName;
-    NodePtr parent = getParentMultiInstance();
 
-    if (parent) {
-        prependGroupNameRecursive(parent, ret);
-    } else {
-        NodeCollectionPtr hasParentGroup = getGroup();
-        NodeGroupPtr isGrp = toNodeGroup(hasParentGroup);
-        if (isGrp) {
-            NodePtr grpNode = isGrp->getNode();
-            if (grpNode) {
-                prependGroupNameRecursive(grpNode, ret);
-            }
+
+    NodeCollectionPtr hasParentGroup = getGroup();
+    NodeGroupPtr isGrp = toNodeGroup(hasParentGroup);
+    if (isGrp) {
+        NodePtr grpNode = isGrp->getNode();
+        if (grpNode) {
+            prependGroupNameRecursive(grpNode, ret);
         }
     }
+
 
     return ret;
 }
@@ -3810,7 +3785,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
 
     PluginPtr plugin = getPlugin();
     if (plugin && plugin->isOpenGLEnabled()) {
-        glSupport = plugin->getPluginOpenGLRenderSupport();
+        glSupport = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
     }
     // The Roto node needs to have a "GPU enabled" knob to control the nodes internally
     if (glSupport != ePluginOpenGLRenderSupportNone || dynamic_cast<RotoPaint*>(_imp->effect.get())) {
@@ -4574,31 +4549,21 @@ Node::makeDocumentation(bool genHTML) const
     QString pluginID, pluginLabel, pluginDescription, pluginIcon;
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
-    QStringList pluginGroup;
+    std::vector<std::string> pluginGroup;
     bool pluginDescriptionIsMarkdown = false;
     QVector<QStringList> inputs;
     QVector<QStringList> items;
 
     {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        bool pyplug = _imp->isPyPlugInternal();
-        if (pyplug) {
-            pluginID = QString::fromUtf8( _imp->pyPlugInfo.pyPlugID.c_str() );
-            pluginLabel =  QString::fromUtf8( _imp->pyPlugInfo.pyPlugLabel.c_str() );
-            pluginDescription = QString::fromUtf8( _imp->pyPlugInfo.pyPlugDesc.c_str() );
-            pluginIcon = QString::fromUtf8( _imp->pyPlugInfo.pyPlugIconFilePath.c_str() );
-            for (std::list<std::string>::const_iterator it = _imp->pyPlugInfo.pyPlugGrouping.begin() ; it != _imp->pyPlugInfo.pyPlugGrouping.end(); ++it) {
-                pluginGroup.push_back(QString::fromUtf8(it->c_str()));
-            }
-        } else {
-            PluginPtr plugin = getPlugin();
-            pluginID = plugin->getPluginID();
-            pluginLabel =  plugin->getPluginLabel();
-            pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
-            pluginIcon = plugin->getIconFilePath();
-            pluginGroup = plugin->getGrouping();
-            pluginDescriptionIsMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
-        }
+        PluginPtr plugin = getPlugin();
+        assert(plugin);
+
+        pluginID = QString::fromUtf8(plugin->getPluginID().c_str());
+        pluginLabel =  QString::fromUtf8(plugin->getPluginLabel().c_str());
+        pluginDescription =  QString::fromUtf8( plugin->getProperty<std::string>(kNatronPluginPropDescription).c_str() );
+        pluginIcon = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+        pluginGroup = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+        pluginDescriptionIsMarkdown = plugin->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
@@ -4860,8 +4825,8 @@ Node::makeDocumentation(bool genHTML) const
         ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
         ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
         ts << "<li><a href=\"/_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
-        if ( !pluginGroup.isEmpty() ) {
-            QString group = pluginGroup.at(0);
+        if ( !pluginGroup.empty() ) {
+            const QString group = QString::fromUtf8(pluginGroup[0].c_str());
             if (!group.isEmpty()) {
                 ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
             }
@@ -4921,29 +4886,6 @@ Node::beginEditKnobs()
     _imp->effect->beginEditKnobs();
 }
 
-void
-Node::setEffect(const EffectInstancePtr& effect)
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->effect = effect;
-    _imp->effect->initializeData();
-
-    NodePtr thisShared = shared_from_this();
-    NodePtr ioContainer = _imp->ioContainer.lock();
-    if (ioContainer) {
-        ReadNodePtr isReader = toReadNode( ioContainer->getEffectInstance() );
-        if (isReader) {
-            isReader->setEmbeddedReader(thisShared);
-        } else {
-            WriteNodePtr isWriter = toWriteNode( ioContainer->getEffectInstance() );
-            assert(isWriter);
-            if (isWriter) {
-                isWriter->setEmbeddedWriter(thisShared);
-            }
-        }
-    }
-}
 
 EffectInstancePtr
 Node::getEffectInstance() const
@@ -5137,19 +5079,13 @@ Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const
 int
 Node::getMajorVersion() const
 {
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return _imp->pyPlugInfo.pyPlugVersion;
-        }
-    }
 
     PluginPtr plugin = getPlugin();
     if (!plugin) {
         return 0;
     }
 
-    return plugin->getMajorVersion();
+    return (int)plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
 }
 
 int
@@ -5160,14 +5096,8 @@ Node::getMinorVersion() const
     if (!plugin) {
         return 0;
     }
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return 0;
-        }
-    }
 
-    return plugin->getMinorVersion();
+    return (int)plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
 }
 
 void
@@ -5246,11 +5176,6 @@ Node::getInputInternal(bool useGuiInput,
                        bool useGroupRedirections,
                        int index) const
 {
-    NodePtr parent = _imp->multiInstanceParent.lock();
-
-    if (parent) {
-        return parent->getInput(index);
-    }
     if (!_imp->inputsInitialized) {
         qDebug() << "Node::getInput(): inputs not initialized";
     }
@@ -5305,12 +5230,6 @@ Node::getInputs() const
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
-
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->getInputs();
-    }
-
     return _imp->inputs;
 }
 
@@ -5321,11 +5240,6 @@ Node::getGuiInputs() const
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
 
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->getGuiInputs();
-    }
-
     return _imp->guiInputs;
 }
 
@@ -5333,11 +5247,6 @@ std::vector<NodeWPtr >
 Node::getInputs_copy() const
 {
     assert(_imp->inputsInitialized);
-
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->getInputs();
-    }
 
     QMutexLocker l(&_imp->inputsMutex);
 
@@ -5459,10 +5368,6 @@ Node::hasInputConnected() const
 {
     assert(_imp->inputsInitialized);
 
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->hasInputConnected();
-    }
     QMutexLocker l(&_imp->inputsMutex);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         if ( _imp->inputs[i].lock() ) {
@@ -5506,29 +5411,17 @@ bool
 Node::hasOutputConnected() const
 {
     ////Only called by the main-thread
-    NodePtr parent = _imp->multiInstanceParent.lock();
 
-    if (parent) {
-        return parent->hasOutputConnected();
-    }
     if ( isOutputNode() ) {
         return true;
     }
     if ( QThread::currentThread() == qApp->thread() ) {
-        if (_imp->outputs.size() == 1) {
-            NodePtr output = _imp->outputs.front().lock();
-
-            return !( output->isTrackerNodePlugin() && output->isMultiInstance() );
-        } else if (_imp->outputs.size() > 1) {
+        if (_imp->outputs.size() > 0) {
             return true;
         }
     } else {
         QMutexLocker l(&_imp->outputsMutex);
-        if (_imp->outputs.size() == 1) {
-            NodePtr output = _imp->outputs.front().lock();
-
-            return !( output->isTrackerNodePlugin() && output->isMultiInstance() );
-        } else if (_imp->outputs.size() > 1) {
+        if (_imp->outputs.size() > 0) {
             return true;
         }
     }
@@ -5665,9 +5558,6 @@ Node::canConnectInput(const NodePtr& input,
         return eCanConnectInput_groupHasNoOutput;
     }
 
-    if ( getParentMultiInstance() || input->getParentMultiInstance() ) {
-        return eCanConnectInput_inputAlreadyConnected;
-    }
 
     ///Applying this connection would create cycles in the graph
     if ( !checkIfConnectingInputIsOk( input ) ) {
@@ -6215,11 +6105,6 @@ Node::inputIndex(const NodePtr& n) const
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
 
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->inputIndex(n);
-    }
-
     ///No need to lock this is only called by the main-thread
     for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i].lock() == n) {
@@ -6376,9 +6261,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     std::vector<NodePtr > inputsQueueCopy;
 
 
-    ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
-    ///then don't remove it from outputs of the inputs
-    if (hideGui || !_imp->isMultiInstance) {
+    if (hideGui) {
         for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
             NodePtr input = _imp->guiInputs[i].lock();
             if (input) {
@@ -6460,11 +6343,6 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
             (*it)->deactivate(std::list< NodePtr >(), false, false, true, false);
         }
         isGrp->setIsDeactivatingGroup(false);
-    }
-
-    ///If the node has children (i.e it is a multi-instance), deactivate its children
-    for (NodesWList::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->deactivate(std::list< NodePtr >(), false, false, true, false);
     }
 
 
@@ -6563,10 +6441,6 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
         isGrp->setIsActivatingGroup(false);
     }
 
-    ///If the node has children (i.e it is a multi-instance), activate its children
-    for (NodesWList::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->activate(std::list< NodePtr >(), false, false);
-    }
 
     _imp->runOnNodeCreatedCB(true);
 } // activate
@@ -7179,20 +7053,14 @@ Node::getPluginIconFilePath() const
         return std::string();
     }
 
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return _imp->pyPlugInfo.pyPlugIconFilePath;
-        }
-    }
-    return plugin->getIconFilePath().toStdString();
+
+    return plugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
 }
 
 bool
 Node::Implementation::isPyPlugInternal() const
 {
-    assert(!pyPluginInfoMutex.tryLock());
-    if (pyPlugInfo.pyPlugID.empty()) {
+    if (!isPyPlug) {
         return false;
     }
     NodeGroupPtr isGrp = toNodeGroup(effect);
@@ -7205,10 +7073,7 @@ Node::Implementation::isPyPlugInternal() const
 bool
 Node::isPyPlug() const
 {
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        return _imp->isPyPlugInternal();
-    }
+    return _imp->isPyPlugInternal();
 }
 
 std::string
@@ -7219,34 +7084,17 @@ Node::getPluginID() const
         return std::string();
     }
 
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return _imp->pyPlugInfo.pyPlugID;
-        }
-    }
-
-    return plugin->getPluginID().toStdString();
-}
-
-std::string
-Node::getPyPlugID() const
-{
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-    return _imp->pyPlugInfo.pyPlugID;
+    return plugin->getPluginID();
 }
 
 std::string
 Node::getPluginLabel() const
 {
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return _imp->pyPlugInfo.pyPlugLabel;
-        }
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        return std::string();
     }
-
-    return _imp->effect->getPluginLabel();
+    return plugin->getPluginLabel();
 }
 
 std::string
@@ -7256,40 +7104,27 @@ Node::getPluginResourcesPath() const
     if (!plugin) {
         return std::string();
     }
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return _imp->pyPlugInfo.pyPlugPluginPath;
-        }
-    }
-
-    return plugin->getResourcesPath().toStdString();
+    return plugin->getProperty<std::string>(kNatronPluginPropResourcesPath);
 }
 
 std::string
 Node::getPluginDescription() const
 {
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            return _imp->pyPlugInfo.pyPlugDesc;
-        }
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        return std::string();
     }
-
-    return _imp->effect->getPluginDescription();
+    return plugin->getProperty<std::string>(kNatronPluginPropDescription);
 }
 
 void
-Node::getPluginGrouping(std::list<std::string>* grouping) const
+Node::getPluginGrouping(std::vector<std::string>* grouping) const
 {
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        if ( _imp->isPyPlugInternal() ) {
-            *grouping =  _imp->pyPlugInfo.pyPlugGrouping;
-            return;
-        }
+    PluginPtr plugin = getPlugin();
+    if (!plugin) {
+        return;
     }
-    _imp->effect->getPluginGrouping(grouping);
+    *grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
 }
 
 int
@@ -7299,6 +7134,26 @@ Node::getMaxInputCount() const
     assert(_imp->effect);
 
     return _imp->effect->getMaxInputCount();
+}
+
+bool
+Node::isEntitledForInspectorInputsStyle() const
+{
+    int maxInputs = getMaxInputCount();
+    int nOptionalInputs = 0;
+    bool firstInput = true;
+    for (int i = 0; i < maxInputs; ++i) {
+        if ( !_imp->effect->isInputOptional(i)) {
+            // allow one non-optional input, otherwise display them all
+            if (!firstInput) {
+                return false;
+            }
+        } else {
+            ++nOptionalInputs;
+        }
+        firstInput = false;
+    }
+    return nOptionalInputs > 4;
 }
 
 bool
@@ -8351,10 +8206,6 @@ Node::shouldDrawOverlay() const
         return false;
     }
 
-    if ( getParentMultiInstance() ) {
-        return false;
-    }
-
     if ( !isEffectViewerNode() && !isSettingsPanelVisible() ) {
         return false;
     }
@@ -8661,46 +8512,6 @@ Node::initializeHostOverlays()
     _imp->nativeOverlays.clear();
 }
 
-void
-Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
-                                  const std::string& pluginLabel,
-                                  const std::string& pluginID,
-                                  const std::string& pluginDesc,
-                                  const std::string& pluginIconFilePath,
-                                  const std::string& pluginPath,
-                                  unsigned int version)
-{
-    // Only works for group nodes...
-    NodeGroupPtr isGroup = isEffectNodeGroup();
-    if (!isGroup) {
-        assert(false);
-        return;
-    }
-
-    assert( QThread::currentThread() == qApp->thread() );
-    NodeGuiIPtr nodeGui = getNodeGui();
-
-    {
-        QMutexLocker k(&_imp->pyPluginInfoMutex);
-        _imp->pyPlugInfo.pyPlugVersion = version;
-        _imp->pyPlugInfo.pyPlugID = pluginID;
-        _imp->pyPlugInfo.pyPlugDesc = pluginDesc;
-        _imp->pyPlugInfo.pyPlugLabel = pluginLabel;
-        _imp->pyPlugInfo.pyPlugPluginPath = pluginPath;
-        _imp->pyPlugInfo.pyPlugGrouping = grouping;
-        _imp->pyPlugInfo.pyPlugIconFilePath = pluginIconFilePath;
-    }
-
-    // For PyPlugs, start with the subgraph unedited
-    isGroup->setSubGraphEditedByUser(false);
-
-    if (!nodeGui) {
-        return;
-    }
-    
-
-    nodeGui->setPluginIDAndVersion(grouping, pluginLabel, pluginID, pluginDesc, pluginIconFilePath, version);
-}
 
 bool
 Node::isSubGraphEditedByUser() const
@@ -8714,21 +8525,6 @@ Node::isSubGraphEditedByUser() const
 }
 
 
-void
-Node::setPluginPythonModule(const std::string& pythonModule)
-{
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-
-    _imp->pyPlugInfo.pluginPythonModule = pythonModule;
-}
-
-std::string
-Node::getPluginPythonModule() const
-{
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
-
-    return _imp->pyPlugInfo.pluginPythonModule;
-}
 
 bool
 Node::hasHostOverlayForParam(const KnobIConstPtr& knob) const
@@ -9015,7 +8811,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             works.push_back(w);
             getApp()->startWritersRendering(false, works);
         }
-    } else if ( ( what == _imp->disableNodeKnob.lock() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
+    } else if (what == _imp->disableNodeKnob.lock()) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
     } else if ( what == _imp->nodeLabelKnob.lock() || what == _imp->ofxSubLabelKnob.lock() ) {
         Q_EMIT nodeExtraLabelChanged();
@@ -9809,17 +9605,6 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
     }
 }
 
-bool
-Node::isTrackerNodePlugin() const
-{
-    return _imp->effect->isTrackerNodePlugin();
-}
-
-bool
-Node::isPointTrackerNode() const
-{
-    return getPluginID() == PLUGINID_OFX_TRACKERPM;
-}
 
 bool
 Node::isBackdropNode() const
@@ -10577,10 +10362,10 @@ Node::getColor(double* r,
     return true;
 }
 
-bool
-Node::hasColorChangedSinceDefault() const
+void
+Node::getDefaultColor(double* r, double *g, double* b) const
 {
-    std::list<std::string> grouping;
+    std::vector<std::string> grouping;
     getPluginGrouping(&grouping);
     std::string majGroup = grouping.empty() ? "" : grouping.front();
     float defR, defG, defB;
@@ -10618,7 +10403,17 @@ Node::hasColorChangedSinceDefault() const
     } else {
         settings->getDefaultNodeColor(&defR, &defG, &defB);
     }
+    *r = defR;
+    *g = defG;
+    *b = defB;
 
+}
+
+bool
+Node::hasColorChangedSinceDefault() const
+{
+    double defR, defG, defB;
+    getDefaultColor(&defR, &defG, &defB);
     if ( (std::abs(_imp->nodeColor[0] - defR) > 0.01) || (std::abs(_imp->nodeColor[1] - defG) > 0.01) || (std::abs(_imp->nodeColor[2] - defB) > 0.01) ) {
         return true;
     }
@@ -10765,10 +10560,6 @@ Node::isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) cons
     if (!gui) {
         return false;
     }
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->isSettingsPanelVisible();
-    }
 
     if ( recursionList.find(shared_from_this()) != recursionList.end() ) {
         return false;
@@ -10886,9 +10677,6 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     return;
 #endif
    if (getScriptName_mt_safe().empty()) {
-        return;
-    }
-    if ( getParentMultiInstance() ) {
         return;
     }
 
@@ -11996,130 +11784,6 @@ Node::getHostMixingValue(double time,
 
     return mix ? mix->getValueAtTime(time, 0, view) : 1.;
 }
-
-//////////////////////////////////
-
-InspectorNode::InspectorNode(const AppInstancePtr& app,
-                             const NodeCollectionPtr& group,
-                             const PluginPtr& plugin)
-    : Node(app, group, plugin)
-{
-
-}
-
-InspectorNode::~InspectorNode()
-{
-}
-
-bool
-InspectorNode::connectInput(const NodePtr& input,
-                            int inputNumber)
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    if ( !isEffectViewerNode() ) {
-        return connectInputBase(input, inputNumber);
-    }
-
-    ///cannot connect more than _maxInputs inputs.
-    assert( inputNumber <= getMaxInputCount() );
-
-    assert(input);
-
-    if ( !checkIfConnectingInputIsOk( input ) ) {
-        return false;
-    }
-
-    ///For effects that do not support multi-resolution, make sure the input effect is correct
-    ///otherwise the rendering might crash
-    if ( !getEffectInstance()->supportsMultiResolution() ) {
-        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
-        if (ret != eCanConnectInput_ok) {
-            return false;
-        }
-    }
-
-    ///If the node 'input' is already to an input of the inspector, find it.
-    ///If it has the same input number as what we want just return, otherwise
-    ///disconnect it and continue as usual.
-    int inputAlreadyConnected = inputIndex(input);
-    if (inputAlreadyConnected != -1) {
-        if (inputAlreadyConnected == inputNumber) {
-            return false;
-        } else {
-            disconnectInput(inputAlreadyConnected);
-        }
-    }
-
-    if ( !Node::connectInput(input, inputNumber) ) {
-        bool creatingNodeTree = getApp()->isCreatingNodeTree();
-        if (!creatingNodeTree) {
-            getEffectInstance()->invalidateHashCache();
-        }
-    }
-
-    return true;
-}
-
-int
-InspectorNode::getPreferredInputInternal(bool connected) const
-{
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
-
-    ///Find an input named A
-    std::string inputNameToFind, otherName;
-
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE) ) {
-        inputNameToFind = "A";
-        otherName = "B";
-    } else {
-        inputNameToFind = "B";
-        otherName = "A";
-    }
-    int foundOther = -1;
-    int maxinputs = getMaxInputCount();
-    for (int i = 0; i < maxinputs; ++i) {
-        std::string inputLabel = getInputLabel(i);
-        if (inputLabel == inputNameToFind) {
-            NodePtr inp = getInput(i);
-            if ( (connected && inp) || (!connected && !inp) ) {
-                return i;
-            }
-        } else if (inputLabel == otherName) {
-            foundOther = i;
-        }
-    }
-    if (foundOther != -1) {
-        NodePtr inp = getInput(foundOther);
-        if ( (connected && inp) || (!connected && !inp) ) {
-            return foundOther;
-        }
-    }
-
-    int maxInputs = getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr inp = getInput(i);
-        if ( (!inp && !connected) || (inp && connected) ) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-int
-InspectorNode::getPreferredInput() const
-{
-    return getPreferredInputInternal(true);
-}
-
-int
-InspectorNode::getPreferredInputForConnection() const
-{
-    return getPreferredInputInternal(false);
-}
-
 
 NATRON_NAMESPACE_EXIT;
 

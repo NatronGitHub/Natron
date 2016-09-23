@@ -296,7 +296,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             return;
         }
 
-        CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_DOT, _imp->group.lock() ));
+        CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_NATRON_DOT, _imp->group.lock() ));
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);

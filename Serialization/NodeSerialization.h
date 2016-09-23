@@ -48,7 +48,6 @@ public:
     , _inputs()
     , _rotoContext()
     , _trackerContext()
-    , _multiInstanceParentName()
     , _userPages()
     , _pagesIndexes()
     , _children()
@@ -103,9 +102,6 @@ public:
     // If this node has a Tracker context, this is its serialization
     boost::shared_ptr<TrackerContextSerialization> _trackerContext;
 
-    // Deprecated: In Natron 1, the tracker was a bundle with sub instances where each track would be 1 node.
-    // This is left here for backward compatibility.
-    std::string _multiInstanceParentName;
 
     // The serialization of the pages created by the user
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
@@ -149,11 +145,17 @@ public:
 
     // If set the preset will appear as a different plug-in than the one set in originalPluginID.
     // If not set it will appear as a preset of originalPluginID
-    std::string presetID;
+    std::string pyPlugID;
 
-    // You may set a grouping into which the tool should be
+    // You may set a description for the pyPlug. Only relevant if pyPlugID is set
+    std::string pyPlugDescription;
+
+    // True if the description is encoded in markdown, otherwise it is considered plain text
+    bool pyPlugDescriptionIsMarkdown;
+
+    // You may set a grouping into which the tool should be if pyPlugID is set
     // If not set it will default to the grouping of the plug-in set in originalPluginID
-    std::string presetGrouping;
+    std::string pyPlugGrouping;
 
     // The label of the preset as it should appear in the GUI
     std::string presetLabel;
@@ -161,8 +163,8 @@ public:
     // Optionally the filename of an icon file (without path) that should be located next to the preset file
     std::string presetIcon;
 
-    // When setting a presetID may be useful to notify the user that the plug-in changed. Only relevant with
-    // a non empty presetID
+    // When setting a pyPlugID may be useful to notify the user that the plug-in changed. Only relevant with
+    // a non empty pyPlugID
     int version;
 
     // Optionally the default keyboard symbol (as in Natron::Key) and modifiers (as in Natron::KeyboardModifiers)
@@ -171,8 +173,9 @@ public:
     int presetSymbol;
     int presetModifiers;
 
-    // The serialization that should set the state of the node by default
-    NodeSerialization node;
+    // For a preset, there is a single node serialization and this is the serialization that should set the state of the node by default.
+    // For a pyplug, this is the serialization of the top level group (which recursively has serialization of its internal nodes)
+    NodeSerialization nodeSerialization;
 
     // This flag is used to speed-up preset parsing by Natron: it will only read relevant meta-data from this class
     // to show to the user in the interface instead of the whole node serialization object.
@@ -181,14 +184,16 @@ public:
     NodePresetSerialization()
     : SerializationObjectBase()
     , originalPluginID()
-    , presetID()
-    , presetGrouping()
+    , pyPlugID()
+    , pyPlugDescription()
+    , pyPlugDescriptionIsMarkdown(false)
+    , pyPlugGrouping()
     , presetLabel()
     , presetIcon()
     , version(0)
     , presetSymbol(0)
     , presetModifiers(0)
-    , node()
+    , nodeSerialization()
     , decodeMetaDataOnly(false)
     {
 

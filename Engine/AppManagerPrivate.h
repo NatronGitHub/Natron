@@ -212,7 +212,7 @@ public:
      **/
     void setMaxCacheFiles();
 
-    PluginPtr findPluginById(const QString& oldId, int major, int minor) const;
+    PluginPtr findPluginById(const std::string& oldId, int major, int minor) const;
 
     void declareSettingsToPython();
 

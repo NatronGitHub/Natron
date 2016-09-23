@@ -29,10 +29,20 @@
 
 NATRON_NAMESPACE_ENTER;
 
-std::string
-GroupOutput::getPluginDescription() const
+
+
+PluginPtr
+GroupOutput::createPlugin()
 {
-    return "This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.";
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create((void*)GroupOutput::create, PLUGINID_NATRON_OUTPUT, "Output", 1, 0, grouping);
+
+    QString desc =  tr("This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "output_icon.png");
+    return ret;
 }
 
 NATRON_NAMESPACE_EXIT;

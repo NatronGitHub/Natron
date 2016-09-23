@@ -277,15 +277,24 @@ NodeSerialization::decode(const YAML::Node& node)
 void
 NodePresetSerialization::encode(YAML::Emitter& em) const
 {
+    
     em << YAML::BeginMap;
-    em << YAML::Key << "BasePluginID" << YAML::Value << originalPluginID;
-    if (!presetID.empty()) {
-        em << YAML::Key << "PresetID" << YAML::Value << presetID;
-        em << YAML::Key << "PresetVersion" << YAML::Value << version;
+    if (!pyPlugID.empty()) {
+        em << YAML::Key << "PyPlugID" << YAML::Value << pyPlugID;
+        if (!pyPlugDescription.empty()) {
+            em << YAML::Key << "PyPlugDescription" << YAML::Value << pyPlugDescription;
+            if (pyPlugDescriptionIsMarkdown) {
+                em << YAML::Key << "DescIsMarkdown" << YAML::Value << pyPlugDescriptionIsMarkdown;
+            }
+        }
+
+        em << YAML::Key << "PyPlugVersion" << YAML::Value << version;
+    } else {
+        em << YAML::Key << "PluginID" << YAML::Value << originalPluginID;
     }
-    em << YAML::Key << "PresetLabel" << YAML::Value << presetLabel;
-    if (!presetGrouping.empty()) {
-        em << YAML::Key << "PresetGrouping" << YAML::Value << presetGrouping;
+    em << YAML::Key << "Label" << YAML::Value << presetLabel;
+    if (!pyPlugGrouping.empty()) {
+        em << YAML::Key << "PyPlugGrouping" << YAML::Value << pyPlugGrouping;
     }
     if (!presetIcon.empty()) {
         em << YAML::Key << "Icon" << YAML::Value << presetIcon;
@@ -297,7 +306,7 @@ NodePresetSerialization::encode(YAML::Emitter& em) const
         em << YAML::Key << "Modifiers" << YAML::Value << presetModifiers;
     }
     em << YAML::Key << "Node" << YAML::Value;
-    node.encode(em);
+    nodeSerialization.encode(em);
     em << YAML::EndMap;
 };
 
@@ -307,15 +316,23 @@ NodePresetSerialization::decode(const YAML::Node& node)
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }
-    originalPluginID = node["BasePluginID"].as<std::string>();
-    if (node["PresetID"]) {
-        presetID = node["PresetID"].as<std::string>();
-        version = node["PresetVersion"].as<int>();
+
+    if (node["PyPlugID"]) {
+        pyPlugID = node["PyPlugID"].as<std::string>();
+        if (node["PyPlugDescription"]) {
+            pyPlugDescription = node["PyPlugDescription"].as<std::string>();
+            if (node["DescIsMarkdown"]) {
+                pyPlugDescriptionIsMarkdown = node["DescIsMarkdown"].as<bool>();
+            }
+        }
+        version = node["PyPlugVersion"].as<int>();
+    } else if (node["PluginID"]) {
+        originalPluginID = node["PluginID"].as<std::string>();
     }
-    if (node["PresetGrouping"]) {
-        presetGrouping = node["PresetGrouping"].as<std::string>();
+    if (node["Grouping"]) {
+        pyPlugGrouping = node["Grouping"].as<std::string>();
     }
-    presetLabel = node["PresetLabel"].as<std::string>();
+    presetLabel = node["Label"].as<std::string>();
     if (node["Icon"]) {
         presetIcon = node["Icon"].as<std::string>();
     }
@@ -325,11 +342,13 @@ NodePresetSerialization::decode(const YAML::Node& node)
     if (node["Modifiers"]) {
         presetModifiers = node["Modifiers"].as<int>();
     }
-    presetLabel = node["PresetLabel"].as<std::string>();
+    presetLabel = node["Label"].as<std::string>();
     if (decodeMetaDataOnly) {
         return;
     }
-    this->node.decode(node["Node"]);
+    nodeSerialization.decode(node["Node"]);
+
+
 }
 
 SERIALIZATION_NAMESPACE_EXIT

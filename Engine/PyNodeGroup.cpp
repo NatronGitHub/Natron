@@ -75,7 +75,7 @@ Group::getChildren() const
     NodesList nodes = _collection.lock()->getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && (*it)->getParentMultiInstanceName().empty() ) {
+        if ( (*it)->isActivated() ) {
             ret.push_back( new Effect(*it) );
         }
     }

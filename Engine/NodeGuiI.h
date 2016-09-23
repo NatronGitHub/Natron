@@ -61,10 +61,6 @@ public:
      **/
     virtual bool isSettingsPanelMinimized() const = 0;
 
-    /**
-     * @brief If this is a parent multi-instance, returns whether the given node is selected by the user or not
-     **/
-    virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const = 0;
 
     /**
      * @brief Set the position of the node in the nodegraph.
@@ -128,12 +124,7 @@ public:
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
     virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) = 0;
     virtual void removePositionHostOverlay(const KnobIPtr& knob) = 0;
-    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
-                                       const std::string& pluginLabel,
-                                       const std::string& pluginID,
-                                       const std::string& pluginDesc,
-                                       const std::string& pluginIconFilePath,
-                                       unsigned int version) = 0;
+
     virtual bool isUserSelected() const = 0;
     virtual void restoreStateAfterCreation() = 0;
     virtual void onIdentityStateChanged(int inputNb) = 0;

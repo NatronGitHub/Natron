@@ -172,7 +172,6 @@ public:
         return _graph;
     }
 
-    virtual bool isSelectedInParentMultiInstance(const NodeConstPtr& node) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSettingsPanelMinimized() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void getPosition(double *x, double* y) const;
@@ -300,8 +299,6 @@ public:
 
     void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
 
-    MultiInstancePanelPtr getMultiInstancePanel() const;
-
     void setParentMultiInstance(const NodeGuiPtr & parent);
 
     NodeGuiPtr getParentMultiInstance() const
@@ -374,12 +371,7 @@ public:
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
     virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void removePositionHostOverlay(const KnobIPtr& knob) OVERRIDE FINAL;
-    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
-                                       const std::string& pluginLabel,
-                                       const std::string& pluginID,
-                                       const std::string& pluginDesc,
-                                       const std::string& pluginIconFilePath,
-                                       unsigned int version) OVERRIDE FINAL;
+
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
@@ -417,6 +409,8 @@ protected:
                                     bool /*forceResize*/) {}
 
 public Q_SLOTS:
+
+    void onNodePresetsChanged();
 
     void onInputLabelChanged(int inputNb,const QString& label);
 

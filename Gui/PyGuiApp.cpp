@@ -316,7 +316,7 @@ GuiApp::getSelectedNodes(Group* group) const
     const NodesGuiList& nodes = graph->getSelectedNodes();
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it)->getNode();
-        if ( node->isActivated() && !node->getParentMultiInstance() ) {
+        if ( node->isActivated() ) {
             ret.push_back( new Effect(node) );
         }
     }

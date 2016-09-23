@@ -254,7 +254,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     selectedNodeBbox = selectedNode->mapToScene( selectedNode->boundingRect() ).boundingRect();
 
                     QPointF selectedNodeCenter = selectedNodeBbox.center();
-                    CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_OFX_MERGE, getGroup() ));
+                    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_MERGE, getGroup() ));
                     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                     

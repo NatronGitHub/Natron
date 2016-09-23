@@ -45,9 +45,6 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-/**
- * @brief This is the new tracker panel, the previous version TrackerPanelV1 (used for TrackerPM) can be found in MultiInstancePanel.h
- **/
 struct TrackerPanelPrivate;
 class TrackerPanel
     : public QWidget

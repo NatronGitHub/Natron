@@ -100,8 +100,8 @@ struct GuiApplicationManagerPrivate
 
     void createLinkMultCursor();
 
-    void removePluginToolButtonInternal(const PluginGroupNodePtr& n, const QStringList& grouping);
-    void removePluginToolButton(const QStringList& grouping);
+    void removePluginToolButtonInternal(const PluginGroupNodePtr& n, const std::vector<std::string>& grouping);
+    void removePluginToolButton(const std::vector<std::string>& grouping);
 
     void addStandardKeybind(const std::string & grouping, const std::string & id,
                             const std::string & description, QKeySequence::StandardKey key,

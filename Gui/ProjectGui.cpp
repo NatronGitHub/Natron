@@ -63,7 +63,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Histogram.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/NodeGui.h"
@@ -320,44 +319,8 @@ loadNodeGuiSerialization(Gui* gui, const SERIALIZATION_NAMESPACE::NodeSerializat
     BackdropGuiPtr isBd = toBackdropGui( nGui );
 
     if (hasNodeColor) {
-        SettingsPtr settings = appPTR->getCurrentSettings();
-        std::list<std::string> grouping;
-        nGui->getNode()->getPluginGrouping(&grouping);
-        std::string majGroup = grouping.empty() ? "" : grouping.front();
-        float defR, defG, defB;
-
-        if ( iseffect->isReader() ) {
-            settings->getReaderColor(&defR, &defG, &defB);
-        } else if ( iseffect->isWriter() ) {
-            settings->getWriterColor(&defR, &defG, &defB);
-        } else if ( iseffect->isGenerator() ) {
-            settings->getGeneratorColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_COLOR) {
-            settings->getColorGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_FILTER) {
-            settings->getFilterGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
-            settings->getChannelGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_KEYER) {
-            settings->getKeyerGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_MERGE) {
-            settings->getMergeGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_PAINT) {
-            settings->getDrawGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_TIME) {
-            settings->getTimeGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
-            settings->getTransformGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
-            settings->getViewsGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_DEEP) {
-            settings->getDeepGroupColor(&defR, &defG, &defB);
-        } else if (isBd) {
-            settings->getDefaultBackdropColor(&defR, &defG, &defB);
-        } else {
-            settings->getDefaultNodeColor(&defR, &defG, &defB);
-        }
-
+        double defR, defG, defB;
+        iseffect->getNode()->getDefaultColor(&defR, &defG, &defB);
 
         ///restore color only if different from default.
         if ( (std::abs(serialization->_nodeColor[0] - defR) > 0.05) || (std::abs(serialization->_nodeColor[1] - defG) > 0.05) || (std::abs(serialization->_nodeColor[2] - defB) > 0.05) ) {

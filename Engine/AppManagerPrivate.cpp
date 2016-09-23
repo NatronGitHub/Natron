@@ -246,13 +246,13 @@ AppManagerPrivate::loadBuiltinFormats()
 } // loadBuiltinFormats
 
 PluginPtr
-AppManagerPrivate::findPluginById(const QString& newId,
+AppManagerPrivate::findPluginById(const std::string& newId,
                                   int major,
                                   int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( ( (*it2)->getPluginID() == newId ) && ( (*it2)->getMajorVersion() == major ) && ( (*it2)->getMinorVersion() == minor ) ) {
+            if ( ( (*it2)->getPluginID() == newId ) && (major == -1 || (*it2)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) && (minor == -1 || (*it2)->getProperty<unsigned int>(kNatronPluginPropVersion, 1) == (unsigned int)minor ) ) {
                 return (*it2);
             }
         }

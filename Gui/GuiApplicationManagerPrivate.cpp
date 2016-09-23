@@ -70,17 +70,17 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 
 void
 GuiApplicationManagerPrivate::removePluginToolButtonInternal(const PluginGroupNodePtr& n,
-                                                             const QStringList& grouping)
+                                                             const std::vector<std::string>& grouping)
 {
     assert(grouping.size() > 0);
 
     const std::list<PluginGroupNodePtr>& children = n->getChildren();
     for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin();
          it != children.end(); ++it) {
-        if ( (*it)->getTreeNodeID() == grouping[0] ) {
+        if ( (*it)->getTreeNodeID().toStdString() == grouping[0] ) {
             if (grouping.size() > 1) {
-                QStringList newGrouping;
-                for (int i = 1; i < grouping.size(); ++i) {
+                std::vector<std::string> newGrouping;
+                for (std::size_t i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
                 }
                 removePluginToolButtonInternal(*it, newGrouping);
@@ -96,16 +96,16 @@ GuiApplicationManagerPrivate::removePluginToolButtonInternal(const PluginGroupNo
 }
 
 void
-GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping)
+GuiApplicationManagerPrivate::removePluginToolButton(const std::vector<std::string>& grouping)
 {
     assert(grouping.size() > 0);
 
     for (std::list<PluginGroupNodePtr>::iterator it = _topLevelToolButtons.begin();
          it != _topLevelToolButtons.end(); ++it) {
-        if ( (*it)->getTreeNodeID() == grouping[0] ) {
+        if ( (*it)->getTreeNodeID().toStdString() == grouping[0] ) {
             if (grouping.size() > 1) {
-                QStringList newGrouping;
-                for (int i = 1; i < grouping.size(); ++i) {
+                std::vector<std::string> newGrouping;
+                for (std::size_t i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
                 }
                 removePluginToolButtonInternal(*it, newGrouping);
@@ -137,7 +137,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal(const std::li
     QString nodeIDToFind;
     if (grouping.empty()) {
         // Look for plugin ID
-        nodeIDToFind = plugin->getPluginID();
+        nodeIDToFind = QString::fromUtf8(plugin->getPluginID().c_str());
     } else {
         // Look for grouping menu item
         nodeIDToFind = grouping[0];
@@ -170,8 +170,8 @@ GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal(const std::li
     QString treeNodeName, iconFilePath;
     if (grouping.empty()) {
         // This is a leaf (plug-in), take the plug-in label and icon
-        treeNodeName = plugin->getLabelWithoutSuffix();
-        iconFilePath = plugin->getIconFilePath();
+        treeNodeName = QString::fromUtf8(plugin->getLabelWithoutSuffix().c_str());
+        iconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
     } else {
         // For menu items, take from grouping
         treeNodeName = grouping[0];

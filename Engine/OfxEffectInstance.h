@@ -81,12 +81,7 @@ public:
     {
     }
 
-    virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                              OFX::Host::ImageEffect::Descriptor* desc,
-                                              ContextEnum context,
-                                              const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
-                                              const CreateNodeArgs& args) = 0;
-    static QStringList makePluginGrouping(const std::string & pluginIdentifier,
+    static std::vector<std::string> makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
                                           const std::string & grouping) WARN_UNUSED_RETURN;
@@ -118,11 +113,6 @@ public:
 
     virtual ~OfxEffectInstance();
 
-    void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                      OFX::Host::ImageEffect::Descriptor* desc,
-                                      ContextEnum context,
-                                      const SERIALIZATION_NAMESPACE::NodeSerialization* serialization,
-                                      const CreateNodeArgs& args) OVERRIDE FINAL;
 
     OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
     const OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
@@ -131,7 +121,6 @@ public:
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
 
-    bool isCreated() const;
     bool isInitialized() const;
 
     const std::string & ofxGetOutputPremultiplication() const;
@@ -144,28 +133,23 @@ public:
 
 public:
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void initializeDataAfterCreate() OVERRIDE FINAL;
+    virtual void createInstanceAction() OVERRIDE FINAL;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTrackerNodePlugin() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOpenFX() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-
+    virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderSafetyEnum getCurrentRenderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
     virtual bool isEffectCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isPluginDescriptionInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
@@ -213,7 +197,6 @@ public:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE;
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -224,7 +207,6 @@ public:
      **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsRenderQuality() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**

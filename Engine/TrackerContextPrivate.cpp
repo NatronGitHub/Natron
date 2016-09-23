@@ -118,7 +118,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         //NodePtr maskInput;
 
         {
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, isTrackerNode));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, isTrackerNode));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
@@ -131,7 +131,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             assert(output);
         }
         {
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, isTrackerNode));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, isTrackerNode));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
@@ -142,7 +142,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_CORNERPIN, isTrackerNode));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_CORNERPIN, isTrackerNode));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
@@ -156,7 +156,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             QString transformName = fixedNamePrefix + QLatin1String("Transform");
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_OFX_TRANSFORM, isTrackerNode));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TRANSFORM, isTrackerNode));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());

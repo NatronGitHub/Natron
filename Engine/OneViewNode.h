@@ -49,27 +49,14 @@ public:
         return EffectInstancePtr( new OneViewNode(node) );
     }
 
+    static PluginPtr createPlugin();
+
     virtual ~OneViewNode();
-
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
 
     virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 1;
     }
-
-    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -84,11 +71,6 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

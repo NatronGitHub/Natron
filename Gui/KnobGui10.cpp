@@ -590,7 +590,7 @@ KnobGui::toolTip(QWidget* w) const
         std::list<std::string> additionalShortcuts = knob->getInViewerContextAdditionalShortcuts();
         EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
         if (isEffect) {
-            QString pluginShortcutGroup = isEffect->getNode()->getPlugin()->getPluginShortcutGroup();
+            QString pluginShortcutGroup = QString::fromUtf8(isEffect->getNode()->getPlugin()->getPluginShortcutGroup().c_str());
 
             QString additionalKeyboardShortcutString;
             QString thisActionID = QString::fromUtf8( knob->getName().c_str() );

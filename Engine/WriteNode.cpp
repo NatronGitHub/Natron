@@ -173,6 +173,22 @@ WriteNode::isBundledWriter(const std::string& pluginID)
     return isBundledWriter( pluginID, getApp()->wasProjectCreatedWithLowerCaseIDs() );
 }
 
+PluginPtr
+WriteNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_IMAGE);
+    PluginPtr ret = Plugin::create((void*)WriteNode::create, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
+
+    QString desc = tr("Node used to write images or videos on disk. The image/video is identified by its filename and "
+                      "its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_W);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "writeImage.png");
+    return ret;
+}
+
 struct WriteNodePrivate
 {
     Q_DECLARE_TR_FUNCTIONS(WriteNode)
@@ -435,7 +451,7 @@ void
 WriteNodePrivate::createDefaultWriteNode()
 {
     NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
-    CreateNodeArgsPtr args(new CreateNodeArgs( WRITE_NODE_DEFAULT_WRITER, isGrp ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create( WRITE_NODE_DEFAULT_WRITER, isGrp ));
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty(kCreateNodeArgsPropVolatile, true);
     args->setProperty(kCreateNodeArgsPropSilent, true);
@@ -550,7 +566,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 
     readBackNode.reset();
     if ( !readerPluginID.empty() ) {
-        CreateNodeArgsPtr args(new CreateNodeArgs(readerPluginID, isGrp ));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, isGrp ));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
@@ -613,7 +629,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     //NodePtr maskInput;
     assert( (input && output) || (!input && !output) );
     if (!output) {
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_OUTPUT, isGrp));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, isGrp));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -627,7 +643,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         outputNode = output;
     }
     if (!input) {
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, isGrp));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, isGrp));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
@@ -679,7 +695,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if ( writerPluginID.empty() ) {
             writerPluginID = WRITE_NODE_DEFAULT_WRITER;
         }
-        CreateNodeArgsPtr args(new CreateNodeArgs(writerPluginID, isGrp ));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(writerPluginID, isGrp ));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalEncoderNode");
@@ -782,10 +798,10 @@ WriteNodePrivate::refreshPluginSelectorKnob()
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it != writersForFormat.rend(); ++it) {
             PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
-            entries.push_back( plugin->getPluginID().toStdString() );
+            entries.push_back( plugin->getPluginID() );
             std::stringstream ss;
-            ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
-            ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
+            ss << "Use " << plugin->getPluginLabel() << " version ";
+            ss << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0) << "." << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
             ss << " to write this file format";
             help.push_back( ss.str() );
         }
@@ -848,35 +864,6 @@ WriteNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
                                           bool* /*defaultA*/) const
 {
     return false;
-}
-
-int
-WriteNode::getMajorVersion() const
-{ return 1; }
-
-int
-WriteNode::getMinorVersion() const
-{ return 0; }
-
-std::string
-WriteNode::getPluginID() const
-{ return PLUGINID_NATRON_WRITE; }
-
-std::string
-WriteNode::getPluginLabel() const
-{ return "Write"; }
-
-std::string
-WriteNode::getPluginDescription() const
-{
-    return "Node used to write images or videos on disk. The image/video is identified by its filename and "
-           "its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used. ";
-}
-
-void
-WriteNode::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
 
 void

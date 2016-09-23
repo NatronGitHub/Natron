@@ -39,143 +39,139 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER;
 
-Plugin::Plugin(LibraryBinary* binary,
-       const QString& resourcesPath,
-       const QString & id,
-       const QString & label,
-       const QString & iconFilePath,
-       const QStringList & groupIconFilePath,
-       const QStringList & grouping,
-       bool mustCreateMutex,
-       int majorVersion,
-       int minorVersion,
-       bool isReader,
-       bool isWriter,
-       bool isDeprecated)
-: _binary(binary)
-, _resourcesPath(resourcesPath)
-, _id(id)
-, _label(label)
-, _iconFilePath(iconFilePath)
-, _groupIconFilePath(groupIconFilePath)
-, _grouping(grouping)
-, _labelWithoutSuffix()
-, _pythonModule()
-, _ofxPlugin(0)
-, _ofxDescriptor(0)
-, _lock()
-, _majorVersion(majorVersion)
-, _minorVersion(minorVersion)
-, _ofxContext(eContextNone)
-, _isReader(isReader)
-, _isWriter(isWriter)
-, _isDeprecated(isDeprecated)
-, _isInternalOnly(false)
-, _toolSetScript(false)
-, _activated(true)
-, _renderScaleEnabled(true)
-, _multiThreadingEnabled(true)
-, _openglActivated(true)
-, _openglRenderSupport(ePluginOpenGLRenderSupportNone)
-, _presetsFiles()
-, _isHighestVersion(false)
+void
+Plugin::initializeProperties() const
 {
-    if ( _resourcesPath.isEmpty() ) {
-        _resourcesPath = QString::fromUtf8(PLUGIN_DEFAULT_RESOURCES_PATH);
-    }
+    createProperty<void*>(kNatronPluginPropCreateFunc, 0);
+    createProperty<std::string>(kNatronPluginPropID, std::string());
+    createProperty<std::string>(kNatronPluginPropLabel, std::string());
+    createProperty<std::string>(kNatronPluginPropDescription, std::string());
+    createProperty<unsigned int>(kNatronPluginPropVersion, 0, 0);
+    createProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, false);
+    createProperty<std::string>(kNatronPluginPropResourcesPath, PLUGIN_DEFAULT_RESOURCES_PATH);
+    createProperty<std::string>(kNatronPluginPropIconFilePath, std::string());
+    createProperty<std::string>(kNatronPluginPropGrouping, PLUGIN_GROUP_DEFAULT);
+    createProperty<int>(kNatronPluginPropShortcut, 0, 0);
+    createProperty<std::string>(kNatronPluginPropGroupIconFilePath, std::vector<std::string>());
+    createProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, std::string());
+    createProperty<bool>(kNatronPluginPropPyPlugIsPythonScript, false);
+    createProperty<bool>(kNatronPluginPropPyPlugIsToolset, false);
+    createProperty<void*>(kNatronPluginPropOpenFXPluginPtr, 0);
+    createProperty<bool>(kNatronPluginPropIsDeprecated, false);
+    createProperty<bool>(kNatronPluginPropIsInternalOnly, false);
+    createProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportNone);
+    createProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyUnsafe);
+}
 
-    if (_grouping.isEmpty()) {
-        _grouping.push_back(QString::fromUtf8(PLUGIN_GROUP_DEFAULT));
+PluginPtr
+Plugin::create(void* createEffectFunc,
+               const std::string &pluginID,
+               const std::string &pluginLabel,
+               unsigned int majorVersion,
+               unsigned int minorVersion,
+               const std::vector<std::string> &pluginGrouping,
+               const std::vector<std::string> &groupIconFilePath)
+{
+    if (pluginID.empty()) {
+        throw std::invalid_argument("Plugin::create: plugin ID cannot be empty");
     }
-    if (_groupIconFilePath.isEmpty()) {
+    if (pluginLabel.empty()) {
+        throw std::invalid_argument("Plugin::create: plugin label cannot be empty");
+    }
+    PluginPtr ret(new Plugin);
+    ret->setProperty<void*>(kNatronPluginPropCreateFunc, createEffectFunc);
+    ret->setProperty<std::string>(kNatronPluginPropID, pluginID);
+    ret->setProperty<std::string>(kNatronPluginPropLabel, pluginLabel);
+    ret->setProperty<unsigned int>(kNatronPluginPropVersion, majorVersion);
+    ret->setProperty<unsigned int>(kNatronPluginPropVersion, minorVersion);
+    if (!pluginGrouping.empty()) {
+        ret->setPropertyN<std::string>(kNatronPluginPropGrouping, pluginGrouping);
+    }
+    if (!groupIconFilePath.empty()) {
+        ret->setPropertyN<std::string>(kNatronPluginPropGroupIconFilePath, groupIconFilePath);
+    } else {
+
+        std::vector<std::string> grouping = ret->getPropertyN<std::string>(kNatronPluginPropGrouping);
         std::string iconPath;
-        const QString& mainGroup = _grouping[0];
-        if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_COLOR) ) {
+        const std::string& mainGroup = grouping[0];
+        if ( mainGroup == PLUGIN_GROUP_COLOR) {
             iconPath = PLUGIN_GROUP_COLOR_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_FILTER) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_FILTER) {
             iconPath = PLUGIN_GROUP_FILTER_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_IMAGE) {
             iconPath = PLUGIN_GROUP_IMAGE_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_TRANSFORM) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_TRANSFORM) {
             iconPath = PLUGIN_GROUP_TRANSFORM_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_DEEP) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_DEEP) {
             iconPath = PLUGIN_GROUP_DEEP_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_MULTIVIEW) {
             iconPath = PLUGIN_GROUP_VIEWS_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_TIME) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_TIME) {
             iconPath = PLUGIN_GROUP_TIME_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_PAINT) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_PAINT) {
             iconPath = PLUGIN_GROUP_PAINT_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_OTHER) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_OTHER) {
             iconPath = PLUGIN_GROUP_MISC_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_KEYER) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_KEYER) {
             iconPath = PLUGIN_GROUP_KEYER_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_TOOLSETS) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_TOOLSETS) {
             iconPath = PLUGIN_GROUP_TOOLSETS_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_3D) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_3D) {
             iconPath = PLUGIN_GROUP_3D_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_CHANNEL) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_CHANNEL) {
             iconPath = PLUGIN_GROUP_CHANNEL_ICON_PATH;
-        } else if ( mainGroup == QString::fromUtf8(PLUGIN_GROUP_MERGE) ) {
+        } else if ( mainGroup == PLUGIN_GROUP_MERGE) {
             iconPath = PLUGIN_GROUP_MERGE_ICON_PATH;
         } else {
             iconPath = PLUGIN_GROUP_DEFAULT_ICON_PATH;
         }
 
-        _groupIconFilePath.push_back(QString::fromUtf8(iconPath.c_str()));
+        std::vector<std::string> groupIcon;
+        groupIcon.push_back(iconPath);
+        ret->setPropertyN<std::string>(kNatronPluginPropGroupIconFilePath, groupIcon);
     }
+    return ret;
+}
 
-    if (mustCreateMutex) {
-        _lock.reset(new QMutex(QMutex::Recursive));
-    }
+Plugin::Plugin()
+: PropertiesHolder()
+, _actionShortcuts()
+, _presets()
+, _pluginLock(new QMutex(QMutex::Recursive))
+, _openfxContext(eContextNone)
+, _openfxDescriptor(0)
+, _isEnabled(true)
+, _isHighestVersion(true)
+, _openGLEnabled(true)
+, _multiThreadEnabled(true)
+, _renderScaleEnabled(true)
+{
+
+
 }
 
 Plugin::~Plugin()
 {
-    delete _binary;
 }
 
-void
-Plugin::setPluginID(const QString & id)
-{
-    _id = id;
-}
-
-const QString &
+std::string
 Plugin::getPluginID() const
 {
-    return _id;
-}
-
-bool
-Plugin::isReader() const
-{
-    return _isReader;
-}
-
-bool
-Plugin::isWriter() const
-{
-    return _isWriter;
+    return getProperty<std::string>(kNatronPluginPropID);
 }
 
 void
-Plugin::addPresetFile(const QString& filePath, const QString& presetLabel, const QString& iconFilePath, Key symbol, const KeyboardModifiers& mods)
+Plugin::addPresetFile(const PluginPresetDescriptor& preset)
 {
-    for (std::vector<PluginPresetDescriptor>::iterator it = _presetsFiles.begin(); it!=_presetsFiles.end(); ++it) {
-        if (it->presetLabel == presetLabel) {
+    for (std::vector<PluginPresetDescriptor>::iterator it = _presets.begin(); it!= _presets.end(); ++it) {
+        if (it->presetLabel == preset.presetLabel) {
             // Another preset with the same label already exists for this plug-in, ignore it
             return;
         }
     }
-    PluginPresetDescriptor s;
-    s.presetFilePath = filePath;
-    s.presetLabel = presetLabel;
-    s.presetIconFile = iconFilePath;
-    s.symbol = symbol;
-    s.modifiers = mods;
-    _presetsFiles.push_back(s);
+    _presets.push_back(preset);
 }
+
 
 struct PresetsSortByLabelFunctor
 {
@@ -186,212 +182,168 @@ struct PresetsSortByLabelFunctor
     }
 };
 
+
 void
 Plugin::sortPresetsByLabel()
 {
-    
-    std::sort(_presetsFiles.begin(), _presetsFiles.end(), PresetsSortByLabelFunctor());
+
+    std::sort(_presets.begin(), _presets.end(), PresetsSortByLabelFunctor());
 }
 
 const std::vector<PluginPresetDescriptor>&
 Plugin::getPresetFiles() const
 {
-    return _presetsFiles;
+    return _presets;
 }
 
-QString
+std::string
 Plugin::getPluginShortcutGroup() const
 {
-    QString ret = getPluginLabel();
-    bool isViewer = ret == QLatin1String("Viewer");
-    ret += QLatin1Char(' ');
+    std::string ret = getProperty<std::string>(kNatronPluginPropLabel);
+    bool isViewer = ret == "Viewer";
+    ret += ' ';
     if (!isViewer) {
-        ret +=  QLatin1String("Viewer");
-        ret += QLatin1Char(' ');
+        ret +=  "Viewer";
+        ret += ' ';
     }
 
-    ret += QLatin1String("Interface");
+    ret += "Interface";
     return ret;
 }
 
-void
-Plugin::setPluginLabel(const QString & label)
-{
-    _label = label;
-}
-
-const QString &
+std::string
 Plugin::getPluginLabel() const
 {
-    return _label;
+    return getProperty<std::string>(kNatronPluginPropLabel);
 }
 
-const QString
+int
+Plugin::getMajorVersion() const
+{
+    return getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+}
+
+int
+Plugin::getMinorVersion() const
+{
+    return getProperty<unsigned int>(kNatronPluginPropVersion, 1);
+}
+
+std::string
 Plugin::getLabelVersionMajorMinorEncoded() const
 {
-    return getLabelWithoutSuffix() + QLatin1Char(' ') + QString::number(_majorVersion) + QLatin1Char('.') + QString::number(_minorVersion);
+    std::stringstream ss;
+    ss << getLabelWithoutSuffix();
+    ss << ' ';
+    ss << getMajorVersion();
+    ss << '.';
+    ss << getMinorVersion();
+    return ss.str();
 }
 
-QString
-Plugin::makeLabelWithoutSuffix(const QString& label)
+std::string
+Plugin::getLabelVersionMajorEncoded() const
 {
-    if ( label.startsWith( QString::fromUtf8("Read") ) || label.startsWith( QString::fromUtf8("Write") ) ) {
+    std::stringstream ss;
+    ss << getLabelWithoutSuffix();
+    ss << ' ';
+    ss << getMajorVersion();
+    return ss.str();
+}
+
+std::string
+Plugin::makeLabelWithoutSuffix(const std::string& label)
+{
+    QString qLabel(QString::fromUtf8(label.c_str()));
+    if ( qLabel.startsWith( QString::fromUtf8("Read") ) || qLabel.startsWith( QString::fromUtf8("Write") ) ) {
         return label;
-    } else if ( label.endsWith( QString::fromUtf8("OFX") ) ) {
-        return label.mid(0, label.size() - 3);
-    } else if ( label.endsWith( QString::fromUtf8("CImg") ) ) {
-        return label.mid(0, label.size() - 4);
-    } else if ( label.endsWith( QString::fromUtf8("OIIO") ) ) {
-        return label.mid(0, label.size() - 4);
+    } else if ( qLabel.endsWith( QString::fromUtf8("OFX") ) ) {
+        return qLabel.mid(0, label.size() - 3).toStdString();
+    } else if ( qLabel.endsWith( QString::fromUtf8("CImg") ) ) {
+        return qLabel.mid(0, label.size() - 4).toStdString();
+    } else if ( qLabel.endsWith( QString::fromUtf8("OIIO") ) ) {
+        return qLabel.mid(0, label.size() - 4).toStdString();
     }
 
     return label;
 }
 
-const QString&
+std::string
 Plugin::getLabelWithoutSuffix() const
 {
     return _labelWithoutSuffix;
 }
 
 void
-Plugin::setLabelWithoutSuffix(const QString& label)
+Plugin::setLabelWithoutSuffix(const std::string& label)
 {
     _labelWithoutSuffix = label;
 }
 
-const QString
-Plugin::getLabelVersionMajorEncoded() const
+QStringList
+Plugin::getGroupingAsQStringList() const
 {
-    return getLabelWithoutSuffix() + QLatin1Char(' ') + QString::number(_majorVersion);
+    QStringList ret;
+    std::vector<std::string> groupingStd = getPropertyN<std::string>(kNatronPluginPropGrouping);
+    for (std::size_t i = 0; i < groupingStd.size(); ++i) {
+        ret.push_back(QString::fromUtf8(groupingStd[i].c_str()));
+    }
+    return ret;
 }
 
-QString
+std::string
 Plugin::generateUserFriendlyPluginID() const
 {
-    QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-
-    return getLabelWithoutSuffix() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
+    std::stringstream ss;
+    ss << getLabelWithoutSuffix();
+    ss << "  [";
+    ss << getProperty<unsigned int>(kNatronPluginPropGrouping, 0);
+    ss << ']';
+    return ss.str();
 }
 
-QString
+std::string
 Plugin::generateUserFriendlyPluginIDMajorEncoded() const
 {
-    QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-
-    return getLabelVersionMajorEncoded() + QString::fromUtf8("  [") + grouping + QLatin1Char(']');
-}
-
-void
-Plugin::setToolsetScript(bool isToolset)
-{
-    _toolSetScript = isToolset;
-}
-
-bool
-Plugin::getToolsetScript() const
-{
-    return _toolSetScript;
-}
-
-const QString&
-Plugin::getIconFilePath() const
-{
-    return _iconFilePath;
-}
-
-void
-Plugin::setIconFilePath(const QString& filePath)
-{
-    _iconFilePath = filePath;
-}
-
-const QStringList&
-Plugin::getGroupIconFilePath() const
-{
-    return _groupIconFilePath;
-}
-
-const QStringList&
-Plugin::getGrouping() const
-{
-    return _grouping;
+    std::stringstream ss;
+    ss << getLabelVersionMajorEncoded();
+    ss << "  [";
+    ss << getProperty<unsigned int>(kNatronPluginPropGrouping, 0);
+    ss << ']';
+    return ss.str();
 }
 
 boost::shared_ptr<QMutex>
 Plugin::getPluginLock() const
 {
-    return _lock;
-}
-
-LibraryBinary*
-Plugin::getLibraryBinary() const
-{
-    return _binary;
-}
-
-int
-Plugin::getMajorVersion() const
-{
-    return _majorVersion;
-}
-
-int
-Plugin::getMinorVersion() const
-{
-    return _minorVersion;
-}
-
-void
-Plugin::setPythonModule(const QString& module)
-{
-    _pythonModule = module;
-}
-
-const QString&
-Plugin::getPythonModule() const
-{
-    return _pythonModule; // < does not end with .py
-}
-
-void
-Plugin::getPythonModuleNameAndPath(QString* moduleName,
-                                   QString* modulePath) const
-{
-    int foundLastSlash = _pythonModule.lastIndexOf( QLatin1Char('/') );
-
-    if (foundLastSlash != -1) {
-        *modulePath = _pythonModule.mid(0, foundLastSlash + 1);
-        *moduleName = _pythonModule.mid(foundLastSlash + 1);
-    } else {
-        *moduleName = _pythonModule;
-    }
-}
-
-void
-Plugin::setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p)
-{
-    _ofxPlugin = p;
-}
-
-OFX::Host::ImageEffect::ImageEffectPlugin*
-Plugin::getOfxPlugin() const
-{
-    return _ofxPlugin;
+    return _pluginLock;
 }
 
 OFX::Host::ImageEffect::Descriptor*
 Plugin::getOfxDesc(ContextEnum* ctx) const
 {
-    *ctx = _ofxContext;
+    *ctx = _openfxContext;
+    return _openfxDescriptor;
+}
 
-    return _ofxDescriptor;
+bool
+Plugin::isEnabled() const
+{
+    return _isEnabled;
+}
+
+void
+Plugin::setEnabled(bool b)
+{
+    _isEnabled = b;
 }
 
 bool
 Plugin::getIsUserCreatable() const
 {
-    return !_isInternalOnly && _activated && !_isDeprecated;
+    return _isEnabled &&
+    !getProperty<bool>(kNatronPluginPropIsInternalOnly) &&
+    !getProperty<bool>(kNatronPluginPropIsDeprecated);
 }
 
 void
@@ -399,8 +351,8 @@ Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,
                    ContextEnum ctx)
 {
     assert(ctx != eContextNone);
-    _ofxDescriptor = desc;
-    _ofxContext = ctx;
+    _openfxDescriptor = desc;
+    _openfxContext = ctx;
 }
 
 bool
@@ -418,49 +370,25 @@ Plugin::setRenderScaleEnabled(bool b)
 bool
 Plugin::isMultiThreadingEnabled() const
 {
-    return _multiThreadingEnabled;
+    return _multiThreadEnabled;
 }
 
 void
 Plugin::setMultiThreadingEnabled(bool b)
 {
-    _multiThreadingEnabled = b;
+    _multiThreadEnabled = b;
 }
 
 bool
 Plugin::isOpenGLEnabled() const
 {
-    return _openglActivated;
+    return _openGLEnabled;
 }
 
 void
 Plugin::setOpenGLEnabled(bool b)
 {
-    _openglActivated = b;
-}
-
-void
-Plugin::setOpenGLRenderSupport(PluginOpenGLRenderSupport support)
-{
-    _openglRenderSupport = support;
-}
-
-PluginOpenGLRenderSupport
-Plugin::getPluginOpenGLRenderSupport() const
-{
-    return _openglRenderSupport;
-}
-
-bool
-Plugin::isActivated() const
-{
-    return _activated;
-}
-
-void
-Plugin::setActivated(bool b)
-{
-    _activated = b;
+    _openGLEnabled = b;
 }
 
 void
@@ -475,12 +403,24 @@ Plugin::getIsHighestMajorVersion() const
     return _isHighestVersion;
 }
 
-const QString&
+void
+Plugin::addActionShortcut(const PluginActionShortcut& shortcut)
+{
+    _actionShortcuts.push_back(shortcut);
+}
+
+const std::list<PluginActionShortcut>&
+Plugin::getShortcuts() const
+{
+    return _actionShortcuts;
+}
+
+QString
 PluginGroupNode::getTreeNodeID() const
 {
     PluginPtr plugin = getPlugin();
     if (plugin) {
-        return plugin->getPluginID();
+        return QString::fromUtf8(plugin->getPluginID().c_str());
     } else {
         return _name;
     }

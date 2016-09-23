@@ -42,6 +42,22 @@ struct BackdropPrivate
     }
 };
 
+PluginPtr
+Backdrop::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create((void*)Backdrop::create, PLUGINID_NATRON_BACKDROP, "Backdrop", 1, 0, grouping);
+
+    QString desc =  tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
+                       "You can also move all the nodes inside the backdrop.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "backdrop_icon.png");
+    return ret;
+}
+
+
 Backdrop::Backdrop(const NodePtr& node)
     : NoOpBase(node)
     , _imp( new BackdropPrivate() )
@@ -50,13 +66,6 @@ Backdrop::Backdrop(const NodePtr& node)
 
 Backdrop::~Backdrop()
 {
-}
-
-std::string
-Backdrop::getPluginDescription() const
-{
-    return tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
-              "You can also move all the nodes inside the backdrop.").toStdString();
 }
 
 void

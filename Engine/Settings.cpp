@@ -1833,19 +1833,19 @@ Settings::restorePluginSettings()
             PluginPtr plugin  = *it2;
             assert(plugin);
 
-            if ( plugin->getIsForInternalUseOnly() ) {
+            if ( plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly) ) {
                 continue;
             }
 
 
             {
-                QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
+                QString pluginIDKey = QString::fromUtf8(plugin->getPluginID().c_str()) + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
                 QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
                 if ( settings.contains(enabledKey) ) {
                     bool enabled = settings.value(enabledKey).toBool();
-                    plugin->setActivated(enabled);
+                    plugin->setEnabled(enabled);
                 } else {
-                    settings.setValue( enabledKey, plugin->isActivated() );
+                    settings.setValue( enabledKey, plugin->isMultiThreadingEnabled() );
                 }
 
                 QString rsKey = pluginIDKey + QString::fromUtf8("_rs");
@@ -1890,9 +1890,9 @@ Settings::savePluginsSettings()
             PluginPtr plugin  = *it2;
             assert(plugin);
 
-            QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
+            QString pluginID = QString::fromUtf8(plugin->getPluginID().c_str()) + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
             QString enabledKey = pluginID + QString::fromUtf8("_enabled");
-            settings.setValue( enabledKey, plugin->isActivated() );
+            settings.setValue( enabledKey, plugin->isEnabled() );
 
             QString rsKey = pluginID + QString::fromUtf8("_rs");
             settings.setValue( rsKey, plugin->isRenderScaleEnabled() );

@@ -29,10 +29,21 @@
 
 NATRON_NAMESPACE_ENTER;
 
-std::string
-Dot::getPluginDescription() const
+PluginPtr
+Dot::createPlugin()
 {
-    return "Doesn't do anything to the input image, this is used in the node graph to make bends in the links.";
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create((void*)Dot::create, PLUGINID_NATRON_DOT, "Dot", 1, 0, grouping);
+
+    QString desc = tr("Doesn't do anything to the input image, this is used in the node graph to make bends in the links.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_period);
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierShift, 1);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "dot_icon.png");
+    return ret;
 }
+
 
 NATRON_NAMESPACE_EXIT;

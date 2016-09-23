@@ -497,12 +497,11 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             PluginPtr plugin  = *it2;
             assert(plugin);
-            if ( plugin->getIsForInternalUseOnly() ) {
+            if (plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly)) {
                 continue;
             }
 
-
-            PluginTreeNodeList::iterator foundParent = _imp->buildPluginGroupHierarchy( plugin->getGrouping() );
+            PluginTreeNodeList::iterator foundParent = _imp->buildPluginGroupHierarchy( plugin->getGroupingAsQStringList() );
             PluginTreeNode node;
             node.plugin = plugin;
             if ( foundParent == _imp->pluginsList.end() ) {
@@ -510,8 +509,8 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
             } else {
                 node.item = new QTreeWidgetItem(foundParent->item);
             }
-            node.item->setText( COL_PLUGIN_LABEL, plugin->getLabelWithoutSuffix() );
-            node.item->setText( COL_PLUGINID, plugin->getPluginID() );
+            node.item->setText( COL_PLUGIN_LABEL, QString::fromUtf8(plugin->getLabelWithoutSuffix().c_str()) );
+            node.item->setText( COL_PLUGINID, QString::fromUtf8(plugin->getPluginID().c_str()) );
             QString versionString = QString::number( plugin->getMajorVersion() ) + QString::fromUtf8(".") + QString::number( plugin->getMinorVersion() );
             node.item->setText(COL_VERSION, versionString);
 
@@ -523,7 +522,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isActivated() );
+                checkbox->setChecked( plugin->isEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onItemEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_ENABLED, checkbox);
                 node.enabledCheckbox = checkbox;
@@ -536,7 +535,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isActivated() );
+                checkbox->setChecked( plugin->isRenderScaleEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onRSEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_RS_ENABLED, checkbox);
                 node.rsCheckbox = checkbox;
@@ -550,7 +549,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isActivated() );
+                checkbox->setChecked( plugin->isMultiThreadingEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onMTEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_MT_ENABLED, checkbox);
                 node.mtCheckbox = checkbox;
@@ -563,10 +562,10 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked(plugin->isActivated());
+                checkbox->setChecked(plugin->isOpenGLEnabled());
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
-                if (plugin->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportNone) {
+                if ((PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport) == ePluginOpenGLRenderSupportNone) {
                     checkbox->setChecked(false);
                     checkbox->setReadOnly(true);
                 }
@@ -789,7 +788,7 @@ PreferencesPanel::filterPlugins(const QString & txt)
         QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
-            if ( it->plugin.lock() && it->plugin.lock()->getLabelWithoutSuffix().contains(expr) ) {
+            if ( it->plugin.lock() && QString::fromUtf8(it->plugin.lock()->getLabelWithoutSuffix().c_str()).contains(expr) ) {
                 itemsToDisplay.push_back(it->item);
             } else {
                 it->item->setExpanded(false);
@@ -819,7 +818,7 @@ PreferencesPanel::onItemEnabledCheckBoxChecked(bool checked)
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->enabledCheckbox == cb) {
-            it->plugin.lock()->setActivated(checked);
+            it->plugin.lock()->setEnabled(checked);
             _imp->pluginSettingsChanged = true;
             break;
         }

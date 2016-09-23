@@ -2888,7 +2888,7 @@ public:
 class NamedKnobHolder
     : public KnobHolder
 {
-protected: // derives from KnobHolder, parent of EffectInstance, TrackMarker, MultiInstancePanel, DialogParamHolder
+protected: // derives from KnobHolder, parent of EffectInstance, TrackMarker, DialogParamHolder
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 

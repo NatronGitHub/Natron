@@ -430,9 +430,6 @@ Gui::createMenuActions()
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()) );
 
-    _imp->actionExportAsGroup = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionExportProject, kShortcutDescActionExportProject, this);
-    _imp->actionExportAsGroup->setIcon( get_icon("document-save-as") );
-    QObject::connect( _imp->actionExportAsGroup, SIGNAL(triggered()), this, SLOT(exportProjectAsGroup()) );
 
     _imp->actionSaveAndIncrementVersion = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, this);
     QObject::connect( _imp->actionSaveAndIncrementVersion, SIGNAL(triggered()), this, SLOT(saveAndIncrVersion()) );
@@ -608,7 +605,6 @@ Gui::createMenuActions()
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
     _imp->menuFile->addAction(_imp->actionSaveAndIncrementVersion);
-    _imp->menuFile->addAction(_imp->actionExportAsGroup);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionExit);
 

@@ -239,7 +239,7 @@ Project::loadProject(const QString & path,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
@@ -251,7 +251,7 @@ Project::loadProject(const QString & path,
     } catch (...) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
@@ -2509,7 +2509,7 @@ Project::createViewer()
         return;
     }
 
-    CreateNodeArgsPtr args(new CreateNodeArgs( PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
@@ -2699,7 +2699,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         NodesList nodes;
         getActiveNodes(&nodes);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if ( !(*it)->getParentMultiInstance() && (*it)->isPersistent() ) {
+            if ( (*it)->isPersistent() ) {
                 
                 SERIALIZATION_NAMESPACE::NodeSerializationPtr state;
                 StubNodePtr isStub = toStubNode((*it)->getEffectInstance());
@@ -2908,8 +2908,7 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 
 
         // Restore the nodes
-        std::map<std::string, bool> processedModules;
-        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(), true, &processedModules);
+        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this());
         getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
 

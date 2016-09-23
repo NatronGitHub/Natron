@@ -73,7 +73,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiString.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGraphTextItem.h"
@@ -168,15 +167,6 @@ NodeSettingsPanel*
 DotGui::createPanel(QVBoxLayout* /*container*/,
                     const NodeGuiPtr & /*thisAsShared*/)
 {
-    /* NodeSettingsPanel* panel = new NodeSettingsPanel( MultiInstancePanelPtr(),
-                                                       getDagGui()->getGui(),
-                                                       thisAsShared,
-                                                       container,container->parentWidget() );
-
-       ///Always close the panel by default for Dots
-       panel->setClosed(true);
-
-       return panel;*/
     return 0;
 }
 

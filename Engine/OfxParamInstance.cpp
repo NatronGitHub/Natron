@@ -4362,9 +4362,10 @@ OfxParametricInstance::addControlPoint(int curveIndex,
 #pragma message WARN("This is a hack, we should extend the parametric suite to add derivatives infos")
 #endif
     if (effect) {
-        if ( (effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) || (effect->getPluginID() == PLUGINID_OFX_TIMEDISSOLVE) ) {
+        NodePtr node = effect->getNode();
+        if ( (node->getPluginID() == PLUGINID_OFX_COLORCORRECT) || (node->getPluginID() == PLUGINID_OFX_TIMEDISSOLVE) ) {
             interpolation = eKeyframeTypeHorizontal;
-        } else if ( (effect->getPluginID() == PLUGINID_OFX_COLORLOOKUP) || (effect->getPluginID() == PLUGINID_OFX_RETIME) ) {
+        } else if ( (node->getPluginID() == PLUGINID_OFX_COLORLOOKUP) || (node->getPluginID() == PLUGINID_OFX_RETIME) ) {
             interpolation = eKeyframeTypeCubic;
         }
     }

@@ -16,58 +16,26 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_Dot_h
-#define Engine_Dot_h
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
+#include "PropertiesHolder.h"
 
-#include "Engine/NoOpBase.h"
-#include "Engine/EngineFwd.h"
+NATRON_NAMESPACE_ENTER
 
-NATRON_NAMESPACE_ENTER;
-
-class Dot
-    : public NoOpBase
+PropertiesHolder::PropertiesHolder()
+: _properties()
+, _propertiesInitialized(false)
 {
-private: // derives from EffectInstance
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    Dot(const NodePtr& n)
-        : NoOpBase(n)
-    {
-    }
-
-public:
-    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
-    {
-        return EffectInstancePtr( new Dot(node) );
-    }
-
-    static PluginPtr createPlugin();
-
-    virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
-
-    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "";
-    }
-};
-
-inline DotPtr
-toDot(const EffectInstancePtr& effect)
-{
-    return boost::dynamic_pointer_cast<Dot>(effect);
 }
 
-NATRON_NAMESPACE_EXIT;
+PropertiesHolder::~PropertiesHolder()
+{
+    
+}
 
-#endif // Engine_Dot_h
+NATRON_NAMESPACE_EXIT

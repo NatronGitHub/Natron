@@ -54,6 +54,7 @@
 #include <shlobj.h>
 #endif
 
+#include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
 #include <libs/hoedown/src/version.h>
 #include <ceres/version.h>
@@ -1380,7 +1381,7 @@ AppManager::onAllPluginsLoaded()
             continue;
         }
 
-        QString labelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*first)->getPluginLabel() );
+        std::string labelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*first)->getPluginLabel() );
 
         //Find a duplicate
         for (PluginsMap::const_iterator it2 = plugins.begin(); it2 != plugins.end(); ++it2) {
@@ -1402,12 +1403,22 @@ AppManager::onAllPluginsLoaded()
                 continue;
             }
 
-            QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*other)->getPluginLabel() );
+            std::string otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*other)->getPluginLabel() );
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
-                QString otherGrouping = (*other)->getGrouping().join( QChar::fromLatin1('/') );
-                const QStringList& thisGroupingSplit = (*first)->getGrouping();
-                QString thisGrouping = thisGroupingSplit.join( QChar::fromLatin1('/') );
-                if (otherGrouping == thisGrouping) {
+
+                std::vector<std::string> otherGrouping = (*other)->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                std::vector<std::string> thisGrouping = (*first)->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                bool allEqual = false;
+                if (otherGrouping.size() == thisGrouping.size()) {
+                    allEqual = true;
+                    for (std::size_t i = 0; i < thisGrouping.size(); ++i) {
+                        if (otherGrouping[i] != thisGrouping[i]) {
+                            allEqual = false;
+                            break;
+                        }
+                    }
+                }
+                if (allEqual) {
                     labelWithoutSuffix = (*first)->getPluginLabel();
                 }
                 break;
@@ -1428,65 +1439,30 @@ AppManager::onAllPluginsLoaded()
     }
 } // AppManager::onAllPluginsLoaded
 
-template <typename PLUGIN>
-void
-AppManager::registerBuiltInPlugin(const QString& iconPath,
-                                  bool isDeprecated,
-                                  bool internalUseOnly)
-{
-    EffectInstancePtr node( PLUGIN::create( NodePtr() ) );
-    std::map<std::string, void (*)()> functions;
-
-    functions.insert( std::make_pair("create", ( void (*)() ) (EffectBuilder)PLUGIN::create) );
-    LibraryBinary *binary = new LibraryBinary(functions);
-    assert(binary);
-
-    std::list<std::string> grouping;
-    node->getPluginGrouping(&grouping);
-    QStringList qgrouping;
-
-    for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-        qgrouping.push_back( QString::fromUtf8( it->c_str() ) );
-    }
-
-    // Empty since statically bundled
-    QString resourcesPath = QString();
-    PluginPtr p = registerPlugin(resourcesPath, qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
-                               iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
-    std::list<PluginActionShortcut> shortcuts;
-    node->getPluginShortcuts(&shortcuts);
-    p->setShorcuts(shortcuts);
-
-    PluginOpenGLRenderSupport glSupport = node->supportsOpenGLRender();
-    p->setOpenGLRenderSupport(glSupport);
-
-    if (internalUseOnly) {
-        p->setForInternalUseOnly(true);
-    }
-}
 
 void
 AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
                                    IOPluginsMap* /*writersMap*/)
 {
-    registerBuiltInPlugin<Backdrop>(QString::fromUtf8(NATRON_IMAGES_PATH "backdrop_icon.png"), false, false);
-    registerBuiltInPlugin<GroupOutput>(QString::fromUtf8(NATRON_IMAGES_PATH "output_icon.png"), false, false);
-    registerBuiltInPlugin<GroupInput>(QString::fromUtf8(NATRON_IMAGES_PATH "input_icon.png"), false, false);
-    registerBuiltInPlugin<NodeGroup>(QString::fromUtf8(NATRON_IMAGES_PATH "group_icon.png"), false, false);
-    registerBuiltInPlugin<Dot>(QString::fromUtf8(NATRON_IMAGES_PATH "dot_icon.png"), false, false);
-    registerBuiltInPlugin<DiskCacheNode>(QString::fromUtf8(NATRON_IMAGES_PATH "diskcache_icon.png"), false, false);
-    registerBuiltInPlugin<RotoPaint>(QString::fromUtf8(NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png"), false, false);
-    registerBuiltInPlugin<RotoNode>(QString::fromUtf8(NATRON_IMAGES_PATH "rotoNodeIcon.png"), false, false);
-    registerBuiltInPlugin<RotoShapeRenderNode>(QString::fromUtf8(""), false, true);
-    registerBuiltInPlugin<PrecompNode>(QString::fromUtf8(NATRON_IMAGES_PATH "precompNodeIcon.png"), false, false);
-    registerBuiltInPlugin<TrackerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "trackerNodeIcon.png"), false, false);
-    registerBuiltInPlugin<JoinViewsNode>(QString::fromUtf8(NATRON_IMAGES_PATH "joinViewsNode.png"), false, false);
-    registerBuiltInPlugin<OneViewNode>(QString::fromUtf8(NATRON_IMAGES_PATH "oneViewNode.png"), false, false);
-    registerBuiltInPlugin<ReadNode>(QString::fromUtf8(NATRON_IMAGES_PATH "readImage.png"), false, false);
-    registerBuiltInPlugin<StubNode>(QString::fromUtf8(""), false, true);
-    registerBuiltInPlugin<WriteNode>(QString::fromUtf8(NATRON_IMAGES_PATH "writeImage.png"), false, false);
-    registerBuiltInPlugin<ViewerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
-    registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, true);
+    registerPlugin(Backdrop::createPlugin());
+    registerPlugin(GroupOutput::createPlugin());
+    registerPlugin(GroupInput::createPlugin());
+    registerPlugin(NodeGroup::createPlugin());
+    registerPlugin(Dot::createPlugin());
+    registerPlugin(DiskCacheNode::createPlugin());
+    registerPlugin(RotoPaint::createPlugin());
+    registerPlugin(RotoNode::createPlugin());
+    registerPlugin(RotoShapeRenderNode::createPlugin());
+    registerPlugin(PrecompNode::createPlugin());
+    registerPlugin(TrackerNode::createPlugin());
+    registerPlugin(JoinViewsNode::createPlugin());
+    registerPlugin(OneViewNode::createPlugin());
+    registerPlugin(ReadNode::createPlugin());
+    registerPlugin(StubNode::createPlugin());
+    registerPlugin(WriteNode::createPlugin());
+    registerPlugin(ViewerNode::createPlugin());
+    registerPlugin(ViewerInstance::createPlugin());
+
 
 }
 
@@ -1786,32 +1762,59 @@ AppManager::loadNodesPresets()
         }
 
         // If the presetID is set, make a new plug-in, otherwise append as a preset of the original plugin
-        if (!obj.presetID.empty()) {
-            QString path;
-            {
-                int foundSlash = presetFile.lastIndexOf(QLatin1Char('/'));
-                path = presetFile.mid(0, foundSlash);
-            }
-            QStringList grouping;
-            if (!obj.presetGrouping.empty()) {
-                grouping = QString::fromUtf8(obj.presetGrouping.c_str()).split(QChar::fromLatin1('/'));
+        if (!obj.pyPlugID.empty()) {
+
+            std::vector<std::string> grouping;
+            if (!obj.pyPlugGrouping.empty()) {
+                boost::split(grouping, obj.pyPlugGrouping, boost::is_any_of("/"));
             } else {
                 // Use the original plugin grouping
-                PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(obj.originalPluginID.c_str()), -1, -1, false);
+                QString originalPluginID = QString::fromUtf8(obj.originalPluginID.c_str());
+                if (originalPluginID.isEmpty()) {
+                    // Assume this is a group
+                    originalPluginID = QLatin1String(PLUGINID_NATRON_GROUP);
+                }
+                PluginPtr foundPlugin;
+                try {
+                    foundPlugin = getPluginBinary(originalPluginID, -1, -1, false);
+                } catch (...) {
+                    continue;
+                }
                 if (!foundPlugin) {
                     continue;
                 }
-                grouping = foundPlugin->getGrouping();
+                grouping = foundPlugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
             }
-            PluginPtr p = registerPlugin(path, grouping, QString::fromUtf8( obj.presetID.c_str() ), QString::fromUtf8( obj.presetLabel.c_str() ), QString::fromUtf8( obj.presetIcon.c_str() ), QStringList(), false, false, 0, false, obj.version, 0, false);
-            (void)p;
+
+
+            PluginPtr p = Plugin::create(0, obj.pyPlugID, obj.presetLabel, obj.version, 0, grouping);
+            p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, presetFile.toStdString());
+            p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, obj.pyPlugDescriptionIsMarkdown);
+            p->setProperty<std::string>(kNatronPluginPropDescription, obj.pyPlugDescription);
+            p->setProperty<std::string>(kNatronPluginPropIconFilePath, obj.presetIcon);
+            p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);
+            p->setProperty<int>(kNatronPluginPropShortcut, obj.presetModifiers, 1);
+            registerPlugin(p);
+
+            
         } else {
 
-            PluginPtr foundPlugin = getPluginBinary(QString::fromUtf8(obj.originalPluginID.c_str()), -1, -1, false);
+            PluginPtr foundPlugin;
+            try {
+                foundPlugin = getPluginBinary(QString::fromUtf8(obj.originalPluginID.c_str()), -1, -1, false);
+            } catch (...) {
+                continue;
+            }
             if (!foundPlugin) {
                 continue;
             }
-            foundPlugin->addPresetFile(presetFile, QString::fromUtf8(obj.presetLabel.c_str()), QString::fromUtf8(obj.presetIcon.c_str()), (Key)obj.presetSymbol, KeyboardModifiers(obj.presetModifiers));
+            PluginPresetDescriptor preset;
+            preset.presetFilePath = presetFile;
+            preset.presetLabel = QString::fromUtf8(obj.presetLabel.c_str());
+            preset.presetIconFile = QString::fromUtf8(obj.presetIcon.c_str());
+            preset.symbol = (Key)obj.presetSymbol;
+            preset.modifiers = KeyboardModifiers(obj.presetModifiers);
+            foundPlugin->addPresetFile(preset);
         }
     }
 }
@@ -1916,7 +1919,7 @@ AppManager::loadPythonGroups()
         }
     }
 
-    // Now that init.py and InitGui.py have run, we need to set the search path again for the PyPlug
+    // Now that init.py and initGui.py have run, we need to set the search path again for the PyPlug
     // as the user might have called appendToNatronPath
 
     QStringList newTemplatesSearchPath = getAllNonOFXPluginsPaths();
@@ -1936,8 +1939,7 @@ AppManager::loadPythonGroups()
         }
     }
 
-    appPTR->setLoadingStatus( tr("Loading PyPlugs...") );
-
+    // Load deprecated PyPlugs encoded using Python scripts
     Q_FOREACH(const QString &plugin, allPlugins) {
         QString moduleName = plugin;
         QString modulePath;
@@ -1958,52 +1960,47 @@ AppManager::loadPythonGroups()
         bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &pluginPath, &isToolset, &version);
 
 
-        if (gotInfos) {
-            qDebug() << "Loading " << moduleName;
-            QStringList grouping = QString::fromUtf8( pluginGrouping.c_str() ).split( QChar::fromLatin1('/') );
-            PluginPtr p = registerPlugin(modulePath, grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
-
-            p->setPythonModule(modulePath + moduleName);
-            p->setToolsetScript(isToolset);
+        if (!gotInfos) {
+            continue;
         }
+
+
+        std::vector<std::string> grouping;
+        boost::split(grouping, pluginGrouping, boost::is_any_of("/"));
+
+        PluginPtr p = Plugin::create(0, pluginID, pluginLabel, version, 0, grouping);
+        p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, plugin.toStdString());
+        p->setProperty<bool>(kNatronPluginPropPyPlugIsToolset, isToolset);
+        p->setProperty<std::string>(kNatronPluginPropDescription, pluginDescription);
+        p->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFilePath);
+
+        //p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, false);
+        //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);
+        //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetModifiers, 1);
+        registerPlugin(p);
+
     }
 } // AppManager::loadPythonGroups
 
-PluginPtr
-AppManager::registerPlugin(const QString& resourcesPath,
-                           const QStringList & groups,
-                           const QString & pluginID,
-                           const QString & pluginLabel,
-                           const QString & pluginIconPath,
-                           const QStringList & groupIconPath,
-                           bool isReader,
-                           bool isWriter,
-                           LibraryBinary* binary,
-                           bool mustCreateMutex,
-                           int major,
-                           int minor,
-                           bool isDeprecated)
+void
+AppManager::registerPlugin(const PluginPtr& plugin)
 {
 
-    PluginPtr plugin(new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, mustCreateMutex, major, minor,
-                                isReader, isWriter, isDeprecated));
-    std::string stdID = pluginID.toStdString();
-
-    if ( ReadNode::isBundledReader( stdID, false ) ||
-         WriteNode::isBundledWriter( stdID, false ) ) {
-        plugin->setForInternalUseOnly(true);
+    std::string pluginID = plugin->getPluginID();
+    if ( ReadNode::isBundledReader( pluginID, false ) ||
+         WriteNode::isBundledWriter( pluginID, false ) ) {
+        plugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     }
 
-    PluginsMap::iterator found = _imp->_plugins.find(stdID);
+    PluginsMap::iterator found = _imp->_plugins.find(pluginID);
     if ( found != _imp->_plugins.end() ) {
         found->second.insert(plugin);
     } else {
         PluginMajorsOrdered set;
         set.insert(plugin);
-        _imp->_plugins.insert( std::make_pair(stdID, set) );
+        _imp->_plugins.insert( std::make_pair(pluginID, set) );
     }
 
-    return plugin;
 }
 
 Format
@@ -2086,32 +2083,28 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
     std::map<int, PluginPtr> matches;
 
     if ( pluginId == QString::fromUtf8("Viewer") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_VIEWER_GROUP), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_VIEWER_GROUP, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("Dot") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_DOT), majorVersion, minorVersion );
+        return _imp->findPluginById(PLUGINID_NATRON_DOT, majorVersion, minorVersion );
     } else if ( pluginId == QString::fromUtf8("DiskCache") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_DISKCACHE), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("Backdrop") ) { // DO NOT change the capitalization, even if it's wrong
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_BACKDROP), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("RotoOFX  [Draw]") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_ROTO), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
     } else if ( ( !projectIsLowerCase && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( projectIsLowerCase && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) )  {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_ROTO), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
     }
 
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
         assert( !it->second.empty() );
         PluginMajorsOrdered::const_iterator it2 = it->second.begin();
-        QString friendlyLabel = (*it2)->getPluginLabel();
-        const QStringList& s = (*it2)->getGrouping();
-        QString grouping;
-        if (s.size() > 0) {
-            grouping = s[0];
-        }
-        friendlyLabel += QString::fromUtf8("  [") + grouping + QChar::fromLatin1(']');
+        std::string friendlyLabel = (*it2)->getPluginLabel();
+        std::string grouping0 = (*it2)->getProperty<std::string>(kNatronPluginPropGrouping, 0);
+        friendlyLabel.append("  [" + grouping0 + "]");
 
-        if (friendlyLabel == pluginId) {
+        if (friendlyLabel == pluginId.toStdString()) {
             if (majorVersion == -1) {
                 // -1 means we want to load the highest version existing
                 return *( it->second.rbegin() );
@@ -2119,7 +2112,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
 
             //Look for the exact version
             for (; it2 != it->second.end(); ++it2) {
-                if ( (*it2)->getMajorVersion() == majorVersion ) {
+                if ( (*it2)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)majorVersion ) {
                     return *it2;
                 }
             }
@@ -2168,7 +2161,7 @@ AppManager::getPluginBinary(const QString & pluginId,
 
         ///Try to find the exact version
         for (PluginMajorsOrdered::const_iterator it = foundID->second.begin(); it != foundID->second.end(); ++it) {
-            if ( ( (*it)->getMajorVersion() == majorVersion ) ) {
+            if ( ( (*it)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)majorVersion ) ) {
                 return *it;
             }
         }
@@ -2185,26 +2178,17 @@ AppManager::getPluginBinary(const QString & pluginId,
     return PluginPtr();
 }
 
-EffectInstancePtr
-AppManager::createOFXEffect(const NodePtr& node,
-                            const CreateNodeArgs& args) const
-{
-    return _imp->ofxHost->createOfxEffect(node, args);
-}
 
 NodePtr
 AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group)
 {
     NodePtr retNode;
     {
-        CreateNodeArgsPtr args(new CreateNodeArgs(serialization->_pluginID, group));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(serialization->_pluginID, group));
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
         args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
         args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
-        if (!serialization->_multiInstanceParentName.empty()) {
-            args->setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, serialization->_multiInstanceParentName);
-        }
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         retNode =  group->getApplication()->createNode(args);
@@ -2215,7 +2199,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     
     // If the node could not be created, make a Stub node
     {
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_STUB, group));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_STUB, group));
 
         std::stringstream ss;
         try {

@@ -1031,18 +1031,6 @@ ParallelRenderArgsSetter::computeRequestPass(unsigned int mipMapLevel, const Rec
             }
         }
 
-        if ( (*it)->isMultiInstance() ) {
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodesList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                FrameRequestMap::const_iterator foundRequest = requestData.find(*it2);
-                if ( foundRequest != requestData.end() ) {
-                    (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
-                }
-            }
-        }
     }
     return stat;
 }
@@ -1091,21 +1079,6 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
             continue;
         }
         (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
-
-        if ( (*it)->isMultiInstance() ) {
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodesList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                (*it2)->getEffectInstance()->invalidateParallelRenderArgsTLS();
-            }
-        }
-
-        /* NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-           if (isGrp) {
-             isGrp->invalidateParallelRenderArgs();
-           }*/
     }
 
     if (argsMap) {

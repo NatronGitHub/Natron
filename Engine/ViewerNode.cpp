@@ -390,6 +390,7 @@
 
 #define VIEWER_INITIAL_N_INPUTS 10
 
+
 enum ViewerNodeInteractMouseStateEnum
 {
     eViewerNodeInteractMouseStateIdle,
@@ -416,6 +417,100 @@ enum HoverStateEnum
 };
 
 NATRON_NAMESPACE_ENTER;
+
+
+PluginPtr
+ViewerNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_IMAGE);
+    PluginPtr ret = Plugin::create((void*)ViewerNode::create, PLUGINID_NATRON_VIEWER_GROUP, "Viewer", 1, 0, grouping);
+
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "viewer_icon.png");
+    QString desc = tr("The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree");
+
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_I, 0);
+    ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierControl, 1
+                          );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamClipToProject, kViewerNodeParamClipToProjectLabel, Key_C, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamFullFrame, kViewerNodeParamFullFrameLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableUserRoI, kViewerNodeParamEnableUserRoILabel, Key_W, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableProxyMode, kViewerNodeParamEnableProxyModeLabel, Key_P, eKeyboardModifierControl) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPauseRender, kViewerNodeParamPauseRenderLabel, Key_P) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableGain, kViewerNodeParamEnableGainLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableAutoContrast, kViewerNodeParamEnableAutoContrastLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableGamma, kViewerNodeParamEnableGammaLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRefreshViewport, kViewerNodeParamRefreshViewportLabel, Key_U) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamFitViewport, kViewerNodeParamFitViewportLabel, Key_F) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamSyncViewports, kViewerNodeParamSyncViewportsLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamCheckerBoard, kViewerNodeParamCheckerBoardLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableColorPicker, kViewerNodeParamEnableColorPickerLabel) );
+
+    // Right-click actions
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuToggleWipe, kViewerNodeParamRightClickMenuToggleWipeLabel, Key_W) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuCenterWipe, kViewerNodeParamRightClickMenuCenterWipeLabel, Key_F, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousLayer, kViewerNodeParamRightClickMenuPreviousLayerLabel, Key_Page_Up) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuNextLayer, kViewerNodeParamRightClickMenuNextLayerLabel, Key_Page_Down) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuSwitchAB, kViewerNodeParamRightClickMenuSwitchABLabel, Key_Return) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousView, kViewerNodeParamRightClickMenuPreviousViewLabel, Key_Page_Up, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuNextView, kViewerNodeParamRightClickMenuNextViewLabel, Key_Page_Down, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideOverlays, kViewerNodeParamRightClickMenuShowHideOverlaysLabel, Key_O) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel, Key_space, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierAlt) ));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAllTop, kViewerNodeParamRightClickMenuHideAllTopLabel, Key_space, eKeyboardModifierShift ));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAllBottom, kViewerNodeParamRightClickMenuHideAllBottomLabel, Key_space, eKeyboardModifierAlt ));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHidePlayer, kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTimeline, kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideLeftToolbar, kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTopToolbar, kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTabHeader, kViewerNodeParamRightClickMenuShowHideTabHeaderLabel) );
+
+    // Viewer actions
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionLuminance, kViewerNodeParamActionLuminanceLabel, Key_Y) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionRed, kViewerNodeParamActionRedLabel, Key_R) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionRedA, kViewerNodeParamActionRedALabel, Key_R, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionGreen, kViewerNodeParamActionGreenLabel, Key_G) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionGreenA, kViewerNodeParamActionGreenALabel, Key_G, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionBlue, kViewerNodeParamActionBlueLabel, Key_B) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionBlueA, kViewerNodeParamActionBlueALabel, Key_B, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionAlpha, kViewerNodeParamActionAlphaLabel, Key_A) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionAlphaA, kViewerNodeParamActionAlphaALabel, Key_A, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionMatte, kViewerNodeParamActionMatteLabel, Key_M) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionMatteA, kViewerNodeParamActionMatteALabel, Key_M, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionZoomIn, kViewerNodeParamActionZoomInLabel, Key_plus) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionZoomOut, kViewerNodeParamActionZoomOutLabel, Key_minus) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionScaleOne, kViewerNodeParamActionScaleOneLabel, Key_1, eKeyboardModifierControl) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionProxy2, kViewerNodeParamActionProxy2Label, Key_1, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionProxy4, kViewerNodeParamActionProxy4Label, Key_2, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionProxy8, kViewerNodeParamActionProxy8Label, Key_3, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionProxy16, kViewerNodeParamActionProxy16Label, Key_4, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionProxy32, kViewerNodeParamActionProxy32Label, Key_5, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionLeftView, kViewerNodeParamActionLeftViewLabel, Key_Left, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionRightView, kViewerNodeParamActionRightViewLabel, Key_Right, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionCreateNewRoI, kViewerNodeParamActionCreateNewRoILabel, Key_W, eKeyboardModifierAlt) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionPauseAB, kViewerNodeParamActionPauseABLabel, Key_P, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionRefreshWithStats, kViewerNodeParamActionRefreshWithStatsLabel, Key_U, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)) );
+
+
+    // Player
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPreviousFrame, kViewerNodeParamPreviousFrameLabel, Key_Left, eKeyboardModifierNone));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamNextFrame, kViewerNodeParamNextFrameLabel, Key_Right, eKeyboardModifierNone));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPlayBackward, kViewerNodeParamPlayBackwardLabel, Key_J, eKeyboardModifierNone));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPlayForward, kViewerNodeParamPlayForwardLabel, Key_L, eKeyboardModifierNone));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamActionAbortRender, kViewerNodeParamActionAbortRenderLabel, Key_K, eKeyboardModifierNone));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPreviousIncr, kViewerNodeParamPreviousIncrLabel, Key_Left, eKeyboardModifierShift));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamNextIncr, kViewerNodeParamNextIncrLabel, Key_Right, eKeyboardModifierShift));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPreviousKeyFrame, kViewerNodeParamPreviousKeyFrameLabel, Key_Left, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamNextKeyFrame, kViewerNodeParamNextKeyFrameLabel, Key_Right, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamFirstFrame, kViewerNodeParamFirstFrameLabel, Key_Left, eKeyboardModifierControl));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamLastFrame, kViewerNodeParamLastFrameLabel, Key_Right, eKeyboardModifierControl));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamSetInPoint, kViewerNodeParamSetInPointLabel, Key_I, eKeyboardModifierAlt));
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamSetOutPoint, kViewerNodeParamSetOutPointLabel, Key_O, eKeyboardModifierAlt));
+
+
+    return ret;
+}
 
 struct ViewerNodePrivate
 {
@@ -671,23 +766,6 @@ ViewerNode::getInternalViewerNode() const
     return toViewerInstance(node->getEffectInstance());
 }
 
-std::string
-ViewerNode::getPluginLabel() const
-{
-    return tr("Viewer").toStdString();
-}
-
-void
-ViewerNode::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    grouping->push_back(PLUGIN_GROUP_IMAGE);
-}
-
-std::string
-ViewerNode::getPluginDescription() const
-{
-    return tr("The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree").toStdString();
-}
 
 void
 ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
@@ -798,85 +876,6 @@ ViewerNode::onInputNameChanged(int,QString)
 }
 
 void
-ViewerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const
-{
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamClipToProject, kViewerNodeParamClipToProjectLabel, Key_C, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamFullFrame, kViewerNodeParamFullFrameLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableUserRoI, kViewerNodeParamEnableUserRoILabel, Key_W, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableProxyMode, kViewerNodeParamEnableProxyModeLabel, Key_P, eKeyboardModifierControl) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPauseRender, kViewerNodeParamPauseRenderLabel, Key_P) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableGain, kViewerNodeParamEnableGainLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableAutoContrast, kViewerNodeParamEnableAutoContrastLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableGamma, kViewerNodeParamEnableGammaLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRefreshViewport, kViewerNodeParamRefreshViewportLabel, Key_U) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamFitViewport, kViewerNodeParamFitViewportLabel, Key_F) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamSyncViewports, kViewerNodeParamSyncViewportsLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamCheckerBoard, kViewerNodeParamCheckerBoardLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamEnableColorPicker, kViewerNodeParamEnableColorPickerLabel) );
-
-    // Right-click actions
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuToggleWipe, kViewerNodeParamRightClickMenuToggleWipeLabel, Key_W) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuCenterWipe, kViewerNodeParamRightClickMenuCenterWipeLabel, Key_F, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousLayer, kViewerNodeParamRightClickMenuPreviousLayerLabel, Key_Page_Up) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextLayer, kViewerNodeParamRightClickMenuNextLayerLabel, Key_Page_Down) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuSwitchAB, kViewerNodeParamRightClickMenuSwitchABLabel, Key_Return) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuPreviousView, kViewerNodeParamRightClickMenuPreviousViewLabel, Key_Page_Up, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuNextView, kViewerNodeParamRightClickMenuNextViewLabel, Key_Page_Down, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideOverlays, kViewerNodeParamRightClickMenuShowHideOverlaysLabel, Key_O) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAll, kViewerNodeParamRightClickMenuHideAllLabel, Key_space, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierAlt) ));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAllTop, kViewerNodeParamRightClickMenuHideAllTopLabel, Key_space, eKeyboardModifierShift ));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuHideAllBottom, kViewerNodeParamRightClickMenuHideAllBottomLabel, Key_space, eKeyboardModifierAlt ));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHidePlayer, kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTimeline, kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideLeftToolbar, kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTopToolbar, kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamRightClickMenuShowHideTabHeader, kViewerNodeParamRightClickMenuShowHideTabHeaderLabel) );
-
-    // Viewer actions
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionLuminance, kViewerNodeParamActionLuminanceLabel, Key_Y) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRed, kViewerNodeParamActionRedLabel, Key_R) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRedA, kViewerNodeParamActionRedALabel, Key_R, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionGreen, kViewerNodeParamActionGreenLabel, Key_G) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionGreenA, kViewerNodeParamActionGreenALabel, Key_G, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionBlue, kViewerNodeParamActionBlueLabel, Key_B) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionBlueA, kViewerNodeParamActionBlueALabel, Key_B, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionAlpha, kViewerNodeParamActionAlphaLabel, Key_A) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionAlphaA, kViewerNodeParamActionAlphaALabel, Key_A, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionMatte, kViewerNodeParamActionMatteLabel, Key_M) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionMatteA, kViewerNodeParamActionMatteALabel, Key_M, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionZoomIn, kViewerNodeParamActionZoomInLabel, Key_plus) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionZoomOut, kViewerNodeParamActionZoomOutLabel, Key_minus) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionScaleOne, kViewerNodeParamActionScaleOneLabel, Key_1, eKeyboardModifierControl) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy2, kViewerNodeParamActionProxy2Label, Key_1, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy4, kViewerNodeParamActionProxy4Label, Key_2, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy8, kViewerNodeParamActionProxy8Label, Key_3, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy16, kViewerNodeParamActionProxy16Label, Key_4, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionProxy32, kViewerNodeParamActionProxy32Label, Key_5, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionLeftView, kViewerNodeParamActionLeftViewLabel, Key_Left, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRightView, kViewerNodeParamActionRightViewLabel, Key_Right, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionCreateNewRoI, kViewerNodeParamActionCreateNewRoILabel, Key_W, eKeyboardModifierAlt) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionPauseAB, kViewerNodeParamActionPauseABLabel, Key_P, eKeyboardModifierShift) );
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionRefreshWithStats, kViewerNodeParamActionRefreshWithStatsLabel, Key_U, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)) );
-
-
-    // Player
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPreviousFrame, kViewerNodeParamPreviousFrameLabel, Key_Left, eKeyboardModifierNone));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamNextFrame, kViewerNodeParamNextFrameLabel, Key_Right, eKeyboardModifierNone));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPlayBackward, kViewerNodeParamPlayBackwardLabel, Key_J, eKeyboardModifierNone));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPlayForward, kViewerNodeParamPlayForwardLabel, Key_L, eKeyboardModifierNone));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamActionAbortRender, kViewerNodeParamActionAbortRenderLabel, Key_K, eKeyboardModifierNone));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPreviousIncr, kViewerNodeParamPreviousIncrLabel, Key_Left, eKeyboardModifierShift));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamNextIncr, kViewerNodeParamNextIncrLabel, Key_Right, eKeyboardModifierShift));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamPreviousKeyFrame, kViewerNodeParamPreviousKeyFrameLabel, Key_Left, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamNextKeyFrame, kViewerNodeParamNextKeyFrameLabel, Key_Right, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl)));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamFirstFrame, kViewerNodeParamFirstFrameLabel, Key_Left, eKeyboardModifierControl));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamLastFrame, kViewerNodeParamLastFrameLabel, Key_Right, eKeyboardModifierControl));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamSetInPoint, kViewerNodeParamSetInPointLabel, Key_I, eKeyboardModifierAlt));
-    shortcuts->push_back( PluginActionShortcut(kViewerNodeParamSetOutPoint, kViewerNodeParamSetOutPointLabel, Key_O, eKeyboardModifierAlt));
-
-}
-
-void
 ViewerNode::onKnobsLoaded()
 {
     _imp->lastGammaValue = _imp->gammaSliderKnob.lock()->getValue();
@@ -884,43 +883,18 @@ ViewerNode::onKnobsLoaded()
 }
 
 void
-ViewerNode::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& args)
+ViewerNode::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
 {
-
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-
-    // Refresh the graph edited flag. The graph is considered edited if there's no serialization or there are children in the serialization
-    setSubGraphEditedByUser(serialization && !serialization->_children.empty());
-    if (!getNode()->getCurrentNodePresets().empty()) {
-        // If this is a preset, let the preset create sub nodes
-        return;
-    }
-
-    // Let the serialization load nodes
+    // If there's a serialization, load the nodes from there, otherwise create them
     if (serialization && !serialization->_children.empty()) {
         return;
     }
-
-    if (serialization) {
-        // We have a serialization with children, meaning the group was edited by user.
-        // The the sub-graph as edited only if this is a preset
-        setSubGraphEditedByUser(!serialization->_children.empty() && serialization->_presetLabel.empty());
-
-        if (!serialization->_children.empty()) {
-            return;
-        }
-    }
-
-    if (serialization && !serialization->_children.empty()) {
-        return;
-    }
-
     ViewerNodePtr thisShared = shared_from_this();
 
     NodePtr internalViewerNode;
     {
         QString nodeName = QString::fromUtf8("ViewerProcess");
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared));
         //args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -948,7 +922,7 @@ ViewerNode::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& 
     // Create input nodes
     for (int i = 0; i < VIEWER_INITIAL_N_INPUTS; ++i) {
         QString inputName = QString::fromUtf8("Input%1").arg(i + 1);
-        CreateNodeArgsPtr args(new CreateNodeArgs(PLUGINID_NATRON_INPUT, thisShared));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
@@ -960,11 +934,10 @@ ViewerNode::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& 
     }
 
 
-
+    
     _imp->onInternalViewerCreated();
-
-
 }
+
 
 void
 ViewerNodePrivate::onInternalViewerCreated()

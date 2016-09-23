@@ -157,7 +157,6 @@ SOURCES += \
     ManageUserParamsDialog.cpp \
     MessageBox.cpp \
     Menu.cpp \
-    MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
@@ -300,7 +299,6 @@ HEADERS += \
     ManageUserParamsDialog.h \
     MessageBox.h \
     Menu.h \
-    MultiInstancePanel.h \
     NewLayerDialog.h \
     NodeCreationDialog.h \
     NodeGraph.h \

@@ -104,7 +104,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/Histogram.h"
 #include "Gui/Menu.h"
 #include "Gui/MessageBox.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -151,7 +150,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , actionReload_project(0)
     , actionSave_project(0)
     , actionSaveAs_project(0)
-    , actionExportAsGroup(0)
     , actionSaveAndIncrementVersion(0)
     , actionPreferences(0)
     , actionExit(0)

@@ -50,6 +50,9 @@ public:
         return EffectInstancePtr( new TrackerNode(node) );
     }
 
+
+    static PluginPtr createPlugin();
+
     virtual ~TrackerNode();
 
     virtual bool isBuiltinTrackerNode() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -57,36 +60,9 @@ public:
         return true;
     }
 
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
-    virtual bool isPluginDescriptionInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
-    {
-        grouping->push_back(PLUGIN_GROUP_TRANSFORM);
-    }
-
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -136,7 +112,6 @@ public:
 
 private:
 
-    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) const OVERRIDE FINAL;
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,

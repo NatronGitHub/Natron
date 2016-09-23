@@ -50,6 +50,19 @@ enum RotoShapeRenderTypeEnum
     eRotoShapeRenderTypeSmear
 };
 
+PluginPtr
+RotoShapeRenderNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_PAINT);
+    PluginPtr ret = Plugin::create((void*)RotoShapeRenderNode::create, PLUGINID_NATRON_ROTOSHAPE, "RotoShape", 1, 0, grouping);
+    ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+    ret->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportYes);
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
+    return ret;
+}
+
+
 RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 : EffectInstance(n)
 , _imp(new RotoShapeRenderNodePrivate())

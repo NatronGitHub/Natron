@@ -117,11 +117,6 @@ public:
 
     void resetHostOverlayColor();
 
-    virtual MultiInstancePanelPtr getMultiInstancePanel() const
-    {
-        return MultiInstancePanelPtr();
-    }
-
     KnobHolderPtr getHolder() const;
     TrackerPanel* getTrackerPanel() const;
 
@@ -148,7 +143,8 @@ public:
     void setPluginIDAndVersion(const std::string& pluginLabel,
                                const std::string& pluginID,
                                const std::string& pluginDesc,
-                               unsigned int version);
+                               unsigned int majorVersion,
+                               unsigned int minorVersion);
 
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
     virtual bool isPagingEnabled() const OVERRIDE FINAL;
@@ -268,9 +264,6 @@ protected:
         return NULL;
     }
 
-    virtual void initializeExtraGui(QVBoxLayout* /*layout*/)
-    {
-    }
 
 private:
 

@@ -56,6 +56,27 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+
+PluginPtr
+PrecompNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create((void*)PrecompNode::create, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
+
+    QString desc = tr( "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
+                      "This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:\n"
+                      "It can be used to reduce portions of the node tree to pre-rendered image inputs. "
+                      "This speeds up render time: Natron only has to process the single image input instead of all the nodes within the project. "
+                      "Since this is a separate project, you also maintain access to the internal tree and can edit it any time.\n\n"
+                      "It enables a collaborative project: while one user works on the main project, others can work on other parts referenced by the Precomp node.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "precompNodeIcon.png");
+    return ret;
+}
+
+
 struct PrecompNodePrivate
 {
     Q_DECLARE_TR_FUNCTIONS(PrecompNode)
@@ -153,34 +174,6 @@ PrecompNode::getOutputNode() const
     }
 }
 
-std::string
-PrecompNode::getPluginID() const
-{
-    return PLUGINID_NATRON_PRECOMP;
-}
-
-std::string
-PrecompNode::getPluginLabel() const
-{
-    return "Precomp";
-}
-
-std::string
-PrecompNode::getPluginDescription() const
-{
-    return "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
-           "This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:\n"
-           "It can be used to reduce portions of the node tree to pre-rendered image inputs. "
-           "This speeds up render time: Natron only has to process the single image input instead of all the nodes within the project. "
-           "Since this is a separate project, you also maintain access to the internal tree and can edit it any time.\n\n"
-           "It enables a collaborative project: while one user works on the main project, others can work on other parts referenced by the Precomp node.";
-}
-
-void
-PrecompNode::getPluginGrouping(std::list<std::string>* grouping) const
-{
-    grouping->push_back(PLUGIN_GROUP_OTHER);
-}
 
 void
 PrecompNode::addAcceptedComponents(int /*inputNb*/,
@@ -576,7 +569,7 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append( QString::fromUtf8("readNode") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-    CreateNodeArgsPtr args(new CreateNodeArgs( readPluginID.toStdString(), app.lock()->getProject() ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create( readPluginID.toStdString(), app.lock()->getProject() ));
     args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());

@@ -89,7 +89,7 @@ public:
 
     struct Implementation;
 
-protected: // parent of InspectorNode
+protected: 
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstancePtr& app,
@@ -114,7 +114,9 @@ public:
      **/
     bool isPersistent() const;
 
-    const PluginPtr getPlugin() const;
+    PluginPtr getPlugin() const;
+
+    PluginPtr getPyPlugPlugin() const;
 
 
     void setPrecompNode(const PrecompNodePtr& precomp);
@@ -166,7 +168,7 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
-    void loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
+    void loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
     void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 
@@ -176,7 +178,7 @@ private:
 
     void getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
-    void loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
+    void loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, bool setKnobsDefault);
 
 public:
 
@@ -189,7 +191,48 @@ public:
     void loadPresets(const std::string& presetsLabel);
     void loadPresetsFromFile(const std::string& presetsFile);
 
-    void saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods);
+    /**
+     * @brief Exports the node state to a preset file
+     **/
+    void saveNodeToPresets(const std::string& filePath,
+                           const std::string& presetsLabel,
+                           const std::string& presetsIcon,
+                           Key symbol,
+                           const KeyboardModifiers& mods);
+
+    /**
+     * @brief Same as saveNodeToPresets, excepts that the preset will be considered as a new plug-in.
+     * And this only works for group plug-ins
+     **/
+    void saveNodeToPyPlug(const std::string& filePath,
+                          const std::string& pyPlugID,
+                          const std::string& pyPlugLabel,
+                          const std::string& pyPlugIcon,
+                          const std::string& pyPlugDesc,
+                          const bool pyPlugDescIsMarkdown,
+                          const std::string& pyPlugGrouping,
+                          int majorVersion,
+                          Key symbol,
+                          const KeyboardModifiers& mods);
+
+private:
+
+    void saveNodeToFileInternal(const std::string& filePath,
+                                const std::string& pyPlugID,
+                                const std::string& pyPlugLabel,
+                                const std::string& pyPlugIcon,
+                                const std::string& pyPlugDesc,
+                                const bool pyPlugDescIsMarkdown,
+                                const std::string& pyPlugGrouping,
+                                int majorVersion,
+                                Key symbol,
+                                const KeyboardModifiers& mods);
+
+
+public:
+
+
+
 
     std::string getCurrentNodePresets() const;
 
@@ -197,10 +240,6 @@ public:
 
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const CreateNodeArgs& args);
-
-    ///to be called once all nodes have been loaded from the project or right away after the load() function.
-    ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
-    void fetchParentMultiInstancePointer();
 
 
     ///If the node can have a roto context, create it
@@ -252,27 +291,8 @@ public:
     void abortAnyProcessing_non_blocking();
     void abortAnyProcessing_blocking();
 
-    /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
-     * is set earlier.
-     */
-    void setEffect(const EffectInstancePtr& liveInstance);
 
     EffectInstancePtr getEffectInstance() const;
-
-    /**
-     * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
-     * e.g: the Tracker node.
-     **/
-    bool isMultiInstance() const;
-
-    NodePtr getParentMultiInstance() const;
-
-    ///Accessed by the serialization thread, but mt safe since never changed
-    std::string getParentMultiInstanceName() const;
-
-    void getChildrenMultiInstance(NodesList* children) const;
-
-
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -321,12 +341,6 @@ public:
      **/
     bool isOpenFXNode() const;
 
-    /**
-     * @brief Returns true if this node is a tracker
-     **/
-    bool isTrackerNodePlugin() const;
-
-    bool isPointTrackerNode() const;
 
     /**
      * @brief Returns true if this node is a backdrop
@@ -373,6 +387,12 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     int getMaxInputCount() const;
+
+    /**
+     * @brief Hint indicating to the UI that this node has numerous optional inputs and should not display them all.
+     * See Switch/Viewer node for examples
+     **/
+    bool isEntitledForInspectorInputsStyle() const;
 
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
@@ -685,6 +705,7 @@ public:
     void setColor(double r, double g, double b);
     void onNodeUIColorChanged(double r, double g, double b);
     bool hasColorChangedSinceDefault() const;
+    void getDefaultColor(double* r, double *g, double* b) const;
 
     void setOverlayColor(double r, double g, double b);
     bool getOverlayColor(double* r, double* g, double* b) const;
@@ -744,7 +765,7 @@ public:
      **/
     std::string getPluginResourcesPath() const;
 
-    void getPluginGrouping(std::list<std::string>* grouping) const;
+    void getPluginGrouping(std::vector<std::string>* grouping) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -1288,25 +1309,8 @@ public:
 
     bool hasHostOverlayForParam(const KnobIConstPtr& knob) const;
 
-    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
-                                     const std::string& pluginLabel,
-                                     const std::string& pluginID,
-                                     const std::string& pluginDesc,
-                                     const std::string& pluginIconFilePath,
-                                     const std::string& pluginPath,
-                                     unsigned int version);
-
-    void setPluginPythonModule(const std::string& pythonModule);
-
     bool isSubGraphEditedByUser() const;
 
-    std::string getPluginPythonModule() const;
-
-    /**
-     * @brief If this node has been created as a PyPlug, this will return it's ID, even if the node is no longer a PyPlug and
-     * has been transformed to a Group.
-     **/
-    std::string getPyPlugID() const;
 
     //Returns true if changed
     bool refreshChannelSelectors();
@@ -1565,56 +1569,7 @@ private:
     boost::scoped_ptr<Implementation> _imp;
 };
 
-/**
- * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
- * Only 1 input is considered to be the "active" input of the InspectorNode, but several inputs
- * can be connected. This Node is suitable for effects that take only 1 input in parameter.
- * This is used for example by the Viewer, to be able to switch quickly from several inputs
- * while still having 1 input active.
- **/
-class InspectorNode
-    : public Node
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-private: // derives from Node
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-
-    InspectorNode(const AppInstancePtr& app,
-                  const NodeCollectionPtr& group,
-                  const PluginPtr& plugin);
-
-public:
-
-    static NodePtr create(const AppInstancePtr& app,
-                          const NodeCollectionPtr& group,
-                          const PluginPtr& plugin)
-    {
-        return NodePtr( new InspectorNode(app, group, plugin) );
-    }
-
-    virtual ~InspectorNode();
-
-
-    /**
-     * @brief Same as connectInputBase but if another input is already connected to 'input' then
-     * it will disconnect it prior to connecting the input of the given number.
-     **/
-    virtual bool connectInput(const NodePtr& input, int inputNumber) OVERRIDE;
-    virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
-    virtual int getPreferredInput() const OVERRIDE FINAL;
-
-Q_SIGNALS:
-
-    void refreshOptionalState();
-
-private:
-
-    int getPreferredInputInternal(bool connected) const;
-
-};
 
 /**
  * @brief Small RAII style that locks the nodeIsRendering mutex of a node and releases it.
@@ -1647,11 +1602,6 @@ public:
 
 };
 
-inline InspectorNodePtr
-toInspectorNode(const NodePtr& node)
-{
-    return boost::dynamic_pointer_cast<InspectorNode>(node);
-}
 
 class RenderingFlagSetter
 {

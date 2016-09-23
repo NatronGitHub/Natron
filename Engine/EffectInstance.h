@@ -325,16 +325,6 @@ public:
     bool hasOutputConnected() const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Must return the plugin's major version.
-     **/
-    virtual int getMajorVersion() const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief Must return the plugin's minor version.
-     **/
-    virtual int getMinorVersion() const WARN_UNUSED_RETURN = 0;
-
-    /**
      * @brief Is this node an input node ? An input node means
      * it has no input.
      **/
@@ -372,14 +362,6 @@ public:
      * it has no output.
      **/
     virtual bool isOutput() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    /**
-     * @brief Returns true if this node is a tracker
-     **/
-    virtual bool isTrackerNodePlugin() const WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -499,46 +481,6 @@ public:
      * @brief Return a string indicating the purpose of the given input. It is used for the user documentation.
      **/
     virtual std::string getInputHint(int inputNb) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Must be implemented to give the plugin internal id(i.e: net.sf.openfx:invertPlugin)
-     **/
-    virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief Must be implemented to give the plugin a label that will be used by the graphical
-     * user interface.
-     **/
-    virtual std::string getPluginLabel() const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief The grouping of the plug-in. For instance Views/Stereo/MyStuff
-     * Each string being one level of the grouping. The first one being the name
-     * of one group that will appear in the user interface.
-     **/
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const = 0;
-
-    /**
-     * @brief Must be implemented to give a desription of the effect that this node does. This is typically
-     * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
-     **/
-    virtual std::string getPluginDescription() const WARN_UNUSED_RETURN = 0;
-
-    /**
-     * @brief Returns whether the plugin  description is written in markdown or not
-     **/
-    virtual bool isPluginDescriptionInMarkdown() const
-    {
-        return false;
-    }
-
-    /**
-     * @brief Must returns the shortcuts that are going to be used for this plug-in. Each shortcut
-     * will be added to the shortcut editor and must have an ID and a description label.
-     * Make sure that within the same plug-in there are no conflicting shortcuts.
-     * Each shortcut ID can then be set to KnobButton used to indicate they have a shortcut.
-     **/
-    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* /*shortcuts*/) const {}
 
 
     /**
@@ -1007,12 +949,15 @@ public:
 
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
+     * By default it returns the plug-in safety.
      * RenderSafetyEnum::eRenderSafetyUnsafe - indicating that only a single 'render' call can be made at any time amoung all instances,
      * RenderSafetyEnum::eRenderSafetyInstanceSafe - indicating that any instance can have a single 'render' call at any one time,
      * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
-    virtual RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
+    virtual RenderSafetyEnum getCurrentRenderThreadSafety() const WARN_UNUSED_RETURN;
+
+    virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -1258,6 +1203,8 @@ public:
     /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
     void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
 
+    void refreshRenderScaleSupport();
+
     virtual bool supportsRenderQuality() const { return false; }
 
     /**
@@ -1284,11 +1231,6 @@ public:
     virtual bool doesTemporalClipAccess() const
     {
         return false;
-    }
-
-    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
-    {
-        return ePluginOpenGLRenderSupportNone;
     }
 
     virtual bool canCPUImplementationSupportOSMesa() const
@@ -1431,10 +1373,16 @@ public:
 
     bool getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const;
 
-
-    virtual void initializeData()
+    /**
+     * @brief Callback called after the static create function has been called to initialize virtual stuff
+     **/
+    virtual void initializeDataAfterCreate()
     {
     }
+
+    virtual void createInstanceAction() {}
+
+
 
 #ifdef DEBUG
     void checkCanSetValueAndWarn() const;

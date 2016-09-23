@@ -3292,6 +3292,46 @@ EffectInstance::setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) cons
 }
 
 void
+EffectInstance::refreshRenderScaleSupport()
+{
+
+    // Try to set renderscale support at plugin creation.
+    // This is not always possible (e.g. if a param has a wrong value).
+    if (supportsRenderScaleMaybe() != eSupportsMaybe) {
+        return;
+    }
+
+    RenderScale scaleOne;
+    scaleOne.x = 1.;
+    scaleOne.y = 1.;
+
+    double first = INT_MIN, last = INT_MAX;
+    getFrameRange(&first, &last);
+    if ( (first == INT_MIN) || (last == INT_MAX) ) {
+        first = last = getApp()->getTimeLine()->currentFrame();
+    }
+
+    double time = first;
+    RectD rod;
+    StatusEnum stat = getRegionOfDefinition_public(0, time, scaleOne, ViewIdx(0), &rod);
+
+    if (stat == eStatusOK || stat == eStatusReplyDefault) {
+        RenderScale scale;
+        scale.x = 0.5;
+        scale.y = 0.5;
+        stat = getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
+        if (stat == eStatusOK || stat == eStatusReplyDefault) {
+            setSupportsRenderScaleMaybe(eSupportsYes);
+        } else {
+            setSupportsRenderScaleMaybe(eSupportsNo);
+        }
+    }
+
+
+
+}
+
+void
 EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 {
     if ( !isWriter() ) {
@@ -4789,8 +4829,8 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
 bool
 EffectInstance::getCreateChannelSelectorKnob() const
 {
-    return ( !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNodePlugin() &&
-             !boost::starts_with(getPluginID(), "uk.co.thefoundry.furnace") );
+    return ( !isMultiPlanar() && !isReader() && !isWriter() &&
+             !boost::starts_with(getNode()->getPluginID(), "uk.co.thefoundry.furnace") );
 }
 
 int
@@ -4805,6 +4845,18 @@ bool
 EffectInstance::isMaskEnabled(int inputNb) const
 {
     return getNode()->isMaskEnabled(inputNb);
+}
+
+RenderSafetyEnum
+EffectInstance::getCurrentRenderThreadSafety() const
+{
+    return (RenderSafetyEnum)getNode()->getPlugin()->getProperty<int>(kNatronPluginPropRenderSafety);
+}
+
+PluginOpenGLRenderSupport
+EffectInstance::getCurrentOpenGLSupport() const
+{
+    return (PluginOpenGLRenderSupport)getNode()->getPlugin()->getProperty<int>(kNatronPluginPropOpenGLSupport);
 }
 
 bool
@@ -5824,19 +5876,7 @@ EffectInstance::refreshMetaDatas_public(bool recurse)
             return refreshMetaDatas_recursive(markedNodes);
         }
     } else {
-        bool ret = refreshMetaDatas_internal();
-        if (ret) {
-            NodePtr node = getNode();
-            NodesList children;
-            node->getChildrenMultiInstance(&children);
-            if ( !children.empty() ) {
-                for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                    (*it)->getEffectInstance()->refreshMetaDatas_internal();
-                }
-            }
-        }
-
-        return ret;
+        return refreshMetaDatas_internal();
     }
 }
 

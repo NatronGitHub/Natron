@@ -118,12 +118,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     boost::weak_ptr<NodeGui> _nodeGUI;
     bool _selected;
     Button* _settingsButton;
-    MultiInstancePanelPtr _multiPanel;
 
 public:
 
-    explicit NodeSettingsPanel(const MultiInstancePanelPtr & multiPanel,
-                               Gui* gui,
+    explicit NodeSettingsPanel(Gui* gui,
                                const NodeGuiPtr &NodeUi,
                                QVBoxLayout* container,
                                QWidget *parent = 0);
@@ -142,11 +140,6 @@ public:
         return _nodeGUI.lock();
     }
 
-    virtual MultiInstancePanelPtr getMultiInstancePanel() const OVERRIDE
-    {
-        return _multiPanel;
-    }
-
     virtual QColor getCurrentColor() const OVERRIDE FINAL;
 
 private:
@@ -154,7 +147,6 @@ private:
 
     virtual RotoPanel* initializeRotoPanel() OVERRIDE FINAL;
     virtual TrackerPanel* initializeTrackerPanel() OVERRIDE;
-    virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 
 public Q_SLOTS:

@@ -159,6 +159,7 @@ SOURCES += \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
+    PropertiesHolder.cpp \
     PyPanelI.cpp \
     PyAppInstance.cpp \
     PyNodeGroup.cpp \
@@ -373,6 +374,7 @@ HEADERS += \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
+    PropertiesHolder.h \
     PyAppInstance.h \
     PyGlobalFunctions.h \
     PyNodeGroup.h \

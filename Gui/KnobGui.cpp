@@ -286,6 +286,15 @@ void
 KnobGui::enableRightClickMenu(QWidget* widget,
                               int dimension)
 {
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    KnobSeparatorPtr sep = toKnobSeparator(knob);
+    KnobGroupPtr grp = toKnobGroup(knob);
+    if (sep || grp) {
+        return;
+    }
     QString name = QString::fromUtf8("dim-");
 
     name.append( QString::number(dimension) );

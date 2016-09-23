@@ -487,9 +487,6 @@ public:
     void saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization);
 
 
-    static void setGroupLabelIDAndVersion(const NodePtr& node,
-                                      const QString &pythonModule,
-                                      bool pythonModuleIsAbsoluteScriptFilePath);
 public Q_SLOTS:
 
     void quit();
@@ -527,6 +524,7 @@ protected:
     void setMainWindowPointer(SerializableWindow* window);
 
 private:
+
 
     void startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter);
 

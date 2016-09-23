@@ -91,7 +91,7 @@ NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializ
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
              it != clipboard.end(); ++it) {
             const std::string& oldScriptName = (*it)->_nodeScriptName;
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, avgNodesPosition, scenePos, group.lock(), std::string(), NodePtr());
+            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, avgNodesPosition, scenePos, group.lock(), NodePtr());
             
             if (!node) {
                 continue;
@@ -116,7 +116,6 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
                             const QPointF& averageNodesPosition,
                             const QPointF& position,
                             const NodeCollectionPtr& groupContainer,
-                            const std::string& parentName,
                             const NodePtr& cloneMaster)
 {
     assert(groupContainer && internalSerialization);
@@ -124,11 +123,8 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
     // Create the duplicate node
     NodePtr duplicateNode;
     {
-        CreateNodeArgsPtr args(new CreateNodeArgs(internalSerialization->_pluginID, groupContainer));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(internalSerialization->_pluginID, groupContainer));
         args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
-        if (!parentName.empty()) {
-            args->setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, parentName);
-        }
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMajorVersion, 0);
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMinorVersion, 1);
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);

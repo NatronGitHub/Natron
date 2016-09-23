@@ -363,14 +363,14 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
                 continue;
             }
 
-            idNamePair.second = p->generateUserFriendlyPluginID();
+            idNamePair.second = QString::fromUtf8(p->generateUserFriendlyPluginID().c_str());
 
             int indexOfBracket = idNamePair.second.lastIndexOf( QString::fromUtf8("  [") );
             if (indexOfBracket != -1) {
                 idNamePair.first = idNamePair.second.left(indexOfBracket);
             }
 
-            int weight = getPluginWeight( p->getPluginID(), p->getMajorVersion() );
+            int weight = getPluginWeight( QString::fromUtf8(p->getPluginID().c_str()), p->getMajorVersion() );
             pluginsMap.insert( std::make_pair(weight, idNamePair) );
 
             if (it->first == stdInitialFilter) {
@@ -385,10 +385,10 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
                 }
                 std::pair<QString, QString> idNamePair;
                 if ( it2 == it->second.rbegin() ) {
-                    idNamePair.second = (*it2)->generateUserFriendlyPluginID();
+                    idNamePair.second = QString::fromUtf8((*it2)->generateUserFriendlyPluginID().c_str());
                     bestMajorName = idNamePair.second;
                 } else {
-                    idNamePair.second = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
+                    idNamePair.second = QString::fromUtf8((*it2)->generateUserFriendlyPluginIDMajorEncoded().c_str());
                 }
 
 
@@ -399,7 +399,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
 
                 ++i;
 
-                int weight = getPluginWeight( (*it2)->getPluginID(), (*it2)->getMajorVersion() );
+                int weight = getPluginWeight( QString::fromUtf8((*it2)->getPluginID().c_str()), (*it2)->getMajorVersion() );
                 pluginsMap.insert( std::make_pair(weight, idNamePair) );
             }
             if (it->first == stdInitialFilter) {
@@ -432,7 +432,7 @@ NodeCreationDialog::~NodeCreationDialog()
 QString
 NodeCreationDialog::getNodeName(int *major) const
 {
-    QString name = _imp->textEdit->text();
+    std::string name = _imp->textEdit->text().toStdString();
 
 
     for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
@@ -440,7 +440,7 @@ NodeCreationDialog::getNodeName(int *major) const
             if ( ( *it->second.begin() )->generateUserFriendlyPluginID() == name ) {
                 PluginPtr p = ( *it->second.begin() );
                 *major = p->getMajorVersion();
-                const QString& ret = p->getPluginID();
+                const QString ret = QString::fromUtf8(p->getPluginID().c_str());
                 incrementPluginWeight(ret, *major);
 
                 return ret;
@@ -450,7 +450,7 @@ NodeCreationDialog::getNodeName(int *major) const
                 if ( it2 == it->second.rbegin() ) {
                     if ( (*it2)->generateUserFriendlyPluginID() == name ) {
                         *major = (*it2)->getMajorVersion();
-                        const QString& ret = (*it2)->getPluginID();
+                        const QString ret = QString::fromUtf8((*it2)->getPluginID().c_str());
                         incrementPluginWeight(ret, *major);
 
                         return ret;
@@ -458,7 +458,7 @@ NodeCreationDialog::getNodeName(int *major) const
                 } else {
                     if ( (*it2)->generateUserFriendlyPluginIDMajorEncoded() == name ) {
                         *major = (*it2)->getMajorVersion();
-                        const QString& ret = (*it2)->getPluginID();
+                        const QString ret = QString::fromUtf8((*it2)->getPluginID().c_str());
                         incrementPluginWeight(ret, *major);
 
                         return ret;
