@@ -1138,10 +1138,6 @@ KnobGuiContainerHelper::recreateUserKnobs(bool restorePageIndex)
             curPage = getCurrentPage();
         }
 
-        KnobPagePtr page = getUserPageKnob();
-        if (page) {
-            userPages.push_back( page );
-        }
         for (std::list<KnobPagePtr>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
             deleteKnobGui( (*it)->shared_from_this() );
         }
@@ -1156,24 +1152,7 @@ KnobGuiContainerHelper::recreateUserKnobs(bool restorePageIndex)
 void
 KnobGuiContainerHelper::getUserPages(std::list<KnobPagePtr>& userPages) const
 {
-    const KnobsVec& knobs = getInternalKnobs();
-
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->isUserKnob() ) {
-            KnobPagePtr isPage = toKnobPage(*it);
-            if (isPage) {
-                userPages.push_back(isPage);
-            }
-        }
-    }
-}
-
-void
-KnobGuiContainerHelper::setUserPageActiveIndex()
-{
-    KnobPagePtr page = getUserPageKnob();
-
-    setPageActiveIndex(page);
+    return _imp->holder->getUserPages(userPages);
 }
 
 void
@@ -1189,17 +1168,6 @@ KnobGuiContainerHelper::setPageActiveIndex(const KnobPagePtr& page)
     onPageActivated(foundPage->second);
 }
 
-KnobPagePtr
-KnobGuiContainerHelper::getOrCreateUserPageKnob() const
-{
-    return _imp->holder->getOrCreateUserPageKnob();
-}
-
-KnobPagePtr
-KnobGuiContainerHelper::getUserPageKnob() const
-{
-    return _imp->holder->getUserPageKnob();
-}
 
 int
 KnobGuiContainerHelper::getPagesCount() const

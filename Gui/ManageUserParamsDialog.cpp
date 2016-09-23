@@ -169,8 +169,6 @@ struct ManageUserParamsDialogPrivate
 
     QTreeWidgetItem* createItemForKnob(const KnobIPtr& knob, int insertIndex = -1);
 
-    bool createUserPageItem();
-
     void saveAndRebuildPages();
 
     void saveAndRebuildViewerUI();
@@ -247,6 +245,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     QObject::connect( _imp->knobsTree, SIGNAL(itemSelectionChanged()), this, SLOT(onKnobsTreeSelectionChanged()) );
     QObject::connect( _imp->knobsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onKnobsTreeItemDoubleClicked(QTreeWidgetItem*,int)) );
     std::list<KnobIPtr> markedKnobs;
+
     const KnobsVec& knobs = panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr page = toKnobPage(*it);
@@ -258,6 +257,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
             pageItem.knob = *it;
             pageItem.item->setExpanded(true);
             _imp->knobsItems.push_back(pageItem);
+
 
             if ( (*it)->isUserKnob() ) {
                 KnobsVec children = page->getChildren();
@@ -353,14 +353,12 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     _imp->buttonsLayout->addStretch();
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
     onKnobsTreeSelectionChanged();
-    _imp->panel->setUserPageActiveIndex();
+
 }
 
 ManageUserParamsDialog::~ManageUserParamsDialog()
 {
-//    for (std::list<TreeItem>::iterator it = _imp->knobsItems.begin() ; it != _imp->knobsItems.end(); ++it) {
-//        delete it->item;
-//    }
+
 }
 
 
@@ -405,6 +403,20 @@ ManageUserParamsDialogPrivate::rebuildUserPages()
     panel->recreateUserKnobs(true);
 }
 
+bool
+ManageUserParamsDialog::ensureHasUserPage()
+{
+    std::list<KnobPagePtr> pages;
+    _imp->panel->getUserPages(pages);
+    if (!pages.empty()) {
+        return true;
+    }
+
+    Dialogs::warningDialog(tr("User Page").toStdString(), tr("This node does not have a user page yet. You need to create one "
+                                                                                       "to add custom parameters to it.").toStdString());
+    return false;
+}
+
 void
 ManageUserParamsDialog::onPickClicked()
 {
@@ -418,7 +430,11 @@ ManageUserParamsDialog::onPickClicked()
         if (!selectedKnob) {
             return;
         }
-        KnobPagePtr hadUserPage = _imp->panel->getUserPageKnob();
+
+        if (!ensureHasUserPage()) {
+            return;
+        }
+
         NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->panel);
         assert(nodePanel);
         if (!nodePanel) {
@@ -436,17 +452,10 @@ ManageUserParamsDialog::onPickClicked()
         }
         KnobIPtr duplicate = selectedKnob->createDuplicateOnNode(node->getEffectInstance(), useAlias, page, group, -1);
         if (duplicate) {
-            bool hasCreatedUserPage = false;
-            if (!hadUserPage) {
-                hasCreatedUserPage = _imp->createUserPageItem();
-            }
+
             _imp->createItemForKnob(duplicate);
 
             _imp->saveAndRebuildPages();
-
-            if (hasCreatedUserPage) {
-                _imp->panel->setUserPageActiveIndex();
-            }
 
             // Adjust viewer UI
             int viewerContextIndex = duplicate->getHolder()->getInViewerContextKnobIndex(duplicate);
@@ -474,7 +483,19 @@ ManageUserParamsDialog::onPickClicked()
 void
 ManageUserParamsDialog::onAddClicked()
 {
-    KnobPagePtr hadUserPage = _imp->panel->getUserPageKnob();
+
+    if (!ensureHasUserPage()) {
+        AddKnobDialog dialog(_imp->panel, KnobIPtr(), std::string(), std::string(), this);
+        dialog.setVisibleType(false);
+        dialog.setType(AddKnobDialog::eParamDataTypePage);
+        dialog.setWindowTitle(tr("Add Page"));
+        if (!dialog.exec() ) {
+            return;
+        }
+        KnobIPtr knob = dialog.getKnob();
+        _imp->createItemForKnob(knob);
+
+    }
     std::string selectedPageName, selectedGroupName;
 
     QList<QTreeWidgetItem*> selection = _imp->knobsTree->selectedItems();
@@ -499,17 +520,11 @@ ManageUserParamsDialog::onAddClicked()
 
     AddKnobDialog dialog(_imp->panel, KnobIPtr(), selectedPageName, selectedGroupName, this);
     if ( dialog.exec() ) {
-        //Ensure the user page knob exists
-        bool hasCreatedUserPage = false;
-        if (!hadUserPage) {
-            hasCreatedUserPage = _imp->createUserPageItem();
-        }
+
         KnobIPtr knob = dialog.getKnob();
         _imp->createItemForKnob(knob);
         _imp->saveAndRebuildPages();
-        if (hasCreatedUserPage) {
-            _imp->panel->setUserPageActiveIndex();
-        }
+
 
         // Adjust viewer UI
         int viewerContextIndex = knob->getHolder()->getInViewerContextKnobIndex(knob);
@@ -533,23 +548,6 @@ ManageUserParamsDialog::onAddClicked()
     }
 }
 
-bool
-ManageUserParamsDialogPrivate::createUserPageItem()
-{
-    KnobPagePtr userPageKnob = panel->getUserPageKnob();
-
-    if (!userPageKnob) {
-        return false;
-    }
-    for (std::list<TreeItem>::iterator it = knobsItems.begin(); it != knobsItems.end(); ++it) {
-        if (it->knob == userPageKnob) {
-            return false;
-        }
-    }
-    createItemForKnob(userPageKnob, -1);
-
-    return true;
-}
 
 QTreeWidgetItem*
 ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
@@ -572,12 +570,18 @@ ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
 
     KnobPagePtr isPage = toKnobPage(knob);
     if (!parent && !isPage) {
-        //Default to user page
+        //Default to first user page
         for (std::list<TreeItem>::iterator it = knobsItems.begin(); it != knobsItems.end(); ++it) {
-            if ( it->scriptName == QString::fromUtf8(NATRON_USER_MANAGED_KNOBS_PAGE) ) {
-                parent = it->item;
-                break;
+            KnobPagePtr isPage = toKnobPage(it->knob);
+            if (!isPage) {
+                continue;
             }
+            if (!isPage->isUserKnob()) {
+                continue;
+            }
+
+            parent = it->item;
+            break;
         }
     }
     TreeItem i;
@@ -628,10 +632,6 @@ ManageUserParamsDialogPrivate::deleteKnobItem(std::list<TreeItem>::iterator sele
     delete selectedItem->item;
     knobsItems.erase(selectedItem);
 
-    KnobPagePtr userPage = panel->getUserPageKnob();
-    if ( userPage && userPage->getChildren().empty() ) {
-        userPage->getHolder()->deleteKnob(userPage, true);
-    }
     saveAndRebuildPages();
 
 }
@@ -665,6 +665,7 @@ ManageUserParamsDialog::onDeleteClicked()
                         return;
                     }
                     _imp->deleteKnobItem(it);
+
                     break;
                 }
             }
@@ -820,6 +821,7 @@ ManageUserParamsDialogPrivate::moveViewerUIItemUp(std::list<TreeItem>::iterator 
         return;
     }
 
+
     if ( !selectedItem->knob) {
         return;
     }
@@ -908,20 +910,13 @@ ManageUserParamsDialogPrivate::moveKnobItemUp(std::list<TreeItem>::iterator sele
         parentKnob = selectedItem->knob->getParentKnob();
     }
     if (parentKnob) {
-        if (parentKnob->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
-            for (std::list<TreeItem>::iterator it = knobsItems.begin(); it != knobsItems.end(); ++it) {
-                if ( selectedItem->scriptName == QString::fromUtf8(NATRON_USER_MANAGED_KNOBS_PAGE) ) {
-                    parent = selectedItem->item;
-                    break;
-                }
+
+        for (std::list<TreeItem>::iterator it = knobsItems.begin(); it != knobsItems.end(); ++it) {
+            if (selectedItem->knob == parentKnob) {
+                parent = selectedItem->item;
+                break;
             }
-        } else {
-            for (std::list<TreeItem>::iterator it = knobsItems.begin(); it != knobsItems.end(); ++it) {
-                if (selectedItem->knob == parentKnob) {
-                    parent = selectedItem->item;
-                    break;
-                }
-            }
+
         }
     }
 
@@ -1124,10 +1119,9 @@ ManageUserParamsDialog::onKnobsTreeSelectionChanged()
     bool canDelete = true;
     if ( !selection.isEmpty() ) {
         QTreeWidgetItem* item = selection[0];
-        //if (item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-        //    canEdit = false;
-        // }
+
         for (std::list<TreeItem>::iterator it = _imp->knobsItems.begin(); it != _imp->knobsItems.end(); ++it) {
+
             if (it->item == item) {
                 KnobPagePtr isPage = toKnobPage( it->knob );
                 KnobGroupPtr isGroup = toKnobGroup( it->knob );

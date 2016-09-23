@@ -149,24 +149,9 @@ public:
     void getUserPages(std::list<KnobPagePtr>& userPages) const;
 
     /**
-     * @brief Same as calling setPageActiveIndex(getUserPageKnob())
-     **/
-    void setUserPageActiveIndex();
-
-    /**
      * @brief Make the given page current
      **/
     void setPageActiveIndex(const KnobPagePtr& page);
-
-    /**
-     * @brief Returns the use page knob or create it if it was not
-     **/
-    KnobPagePtr getOrCreateUserPageKnob() const;
-
-    /**
-     * @brief Returns the use page knob but do not create it
-     **/
-    KnobPagePtr getUserPageKnob() const;
 
     /**
      * @brief Same as getPages().size()

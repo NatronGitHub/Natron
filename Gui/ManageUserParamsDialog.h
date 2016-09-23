@@ -82,6 +82,9 @@ public Q_SLOTS:
 private:
 
 
+    // Prompts user to create a user page
+    bool ensureHasUserPage();
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
     

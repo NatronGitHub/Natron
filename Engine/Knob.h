@@ -2580,7 +2580,6 @@ public:
 
     void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
 
-
     /**
      * @brief To implement if you need to make the hash vary at a specific time/view
      **/
@@ -2723,6 +2722,12 @@ public:
     //Calls onSignificantEvaluateAboutToBeCalled + evaluate
     void invalidateCacheHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
 
+
+    /**
+     * @brief Return a list of all the internal pages which were created by the user
+     **/
+    void getUserPages(std::list<KnobPagePtr>& userPages) const;
+    
 protected:
 
 

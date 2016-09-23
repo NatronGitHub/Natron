@@ -157,7 +157,6 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
         NodesList groupnodes = isGroup->getNodes();
         for (NodesList::iterator it = groupnodes.begin(); it != groupnodes.end(); ++it) {
             if ( (*it)->getNodeGui() &&
-                !(*it)->getParentMultiInstance() &&
                 (*it)->isActivated() &&
                 ( (*it)->getKnobs().size() > 0 ) ) {
                 _imp->allNodes.push_back(*it);
@@ -378,14 +377,11 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
     KnobPagePtr parentPage;
 
-    if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
-        parentPage = _imp->panel->getUserPageKnob();
-    } else {
-        for (std::vector<KnobPagePtr >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
-            if ( (*it)->getName() == selectedPage ) {
-                parentPage = *it;
-                break;
-            }
+
+    for (std::vector<KnobPagePtr >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
+        if ( (*it)->getName() == selectedPage ) {
+            parentPage = *it;
+            break;
         }
     }
 

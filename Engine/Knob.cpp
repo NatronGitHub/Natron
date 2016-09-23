@@ -4311,6 +4311,20 @@ KnobHelper::setHasModifications(int dimension,
     return ret;
 }
 
+void
+KnobHolder::getUserPages(std::list<KnobPagePtr>& userPages) const {
+    const KnobsVec& knobs = getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ( (*it)->isUserKnob() ) {
+            KnobPagePtr isPage = toKnobPage(*it);
+            if (isPage) {
+                userPages.push_back(isPage);
+            }
+        }
+    }
+}
+
 KnobIPtr
 KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                                     const KnobPagePtr& page,
@@ -4348,11 +4362,19 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
 
     //Ensure the group user page is created
     KnobPagePtr destPage;
+
     if (page) {
         destPage = page;
     } else {
         if (otherIsEffect) {
-            destPage = otherIsEffect->getOrCreateUserPageKnob();
+            std::list<KnobPagePtr> userPages;
+            otherIsEffect->getUserPages(userPages);
+            if (userPages.empty()) {
+                destPage = otherIsEffect->getOrCreateUserPageKnob();
+            } else {
+                destPage = userPages.front();
+            }
+
         }
     }
 
@@ -5898,8 +5920,12 @@ KnobHolder::getUserPageKnob() const
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if ( (*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE ) {
-                return toKnobPage(*it);
+            if (!(*it)->isUserKnob()) {
+                continue;
+            }
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            if (isPage) {
+                return isPage;
             }
         }
     }

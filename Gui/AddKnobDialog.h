@@ -48,6 +48,30 @@ class AddKnobDialog
 
 public:
 
+    enum ParamDataTypeEnum
+    {
+        eParamDataTypeInteger, // 0
+        eParamDataTypeInteger2D, // 1
+        eParamDataTypeInteger3D, // 2
+        eParamDataTypeFloatingPoint, //3
+        eParamDataTypeFloatingPoint2D, // 4
+        eParamDataTypeFloatingPoint3D, // 5
+        eParamDataTypeColorRGB, // 6
+        eParamDataTypeColorRGBA, // 7
+        eParamDataTypeChoice, // 8
+        eParamDataTypeCheckbox, // 9
+        eParamDataTypeLabel, // 10
+        eParamDataTypeTextInput, // 11
+        eParamDataTypeInputFile, // 12
+        eParamDataTypeOutputFile, // 13
+        eParamDataTypeDirectory, // 14
+        eParamDataTypeGroup, // 15
+        eParamDataTypePage, // 16
+        eParamDataTypeButton, // 17
+        eParamDataTypeSeparator, // 18
+        eParamDataTypeCount // 19
+    };
+
     AddKnobDialog(DockablePanel* panel,
                   const KnobIPtr& knob,
                   const std::string& selectedPageName,
@@ -58,6 +82,12 @@ public:
 
     KnobIPtr getKnob() const;
 
+    void setVisibleType(bool visible);
+
+    void setType(ParamDataTypeEnum type);
+
+    static int dataTypeDim(ParamDataTypeEnum t);
+
 public Q_SLOTS:
 
     void onPageCurrentIndexChanged(int index);
@@ -67,6 +97,10 @@ public Q_SLOTS:
     void onOkClicked();
 
 private:
+
+    static const char* dataTypeString(ParamDataTypeEnum t);
+
+    static ParamDataTypeEnum getChoiceIndexFromKnobType(const KnobIPtr& knob);
 
     boost::scoped_ptr<AddKnobDialogPrivate> _imp;
 };

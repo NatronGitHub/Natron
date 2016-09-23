@@ -584,8 +584,6 @@ DockablePanel::turnOffPages()
     _imp->_tabWidget = 0;
     setFrameShape(QFrame::NoFrame);
 
-    KnobPagePtr userPage = _imp->_holder->getOrCreateUserPageKnob();
-    getOrCreatePage(userPage);
 }
 
 void
@@ -1377,6 +1375,33 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 void
 DockablePanel::onManageUserParametersActionTriggered()
 {
+    KnobHolderPtr holder = getHolder();
+    if (!holder) {
+        return;
+    }
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder.get());
+    if (!isEffect) {
+        return;
+    }
+    NodePtr node = isEffect->getNode();
+    if (!node) {
+        return;
+    }
+    // If this is a pyplug, warn that the user is about to break it
+    if (node->isPyPlug()) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(isEffect);
+        if (isGrp) {
+            StandardButtons rep = Dialogs::questionDialog(tr("PyPlug").toStdString(), tr("You are about to edit parameters of this node which will "
+                                                                                         "automatically convert this node as a Group. Are you sure "
+                                                                                         "you want to edit it?").toStdString(), false);
+            if (rep != eStandardButtonYes) {
+                return;
+            }
+            isGrp->setSubGraphEditedByUser(true);
+        }
+        
+
+    }
     ManageUserParamsDialog dialog(this, this);
 
     ignore_result( dialog.exec() );
@@ -1554,7 +1579,6 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
         }
     }
 }
-
 
 std::string
 DockablePanel::getHolderFullyQualifiedScriptName() const
