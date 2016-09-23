@@ -1368,9 +1368,7 @@ AppManager::onAllPluginsLoaded()
         if (it->second.empty()) {
             continue;
         }
-        if (it->first == "net.sf.cimg.CImgBlur") {
-            assert(true);
-        }
+    
         PluginMajorsOrdered::iterator first = it->second.begin();
         bool isUserCreatable = false;
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
