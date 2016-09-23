@@ -1485,13 +1485,17 @@ NodeGui::refreshEdgesVisility(bool hovered)
 void
 NodeGui::refreshEdgesVisibilityInternal(bool hovered)
 {
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
     std::vector<bool> edgesVisibility( _inputEdges.size() );
 
     for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
         edgesVisibility[i] = _inputEdges[i]->computeVisibility(hovered);
     }
 
-    NodePtr node = getNode();
+
     if (node->isEntitledForInspectorInputsStyle()) {
         bool isViewer = node->isEffectViewerNode() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
