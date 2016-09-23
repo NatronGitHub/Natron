@@ -236,7 +236,7 @@ public:
      **/
     static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
     static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
-    static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
+    static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth, bool throwOnFailure = true);
     static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
     static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
     static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
