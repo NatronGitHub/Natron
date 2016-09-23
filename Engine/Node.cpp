@@ -1950,12 +1950,17 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         // For pages, check if it is a user knob, if so serialialize user knobs recursively
         if (isPage) {
+            // Don t save empty pages
+            if (isPage->getChildren().empty()) {
+                continue;
+            }
             if (pageOrderChanged || subGraphEdited) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
             if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
                 userPages.push_back(knobs[i]);
             }
+            continue;
         }
 
         if (!knobs[i]->getIsPersistent()) {
