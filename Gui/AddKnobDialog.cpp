@@ -31,7 +31,6 @@
 #include <QTextEdit>
 #include <QtCore/QTextStream>
 #include <QFormLayout>
-#include <QDialogButtonBox>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobFile.h" // KnobFile
@@ -43,6 +42,7 @@
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ComboBox.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiDefines.h"
@@ -1032,7 +1032,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
 
 
-    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
+    DialogButtonBox* buttons = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
     QObject::connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     QObject::connect( buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
     _imp->vLayout->addWidget(buttons);

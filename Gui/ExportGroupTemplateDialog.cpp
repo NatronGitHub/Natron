@@ -33,7 +33,6 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTextStream>
-#include <QDialogButtonBox>
 #include <QGridLayout>
 #include <QTextEdit>
 CLANG_DIAG_ON(deprecated)
@@ -45,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
@@ -130,7 +130,7 @@ struct ExportGroupTemplateDialogPrivate
     LineEdit* iconPath;
     Label* descriptionLabel;
     PlaceHolderTextEdit* descriptionEdit;
-    QDialogButtonBox *buttons;
+    DialogButtonBox *buttons;
 
     ExportGroupTemplateDialogPrivate(NodeCollection* group,
                                      Gui* gui)
@@ -242,7 +242,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->openButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _imp->openButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );

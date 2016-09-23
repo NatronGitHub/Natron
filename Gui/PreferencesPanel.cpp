@@ -32,7 +32,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QDesktopWidget>
 #include <QApplication>
-#include <QDialogButtonBox>
 #include <QKeyEvent>
 #include <QDesktopServices>
 #include <QTreeWidget>
@@ -52,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Label.h"
@@ -260,7 +260,7 @@ public:
     QTreeWidget* tree;
     std::vector<PreferenceTab> tabs;
     int currentTabIndex;
-    QDialogButtonBox* buttonBox;
+    DialogButtonBox* buttonBox;
     Button* restoreDefaultsB;
     Button* prefsHelp;
     Button* cancelB;
@@ -732,7 +732,7 @@ PreferencesPanel::createGui()
     assert(uiTabTreeItem);
     _imp->tree->setFixedWidth(maxLength + 100);
 
-    _imp->buttonBox = new QDialogButtonBox(Qt::Horizontal);
+    _imp->buttonBox = new DialogButtonBox(Qt::Horizontal);
     _imp->restoreDefaultsB = new Button( tr("Restore defaults") );
     _imp->restoreDefaultsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 

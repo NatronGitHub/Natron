@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -223,19 +224,10 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _nameLineEdit = new LineEdit(_formatNameLine);
     _formatNameLayout->addWidget(_nameLineEdit);
 
-    _buttonsLine = new QWidget(this);
-    _buttonsLineLayout = new QHBoxLayout(_buttonsLine);
-    _buttonsLine->setLayout(_buttonsLineLayout);
-    _mainLayout->addWidget(_buttonsLine);
-
-
-    _cancelButton = new Button(tr("Cancel"), _buttonsLine);
-    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
-    _buttonsLineLayout->addWidget(_cancelButton);
-
-    _okButton = new Button(tr("Ok"), _buttonsLine);
-    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
-    _buttonsLineLayout->addWidget(_okButton);
+    _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(accept()) );
+    _mainLayout->addWidget(_buttonBox);
 }
 
 void
@@ -498,7 +490,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         }
     }
 
-    _gui->getApp()->updateProjectLoadStatus( tr("Restoring settings panels") );
+    // we have to give the tr() context explicitely due to a bug in lupdate
+    _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring settings panels", "ProjectGui") );
 
     ///now restore opened settings panels
     const std::list<std::string> & openedPanels = obj.getOpenedPanels();
@@ -524,7 +517,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
     ///restore user python panels
     const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = obj.getPythonPanels();
     if ( !pythonPanels.empty() ) {
-        _gui->getApp()->updateProjectLoadStatus( tr("Restoring user panels") );
+        // we have to give the tr() context explicitely due to a bug in lupdate
+        _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring user panels", "ProjectGui") );
     }
 
     if ( !pythonPanels.empty() ) {
@@ -534,7 +528,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
         assert(ok);
         if (!ok) {
-            throw std::runtime_error("ProjectGui::load(): interpretPythonScript(" + script + ") failed!");
+            // we have to give the tr() context explicitely due to a bug in lupdate
+            throw std::runtime_error( QObject::tr("ProjectGui::load(): interpretPythonScript(%1) failed!", "ProjectGui").arg( QString::fromUtf8(script.c_str()) ).toStdString() );
         }
     }
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
@@ -564,7 +559,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         }
     }
 
-    _gui->getApp()->updateProjectLoadStatus( tr("Restoring layout") );
+    // we have to give the tr() context explicitely due to a bug in lupdate
+    _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring layout", "ProjectGui") );
 
     // For auto-saves, always load the workspace
     bool loadWorkspace = isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce();

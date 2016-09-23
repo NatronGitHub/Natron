@@ -633,10 +633,7 @@ class AddFavoriteDialog
     LineEdit* _pathLineEdit;
     Button* _openDirButton;
     SequenceFileDialog* _fd;
-    QWidget* _thirdLine;
-    QHBoxLayout* _thirdLineLayout;
-    Button* _cancelButton;
-    Button* _okButton;
+    DialogButtonBox* _buttonBox;
 
 public:
 

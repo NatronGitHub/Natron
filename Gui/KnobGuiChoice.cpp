@@ -48,7 +48,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QDebug>
 #include <QFontComboBox>
-#include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

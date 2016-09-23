@@ -34,7 +34,6 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QThread>
 #include <QVBoxLayout>
-#include <QDialogButtonBox>
 #include <QKeyEvent>
 #include <QApplication>
 #include <QCheckBox>
@@ -52,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -275,7 +275,7 @@ struct FindNodeDialogPrivate
     QCheckBox* caseSensitivity;
     Label* resultLabel;
     LineEdit* filter;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
 
 
     FindNodeDialogPrivate(NodeGraph* graph)
@@ -334,7 +334,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::NoButton, Qt::Horizontal, this);
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::NoButton, Qt::Horizontal, this);
     _imp->buttons->addButton(tr("&Next"), QDialogButtonBox::ActionRole);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onNextClicked()) );
 

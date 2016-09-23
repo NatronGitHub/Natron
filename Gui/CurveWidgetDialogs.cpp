@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/AppManager.h" // appPTR
 
+#include "Gui/DialogButtonBox.h"
 #include "Gui/LineEdit.h" // LineEdit
 #include "Gui/SpinBox.h" // SpinBox
 #include "Gui/Button.h" // Button
@@ -77,10 +78,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     , _endLabel(0)
     , _endSpinBox(0)
     , _curveColumns()
-    , _buttonsContainer(0)
-    , _buttonsLayout(0)
-    , _okButton(0)
-    , _cancelButton(0)
+    , _buttonBox(0)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -176,15 +174,10 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         _incrSpinBox->setValue(1);
     }
     /////buttons
-    _buttonsContainer = new QWidget(this);
-    _buttonsLayout = new QHBoxLayout(_buttonsContainer);
-    _okButton = new Button(tr("Ok"), _buttonsContainer);
-    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
-    _buttonsLayout->addWidget(_okButton);
-    _cancelButton = new Button(tr("Cancel"), _buttonsContainer);
-    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
-    _buttonsLayout->addWidget(_cancelButton);
-    _mainLayout->addWidget(_buttonsContainer);
+    _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(accept()) );
+    _mainLayout->addWidget(_buttonBox);
 
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     QByteArray state;

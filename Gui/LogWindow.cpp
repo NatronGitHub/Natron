@@ -31,7 +31,6 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDateTime>
 #include <QtCore/QLocale>
-#include <QDialogButtonBox>
 #include <QVBoxLayout>
 #include <QScrollBar>
 #include <QTextBrowser>
@@ -42,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/Lut.h" // floatToInt
 #include "Gui/Button.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 
 NATRON_NAMESPACE_ENTER;
@@ -58,19 +58,12 @@ LogWindow::LogWindow(QWidget* parent)
     textBrowser->setOpenExternalLinks(true);
     mainLayout->addWidget(textBrowser);
 
-    // we could use QDialogButtonBox::CancelButton,
-    // but that would add a QPushButton instead of a Button
-    QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::NoButton), Qt::Horizontal, this);
+    DialogButtonBox* buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Cancel), Qt::Horizontal, this);
 
     clearButton = new Button( tr("&Clear") );
     clearButton->setFocusPolicy(Qt::TabFocus);
     buttonBox->addButton(clearButton, QDialogButtonBox::ResetRole);
     QObject::connect( clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()) );
-
-    okButton = new Button( tr("Cancel") );
-    okButton->setFocusPolicy(Qt::TabFocus);
-    buttonBox->addButton(okButton, QDialogButtonBox::RejectRole);
-    //QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
     QObject::connect(buttonBox, SIGNAL(rejected()), this, SLOT(onOkButtonClicked()));
     mainLayout->addWidget(buttonBox);
 }

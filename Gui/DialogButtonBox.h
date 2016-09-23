@@ -43,12 +43,16 @@ class DialogButtonBox
 {
 public:
 
-    //explicit DialogButtonBox(QWidget *parent = 0);
-    //explicit DialogButtonBox(Qt::Orientation orientation, QWidget *parent = 0);
+    explicit DialogButtonBox(QWidget *parent = 0) : QDialogButtonBox(parent) {}
+    explicit DialogButtonBox(Qt::Orientation orientation, QWidget *parent = 0) : QDialogButtonBox(orientation, parent) {}
     explicit DialogButtonBox(StandardButtons buttons, Qt::Orientation orientation = Qt::Horizontal,
                      QWidget *parent = 0);
 
+    void addButton(QAbstractButton *button, ButtonRole role);
+    QPushButton *addButton(const QString &text, ButtonRole role);
     QPushButton *addButton(StandardButton button);
+
+    void setStandardButtons(StandardButtons buttons);
 
 private:
 };

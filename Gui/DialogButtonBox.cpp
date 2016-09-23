@@ -45,6 +45,14 @@ DialogButtonBox::DialogButtonBox(StandardButtons buttons,
     }
 }
 
+void
+DialogButtonBox::addButton(QAbstractButton *button, ButtonRole role)
+{
+    QDialogButtonBox::addButton(button, role);
+    button->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
+    button->setFont( QApplication::font() ); // necessary, or the buttons will get the default font size
+}
+
 QPushButton *
 DialogButtonBox::addButton(StandardButton button)
 {
@@ -52,6 +60,26 @@ DialogButtonBox::addButton(StandardButton button)
     b->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     b->setFont( QApplication::font() ); // necessary, or the buttons will get the default font size
     return b;
+}
+
+QPushButton *
+DialogButtonBox::addButton(const QString &text, ButtonRole role)
+{
+    QPushButton* b = QDialogButtonBox::addButton(text, role);
+    b->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
+    b->setFont( QApplication::font() ); // necessary, or the buttons will get the default font size
+    return b;
+}
+
+void
+DialogButtonBox::setStandardButtons(StandardButtons buttons)
+{
+    QDialogButtonBox::setStandardButtons(buttons);
+    QList<QAbstractButton *> buttonsList = QDialogButtonBox::buttons();
+    Q_FOREACH(QAbstractButton *b, buttonsList) {
+        b->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
+        b->setFont( QApplication::font() ); // necessary, or the buttons will get the default font size
+    }
 }
 
 NATRON_NAMESPACE_EXIT;
