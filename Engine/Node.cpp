@@ -4087,6 +4087,9 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 #ifndef NATRON_ENABLE_IO_META_NODES
         createWriterFrameStepKnob(mainPage);
 #endif
+        if (!mainPage) {
+            mainPage = getOrCreateMainPage();
+        }
 
         boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
