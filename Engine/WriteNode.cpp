@@ -696,6 +696,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
         if (serialization) {
             args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+            args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
         }
 
         embeddedPlugin = _publicInterface->getApp()->createNode(args);

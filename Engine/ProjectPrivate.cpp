@@ -162,7 +162,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                     args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
                     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+                    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
 
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {

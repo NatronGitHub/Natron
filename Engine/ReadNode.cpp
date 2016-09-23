@@ -630,6 +630,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         if (serialization || wasCreatedAsHiddenNode) {
             args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+            args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
         }
 
         //Set a pre-value for the inputfile knob only if it did not exist

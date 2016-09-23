@@ -112,6 +112,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
     args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
 
     bool skipNoNodeGuiProp = false;
     for (std::map<QString, NodeCreationProperty*>::const_iterator it = props.begin(); it!=props.end(); ++it) {
