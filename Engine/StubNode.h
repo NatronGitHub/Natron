@@ -41,9 +41,14 @@
 NATRON_NAMESPACE_ENTER;
 
 struct StubNodePrivate;
+
 class StubNode
-: public NoOpBase
+    : public NoOpBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     StubNode(const NodePtr& n);

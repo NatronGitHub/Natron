@@ -40,6 +40,10 @@ NATRON_NAMESPACE_ENTER;
 class GroupOutput
     : public NoOpBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     GroupOutput(const NodePtr& n)

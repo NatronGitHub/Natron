@@ -52,8 +52,13 @@
 NATRON_NAMESPACE_ENTER;
 
 class RotoShapeRenderNodePrivate;
-class RotoShapeRenderNode : public EffectInstance
+class RotoShapeRenderNode
+    : public EffectInstance
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
     RotoShapeRenderNode(NodePtr n);
 
 
