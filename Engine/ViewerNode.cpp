@@ -426,7 +426,7 @@ ViewerNode::createPlugin()
     grouping.push_back(PLUGIN_GROUP_IMAGE);
     PluginPtr ret = Plugin::create((void*)ViewerNode::create, PLUGINID_NATRON_VIEWER_GROUP, "Viewer", 1, 0, grouping);
 
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "viewer_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/viewer_icon.png");
     QString desc = tr("The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree");
 
     ret->setProperty<int>(kNatronPluginPropRenderSafety, eRenderSafetyFullySafe);

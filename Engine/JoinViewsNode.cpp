@@ -55,7 +55,7 @@ JoinViewsNode::createPlugin()
                        "The first view from each input is copied to one of the view of the output.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "joinViewsNode.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/joinViewsNode.png");
     return ret;
 }
 

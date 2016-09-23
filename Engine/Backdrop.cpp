@@ -53,7 +53,7 @@ Backdrop::createPlugin()
                        "You can also move all the nodes inside the backdrop.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "backdrop_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/backdrop_icon.png");
     return ret;
 }
 

@@ -43,10 +43,10 @@ GroupInput::createPlugin()
     grouping.push_back(PLUGIN_GROUP_OTHER);
     PluginPtr ret = Plugin::create((void*)GroupInput::create, PLUGINID_NATRON_INPUT, "Input", 1, 0, grouping);
 
-    QString desc =  tr("This node can only be used within a Group. It adds an input arrow to the group.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    QString desc =  tr("This node can only be used within a Group. It adds an input arrow to the group.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "input_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/input_icon.png");
     return ret;
 }
 

@@ -41,7 +41,7 @@ GroupOutput::createPlugin()
     QString desc =  tr("This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "output_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/output_icon.png");
     return ret;
 }
 

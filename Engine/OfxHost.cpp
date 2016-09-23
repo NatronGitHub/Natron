@@ -1031,6 +1031,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                 evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         }
+
+        appPTR->registerPlugin(natronPlugin);
     }
 } // loadOFXPlugins
 

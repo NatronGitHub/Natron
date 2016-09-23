@@ -66,7 +66,7 @@ DiskCacheNode::createPlugin()
                        "WARNING: The DiskCache node must be part of the tree when you want to read cached data from it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "diskcache_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/diskcache_icon.png");
     return ret;
 }
 

@@ -41,7 +41,7 @@ Dot::createPlugin()
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_period);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierShift, 1);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "dot_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/dot_icon.png");
     return ret;
 }
 

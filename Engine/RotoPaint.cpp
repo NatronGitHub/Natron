@@ -114,7 +114,7 @@ RotoPaint::createPlugin()
     QString desc = tr("RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/GroupingIcons/Set2/paint_grouping_2.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_P);
     return ret;
 }
@@ -129,7 +129,7 @@ RotoNode::createPlugin()
     QString desc = tr("Create masks and shapes.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "rotoNodeIcon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/rotoNodeIcon.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_O);
     return ret;
 }

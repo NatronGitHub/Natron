@@ -74,10 +74,10 @@ TrackerNode::createPlugin()
                       "---------------------------\n\n"
                       "You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
-    ret->setProperty<int>(kNatronPluginPropDescriptionIsMarkdown, true);
+    ret->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, true);
 
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "trackerNodeIcon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/trackerNodeIcon.png");
 
     // Viewer buttons
     ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, Key_Z) );

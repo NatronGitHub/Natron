@@ -176,7 +176,7 @@ ViewerInstance::createPlugin()
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
     PluginPtr ret = Plugin::create((void*)ViewerInstance::create, PLUGINID_NATRON_VIEWER_INTERNAL, "ViewerProcess", 1, 0, grouping);
-    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "viewer_icon.png");
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/viewer_icon.png");
     QString desc =  tr("The Viewer node can display the output of a node graph.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());

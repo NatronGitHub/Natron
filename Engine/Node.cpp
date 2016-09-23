@@ -7139,6 +7139,10 @@ Node::getMaxInputCount() const
 bool
 Node::isEntitledForInspectorInputsStyle() const
 {
+    ViewerNodePtr isViewer = toViewerNode(_imp->effect);
+    if (isViewer) {
+        return true;
+    }
     int maxInputs = getMaxInputCount();
     int nOptionalInputs = 0;
     bool firstInput = true;
