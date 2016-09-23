@@ -756,6 +756,8 @@ protected:
 
     bool refreshMetaDatas_internal();
 
+    bool setMetaDatasInternal(const NodeMetadata& metadata);
+
     virtual void onMetaDatasRefreshed(const NodeMetadata& /*metadata*/) {}
 
     bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);

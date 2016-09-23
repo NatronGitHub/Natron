@@ -133,6 +133,11 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
             newNodesList.front()->getNode()->getEffectInstance()->refreshMetaDatas_public(true);
         }
 
+        // Now that meta-datas are refreshed, compute preview
+        for (NodesGuiList::const_iterator it = newNodesList.begin(); it!=newNodesList.end(); ++it) {
+            (*it)->forceComputePreview(_publicInterface->getGui()->getApp()->getTimeLine()->currentFrame());
+        }
+
         if (useUndoCommand) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
         }
@@ -219,7 +224,6 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     }
     QPointF newPos = gui->getPos_mt_safe() + offset;
     gui->setPosition( newPos.x(), newPos.y() );
-    gui->forceComputePreview( _publicInterface->getGui()->getApp()->getProject()->currentFrame() );
 
     if (clone) {
         assert( internalSerialization->getNode() );
