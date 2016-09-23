@@ -312,6 +312,13 @@ Gui::setQMessageBoxAppropriateFont(QMessageBox* widget)
             }
         }
     }
+
+    QList<QAbstractButton *> buttonsList = widget->buttons();
+    Q_FOREACH(QAbstractButton* b, buttonsList) {
+        b->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
+        b->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
+    }
+
 }
 
 void
