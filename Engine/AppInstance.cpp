@@ -1316,7 +1316,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 output = createNode(args);
                 try {
-                    output->setScriptName("Output");
+                    output->setLabel("Output");
                 } catch (...) {
                 }
 

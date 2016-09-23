@@ -2967,9 +2967,6 @@ void
 Node::setLabel(const std::string& label)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( dynamic_cast<GroupOutput*>( _imp->effect.get() ) ) {
-        return;
-    }
 
     {
         QMutexLocker k(&_imp->nameMutex);
@@ -3969,6 +3966,9 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     findPluginFormatKnobs(knobs, loadingSerialization);
     findRightClickMenuKnob(knobs);
 
+    boost::shared_ptr<KnobPage> mainPage;
+
+
     // Scan all inputs to find masks and get inputs labels
     //Pair hasMaskChannelSelector, isMask
     int inputsCount = getMaxInputCount();
@@ -3988,15 +3988,20 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         if ( (isMask || supportsOnlyAlpha) &&
              !_imp->effect->isInputRotoBrush(i) ) {
             hasMaskChannelSelector[i].first = true;
+            if (!mainPage) {
+                mainPage = getOrCreateMainPage();
+            }
         }
     }
 
-    boost::shared_ptr<KnobPage> mainPage = getOrCreateMainPage();
-    assert(mainPage);
+    bool requiresLayerShuffle = _imp->effect->getCreateChannelSelectorKnob();
 
     // Create the Output Layer choice if needed plus input layers selectors
     KnobPtr lastKnobBeforeAdvancedOption;
-    if ( _imp->effect->getCreateChannelSelectorKnob() ) {
+    if (requiresLayerShuffle) {
+        if (!mainPage) {
+            mainPage = getOrCreateMainPage();
+        }
         createChannelSelectors(hasMaskChannelSelector, inputLabels, mainPage, &lastKnobBeforeAdvancedOption);
     }
 
@@ -4007,16 +4012,16 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     std::vector<std::pair<std::string, KnobPtr > > foundPluginDefaultKnobsToReorder;
     foundPluginDefaultKnobsToReorder.push_back( std::make_pair( kOfxMaskInvertParamName, KnobPtr() ) );
     foundPluginDefaultKnobsToReorder.push_back( std::make_pair( kOfxMixParamName, KnobPtr() ) );
-    if (mainPage) {
-        ///Insert auto-added knobs before mask invert if found
-        for (std::size_t i = 0; i < knobs.size(); ++i) {
-            for (std::size_t j = 0; j < foundPluginDefaultKnobsToReorder.size(); ++j) {
-                if (knobs[i]->getName() == foundPluginDefaultKnobsToReorder[j].first) {
-                    foundPluginDefaultKnobsToReorder[j].second = knobs[i];
-                }
+
+    ///Insert auto-added knobs before mask invert if found
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        for (std::size_t j = 0; j < foundPluginDefaultKnobsToReorder.size(); ++j) {
+            if (knobs[i]->getName() == foundPluginDefaultKnobsToReorder[j].first) {
+                foundPluginDefaultKnobsToReorder[j].second = knobs[i];
             }
         }
     }
+
 
     assert(foundPluginDefaultKnobsToReorder.size() > 0 && foundPluginDefaultKnobsToReorder[0].first == kOfxMaskInvertParamName);
 
@@ -4025,6 +4030,9 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
     //Create the host mix if needed
     if ( _imp->effect->isHostMixingEnabled() ) {
+        if (!mainPage) {
+            mainPage = getOrCreateMainPage();
+        }
         createHostMixKnob(mainPage);
     }
 
@@ -4032,16 +4040,21 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     /*
      * Reposition the MaskInvert and Mix parameters declared by the plug-in
      */
-    if (mainPage) {
-        for (std::size_t i = 0; i < foundPluginDefaultKnobsToReorder.size(); ++i) {
-            if ( foundPluginDefaultKnobsToReorder[i].second && (foundPluginDefaultKnobsToReorder[i].second->getParentKnob() == mainPage) ) {
+    for (std::size_t i = 0; i < foundPluginDefaultKnobsToReorder.size(); ++i) {
+        if (foundPluginDefaultKnobsToReorder[i].second) {
+            if (!mainPage) {
+                mainPage = getOrCreateMainPage();
+            }
+            if (foundPluginDefaultKnobsToReorder[i].second->getParentKnob() == mainPage) {
                 mainPage->removeKnob( foundPluginDefaultKnobsToReorder[i].second.get() );
                 mainPage->addKnob(foundPluginDefaultKnobsToReorder[i].second);
             }
         }
     }
 
-    if (lastKnobBeforeAdvancedOption) {
+
+    if (lastKnobBeforeAdvancedOption && mainPage) {
+        
         KnobsVec mainPageChildren = mainPage->getChildren();
         int i = 0;
         for (KnobsVec::iterator it = mainPageChildren.begin(); it != mainPageChildren.end(); ++it, ++i) {
