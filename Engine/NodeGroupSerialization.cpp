@@ -223,6 +223,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
             args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, *it);
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+            args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
             if (!(*it)->getMultiInstanceParentName().empty()) {
                 args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
             }
