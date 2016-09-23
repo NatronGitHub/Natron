@@ -50,7 +50,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
 #include <QComboBox>
-#include <QDialogButtonBox>
 #include <QCompleter>
 
 #include "Global/GlobalDefines.h"

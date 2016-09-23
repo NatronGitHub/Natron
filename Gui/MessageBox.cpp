@@ -31,7 +31,6 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QDialogButtonBox>
 #include <QStyle>
 #include <QPushButton>
 #include <QCheckBox>
@@ -41,9 +40,10 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/QtEnumConvert.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
+#include "Gui/QtEnumConvert.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -57,7 +57,7 @@ struct MessageBoxPrivate
     Label* questionLabel;
     QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
     QAbstractButton* clickedButton;
 
     MessageBoxPrivate(MessageBox::MessageBoxTypeEnum type)
@@ -148,8 +148,9 @@ MessageBox::init(const QString & title,
     }
 
 
-    _imp->buttons = new QDialogButtonBox(_imp->vContainer);
-    _imp->buttons->setStandardButtons( QDialogButtonBox::StandardButtons( int( QtEnumConvert::toQtStandarButtons(buttons) ) ) );
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::StandardButtons( int( QtEnumConvert::toQtStandarButtons(buttons) ) ),
+                                        Qt::Horizontal,
+                                        _imp->vContainer);
     QPushButton* defaultB = _imp->buttons->button( QDialogButtonBox::StandardButton(
                                                        (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(defaultButton) ) );
     if ( _imp->buttons->buttons().contains(defaultB) ) {

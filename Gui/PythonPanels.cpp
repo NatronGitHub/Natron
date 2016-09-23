@@ -31,12 +31,13 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/PyNode.h"
 #include "Engine/ViewIdx.h"
+
+#include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/GuiAppInstance.h"
@@ -174,7 +175,7 @@ struct PyModalDialogPrivate
     DockablePanel* panel;
     QWidget* centerContainer;
     QVBoxLayout* centerLayout;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
 
     PyModalDialogPrivate(Gui* gui)
         : gui(gui)
@@ -277,7 +278,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
         }
 
 
-        _imp->buttons = new QDialogButtonBox(qbuttons, Qt::Horizontal, this);
+        _imp->buttons = new DialogButtonBox(qbuttons, Qt::Horizontal, this);
         _imp->buttons->setFocusPolicy(Qt::TabFocus);
         QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
         QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );

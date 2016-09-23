@@ -50,7 +50,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
 #include <QComboBox>
-#include <QDialogButtonBox>
 #include <QCompleter>
 
 #include "Global/GlobalDefines.h"
@@ -73,6 +72,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -107,7 +107,7 @@ struct EditScriptDialogPrivate
     Button* helpButton;
     Label* resultLabel;
     OutputScriptTextEdit* resultEdit;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
 
     EditScriptDialogPrivate(Gui* gui)
         : gui(gui)
@@ -209,7 +209,7 @@ EditScriptDialog::create(const QString& initialScript,
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     _imp->mainLayout->addWidget(_imp->buttons);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );

@@ -50,7 +50,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
 #include <QComboBox>
-#include <QDialogButtonBox>
 #include <QCompleter>
 
 #include "Global/GlobalDefines.h"
@@ -73,6 +72,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -103,7 +103,7 @@ struct LinkToKnobDialogPrivate
     Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
     NodesList allNodes;
     std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
 
@@ -134,7 +134,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
 
     _imp->mainLayout->addWidget(_imp->firstLine);
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );

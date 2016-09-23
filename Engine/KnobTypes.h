@@ -1449,6 +1449,7 @@ toKnobParametric(const KnobIPtr& knob)
  * @brief A Table containing strings. The number of columns is static.
  **/
 class KnobTable
+<<<<<<< HEAD
     : public KnobStringBase
 {
 protected: // derives from KnobI, parent of KnobLayer, KnobPath
@@ -1456,6 +1457,16 @@ protected: // derives from KnobI, parent of KnobLayer, KnobPath
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobTable(const KnobHolderPtr& holder,
+=======
+    : public QObject, public Knob<std::string>
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+public:
+    KnobTable(KnobHolder* holder,
+>>>>>>> origin/RB-2.1
               const std::string &description,
               int dimension,
               bool declaredByPlugin);

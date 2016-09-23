@@ -33,7 +33,6 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTextStream>
-#include <QDialogButtonBox>
 #include <QGridLayout>
 #include <QTextEdit>
 CLANG_DIAG_ON(deprecated)
@@ -46,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
@@ -138,7 +138,7 @@ struct ExportGroupTemplateDialogPrivate
     AnimatedCheckBox* descriptionIsMarkdownCheckbox;
     Label* shortcutKeyLabel;
     KeybindRecorder* shortcutKeyEditor;
-    QDialogButtonBox *buttons;
+    DialogButtonBox *buttons;
 
     ExportGroupTemplateDialogPrivate(const NodeCollectionPtr& group,
                                      Gui* gui)
@@ -270,7 +270,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->openButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _imp->openButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );

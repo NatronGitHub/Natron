@@ -124,10 +124,7 @@ private:
     std::vector< CurveColumn > _curveColumns;
 
     ////buttons
-    QWidget* _buttonsContainer;
-    QHBoxLayout* _buttonsLayout;
-    Button* _okButton;
-    Button* _cancelButton;
+    DialogButtonBox* _buttonBox;
 };
 
 

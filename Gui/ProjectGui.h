@@ -118,7 +118,9 @@ private:
 class AddFormatDialog
     : public QDialog
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -156,10 +158,7 @@ private:
     QHBoxLayout* _formatNameLayout;
     Label* _nameLabel;
     LineEdit* _nameLineEdit;
-    QWidget* _buttonsLine;
-    QHBoxLayout* _buttonsLineLayout;
-    Button* _cancelButton;
-    Button* _okButton;
+    DialogButtonBox* _buttonBox;
 };
 
 NATRON_NAMESPACE_EXIT;

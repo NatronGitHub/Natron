@@ -41,7 +41,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGridLayout>
 #include <QCursor>
 #include <QtCore/QFile>
-#include <QDialogButtonBox>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

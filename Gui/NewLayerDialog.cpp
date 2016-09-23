@@ -46,7 +46,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QDebug>
 #include <QFontComboBox>
-#include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -62,6 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
@@ -97,7 +97,7 @@ struct NewLayerDialogPrivate
     Label* aLabel;
     LineEdit* aEdit;
     Button* setRgbaButton;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
 
     NewLayerDialogPrivate()
         : mainLayout(0)
@@ -148,7 +148,7 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
     _imp->setRgbaButton->setText( tr("Set RGBA") );
     QObject::connect( _imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()) );
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
 

@@ -36,7 +36,6 @@
 #include <QGridLayout>
 #include <QCheckBox>
 #include <QtCore/QTimer>
-#include <QDialogButtonBox>
 
 #include "Engine/Knob.h" // KnobI
 #include "Engine/KnobTypes.h" // KnobButton...
@@ -45,6 +44,7 @@
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/ComboBox.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/Label.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeCreationDialog.h" // CompleterLineEdit
@@ -68,7 +68,7 @@ struct PickKnobDialogPrivate
     ComboBox* groupCombo;
     std::vector<KnobPagePtr > pages;
     std::vector<KnobGroupPtr > groups;
-    QDialogButtonBox* buttons;
+    DialogButtonBox* buttons;
     NodesList allNodes;
     std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
     KnobGuiPtr selectedKnob;
@@ -156,7 +156,10 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     if (isGroup) {
         NodesList groupnodes = isGroup->getNodes();
         for (NodesList::iterator it = groupnodes.begin(); it != groupnodes.end(); ++it) {
-            if ((*it)->isActivated() && (*it)->getNodeGui()  && ( (*it)->getKnobs().size() > 0 ) ) {
+            if ( (*it)->getNodeGui() &&
+                !(*it)->getParentMultiInstance() &&
+                (*it)->isActivated() &&
+                ( (*it)->getKnobs().size() > 0 ) ) {
                 _imp->allNodes.push_back(*it);
             }
         }
@@ -224,7 +227,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     _imp->groupCombo->setToolTip(grouptt);
     onPageComboIndexChanged(0);
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+    _imp->buttons = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal, this);
     QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
     QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );

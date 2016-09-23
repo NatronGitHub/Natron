@@ -97,6 +97,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
+#include "Gui/DialogButtonBox.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
@@ -1454,19 +1455,10 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
 
     _mainLayout->addWidget(_secondLine);
 
-    _thirdLine = new QWidget(this);
-    _thirdLineLayout = new QHBoxLayout(_thirdLine);
-    _thirdLine->setLayout(_thirdLineLayout);
-
-    _cancelButton = new Button(tr("Cancel"), _thirdLine);
-    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
-    _thirdLineLayout->addWidget(_cancelButton);
-
-    _okButton = new Button(tr("Ok"), _thirdLine);
-    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
-    _thirdLineLayout->addWidget(_okButton);
-
-    _mainLayout->addWidget(_thirdLine);
+    _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(accept()) );
+    _mainLayout->addWidget(_buttonBox);
 }
 
 void

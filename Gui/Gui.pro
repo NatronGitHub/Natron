@@ -96,6 +96,7 @@ SOURCES += \
     CurveWidgetDialogs.cpp \
     CurveWidgetPrivate.cpp \
     CustomParamInteract.cpp \
+    DialogButtonBox.cpp \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
@@ -245,6 +246,7 @@ HEADERS += \
     CurveWidgetDialogs.h \
     CurveWidgetPrivate.h \
     CustomParamInteract.h \
+    DialogButtonBox.h \
     DockablePanel.h \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \
