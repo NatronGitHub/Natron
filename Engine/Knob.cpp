@@ -4189,6 +4189,20 @@ KnobHelper::setHasModifications(int dimension,
     return ret;
 }
 
+void
+KnobHolder::getUserPages(std::list<KnobPage*>& userPages) const {
+    const KnobsVec& knobs = getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ( (*it)->isUserKnob() ) {
+            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+            if (isPage) {
+                userPages.push_back(isPage);
+            }
+        }
+    }
+}
+
 KnobPtr
 KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
                                     const boost::shared_ptr<KnobPage>& page,
@@ -4224,13 +4238,20 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
 
 
-    //Ensure the group user page is created
+    //Ensure there is a user page
     boost::shared_ptr<KnobPage> destPage;
     if (page) {
         destPage = page;
     } else {
         if (otherIsEffect) {
-            destPage = otherIsEffect->getOrCreateUserPageKnob();
+            std::list<KnobPage*> userPages;
+            otherIsEffect->getUserPages(userPages);
+            if (userPages.empty()) {
+                destPage = otherIsEffect->getOrCreateUserPageKnob();
+            } else {
+                destPage = boost::dynamic_pointer_cast<KnobPage>(userPages.front()->shared_from_this());
+            }
+
         }
     }
 
@@ -4964,8 +4985,12 @@ KnobHolder::getUserPageKnob() const
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if ( (*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE ) {
-                return boost::dynamic_pointer_cast<KnobPage>(*it);
+            if (!(*it)->isUserKnob()) {
+                continue;
+            }
+            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            if (isPage) {
+                return isPage;
             }
         }
     }

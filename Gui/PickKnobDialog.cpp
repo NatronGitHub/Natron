@@ -378,16 +378,14 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
     boost::shared_ptr<KnobPage> parentPage;
 
-    if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
-        parentPage = _imp->panel->getUserPageKnob();
-    } else {
-        for (std::vector<boost::shared_ptr<KnobPage> >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
-            if ( (*it)->getName() == selectedPage ) {
-                parentPage = *it;
-                break;
-            }
+
+    for (std::vector<boost::shared_ptr<KnobPage> >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
+        if ( (*it)->getName() == selectedPage ) {
+            parentPage = *it;
+            break;
         }
     }
+
 
     for (std::vector<boost::shared_ptr<KnobGroup> >::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
         boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();

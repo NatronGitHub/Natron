@@ -149,24 +149,10 @@ public:
     void getUserPages(std::list<KnobPage*>& userPages) const;
 
     /**
-     * @brief Same as calling setPageActiveIndex(getUserPageKnob())
-     **/
-    void setUserPageActiveIndex();
-
-    /**
      * @brief Make the given page current
      **/
     void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
 
-    /**
-     * @brief Returns the use page knob or create it if it was not
-     **/
-    boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() const;
-
-    /**
-     * @brief Returns the use page knob but do not create it
-     **/
-    boost::shared_ptr<KnobPage> getUserPageKnob() const;
 
     /**
      * @brief Same as getPages().size()

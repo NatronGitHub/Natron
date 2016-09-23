@@ -2480,6 +2480,7 @@ public:
 
     void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
 
+    
 protected:
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -2614,6 +2615,12 @@ public:
     //Calls onSignificantEvaluateAboutToBeCalled + evaluate
     void incrHashAndEvaluate(bool isSignificant, bool refreshMetadatas);
 
+
+    /**
+     * @brief Return a list of all the internal pages which were created by the user
+     **/
+    void getUserPages(std::list<KnobPage*>& userPages) const;
+    
 protected:
 
 

@@ -591,9 +591,6 @@ DockablePanel::turnOffPages()
     delete _imp->_tabWidget;
     _imp->_tabWidget = 0;
     setFrameShape(QFrame::NoFrame);
-
-    boost::shared_ptr<KnobPage> userPage = _imp->_holder->getOrCreateUserPageKnob();
-    getOrCreatePage(userPage);
 }
 
 void
@@ -1670,8 +1667,6 @@ struct ManageUserParamsDialogPrivate
         , closeButton(0)
     {
     }
-
-    boost::shared_ptr<KnobPage> getUserPageKnob() const;
 
     void initializeKnobs(const KnobsVec& knobs, QTreeWidgetItem* parent, std::list<KnobI*>& markedKnobs);
 

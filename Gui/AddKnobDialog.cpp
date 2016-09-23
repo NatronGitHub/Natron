@@ -224,32 +224,8 @@ struct AddKnobDialogPrivate
     boost::shared_ptr<KnobPage> getSelectedPage() const;
 };
 
-enum ParamDataTypeEnum
-{
-    eParamDataTypeInteger, // 0
-    eParamDataTypeInteger2D, // 1
-    eParamDataTypeInteger3D, // 2
-    eParamDataTypeFloatingPoint, //3
-    eParamDataTypeFloatingPoint2D, // 4
-    eParamDataTypeFloatingPoint3D, // 5
-    eParamDataTypeColorRGB, // 6
-    eParamDataTypeColorRGBA, // 7
-    eParamDataTypeChoice, // 8
-    eParamDataTypeCheckbox, // 9
-    eParamDataTypeLabel, // 10
-    eParamDataTypeTextInput, // 11
-    eParamDataTypeInputFile, // 12
-    eParamDataTypeOutputFile, // 13
-    eParamDataTypeDirectory, // 14
-    eParamDataTypeGroup, // 15
-    eParamDataTypePage, // 16
-    eParamDataTypeButton, // 17
-    eParamDataTypeSeparator, // 18
-    eParamDataTypeCount // 19
-};
-
-static const char*
-dataTypeString(ParamDataTypeEnum t)
+const char*
+AddKnobDialog::dataTypeString(ParamDataTypeEnum t)
 {
     switch (t) {
     case eParamDataTypeInteger:
@@ -315,8 +291,8 @@ dataTypeString(ParamDataTypeEnum t)
     } // switch
 } // dataTypeString
 
-static int
-dataTypeDim(ParamDataTypeEnum t)
+int
+AddKnobDialog::dataTypeDim(ParamDataTypeEnum t)
 {
     switch (t) {
     case eParamDataTypeInteger:
@@ -360,8 +336,8 @@ dataTypeDim(ParamDataTypeEnum t)
     }
 }
 
-static ParamDataTypeEnum
-getChoiceIndexFromKnobType(KnobI* knob)
+AddKnobDialog::ParamDataTypeEnum
+AddKnobDialog::getChoiceIndexFromKnobType(KnobI* knob)
 {
     int dim = knob->getDimension();
     KnobInt* isInt = dynamic_cast<KnobInt*>(knob);
@@ -950,9 +926,6 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             }
         }
     }
-    if ( _imp->userPages.empty() ) {
-        _imp->parentPage->addItem( QString::fromUtf8(NATRON_USER_MANAGED_KNOBS_PAGE) );
-    }
 
     for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
         _imp->parentPage->addItem( QString::fromUtf8( (*it)->getName().c_str() ) );
@@ -964,7 +937,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     if (knob) {
         ////find in which page the knob should be
         boost::shared_ptr<KnobPage> isTopLevelParentAPage = knob->getTopLevelPage();
-        if ( isTopLevelParentAPage && (isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) ) {
+        if (isTopLevelParentAPage) {
             int index = 0; // 1 because of the "User" item
             bool found = false;
             for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
@@ -1045,7 +1018,6 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         assert(t != eParamDataTypeCount);
     }
     onTypeCurrentIndexChanged( (int)t );
-    _imp->panel->setUserPageActiveIndex();
 
     if (knob) {
         _imp->originalKnobSerialization.reset( new KnobSerialization(knob) );
@@ -1064,16 +1036,13 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
     std::string selectedPage = _imp->parentPage->itemText(index).toStdString();
     boost::shared_ptr<KnobPage> parentPage;
 
-    if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
-        parentPage = _imp->panel->getUserPageKnob();
-    } else {
-        for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
-            if ( (*it)->getName() == selectedPage ) {
-                parentPage = *it;
-                break;
-            }
+    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+        if ( (*it)->getName() == selectedPage ) {
+            parentPage = *it;
+            break;
         }
     }
+
 
     for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
         boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
@@ -1372,24 +1341,24 @@ void
 AddKnobDialogPrivate::createKnobFromSelection(int index,
                                               int optionalGroupIndex)
 {
-    ParamDataTypeEnum t = (ParamDataTypeEnum)index;
+    AddKnobDialog::ParamDataTypeEnum t = (AddKnobDialog::ParamDataTypeEnum)index;
 
     assert(!knob);
     std::string label = labelLineEdit->text().toStdString();
-    int dim = dataTypeDim(t);
+    int dim = AddKnobDialog::dataTypeDim(t);
     switch (t) {
-    case eParamDataTypeInteger:
-    case eParamDataTypeInteger2D:
-    case eParamDataTypeInteger3D: {
+    case AddKnobDialog::eParamDataTypeInteger:
+    case AddKnobDialog::eParamDataTypeInteger2D:
+    case AddKnobDialog::eParamDataTypeInteger3D: {
         //int
         boost::shared_ptr<KnobInt> k = AppManager::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
         setKnobMinMax<int>( k.get() );
         knob = k;
         break;
     }
-    case eParamDataTypeFloatingPoint:
-    case eParamDataTypeFloatingPoint2D:
-    case eParamDataTypeFloatingPoint3D: {
+    case AddKnobDialog::eParamDataTypeFloatingPoint:
+    case AddKnobDialog::eParamDataTypeFloatingPoint2D:
+    case AddKnobDialog::eParamDataTypeFloatingPoint3D: {
         //double
         int dim = index - 2;
         boost::shared_ptr<KnobDouble> k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
@@ -1397,8 +1366,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeColorRGB:
-    case eParamDataTypeColorRGBA: {
+    case AddKnobDialog::eParamDataTypeColorRGB:
+    case AddKnobDialog::eParamDataTypeColorRGBA: {
         // color
         int dim = index - 3;
         boost::shared_ptr<KnobColor> k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
@@ -1406,7 +1375,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeChoice: {
+    case AddKnobDialog::eParamDataTypeChoice: {
         boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
         QString entriesRaw = menuItemsEdit->toPlainText();
         QTextStream stream(&entriesRaw);
@@ -1455,15 +1424,15 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeCheckbox: {
+    case AddKnobDialog::eParamDataTypeCheckbox: {
         boost::shared_ptr<KnobBool> k = AppManager::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
         bool defValue = defaultBool->isChecked();
         k->setDefaultValue(defValue);
         knob = k;
         break;
     }
-    case eParamDataTypeLabel:
-    case eParamDataTypeTextInput: {
+    case AddKnobDialog::eParamDataTypeLabel:
+    case AddKnobDialog::eParamDataTypeTextInput: {
         boost::shared_ptr<KnobString> k = AppManager::createKnob<KnobString>(panel->getHolder(), label, 1, false);
         if ( multiLine->isChecked() ) {
             k->setAsMultiLine();
@@ -1480,7 +1449,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeInputFile: {
+    case AddKnobDialog::eParamDataTypeInputFile: {
         boost::shared_ptr<KnobFile> k = AppManager::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
         if ( sequenceDialog->isChecked() ) {
             k->setAsInputImage();
@@ -1490,7 +1459,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeOutputFile: {
+    case AddKnobDialog::eParamDataTypeOutputFile: {
         boost::shared_ptr<KnobOutputFile> k = AppManager::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
         if ( sequenceDialog->isChecked() ) {
             k->setAsOutputImageFile();
@@ -1500,7 +1469,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeDirectory: {
+    case AddKnobDialog::eParamDataTypeDirectory: {
         boost::shared_ptr<KnobPath> k = AppManager::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
         if ( multiPath->isChecked() ) {
             k->setMultiPath(true);
@@ -1510,7 +1479,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypeGroup: {
+    case AddKnobDialog::eParamDataTypeGroup: {
         boost::shared_ptr<KnobGroup> k = AppManager::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
         if ( groupAsTab->isChecked() ) {
             k->setAsTab();
@@ -1519,17 +1488,17 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         knob = k;
         break;
     }
-    case eParamDataTypePage: {
+    case AddKnobDialog::eParamDataTypePage: {
         boost::shared_ptr<KnobPage> k = AppManager::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
         knob = k;
         break;
     }
-    case eParamDataTypeButton: {
+    case AddKnobDialog::eParamDataTypeButton: {
         boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
         knob = k;
         break;
     }
-    case eParamDataTypeSeparator: {
+    case AddKnobDialog::eParamDataTypeSeparator: {
         boost::shared_ptr<KnobSeparator> k = AppManager::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
         knob = k;
         break;
@@ -1563,19 +1532,18 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
 
 
     if ( (index != 16) && parentPage && !addedInGrp ) {
+
+        // Ensure the knob is in a page
         boost::shared_ptr<KnobPage> page = getSelectedPage();
-        if (!page) {
-            page = panel->getOrCreateUserPageKnob();
-        }
+        assert(page);
         if (page) {
             if (optionalGroupIndex != -1) {
                 page->insertKnob(optionalGroupIndex, knob);
             } else {
                 page->addKnob(knob);
             }
-            if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
-                panel->setUserPageActiveIndex();
-            }
+            panel->setPageActiveIndex(page);
+
         }
     }
 
@@ -1611,9 +1579,6 @@ AddKnobDialogPrivate::getSelectedPage() const
 {
     if ( parentPage && parentPage->isVisible() ) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
-        if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
-            return panel->getUserPageKnob();
-        }
         for (std::list<boost::shared_ptr<KnobPage> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             if ( (*it)->getName() == selectedItem ) {
                 return *it;
@@ -1822,10 +1787,8 @@ AddKnobDialog::onOkClicked()
         //Alias knobs can only have these properties changed
         assert(effect);
         boost::shared_ptr<KnobPage> page = _imp->getSelectedPage();
-        if (!page) {
-            page = _imp->panel->getOrCreateUserPageKnob();
-            _imp->panel->setUserPageActiveIndex();
-        }
+        assert(page);
+        _imp->panel->setPageActiveIndex(page);
         KnobGroup* group = _imp->getSelectedGroup();
         boost::shared_ptr<KnobGroup> shrdGrp;
         if (group) {
@@ -1965,9 +1928,9 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
     dmaxLabel->setVisible(visible);
     dmaxBox->setVisible(visible);
     if (typeChoice) {
-        ParamDataTypeEnum t = (ParamDataTypeEnum)typeChoice->activeIndex();
+        AddKnobDialog::ParamDataTypeEnum t = (AddKnobDialog::ParamDataTypeEnum)typeChoice->activeIndex();
 
-        if ( (t == eParamDataTypeColorRGB) || (t == eParamDataTypeColorRGBA) ) {
+        if ( (t == AddKnobDialog::eParamDataTypeColorRGB) || (t == AddKnobDialog::eParamDataTypeColorRGBA) ) {
             // color range to 0-1
             minBox->setValue(INT_MIN);
             maxBox->setValue(INT_MAX);
@@ -1981,6 +1944,21 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
         }
     }
 }
+
+
+void
+AddKnobDialog::setVisibleType(bool visible)
+{
+    _imp->typeChoice->setVisible(visible);
+    _imp->typeLabel->setVisible(visible);
+}
+
+void
+AddKnobDialog::setType(ParamDataTypeEnum type)
+{
+    _imp->typeChoice->setCurrentIndex((int)type);
+}
+
 
 void
 AddKnobDialogPrivate::setVisibleMenuItems(bool visible)
