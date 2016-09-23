@@ -1090,8 +1090,12 @@ private:
  * @brief A Table containing strings. The number of columns is static.
  **/
 class KnobTable
-    : public Knob<std::string>
+    : public QObject, public Knob<std::string>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     KnobTable(KnobHolder* holder,
               const std::string &description,
