@@ -123,7 +123,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
     for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
         NodePtr node = appPTR->createNodeForProjectLoading(*it, group);
-
         if (!node) {
             QString text( tr("ERROR: The node %1 version %2.%3"
                              " was found in the script but does not"

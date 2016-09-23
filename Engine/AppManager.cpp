@@ -2190,7 +2190,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
         args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
         args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
         retNode =  group->getApplication()->createNode(args);
     }
     if (retNode) {
@@ -2209,7 +2209,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
         }
         
         args->addParamDefaultValue<std::string>(kStubNodeParamSerialization, ss.str());
-        args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        args->setProperty<bool>(kCreateNodeArgsPropSilent, true); // also load deprecated plugins
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, serialization->_nodeScriptName);

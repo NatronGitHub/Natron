@@ -45,6 +45,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
+
 NATRON_NAMESPACE_ENTER;
 
 LineEdit::LineEdit(QWidget* parent)
@@ -55,7 +58,7 @@ LineEdit::LineEdit(QWidget* parent)
 {
     setAttribute(Qt::WA_MacShowFocusRect, 0);
     connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
-    setContentsMargins(0, 0, 0, 1);
+    setFixedHeight( TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
 }
 
 LineEdit::~LineEdit()

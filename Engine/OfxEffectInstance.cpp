@@ -2643,10 +2643,10 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 
     for (int i = 0; i < dim; ++i) {
         const std::string & depth = prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths, i);
-        try {
-            depths->push_back( OfxClipInstance::ofxDepthToNatronDepth(depth) );
-        } catch (const std::runtime_error &e) {
-            // ignore unsupported bitdepth
+        // ignore unsupported bitdepth
+        ImageBitDepthEnum bitDepth = OfxClipInstance::ofxDepthToNatronDepth(depth, false);
+        if (bitDepth != eImageBitDepthNone) {
+            depths->push_back(bitDepth);
         }
     }
 }
