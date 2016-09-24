@@ -10121,6 +10121,15 @@ Node::declareAllPythonAttributes()
     }
 }
 
+void
+Node::runChangedParamCallback(const KnobIPtr& k, bool userEdited)
+{
+    std::string cb = getKnobChangedCallback();
+    if (!cb.empty()) {
+        _imp->runChangedParamCallback(cb, k, userEdited);
+    }
+}
+
 std::string
 Node::getKnobChangedCallback() const
 {

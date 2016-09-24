@@ -152,6 +152,10 @@ public:
 
     void runOnNodeDeleteCB();
 
+    bool figureOutCallbackName(const std::string& inCallback, std::string* outCallback);
+
+    void runChangedParamCallback(const std::string& cb, const KnobIPtr& k, bool userEdited);
+
     void runOnNodeCreatedCBInternal(const std::string& cb, bool userEdited);
 
     void runOnNodeDeleteCBInternal(const std::string& cb);
@@ -367,10 +371,6 @@ public:
     std::list<std::pair<NodePtr, CreateNodeArgsPtr> > nodesToCreateGui;
 
     bool restoringDefaults;
-
-    // If true, then before calling any python callback (onParamChanged, onInputChanged...)
-    // we must prefix the function name provided by the user by the plug-in id
-    bool pythonCallbacksPrefixedWithPluginID;
 };
 
 class RefreshingInputData_RAII

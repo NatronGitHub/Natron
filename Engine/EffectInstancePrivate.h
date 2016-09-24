@@ -225,8 +225,6 @@ public:
     mutable QMutex renderClonesMutex;
     std::list<EffectInstancePtr> renderClonesPool;
 
-    void runChangedParamCallback(const KnobIPtr& k, bool userEdited, const std::string & callback);
-
     void setDuringInteractAction(bool b);
 
 #if NATRON_ENABLE_TRIMAP

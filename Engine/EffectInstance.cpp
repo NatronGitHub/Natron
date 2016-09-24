@@ -5065,12 +5065,10 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     }
 
     ///If there's a knobChanged Python callback, run it
-    std::string pythonCB = getNode()->getKnobChangedCallback();
-
-    if ( !pythonCB.empty() ) {
+    {
         bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
-                          reason == eValueChangedReasonUserEdited;
-        _imp->runChangedParamCallback(k, userEdited, pythonCB);
+        reason == eValueChangedReasonUserEdited;
+        getNode()->runChangedParamCallback(k, userEdited);
     }
 
     ///Refresh the dynamic properties that can be changed during the instanceChanged action

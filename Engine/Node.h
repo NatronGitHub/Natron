@@ -716,6 +716,8 @@ public:
     std::string getKnobChangedCallback() const;
     std::string getInputChangedCallback() const;
 
+    void runChangedParamCallback(const KnobIPtr& k, bool userEdited);
+
     /**
      * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
      * Do not use that anywhere else.
@@ -1564,7 +1566,7 @@ private:
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
     void deleteNodeVariableToPython(const std::string& nodeName);
 
-    friend class NodePrivate;
+    friend struct NodePrivate;
     boost::scoped_ptr<NodePrivate> _imp;
 };
 

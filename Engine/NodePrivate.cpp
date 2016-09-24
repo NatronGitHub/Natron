@@ -147,7 +147,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , overlayColor()
 , nodeIsSelected(false)
 , restoringDefaults(false)
-, pythonCallbacksPrefixedWithPluginID(false)
 {
     nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
     nodeSize[0] = nodeSize[1] = -1;
@@ -409,6 +408,60 @@ NodePrivate::checkForExitPreview()
     }
 }
 
+static bool runAndCheckRet(const std::string& script)
+{
+    std::string err;
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
+        return false;
+    }
+
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+    PyObject* retObj = PyObject_GetAttrString(mainModule, "ret"); //new ref
+    assert(retObj);
+    bool ret = PyObject_IsTrue(retObj) == 0;
+    Py_XDECREF(retObj);
+    return ret;
+}
+
+static bool checkFunctionPresence(const std::string& pluginID, const std::string& functionName, bool prefixed)
+{
+    if (prefixed) {
+        static const QString script = QString::fromUtf8("import inspect\n"
+                                                        "import %1\n"
+                                                        "ret = True\n"
+                                                        "if not hasattr(%1,\"%2\") or not inspect.isfunction(%1.%2):\n"
+                                                        "    ret = False\n");
+        std::string toRun = script.arg(QString::fromUtf8(pluginID.c_str())).arg(QString::fromUtf8(functionName.c_str())).toStdString();
+        return runAndCheckRet(toRun);
+    } else {
+        static const QString script = QString::fromUtf8("ret = True\n"
+                                                        "try:\n"
+                                                        "    %1\n"
+                                                        "except NameError:\n"
+                                                        "    ret = False\n");
+        std::string toRun = script.arg(QString::fromUtf8(functionName.c_str())).toStdString();
+        return runAndCheckRet(toRun);
+
+    }
+    
+}
+
+bool
+NodePrivate::figureOutCallbackName(const std::string& inCallback, std::string* outCallback)
+{
+    // Python callbacks may be in a python script with the name of the plug-in, so prefix the plugin-ID and
+    // check if it exists
+    std::string pluginID = plugin.lock()->getPluginID();
+    if (checkFunctionPresence(pluginID, inCallback, true)) {
+        *outCallback = pluginID + "." + inCallback;
+    } else if (checkFunctionPresence(pluginID, inCallback, false)) {
+        *outCallback = inCallback;
+    } else {
+        _publicInterface->getApp()->appendToScriptEditor(tr("Failed to run onNodeCreated callback: %1 does not seem to be defined").arg(QString::fromUtf8(inCallback.c_str())).toStdString());
+        return false;
+    }
+    return true;
+}
 
 
 void
@@ -420,8 +473,14 @@ NodePrivate::runOnNodeCreatedCBInternal(const std::string& cb,
     if (_publicInterface->getScriptName_mt_safe().empty()) {
         return;
     }
+
+    std::string callbackFunction;
+    if (!figureOutCallbackName(cb, &callbackFunction)) {
+        return;
+    }
+
     try {
-        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeCreated callback: ")
                                                          + e.what() );
@@ -456,7 +515,7 @@ NodePrivate::runOnNodeCreatedCBInternal(const std::string& cb,
         return;
     }
     std::stringstream ss;
-    ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ",";
+    ss << callbackFunction << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ",";
     if (userEdited) {
         ss << "True";
     } else {
@@ -478,8 +537,13 @@ NodePrivate::runOnNodeDeleteCBInternal(const std::string& cb)
     std::vector<std::string> args;
     std::string error;
 
+    std::string callbackFunction;
+    if (!figureOutCallbackName(cb, &callbackFunction)) {
+        return;
+    }
+
     try {
-        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeDeletion callback: ")
                                                          + e.what() );
@@ -510,7 +574,7 @@ NodePrivate::runOnNodeDeleteCBInternal(const std::string& cb)
 
     std::string appID = _publicInterface->getApp()->getAppIDString();
     std::stringstream ss;
-    ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ")\n";
+    ss << callbackFunction << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ")\n";
 
     std::string err;
     std::string output;
@@ -518,32 +582,6 @@ NodePrivate::runOnNodeDeleteCBInternal(const std::string& cb)
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
     } else if ( !output.empty() ) {
         _publicInterface->getApp()->appendToScriptEditor(output);
-    }
-}
-
-void
-NodePrivate::runOnNodeCreatedCB(bool userEdited)
-{
-
-    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
-    NodeCollectionPtr group = _publicInterface->getGroup();
-
-    if (!group) {
-        return;
-    }
-    if ( !cb.empty() ) {
-        runOnNodeCreatedCBInternal(cb, userEdited);
-    }
-
-    NodeGroupPtr isGroup = toNodeGroup(group);
-    KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
-    if (!nodeCreatedCbKnob && isGroup) {
-        cb = isGroup->getNode()->getAfterNodeCreatedCallback();
-    } else if (nodeCreatedCbKnob) {
-        cb = nodeCreatedCbKnob->getValue();
-    }
-    if ( !cb.empty() ) {
-        runOnNodeCreatedCBInternal(cb, userEdited);
     }
 }
 
@@ -560,24 +598,76 @@ NodePrivate::runOnNodeDeleteCB()
     if (!group) {
         return;
     }
-    if ( !cb.empty() ) {
-        runOnNodeDeleteCBInternal(cb);
+
+    std::string callbackFunction;
+    if (figureOutCallbackName(cb, &callbackFunction)) {
+        runOnNodeDeleteCBInternal(callbackFunction);
     }
 
 
-    NodeGroupPtr isGroup = toNodeGroup(group);
+
+
+    // If this is a group, run the node deleted callback on itself
     KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
-    if (!nodeDeletedKnob && isGroup) {
-        NodePtr grpNode = isGroup->getNode();
+    if (nodeDeletedKnob) {
+        cb = nodeDeletedKnob->getValue();
+        if (figureOutCallbackName(cb, &callbackFunction)) {
+            runOnNodeDeleteCBInternal(callbackFunction);
+        }
+
+    }
+
+    // if there's a parent group, run the node deletec callback on the parent
+    NodeGroupPtr isParentGroup = toNodeGroup(group);
+    if (isParentGroup) {
+        NodePtr grpNode = isParentGroup->getNode();
         if (grpNode) {
             cb = grpNode->getBeforeNodeRemovalCallback();
+            if (figureOutCallbackName(cb, &callbackFunction)) {
+                runOnNodeDeleteCBInternal(callbackFunction);
+            }
         }
-    } else if (nodeDeletedKnob) {
+    }
+}
+
+
+void
+NodePrivate::runOnNodeCreatedCB(bool userEdited)
+{
+
+    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
+    NodeCollectionPtr group = _publicInterface->getGroup();
+
+    if (!group) {
+        return;
+    }
+    std::string callbackFunction;
+    if (figureOutCallbackName(cb, &callbackFunction)) {
+        runOnNodeCreatedCBInternal(callbackFunction, userEdited);
+    }
+
+    // If this is a group, run the node created callback on itself
+    KnobStringPtr nodeDeletedKnob = nodeCreatedCallback.lock();
+    if (nodeDeletedKnob) {
         cb = nodeDeletedKnob->getValue();
+        if (figureOutCallbackName(cb, &callbackFunction)) {
+            runOnNodeCreatedCBInternal(callbackFunction, userEdited);
+        }
+
     }
-    if ( !cb.empty() ) {
-        runOnNodeDeleteCBInternal(cb);
+
+    // if there's a parent group, run the node created callback on the parent
+    NodeGroupPtr isParentGroup = toNodeGroup(group);
+    if (isParentGroup) {
+        NodePtr grpNode = isParentGroup->getNode();
+        if (grpNode) {
+            cb = grpNode->getAfterNodeCreatedCallback();
+            if (figureOutCallbackName(cb, &callbackFunction)) {
+                runOnNodeCreatedCBInternal(callbackFunction, userEdited);
+            }
+        }
     }
+
 }
 
 
@@ -588,8 +678,13 @@ NodePrivate::runInputChangedCallback(int index,
     std::vector<std::string> args;
     std::string error;
 
+    std::string callbackFunction;
+    if (!figureOutCallbackName(cb, &callbackFunction)) {
+        return;
+    }
+
     try {
-        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onInputChanged callback: ")
                                                          + e.what() );
@@ -636,7 +731,7 @@ NodePrivate::runInputChangedCallback(int index,
     }
 
     std::stringstream ss;
-    ss << cb << "(" << index << "," << appID << "." << _publicInterface->getFullyQualifiedName() << "," << thisGroupVar << "," << appID << ")\n";
+    ss << callbackFunction << "(" << index << "," << appID << "." << _publicInterface->getFullyQualifiedName() << "," << thisGroupVar << "," << appID << ")\n";
 
     std::string script = ss.str();
     std::string output;
@@ -649,5 +744,103 @@ NodePrivate::runInputChangedCallback(int index,
     }
 } //runInputChangedCallback
 
+void
+NodePrivate::runChangedParamCallback(const std::string& cb, const KnobIPtr& k, bool userEdited)
+{
+    std::vector<std::string> args;
+    std::string error;
+
+    if ( !k || (k->getName() == "onParamChanged") ) {
+        return;
+    }
+
+    std::string callbackFunction;
+    if (!figureOutCallbackName(cb, &callbackFunction)) {
+        return;
+    }
+
+    try {
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
+    } catch (const std::exception& e) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
+
+        return;
+    }
+
+    if ( !error.empty() ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
+
+        return;
+    }
+
+    std::string signatureError;
+    signatureError.append( tr("The param changed callback supports the following signature(s):").toStdString() );
+    signatureError.append("\n- callback(thisParam,thisNode,thisGroup,app,userEdited)");
+    if (args.size() != 5) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+
+        return;
+    }
+
+    if ( ( (args[0] != "thisParam") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") || (args[4] != "userEdited") ) ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+
+        return;
+    }
+
+    std::string appID = _publicInterface->getApp()->getAppIDString();
+
+    assert(k);
+    std::string thisNodeVar = appID + ".";
+    thisNodeVar.append( _publicInterface->getFullyQualifiedName() );
+
+    NodeCollectionPtr collection = _publicInterface->getGroup();
+    assert(collection);
+    if (!collection) {
+        return;
+    }
+
+    std::string thisGroupVar;
+    NodeGroupPtr isParentGrp = toNodeGroup(collection);
+    if (isParentGrp) {
+        std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
+        std::string nodeFullName = appID + "." + nodeName;
+        thisGroupVar = nodeFullName;
+    } else {
+        thisGroupVar = appID;
+    }
+
+    bool alreadyDefined = false;
+    PyObject* nodeObj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(thisNodeVar, NATRON_PYTHON_NAMESPACE::getMainModule(), &alreadyDefined);
+    if (!nodeObj || !alreadyDefined) {
+        return;
+    }
+
+    if (!PyObject_HasAttrString( nodeObj, k->getName().c_str() ) ) {
+        return;
+    }
+
+    std::stringstream ss;
+    ss << callbackFunction << "(" << thisNodeVar << "." << k->getName() << "," << thisNodeVar << "," << thisGroupVar << "," << appID
+    << ",";
+    if (userEdited) {
+        ss << "True";
+    } else {
+        ss << "False";
+    }
+    ss << ")\n";
+
+    std::string script = ss.str();
+    std::string err;
+    std::string output;
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute onParamChanged callback: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
+    } else {
+        if ( !output.empty() ) {
+            _publicInterface->getApp()->appendToScriptEditor(output);
+        }
+    }
+
+} // runChangedParamCallback
 
 NATRON_NAMESPACE_EXIT
