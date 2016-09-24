@@ -76,6 +76,7 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
+struct NodePrivate;
 class Node
     : public QObject
     , public boost::enable_shared_from_this<Node>
@@ -85,9 +86,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
-    struct Implementation;
 
 protected: 
     // TODO: enable_shared_from_this
@@ -1566,7 +1564,8 @@ private:
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
     void deleteNodeVariableToPython(const std::string& nodeName);
 
-    boost::scoped_ptr<Implementation> _imp;
+    friend class NodePrivate;
+    boost::scoped_ptr<NodePrivate> _imp;
 };
 
 

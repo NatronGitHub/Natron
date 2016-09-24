@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/MemoryInfo.h"
 
+#include "Engine/NodePrivate.h"
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -116,486 +117,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-#define kNodeParamProcessAllLayers "processAllLayers"
-#define kNodeParamProcessAllLayersLabel "All Layers"
-#define kNodeParamProcessAllLayersHint "When checked all layers in input will be processed and output to the same layer as in input. It is useful for example to apply a Transform effect on all layers."
-
 
 NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
-
-
-// protect local classes in anonymous namespace
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-/*The output node was connected from inputNumber to this...*/
-typedef std::map<NodeWPtr, int > DeactivatedState;
-typedef std::list<Node::KnobLink> KnobLinkList;
-typedef std::vector<NodeWPtr> InputsV;
-
-
-class ChannelSelector
-{
-public:
-
-    KnobChoiceWPtr layer;
-    mutable QMutex compsMutex;
-
-    //Stores the components available at build time of the choice menu
-    EffectInstance::ComponentsAvailableMap compsAvailable;
-
-    ChannelSelector()
-        : layer()
-        , compsMutex()
-        , compsAvailable()
-    {
-    }
-
-    ChannelSelector(const ChannelSelector& other)
-    {
-        *this = other;
-    }
-
-    void operator=(const ChannelSelector& other)
-    {
-        layer = other.layer;
-        QMutexLocker k(&compsMutex);
-        compsAvailable = other.compsAvailable;
-    }
-};
-
-class MaskSelector
-{
-public:
-
-    KnobBoolWPtr enabled;
-    KnobChoiceWPtr channel;
-    mutable QMutex compsMutex;
-    //Stores the components available at build time of the choice menu
-    std::vector<std::pair<ImageComponents, NodeWPtr > > compsAvailable;
-
-    MaskSelector()
-        : enabled()
-        , channel()
-        , compsMutex()
-        , compsAvailable()
-    {
-    }
-
-    MaskSelector(const MaskSelector& other)
-    {
-        *this = other;
-    }
-
-    void operator=(const MaskSelector& other)
-    {
-        enabled = other.enabled;
-        channel = other.channel;
-        QMutexLocker k(&compsMutex);
-        compsAvailable = other.compsAvailable;
-    }
-};
-
-
-struct FormatKnob
-{
-    KnobIntWPtr size;
-    KnobDoubleWPtr par;
-    KnobChoiceWPtr formatChoice;
-};
-
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
-
-struct Node::Implementation
-{
-    Q_DECLARE_TR_FUNCTIONS(Node)
-
-public:
-    Implementation(Node* publicInterface,
-                   const AppInstancePtr& app_,
-                   const NodeCollectionPtr& collection,
-                   const PluginPtr& plugin_)
-        : _publicInterface(publicInterface)
-        , group(collection)
-        , precomp()
-        , app(app_)
-        , isPersistent(true)
-        , knobsInitialized(false)
-        , inputsInitialized(false)
-        , outputsMutex()
-        , outputs()
-        , guiOutputs()
-        , inputsMutex()
-        , inputs()
-        , guiInputs()
-        , effect()
-        , inputsComponents()
-        , outputComponents()
-        , inputsLabelsMutex()
-        , inputLabels()
-        , scriptName()
-        , label()
-        , deactivatedState()
-        , activatedMutex()
-        , activated(true)
-        , plugin(plugin_)
-        , pyPlugHandle()
-        , isPyPlug(false)
-        , computingPreview(false)
-        , previewThreadQuit(false)
-        , computingPreviewMutex()
-        , pluginInstanceMemoryUsed(0)
-        , memoryUsedMutex()
-        , mustQuitPreview(0)
-        , mustQuitPreviewMutex()
-        , mustQuitPreviewCond()
-        , renderInstancesSharedMutex(QMutex::Recursive)
-        , masterNodeMutex()
-        , masterNode()
-        , nodeLinks()
-        , ioContainer()
-        , frameIncrKnob()
-        , nodeSettingsPage()
-        , nodeLabelKnob()
-        , previewEnabledKnob()
-        , disableNodeKnob()
-        , infoPage()
-        , nodeInfos()
-        , refreshInfoButton()
-        , useFullScaleImagesWhenRenderScaleUnsupported()
-        , forceCaching()
-        , hideInputs()
-        , beforeFrameRender()
-        , beforeRender()
-        , afterFrameRender()
-        , afterRender()
-        , enabledChan()
-        , channelsSelectors()
-        , maskSelectors()
-        , rotoContext()
-        , trackContext()
-        , imagesBeingRenderedMutex()
-        , imageBeingRenderedCond()
-        , imagesBeingRendered()
-        , supportedDepths()
-        , keyframesDisplayedOnTimeline(false)
-        , lastRenderStartedMutex()
-        , lastRenderStartedSlotCallTime()
-        , renderStartedCounter(0)
-        , inputIsRenderingCounter(0)
-        , lastInputNRenderStartedSlotCallTime()
-        , nodeIsDequeuing(false)
-        , nodeIsDequeuingMutex()
-        , nodeIsDequeuingCond()
-        , nodeIsRendering(0)
-        , nodeIsRenderingMutex()
-        , persistentMessage()
-        , persistentMessageType(0)
-        , persistentMessageMutex()
-        , guiPointer()
-        , nativeOverlays()
-        , nodeCreated(false)
-        , wasCreatedSilently(false)
-        , createdComponentsMutex()
-        , createdComponents()
-        , paintStroke()
-        , pluginsPropMutex()
-        , pluginSafety(eRenderSafetyInstanceSafe)
-        , currentThreadSafety(eRenderSafetyInstanceSafe)
-        , currentSupportTiles(false)
-        , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-        , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
-        , currentCanTransform(false)
-        , draftModeUsed(false)
-        , mustComputeInputRelatedData(true)
-        , duringPaintStrokeCreation(false)
-        , lastStrokeMovementMutex()
-        , strokeBitmapCleared(false)
-        , paintBuffer()
-        , isBeingDestroyedMutex()
-        , isBeingDestroyed(false)
-        , inputModifiedRecursion(0)
-        , inputsModified()
-        , refreshIdentityStateRequestsCount(0)
-        , isRefreshingInputRelatedData(false)
-        , streamWarnings()
-        , requiresGLFinishBeforeRender(false)
-        , nodePositionCoords()
-        , nodeSize()
-        , nodeColor()
-        , overlayColor()
-        , nodeIsSelected(false)
-        , restoringDefaults(false)
-    {
-        nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
-        nodeSize[0] = nodeSize[1] = -1;
-        nodeColor[0] = nodeColor[1] = nodeColor[2] = -1;
-        overlayColor[0] = overlayColor[1] = overlayColor[2] = -1;
-
-
-        ///Initialize timers
-        gettimeofday(&lastRenderStartedSlotCallTime, 0);
-        gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
-    }
-
-    void abortPreview_non_blocking();
-
-    void abortPreview_blocking(bool allowPreviewRenders);
-
-    bool checkForExitPreview();
-
-    void setComputingPreview(bool v)
-    {
-        QMutexLocker l(&computingPreviewMutex);
-
-        computingPreview = v;
-    }
-
-    void runOnNodeCreatedCB(bool userEdited);
-
-    void runOnNodeDeleteCB();
-
-    void runOnNodeCreatedCBInternal(const std::string& cb, bool userEdited);
-
-    void runOnNodeDeleteCBInternal(const std::string& cb);
-
-    void runInputChangedCallback(int index, const std::string& script);
-
-    void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
-
-    void onLayerChanged(bool isOutput);
-
-    void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
-
-    ImageComponents getSelectedLayerInternal(int inputNb, const ChannelSelector& selector) const;
-
-    bool isPyPlugInternal() const;
-
-    void refreshDefaultPagesOrder();
-
-    void refreshDefaultViewerKnobsOrder();
-
-
-    ////////////////////////////////////////////////
-
-    // Ptr to public interface, can not be a smart ptr
-    Node* _publicInterface;
-
-    // The group containing this node
-    boost::weak_ptr<NodeCollection> group;
-
-    // If this node is part of a precomp, this is a pointer to it
-    boost::weak_ptr<PrecompNode> precomp;
-
-    // pointer to the app: needed to access project stuff
-    AppInstanceWPtr app;
-
-    // If true, the node is serialized
-    bool isPersistent;
-    bool knobsInitialized;
-    bool inputsInitialized;
-    mutable QMutex outputsMutex;
-    NodesWList outputs, guiOutputs;
-    mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
-
-    ///The  inputs are the ones used while rendering and guiInputs the ones used by the gui whenever
-    ///the node is currently rendering. Once the render is finished, inputs are refreshed automatically to the value of
-    ///guiInputs
-    InputsV inputs, guiInputs;
-
-    //to the inputs in a thread-safe manner.
-    EffectInstancePtr effect;  //< the effect hosted by this node
-
-    ///The accepted components in input and in output of the plug-in
-    ///These two are also protected by inputsMutex
-    std::vector< std::list<ImageComponents> > inputsComponents;
-    std::list<ImageComponents> outputComponents;
-    mutable QMutex nameMutex;
-    mutable QMutex inputsLabelsMutex;
-    std::vector<std::string> inputLabels; // inputs name, protected by inputsLabelsMutex
-    std::vector<std::string> inputHints; // protected by inputsLabelsMutex
-    std::vector<bool> inputsVisibility; // protected by inputsMutex
-    std::string scriptName; //node name internally and as visible to python
-    std::string label; // node label as visible in the GUI
-
-    DeactivatedState deactivatedState;
-    mutable QMutex activatedMutex;
-    bool activated;
-
-    // the plugin which stores the function to instantiate the effect
-    PluginWPtr plugin;
-
-    PluginWPtr pyPlugHandle;
-    bool isPyPlug;
-
-    bool computingPreview;
-    bool previewThreadQuit;
-    mutable QMutex computingPreviewMutex;
-    size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
-    QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
-    int mustQuitPreview;
-    QMutex mustQuitPreviewMutex;
-    QWaitCondition mustQuitPreviewCond;
-    QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
-    mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
-    NodeWPtr masterNode; //< this points to the master when the node is a clone
-    KnobLinkList nodeLinks; //< these point to the parents of the params links
-
-    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
-    NodeWPtr ioContainer;
-
-
-    KnobIntWPtr frameIncrKnob;
-    KnobPageWPtr nodeSettingsPage;
-
-    KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
-    KnobBoolWPtr previewEnabledKnob;
-    KnobBoolWPtr disableNodeKnob;
-    KnobChoiceWPtr openglRenderingEnabledKnob;
-    KnobIntWPtr lifeTimeKnob;
-    KnobBoolWPtr enableLifeTimeKnob;
-    KnobStringWPtr knobChangedCallback;
-    KnobStringWPtr inputChangedCallback;
-    KnobStringWPtr nodeCreatedCallback;
-    KnobStringWPtr nodeRemovalCallback;
-    KnobPageWPtr infoPage;
-    KnobStringWPtr nodeInfos;
-    KnobButtonWPtr refreshInfoButton;
-    KnobBoolWPtr useFullScaleImagesWhenRenderScaleUnsupported;
-    KnobBoolWPtr forceCaching;
-    KnobBoolWPtr hideInputs;
-    KnobStringWPtr beforeFrameRender;
-    KnobStringWPtr beforeRender;
-    KnobStringWPtr afterFrameRender;
-    KnobStringWPtr afterRender;
-    KnobBoolWPtr enabledChan[4];
-    KnobStringWPtr premultWarning;
-    KnobDoubleWPtr mixWithSource;
-    KnobButtonWPtr renderButton; //< render button for writers
-    FormatKnob pluginFormatKnobs;
-    std::map<int, ChannelSelector> channelsSelectors;
-    KnobBoolWPtr processAllLayersKnob;
-    std::map<int, MaskSelector> maskSelectors;
-    RotoContextPtr rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
-    TrackerContextPtr trackContext;
-    mutable QMutex imagesBeingRenderedMutex;
-    QWaitCondition imageBeingRenderedCond;
-    std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
-    std::list <ImageBitDepthEnum> supportedDepths;
-
-    bool keyframesDisplayedOnTimeline;
-
-    ///This is to avoid the slots connected to the main-thread to be called too much
-    QMutex lastRenderStartedMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
-    timeval lastRenderStartedSlotCallTime;
-    int renderStartedCounter;
-    std::vector<int> inputIsRenderingCounter;
-    timeval lastInputNRenderStartedSlotCallTime;
-
-    ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
-    bool nodeIsDequeuing;
-    QMutex nodeIsDequeuingMutex;
-    QWaitCondition nodeIsDequeuingCond;
-
-    ///Counter counting how many parallel renders are active on the node
-    int nodeIsRendering;
-    mutable QMutex nodeIsRenderingMutex;
-    QString persistentMessage;
-    int persistentMessageType;
-    mutable QMutex persistentMessageMutex;
-    boost::weak_ptr<NodeGuiI> guiPointer;
-    std::list<HostOverlayKnobsPtr> nativeOverlays;
-    bool nodeCreated;
-    bool wasCreatedSilently;
-    mutable QMutex createdComponentsMutex;
-    std::list<ImageComponents> createdComponents; // comps created by the user
-    boost::weak_ptr<RotoDrawableItem> paintStroke;
-
-    mutable QMutex pluginsPropMutex;
-    RenderSafetyEnum pluginSafety, currentThreadSafety;
-    bool currentSupportTiles;
-    PluginOpenGLRenderSupport currentSupportOpenGLRender;
-    SequentialPreferenceEnum currentSupportSequentialRender;
-    bool currentCanTransform;
-    bool draftModeUsed, mustComputeInputRelatedData;
-    bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
-    mutable QMutex lastStrokeMovementMutex;
-    bool strokeBitmapCleared;
-
-    // During painting this is the buffer we use
-    ImagePtr paintBuffer;
-
-    mutable QMutex isBeingDestroyedMutex;
-    bool isBeingDestroyed;
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher;
-    /*
-       Used to block render emitions while modifying nodes links
-       MT-safe: only accessed/used on main thread
-     */
-    int inputModifiedRecursion;
-    std::set<int> inputsModified;
-
-    //For readers, this is the name of the views in the file
-    std::vector<std::string> createdViews;
-
-    //To concatenate calls to refreshIdentityState, accessed only on main-thread
-    int refreshIdentityStateRequestsCount;
-    int isRefreshingInputRelatedData; // only used by the main thread
-    std::map<Node::StreamWarningEnum, QString> streamWarnings;
-
-    // Some plug-ins (mainly Hitfilm Ignite detected for now) use their own OpenGL context that is sharing resources with our OpenGL contexT.
-    // as a result if we don't call glFinish() before calling the render action, the plug-in context might use textures that were not finished yet.
-    bool requiresGLFinishBeforeRender;
-
-    // UI
-    mutable QMutex nodeUIDataMutex;
-    double nodePositionCoords[2]; // x,y  X=Y=INT_MIN if there is no position info
-    double nodeSize[2]; // width, height, W=H=-1 if there is no size info
-    double nodeColor[3]; // node color (RGB), between 0. and 1. If R=G=B=-1 then no color
-    double overlayColor[3]; // overlay color (RGB), between 0. and 1. If R=G=B=-1 then no color
-    bool nodeIsSelected; // is this node selected by the user ?
-
-    // The name of the preset with which this node was created
-    mutable QMutex nodePresetMutex;
-    std::string initialNodePreset;
-
-    // This is a list of KnobPage script-names defining the ordering of the pages in the settings panel.
-    // This is used to determine if the ordering has changed or not for serialization purpose
-    std::list<std::string> defaultPagesOrder;
-
-    // This is a list of Knob script-names which are by default in the viewer interface.
-    // This is used to determine if the ordering has changed or not for serialization purpose
-    std::list<std::string> defaultViewerKnobsOrder;
-
-    // When deserializing a Group, the internal nodes are built before the Group UI is created, hence we store them in this
-    // list temporarily to create their GUI once the Group creates its own
-    std::list<std::pair<NodePtr, CreateNodeArgsPtr> > nodesToCreateGui;
-
-    bool restoringDefaults;
-};
-
-class RefreshingInputData_RAII
-{
-    Node::Implementation *_imp;
-
-public:
-
-    RefreshingInputData_RAII(Node::Implementation* imp)
-        : _imp(imp)
-    {
-        ++_imp->isRefreshingInputRelatedData;
-    }
-
-    ~RefreshingInputData_RAII()
-    {
-        --_imp->isRefreshingInputRelatedData;
-    }
-};
 
 
 /**
@@ -616,7 +143,7 @@ Node::Node(const AppInstancePtr& app,
            const NodeCollectionPtr& group,
            const PluginPtr& plugin)
     : QObject()
-    , _imp( new Implementation(this, app, group, plugin) )
+    , _imp( new NodePrivate(this, app, group, plugin) )
 {
     QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
@@ -625,6 +152,12 @@ Node::Node(const AppInstancePtr& app,
     if (plugin && QString::fromUtf8(plugin->getPluginID().c_str()).startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
         _imp->requiresGLFinishBeforeRender = true;
     }
+}
+
+
+Node::~Node()
+{
+    destroyNodeInternal(true, false);
 }
 
 bool
@@ -667,7 +200,7 @@ Node::createTrackerContextConditionnally()
 PluginPtr
 Node::getPlugin() const
 {
-    if (_imp->isPyPlugInternal()) {
+    if (isPyPlug()) {
         return _imp->pyPlugHandle.lock();
     } else {
         return _imp->plugin.lock();
@@ -2492,7 +2025,7 @@ Node::restoreNodeToDefaultState()
     } else if (pyPlugHandle) {
         bool isPythonScriptPyPlug = pyPlugHandle->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
         if (!isPythonScriptPyPlug) {
-            std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugIsPythonScript);
+            std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
             pyPlugSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
             getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get(), 0);
         }
@@ -2714,34 +2247,9 @@ Node::setPagesOrder(const std::list<std::string>& pages)
 }
 
 void
-Node::Implementation::refreshDefaultPagesOrder()
-{
-    const KnobsVec& knobs = effect->getKnobs();
-    defaultPagesOrder.clear();
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPagePtr ispage = toKnobPage(*it);
-        if (ispage && !ispage->getChildren().empty()) {
-            defaultPagesOrder.push_back( ispage->getName() );
-        }
-    }
-
-}
-
-void
 Node::refreshDefaultPagesOrder()
 {
     _imp->refreshDefaultPagesOrder();
-}
-
-
-void
-Node::Implementation::refreshDefaultViewerKnobsOrder()
-{
-    KnobsVec knobs = effect->getViewerUIKnobs();
-    defaultViewerKnobsOrder.clear();
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        defaultViewerKnobsOrder.push_back( (*it)->getName() );
-    }
 }
 
 
@@ -2802,56 +2310,7 @@ Node::hasOverlay() const
     return _imp->effect->hasOverlay();
 }
 
-void
-Node::Implementation::abortPreview_non_blocking()
-{
-    bool computing;
-    {
-        QMutexLocker locker(&computingPreviewMutex);
-        computing = computingPreview;
-    }
 
-    if (computing) {
-        QMutexLocker l(&mustQuitPreviewMutex);
-        ++mustQuitPreview;
-    }
-}
-
-void
-Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
-{
-    bool computing;
-    {
-        QMutexLocker locker(&computingPreviewMutex);
-        computing = computingPreview;
-        previewThreadQuit = !allowPreviewRenders;
-    }
-
-    if (computing) {
-        QMutexLocker l(&mustQuitPreviewMutex);
-        assert(!mustQuitPreview);
-        ++mustQuitPreview;
-        while (mustQuitPreview) {
-            mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
-        }
-    }
-}
-
-bool
-Node::Implementation::checkForExitPreview()
-{
-    {
-        QMutexLocker locker(&mustQuitPreviewMutex);
-        if (mustQuitPreview || previewThreadQuit) {
-            mustQuitPreview = 0;
-            mustQuitPreviewCond.wakeOne();
-
-            return true;
-        }
-
-        return false;
-    }
-}
 
 bool
 Node::areAllProcessingThreadsQuit() const
@@ -2988,10 +2447,6 @@ Node::abortAnyProcessing_blocking()
     _imp->abortPreview_blocking(false);
 }
 
-Node::~Node()
-{
-    destroyNodeInternal(true, false);
-}
 
 const std::vector<std::string> &
 Node::getInputLabels() const
@@ -4398,76 +3853,7 @@ Node::initializeKnobs(bool loadingSerialization)
     Q_EMIT knobsInitialized();
 } // initializeKnobs
 
-void
-Node::Implementation::createChannelSelector(int inputNb,
-                                            const std::string & inputName,
-                                            bool isOutput,
-                                            const KnobPagePtr& page,
-                                            KnobIPtr* lastKnobBeforeAdvancedOption)
-{
-    ChannelSelector sel;
-    KnobChoicePtr layer = AppManager::createKnob<KnobChoice>(effect, isOutput ? tr("Output Layer") : tr("%1 Layer").arg( QString::fromUtf8( inputName.c_str() ) ), 1, false);
-    layer->setHostCanAddOptions(isOutput);
-    if (!isOutput) {
-        layer->setName( inputName + std::string("_") + std::string(kOutputChannelsKnobName) );
-    } else {
-        layer->setName(kOutputChannelsKnobName);
-    }
-    if (isOutput) {
-        layer->setHintToolTip( tr("Select here the layer onto which the processing should occur.") );
-    } else {
-        layer->setHintToolTip( tr("Select here the layer that will be used in input by %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
-    }
-    layer->setAnimationEnabled(false);
-    layer->setSecret(!isOutput);
-    page->addKnob(layer);
 
-    if (isOutput) {
-        KnobBoolPtr processAllKnob = AppManager::createKnob<KnobBool>(effect, tr(kNodeParamProcessAllLayersLabel), 1, false);
-        processAllKnob->setName(kNodeParamProcessAllLayers);
-        processAllKnob->setHintToolTip(tr(kNodeParamProcessAllLayersHint));
-        processAllKnob->setAnimationEnabled(false);
-        page->addKnob(processAllKnob);
-
-        // If the effect wants by default to render all planes set default value
-        if ( isOutput && (effect->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) ) {
-            processAllKnob->setDefaultValue(true);
-            //Hide all other input selectors if choice is All in output
-            for (std::map<int, ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
-                it->second.layer.lock()->setSecret(true);
-            }
-        }
-        processAllLayersKnob = processAllKnob;
-    }
-
-    sel.layer = layer;
-    std::vector<std::string> baseLayers;
-    if (!isOutput) {
-        baseLayers.push_back("None");
-    }
-
-    std::map<std::string, int > defaultLayers;
-    {
-        std::vector<std::string> projectLayers = _publicInterface->getApp()->getProject()->getProjectDefaultLayerNames();
-        for (std::size_t i = 0; i < projectLayers.size(); ++i) {
-            defaultLayers[projectLayers[i]] = -1;
-        }
-    }
-    baseLayers.push_back(kNatronRGBAPlaneUserName);
-    for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
-        std::string choiceName = ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(itl->first);
-        baseLayers.push_back(choiceName);
-    }
-
-    layer->populateChoices(baseLayers);
-    layer->setDefaultValue(isOutput ? 0 : 1);
-
-    if (!*lastKnobBeforeAdvancedOption) {
-        *lastKnobBeforeAdvancedOption = layer;
-    }
-
-    channelsSelectors[inputNb] = sel;
-} // Node::Implementation::createChannelSelector
 
 int
 Node::getFrameStepKnobValue() const
@@ -6730,26 +6116,6 @@ renderPreviewForDepth(const Image & srcImg,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-class ComputingPreviewSetter_RAII
-{
-    Node::Implementation* _imp;
-
-public:
-    ComputingPreviewSetter_RAII(Node::Implementation* imp)
-        : _imp(imp)
-    {
-        _imp->setComputingPreview(true);
-    }
-
-    ~ComputingPreviewSetter_RAII()
-    {
-        _imp->setComputingPreview(false);
-
-        bool mustQuitPreview = _imp->checkForExitPreview();
-        Q_UNUSED(mustQuitPreview);
-    }
-};
-
 bool
 Node::makePreviewImage(SequenceTime time,
                        int *width,
@@ -7084,22 +6450,16 @@ Node::getPluginIconFilePath() const
 }
 
 bool
-Node::Implementation::isPyPlugInternal() const
+Node::isPyPlug() const
 {
-    if (!isPyPlug) {
+    if (!_imp->isPyPlug) {
         return false;
     }
-    NodeGroupPtr isGrp = toNodeGroup(effect);
+    NodeGroupPtr isGrp = toNodeGroup(_imp->effect);
     if (!isGrp) {
         return false;
     }
     return !isGrp->isSubGraphEditedByUser();
-}
-
-bool
-Node::isPyPlug() const
-{
-    return _imp->isPyPlugInternal();
 }
 
 std::string
@@ -9040,62 +8400,6 @@ Node::getLayerChoiceKnob(int inputNb) const
     return found->second.layer.lock();
 }
 
-ImageComponents
-Node::Implementation::getSelectedLayerInternal(int inputNb, const ChannelSelector& selector) const
-{
-    NodePtr node;
-
-    if (inputNb == -1) {
-        node = _publicInterface->shared_from_this();
-    } else {
-        node = _publicInterface->getInput(inputNb);
-    }
-
-    KnobChoicePtr layerKnob = selector.layer.lock();
-    if (!layerKnob) {
-        return ImageComponents();
-    }
-    std::string layer = layerKnob->getActiveEntryText_mt_safe();
-
-    
-    std::string mappedLayerName = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(layer);
-    bool isCurLayerColorComp = mappedLayerName == kNatronRGBAComponentsName || mappedLayerName == kNatronRGBComponentsName || mappedLayerName == kNatronAlphaComponentsName;
-    EffectInstance::ComponentsAvailableMap compsAvailable;
-    {
-        QMutexLocker k(&selector.compsMutex);
-        compsAvailable = selector.compsAvailable;
-    }
-
-    ImageComponents ret;
-    if (node) {
-        for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2 != compsAvailable.end(); ++it2) {
-            if ( it2->first.isColorPlane() ) {
-                if (isCurLayerColorComp) {
-                    ret = it2->first;
-                    break;
-                }
-            } else {
-                if (it2->first.getLayerName() == mappedLayerName) {
-                    ret = it2->first;
-                    break;
-                }
-            }
-        }
-    }
-
-
-    if ( (ret.getNumComponents() == 0) && _publicInterface ) {
-        std::vector<ImageComponents> projectLayers = _publicInterface->getApp()->getProject()->getProjectDefaultLayers();
-        for (std::size_t i = 0; i < projectLayers.size(); ++i) {
-            if (projectLayers[i].getLayerName() == mappedLayerName) {
-                ret = projectLayers[i];
-                break;
-            }
-        }
-    }
-    return ret;
-} // Node::Implementation::getSelectedLayerInternal
-
 void
 Node::refreshLayersSelectorsVisibility()
 {
@@ -9143,22 +8447,6 @@ Node::refreshLayersSelectorsVisibility()
     }
 }
 
-void
-Node::Implementation::onLayerChanged(bool isOutput)
-{
-    if (isOutput) {
-        _publicInterface->refreshLayersSelectorsVisibility();
-    }
-    if (!isRefreshingInputRelatedData) {
-        ///Clip preferences have changed
-        RenderScale s(1.);
-        effect->refreshMetaDatas_public(true);
-    }
-
-    if (isOutput) {
-        _publicInterface->s_outputLayerChanged();
-    }
-}
 
 void
 Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps)
@@ -9251,30 +8539,7 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
     } // switch
 } // Node::refreshEnabledKnobsLabel
 
-void
-Node::Implementation::onMaskSelectorChanged(int inputNb,
-                                            const MaskSelector& selector)
-{
-    KnobChoicePtr channel = selector.channel.lock();
-    int index = channel->getValue();
-    KnobBoolPtr enabled = selector.enabled.lock();
 
-    if ( (index == 0) && enabled->isEnabled(0) ) {
-        enabled->setValue(false);
-        enabled->setEnabled(0, false);
-    } else if ( !enabled->isEnabled(0) ) {
-        enabled->setEnabled(0, true);
-        if ( _publicInterface->getInput(inputNb) ) {
-            enabled->setValue(true);
-        }
-    }
-
-    if (!isRefreshingInputRelatedData) {
-        ///Clip preferences have changed
-        RenderScale s(1.);
-        effect->refreshMetaDatas_public(true);
-    }
-}
 
 bool
 Node::getProcessChannel(int channelIndex) const
@@ -10872,174 +10137,6 @@ Node::getInputChangedCallback() const
     return s ? s->getValue() : std::string();
 }
 
-void
-Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
-                                                 bool userEdited)
-{
-    std::vector<std::string> args;
-    std::string error;
-    if (_publicInterface->getScriptName_mt_safe().empty()) {
-        return;
-    }
-    try {
-        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
-    } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeCreated callback: ")
-                                                          + e.what() );
-
-        return;
-    }
-
-    if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
-
-        return;
-    }
-
-    std::string signatureError;
-    signatureError.append("The on node created callback supports the following signature(s):\n");
-    signatureError.append("- callback(thisNode,app,userEdited)");
-    if (args.size() != 3) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "thisNode") || (args[1] != "app") || (args[2] != "userEdited") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
-
-        return;
-    }
-
-    std::string appID = _publicInterface->getApp()->getAppIDString();
-    std::string scriptName = _publicInterface->getScriptName_mt_safe();
-    if ( scriptName.empty() ) {
-        return;
-    }
-    std::stringstream ss;
-    ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ",";
-    if (userEdited) {
-        ss << "True";
-    } else {
-        ss << "False";
-    }
-    ss << ")\n";
-    std::string output;
-    std::string script = ss.str();
-    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
-    } else if ( !output.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor(output);
-    }
-} // Node::Implementation::runOnNodeCreatedCBInternal
-
-void
-Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
-{
-    std::vector<std::string> args;
-    std::string error;
-
-    try {
-        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
-    } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeDeletion callback: ")
-                                                          + e.what() );
-
-        return;
-    }
-
-    if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + error);
-
-        return;
-    }
-
-    std::string signatureError;
-    signatureError.append("The on node deletion callback supports the following signature(s):\n");
-    signatureError.append("- callback(thisNode,app)");
-    if (args.size() != 2) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "thisNode") || (args[1] != "app") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
-
-        return;
-    }
-
-    std::string appID = _publicInterface->getApp()->getAppIDString();
-    std::stringstream ss;
-    ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ")\n";
-
-    std::string err;
-    std::string output;
-    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
-    } else if ( !output.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor(output);
-    }
-}
-
-void
-Node::Implementation::runOnNodeCreatedCB(bool userEdited)
-{
-
-    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
-    NodeCollectionPtr group = _publicInterface->getGroup();
-
-    if (!group) {
-        return;
-    }
-    if ( !cb.empty() ) {
-        runOnNodeCreatedCBInternal(cb, userEdited);
-    }
-
-    NodeGroupPtr isGroup = toNodeGroup(group);
-    KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
-    if (!nodeCreatedCbKnob && isGroup) {
-        cb = isGroup->getNode()->getAfterNodeCreatedCallback();
-    } else if (nodeCreatedCbKnob) {
-        cb = nodeCreatedCbKnob->getValue();
-    }
-    if ( !cb.empty() ) {
-        runOnNodeCreatedCBInternal(cb, userEdited);
-    }
-}
-
-void
-Node::Implementation::runOnNodeDeleteCB()
-{
-
-    if (_publicInterface->getScriptName_mt_safe().empty()) {
-        return;
-    }
-    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();
-    NodeCollectionPtr group = _publicInterface->getGroup();
-
-    if (!group) {
-        return;
-    }
-    if ( !cb.empty() ) {
-        runOnNodeDeleteCBInternal(cb);
-    }
-
-
-    NodeGroupPtr isGroup = toNodeGroup(group);
-    KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
-    if (!nodeDeletedKnob && isGroup) {
-        NodePtr grpNode = isGroup->getNode();
-        if (grpNode) {
-            cb = grpNode->getBeforeNodeRemovalCallback();
-        }
-    } else if (nodeDeletedKnob) {
-        cb = nodeDeletedKnob->getValue();
-    }
-    if ( !cb.empty() ) {
-        runOnNodeDeleteCBInternal(cb);
-    }
-}
 
 std::string
 Node::getBeforeRenderCallback() const
@@ -11098,74 +10195,6 @@ Node::runInputChangedCallback(int index)
         _imp->runInputChangedCallback(index, cb);
     }
 }
-
-void
-Node::Implementation::runInputChangedCallback(int index,
-                                              const std::string& cb)
-{
-    std::vector<std::string> args;
-    std::string error;
-
-    try {
-        NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
-    } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onInputChanged callback: ")
-                                                          + e.what() );
-
-        return;
-    }
-
-    if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + error);
-
-        return;
-    }
-
-    std::string signatureError;
-    signatureError.append("The on input changed callback supports the following signature(s):\n");
-    signatureError.append("- callback(inputIndex,thisNode,thisGroup,app)");
-    if (args.size() != 4) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "inputIndex") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
-
-        return;
-    }
-
-    std::string appID = _publicInterface->getApp()->getAppIDString();
-    NodeCollectionPtr collection = _publicInterface->getGroup();
-    assert(collection);
-    if (!collection) {
-        return;
-    }
-
-    std::string thisGroupVar;
-    NodeGroupPtr isParentGrp = toNodeGroup(collection);
-    if (isParentGrp) {
-        std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
-        std::string nodeFullName = appID + "." + nodeName;
-        thisGroupVar = nodeFullName;
-    } else {
-        thisGroupVar = appID;
-    }
-
-    std::stringstream ss;
-    ss << cb << "(" << index << "," << appID << "." << _publicInterface->getFullyQualifiedName() << "," << thisGroupVar << "," << appID << ")\n";
-
-    std::string script = ss.str();
-    std::string output;
-    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
-    } else {
-        if ( !output.empty() ) {
-            _publicInterface->getApp()->appendToScriptEditor(output);
-        }
-    }
-} // Node::Implementation::runInputChangedCallback
 
 KnobChoicePtr
 Node::getChannelSelectorKnob(int inputNb) const

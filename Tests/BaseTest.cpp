@@ -69,12 +69,9 @@ BaseTest::registerTestPlugins()
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
-        LibraryBinary* bin = NULL;
+        PluginPtr p;
         try {
-            PluginPtr p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
-            if (p) {
-                bin = p->getLibraryBinary();
-            }
+            p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
         } catch (const std::exception & e) {
             std::cout << e.what() << std::endl;
         }

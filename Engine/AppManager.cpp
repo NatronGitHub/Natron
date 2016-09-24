@@ -1370,21 +1370,23 @@ AppManager::onAllPluginsLoaded()
         }
     
         PluginMajorsOrdered::iterator first = it->second.begin();
+
+        // If at least one version of the plug-in can be created, consider it creatable
         bool isUserCreatable = false;
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ( (*it2)->getIsUserCreatable() ) {
                 isUserCreatable = true;
-                break;
+            } else {
+                (*it2)->setLabelWithoutSuffix((*it2)->getPluginLabel());
             }
         }
         if (!isUserCreatable) {
-            (*first)->setLabelWithoutSuffix((*first)->getPluginLabel());
             continue;
         }
 
         std::string labelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*first)->getPluginLabel() );
 
-        //Find a duplicate
+        // Find a duplicate
         for (PluginsMap::const_iterator it2 = plugins.begin(); it2 != plugins.end(); ++it2) {
             if (it->first == it2->first) {
                 continue;
@@ -1404,6 +1406,8 @@ AppManager::onAllPluginsLoaded()
                 continue;
             }
 
+            // If we find another plug-in (with a different ID) but with the same label without suffix and same grouping
+            // then keep the original label
             std::string otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*other)->getPluginLabel() );
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
 
@@ -1435,6 +1439,8 @@ AppManager::onAllPluginsLoaded()
             if ( (*it2)->getIsUserCreatable() ) {
                 (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
                 onPluginLoaded(*it2);
+            } else {
+
             }
         }
     }
@@ -1974,6 +1980,7 @@ AppManager::loadPythonGroups()
         p->setProperty<bool>(kNatronPluginPropPyPlugIsToolset, isToolset);
         p->setProperty<std::string>(kNatronPluginPropDescription, pluginDescription);
         p->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFilePath);
+        p->setProperty<bool>(kNatronPluginPropPyPlugIsPythonScript, true);
 
         //p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, false);
         //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);

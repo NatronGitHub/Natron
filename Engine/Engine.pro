@@ -130,6 +130,7 @@ SOURCES += \
     Markdown.cpp \
     MemoryFile.cpp \
     Node.cpp \
+    NodePrivate.cpp \
     NodeGroup.cpp \
     NodeMetadata.cpp \
     NonKeyParams.cpp \
@@ -339,6 +340,7 @@ HEADERS += \
     MemoryFile.h \
     MergingEnum.h \
     Node.h \
+    NodePrivate.h \
     Noise.h \
     NoiseTables.h \
     NodeGroup.h \

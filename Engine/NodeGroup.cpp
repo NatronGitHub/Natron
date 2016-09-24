@@ -1612,8 +1612,6 @@ void
 NodeGroup::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& args)
 {
 
-    // Group nodes are always considered "edited"
-    setSubGraphEditedByUser(true);
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
