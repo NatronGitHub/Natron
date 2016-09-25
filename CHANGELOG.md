@@ -11,6 +11,9 @@
 ### Plugins
 
 - (beta feature) ErodeBlur: Erode or dilate a mask by smoothing.
+- (beta feature) KeyMix: Copies A to B only where Mask is non-zero.
+- (beta feature) PIK: A per-pixel color difference keyer that uses a mix operation instead of a max operation to combine the non-backing screen channels.
+- (beta feature) PIKColor: Generate a clean plate from each frame for keying with PIK.
 
 ## Version 2.1.4
 
