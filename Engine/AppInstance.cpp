@@ -940,19 +940,8 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
                 return containerNode;
             }
 
-
-            if (!serialization && args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName).empty()) {
-                std::string containerName;
-                try {
-                    if (group) {
-                        group->initNodeName(plugin->getLabelWithoutSuffix(), &containerName);
-                    }
-                    containerNode->setScriptName(containerName);
-                    containerNode->setLabel(containerName);
-                } catch (...) {
-                }
-            }
         }
+        node = containerNode;
 
         // For older pyPlugs with Python script, we must create the nodes now.
         // For newer pyPlugs this is taken care of in the Node::load function when creating

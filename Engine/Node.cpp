@@ -453,6 +453,14 @@ Node::load(const CreateNodeArgsPtr& args)
         }
     }
 
+
+    // If this is a pyplug, load its properties
+    std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
+    if (!pyPlugID.empty()) {
+        _imp->pyPlugHandle = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, false);
+        _imp->isPyPlug = true;
+    }
+
     // Make sure knobs initialization does not attempt to call knobChanged or trigger a render.
     _imp->effect->beginChanges();
 
@@ -477,12 +485,6 @@ Node::load(const CreateNodeArgsPtr& args)
     // Create knobs
     initializeKnobs(serialization.get() != 0);
 
-    // If this is a pyplug, load its properties
-    std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
-    if (!pyPlugID.empty()) {
-        _imp->pyPlugHandle = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, false);
-        _imp->isPyPlug = true;
-    }
 
     // If there is either PyPlug info or a preset to load, do it now
     // Since this is the same format, the same function handles it
@@ -3867,7 +3869,7 @@ Node::initializeKnobs(bool loadingSerialization)
 
     ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
     ///For RotoPaint we need to access it's default knobs within the roto context
-    bool effectIsGroup = getPluginID() == PLUGINID_NATRON_GROUP || dynamic_cast<RotoPaint*>(_imp->effect.get());
+    bool effectIsGroup = dynamic_cast<NodeGroup*>(_imp->effect.get()) || dynamic_cast<RotoPaint*>(_imp->effect.get());
 
     if (!effectIsGroup) {
         //Initialize plug-in knobs
