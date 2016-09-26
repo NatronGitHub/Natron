@@ -76,7 +76,7 @@ BaseTest::registerTestPlugins()
             std::cout << e.what() << std::endl;
         }
 
-        ASSERT_TRUE(bin != NULL);
+        ASSERT_TRUE(p != NULL);
     }
 }
 

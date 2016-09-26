@@ -457,7 +457,9 @@ NodePrivate::figureOutCallbackName(const std::string& inCallback, std::string* o
     } else if (checkFunctionPresence(pluginID, inCallback, false)) {
         *outCallback = inCallback;
     } else {
-        _publicInterface->getApp()->appendToScriptEditor(tr("Failed to run onNodeCreated callback: %1 does not seem to be defined").arg(QString::fromUtf8(inCallback.c_str())).toStdString());
+        if (!inCallback.empty()) {
+            _publicInterface->getApp()->appendToScriptEditor(tr("Failed to run callback: %1 does not seem to be defined").arg(QString::fromUtf8(inCallback.c_str())).toStdString());
+        }
         return false;
     }
     return true;
