@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Curve.h"
@@ -1328,9 +1329,26 @@ ChoiceParam::set(int x,
 void
 ChoiceParam::set(const QString& label)
 {
-    KnobHelper::ValueChangedReturnCodeEnum s = _choiceKnob.lock()->setValueFromLabel(label.toStdString(), 0);
+    KnobChoicePtr k = _choiceKnob.lock();
+    if (!k) {
+        return;
+    }
+    try {
+        KnobHelper::ValueChangedReturnCodeEnum s = k->setValueFromLabel(label.toStdString(), 0);
+        Q_UNUSED(s);
+    } catch (const std::exception& e) {
+        KnobHolderPtr holder =  k->getHolder();
+        AppInstancePtr app;
+        if (holder) {
+            app = holder->getApp();
+        }
+        if (app) {
+            app->appendToScriptEditor(e.what());
+        } else {
+            std::cerr << e.what() << std::endl;
+        }
+    }
 
-    Q_UNUSED(s);
 }
 
 int
