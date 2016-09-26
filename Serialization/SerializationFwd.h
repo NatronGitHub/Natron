@@ -20,6 +20,7 @@
 #define SERIALIZATIONFWD_H
 
 #include <list>
+#include <string>
 
 #include "Global/Macros.h"
 

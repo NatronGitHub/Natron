@@ -176,7 +176,7 @@ Plugin::addPresetFile(const PluginPresetDescriptor& preset)
 struct PresetsSortByLabelFunctor
 {
     bool operator() (const PluginPresetDescriptor& lhs,
-                     PluginPresetDescriptor& rhs)
+                     const PluginPresetDescriptor& rhs)
     {
         return lhs.presetLabel < rhs.presetLabel;
     }
