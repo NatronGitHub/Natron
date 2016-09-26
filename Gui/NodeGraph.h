@@ -31,6 +31,7 @@
 #include <list>
 #include <set>
 #include <utility>
+#include <istream>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
@@ -170,7 +171,7 @@ public:
     void duplicateSelectedNodes(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);
     
-    bool tryReadClipboard(const QPointF& pos, const std::string& str);
+    bool tryReadClipboard(const QPointF& pos, std::istream& stream);
 
     QPointF getRootPos() const;
 

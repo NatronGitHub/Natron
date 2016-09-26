@@ -68,6 +68,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
@@ -1193,6 +1194,7 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList supportedExtensions;
     supportedExtensions.push_back( QString::fromLatin1(NATRON_PROJECT_FILE_EXT) );
     supportedExtensions.push_back( QString::fromLatin1("py") );
+    supportedExtensions.push_back( QString::fromLatin1(NATRON_PRESETS_FILE_EXT) );
 
     std::vector<std::string> readersFormat;
     appPTR->getSupportedReaderFileFormats(&readersFormat);
@@ -1286,6 +1288,18 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
             assert( !content.empty() );
             AppInstancePtr appInstance = openProject( content.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
+        } else if (extLower == NATRON_PRESETS_FILE_EXT) {
+            const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
+            assert( !content.empty() );
+
+            FStreamsSupport::ifstream ifile;
+            std::string filePath = content.begin()->second.absoluteFileName();
+            FStreamsSupport::open(&ifile, filePath);
+            if (!ifile.is_open()) {
+                Dialogs::errorDialog(tr("Loader").toStdString(), tr("Cannot open file %1").arg(QString::fromUtf8(filePath.c_str())).toStdString());
+            } else {
+                graph->tryReadClipboard(graphScenePos, ifile);
+            }
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
@@ -1294,7 +1308,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         } else {
             std::string readerPluginID = appPTR->getReaderPluginIDForFileType(extLower);
             if ( readerPluginID.empty() ) {
-                Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
+                Dialogs::errorDialog(tr("Reader").toStdString(), tr("No plugin capable of decoding %1 was found.").arg(QString::fromUtf8(extLower.c_str())).toStdString());
             } else {
 
 

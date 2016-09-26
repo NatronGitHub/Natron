@@ -37,6 +37,7 @@
 #include <QtCore/QMimeData>
 
 #include "Engine/Node.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Project.h"
@@ -162,48 +163,64 @@ NodeGraph::pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard
 }
 
 bool
-NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
+NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
 {
 
-    SERIALIZATION_NAMESPACE::NodeSerializationList nodes;
     
     // Check if this is a regular clipboard
     // This will also check if this is a single node
     try {
-        std::istringstream ss(str);
         SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
         SERIALIZATION_NAMESPACE::read(ss, &cb);
-        nodes = cb.nodes;
+        _imp->pasteNodesInternal(cb.nodes, pos, true);
     } catch (...) {
         
         // Check if this was copy/pasted from a project directly
         try {
-            std::istringstream ss(str);
+            ss.seekg(0);
             SERIALIZATION_NAMESPACE::ProjectSerialization isProject;
             SERIALIZATION_NAMESPACE::read(ss, &isProject);
-            nodes = isProject._nodes;
+            _imp->pasteNodesInternal(isProject._nodes, pos, true);
         } catch (...) {
             
-            // check for a preset...
+            // check for a preset/pyplug...
             try {
-                std::istringstream ss(str);
+                ss.seekg(0);
                 SERIALIZATION_NAMESPACE::NodePresetSerialization isPreset;
                 SERIALIZATION_NAMESPACE::read(ss, &isPreset);
-                SERIALIZATION_NAMESPACE::NodeSerializationPtr ns(new SERIALIZATION_NAMESPACE::NodeSerialization);
-                *ns = isPreset.nodeSerialization;
-                nodes.push_back(ns);
+
+                // Instantiate this preset/pyplug
+                CreateNodeArgsPtr args;
+                if (!isPreset.pyPlugID.empty()) {
+                    args = CreateNodeArgs::create(isPreset.pyPlugID, getGroup());
+                } else if (!isPreset.originalPluginID.empty()) {
+                    args = CreateNodeArgs::create(isPreset.originalPluginID, getGroup());
+                    args->setProperty<std::string>(kCreateNodeArgsPropPreset, isPreset.presetLabel);
+                }
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, pos.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, pos.y(), 1);
+                getGui()->getApp()->createNode(args);
+
             } catch (...) {
-                
+                ss.seekg(0);
                 // Last resort: Assume this is python code or the url of a file. We cannot rely on the
                 // mimetype correctly here because on OSX the url gets encoded as a string
-                QString qStr = QString::fromUtf8(str.c_str());
+                std::string buffer;
+                while (ss.good()) {
+                    std::string line;
+                    std::getline(ss, line);
+                    line += '\n';
+                    buffer.append(line);
+                }
+
+                QString qStr = QString::fromUtf8(buffer.c_str());
                 if ( QFile::exists(qStr) ) {
                     QList<QUrl> urls;
                     urls.push_back( QUrl::fromLocalFile(qStr) );
                     getGui()->handleOpenFilesFromUrls( urls, QCursor::pos() );
                 } else {
                     std::string error, output;
-                    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str, &error, &output) ) {
+                    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(buffer, &error, &output) ) {
                         getGui()->appendToScriptEditor(error);
                         getGui()->ensureScriptEditorVisible();
                     } else if ( !output.empty() ) {
@@ -216,8 +233,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, const std::string& str)
         }
     }
     
-    _imp->pasteNodesInternal(nodes, pos, true);
-    
+
     return true;
 
 }
@@ -247,8 +263,8 @@ NodeGraph::pasteClipboard(const QPointF& pos)
     }
     QByteArray data = mimedata->data( QLatin1String("text/plain") );
     std::string s = QString::fromUtf8(data).toStdString();
-    
-    return tryReadClipboard(position, s);
+    std::istringstream ss(s);
+    return tryReadClipboard(position, ss);
     
 }
 
