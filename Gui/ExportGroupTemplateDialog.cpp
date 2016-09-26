@@ -259,7 +259,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->shortcutKeyEditor = new KeybindRecorder(this);
 
 
-    _imp->extPythonScriptLabel = new Label(tr("Icon relative path"), this);
+    _imp->extPythonScriptLabel = new Label(tr("Python callbacks script"), this);
     QString extPyScriptTt = NATRON_NAMESPACE::convertFromPlainText(tr("Set here the file path of an optional Python script where callback(s) used "
                                                                       "by the PyPlug are defined.\n"
                                                                       "The path is relative to where you save the PyPlug script."), NATRON_NAMESPACE::WhiteSpaceNormal);
